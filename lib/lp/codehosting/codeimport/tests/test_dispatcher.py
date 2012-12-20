@@ -10,67 +10,60 @@ from optparse import OptionParser
 import os
 import shutil
 import socket
-import sys
 import tempfile
-from textwrap import dedent
-from unittest import TestLoader
 
-from twisted.trial.unittest import TestCase
-
-from canonical.config import config
 from lp.codehosting.codeimport.dispatcher import CodeImportDispatcher
-from lp.codehosting.codeimport.tests.servers import (
-    _make_silent_logger)
-from canonical.launchpad import scripts
-from canonical.testing.layers import TwistedLaunchpadZopelessLayer
+from lp.services import scripts
+from lp.services.log.logger import BufferLogger
+from lp.testing import TestCase
+from lp.testing.layers import BaseLayer
 
 
 class StubSchedulerClient:
-    """A stub scheduler client that returns a pre-arranged answer."""
+    """A scheduler client that returns a pre-arranged answer."""
 
-    def __init__(self, id_to_return):
-        self.id_to_return = id_to_return
+    def __init__(self, ids_to_return):
+        self.ids_to_return = ids_to_return
 
-    def getJobForMachine(self, machine):
-        return self.id_to_return
+    def getJobForMachine(self, machine, limit):
+        return self.ids_to_return.pop(0)
+
+
+class MockSchedulerClient:
+    """A scheduler client that records calls to `getJobForMachine`."""
+
+    def __init__(self):
+        self.calls = []
+
+    def getJobForMachine(self, machine, limit):
+        self.calls.append((machine, limit))
+        return 0
 
 
 class TestCodeImportDispatcherUnit(TestCase):
     """Unit tests for `CodeImportDispatcher`."""
 
-    layer = TwistedLaunchpadZopelessLayer
+    layer = BaseLayer
 
     def setUp(self):
-        self.config_count = 0
-        self.pushConfig(forced_hostname='none')
-        self.dispatcher = CodeImportDispatcher(_make_silent_logger())
+        TestCase.setUp(self)
+        self.pushConfig('codeimportdispatcher', forced_hostname='none')
 
-    def pushConfig(self, **args):
-        """Push some key-value pairs into the codeimportdispatcher config.
-
-        The config values will be restored during test tearDown.
-        """
-        self.config_count += 1
-        name = 'test%d' % self.config_count
-        body = '\n'.join(["%s: %s"%(k, v) for k, v in args.iteritems()])
-        config.push(name, dedent("""
-            [codeimportdispatcher]
-            %s
-            """ % body))
-        self.addCleanup(config.pop, name)
+    def makeDispatcher(self, worker_limit=10, _sleep=lambda delay: None):
+        """Make a `CodeImportDispatcher`."""
+        return CodeImportDispatcher(
+            BufferLogger(), worker_limit, _sleep=_sleep)
 
     def test_getHostname(self):
         # By default, getHostname return the same as socket.gethostname()
-        self.assertEqual(
-            self.dispatcher.getHostname(),
-            socket.gethostname())
+        dispatcher = self.makeDispatcher()
+        self.assertEqual(socket.gethostname(), dispatcher.getHostname())
 
     def test_getHostnameOverride(self):
-        # getHostname can be overriden by the config for testing, however.
-        self.pushConfig(forced_hostname='test-value')
-        self.assertEqual(
-            self.dispatcher.getHostname(),
-            'test-value')
+        # getHostname can be overridden by the config for testing, however.
+        dispatcher = self.makeDispatcher()
+        self.pushConfig('codeimportdispatcher', forced_hostname='test-value')
+        self.assertEqual('test-value', dispatcher.getHostname())
 
     def writePythonScript(self, script_path, script_body):
         """Write out an executable Python script.
@@ -85,6 +78,17 @@ class TestCodeImportDispatcherUnit(TestCase):
 
     def filterOutLoggingOptions(self, arglist):
         """Remove the standard logging options from a list of arguments."""
+
+        # Calling parser.parse_args as we do below is dangerous,
+        # as if a callback invokes parser.error the test suite
+        # terminates. This hack removes the dangerous argument manually.
+        arglist = [
+            arg for arg in arglist if not arg.startswith('--log-file=')]
+        while '--log-file' in arglist:
+            index = arglist.index('--log-file')
+            del arglist[index] # Delete the argument
+            del arglist[index] # And its parameter
+
         parser = OptionParser()
         scripts.logger_options(parser)
         options, args = parser.parse_args(arglist)
@@ -96,6 +100,7 @@ class TestCodeImportDispatcherUnit(TestCase):
 
         # We create a script that writes its command line arguments to
         # some a temporary file and examine that.
+        dispatcher = self.makeDispatcher()
         tmpdir = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, tmpdir)
         script_path = os.path.join(tmpdir, 'script.py')
@@ -104,26 +109,59 @@ class TestCodeImportDispatcherUnit(TestCase):
             script_path,
             ['import sys',
              'open(%r, "w").write(str(sys.argv[1:]))' % output_path])
-        self.dispatcher.worker_script = script_path
-        proc = self.dispatcher.dispatchJob(10)
+        dispatcher.worker_script = script_path
+        proc = dispatcher.dispatchJob(10)
         proc.wait()
         arglist = self.filterOutLoggingOptions(eval(open(output_path).read()))
-        self.assertEqual(arglist, ['10'])
+        self.assertEqual(['10'], arglist)
 
     def test_findAndDispatchJob_jobWaiting(self):
-        # If there is a job to dispatch, then we call dispatchJob with its id.
+        # If there is a job to dispatch, then we call dispatchJob with its id
+        # and the worker_limit supplied to the dispatcher.
         calls = []
-        self.dispatcher.dispatchJob = lambda job_id: calls.append(job_id)
-        self.dispatcher.findAndDispatchJob(StubSchedulerClient(10))
-        self.assertEqual(calls, [10])
+        dispatcher = self.makeDispatcher()
+        dispatcher.dispatchJob = lambda job_id: calls.append(job_id)
+        found = dispatcher.findAndDispatchJob(StubSchedulerClient([10]))
+        self.assertEqual(([10], True), (calls, found))
 
     def test_findAndDispatchJob_noJobWaiting(self):
         # If there is no job to dispatch, then we just exit quietly.
         calls = []
-        self.dispatcher.dispatchJob = lambda job_id: calls.append(job_id)
-        self.dispatcher.findAndDispatchJob(StubSchedulerClient(0))
-        self.assertEqual(calls, [])
+        dispatcher = self.makeDispatcher()
+        dispatcher.dispatchJob = lambda job_id: calls.append(job_id)
+        found = dispatcher.findAndDispatchJob(StubSchedulerClient([0]))
+        self.assertEqual(([], False), (calls, found))
 
+    def test_findAndDispatchJob_calls_getJobForMachine_with_limit(self):
+        # findAndDispatchJob calls getJobForMachine on the scheduler client
+        # with the hostname and supplied worker limit.
+        worker_limit = self.factory.getUniqueInteger()
+        dispatcher = self.makeDispatcher(worker_limit)
+        scheduler_client = MockSchedulerClient()
+        dispatcher.findAndDispatchJob(scheduler_client)
+        self.assertEqual(
+            [(dispatcher.getHostname(), worker_limit)],
+            scheduler_client.calls)
 
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+    def test_findAndDispatchJobs(self):
+        # findAndDispatchJobs calls getJobForMachine on the scheduler_client,
+        # dispatching jobs, until it indicates that there are no more jobs to
+        # dispatch.
+        calls = []
+        dispatcher = self.makeDispatcher()
+        dispatcher.dispatchJob = lambda job_id: calls.append(job_id)
+        dispatcher.findAndDispatchJobs(StubSchedulerClient([10, 9, 0]))
+        self.assertEqual([10, 9], calls)
+
+    def test_findAndDispatchJobs_sleeps(self):
+        # After finding a job, findAndDispatchJobs sleeps for an interval as
+        # returned by _getSleepInterval.
+        sleep_calls = []
+        interval = self.factory.getUniqueInteger()
+        def _sleep(delay):
+            sleep_calls.append(delay)
+        dispatcher = self.makeDispatcher(_sleep=_sleep)
+        dispatcher.dispatchJob = lambda job_id: None
+        dispatcher._getSleepInterval = lambda : interval
+        dispatcher.findAndDispatchJobs(StubSchedulerClient([10, 0]))
+        self.assertEqual([interval], sleep_calls)

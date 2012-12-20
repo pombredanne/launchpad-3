@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
   <body>
@@ -16,46 +13,20 @@
         color: lightgray;
     }
     </style>
-    <script type="text/javascript"
-      tal:condition="devmode"
-      tal:define="lp_js string:${icingroot}/build"
-      tal:attributes="src string:${lp_js}/translations/pofile.js"></script>
     <script type="text/javascript">
-      YUI().use('node', 'lp.pofile', function(Y) {
-          Y.on('domready', Y.lp.pofile.setupSuggestionDismissal);
+      LPJS.use('lp.translations.pofile', function(Y) {
+        Y.on('domready', Y.lp.translations.pofile.initializeTranslationMessage);
       });
     </script>
     </div>
 
     <div metal:fill-slot="main">
 
-
-      <div>
-        <a tal:attributes="href context/pofile/potemplate/fmt:url"
-           tal:content="context/pofile/potemplate/title">
-          evolution 2.10 template
-        </a>
-      </div>
-
-      <tal:form-not-writeable condition="not:view/form_is_writeable">
-        <h1>
-          Browsing
-          <tal:language replace="context/pofile/language/englishname">
-            Spanish
-          </tal:language>
-          translation
-        </h1>
-      </tal:form-not-writeable>
-      <tal:form-writeable condition="view/form_is_writeable">
-        <h1>
-          Translating into
-          <tal:language replace="context/pofile/language/englishname">
-            Spanish
-          </tal:language>
-        </h1>
-      </tal:form-writeable>
-
       <tal:havepluralforms condition="view/has_plural_form_information">
+
+      <!--  Navigation -->
+      <metal:nav-pofile-subpages
+        use-macro="context/@@+translations-macros/nav-pofile-subpages" />
 
         <!-- Alternative suggestions. -->
         <div metal:define-macro="editform">
@@ -101,6 +72,7 @@
                 <th colspan="5" style="text-align: right;">
                   <input type="submit"
                          name="submit_translations"
+                         id="save_and_continue_button"
                          value="Save &amp; Continue" />
                 </th>
               </tr>
@@ -112,8 +84,10 @@
         <!-- Paging doodads. -->
         <tal:navigation
           replace="structure view/batchnav/@@+navigation-links-lower" />
-      <tal:status replace="structure context/pofile/@@+access" />
+      <tal:status replace="structure context/browser_pofile/@@+access" />
       </tal:havepluralforms>
+      <metal:pofile-js-footer
+        use-macro="context/@@+translations-macros/pofile-js-footer" />
     </div>
 
   </body>

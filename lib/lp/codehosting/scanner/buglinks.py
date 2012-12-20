@@ -11,11 +11,11 @@ __all__ = [
 import urlparse
 
 from bzrlib.errors import InvalidBugStatus
-from zope.component import adapter, getUtility
+from zope.component import getUtility
 
-from lp.codehosting.scanner import events
-from canonical.launchpad.interfaces import (
-    IBugBranchSet, IBugSet, ILaunchpadCelebrities, NotFoundError)
+from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.bugs.interfaces.bug import IBugSet
 
 
 class BugBranchLinker:
@@ -89,9 +89,7 @@ class BugBranchLinker:
                     registrant=getUtility(ILaunchpadCelebrities).janitor)
 
 
-@adapter(events.NewRevision)
-def got_new_revision(new_revision):
-    if new_revision.isMainline():
-        linker = BugBranchLinker(new_revision.db_branch)
-        linker.createBugBranchLinksForRevision(new_revision.bzr_revision)
-
+def got_new_mainline_revisions(new_mainline_revisions):
+    linker = BugBranchLinker(new_mainline_revisions.db_branch)
+    for bzr_revision in new_mainline_revisions.bzr_revisions:
+        linker.createBugBranchLinksForRevision(bzr_revision)

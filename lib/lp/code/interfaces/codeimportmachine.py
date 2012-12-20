@@ -12,10 +12,18 @@ __all__ = [
     'ICodeImportMachineSet',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int, TextLine
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    TextLine,
+    )
 
-from canonical.launchpad import _
+from lp import _
 from lp.code.enums import CodeImportMachineState
 
 
@@ -47,7 +55,7 @@ class ICodeImportMachine(Interface):
         description=_("When the controller deamon last recorded it was"
                       " running."))
 
-    def shouldLookForJob():
+    def shouldLookForJob(worker_limit):
         """Should we look for a job to run on this machine?
 
         There are three reasons we might not look for a job:

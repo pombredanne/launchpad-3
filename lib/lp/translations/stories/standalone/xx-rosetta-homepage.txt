@@ -1,4 +1,21 @@
-= Translations front page =
+Translations front page
+=======================
+
+Set up
+------
+
+    >>> import transaction
+    >>> from lp.app.enums import ServiceUsage
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from zope.component import getUtility
+    >>> login('admin@canonical.com')
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> evolution.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> logout()
+    >>> transaction.commit()
+
+The front page
+--------------
 
     >>> browser.open('http://translations.launchpad.dev/')
     >>> print browser.title
@@ -11,7 +28,7 @@ in the left column.
     ...     browser.contents, 'three column left')[0]
     >>> print extract_text(left_column)
     Translatable operating systems
-    Ubuntu 5.04
+    Ubuntu Hoary (5.04)
 
 The middle lists translatable products, Evolution is one of most
 translated projects.
@@ -33,14 +50,13 @@ in the right column.
     >>> right_column = find_tags_by_class(
     ...     browser.contents, 'three column right')[0]
     >>> print extract_text(right_column)
-    Preferred languages
+    Your preferred languages
     Afrikaans
     Sotho, Southern
     Xhosa
     Zulu
     ...
-    Change your preferred language...
+    Change your preferred languages...
 
     >>> right_column.findAll('a')[-1]
-    <a href="/+editmylanguages">
-    ...Change your preferred language...
+    <a href="/+editmylanguages"...Change your preferred languages...

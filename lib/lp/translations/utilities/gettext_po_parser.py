@@ -4,118 +4,46 @@
 # pylint: disable-msg=W0404
 # (Suppress warning about two datetimes being imported)
 #
-# Contains code from msgfmt.py (available from python source code),
-#     written by Martin v. Loewis <loewis@informatik.hu-berlin.de>
-#     changed by Christian 'Tiran' Heimes <ch@comlounge.net>
+# Originally based on code from msgfmt.py (available from python source
+# code), written by Martin v. Loewis and changed by Christian 'Tiran'
+# Heimes.  The code is no longer recognizably similar though, so don't
+# blame these people for any mistakes.
 
 __metaclass__ = type
 
 __all__ = [
     'POHeader',
     'POParser',
-    'plural_form_mapper',
     ]
 
-import gettext
-import datetime
-import re
 import codecs
-import logging
-import pytz
+import datetime
 from email.Utils import parseaddr
-from zope.interface import implements
-from zope import datetime as zope_datetime
+import logging
+import re
 
+import pytz
+from zope import datetime as zope_datetime
+from zope.interface import implements
+
+from lp.app.versioninfo import revno
+from lp.translations.interfaces.translationcommonformat import (
+    ITranslationHeaderData,
+    )
 from lp.translations.interfaces.translationimporter import (
     TooManyPluralFormsError,
     TranslationFormatInvalidInputError,
-    TranslationFormatSyntaxError)
-from lp.translations.interfaces.translationcommonformat import (
-    ITranslationHeaderData)
-from lp.translations.interfaces.translations import (
-    TranslationConstants)
+    TranslationFormatSyntaxError,
+    )
+from lp.translations.interfaces.translations import TranslationConstants
+from lp.translations.utilities.pluralforms import (
+    make_plurals_identity_map,
+    plural_form_mapper,
+    )
 from lp.translations.utilities.translation_common_format import (
     TranslationFileData,
-    TranslationMessageData)
-from canonical.launchpad.versioninfo import revno
-
-
-class BadPluralExpression(Exception):
-    """Local "escape hatch" exception for unusable plural expressions."""
-
-
-def make_plural_function(expression):
-    """Create a lambda function for C-like plural expression."""
-    # Largest expressions we could find in practice were 113 characters
-    # long.  500 is a reasonable value which is still 4 times more than
-    # that, yet not incredibly long.
-    if expression is None or len(expression) > 500:
-        raise BadPluralExpression
-
-    # Guard against '**' usage: it's not useful in evaluating
-    # plural forms, yet can be used to introduce a DoS.
-    if expression.find('**') != -1:
-        raise BadPluralExpression
-
-    # We allow digits, whitespace [ \t], parentheses, "n", and operators
-    # as allowed by GNU gettext implementation as well.
-    if not re.match('^[0-9 \t()n|&?:!=<>+%*/-]*$', expression):
-        raise BadPluralExpression
-
-    try:
-        function = gettext.c2py(expression)
-    except (ValueError, SyntaxError):
-        raise BadPluralExpression
-
-    return function
-
-
-def make_plurals_identity_map():
-    """Return a dict mapping each plural form number onto itself."""
-    return dict(enumerate(xrange(TranslationConstants.MAX_PLURAL_FORMS)))
-
-
-def plural_form_mapper(first_expression, second_expression):
-    """Maps plural forms from one plural formula to the other.
-
-    Returns a dict indexed by indices in the `first_formula`
-    pointing to corresponding indices in the `second_formula`.
-    """
-    identity_map = make_plurals_identity_map()
-    try:
-        first_func = make_plural_function(first_expression)
-        second_func = make_plural_function(second_expression)
-    except BadPluralExpression:
-        return identity_map
-
-    # Can we create a mapping from one expression to the other?
-    mapping = {}
-    for n in range(1000):
-        try:
-            first_form = first_func(n)
-            second_form = second_func(n)
-        except (ArithmeticError, TypeError):
-            return identity_map
-
-        # Is either result out of range?
-        valid_forms = range(TranslationConstants.MAX_PLURAL_FORMS)
-        if first_form not in valid_forms or second_form not in valid_forms:
-            return identity_map
-
-        if first_form in mapping:
-            if mapping[first_form] != second_form:
-                return identity_map
-        else:
-            mapping[first_form] = second_form
-
-    # The mapping must be an isomorphism.
-    if sorted(mapping.keys()) != sorted(mapping.values()):
-        return identity_map
-
-    # Fill in the remaining inputs from the identity map:
-    result = identity_map.copy()
-    result.update(mapping)
-    return result
+    TranslationMessageData,
+    )
 
 
 class POSyntaxWarning(Warning):
@@ -300,7 +228,7 @@ class POHeader:
         """Attempt to parse `date_string`, or return None if invalid."""
         try:
             return zope_datetime.parseDatetimetz(date_string)
-        except (ValueError, zope_datetime.DateTimeError), exception:
+        except (ValueError, zope_datetime.DateTimeError) as exception:
             return None
 
     def _parseHeaderFields(self):
@@ -550,7 +478,7 @@ class POParser(object):
         # decode as many characters as we can:
         try:
             newchars, length = decode(self._pending_chars, 'strict')
-        except UnicodeDecodeError, exc:
+        except UnicodeDecodeError as exc:
             # XXX: James Henstridge 2006-03-16:
             # If the number of unconvertable chars is longer than a
             # multibyte sequence to be, the UnicodeDecodeError indicates
@@ -588,7 +516,7 @@ class POParser(object):
 
     def parse(self, content_text):
         """Parse string as a PO file."""
-        # Initialise the parser.
+        # Initialize the parser.
         self._translation_file = TranslationFileData()
         self._messageids = set()
         self._pending_chars = content_text
@@ -691,7 +619,7 @@ class POParser(object):
             header = POHeader(header_text, header_comment)
             self._translation_file.header = header
             self._translation_file.syntax_warnings += header.syntax_warnings
-        except TranslationFormatInvalidInputError, error:
+        except TranslationFormatInvalidInputError as error:
             if error.line_number is None:
                 error.line_number = self._message_lineno
             raise

@@ -1,32 +1,38 @@
 #!/bin/sh
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 if [ -n "$1" ]; then
     USER=$1
     echo "Creating Launchpad database for $USER"
 else
-    echo "THIS SCRIPT WILL DESTROY ALL OF YOUR POSTGRESQL DATA"
-    echo "If you really want that, run it with a username as "
-    echo "an argument"
+    echo "usage: launchpad-database-setup DEVELOPER_USER"
+    echo "THIS SCRIPT WILL DESTROY ALL POSTGRESQL DATA for the given user"
+    echo "If you really want that, run it with the username of your "
+    echo "local developer account."
     exit 1
 fi
 
 # This attempts to automate instructions provided on
-# https://launchpad.canonical.com/DatabaseSetup which are intended for
+# https://dev.launchpad.net/DatabaseSetup which are intended for
 # initial Launchpad setup on an otherwise unconfigured postgresql instance
 
-if [ -e /etc/init.d/postgresql-8.3 ]; then
-  pgversion=8.3
-  echo "Using postgres 8.3"
-elif [ -e /etc/init.d/postgresql-8.2]; then
-  pgversion=8.2
-  echo "Using postgres 8.2"
-else
+for pgversion in 9.1
+do
+  sudo grep -q "^auto" /etc/postgresql/$pgversion/main/start.conf
+  if [ $? -eq 0 ]; then
+    break
+  fi
+done
+
+if [ -z "$pgversion" ]
+then
   echo "Unable to determine your postgres version."
   exit 1
 fi
+
+echo "Using postgres $pgversion"
 
 # Make sure that we have the correct version running on port 5432
 sudo grep -q "port.*5432" /etc/postgresql/$pgversion/main/postgresql.conf
@@ -35,7 +41,12 @@ if [ $? -ne 0 ]; then
   echo "ensure postgres is running on port 5432."
 fi;
 
-sudo /etc/init.d/postgresql-$pgversion stop
+if [ -e /etc/init.d/postgresql-$pgversion ]; then
+    sudo /etc/init.d/postgresql-$pgversion stop
+else
+    # This is Maverick.
+    sudo /etc/init.d/postgresql stop $pgversion
+fi
 
 echo Purging postgresql data...
 sudo pg_dropcluster $pgversion main --stop-server
@@ -47,22 +58,18 @@ echo Applying postgresql configuration changes...
 
 sudo cp -a /etc/postgresql/$pgversion/main/pg_hba.conf \
     /etc/postgresql/$pgversion/main/pg_hba.conf.old
-sudo grep -q Launchpad /etc/postgresql/$pgversion/main/pg_hba.conf || \
-sudo patch /etc/postgresql/$pgversion/main/pg_hba.conf <<'EOF'
---- pg_hba.conf 2005-11-02 17:33:08.000000000 -0800
-+++ /tmp/pg_hba.conf    2005-11-03 07:32:46.932400423 -0800
-@@ -58,7 +58,9 @@
- # on a non-local interface via the listen_addresses configuration parameter,
- # or via the -i or -h command line switches.
- #
--
-+# Launchpad users
-+local   all         all                           trust
-+host    all         all         127.0.0.1/32      trust
-
-
+sudo dd of=/etc/postgresql/$pgversion/main/pg_hba.conf <<'EOF'
+# Launchpad users
+# This section added automatically by launchpad-database-setup
+local   all         all                           trust
+host    all         all         127.0.0.1/32      trust
+host    all         all         ::1/128           trust
+# END Launchpad users
 
 EOF
+sudo dd oflag=append conv=notrunc \
+    if=/etc/postgresql/$pgversion/main/pg_hba.conf.old \
+    of=/etc/postgresql/$pgversion/main/pg_hba.conf
 sudo chown --reference=/etc/postgresql/$pgversion/main/pg_hba.conf.old \
     /etc/postgresql/$pgversion/main/pg_hba.conf
 sudo chmod --reference=/etc/postgresql/$pgversion/main/pg_hba.conf.old \
@@ -76,16 +83,23 @@ sudo tee -a /etc/postgresql/$pgversion/main/postgresql.conf <<'EOF'
 ##
 # Enable launchpad full text searching in database
 search_path='$user,public,ts2'
-add_missing_from=false
+# Per Bug #90809, standard_conforming_strings should be 'on'
+standard_conforming_strings=off
+escape_string_warning=off
+
 #enable_seqscan=false
-log_statement='all'
+log_statement='none'
 log_line_prefix='[%t] %q%u@%d '
 fsync = off
-max_fsm_relations=2000
 
 EOF
 
-sudo /etc/init.d/postgresql-$pgversion start
+if [ -e /etc/init.d/postgresql-$pgversion ]; then
+    sudo /etc/init.d/postgresql-$pgversion start
+else
+    # This is Maverick.
+    sudo /etc/init.d/postgresql start $pgversion
+fi
 
 echo Waiting 10 seconds for postgresql to come up...
 sleep 10

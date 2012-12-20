@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
   <body>
@@ -36,19 +36,21 @@
 
       <tal:visited_steps
           replace="structure view/widgets/__visited_steps__/hidden" />
+      <tal:add_packaging
+          replace="structure view/widgets/add_packaging/hidden" />
 
       <div class="field">
 
         <label tal:content="product_widget/label">Label</label>
 
         <div>
-          <tal:link replace="structure product/fmt:link" />
+          <tal:link replace="structure product/fmt:link_with_displayname" />
           (<a tal:attributes="href string:+choose-affected-product?field.product=${product/name}">Choose another project</a>)
           <input type="hidden" tal:replace="structure product_widget/hidden" />
         </div>
       </div>
 
-      <div id="upstream-text" tal:condition="not: product/official_malone"
+      <div id="upstream-text" tal:condition="not: product/bug_tracking_usage/enumvalue:LAUNCHPAD"
           tal:define="widgets view/bugwatch_widgets;
                       bugtracker product/getExternalBugTracker">
         <p tal:condition="bugtracker">
@@ -112,13 +114,6 @@
               </p>
             </td>
           </tr>
-          <tal:XXX condition="nothing">
-            # XXX: GavinPanella 2008-02-13 bug=201793: This will be
-            # uncommented in a later branch.
-            # <tr>
-            #   <td colspan="2" tal:content="structure link_items/EMAIL_UPSTREAM" />
-            # </tr>
-          </tal:XXX>
           <tr>
             <td tal:content="structure link_items/EMAIL_UPSTREAM_DONE" />
             <td tal:define="widget nocall:view/widgets/upstream_email_address_done;
@@ -144,55 +139,23 @@
 
       </div>
 
-      <tal:public_bug tal:condition="not: context/bug/private">
-
-      <p tal:condition="product/bug_supervisor">
-        <a tal:replace="structure product/bug_supervisor/fmt:link">Sample Person</a>,
-           the bug supervisor for
-           <tal:product tal:replace="product/displayname">Firefox</tal:product>,
-           will be notified about this bug.
+      <p tal:condition="product/bug_tracking_usage/enumvalue:LAUNCHPAD">
+        Launchpad will notify the
+        <tal:private tal:condition="context/bug/private">trusted</tal:private>
+        <tal:product tal:replace="product/displayname">Firefox</tal:product>
+        bug mail subscribers about this issue.
       </p>
 
-      <tal:no_bug_supervisor tal:condition="not:product/bug_supervisor">
-        <p tal:condition="product/official_malone">
-          <a tal:replace="structure product/owner/fmt:link">Sample Person</a>, the
-             <tal:product tal:replace="product/displayname">Firefox</tal:product>
-             registrant, will be notified about this bug.
-
-        </p>
-
-        <p tal:condition="not: product/official_malone">
-          There is no bug supervisor for
-          <tal:product tal:replace="product/displayname">Firefox</tal:product>.
-          This means that there is nobody upstream we can notify about
-          this issue.
-        </p>
-
-      </tal:no_bug_supervisor>
-
-      </tal:public_bug>
-
-      <tal:private_bug tal:condition="context/bug/private">
-
-      <p tal:condition="product/bug_supervisor">
-        This is a private bug report,
-        so <a tal:replace="structure product/bug_supervisor/fmt:link">Sample Person</a>,
-         the bug supervisor for
-         <tal:product tal:replace="product/displayname">Firefox</tal:product>,
-         won&rsquo;t be notified. You can also set up
-           <a href="+addsubscriber">additional contacts</a> to be notified.
+      <p tal:condition="not: product/bug_tracking_usage/enumvalue:LAUNCHPAD">
+        <tal:product tal:replace="product/displayname">Firefox</tal:product>
+        does not use Launchpad to track bugs. Nobody will be notified about
+        this issue.
       </p>
-
-      </tal:private_bug>
-
     </metal:widgets>
 
   </div>
 
   </div>
-
-  <div id="portlets"
-       tal:content="structure context/bug/@@+portlet-notified" />
 
 </div>
 

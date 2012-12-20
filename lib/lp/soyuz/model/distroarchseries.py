@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -9,41 +9,52 @@ __all__ = ['DistroArchSeries',
            'PocketChroot'
            ]
 
-from zope.interface import implements
-from zope.component import getUtility
-
 from sqlobject import (
-    BoolCol, IntCol, StringCol, ForeignKey, SQLRelatedJoin, SQLObjectNotFound)
-from storm.locals import SQL, Join
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLObjectNotFound,
+    SQLRelatedJoin,
+    StringCol,
+    )
+from storm.locals import (
+    Join,
+    Or,
+    SQL,
+    )
 from storm.store import EmptyResultSet
+from zope.component import getUtility
+from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like, quote
-from canonical.database.constants import DEFAULT
-from canonical.database.enumcol import EnumCol
-
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
-from canonical.launchpad.interfaces._schema_circular_imports import (
-    IHasBuildRecords)
-from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
-from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseSet
-from lp.soyuz.interfaces.build import IBuildSet
-from lp.soyuz.interfaces.distroarchseries import (
-    IDistroArchSeries, IDistroArchSeriesSet, IPocketChroot)
-from lp.soyuz.interfaces.publishing import (
-    ICanPublishPackages, PackagePublishingPocket, PackagePublishingStatus)
-from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.distroarchseriesbinarypackage import (
-    DistroArchSeriesBinaryPackage)
 from lp.registry.interfaces.person import validate_public_person
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.constants import DEFAULT
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    SLAVE_FLAVOR,
+    )
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import shortlist
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.distroarchseries import (
+    IDistroArchSeries,
+    IDistroArchSeriesSet,
+    IPocketChroot,
+    )
+from lp.soyuz.interfaces.publishing import ICanPublishPackages
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.processor import Processor
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageRelease)
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
+
 
 class DistroArchSeries(SQLBase):
     implements(IDistroArchSeries, IHasBuildRecords, ICanPublishPackages)
@@ -61,6 +72,7 @@ class DistroArchSeries(SQLBase):
         storm_validator=validate_public_person, notNull=True)
     package_count = IntCol(notNull=True, default=DEFAULT)
     supports_virtualized = BoolCol(notNull=False, default=False)
+    enabled = BoolCol(notNull=False, default=True)
 
     packages = SQLRelatedJoin('BinaryPackageRelease',
         joinColumn='distroarchseries',
@@ -102,6 +114,8 @@ class DistroArchSeries(SQLBase):
 
     def updatePackageCount(self):
         """See `IDistroArchSeries`."""
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
         query = """
             BinaryPackagePublishingHistory.distroarchseries = %s AND
             BinaryPackagePublishingHistory.archive IN %s AND
@@ -136,6 +150,14 @@ class DistroArchSeries(SQLBase):
 
         return pocket_chroot.chroot
 
+    @property
+    def chroot_url(self):
+        """See `IDistroArchSeries`."""
+        chroot = self.getChroot()
+        if chroot is None:
+            return None
+        return chroot.http_url
+
     def addOrUpdateChroot(self, chroot):
         """See `IDistroArchSeries`."""
         pocket_chroot = self.getPocketChroot()
@@ -147,14 +169,10 @@ class DistroArchSeries(SQLBase):
 
         return pocket_chroot
 
-    def findPackagesByName(self, pattern, fti=False):
-        """Search BinaryPackages matching pattern and archtag"""
-        binset = getUtility(IBinaryPackageReleaseSet)
-        return binset.findByNameInDistroSeries(
-            self.distroseries, pattern, self.architecturetag, fti)
-
     def searchBinaryPackages(self, text):
         """See `IDistroArchSeries`."""
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
         store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
         origin = [
             BinaryPackageRelease,
@@ -169,33 +187,41 @@ class DistroArchSeries(SQLBase):
                     BinaryPackageName.id
                 )
             ]
-        find_spec = (
-            BinaryPackageRelease,
-            BinaryPackageName,
-            SQL("rank(BinaryPackageRelease.fti, ftq(%s)) AS rank" %
-                sqlvalues(text))
-            )
+        if text:
+            find_spec = (
+                BinaryPackageRelease,
+                BinaryPackageName,
+                SQL("rank(BinaryPackageRelease.fti, ftq(%s)) AS rank" %
+                    sqlvalues(text))
+                )
+        else:
+            find_spec = (
+                BinaryPackageRelease,
+                BinaryPackageName,
+                BinaryPackageName,  # dummy value
+                )
         archives = self.distroseries.distribution.getArchiveIDList()
 
-        # Note: When attempting to convert the query below into straight
-        # Storm expressions, a 'tuple index out-of-range' error was always
-        # raised.
+        clauses = [
+            BinaryPackagePublishingHistory.distroarchseries == self,
+            BinaryPackagePublishingHistory.archiveID.is_in(archives),
+            BinaryPackagePublishingHistory.dateremoved == None,
+            ]
+        if text:
+            clauses.append(
+                Or(
+                    SQL("BinaryPackageRelease.fti @@ ftq(?)", params=(text,)),
+                    BinaryPackageName.name.contains_string(text.lower())))
         result = store.using(*origin).find(
-            find_spec,
-            """
-            BinaryPackagePublishingHistory.distroarchseries = %s AND
-            BinaryPackagePublishingHistory.archive IN %s AND
-            BinaryPackagePublishingHistory.dateremoved is NULL AND
-            (BinaryPackageRelease.fti @@ ftq(%s) OR
-             BinaryPackageName.name ILIKE '%%' || %s || '%%')
-            """ % (quote(self), quote(archives),
-                   quote(text), quote_like(text))
-            ).config(distinct=True)
+            find_spec, *clauses).config(distinct=True)
 
-        result = result.order_by("rank DESC, BinaryPackageName.name")
+        if text:
+            result = result.order_by("rank DESC, BinaryPackageName.name")
+        else:
+            result = result.order_by("BinaryPackageName.name")
 
         # import here to avoid circular import problems
-        from canonical.launchpad.database import (
+        from lp.soyuz.model.distroarchseriesbinarypackagerelease import (
             DistroArchSeriesBinaryPackageRelease)
 
         # Create a function that will decorate the results, converting
@@ -212,6 +238,9 @@ class DistroArchSeries(SQLBase):
 
     def getBinaryPackage(self, name):
         """See `IDistroArchSeries`."""
+        from lp.soyuz.model.distroarchseriesbinarypackage import (
+            DistroArchSeriesBinaryPackage,
+            )
         if not IBinaryPackageName.providedBy(name):
             try:
                 name = BinaryPackageName.byName(name)
@@ -221,25 +250,30 @@ class DistroArchSeries(SQLBase):
             self, name)
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        arch_tag=None, user=None):
+                        arch_tag=None, user=None, binary_only=True):
         """See IHasBuildRecords"""
         # Ignore "user", since it would not make any difference to the
         # records returned here (private builds are only in PPA right
         # now).
+        # Ignore "binary_only" as for a distro arch series it is only
+        # the binaries that are relevant.
 
         # For consistency we return an empty resultset if arch_tag
         # is provided but doesn't match our architecture.
         if arch_tag is not None and arch_tag != self.architecturetag:
             return EmptyResultSet()
 
-        # Use the facility provided by IBuildSet to retrieve the records.
-        return getUtility(IBuildSet).getBuildsByArchIds(
-            [self.id], build_state, name, pocket)
+        # Use the facility provided by IBinaryPackageBuildSet to
+        # retrieve the records.
+        return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
+            self.distroseries.distribution, [self.id], build_state, name,
+            pocket)
 
     def getReleasedPackages(self, binary_name, pocket=None,
-                            include_pending=False, exclude_pocket=None,
-                            archive=None):
+                            include_pending=False, archive=None):
         """See IDistroArchSeries."""
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
         queries = []
 
         if not IBinaryPackageName.providedBy(binary_name):
@@ -254,9 +288,6 @@ class DistroArchSeries(SQLBase):
         if pocket is not None:
             queries.append("pocket=%s" % sqlvalues(pocket.value))
 
-        if exclude_pocket is not None:
-            queries.append("pocket!=%s" % sqlvalues(exclude_pocket.value))
-
         if include_pending:
             queries.append("status in (%s, %s)" % sqlvalues(
                 PackagePublishingStatus.PUBLISHED,
@@ -270,13 +301,15 @@ class DistroArchSeries(SQLBase):
 
         published = BinaryPackagePublishingHistory.select(
             " AND ".join(queries),
-            clauseTables = ['BinaryPackageRelease'],
+            clauseTables=['BinaryPackageRelease'],
             orderBy=['-id'])
 
         return shortlist(published)
 
     def getPendingPublications(self, archive, pocket, is_careful):
         """See `ICanPublishPackages`."""
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
         queries = [
             "distroarchseries = %s AND archive = %s"
             % sqlvalues(self, archive)
@@ -332,7 +365,7 @@ class DistroArchSeriesSet:
         return iter(DistroArchSeries.select())
 
     def get(self, dar_id):
-        """See `canonical.launchpad.interfaces.IDistributionSet`."""
+        """See `IDistributionSet`."""
         return DistroArchSeries.get(dar_id)
 
     def count(self):
@@ -345,8 +378,8 @@ class DistroArchSeriesSet:
         used simply to keep trusted code DRY.
 
         :param architectures: an iterable of architectures to process.
-        :param arch_tag: an optional architecture tag with which to filter
-            the results.
+        :param arch_tag: an optional architecture tag or a tag list with
+            which to filter the results.
         :return: a list of the ids of the architectures matching arch_tag.
         """
         # If arch_tag was not provided, just return the ids without
@@ -354,8 +387,10 @@ class DistroArchSeriesSet:
         if arch_tag is None:
             return [arch.id for arch in architectures]
         else:
+            if not isinstance(arch_tag, (list, tuple)):
+                arch_tag = (arch_tag, )
             return [arch.id for arch in architectures
-                        if arch_tag == arch.architecturetag]
+                        if arch.architecturetag in arch_tag]
 
 
 class PocketChroot(SQLBase):
@@ -371,4 +406,3 @@ class PocketChroot(SQLBase):
                      notNull=True)
 
     chroot = ForeignKey(dbName='chroot', foreignKey='LibraryFileAlias')
-

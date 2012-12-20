@@ -1,10 +1,13 @@
-= Logging into a Mantis instance =
+Logging into a Mantis instance
+------------------------------
 
 Mantis is... special. In a headless/batch environment we must do a
 little dance in order to log in. Thankfully, we can encapsulate this
 neatly in a urllib2-style handler.
 
-== MantisLoginHandler ==
+
+MantisLoginHandler
+==================
 
     >>> from lp.bugs.externalbugtracker import (
     ...     MantisLoginHandler)
@@ -47,8 +50,9 @@ the "return" parameter.
     ...     'http://mantis.example.com/login_page.php')
     Traceback (most recent call last):
       ...
-    BugWatchUpdateWarning: Mantis redirected us to the login page but
-    did not set a return path.
+    BugTrackerConnectError: http://mantis.example.com/login_page.php:
+    Mantis redirected us to the login page but did not set a return
+    path.
 
 In all likelihood, this warning will be followed in the log by an
 error.

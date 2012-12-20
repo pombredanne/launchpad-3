@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -9,65 +9,103 @@ __metaclass__ = type
 __all__ = [
     'ProductSeries',
     'ProductSeriesSet',
+    'TimelineProductSeries',
     ]
 
 import datetime
 
+from lazr.delegates import delegates
 from sqlobject import (
-    ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
-from storm.expr import In, Sum
+    ForeignKey,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.expr import (
+    Max,
+    Sum,
+    )
+from storm.locals import (
+    And,
+    Desc,
+    )
+from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
-from storm.locals import And, Desc
-from storm.store import Store
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase, quote, sqlvalues)
+from lp.app.enums import service_uses_launchpad
+from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import (
+    ILaunchpadCelebrities,
+    IServiceUsage,
+    )
+from lp.blueprints.enums import (
+    SpecificationDefinitionStatus,
+    SpecificationFilter,
+    SpecificationGoalStatus,
+    SpecificationImplementationStatus,
+    SpecificationSort,
+    )
+from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
+from lp.blueprints.model.specification import (
+    HasSpecificationsMixin,
+    Specification,
+    )
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
+from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
+from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bugtarget import BugTargetBase
-from lp.bugs.model.bug import (
-    get_bug_tags, get_bug_tags_open_count)
-from lp.bugs.model.bugtask import BugTask
-from lp.services.worlddata.model.language import Language
+from lp.bugs.model.structuralsubscription import (
+    StructuralSubscriptionTargetMixin,
+    )
+from lp.registry.errors import ProprietaryProduct
+from lp.registry.interfaces.packaging import PackagingType
+from lp.registry.interfaces.person import validate_person
+from lp.registry.interfaces.productrelease import IProductReleaseSet
+from lp.registry.interfaces.productseries import (
+    IProductSeries,
+    IProductSeriesSet,
+    ITimelineProductSeries,
+    )
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.milestone import (
-    HasMilestonesMixin, Milestone)
-from canonical.launchpad.database.packaging import Packaging
-from lp.registry.interfaces.person import (
-    validate_person_not_private_membership)
+    HasMilestonesMixin,
+    Milestone,
+    )
+from lp.registry.model.packaging import PackagingUtil
+from lp.registry.model.productrelease import ProductRelease
+from lp.registry.model.series import SeriesMixin
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.sorting import sorted_dotted_numbers
+from lp.services.worlddata.model.language import Language
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode,
+    )
+from lp.translations.model.hastranslationimports import (
+    HasTranslationImportsMixin,
+    )
+from lp.translations.model.hastranslationtemplates import (
+    HasTranslationTemplatesMixin,
+    )
 from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import (
-    HasTranslationTemplatesMixin,
-    POTemplate)
-from lp.registry.model.productrelease import ProductRelease
-from lp.translations.model.productserieslanguage import (
-    ProductSeriesLanguage)
-from lp.blueprints.model.specification import (
-    HasSpecificationsMixin, Specification)
-from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin)
-from canonical.launchpad.database.structuralsubscription import (
-    StructuralSubscriptionTargetMixin)
-from canonical.launchpad.helpers import shortlist
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
-from lp.registry.model.distroseries import SeriesMixin
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.packaging import PackagingType
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
-from lp.blueprints.interfaces.specification import (
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationGoalStatus, SpecificationImplementationStatus,
-    SpecificationSort)
-from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.registry.interfaces.productseries import (
-    IProductSeries, IProductSeriesSet)
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+    POTemplate,
+    TranslationTemplatesCollection,
+    )
+from lp.translations.model.productserieslanguage import ProductSeriesLanguage
+
+
+MAX_TIMELINE_MILESTONES = 20
 
 
 def landmark_key(landmark):
@@ -85,32 +123,48 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                     HasTranslationTemplatesMixin,
                     StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
-    implements(IProductSeries, IHasTranslationTemplates)
+    implements(
+        IBugSummaryDimension, IProductSeries, IServiceUsage,
+        ISeriesBugTarget)
+
+    delegates(ISpecificationTarget, 'product')
 
     _table = 'ProductSeries'
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
     status = EnumCol(
-        notNull=True, schema=DistroSeriesStatus,
-        default=DistroSeriesStatus.DEVELOPMENT)
+        notNull=True, schema=SeriesStatus,
+        default=SeriesStatus.DEVELOPMENT)
     name = StringCol(notNull=True)
-    summary = StringCol(notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName="owner", foreignKey="Person",
-        storm_validator=validate_person_not_private_membership,
+        storm_validator=validate_person,
         notNull=True)
+
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
-        storm_validator=validate_person_not_private_membership,
+        storm_validator=validate_person,
         notNull=False, default=None)
     branch = ForeignKey(foreignKey='Branch', dbName='branch',
                              default=None)
+
+    def validate_autoimport_mode(self, attr, value):
+        # Perform the normal validation for None
+        if value is None:
+            return value
+        if (self.product.private and
+            value != TranslationsBranchImportMode.NO_IMPORT):
+            raise ProprietaryProduct('Translations are disabled for'
+                                     ' proprietary projects.')
+        return value
+
     translations_autoimport_mode = EnumCol(
         dbName='translations_autoimport_mode',
         notNull=True,
         schema=TranslationsBranchImportMode,
-        default=TranslationsBranchImportMode.NO_IMPORT)
+        default=TranslationsBranchImportMode.NO_IMPORT,
+        storm_validator=validate_autoimport_mode)
     translations_branch = ForeignKey(
         dbName='translations_branch', foreignKey='Branch', notNull=False,
         default=None)
@@ -121,6 +175,51 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
                             orderBy=['-id'])
 
+    @property
+    def pillar(self):
+        """See `IBugTarget`."""
+        return self.product
+
+    @property
+    def series(self):
+        """See `ISeriesBugTarget`."""
+        return self
+
+    @property
+    def answers_usage(self):
+        """See `IServiceUsage.`"""
+        return self.product.answers_usage
+
+    @property
+    def blueprints_usage(self):
+        """See `IServiceUsage.`"""
+        return self.product.blueprints_usage
+
+    @property
+    def translations_usage(self):
+        """See `IServiceUsage.`"""
+        return self.product.translations_usage
+
+    @property
+    def codehosting_usage(self):
+        """See `IServiceUsage.`"""
+        return self.product.codehosting_usage
+
+    @property
+    def bug_tracking_usage(self):
+        """See `IServiceUsage.`"""
+        return self.product.bug_tracking_usage
+
+    @property
+    def uses_launchpad(self):
+        """ See `IServiceUsage.`"""
+        return (
+            service_uses_launchpad(self.blueprints_usage) or
+            service_uses_launchpad(self.translations_usage) or
+            service_uses_launchpad(self.answers_usage) or
+            service_uses_launchpad(self.codehosting_usage) or
+            service_uses_launchpad(self.bug_tracking_usage))
+
     def _getMilestoneCondition(self):
         """See `HasMilestonesMixin`."""
         return (Milestone.productseries == self)
@@ -129,11 +228,27 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     def releases(self):
         """See `IProductSeries`."""
         store = Store.of(self)
+
+        # The Milestone is cached too because most uses of a ProductRelease
+        # need it. The decorated resultset returns just the ProductRelease.
+        def decorate(row):
+            product_release, milestone = row
+            return product_release
+
         result = store.find(
-            ProductRelease,
-            And(Milestone.productseries == self,
-                ProductRelease.milestone == Milestone.id))
-        return result.order_by(Desc('datereleased'))
+            (ProductRelease, Milestone),
+            Milestone.productseries == self,
+            ProductRelease.milestone == Milestone.id)
+        result = result.order_by(Desc('datereleased'))
+        return DecoratedResultSet(result, decorate)
+
+    @cachedproperty
+    def _cached_releases(self):
+        return self.releases
+
+    def getCachedReleases(self):
+        """See `IProductSeries`."""
+        return self._cached_releases
 
     @property
     def release_files(self):
@@ -163,23 +278,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         return "%s/%s" % (self.product.name, self.name)
 
     @property
-    def drivers(self):
-        """See IProductSeries."""
-        drivers = set()
-        drivers.add(self.driver)
-        drivers = drivers.union(self.product.drivers)
-        drivers.discard(None)
-        return sorted(drivers, key=lambda x: x.displayname)
-
-    @property
-    def bug_supervisor(self):
-        """See IProductSeries."""
-        return self.product.bug_supervisor
-
-    @property
-    def security_contact(self):
-        """See IProductSeries."""
-        return self.product.security_contact
+    def bugtarget_parent(self):
+        """See `ISeriesBugTarget`."""
+        return self.parent
 
     def getPOTemplate(self, name):
         """See IProductSeries."""
@@ -196,6 +297,16 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         return self.product.bug_reporting_guidelines
 
     @property
+    def bug_reported_acknowledgement(self):
+        """See `IBugTarget`."""
+        return self.product.bug_reported_acknowledgement
+
+    @property
+    def enable_bugfiling_duplicate_search(self):
+        """See `IBugTarget`."""
+        return self.product.enable_bugfiling_duplicate_search
+
+    @property
     def sourcepackages(self):
         """See IProductSeries"""
         from lp.registry.model.sourcepackage import SourcePackage
@@ -208,24 +319,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         return ret
 
     @property
-    def has_any_specifications(self):
-        """See IHasSpecifications."""
-        return self.all_specifications.count()
-
-    @property
-    def all_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.ALL])
-
-    @property
-    def valid_specifications(self):
-        return self.specifications(filter=[SpecificationFilter.VALID])
-
-    @property
     def is_development_focus(self):
         """See `IProductSeries`."""
         return self == self.product.development_focus
 
-    def specifications(self, sort=None, quantity=None, filter=None,
+    def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         """See IHasSpecifications.
 
@@ -305,7 +403,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness_clause
+        completeness = Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness
@@ -345,43 +443,37 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
         results = Specification.select(query, orderBy=order, limit=quantity)
         if prejoin_people:
-            results = results.prejoin(['assignee', 'approver', 'drafter'])
+            results = results.prejoin(['_assignee', '_approver', '_drafter'])
         return results
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this product series."""
         search_params.setProductSeries(self)
 
+    def _getOfficialTagClause(self):
+        return self.product._getOfficialTagClause()
+
     @property
     def official_bug_tags(self):
         """See `IHasBugs`."""
         return self.product.official_bug_tags
 
-    def getUsedBugTags(self):
-        """See IBugTarget."""
-        return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
-
-    def getUsedBugTagsWithOpenCounts(self, user):
-        """See IBugTarget."""
-        return get_bug_tags_open_count(BugTask.productseries == self, user)
-
-    def createBug(self, bug_params):
-        """See IBugTarget."""
-        raise NotImplementedError('Cannot file a bug against a productseries')
-
-    def _getBugTaskContextClause(self):
+    def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
-        return 'BugTask.productseries = %s' % sqlvalues(self)
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return BugSummary.productseries_id == self.id
 
-    def getSpecification(self, name):
-        """See ISpecificationTarget."""
-        return self.product.getSpecification(name)
+    def getLatestRelease(self):
+        """See `IProductRelease.`"""
+        try:
+            return self.releases[0]
+        except IndexError:
+            return None
 
     def getRelease(self, version):
-        for release in self.releases:
-            if release.version == version:
-                return release
-        return None
+        return getUtility(IProductReleaseSet).getBySeriesAndVersion(
+            self, version)
 
     def getPackage(self, distroseries):
         """See IProductSeries."""
@@ -392,25 +484,43 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         # the distroseries to try to find a relevant packaging record
         raise NotFoundError(distroseries)
 
+    def getUbuntuTranslationFocusPackage(self):
+        """See `IProductSeries`."""
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        translation_focus = ubuntu.translation_focus
+        current_series = ubuntu.currentseries
+        candidate = None
+        for package in self.sourcepackages:
+            if package.distroseries == translation_focus:
+                return package
+            if package.distroseries == current_series:
+                candidate = package
+            elif package.distroseries.distribution == ubuntu:
+                if candidate is None:
+                    candidate = package
+        return candidate
+
     def setPackaging(self, distroseries, sourcepackagename, owner):
         """See IProductSeries."""
+        if distroseries.distribution.full_functionality:
+            source_package = distroseries.getSourcePackage(sourcepackagename)
+            if source_package.currentrelease is None:
+                raise AssertionError(
+                    "The source package is not published in %s." %
+                    distroseries.displayname)
         for pkg in self.packagings:
-            if pkg.distroseries == distroseries:
+            if (pkg.distroseries == distroseries and
+                pkg.sourcepackagename == sourcepackagename):
                 # we have found a matching Packaging record
-                if pkg.sourcepackagename == sourcepackagename:
-                    # and it has the same source package name
-                    return pkg
-                # ok, we need to update this pkging record
-                pkg.sourcepackagename = sourcepackagename
-                pkg.owner = owner
-                pkg.datecreated = UTC_NOW
-                pkg.sync()  # convert UTC_NOW to actual datetime
+                # and it has the same source package name
                 return pkg
 
         # ok, we didn't find a packaging record that matches, let's go ahead
         # and create one
-        pkg = Packaging(distroseries=distroseries,
-            sourcepackagename=sourcepackagename, productseries=self,
+        pkg = PackagingUtil.createPackaging(
+            distroseries=distroseries,
+            sourcepackagename=sourcepackagename,
+            productseries=self,
             packaging=PackagingType.PRIME,
             owner=owner)
         pkg.sync()  # convert UTC_NOW to actual datetime
@@ -425,51 +535,27 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         return history
 
     def newMilestone(self, name, dateexpected=None, summary=None,
-                     code_name=None):
+                     code_name=None, tags=None):
         """See IProductSeries."""
-        return Milestone(
+        milestone = Milestone(
             name=name, dateexpected=dateexpected, summary=summary,
             product=self.product, productseries=self, code_name=code_name)
+        if tags:
+            milestone.setTags(tags.split())
+        return milestone
 
-    def getTranslationTemplates(self):
+    def getTemplatesCollection(self):
         """See `IHasTranslationTemplates`."""
-        result = POTemplate.selectBy(productseries=self,
-                                     orderBy=['-priority','name'])
-        return shortlist(result, 300)
+        return TranslationTemplatesCollection().restrictProductSeries(self)
 
-    def getCurrentTranslationTemplates(self, just_ids=False):
+    def getSharingPartner(self):
         """See `IHasTranslationTemplates`."""
-        store = Store.of(self)
-        if just_ids:
-            looking_for = POTemplate.id
-        else:
-            looking_for = POTemplate
-
-        # Select all current templates for this series, if the Product
-        # actually uses Launchpad Translations.  Otherwise, return an
-        # empty result.
-        result = store.find(looking_for, And(
-            self.product.official_rosetta == True,
-            POTemplate.iscurrent == True,
-            POTemplate.productseries == self))
-        return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
+        return self.getUbuntuTranslationFocusPackage()
 
     @property
     def potemplate_count(self):
         """See `IProductSeries`."""
         return self.getCurrentTranslationTemplates().count()
-
-    def getObsoleteTranslationTemplates(self):
-        """See `IHasTranslationTemplates`."""
-        result = POTemplate.select('''
-            productseries = %s AND
-            productseries = ProductSeries.id AND
-            ProductSeries.product = Product.id AND
-            (iscurrent IS FALSE OR Product.official_rosetta IS FALSE)
-            ''' % sqlvalues(self),
-            orderBy=['-priority','name'],
-            clauseTables = ['ProductSeries', 'Product'])
-        return shortlist(result, 300)
 
     @property
     def productserieslanguages(self):
@@ -487,28 +573,34 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             origin = [Language, POFile, POTemplate]
             query = store.using(*origin).find(
                 (Language, POFile),
-                POFile.language==Language.id,
-                POFile.variant==None,
-                Language.visible==True,
-                POFile.potemplate==POTemplate.id,
-                POTemplate.productseries==self,
-                POTemplate.iscurrent==True,
-                Language.id!=english.id)
+                POFile.language == Language.id,
+                Language.visible == True,
+                POFile.potemplate == POTemplate.id,
+                POTemplate.productseries == self,
+                POTemplate.iscurrent == True,
+                Language.id != english.id)
 
-            for language, pofile in query.order_by(['Language.englishname']):
+            ordered_results = query.order_by(['Language.englishname'])
+
+            for language, pofile in ordered_results:
                 psl = ProductSeriesLanguage(self, language, pofile=pofile)
-                psl.setCounts(pofile.potemplate.messageCount(),
-                              pofile.currentCount(),
-                              pofile.updatesCount(),
-                              pofile.rosettaCount(),
-                              pofile.unreviewedCount())
+                total = pofile.potemplate.messageCount()
+                imported = pofile.currentCount()
+                changed = pofile.updatesCount()
+                rosetta = pofile.rosettaCount()
+                unreviewed = pofile.unreviewedCount()
+                translated = imported + rosetta
+                new = rosetta - changed
+                psl.setCounts(total, translated, new, changed, unreviewed)
+                psl.last_changed_date = pofile.date_changed
                 results.append(psl)
         else:
             # If there is more than one template, do a single
             # query to count total messages in all templates.
-            query = store.find(Sum(POTemplate.messagecount),
-                                POTemplate.productseries==self,
-                                POTemplate.iscurrent==True)
+            query = store.find(
+                Sum(POTemplate.messagecount),
+                POTemplate.productseries == self,
+                POTemplate.iscurrent == True)
             total, = query
             # And another query to fetch all Languages with translations
             # in this ProductSeries, along with their cumulative stats
@@ -519,26 +611,31 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                  Sum(POFile.currentcount),
                  Sum(POFile.updatescount),
                  Sum(POFile.rosettacount),
-                 Sum(POFile.unreviewed_count)),
-                POFile.language==Language.id,
-                POFile.variant==None,
-                Language.visible==True,
-                POFile.potemplate==POTemplate.id,
-                POTemplate.productseries==self,
-                POTemplate.iscurrent==True,
-                Language.id!=english.id).group_by(Language)
+                 Sum(POFile.unreviewed_count),
+                 Max(POFile.date_changed)),
+                POFile.language == Language.id,
+                Language.visible == True,
+                POFile.potemplate == POTemplate.id,
+                POTemplate.productseries == self,
+                POTemplate.iscurrent == True,
+                Language.id != english.id).group_by(Language)
 
-            for (language, imported, changed, new, unreviewed) in (
-                query.order_by(['Language.englishname'])):
+            ordered_results = query.order_by(['Language.englishname'])
+
+            for (language, imported, changed, rosetta, unreviewed,
+                 last_changed) in ordered_results:
                 psl = ProductSeriesLanguage(self, language)
-                psl.setCounts(total, imported, changed, new, unreviewed)
+                translated = imported + rosetta
+                new = rosetta - changed
+                psl.setCounts(total, translated, new, changed, unreviewed)
+                psl.last_changed_date = last_changed
                 results.append(psl)
 
         return results
 
     def getTimeline(self, include_inactive=False):
         landmarks = []
-        for milestone in self.all_milestones:
+        for milestone in self.all_milestones[:MAX_TIMELINE_MILESTONES]:
             if milestone.product_release is None:
                 # Skip inactive milestones, but include releases,
                 # even if include_inactive is False.
@@ -568,11 +665,51 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
         landmarks = sorted_dotted_numbers(landmarks, key=landmark_key)
         landmarks.reverse()
-        return dict(
+        return TimelineProductSeries(
             name=self.name,
             is_development_focus=self.is_development_focus,
+            status=self.status,
             uri=canonical_url(self, path_only_if_possible=True),
-            landmarks=landmarks)
+            landmarks=landmarks,
+            product=self.product)
+
+    def getBugTaskWeightFunction(self):
+        """Provide a weight function to determine optimal bug task.
+
+        Full weight is given to tasks for this product series.
+
+        If the series isn't found, the product task is better than others.
+        """
+        seriesID = self.id
+        productID = self.productID
+
+        def weight_function(bugtask):
+            if bugtask.productseriesID == seriesID:
+                return OrderedBugTask(1, bugtask.id, bugtask)
+            elif bugtask.productID == productID:
+                return OrderedBugTask(2, bugtask.id, bugtask)
+            else:
+                return OrderedBugTask(3, bugtask.id, bugtask)
+        return weight_function
+
+    def userCanView(self, user):
+        """See `IproductSeriesPublic`."""
+        # Deleate the permission check to the parent product.
+        return self.product.userCanView(user)
+
+
+class TimelineProductSeries:
+    """See `ITimelineProductSeries`."""
+    implements(ITimelineProductSeries)
+
+    def __init__(self, name, status, is_development_focus, uri, landmarks,
+                 product):
+        self.name = name
+        self.status = status
+        self.is_development_focus = is_development_focus
+        self.uri = uri
+        self.landmarks = landmarks
+        self.product = product
 
 
 class ProductSeriesSet:
@@ -594,51 +731,13 @@ class ProductSeriesSet:
         except SQLObjectNotFound:
             return default
 
-    def composeQueryString(self, text=None, importstatus=None):
-        """Build SQL "where" clause for `ProductSeries` search.
+    def findByTranslationsImportBranch(
+            self, branch, force_translations_upload=False):
+        """See IProductSeriesSet."""
+        conditions = [ProductSeries.branch == branch]
+        if not force_translations_upload:
+            import_mode = ProductSeries.translations_autoimport_mode
+            conditions.append(
+                import_mode != TranslationsBranchImportMode.NO_IMPORT)
 
-        :param text: Text to search for in the product and project titles and
-            descriptions.
-        :param importstatus: If specified, limit the list to series which have
-            the given import status; if not specified or None, limit to series
-            with non-NULL import status.
-        """
-        conditions = ["ProductSeries.product = Product.id"]
-        if text == u'':
-            text = None
-
-        # First filter on text, if supplied.
-        if text is not None:
-            conditions.append("""
-                ((Project.fti @@ ftq(%s) AND Product.project IS NOT NULL) OR
-                Product.fti @@ ftq(%s))""" % (quote(text), quote(text)))
-
-        # Exclude deactivated products.
-        conditions.append('Product.active IS TRUE')
-
-        # Exclude deactivated projects, too.
-        conditions.append(
-            "((Product.project = Project.id AND Project.active) OR"
-            " Product.project IS NULL)")
-
-        # Now just add the filter on import status.
-        if importstatus is None:
-            conditions.append('ProductSeries.importstatus IS NOT NULL')
-        else:
-            conditions.append('ProductSeries.importstatus = %s'
-                              % sqlvalues(importstatus))
-
-        # And build the query.
-        query = " AND ".join(conditions)
-        return """productseries.id IN
-            (SELECT productseries.id FROM productseries, product, project
-             WHERE %s) AND productseries.product = product.id""" % query
-
-    def getSeriesForBranches(self, branches):
-        """See `IProductSeriesSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        branch_ids = [branch.id for branch in branches]
-        return store.find(
-            ProductSeries,
-            In(ProductSeries.branchID, branch_ids)).order_by(
-            ProductSeries.name)
+        return Store.of(branch).find(ProductSeries, And(*conditions))

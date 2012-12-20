@@ -1,17 +1,60 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
+__all__ = [
+    'DirectoryMailBox',
+    'IMailBox',
+    'MailBoxError',
+    'POP3MailBox',
+    'TestMailBox',
+    ]
+
 import os
+import poplib
 import socket
 import threading
-import poplib
 
-from zope.interface import implements
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
-from canonical.launchpad.interfaces import IMailBox, MailBoxError
 from lp.services.mail import stub
+
+
+class MailBoxError(Exception):
+    """Indicates that some went wrong while interacting with the mail box."""
+
+
+class IMailBox(Interface):
+    def open():
+        """Opens the mail box.
+
+        Raises MailBoxError if the mail box can't be opened.
+
+        This method has to be called before any operations on the mail
+        box is performed.
+        """
+
+    def items():
+        """Returns all the ids and mails in the mail box.
+
+        Returns an iterable of (id, mail) tuples.
+
+        Raises MailBoxError if there's some error while returning the mails.
+        """
+
+    def delete(id):
+        """Deletes the mail with the given id.
+
+        Raises MailBoxError if the mail couldn't be deleted.
+        """
+
+    def close():
+        """Closes the mailbox."""
+
 
 class TestMailBox:
     """Mail box used for testing.
@@ -72,12 +115,12 @@ class POP3MailBox:
                 popbox = poplib.POP3_SSL(self._host)
             else:
                 popbox = poplib.POP3(self._host)
-        except socket.error, e:
+        except socket.error as e:
             raise MailBoxError(str(e))
         try:
             popbox.user(self._user)
             popbox.pass_(self._password)
-        except poplib.error_proto, e:
+        except poplib.error_proto as e:
             popbox.quit()
             raise MailBoxError(str(e))
         self._popbox = popbox
@@ -87,11 +130,11 @@ class POP3MailBox:
         popbox = self._popbox
         try:
             count, size = popbox.stat()
-        except poplib.error_proto, e:
+        except poplib.error_proto as e:
             # This means we lost the connection.
             raise MailBoxError(str(e))
 
-        for msg_id in range(1, count+1):
+        for msg_id in range(1, count + 1):
             response, msg_lines, size = popbox.retr(msg_id)
             yield (msg_id, '\n'.join(msg_lines))
 
@@ -99,7 +142,7 @@ class POP3MailBox:
         """See IMailBox."""
         try:
             self._popbox.dele(id)
-        except poplib.error_proto, e:
+        except poplib.error_proto as e:
             raise MailBoxError(str(e))
 
     def close(self):

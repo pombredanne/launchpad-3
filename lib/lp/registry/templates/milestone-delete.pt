@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
@@ -27,9 +24,9 @@
         <a tal:content="string:${view/product_release/version} release"
           tal:attributes="href view/product_release/fmt:url">0.9 release</a>
         </strong>
-        <tal:codename condition="view/product_release/codename">
-          "<tal:name replace="view/product_release/codename"/>"
-        </tal:codename>
+        <tal:code_name condition="context/code_name">
+          "<tal:name replace="context/code_name"/>"
+        </tal:code_name>
         <tal:files tal:condition="view/product_release_files">
           and its files will be also be <em>deleted</em>:
         </tal:files>

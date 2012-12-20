@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+# SKIP this file when reformatting, due to the sys mangling.
 import datetime
 
 from storm.exceptions import NotOneError as SQLObjectMoreThanOneResultError
@@ -16,10 +17,6 @@ import sys
 sys.modules['sqlobject.joins'] = sys.modules['sqlobject']
 sys.modules['sqlobject.sqlbuilder'] = sys.modules['sqlobject']
 del sys
-
-# This one is wrong, but CurrencyCol is only used in the bounty
-# tracker so it isn't important.
-CurrencyCol = FloatCol
 
 _sqlStringReplace = [
     ('\\', '\\\\'),

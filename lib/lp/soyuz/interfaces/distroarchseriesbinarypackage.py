@@ -11,12 +11,17 @@ __all__ = [
     'IDistroArchSeriesBinaryPackage',
     ]
 
-from zope.interface import Interface, Attribute
-
-from canonical.launchpad import _
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
 from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+
+from lp import _
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
+
 
 class IDistroArchSeriesBinaryPackage(Interface):
 

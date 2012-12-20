@@ -2,7 +2,6 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
 >
-
   <tal:needs-batch condition="context/has_multiple_pages">
     <div id="batch-links">
       <tal:navigation replace="structure context/@@+navigation-links-upper" />
@@ -13,6 +12,9 @@
     <thead>
       <tr>
         <th>Branch Merge Proposal</th>
+        <th>
+          Status
+        </th>
         <th>Requested By</th>
         <th tal:condition="context/show_column/date_reviewed|nothing">
           Date Reviewed
@@ -39,6 +41,8 @@
             <tal:source-branch replace="proposal/target_branch/bzr_identity"/>
           </a>
         </td>
+        <td tal:attributes="class string:mergestatus${proposal/queue_status/name}"
+            tal:content="proposal/queue_status/title" />
         <td>
           <tal:registrant replace="structure proposal/registrant/fmt:link" />
           <tal:date replace="proposal/date_review_requested/fmt:displaydate"/>

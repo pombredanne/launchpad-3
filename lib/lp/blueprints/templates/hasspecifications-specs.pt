@@ -3,18 +3,18 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 
 <body>
 
-    <metal:portlets fill-slot="portlets">
-      <div tal:replace="structure context/@@+portlet-latestspecs" />
-    </metal:portlets>
+<tal:side metal:fill-slot="side">
+  <tal:register-blueprint
+    content="structure context/@@+register-a-blueprint-button|nothing" />
+  <tal:menu replace="structure context/@@+global-actions" />
+  <div tal:replace="structure context/@@+portlet-latestspecs" />
+</tal:side>
 
 <div metal:fill-slot="main"
      tal:define="specs view/specs;
@@ -32,14 +32,6 @@
       </p>
     </tal:block>
   </tal:block>
-
-  <h1 tal:condition="view/is_person"
-     >Blueprints involving <tal:person replace="context/title" /></h1>
-  <h1 tal:condition="not:view/is_person"
-     >Blueprints for <tal:software replace="context/displayname" /></h1>
-
-  <div style="float: right;"
-       tal:content="structure context/@@+register-a-blueprint-button|nothing" />
 
   <tal:no_specs condition="not: has_any_specs">
     <p>
@@ -114,14 +106,11 @@
           In this case, the drivers are:
         </p>
 
-        <blockquote>
-          <ul>
-            <li tal:repeat="driver context/drivers" class="person">
-              <a tal:attributes="href driver/fmt:url"
-                 tal:content="driver/displayname">Foo Bar</a>
-            </li>
-          </ul>
-        </blockquote>
+        <ul class="subordinate">
+          <li tal:repeat="driver context/drivers">
+            <a tal:replace="structure driver/fmt:link">Foo Bar</a>
+          </li>
+        </ul>
       </tal:not_driver>
       <tal:is_driver condition="context/required:launchpad.Driver">
         Since you are a driver of
@@ -137,14 +126,13 @@
       release management with Launchpad.
     </p>
 
-    <blockquote>
-      <ul class="menu">
-        <li class="info">
-          <a href="https://help.launchpad.net/BlueprintDocumentation"
-          >Read more about tracking blueprints</a>
-        </li>
-      </ul>
-    </blockquote>
+    <ul class="horizontal">
+      <li>
+        <a class="info sprite"
+          href="https://help.launchpad.net/BlueprintDocumentation">Read
+          more about tracking blueprints</a>
+      </li>
+    </ul>
 
   </tal:no_specs>
   <tal:has_specs condition="has_any_specs">
@@ -167,7 +155,7 @@
     </div>
     <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-upper" />
     <table class="listing sortable" id="speclisting"
-          tal:condition="view/specs">
+          tal:condition="not: view/specs/is_empty">
       <thead>
         <tr>
           <th tal:condition="view/show_priority">Priority</th>
@@ -241,7 +229,7 @@
     </table>
     <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-lower" />
   
-    <tal:nomatches condition="not: view/specs"
+    <tal:nomatches condition="view/specs/is_empty"
                    replace="structure context/@@+nomatches" />
 
     <p tal:condition="view/is_series">

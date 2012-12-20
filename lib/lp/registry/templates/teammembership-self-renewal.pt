@@ -3,17 +3,10 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 <body>
-
-<metal:portlets fill-slot="portlets">
-  <div tal:replace="structure context/person/@@+portlet-details" />
-</metal:portlets>
 
 <div metal:fill-slot="main">
 
@@ -23,13 +16,13 @@
         This membership is going to expire in
         <span tal:replace="view/time_before_expiration/fmt:approximateduration"
           /> from now;
-        <tal:is-team condition="context/person/isTeam">
+        <tal:is-team condition="context/person/is_team">
           if you want this team to remain a member of
           <span tal:replace="structure context/team/fmt:link" />,
           you must renew it.
         </tal:is-team>
-        <tal:not-team condition="not: context/person/isTeam">
-          if you want to remain a member of 
+        <tal:not-team condition="not: context/person/is_team">
+          if you want to remain a member of
           <span tal:replace="structure context/team/fmt:link" />,
           you must renew it.
         </tal:not-team>
@@ -39,7 +32,7 @@
 
   <p tal:condition="not: context/canBeRenewedByMember">
     This membership cannot be renewed because
-    <span tal:replace="structure view/getReasonForDeniedRenewal" />
+    <span tal:replace="structure view/reason_for_denied_renewal" />
   </p>
 
 </div>

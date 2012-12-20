@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -9,50 +9,90 @@ __metaclass__ = type
 
 __all__ = [
     'ISourcePackage',
+    'ISourcePackagePublic',
+    'ISourcePackageEdit',
     'ISourcePackageFactory',
     'SourcePackageFileType',
-    'SourcePackageFormat',
+    'SourcePackageType',
     'SourcePackageRelationships',
     'SourcePackageUrgency',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Choice, Object, TextLine
-from lazr.enum import DBEnumeratedType, DBItem
-
-from canonical.launchpad import _
-from lp.bugs.interfaces.bugtarget import IBugTarget
-from lp.soyuz.interfaces.component import IComponent
-from lazr.restful.fields import Reference, ReferenceChoice
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, export_read_operation,
-    export_write_operation, exported, operation_parameters,
-    operation_returns_entry, REQUEST_USER)
+    call_with,
+    export_as_webservice_entry,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    operation_for_version,
+    operation_parameters,
+    operation_returns_entry,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    Reference,
+    ReferenceChoice,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Object,
+    TextLine,
+    )
+
+from lp import _
+from lp.bugs.interfaces.bugtarget import (
+    IBugTarget,
+    IHasOfficialBugTags,
+    )
+from lp.code.interfaces.hasbranches import (
+    IHasBranches,
+    IHasCodeImports,
+    IHasMergeProposals,
+    )
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.role import (
+    IHasDrivers,
+    IHasOwner,
+    )
+from lp.soyuz.interfaces.component import IComponent
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
+    )
 
 
-class ISourcePackage(IBugTarget):
-    """A SourcePackage. See the MagicSourcePackage specification. This
-    interface preserves as much as possible of the old SourcePackage
-    interface from the SourcePackage table, with the new table-less
-    implementation."""
-
-    export_as_webservice_entry()
-
-    id = Attribute("ID")
+class ISourcePackagePublic(IBugTarget, IHasBranches, IHasMergeProposals,
+                           IHasOfficialBugTags, IHasCodeImports,
+                           IHasTranslationImports, IHasTranslationTemplates,
+                           IHasDrivers, IHasOwner):
+    """Public attributes for SourcePackage."""
 
     name = exported(
         TextLine(
-            title=_("Name"), required=True,
+            title=_("Name"), required=True, readonly=True,
             description=_("The text name of this source package.")))
 
     displayname = exported(
         TextLine(
-            title=_("Display name"), required=True,
+            title=_("Display name"), required=True, readonly=True,
             description=_("A displayname, constructed, for this package")))
 
     path = Attribute("A path to this package, <distro>/<series>/<package>")
 
-    title = Attribute("Title")
+    title = Attribute("Title.")
+
+    summary = Attribute(
+        'A description of the binary packages built from this package.')
 
     format = Attribute("Source Package Format. This is the format of the "
                 "current source package release for this name in this "
@@ -67,7 +107,7 @@ class ISourcePackage(IBugTarget):
             Interface,
             # Really IDistribution, circular import fixed in
             # _schema_circular_imports.
-            title=_("Distribution"), required=True,
+            title=_("Distribution"), required=True, readonly=True,
             description=_("The distribution for this source package.")))
 
     # The interface for this is really IDistroSeries, but importing that would
@@ -75,28 +115,21 @@ class ISourcePackage(IBugTarget):
     distroseries = exported(
         Reference(
             Interface, title=_("Distribution Series"), required=True,
+            readonly=True,
             description=_("The DistroSeries for this SourcePackage")))
 
     sourcepackagename = Attribute("SourcePackageName")
 
-    bugtasks = Attribute("Bug Tasks that reference this Source Package name "
-                    "in the context of this distribution.")
-
-    product = Attribute(
-        "The best guess we have as to the Launchpad Project associated with "
-        "this SourcePackage.")
-
     # This is really a reference to an IProductSeries.
     productseries = exported(
         ReferenceChoice(
-            title=_("Product Series"), required=False,
-            vocabulary="ProductSeries",
+            title=_("Project series"), required=False,
+            vocabulary="ProductSeries", readonly=True,
             schema=Interface,
             description=_(
-                "The best guess we have as to the Launchpad ProductSeries "
-                "for this Source Package. Try find packaging information for "
-                "this specific distroseries then try parent series and "
-                "previous Ubuntu series.")))
+                "The registered project series that this source package "
+                "is based on. This series may be the same as the one that "
+                "earlier versions of this source packages were based on.")))
 
     releases = Attribute("The full set of source package releases that "
         "have been published in this distroseries under this source "
@@ -133,6 +166,12 @@ class ISourcePackage(IBugTarget):
     distribution_sourcepackage = Attribute(
         "The IDistributionSourcePackage for this source package.")
 
+    drivers = Attribute(
+        "The drivers for the distroseries for this source package.")
+
+    owner = Attribute(
+        "The owner of the distroseries for this source package.")
+
     def __getitem__(version):
         """Return the source package release with the given version in this
         distro series, or None."""
@@ -158,10 +197,40 @@ class ISourcePackage(IBugTarget):
         sourcepackagename compare not equal.
         """
 
+    @operation_parameters(productseries=Reference(schema=IProductSeries))
+    @call_with(owner=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
     def setPackaging(productseries, owner):
         """Update the existing packaging record, or create a new packaging
         record, that links the source package to the given productseries,
         and record that it was done by the owner.
+        """
+
+    @operation_parameters(productseries=Reference(schema=IProductSeries))
+    @call_with(owner=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setPackagingReturnSharingDetailPermissions(productseries, owner):
+        """Like setPackaging(), but returns getSharingDetailPermissions().
+
+        This method is intended for AJAX usage on the +sharing-details
+        page.
+        """
+
+    @export_write_operation()
+    @operation_for_version('devel')
+    def deletePackaging():
+        """Delete the packaging for this sourcepackage."""
+
+    def getSharingDetailPermissions():
+        """Return a dictionary of user permissions for +sharing-details page.
+
+        This shows whether the user can change
+        - The project series
+        - The project series target branch
+        - The project series autoimport mode
+        - The project translation usage setting
         """
 
     def getSuiteSourcePackage(pocket):
@@ -196,6 +265,49 @@ class ISourcePackage(IBugTarget):
         :return: An `IBranch`.
         """
 
+    latest_published_component = Object(
+        title=u'The component in which the package was last published.',
+        schema=IComponent, readonly=True, required=False)
+
+    latest_published_component_name = exported(TextLine(
+        title=u'The name of the component in which the package'
+               ' was last published.',
+        readonly=True, required=False))
+
+    def get_default_archive(component=None):
+        """Get the default archive of this package.
+
+        If 'component' is a partner component, then the default archive is the
+        partner archive. Otherwise, the primary archive of the associated
+        distribution.
+
+        :param component: The `IComponent` to base the default archive
+            decision on. If None, defaults to the last published component.
+        :raise NoPartnerArchive: If returning the partner archive is
+            appropriate, but no partner archive exists.
+        :return: `IArchive`.
+        """
+
+    def getLatestTranslationsUploads():
+        """Find latest Translations tarballs as produced by Soyuz.
+
+        :return: A list of `ILibraryFileAlias`es, usually of size zero
+            or one.  If not, they are sorted from oldest to newest.
+        """
+
+    @export_read_operation()
+    def linkedBranches():
+        """Get the official branches for this package.
+
+        This operation returns a {`Pocket`-name : `IBranch`} dict.
+
+        :return: A {`Pocket`-name : `IBranch`} dict.
+        """
+
+
+class ISourcePackageEdit(Interface):
+    """SourcePackage attributes requiring launchpad.Edit."""
+
     # 'pocket' should actually be a PackagePublishingPocket, and 'branch'
     # should be IBranch, but we use the base classes to avoid circular
     # imports. Correct interface specific in _schema_circular_imports.
@@ -215,14 +327,10 @@ class ISourcePackage(IBugTarget):
         :return: None
         """
 
-    shouldimport = Attribute("""Whether we should import this or not.
-        By 'import' we mean sourcerer analysis resulting in a manifest and a
-        set of Bazaar branches which describe the source package release.
-        The attribute is True or False.""")
 
-    latest_published_component = Object(
-        title=u'The component in which the package was last published.',
-        schema=IComponent, readonly=True, required=False)
+class ISourcePackage(ISourcePackagePublic, ISourcePackageEdit):
+    """A source package associated to a particular distribution series."""
+    export_as_webservice_entry()
 
 
 class ISourcePackageFactory(Interface):
@@ -268,7 +376,7 @@ class SourcePackageFileType(DBEnumeratedType):
         which in turn lists the orig.tar.gz and diff.tar.gz files used to
         make up the package.  """)
 
-    ORIG = DBItem(4, """
+    ORIG_TARBALL = DBItem(4, """
         Orig Tarball
 
         This file is an Ubuntu "orig" file, typically an upstream tarball or
@@ -280,16 +388,34 @@ class SourcePackageFileType(DBEnumeratedType):
         This is an Ubuntu "diff" file, containing changes that need to be
         made to upstream code for the packaging on Ubuntu. Typically this
         diff creates additional directories with patches and documentation
-        used to build the binary packages for Ubuntu.  """)
+        used to build the binary packages for Ubuntu.
 
-    TARBALL = DBItem(6, """
-        Tarball
+        This is only part of the 1.0 source package format.""")
+
+    NATIVE_TARBALL = DBItem(6, """
+        Native Tarball
 
         This is a tarball, usually of a mixture of Ubuntu and upstream code,
         used in the build process for this source package.  """)
 
+    DEBIAN_TARBALL = DBItem(7, """
+        Debian Tarball
 
-class SourcePackageFormat(DBEnumeratedType):
+        This file is an Ubuntu "orig" file, typically an upstream tarball or
+        other lightly-modified upstreamish thing.
+
+        This is only part of the 3.0 (quilt) source package format.""")
+
+    COMPONENT_ORIG_TARBALL = DBItem(8, """
+        Component Orig Tarball
+
+        This file is an Ubuntu component "orig" file, typically an upstream
+        tarball containing a component of the source package.
+
+        This is only part of the 3.0 (quilt) source package format.""")
+
+
+class SourcePackageType(DBEnumeratedType):
     """Source Package Format
 
     Launchpad supports distributions that use source packages in a variety

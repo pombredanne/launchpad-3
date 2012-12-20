@@ -11,7 +11,7 @@ Lets start with Firefox product inside trunk revision.
 Since we still don't have any POTemplates assigned, we must use the general
 translations upload link.
 
-  >>> browser.getLink('Upload').click()
+  >>> browser.getLink('upload').click()
   >>> print browser.url
   http://translations.launchpad.dev/firefox/trunk/+translations-upload
 
@@ -24,7 +24,7 @@ Now, lets upload this file.
 
   >>> browser.getControl('File:').add_file(
   ...     xpifile, 'application/zip', 'en-US.xpi')
-  >>> browser.getControl('Request Upload').click()
+  >>> browser.getControl('Upload').click()
 
   >>> print browser.url
   http://translations.launchpad.dev/firefox/trunk/+translations-upload
@@ -36,7 +36,7 @@ Lets check the import queue to edit this entry and set the name.
 
   >>> browser.getLink('Translation Import Queue').click()
   >>> print browser.getLink(url='en-US.xpi').url
-  http://localhost:58000/.../en-US.xpi
+  http://.../en-US.xpi
   >>> browser.getLink(url='imports/3').click()
   >>> print browser.url
   http://translations.launchpad.dev/+imports/3
@@ -49,6 +49,6 @@ where will be imported. In this case, it's 'firefox'.
   >>> browser.getControl('Translation domain').value = 'firefox'
   >>> browser.getControl('Approve').click()
   >>> print browser.url
-  http://translations.launchpad.dev/+imports
+  http://translations.launchpad.dev/firefox/trunk/+imports
   >>> browser.getControl(name='field.status_3').value
   ['APPROVED']

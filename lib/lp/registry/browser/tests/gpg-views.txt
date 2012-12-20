@@ -1,15 +1,15 @@
 
 This tests GPG-related pages of an IPerson.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from zope.component import getMultiAdapter, getUtility
 
 Set up the key server:
 
-  >>> from canonical.zeca.ftests.harness import ZecaTestSetup
-  >>> z = ZecaTestSetup()
-  >>> z.setUp()
+  >>> from lp.testing.keyserver import KeyServerTac
+  >>> tac = KeyServerTac()
+  >>> tac.setUp()
 
 Grab the sample user:
 
@@ -28,10 +28,10 @@ Set up some fingerprints for testing:
     >>> revoked     = "84D2 05F0 3E1E 6709 6CB5  4E26 2BE8 3793 AACC D97C"
     >>> expired     = "ECA5 B797 586F 2E27 381A  16CF DE6C 9167 046C 6D63"
 
-    >>> def post_fingerprint(fingerprint):
+    >>> def post_fingerprint(fingerprint, action='claim_gpg'):
     ...     request = LaunchpadTestRequest(form={
     ...         'fingerprint': fingerprint,
-    ...         'action': 'claim_gpg',
+    ...         'action': action,
     ...         'import': 'Import Key'})
     ...     request.method = "POST"
     ...     view = getMultiAdapter((sample_user, request), name="+editpgpkeys")
@@ -92,7 +92,7 @@ Use a valid fingerprint to import a new key.
 
 This new key will be pending validation, though.
 
-    >>> view.context.pendinggpgkeys
+    >>> view.context.pending_gpg_keys
     [u'A419AE861E88BC9E04B9C26FBA2B9389DFD20543']
 
 And while the validation is not finished, it's possible to cancel the
@@ -109,7 +109,7 @@ an error message.
     >>> view.error_message.escapedtext
     u'No key(s) pending validation selected.'
 
-    >>> view.context.pendinggpgkeys
+    >>> view.context.pending_gpg_keys
     [u'A419AE861E88BC9E04B9C26FBA2B9389DFD20543']
 
 Now we specify the key and it's removed from the list of keys pending
@@ -125,11 +125,14 @@ validation.
     >>> view.info_message.escapedtext
     u'Cancelled validation of key(s): A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
 
-    >>> view.context.pendinggpgkeys
+    >>> view.context.pending_gpg_keys
     []
 
+In some unknown way, the action sent to the form can be None (see bug 520476).
 
-And knock the server out, finally:
+    >>> view = post_fingerprint(good_fingerprint, action=None)
+    Traceback (most recent call last):
+     ...
+    UnexpectedFormData: Action not permitted: None
 
-  >>> z.tearDown()
-
+    >>> tac.tearDown()

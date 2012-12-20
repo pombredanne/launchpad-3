@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch views."""
@@ -6,94 +6,162 @@
 __metaclass__ = type
 
 __all__ = [
-    'BranchAddView',
     'BranchContextMenu',
     'BranchDeletionView',
+    'BranchEditStatusView',
     'BranchEditView',
     'BranchEditWhiteboardView',
     'BranchRequestImportView',
     'BranchReviewerEditView',
     'BranchMergeQueueView',
     'BranchMirrorStatusView',
+    'BranchMirrorMixin',
+    'BranchNameValidationMixin',
     'BranchNavigation',
-    'BranchNavigationMenu',
+    'BranchEditMenu',
     'BranchInProductView',
-    'BranchSparkView',
+    'BranchUpgradeView',
     'BranchURL',
     'BranchView',
     'BranchSubscriptionsView',
-    'DecoratedBug',
     'RegisterBranchMergeProposalView',
     'TryImportAgainView',
     ]
 
-import cgi
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
-import pytz
-import simplejson
-
-from zope.app.form.browser import TextAreaWidget
-from zope.traversing.interfaces import IPathAdapter
-from zope.component import getUtility, queryAdapter
-from zope.event import notify
-from zope.formlib import form
-from zope.interface import Interface, implements, providedBy
-from zope.publisher.interfaces import NotFound
-from zope.schema import Choice, Text
-from lazr.delegates import delegates
-from lazr.enum import EnumeratedType, Item
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.fields import Reference
+from lazr.restful.interface import (
+    copy_field,
+    use_template,
+    )
+from lazr.restful.utils import smartquote
 from lazr.uri import URI
+import pytz
+import simplejson
+from zope.app.form.browser import TextAreaWidget
+from zope.component import (
+    getUtility,
+    queryAdapter,
+    )
+from zope.event import notify
+from zope.formlib import form
+from zope.interface import (
+    implements,
+    Interface,
+    providedBy,
+    )
+from zope.publisher.interfaces import NotFound
+from zope.schema import (
+    Bool,
+    Choice,
+    Text,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
+from zope.traversing.interfaces import IPathAdapter
 
-from canonical.cachedproperty import cachedproperty
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-
-from lazr.restful.interface import copy_field, use_template
-from canonical.launchpad import _
-from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
-from canonical.launchpad.browser.launchpad import Hierarchy
-from canonical.launchpad.helpers import truncate_text
+from lp import _
+from lp.app.browser.informationtype import InformationTypePortletMixin
+from lp.app.browser.launchpad import Hierarchy
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.app.browser.lazrjs import EnumChoiceWidget
+from lp.app.enums import InformationType
+from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.vocabularies import InformationTypeVocabulary
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.app.widgets.suggestion import TargetBranchWidget
+from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugbranch import IBugBranch
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.blueprints.interfaces.specificationbranch import (
-    ISpecificationBranch)
-from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, enabled_with_permission,
-    LaunchpadView, Navigation, NavigationMenu, stepto, stepthrough,
-    LaunchpadFormView, LaunchpadEditFormView, action, custom_widget)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.menu import structured
-from canonical.lazr.utils import smartquote
-from canonical.widgets.branch import TargetBranchWidget
-from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
-
-from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugtask import (
+    IBugTaskSet,
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
+from lp.code.browser.branchmergeproposal import (
+    latest_proposals_for_each_branch,
+    )
 from lp.code.browser.branchref import BranchRef
-from lp.code.enums import BranchType, UICreatableBranchType
+from lp.code.browser.decorations import DecoratedBranch
+from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
+from lp.code.browser.widgets.branchtarget import BranchTargetWidget
+from lp.code.enums import (
+    BranchType,
+    CodeImportResultStatus,
+    CodeImportReviewStatus,
+    RevisionControlSystems,
+    )
+from lp.code.errors import (
+    BranchCreationForbidden,
+    BranchExists,
+    BranchTargetError,
+    CannotUpgradeBranch,
+    CodeImportAlreadyRequested,
+    CodeImportAlreadyRunning,
+    CodeImportNotInReviewedState,
+    InvalidBranchMergeProposal,
+    )
 from lp.code.interfaces.branch import (
-    BranchCreationForbidden, BranchExists, IBranch, IBranchNavigationMenu)
-from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposal, InvalidBranchMergeProposal)
-from lp.code.interfaces.branchsubscription import IBranchSubscription
+    IBranch,
+    IBranchSet,
+    )
+from lp.code.interfaces.branchcollection import IAllBranches
+from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.codeimport import CodeImportReviewStatus
-from lp.code.interfaces.codeimportjob import (
-    CodeImportJobState, ICodeImportJobWorkflow)
-from lp.code.interfaces.codereviewcomment import ICodeReviewComment
-from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
-from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.registry.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
-
-
-def quote(text):
-    return cgi.escape(text, quote=True)
+from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
+from lp.services import searchbuilder
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.feeds.browser import (
+    BranchFeedLink,
+    FeedsMixin,
+    )
+from lp.services.helpers import (
+    english_list,
+    truncate_text,
+    )
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    stepthrough,
+    stepto,
+    )
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.escaping import structured
+from lp.services.webapp.interfaces import ICanonicalUrlData
+from lp.translations.interfaces.translationtemplatesbuild import (
+    ITranslationTemplatesBuildSource,
+    )
 
 
 class BranchURL:
@@ -123,7 +191,21 @@ class BranchHierarchy(Hierarchy):
     @property
     def objects(self):
         """See `Hierarchy`."""
-        return IHasBranchTarget(self.context).target.components
+        traversed = list(self.request.traversed_objects)
+        # Pass back the root object.
+        yield traversed.pop(0)
+        # Now pop until we find the branch.
+        branch = traversed.pop(0)
+        while not IBranch.providedBy(branch):
+            branch = traversed.pop(0)
+        # Now pass back the branch components.
+        for component in branch.target.components:
+            yield component
+        # Now the branch.
+        yield branch
+        # Now whatever is left.
+        for obj in traversed:
+            yield obj
 
 
 class BranchNavigation(Navigation):
@@ -163,60 +245,33 @@ class BranchNavigation(Navigation):
             if proposal.id == id:
                 return proposal
 
+    @stepto("+code-import")
+    def traverse_code_import(self):
+        """Traverses to the `ICodeImport` for the branch."""
+        return self.context.code_import
 
-class BranchNavigationMenu(NavigationMenu):
-    """Internal menu tabs."""
-
-    usedfor = IBranchNavigationMenu
-    facet = 'branches'
-    links = ['details', 'merges', 'source']
-
-    def __init__(self, context):
-        NavigationMenu.__init__(self, context)
-        if IBranch.providedBy(context):
-            self.branch = context
-        elif IBranchMergeProposal.providedBy(context):
-            self.branch = context.source_branch
-            self.disabled = True
-        elif IBranchSubscription.providedBy(context):
-            self.branch = context.branch
-        elif ICodeReviewComment.providedBy(context):
-            self.branch = context.branch_merge_proposal.source_branch
-            self.disabled = True
-        else:
-            raise AssertionError(
-                'Bad context type for branch navigation menu.')
-
-    def details(self):
-        url = canonical_url(self.branch)
-        return Link(url, 'Details')
-
-    def merges(self):
-        url = canonical_url(self.branch, view_name="+merges")
-        return Link(url, 'Merge Proposals')
-
-    def source(self):
-        """Return a link to the branch's file listing on codebrowse."""
-        text = 'Source Code'
-        enabled = self.branch.code_is_browseable
-        url = self.branch.codebrowse_url('files')
-        return Link(url, text, icon='info', enabled=enabled)
+    @stepthrough("+translation-templates-build")
+    def traverse_translation_templates_build(self, id_string):
+        """Traverses to a `TranslationTemplatesBuild`."""
+        try:
+            ttbj_id = int(id_string)
+        except ValueError:
+            raise NotFoundError(id_string)
+        source = getUtility(ITranslationTemplatesBuildSource)
+        return source.getByID(ttbj_id)
 
 
-class BranchContextMenu(ContextMenu):
-    """Context menu for branches."""
+class BranchEditMenu(NavigationMenu):
+    """Edit menu for IBranch."""
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['edit_whiteboard', 'edit', 'delete_branch', 'browse_revisions',
-             'subscription', 'add_subscriber', 'associations',
-             'register_merge', 'landing_candidates',
-             'link_bug', 'link_blueprint', 'edit_import', 'reviewer'
-             ]
+    title = 'Edit branch'
+    links = (
+        'edit', 'reviewer', 'edit_whiteboard', 'delete')
 
-    def edit_whiteboard(self):
-        text = 'Edit whiteboard'
-        return Link('+whiteboard', text, icon='edit')
+    def branch_is_import(self):
+        return self.context.branch_type == BranchType.IMPORTED
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -224,14 +279,44 @@ class BranchContextMenu(ContextMenu):
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
+    def delete(self):
+        text = 'Delete branch'
+        return Link('+delete', text, icon='trash-icon')
+
+    @enabled_with_permission('launchpad.AnyPerson')
+    def edit_whiteboard(self):
+        text = 'Edit whiteboard'
+        enabled = self.branch_is_import()
+        return Link(
+            '+whiteboard', text, icon='edit', enabled=enabled)
+
+    @enabled_with_permission('launchpad.Edit')
     def reviewer(self):
         text = 'Set branch reviewer'
         return Link('+reviewer', text, icon='edit')
 
+
+class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
+    """Context menu for branches."""
+
+    usedfor = IBranch
+    facet = 'branches'
+    links = [
+        'add_subscriber', 'browse_revisions', 'create_recipe', 'link_bug',
+        'link_blueprint', 'register_merge', 'source', 'subscription',
+        'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes',
+        'create_queue', 'visibility']
+
     @enabled_with_permission('launchpad.Edit')
-    def delete_branch(self):
-        text = 'Delete branch'
-        return Link('+delete', text)
+    def edit_status(self):
+        text = 'Change branch status'
+        return Link('+edit-status', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Moderate')
+    def visibility(self):
+        """Return the 'Set information type' Link."""
+        text = 'Change information type'
+        return Link('+edit-information-type', text)
 
     def browse_revisions(self):
         """Return a link to the branch's revisions on codebrowse."""
@@ -257,26 +342,15 @@ class BranchContextMenu(ContextMenu):
         text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
 
-    def associations(self):
-        text = 'View branch associations'
-        return Link('+associations', text)
-
-    @enabled_with_permission('launchpad.AnyPerson')
     def register_merge(self):
-        text = 'Propose for merging into another branch'
-        enabled = self.context.target.supports_merge_proposals
+        text = 'Propose for merging'
+        enabled = (
+            self.context.target.supports_merge_proposals and
+            not self.context.branch_type == BranchType.IMPORTED)
         return Link('+register-merge', text, icon='add', enabled=enabled)
 
-    def landing_candidates(self):
-        text = 'View landing candidates'
-        enabled = self.context.landing_candidates.count() > 0
-        return Link('+landing-candidates', text, icon='edit', enabled=enabled)
-
     def link_bug(self):
-        if self.context.linked_bugs:
-            text = 'Link to another bug report'
-        else:
-            text = 'Link to a bug report'
+        text = 'Link a bug report'
         return Link('+linkbug', text, icon='add')
 
     def link_blueprint(self):
@@ -293,47 +367,96 @@ class BranchContextMenu(ContextMenu):
         enabled = self.context.product is not None
         return Link('+linkblueprint', text, icon='add', enabled=enabled)
 
+    def source(self):
+        """Return a link to the branch's file listing on codebrowse."""
+        text = 'Browse the code'
+        enabled = self.context.code_is_browseable
+        url = self.context.codebrowse_url('files')
+        return Link(url, text, icon='info', enabled=enabled)
+
     def edit_import(self):
         text = 'Edit import source or review import'
-        return Link('+edit-import', text, icon='edit', enabled=True)
+        enabled = (
+            self.context.branch_type == BranchType.IMPORTED and
+            check_permission('launchpad.Edit', self.context.code_import))
+        return Link('+edit-import', text, icon='edit', enabled=enabled)
+
+    @enabled_with_permission('launchpad.Edit')
+    def upgrade_branch(self):
+        enabled = self.context.needs_upgrading
+        return Link(
+            '+upgrade', 'Upgrade this branch', icon='edit', enabled=enabled)
+
+    def create_recipe(self):
+        # You can't create a recipe for a private branch.
+        enabled = not self.context.private
+        text = 'Create packaging recipe'
+        return Link('+new-recipe', text, enabled=enabled, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def create_queue(self):
+        return Link('+create-queue', 'Create a new queue', icon='add')
 
 
-class DecoratedBug:
-    """Provide some additional attributes to a normal bug."""
-    delegates(IBug)
+class BranchMirrorMixin:
+    """Provide mirror_location property.
 
-    def __init__(self, context, branch):
-        self.context = context
-        self.branch = branch
+    Requires self.branch to be set by the class using this mixin.
+    """
 
     @property
-    def bugtask(self):
-        """Return the bugtask for the branch project, or the default bugtask.
-        """
-        return self.branch.target.getBugTask(self.context)
+    def mirror_location(self):
+        """Check the mirror location to see if it is a private one."""
+        branch = self.branch
 
-class BranchView(LaunchpadView, FeedsMixin):
+        # If the user has edit permissions, then show the actual location.
+        if branch.url is None or check_permission('launchpad.Edit', branch):
+            return branch.url
 
-    __used_for__ = IBranch
+        # XXX: Tim Penhey, 2008-05-30, bug 235916
+        # Instead of a configuration hack we should support the users
+        # specifying whether or not they want the mirror location
+        # hidden or not.  Given that this is a database patch,
+        # it isn't going to happen today.
+        hosts = config.codehosting.private_mirror_hosts.split(',')
+        private_mirror_hosts = [name.strip() for name in hosts]
+
+        uri = URI(branch.url)
+        for private_host in private_mirror_hosts:
+            if uri.underDomain(private_host):
+                return '<private server>'
+
+        return branch.url
+
+
+class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
+                 LaunchpadView):
 
     feed_types = (
         BranchFeedLink,
         )
 
-    def initialize(self):
-        self.notices = []
-        self._add_subscription_notice()
+    @property
+    def page_title(self):
+        return self.context.bzr_identity
 
-    def _add_subscription_notice(self):
-        """Add the appropriate notice after posting the subscription form."""
-        if self.user and self.request.method == 'POST':
-            newsub = self.request.form.get('subscribe', None)
-            if newsub == 'Subscribe':
-                self.context.subscribe(self.user)
-                self.notices.append("You have subscribed to this branch.")
-            elif newsub == 'Unsubscribe':
-                self.context.unsubscribe(self.user)
-                self.notices.append("You have unsubscribed from this branch.")
+    label = page_title
+
+    def initialize(self):
+        super(BranchView, self).initialize()
+        self.branch = self.context
+        self.notices = []
+        # Cache permission so private team owner can be rendered.
+        # The security adaptor will do the job also but we don't want or need
+        # the expense of running several complex SQL queries.
+        authorised_people = [self.branch.owner]
+        if self.user is not None:
+            precache_permission_for_objects(
+                self.request, "launchpad.LimitedView", authorised_people)
+        # Replace our context with a decorated branch, if it is not already
+        # decorated.
+        if not isinstance(self.context, DecoratedBranch):
+            self.context = DecoratedBranch(self.context)
 
     def user_is_subscribed(self):
         """Is the current user subscribed to this branch?"""
@@ -344,21 +467,41 @@ class BranchView(LaunchpadView, FeedsMixin):
     def recent_revision_count(self, days=30):
         """Number of revisions committed during the last N days."""
         timestamp = datetime.now(pytz.UTC) - timedelta(days=days)
-        return self.context.revisions_since(timestamp).count()
+        return self.context.getRevisionsSince(timestamp).count()
 
     def owner_is_registrant(self):
         """Is the branch owner the registrant?"""
         return self.context.owner == self.context.registrant
+
+    def owner_is_reviewer(self):
+        """Is the branch owner the default reviewer?"""
+        if self.context.reviewer == None:
+            return True
+        return self.context.owner == self.context.reviewer
 
     def show_whiteboard(self):
         """Return whether or not the whiteboard should be shown.
 
         The whiteboard is only shown for import branches.
         """
-        if self.context.branch_type == BranchType.IMPORTED:
+        if (self.context.branch_type == BranchType.IMPORTED and
+            self.context.whiteboard):
             return True
         else:
             return False
+
+    def has_metadata(self):
+        """Return whether there is branch metadata to display."""
+        return (
+            self.context.branch_format or
+            self.context.repository_format or
+            self.context.control_format or
+            self.context.stacked_on)
+
+    @property
+    def is_empty_directory(self):
+        """True if the branch is an empty directory without even a '.bzr'."""
+        return self.context.control_format is None
 
     @property
     def codebrowse_url(self):
@@ -384,18 +527,13 @@ class BranchView(LaunchpadView, FeedsMixin):
         else:
             return None
 
-    def edit_link_url(self):
-        """Target URL of the Edit link used in the actions portlet."""
-        # XXX: DavidAllouche 2005-12-02 bug=5313:
-        # That should go away when bug #5313 is fixed.
-        linkdata = BranchContextMenu(self.context).edit()
-        return '%s/%s' % (canonical_url(self.context), linkdata.target)
-
+    @property
     def user_can_upload(self):
         """Whether the user can upload to this branch."""
-        return (self.user is not None and
-                self.user.inTeam(self.context.owner) and
-                self.context.branch_type == BranchType.HOSTED)
+        branch = self.context
+        if branch.branch_type != BranchType.HOSTED:
+            return False
+        return check_permission('launchpad.Edit', branch)
 
     def user_can_download(self):
         """Whether the user can download this branch."""
@@ -404,20 +542,8 @@ class BranchView(LaunchpadView, FeedsMixin):
 
     @cachedproperty
     def landing_targets(self):
-        """Return a decorated filtered list of landing targets."""
-        targets = []
-        targets_added = set()
-        for proposal in self.context.landing_targets:
-            # Don't show the proposal if the user can't see it.
-            if not check_permission('launchpad.View', proposal):
-                continue
-            # Only show the must recent proposal for any given target.
-            target_id = proposal.target_branch.id
-            if target_id in targets_added:
-                continue
-            targets.append(DecoratedMergeProposal(proposal))
-            targets_added.add(target_id)
-        return targets
+        """Return a filtered list of landing targets."""
+        return latest_proposals_for_each_branch(self.context.landing_targets)
 
     @property
     def latest_landing_candidates(self):
@@ -429,8 +555,27 @@ class BranchView(LaunchpadView, FeedsMixin):
     def landing_candidates(self):
         """Return a decorated list of landing candidates."""
         candidates = self.context.landing_candidates
-        return [DecoratedMergeProposal(proposal) for proposal in candidates
+        return [proposal for proposal in candidates
                 if check_permission('launchpad.View', proposal)]
+
+    @property
+    def recipe_count_text(self):
+        count = self.context.recipes.count()
+        if count == 0:
+            return 'No recipes'
+        elif count == 1:
+            return '1 recipe'
+        else:
+            return '%s recipes' % count
+
+    @property
+    def is_import_branch_with_no_landing_candidates(self):
+        """Is the branch an import branch with no landing candidates?"""
+        if self.landing_candidates:
+            return False
+        if not self.context.branch_type == BranchType.IMPORTED:
+            return False
+        return True
 
     def _getBranchCountText(self, count):
         """Help to show user friendly text."""
@@ -469,57 +614,60 @@ class BranchView(LaunchpadView, FeedsMixin):
         return len(self.landing_candidates) > 5
 
     @cachedproperty
-    def linked_bugs(self):
-        """Return a list of DecoratedBugs linked to the branch."""
-        return [DecoratedBug(bug, self.context)
-            for bug in self.context.linked_bugs]
+    def linked_bugtasks(self):
+        """Return a list of bugtasks linked to the branch."""
+        if self.context.is_series_branch:
+            status_filter = searchbuilder.any(*UNRESOLVED_BUGTASK_STATUSES)
+        else:
+            status_filter = None
+        return list(self.context.getLinkedBugTasks(
+            self.user, status_filter))
+
+    @cachedproperty
+    def revision_info(self):
+        collection = getUtility(IAllBranches).visibleByUser(self.user)
+        return collection.getExtendedRevisionDetails(
+            self.user, self.context.latest_revisions)
 
     @cachedproperty
     def latest_code_import_results(self):
         """Return the last 10 CodeImportResults."""
         return list(self.context.code_import.results[:10])
 
+    def iconForCodeImportResultStatus(self, status):
+        """The icon to represent the `CodeImportResultStatus` `status`."""
+        if status == CodeImportResultStatus.SUCCESS_PARTIAL:
+            return "/@@/yes-gray"
+        elif status in CodeImportResultStatus.successes:
+            return "/@@/yes"
+        else:
+            return "/@@/no"
+
     @property
-    def svn_url_is_web(self):
-        """True if an imported branch's SVN URL is HTTP or HTTPS."""
-        # You should only be calling this if it's an SVN code import
+    def is_svn_import(self):
+        """True if an imported branch is a SVN import."""
+        # You should only be calling this if it's a code import
         assert self.context.code_import
-        assert self.context.code_import.svn_branch_url
-        url = self.context.code_import.svn_branch_url
+        return self.context.code_import.rcs_type in \
+               (RevisionControlSystems.SVN, RevisionControlSystems.BZR_SVN)
+
+    @property
+    def url_is_web(self):
+        """True if an imported branch's URL is HTTP or HTTPS."""
+        # You should only be calling this if it's an SVN, BZR or GIT code
+        # import
+        assert self.context.code_import
+        url = self.context.code_import.url
+        assert url
         # https starts with http too!
         return url.startswith("http")
-
-    @property
-    def mirror_location(self):
-        """Check the mirror location to see if it is a private one."""
-        branch = self.context
-
-        # If the user has edit permissions, then show the actual location.
-        if check_permission('launchpad.Edit', branch):
-            return branch.url
-
-        # XXX: Tim Penhey, 2008-05-30
-        # Instead of a configuration hack we should support the users
-        # specifying whether or not they want the mirror location
-        # hidden or not.  Given that this is a database patch,
-        # it isn't going to happen today.
-        # See bug 235916
-        hosts = config.codehosting.private_mirror_hosts.split(',')
-        private_mirror_hosts = [name.strip() for name in hosts]
-
-        uri = URI(branch.url)
-        for private_host in private_mirror_hosts:
-            if uri.underDomain(private_host):
-                return '<private server>'
-
-        return branch.url
 
     @property
     def show_merge_links(self):
         """Return whether or not merge proposal links should be shown.
 
-        Merge proposal links should not be shown if there is only one branch in
-        a non-final state.
+        Merge proposal links should not be shown if there is only one branch
+        in a non-final state.
         """
         if not self.context.target.supports_merge_proposals:
             return False
@@ -534,18 +682,12 @@ class BranchView(LaunchpadView, FeedsMixin):
         # Actually only ProductSeries currently do that.
         return list(self.context.getProductSeriesPushingTranslations())
 
-
-class DecoratedMergeProposal:
-    """Provide some additional attributes to a normal branch merge proposal.
-    """
-    delegates(IBranchMergeProposal)
-
-    def __init__(self, context):
-        self.context = context
-
-    def show_registrant(self):
-        """Show the registrant if it was not the branch owner."""
-        return self.context.registrant != self.source_branch.owner
+    @property
+    def status_widget(self):
+        """The config to configure the ChoiceSource JS widget."""
+        return EnumChoiceWidget(
+            self.context.branch, IBranch['lifecycle_status'],
+            header='Change status to', css_class_prefix='branchstatus')
 
 
 class BranchInProductView(BranchView):
@@ -557,44 +699,97 @@ class BranchInProductView(BranchView):
 class BranchNameValidationMixin:
     """Provide name validation logic used by several branch view classes."""
 
-    def _setBranchExists(self, existing_branch):
+    def _setBranchExists(self, existing_branch, field_name='name'):
         owner = existing_branch.owner
         if owner == self.user:
             prefix = "You already have"
         else:
-            prefix = "%s already has" % cgi.escape(owner.displayname)
-        message = (
-            "%s a branch for <em>%s</em> called <em>%s</em>."
-            % (prefix, existing_branch.target.displayname,
-               existing_branch.name))
-        self.setFieldError('name', structured(message))
-
-
-class BranchEditSchema(Interface):
-    """Defines the fields for the edit form.
-
-    This is necessary so as to make an editable field for the branch privacy.
-    Normally the field is not editable through the interface in order to stop
-    direct setting of the private attribute, but in this case we actually want
-    the user to be able to edit it.
-    """
-    use_template(IBranch, include=[
-        'name',
-        'url',
-        'description',
-        'lifecycle_status',
-        'whiteboard',
-        ])
-    private = copy_field(IBranch['private'], readonly=False)
-    reviewer = copy_field(IBranch['reviewer'], required=True)
-    owner = copy_field(IBranch['owner'], readonly=False)
+            prefix = "%s already has" % owner.displayname
+        message = structured(
+            "%s a branch for <em>%s</em> called <em>%s</em>.",
+            prefix, existing_branch.target.displayname,
+            existing_branch.name)
+        self.setFieldError(field_name, message)
 
 
 class BranchEditFormView(LaunchpadEditFormView):
     """Base class for forms that edit a branch."""
 
-    schema = BranchEditSchema
     field_names = None
+
+    def getInformationTypesToShow(self):
+        """Get the information types to display on the edit form.
+
+        We display a highly customised set of information types:
+        anything allowed by the namespace, plus the current type,
+        except some of the obscure types unless there's a linked
+        bug with an obscure type.
+        """
+        allowed_types = self.context.getAllowedInformationTypes(self.user)
+
+        # If we're stacked on a private branch, only show that
+        # information type.
+        if self.context.stacked_on and self.context.stacked_on.private:
+            shown_types = set([self.context.stacked_on.information_type])
+        else:
+            shown_types = (
+                InformationType.PUBLIC,
+                InformationType.PUBLICSECURITY,
+                InformationType.PRIVATESECURITY,
+                InformationType.USERDATA,
+                InformationType.PROPRIETARY,
+                InformationType.EMBARGOED,
+                )
+
+            # XXX Once Branch Visibility Policies are removed, we only want to
+            # show Private (USERDATA) if the branch is linked to such a bug.
+            hidden_types = (
+                # InformationType.USERDATA,
+                )
+            if set(allowed_types).intersection(hidden_types):
+                params = BugTaskSearchParams(
+                    user=self.user, linked_branches=self.context.id,
+                    information_type=hidden_types)
+                if getUtility(IBugTaskSet).searchBugIds(params).count() > 0:
+                    shown_types += hidden_types
+
+        # Now take the intersection of the allowed and shown types.
+        combined_types = set(allowed_types).intersection(shown_types)
+        combined_types.add(self.context.information_type)
+        return combined_types
+
+    @cachedproperty
+    def schema(self):
+        info_types = self.getInformationTypesToShow()
+
+        class BranchEditSchema(Interface):
+            """Defines the fields for the edit form.
+
+            This is necessary so as to make an editable field for the
+            branch privacy.  Normally the field is not editable through
+            the interface in order to stop direct setting of the private
+            attribute, but in this case we actually want the user to be
+            able to edit it.
+            """
+            use_template(IBranch, include=[
+                'name',
+                'url',
+                'description',
+                'lifecycle_status',
+                'whiteboard',
+                ])
+            information_type = copy_field(
+                IBranch['information_type'], readonly=False,
+                vocabulary=InformationTypeVocabulary(types=info_types))
+            reviewer = copy_field(IBranch['reviewer'], required=True)
+            owner = copy_field(IBranch['owner'], readonly=False)
+            target = Reference(
+                title=_('Branch target'), required=True,
+                schema=IBranchTarget,
+                description=_('The project (if any) this branch pertains to. '
+                    'If no project is specified, then it is a personal '
+                    'branch'))
+        return BranchEditSchema
 
     @property
     def page_title(self):
@@ -607,9 +802,10 @@ class BranchEditFormView(LaunchpadEditFormView):
     @property
     def adapters(self):
         """See `LaunchpadFormView`"""
-        return {BranchEditSchema: self.context}
+        return {self.schema: self.context}
 
-    @action('Change Branch', name='change')
+    @action('Change Branch', name='change',
+        failure=LaunchpadFormView.ajax_failure_handler)
     def change_action(self, action, data):
         # If the owner or product has changed, add an explicit notification.
         # We take our own snapshot here to make sure that the snapshot records
@@ -628,18 +824,38 @@ class BranchEditFormView(LaunchpadEditFormView):
                     "The branch owner has been changed to %s (%s)"
                     % (new_owner.displayname, new_owner.name))
         if 'private' in data:
-            private = data.pop('private')
-            if private != self.context.private:
-                # We only want to show notifications if it actually changed.
-                self.context.setPrivate(private)
+            # Read only for display.
+            data.pop('private')
+        # We must process information type before target so that the any new
+        # information type is valid for the target.
+        if 'information_type' in data:
+            information_type = data.pop('information_type')
+            self.context.transitionToInformationType(
+                information_type, self.user)
+        if 'target' in data:
+            target = data.pop('target')
+            existing_junk = self.context.target.name == '+junk'
+            same_junk_status = target == '+junk' and existing_junk
+            if target == '+junk':
+                target = None
+            if not same_junk_status or (
+                target is not None and target != self.context.target):
+                try:
+                    self.context.setTarget(self.user, project=target)
+                except BranchTargetError, e:
+                    self.setFieldError('target', e.message)
+                    return
+
                 changed = True
-                if private:
+                if target:
                     self.request.response.addNotification(
-                        "The branch is now private, and only visible to the "
-                        "owner and to subscribers.")
+                        "The branch target has been changed to %s (%s)"
+                        % (target.displayname, target.name))
                 else:
                     self.request.response.addNotification(
-                        "The branch is now publicly accessible.")
+                        "This branch is now a personal branch for %s (%s)"
+                        % (self.context.owner.displayname,
+                            self.context.owner.name))
         if 'reviewer' in data:
             reviewer = data.pop('reviewer')
             if reviewer != self.context.code_reviewer:
@@ -664,17 +880,37 @@ class BranchEditFormView(LaunchpadEditFormView):
             # was in fact a change.
             self.context.date_last_modified = UTC_NOW
 
+        if self.request.is_ajax:
+            return ''
+
     @property
     def next_url(self):
-        return canonical_url(self.context)
+        """Return the next URL to call when this call completes."""
+        if not self.request.is_ajax and not self.errors:
+            return self.cancel_url
+        return None
 
-    cancel_url = next_url
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class BranchEditWhiteboardView(BranchEditFormView):
     """A view for editing the whiteboard only."""
 
     field_names = ['whiteboard']
+
+
+class BranchEditStatusView(BranchEditFormView):
+    """A view for editing the lifecycle status only."""
+
+    field_names = ['lifecycle_status']
+
+
+class BranchEditInformationTypeView(BranchEditFormView):
+    """A view for editing the information type only."""
+
+    field_names = ['information_type']
 
 
 class BranchMirrorStatusView(LaunchpadFormView):
@@ -698,14 +934,13 @@ class BranchMirrorStatusView(LaunchpadFormView):
         else:
             celebs = getUtility(ILaunchpadCelebrities)
             return (self.user.inTeam(self.context.owner) or
-                    self.user.inTeam(celebs.admin) or
-                    self.user.inTeam(celebs.bazaar_experts))
+                    self.user.inTeam(celebs.admin))
 
     @property
     def mirror_of_ssh(self):
         """True if this a mirror branch with an sftp or bzr+ssh URL."""
         if not self.context.url:
-            return False # not a mirror branch
+            return False  # not a mirror branch
         uri = URI(self.context.url)
         return uri.scheme in ('sftp', 'bzr+ssh')
 
@@ -822,7 +1057,6 @@ class BranchDeletionView(LaunchpadFormView):
         The keys are 'delete' and 'alter'; the values are dicts of
         'item', 'reason' and 'allowed'.
         """
-        branch = self.context
         row_dict = {'delete': [], 'alter': [], 'break_link': []}
         for item, action, reason, allowed in (
             self.display_deletion_requirements):
@@ -844,41 +1078,57 @@ class BranchDeletionView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
+class BranchUpgradeView(LaunchpadFormView):
+    """Used to upgrade a branch."""
+
+    schema = IBranch
+    field_names = []
+
+    @property
+    def page_title(self):
+        return smartquote('Upgrade branch "%s"' % self.context.displayname)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
+
+    @action('Upgrade', name='upgrade_branch')
+    def upgrade_branch_action(self, action, data):
+        try:
+            self.context.requestUpgrade(self.user)
+        except CannotUpgradeBranch as e:
+            self.request.response.addErrorNotification(e)
+
+
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
-    """The main branch view for editing the branch attributes."""
+    """The main branch for editing the branch attributes."""
 
-    field_names = [
-        'owner', 'name', 'private', 'url', 'description', 'lifecycle_status']
+    @property
+    def field_names(self):
+        field_names = ['owner', 'name']
+        if not self.context.sourcepackagename:
+            field_names.append('target')
+        field_names.extend([
+            'information_type', 'url', 'description',
+            'lifecycle_status'])
+        return field_names
 
+    custom_widget('target', BranchTargetWidget)
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
 
     def setUpFields(self):
-        LaunchpadFormView.setUpFields(self)
-        # This is to prevent users from converting push/import
-        # branches to pull branches.
+        super(BranchEditView, self).setUpFields()
         branch = self.context
-        if branch.branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
-            self.form_fields = self.form_fields.omit('url')
-
-        policy = IBranchNamespacePolicy(branch.namespace)
-        if branch.private:
-            # If the branch is private, and can be public, show the field.
-            show_private_field = policy.canBranchesBePublic()
-        else:
-            # If the branch is public, and can be made private, show the
-            # field.
-            show_private_field = policy.canBranchesBePrivate()
-
-        if not show_private_field:
-            self.form_fields = self.form_fields.omit('private')
-
         # If the user can administer branches, then they should be able to
         # assign the ownership of the branch to any valid person or team.
         if check_permission('launchpad.Admin', branch):
             owner_field = self.schema['owner']
             any_owner_choice = Choice(
                 __name__='owner', title=owner_field.title,
-                description = _("As an administrator you are able to reassign"
+                description=_("As an administrator you are able to reassign"
                                 " this branch to any person or team."),
                 required=True, vocabulary='ValidPersonOrTeam')
             any_owner_field = form.Fields(
@@ -886,13 +1136,37 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             # Replace the normal owner field with a more permissive vocab.
             self.form_fields = self.form_fields.omit('owner')
             self.form_fields = any_owner_field + self.form_fields
+        else:
+            # For normal users, there is an edge case with package branches
+            # where the editor may not be in the team of the branch owner.  In
+            # these cases we need to extend the vocabulary connected to the
+            # owner field.
+            if not self.user.inTeam(self.context.owner):
+                vocab = UserTeamsParticipationPlusSelfVocabulary()
+                owner = self.context.owner
+                terms = [SimpleTerm(
+                    owner, owner.name, owner.unique_displayname)]
+                terms.extend([term for term in vocab])
+                owner_field = self.schema['owner']
+                owner_choice = Choice(
+                    __name__='owner', title=owner_field.title,
+                    description=owner_field.description,
+                    required=True, vocabulary=SimpleVocabulary(terms))
+                new_owner_field = form.Fields(
+                    owner_choice, render_context=self.render_context)
+                # Replace the normal owner field with a more permissive vocab.
+                self.form_fields = self.form_fields.omit('owner')
+                self.form_fields = new_owner_field + self.form_fields
+
+        if branch.branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
+            self.form_fields = self.form_fields.omit('url')
 
     def validate(self, data):
         # Check that we're not moving a team branch to the +junk
         # pseudo project.
-        owner = data['owner']
         if 'name' in data:
             # Only validate if the name has changed or the owner has changed.
+            owner = data['owner']
             if ((data['name'] != self.context.name) or
                 (owner != self.context.owner)):
                 # We only allow moving within the same branch target for now.
@@ -900,7 +1174,11 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 try:
                     namespace.validateMove(
                         self.context, self.user, name=data['name'])
-                except BranchExists, e:
+                except BranchCreationForbidden:
+                    self.addError(
+                        "%s is not allowed to own branches in %s." % (
+                        owner.displayname, self.context.target.displayname))
+                except BranchExists as e:
                     self._setBranchExists(e.existing_branch)
 
         # If the branch is a MIRRORED branch, then the url
@@ -932,115 +1210,6 @@ class BranchReviewerEditView(BranchEditFormView):
         return {'reviewer': self.context.code_reviewer}
 
 
-class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
-
-    schema = IBranch
-    for_input = True
-    field_names = ['owner', 'name', 'branch_type', 'url', 'lifecycle_status']
-
-    branch = None
-    custom_widget('branch_type', LaunchpadRadioWidgetWithDescription)
-    custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
-
-    initial_focus_widget = 'name'
-
-    @property
-    def page_title(self):
-        return 'Register a branch'
-
-    @property
-    def initial_values(self):
-        return {
-            'owner': self.default_owner,
-            'branch_type': UICreatableBranchType.MIRRORED}
-
-    @property
-    def target(self):
-        """The branch target for the context."""
-        return IBranchTarget(self.context)
-
-    @property
-    def default_owner(self):
-        """The default owner of branches in this context.
-
-        If the context is a person, then it's the context. If the context is
-        not a person, then the default owner is the currently logged-in user.
-        """
-        return IPerson(self.context, self.user)
-
-    def showOptionalMarker(self, field_name):
-        """Don't show the optional marker for url."""
-        if field_name == 'url':
-            return False
-        else:
-            return LaunchpadFormView.showOptionalMarker(self, field_name)
-
-    @action('Register Branch', name='add')
-    def add_action(self, action, data):
-        """Handle a request to create a new branch for this product."""
-        try:
-            ui_branch_type = data['branch_type']
-            namespace = self.target.getNamespace(data['owner'])
-            self.branch = namespace.createBranch(
-                branch_type=BranchType.items[ui_branch_type.name],
-                name=data['name'],
-                registrant=self.user,
-                url=data.get('url'),
-                lifecycle_status=data['lifecycle_status'])
-            if self.branch.branch_type == BranchType.MIRRORED:
-                self.branch.requestMirror()
-        except BranchCreationForbidden:
-            self.addError(
-                "You are not allowed to create branches in %s." %
-                self.context.displayname)
-        except BranchExists, e:
-            self._setBranchExists(e.existing_branch)
-        else:
-            self.next_url = canonical_url(self.branch)
-
-    def validate(self, data):
-        owner = data['owner']
-
-        if not self.user.inTeam(owner):
-            self.setFieldError(
-                'owner',
-                'You are not a member of %s' % owner.displayname)
-
-        branch_type = data.get('branch_type')
-        # If branch_type failed to validate, then the rest of the method
-        # doesn't make any sense.
-        if branch_type is None:
-            return
-
-        # If the branch is a MIRRORED branch, then the url
-        # must be supplied, and if HOSTED the url must *not*
-        # be supplied.
-        url = data.get('url')
-        if branch_type == UICreatableBranchType.MIRRORED:
-            if url is None:
-                # If the url is not set due to url validation errors,
-                # there will be an error set for it.
-                error = self.getFieldError('url')
-                if not error:
-                    self.setFieldError(
-                        'url',
-                        'Branch URLs are required for Mirrored branches.')
-        elif branch_type == UICreatableBranchType.HOSTED:
-            if url is not None:
-                self.setFieldError(
-                    'url',
-                    'Branch URLs cannot be set for Hosted branches.')
-        elif branch_type == UICreatableBranchType.REMOTE:
-            # A remote location can, but doesn't have to be set.
-            pass
-        else:
-            raise AssertionError('Unknown branch type')
-
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context)
-
-
 class BranchSubscriptionsView(LaunchpadView):
     """The view for the branch subscriptions portlet.
 
@@ -1056,8 +1225,6 @@ class BranchSubscriptionsView(LaunchpadView):
 
 class BranchMergeQueueView(LaunchpadView):
     """The view used to render the merge queue for a branch."""
-
-    __used_for__ = IBranch
 
     @cachedproperty
     def merge_queue(self):
@@ -1102,14 +1269,33 @@ class RegisterProposalSchema(Interface):
         description=_(
             "The branch that the source branch will be merged into."))
 
+    prerequisite_branch = Choice(
+        title=_('Prerequisite Branch'),
+        vocabulary='Branch', required=False, readonly=False,
+        description=_(
+            'A branch that should be merged before this one.  (Its changes'
+            ' will not be shown in the diff.)'))
+
     comment = Text(
-        title=_('Initial Comment'), required=False,
-        description=_('Describe your change.'))
+        title=_('Description of the Change'), required=False,
+        description=_('Describe what changes your branch introduces, '
+                      'what bugs it fixes, or what features it implements. '
+                      'Ideally include rationale and how to test.'))
 
     reviewer = copy_field(
         ICodeReviewVoteReference['reviewer'], required=False)
 
-    review_type = copy_field(ICodeReviewVoteReference['review_type'])
+    review_type = copy_field(
+        ICodeReviewVoteReference['review_type'],
+        description=u'Lowercase keywords describing the type of review you '
+                     'would like to be performed.')
+
+    commit_message = IBranchMergeProposal['commit_message']
+
+    needs_review = Bool(
+        title=_("Needs review"), required=True, default=True,
+        description=_(
+            "Is the proposal ready for review now?"))
 
 
 class RegisterBranchMergeProposalView(LaunchpadFormView):
@@ -1118,22 +1304,9 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
     for_input = True
 
     custom_widget('target_branch', TargetBranchWidget)
-    custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
+    custom_widget('comment', TextAreaWidget, cssClass='comment-text')
 
     page_title = label = 'Propose branch for merging'
-
-    @property
-    def initial_values(self):
-        """The default reviewer is the code reviewer of the target."""
-        # If there is a default merge branch for the target, then default
-        # the reviewer to be the review team for that branch.
-        reviewer = None
-        default_target = self.context.target.default_merge_target
-        # Don't set the reviewer if the default branch is the same as the
-        # current context.
-        if default_target is not None and default_target != self.context:
-            reviewer = default_target.code_reviewer
-        return {'reviewer': reviewer}
 
     @property
     def cancel_url(self):
@@ -1145,29 +1318,64 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
             raise NotFound(self.context, '+register-merge')
         LaunchpadFormView.initialize(self)
 
-    @action('Propose Merge', name='register')
+    @action('Propose Merge', name='register',
+        failure=LaunchpadFormView.ajax_failure_handler)
     def register_action(self, action, data):
         """Register the new branch merge proposal."""
 
         registrant = self.user
         source_branch = self.context
         target_branch = data['target_branch']
+        prerequisite_branch = data.get('prerequisite_branch')
 
         review_requests = []
         reviewer = data.get('reviewer')
+        review_type = data.get('review_type')
+        if reviewer is None:
+            reviewer = target_branch.code_reviewer
         if reviewer is not None:
-            review_requests.append((reviewer, data.get('review_type')))
+            review_requests.append((reviewer, review_type))
+
+        branch_names = [branch.unique_name
+                        for branch in [source_branch, target_branch]]
+        visibility_info = getUtility(IBranchSet).getBranchVisibilityInfo(
+            self.user, reviewer, branch_names)
+        visible_branches = list(visibility_info['visible_branches'])
+        if self.request.is_ajax and len(visible_branches) < 2:
+            self.request.response.setStatus(400, "Branch Visibility")
+            self.request.response.setHeader(
+                'Content-Type', 'application/json')
+            return simplejson.dumps({
+                'person_name': visibility_info['person_name'],
+                'branches_to_check': branch_names,
+                'visible_branches': visible_branches,
+            })
 
         try:
-            # Always default to needs review until we have the wonder of AJAX
-            # and an advanced expandable section.
             proposal = source_branch.addLandingTarget(
                 registrant=registrant, target_branch=target_branch,
-                needs_review=True, initial_comment=data.get('comment'),
-                review_requests=review_requests)
-
-            self.next_url = canonical_url(proposal)
-        except InvalidBranchMergeProposal, error:
+                prerequisite_branch=prerequisite_branch,
+                needs_review=data['needs_review'],
+                description=data.get('comment'),
+                review_requests=review_requests,
+                commit_message=data.get('commit_message'))
+            if len(visible_branches) < 2:
+                invisible_branches = [branch.unique_name
+                            for branch in [source_branch, target_branch]
+                            if branch.unique_name not in visible_branches]
+                self.request.response.addNotification(
+                    'To ensure visibility, %s is now subscribed to: %s'
+                    % (visibility_info['person_name'],
+                       english_list(invisible_branches)))
+            # Success so we do a client redirect to the new mp page.
+            if self.request.is_ajax:
+                self.request.response.setStatus(201)
+                self.request.response.setHeader(
+                    'Location', canonical_url(proposal))
+                return None
+            else:
+                self.next_url = canonical_url(proposal)
+        except InvalidBranchMergeProposal as error:
             self.addError(str(error))
 
     def validate(self, data):
@@ -1212,26 +1420,23 @@ class BranchRequestImportView(LaunchpadFormView):
 
     @action('Import Now', name='request')
     def request_import_action(self, action, data):
-        if self.context.code_import.import_job is None:
+        try:
+            self.context.code_import.requestImport(
+                self.user, error_if_already_requested=True)
+            self.request.response.addNotification(
+                "Import will run as soon as possible.")
+        except CodeImportNotInReviewedState:
             self.request.response.addNotification(
                 "This import is no longer being updated automatically.")
-        elif (self.context.code_import.import_job.state !=
-              CodeImportJobState.PENDING):
-            assert (self.context.code_import.import_job.state ==
-                    CodeImportJobState.RUNNING)
+        except CodeImportAlreadyRunning:
             self.request.response.addNotification(
                 "The import is already running.")
-        elif self.context.code_import.import_job.requesting_user is not None:
-            user = self.context.code_import.import_job.requesting_user
+        except CodeImportAlreadyRequested as e:
+            user = e.requesting_user
             adapter = queryAdapter(user, IPathAdapter, 'fmt')
             self.request.response.addNotification(
                 structured("The import has already been requested by %s." %
                            adapter.link(None)))
-        else:
-            getUtility(ICodeImportJobWorkflow).requestJob(
-                self.context.code_import.import_job, self.user)
-            self.request.response.addNotification(
-                "Import will run as soon as possible.")
 
     @property
     def prefix(self):
@@ -1271,58 +1476,3 @@ class TryImportAgainView(LaunchpadFormView):
     @property
     def prefix(self):
         return "tryagain"
-
-
-class BranchSparkView(LaunchpadView):
-    """This view generates the JSON data for the commit sparklines."""
-
-    __for__ = IBranch
-
-    # How many days to look for commits.
-    COMMIT_DAYS = 90
-
-    def _commitCounts(self):
-        """Return a dict of commit counts for rendering."""
-        epoch = (
-            datetime.now(tz=pytz.UTC) - timedelta(days=(self.COMMIT_DAYS-1)))
-        # Make a datetime for that date, but midnight.
-        epoch = epoch.replace(hour=0, minute=0, second=0, microsecond=0)
-        commits = dict(self.context.commitsForDays(epoch))
-        # However storm returns tz-unaware datetime objects.
-        day = datetime(year=epoch.year, month=epoch.month, day=epoch.day)
-        days = [day + timedelta(days=count)
-                for count in range(self.COMMIT_DAYS)]
-
-        commit_list = []
-        total_commits = 0
-        most_commits = 0
-        for index, day in enumerate(days):
-            count = commits.get(day, 0)
-            commit_list.append(count)
-            total_commits += count
-            if count >= most_commits:
-                most_commits = count
-                max_index = index
-        return {'count': total_commits,
-                'commits': commit_list,
-                'max_commits': max_index}
-
-    def render(self):
-        """Write out the commit data as a JSON string."""
-        # We want:
-        #  count: total commit count
-        #  last_commit: string to say when the last commit was
-        #  commits: an array of COMMIT_DAYS values for commits for that day
-        #  max_commits: an index into the commits array with the most commits,
-        #     most recent wins any ties.
-        values = {'count': 0, 'max_commits': 0}
-        # Check there have been commits.
-        if self.context.revision_count == 0:
-            values['last_commit'] = 'empty branch'
-        else:
-            tip = self.context.getTipRevision()
-            adapter = queryAdapter(tip.revision_date, IPathAdapter, 'fmt')
-            values['last_commit'] = adapter.approximatedate()
-            values.update(self._commitCounts())
-
-        return simplejson.dumps(values)

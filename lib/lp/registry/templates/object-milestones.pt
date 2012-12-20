@@ -3,31 +3,35 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
-  i18n:domain="launchpad"
->
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad">
 
 <body>
 
 <div metal:fill-slot="main">
+  <div class="top-portlet">
+    <p>
+      Milestones belong to a series and can be created from the series page
+      by a project owner or series release manager.
+    </p>
 
-  <h1><tal:pillar-name replace="context/displayname" />'s Milestones</h1>
+    <ul class="horizontal"
+      tal:condition="context/project|nothing">
+      <li>
+        <a class="sprite info"
+          tal:attributes="href context/project/menu:overview/milestones/fmt:url">View milestones for
+          <tal:project replace="context/project/displayname" /></a>
+      </li>
+    </ul>
+  </div>
 
-  <p>
-    Milestones belong to a series and can be created from the series page
-    be a project owner or series release manager.
-  </p>
-
-  <tal:milestones define="milestones context/all_milestones">
+  <tal:milestones>
     <table id="milestones" class="listing"
-      tal:define="has_series context/serieses|nothing"
-      tal:condition="milestones">
+      tal:define="has_series context/series|nothing"
+      tal:condition="view/milestones">
       <thead>
         <tr>
-          <th>Version "Codename"</th>
+          <th>Version</th>
           <th tal:condition="has_series">Series</th>
           <th>Expected</th>
           <th>Released</th>
@@ -36,12 +40,12 @@
       </thead>
       <tbody>
           <tal:row
-            repeat="milestone milestones"
+            repeat="milestone view/milestones"
             replace="structure milestone/@@+pillar-table-row" />
       </tbody>
     </table>
 
-    <tal:no-milestones condition="not: milestones">
+    <tal:no-milestones condition="not: view/milestones">
       <p>There are no milestones associated with
         <span tal:replace="context/title" />
       </p>

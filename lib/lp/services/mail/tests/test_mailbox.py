@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for mail boxes."""
@@ -8,23 +8,22 @@ __metaclass__ = type
 import os
 from shutil import rmtree
 import tempfile
-from unittest import TestLoader
 
-from canonical.launchpad.interfaces.mailbox import IMailBox
-from lp.services.mail.mailbox import DirectoryMailBox
+from lp.services.mail.mailbox import (
+    DirectoryMailBox,
+    IMailBox,
+    )
+from lp.services.webapp.testing import verifyObject
 from lp.testing import TestCase
-from canonical.launchpad.webapp.testing import verifyObject
 
 
 class TestDirectoryMailBox(TestCase):
 
     def setUp(self):
+        super(TestDirectoryMailBox, self).setUp()
         # Create a temp directory.
         self.email_dir = tempfile.mkdtemp()
-
-    def tearDown(self):
-        # Delete the directory.
-        rmtree(self.email_dir)
+        self.addCleanup(rmtree, self.email_dir)
 
     def test_verify_interface(self):
         # Make sure that the object actually implements the interface.
@@ -69,7 +68,3 @@ class TestDirectoryMailBox(TestCase):
         for id, content in box.items():
             box.delete(id)
         self.assertEqual(0, len(list(box.items())))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

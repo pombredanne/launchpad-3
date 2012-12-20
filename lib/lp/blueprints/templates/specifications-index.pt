@@ -3,13 +3,9 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/applicationhome"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
   <body>
-    <h1 metal:fill-slot="heading">Blueprint tracking</h1>
     <div metal:fill-slot="main">
 
       <ul class="buttons">
@@ -32,7 +28,7 @@
         </li>
       </ul>
 
-      <form class="central" action="" method="get"
+      <form id="search-all-specifications" class="central" action="" method="get"
             tal:attributes="action request/URL">
         <table>
           <tbody>
@@ -47,34 +43,33 @@
                 />
               </td>
               <td>
-                <input
-                  type="submit"
-                  name="field.actions.search"
-                  value="Find Blueprints"
-                />
+                <input tal:replace="structure view/search_action/render"/>
               </td>
             </tr>
-            <tr tal:define="
-              target_widget nocall:view/widgets/scope/target_widget">
-              <td tal:attributes="class view/scope_css_class"
-                  style="text-align: right;">
-
-                <tal:scope
-                  replace="structure view/widgets/scope/renderScopeOptions" />
-
-                <tal:input replace="structure target_widget/inputField" />
-
+            <tr>
+              <td colspan="2"
+                tal:attributes="class view/scope_css_class">
+                <input tal:replace="structure view/widgets/scope" />
                 <div class="message"
-                  tal:condition="view/scope_error"
-                  tal:content="structure view/scope_error">
+                  tal:condition="view/widgets/scope/error"
+                  tal:content="structure view/widgets/scope/error">
                   Error message
                 </div>
+                <script type="text/javascript"
+                  tal:define="script view/focusedElementScript"
+                  tal:condition="script"
+                  tal:content="structure script" ></script>
               </td>
-              <td tal:content="structure target_widget/chooseLink" />
             </tr>
           </tbody>
         </table>
       </form>
+      <script type="text/javascript">
+          LPJS.use('lp', function (Y) {
+              setFocusByName('field.search_text');
+          });
+      </script>
+
       <tal:searchresults condition="view/searchrequested"
                          define="specs view/specs" >
         <p tal:condition="specs">

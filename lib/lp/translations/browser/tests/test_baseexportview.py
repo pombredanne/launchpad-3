@@ -1,19 +1,32 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
+from datetime import timedelta
 import unittest
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import ZopelessDatabaseLayer
-from lp.translations.browser.sourcepackage import (
-    SourcePackageTranslationsExportView)
-from lp.translations.browser.productseries import (
-    ProductSeriesTranslationsExportView)
-from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+import transaction
+
+from lp.services.database.lpstorm import IMasterStore
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessDatabaseLayer
+from lp.translations.browser.productseries import (
+    ProductSeriesTranslationsExportView,
+    )
+from lp.translations.browser.sourcepackage import (
+    SourcePackageTranslationsExportView,
+    )
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat,
+    )
+from lp.translations.model.poexportrequest import POExportRequest
+
+
+def wipe_queue(queue):
+    """Erase all export queue entries."""
+    IMasterStore(POExportRequest).execute("DELETE FROM POExportRequest")
 
 
 class BaseExportViewMixin(TestCaseWithFactory):
@@ -43,7 +56,7 @@ class BaseExportViewMixin(TestCaseWithFactory):
 
     def test_uses_translations_current_templates(self):
         # If there is a current template, it is marked as using translations.
-        template = self.createTranslationTemplate("current")
+        self.createTranslationTemplate("current")
         self.assertTrue(self.view.uses_translations)
 
     def test_getDefaultFormat(self):
@@ -135,7 +148,6 @@ class TestProductSeries(BaseExportViewMixin):
     def setUp(self):
         super(TestProductSeries, self).setUp()
         self.container = self.factory.makeProductSeries()
-        self.container.product.official_rosetta = True
         self.view = ProductSeriesTranslationsExportView(
             self.container, LaunchpadTestRequest())
 
@@ -153,9 +165,64 @@ class TestSourcePackage(BaseExportViewMixin):
     def setUp(self):
         super(TestSourcePackage, self).setUp()
         self.container = self.factory.makeSourcePackage()
-        self.container.distroseries.distribution.official_rosetta = True
         self.view = SourcePackageTranslationsExportView(
             self.container, LaunchpadTestRequest())
+
+
+class TestPOExportQueueStatusDescriptions(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestPOExportQueueStatusDescriptions, self).setUp()
+        self.container = self.factory.makeProductSeries()
+        self.view = ProductSeriesTranslationsExportView(
+            self.container, LaunchpadTestRequest())
+
+    def test_describeQueueSize(self):
+        self.assertEqual(
+            "The export queue is currently empty.",
+            self.view.describeQueueSize(0))
+
+        self.assertEqual(
+            "There is 1 file request on the export queue.",
+            self.view.describeQueueSize(1))
+
+        self.assertEqual(
+            "There are 2 file requests on the export queue.",
+            self.view.describeQueueSize(2))
+
+    def test_describeBacklog(self):
+        backlog = None
+        self.assertEqual("", self.view.describeBacklog(backlog).strip())
+
+        backlog = timedelta(hours=2)
+        self.assertEqual(
+            "The backlog is approximately 2 hours.",
+            self.view.describeBacklog(backlog).strip())
+
+    def test_export_queue_status(self):
+        self.view.initialize()
+        queue = self.view.request_set
+        wipe_queue(queue)
+
+        requester = self.factory.makePerson()
+
+        size = self.view.describeQueueSize(0)
+        backlog = self.view.describeBacklog(None)
+        status = "%s %s" % (size, backlog)
+        self.assertEqual(
+            status.strip(), self.view.export_queue_status.strip())
+
+        potemplate = self.factory.makePOTemplate()
+        queue.addRequest(requester, potemplates=[potemplate])
+        transaction.commit()
+
+        size = self.view.describeQueueSize(1)
+        backlog = self.view.describeBacklog(queue.estimateBacklog())
+        status = "%s %s" % (size, backlog)
+        self.assertEqual(
+            status.strip(), self.view.export_queue_status.strip())
 
 
 def test_suite():
@@ -163,4 +230,6 @@ def test_suite():
     loader = unittest.TestLoader()
     suite.addTest(loader.loadTestsFromTestCase(TestProductSeries))
     suite.addTest(loader.loadTestsFromTestCase(TestSourcePackage))
+    suite.addTest(loader.loadTestsFromTestCase(
+        TestPOExportQueueStatusDescriptions))
     return suite

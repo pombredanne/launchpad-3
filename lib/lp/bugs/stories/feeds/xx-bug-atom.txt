@@ -5,7 +5,7 @@ using BeautifulStoneSoup instead of BSS or the helper functions.
 
     >>> from BeautifulSoup import BeautifulStoneSoup as BSS
     >>> from BeautifulSoup import SoupStrainer
-    >>> from canonical.launchpad.ftests.feeds_helper import (
+    >>> from lp.services.feeds.tests.helper import (
     ...     parse_entries, parse_links, validate_feed)
 
 Please note that when displaying the results of the feeds in a reader
@@ -84,7 +84,7 @@ as the latest bugs feed for a product.
     ...              browser.headers['content-type'], browser.url)
     No Errors
     >>> BSS(browser.contents).title.contents
-    [u'Bugs in the Mozilla Project']
+    [u'Bugs in The Mozilla Project']
     >>> browser.url
     'http://feeds.launchpad.dev/mozilla/latest-bugs.atom'
 
@@ -186,7 +186,7 @@ type of content as the latest bugs feed for a product.
     ...              browser.headers['content-type'], browser.url)
     No Errors
     >>> BSS(browser.contents).title.contents
-    [u'Bugs in thunderbird in ubuntu']
+    [u'Bugs in thunderbird in Ubuntu']
     >>> browser.url
     'http://feeds.launchpad.dev/ubuntu/+source/thunderbird/latest-bugs.atom'
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
@@ -338,8 +338,8 @@ This feed gets the latest bugs for a person.
 This feed gets the latest bugs for a whole team.
 First, make a team responsible for some bugs.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> one_mem_browser = setupBrowser(
     ...    auth='Basic one-membership@test.com:test')
     >>> personset = getUtility(IPersonSet)
@@ -349,17 +349,17 @@ Subscribe simple-team to a number of bugs.
     >>> one_mem_browser.open('http://launchpad.dev/bugs/1')
     >>> one_mem_browser.getLink('Subscribe someone else').click()
     >>> one_mem_browser.getControl('Person').value = 'simple-team'
-    >>> one_mem_browser.getControl('Add').click()
+    >>> one_mem_browser.getControl('Subscribe user').click()
 
     >>> one_mem_browser.open('http://launchpad.dev/bugs/2')
     >>> one_mem_browser.getLink('Subscribe someone else').click()
     >>> one_mem_browser.getControl('Person').value = 'simple-team'
-    >>> one_mem_browser.getControl('Add').click()
+    >>> one_mem_browser.getControl('Subscribe user').click()
 
     >>> one_mem_browser.open('http://launchpad.dev/bugs/3')
     >>> one_mem_browser.getLink('Subscribe someone else').click()
     >>> one_mem_browser.getControl('Person').value = 'simple-team'
-    >>> one_mem_browser.getControl('Add').click()
+    >>> one_mem_browser.getControl('Subscribe user').click()
 
 
 Now we can do a query on the lastest bugs for simple team and expect
@@ -395,7 +395,6 @@ some results.
 This feed is the most useful of them all. Any bug search can be turned into
 a feed.
 
-    >>> import cgi
     >>> url = ("http://feeds.launchpad.dev/bugs/+bugs.atom?"
     ...        "field.searchtext=&search=Search+Bug+Reports&"
     ...        "field.scope=all&field.scope.target=")
@@ -404,7 +403,7 @@ The bug search feed is not enabled by default since it may represent a
 performance problem in production.
 
     >>> from zope.security.interfaces import Unauthorized
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.launchpad.is_bug_search_feed_active
     True
     >>> bug_search_feed_data = """
@@ -412,11 +411,10 @@ performance problem in production.
     ...     is_bug_search_feed_active: False
     ...     """
     >>> config.push('bug_search_feed_data', bug_search_feed_data)
-    >>> try:
-    ...     browser.open(url)
-    ... except Unauthorized, info:
-    ...     print Unauthorized, info
-    zope.security.interfaces.Unauthorized Bug search feed deactivated
+    >>> browser.open(url)
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Bug search feed deactivated
 
     # Restore the config.
     >>> config_data = config.pop('bug_search_feed_data')
@@ -433,7 +431,8 @@ to True.
     >>> print feed_id
     tag:launchpad.net,2008:/+bugs.atom?field.scope.target=&amp;field.scope=all&amp;field.searchtext=&amp;search=Search+Bug+Reports
 
-    >>> print cgi.escape(browser.url)
+    >>> from lp.services.webapp.escaping import html_escape
+    >>> print html_escape(browser.url)
     http://feeds.launchpad.dev/bugs/+bugs.atom?field.scope.target=&amp;field.scope=all&amp;field.searchtext=&amp;search=Search+Bug+Reports
 
     >>> self_links = parse_links(browser.contents, 'self')

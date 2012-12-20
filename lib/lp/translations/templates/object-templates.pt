@@ -2,21 +2,21 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
-  i18n:domain="launchpad"
-><!-- context/@@main_template/master
-      view/macro:page/onecolumn
- -->
-
+  metal:use-macro="view/macro:page/main_only"
+>
   <body>
-    <div metal:fill-slot="head_epilogue">
+    <tal:head_epilogue metal:fill-slot="head_epilogue">
+      <script type="text/javascript">
+        LPJS.use('lp.translations.sourcepackage_sharing_details', function(Y) {
+          Y.on('domready', function() {
+              Y.lp.translations.sourcepackage_sharing_details.prepare(
+                LP.cache);
+          });
+        });
+      </script>
       <style type="text/css">
-        .inactive_links a img{
-          visibility: hidden;
+        .inactive_links a{
+          background: none;
         }
         .inactive_links a{
           color: lightgray;
@@ -24,9 +24,11 @@
         .template_links a{
           padding-right: 1em;
         }
-        td.template_column, th.template_column,
         td.sourcepackage_column, th.sourcepackage_column {
-            width: 20em;
+            width: 10em;
+        }
+        td.template_column, th.template_column {
+            width: 14em;
         }
         td.actions_column, th.actions_column {
             width: 27em;
@@ -34,21 +36,21 @@
       </style>
       <style tal:condition="view/is_distroseries" type="text/css">
         #templates_table {
-            width: 72em;
+            width: 81em;
         }
       </style>
       <style tal:condition="not:view/is_distroseries" type="text/css">
         #templates_table {
-            width: 50em;
+            width: 79em;
         }
       </style>
       <script language="JavaScript" type="text/javascript">
-      YUI().use('node', function(Y) {
+      LPJS.use('node-base', 'event-delegate', function(Y) {
           Y.on('domready', function(e) {
-              Y.all('.template_links').addClass('inactive_links');
-              var template_rows = Y.all('.template_row');
-              template_rows.each(function(row) {
-                  var template_links = row.query('.template_links');
+              Y.all('#templates_table .template_links').addClass(
+                    'inactive_links');
+              Y.all('#templates_table .template_row').each(function(row) {
+                  var template_links = row.one('.template_links');
                   row.on('mouseover', function(e) {
                       template_links.removeClass('inactive_links');
                   });
@@ -59,61 +61,36 @@
           });
       });
       </script>
-    </div>
+    </tal:head_epilogue>
     <div metal:fill-slot="main">
-      <h1>
-        Translation templates for
-        <tal:title replace="context/title">
-          evolution in Ubuntu Feisty
-        </tal:title>
-      </h1>
+      <div class="translation-help-links">
+        <a href="https://help.launchpad.net/Translations"
+           id="link-to-translations-help"
+           >Help for translations
+        </a>
+        <div></div><!-- to clear-up all floats -->
+      </div>
 
-      <ul class="helplinks">
-        <li>
-          <a href="https://help.launchpad.net/Translations"
-             id="link-to-translations-help"
-             >Help for translations
-          </a>
-        </li>
-      </ul>
+      <div class="yui-b top-portlet">
+        <p>
+          This is a listing of all the translatable templates
+          in <a tal:replace="structure context/fmt:link">here</a>.
+        </p>
+      </div>
 
+      <div class="yui-b">
       <table class="sortable listing" id="templates_table">
         <thead>
-          <tr>
-            <th tal:condition="view/is_distroseries"
-                class="sourcepackage_column">Source package</th>
-            <th class="template_column">Template name</th>
-            <th class="actions_column">Actions</th>
+          <tr tal:content="structure view/renderTemplatesHeader">
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="template view/iter_templates" class="template_row">
-            <td tal:condition="view/is_distroseries"
-                tal:content="template/sourcepackagename/name"
-                class="sourcepackage_column">Source package
-            </td>
-            <td class="template_column"><a tal:attributes="href template/fmt:url"
-                   tal:content="template/name">Template name</a></td>
-            <td class="actions_column">
-            <div class="template_links">
-                <a tal:attributes="href string:${template/fmt:url}/+edit;
-                                   title string:Edit ${template/name}'s details">
-                   <img src="/@@/edit" />&nbsp;Edit</a>
-                <a tal:attributes="href string:${template/fmt:url}/+upload;
-                      title string:Upload translations to ${template/name}">
-                   <img src="/@@/add" />&nbsp;Upload</a>
-                <a tal:attributes="href string:${template/fmt:url}/+export;
-                      title string:Download translations from ${template/name}">
-                   <img src="/@@/download" />&nbsp;Download</a>
-                <a tal:condition="python:view.can_administer(template)"
-                   tal:attributes="href string:${template/fmt:url}/+admin;
-                                   title string:Administer ${template/name}">
-                   <img src="/@@/edit" />&nbsp;Administer</a>
-            </div>
-            </td>
-          </tr>
+          <tal:templates
+              repeat="data view/iter_data"
+              content="structure python:view.renderTemplateRow(*data)"/>
         </tbody>
       </table>
+      </div>
     </div>
   </body>
 </html>

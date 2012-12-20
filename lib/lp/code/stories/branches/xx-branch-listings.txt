@@ -58,7 +58,6 @@ and are really just branch metadata without the revisions behind them.
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
     lp://dev/~name12/gnome-terminal/klingon          Experimental  ...
-    lp://dev/~name12/landscape/feature-x             Development   ...
     lp://dev/~name12/+junk/junk.contrib              Development   ...
     lp://dev/~name12/+junk/junk.dev                  Experimental  ...
 
@@ -66,7 +65,7 @@ If the branch listing has few enough entries that batching isn't
 needed, then the table is sortable and no batching navigation links are shown.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink('subscribed').click()
+    >>> browser.getLink('Subscribed').click()
     >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
     >>> links is None
     True
@@ -137,7 +136,8 @@ Now all types of branches should be shown.
     lp://dev/~name12/gnome-terminal/pushed         Development     ...
     lp://dev/~name12/gnome-terminal/scanned        Development     ...
     lp://dev/~name12/gnome-terminal/klingon        Experimental    ...
-    lp://dev/~name12/landscape/feature-x           Development     ...
+    lp://dev/~name12/+junk/junk.contrib            Development     ...
+    lp://dev/~name12/+junk/junk.dev                Experimental    ...
 
 
 Selecting an individual lifecycle status from the select control
@@ -154,7 +154,7 @@ If anyone tries to hack the URL, and put in an invalid
 status value, it will default to current branches.
 
     >>> browser.open(
-    ...  'http://launchpad.dev/~name12/+branches?field.lifecycle=Fubar')
+    ...  'http://code.launchpad.dev/~name12/+branches?field.lifecycle=Fubar')
     >>> browser.getControl(name='field.lifecycle').displayValue
     ['Any active status']
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
@@ -186,6 +186,7 @@ first.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
+    lp://dev/~name12/firefox/main ...
     lp://dev/~launchpad/gnome-terminal/launchpad ...
     lp://dev/~name12/+junk/junk.dev ...
 
@@ -197,7 +198,7 @@ first.
     >>> filter_control.displayOptions
     ['by project name', 'by status', 'by branch name',
     'by owner name', 'most recently changed first',
-    'least recently changed first', 'newest first', 'oldest first']
+    'most neglected first', 'newest first', 'oldest first']
 
 
 
@@ -229,9 +230,8 @@ We display badges for associated bugs.
 If the bug is not visible to the user that is looking at the page, then the
 badge is not shown.
 
-    >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/4')
-    >>> browser.getLink('This report is public').click()
-    >>> browser.getControl('This bug report should be private').click()
+    >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/4/+secrecy')
+    >>> browser.getControl('Private', index=1).click()
     >>> browser.getControl('Change').click()
 
 Now the badge is still shown for Sample Person...
@@ -277,7 +277,7 @@ changed first.
     by status
     by branch name
     most recently changed first
-    least recently changed first
+    most neglected first
     newest first
     oldest first
 
@@ -300,7 +300,7 @@ options that can be selected.
     by branch name
     by owner name
     most recently changed first
-    least recently changed first
+    most neglected first
     newest first
     oldest first
 
@@ -359,14 +359,13 @@ development focus branch.
 
     >>> admin_browser.open('http://launchpad.dev/gnome-terminal/trunk')
     >>> admin_browser.getLink('Link to branch').click()
-    >>> admin_browser.getControl(name='field.branch').value = (
+    >>> admin_browser.getControl(name='field.branch_location').value = (
     ...     '~name12/gnome-terminal/main')
     >>> admin_browser.getControl('Update').click()
 
 Now when we look at the branches for gnome-terminal, the main branch
 now shows as the "focus of development".  This is indicated by
-both the series link in the first column with the branch unique name,
-but also with a star with the badges.
+both the series link in the first column with the branch unique name.
 
     >>> browser.open('http://code.launchpad.dev/gnome-terminal')
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
@@ -375,8 +374,6 @@ but also with a star with the badges.
     >>> cols = row.fetch('td')
     >>> print extract_text(cols[0])
     lp://dev/gnome-terminal     Series: trunk
-    >>> print cols[1].renderContents()
-    <img src="/@@/favourite-yes" title="focus of development" />
 
 If a branch is associated with more than one series, then the links
 are comma separated and in alphabetical order.

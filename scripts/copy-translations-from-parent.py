@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -15,11 +15,13 @@ Only current translations are copied.
 import _pythonpath
 
 import sys
+
 from zope.component import getUtility
-from canonical.config import config
+
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.translations.scripts.copy_distroseries_translations import (
-    copy_distroseries_translations)
+    copy_distroseries_translations,
+    )
 
 
 class TranslationsCopier(LaunchpadCronScript):
@@ -98,7 +100,7 @@ class TranslationsCopier(LaunchpadCronScript):
 if __name__ == '__main__':
 
     script = TranslationsCopier(
-        'copy-missing-translations', dbuser=config.poimport.dbuser)
+        'copy-missing-translations', dbuser='translations_distroseries_copy')
 
     script.lock_and_run()
 

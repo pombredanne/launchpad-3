@@ -8,7 +8,6 @@ __all__ = ['get_lock_id_for_branch_id', 'mirror']
 import datetime
 
 import pytz
-
 from twisted.internet import defer
 
 
@@ -26,7 +25,7 @@ def mirror(logger, manager):
     """Mirror all current branches that need to be mirrored."""
     try:
         manager.lock()
-    except LockError, exception:
+    except LockError as exception:
         logger.info('Could not acquire lock: %s', exception)
         return defer.succeed(0)
 

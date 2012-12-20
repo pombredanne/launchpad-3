@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -16,25 +16,58 @@ __all__ = [
     'BugNominationStatus',
     'NominationSeriesObsoleteError']
 
-from zope.schema import Int, Datetime, Choice, Set
-from zope.interface import Interface, Attribute
-from lazr.enum import DBEnumeratedType, DBItem
+import httplib
 
-from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
-from canonical.launchpad.interfaces.launchpad import IHasBug, IHasDateCreated
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.declarations import (
+    call_with,
+    error_status,
+    export_as_webservice_entry,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    Reference,
+    ReferenceChoice,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    Set,
+    )
+
+from lp import _
+from lp.app.validators.validation import can_be_nominated_for_series
+from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugtarget import IBugTarget
+from lp.bugs.interfaces.hasbug import IHasBug
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.role import IHasOwner
-from canonical.launchpad.interfaces.validation import (
-    can_be_nominated_for_serieses)
+from lp.services.fields import PublicPersonChoice
 
+
+@error_status(httplib.BAD_REQUEST)
 class NominationError(Exception):
     """The bug cannot be nominated for this release."""
 
 
+@error_status(httplib.BAD_REQUEST)
 class NominationSeriesObsoleteError(Exception):
     """A bug cannot be nominated for an obsolete series."""
 
 
+@error_status(httplib.BAD_REQUEST)
 class BugNominationStatusError(Exception):
     """A error occurred while trying to set a bug nomination status."""
 
@@ -67,43 +100,49 @@ class BugNominationStatus(DBEnumeratedType):
         """)
 
 
-class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
+class IBugNomination(IHasBug, IHasOwner):
     """A nomination for a bug to be fixed in a specific series.
 
     A nomination can apply to an IDistroSeries or an IProductSeries.
     """
+    export_as_webservice_entry(publish_web_link=False)
+
     # We want to customize the titles and descriptions of some of the
     # attributes of our parent interfaces, so we redefine those specific
     # attributes below.
     id = Int(title=_("Bug Nomination #"))
-    bug = Int(title=_("Bug #"))
-    date_created = Datetime(
+    bug = exported(Reference(schema=IBug, readonly=True))
+    date_created = exported(Datetime(
         title=_("Date Submitted"),
         description=_("The date on which this nomination was submitted."),
-        required=True, readonly=True)
-    date_decided = Datetime(
+        required=True, readonly=True))
+    date_decided = exported(Datetime(
         title=_("Date Decided"),
         description=_(
             "The date on which this nomination was approved or declined."),
-        required=False, readonly=True)
-    distroseries = Choice(
-        title=_("Series"), required=False,
-        vocabulary="DistroSeries")
-    productseries = Choice(
-        title=_("Series"), required=False,
-        vocabulary="ProductSeries")
-    owner = PublicPersonChoice(
+        required=False, readonly=True))
+    distroseries = exported(ReferenceChoice(
+        title=_("Series"), required=False, readonly=True,
+        vocabulary="DistroSeries", schema=IDistroSeries))
+    productseries = exported(ReferenceChoice(
+        title=_("Series"), required=False, readonly=True,
+        vocabulary="ProductSeries", schema=IProductSeries))
+    owner = exported(PublicPersonChoice(
         title=_('Submitter'), required=True, readonly=True,
-        vocabulary='ValidPersonOrTeam')
-    decider = PublicPersonChoice(
+        vocabulary='ValidPersonOrTeam'))
+    ownerID = Attribute('The db id of the owner.')
+    decider = exported(PublicPersonChoice(
         title=_('Decided By'), required=False, readonly=True,
-        vocabulary='ValidPersonOrTeam')
-    target = Attribute(
-        "The IProductSeries or IDistroSeries of this nomination.")
-    status = Choice(
+        vocabulary='ValidPersonOrTeam'))
+    target = exported(Reference(
+        schema=IBugTarget,
+        title=_("The IProductSeries or IDistroSeries of this nomination.")))
+    status = exported(Choice(
         title=_("Status"), vocabulary=BugNominationStatus,
-        default=BugNominationStatus.PROPOSED)
+        default=BugNominationStatus.PROPOSED, readonly=True))
 
+    @call_with(approver=REQUEST_USER)
+    @export_write_operation()
     def approve(approver):
         """Approve this bug for fixing in a series.
 
@@ -117,6 +156,8 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
         /already/ approved, this method is a noop.
         """
 
+    @call_with(decliner=REQUEST_USER)
+    @export_write_operation()
     def decline(decliner):
         """Decline this bug for fixing in a series.
 
@@ -139,6 +180,8 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
     def isApproved():
         """Is this nomination in Approved state?"""
 
+    @call_with(person=REQUEST_USER)
+    @export_read_operation()
     def canApprove(person):
         """Is this person allowed to approve the nomination?"""
 
@@ -157,9 +200,7 @@ class IBugNominationSet(Interface):
 class IBugNominationForm(Interface):
     """The browser form for nominating bugs for series."""
 
-    nominatable_serieses = Set(
+    nominatable_series = Set(
         title=_("Series that can be nominated"), required=True,
-        value_type=Choice(vocabulary="BugNominatableSerieses"),
-        constraint=can_be_nominated_for_serieses)
-
-
+        value_type=Choice(vocabulary="BugNominatableSeries"),
+        constraint=can_be_nominated_for_series)

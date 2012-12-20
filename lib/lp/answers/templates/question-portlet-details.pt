@@ -4,78 +4,93 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<div class="portlet" id="portlet-details">
+<div id="portlet-details" xml:lang="en" lang="en" dir="ltr">
+  <div class="two-column-list">
+    <dl id="question-lang">
+      <dt>Language:</dt>
+      <dd>
+        <tal:language content="context/language/englishname" />
+        <a tal:replace="structure context/menu:answers/edit/fmt:icon" />
+      </dd>
+    </dl>
 
-  <h2><span tal:replace="context/target/displayname">Ubuntu</span> question
-      #<span tal:replace="context/id">234</span></h2>
+    <dl id="question-status">
+      <dt>Status:</dt>
+      <dd>
+        <span class="questionstatusOPEN"
+          tal:attributes="class string:questionstatus${context/status/name}"
+          tal:content="context/status/title">Open</span>
+        <a tal:replace="structure context/menu:answers/changestatus/fmt:icon" />
+      </dd>
+    </dl>
 
-  <div class="portletBody portletContent">
+    <dl>
+      <dt>For:</dt>
+      <dd>
+        <a tal:condition="context/product"
+          tal:replace="structure context/product/fmt:link">UFOs</a>
+        <a tal:condition="context/distribution"
+          tal:replace="structure context/distribution/fmt:link">Illumanati</a>
+        <a tal:condition="context/sourcepackagename"
+          tal:attributes="href
+          string:${context/distribution/fmt:url}/+source/${context/sourcepackagename/name}"
+          tal:content="context/sourcepackagename/name">fnord</a>
+        <a tal:replace="structure context/menu:answers/edit/fmt:icon" />
+      </dd>
+    </dl>
 
-    <b>Question from:</b><br />
-    <a tal:replace="structure context/owner/fmt:link">Foo Bar</a><br />
+    <dl>
+      <dt>Assignee:</dt>
+      <dd>
+        <tal:block condition="context/assignee">
+          <a tal:replace="structure context/assignee/fmt:link">Foo Bar</a>
+        </tal:block>
+        <tal:block condition="not: context/assignee">
+          No assignee
+        </tal:block>
+        <a tal:replace="structure context/menu:answers/edit/fmt:icon" />
+      </dd>
+    </dl>
 
-    <b>Language:</b>
-    <span tal:replace="context/language/englishname">English</span><br />
+    <dl tal:condition="context/answerer">
+      <dt>Solved by:</dt>
+      <dd>
+        <a tal:replace="structure context/answerer/fmt:link">Foo Bar</a>
+      </dd>
+    </dl>
 
-    <b>Status:</b>
-    <span tal:replace="context/status/title">Open</span><br />
+    <dl tal:condition="context/answerer">
+      <dt>Solved:</dt>
+      <dd>
+        <span
+          tal:attributes="title context/date_solved/fmt:datetime"
+          tal:content="context/date_solved/fmt:approximatedate" />
+      </dd>
+    </dl>
 
-    <b>For:</b>
-    <span tal:condition="context/product"
-          tal:replace="context/product/name">Firefox</span>
-    <span tal:condition="context/distribution"
-          tal:replace="context/distribution/name">ubuntu</span>
-    <span tal:condition="context/sourcepackagename"
-          tal:replace="context/sourcepackagename/name">moz-ff</span>
-    <br />
+    <dl style="clear: both;">
+      <dt>Last query:</dt>
+      <dd>
+        <span
+          tal:attributes="title context/datelastquery/fmt:datetime"
+          tal:content="context/datelastquery/fmt:approximatedate" />
+      </dd>
+    </dl>
 
-    <tal:block condition="context/datedue">
-      <b>Due:</b>
-      <span
-        tal:attributes="title context/datedue/fmt:datetime"
-        tal:content="context/datedue/fmt:approximatedate" /><br />
-    </tal:block>
-
-    <b>Created:</b>
-    <span
-      tal:attributes="title context/datecreated/fmt:datetime"
-      tal:content="context/datecreated/fmt:approximatedate" /><br />
-
-    <b>Assignee:</b><br />
-    <tal:block condition="context/assignee">
-      <a tal:replace="structure context/assignee/fmt:link">Foo Bar</a>
-    </tal:block>
-    <tal:block condition="not: context/assignee">
-      <i>No assignee</i>
-    </tal:block>
-    <br />
-
-    <tal:block condition="context/answerer">
-      <b>Solved by:</b><br />
-      <a tal:replace="structure context/answerer/fmt:link">Foo Bar</a>
-      <br />
-    </tal:block>
-
-    <b>Last query:</b>
-    <span
-      tal:attributes="title context/datelastquery/fmt:datetime"
-      tal:content="context/datelastquery/fmt:approximatedate" /><br />
-
-    <tal:block condition="context/datelastresponse">
-      <b>Last reply:</b>
-      <span
-        tal:attributes="title context/datelastresponse/fmt:datetime"
-        tal:content="context/datelastresponse/fmt:approximatedate" /><br />
-    </tal:block>
-
-    <tal:block condition="context/date_solved">
-      <b>Solved:</b>
-      <span
-        tal:attributes="title context/date_solved/fmt:datetime"
-        tal:content="context/date_solved/fmt:approximatedate" /><br />
-    </tal:block>
-
+    <dl>
+      <dt>Last reply:</dt>
+      <dd>
+        <span
+          tal:attributes="title context/datelastresponse/fmt:datetime"
+          tal:content="context/datelastresponse/fmt:approximatedate" />
+      </dd>
+    </dl>
   </div>
 
+  <dl id="question-whiteboard"
+    tal:condition="context/whiteboard">
+    <dt>Whiteboard:</dt>
+    <dd tal:content="context/whiteboard">contents</dd>
+  </dl>
 </div>
 </tal:root>

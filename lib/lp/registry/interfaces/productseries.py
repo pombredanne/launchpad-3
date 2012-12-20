@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -10,47 +10,86 @@ __metaclass__ = type
 __all__ = [
     'IProductSeries',
     'IProductSeriesEditRestricted',
+    'IProductSeriesLimitedView',
     'IProductSeriesPublic',
     'IProductSeriesSet',
+    'IProductSeriesView',
     'NoSuchProductSeries',
+    'ITimelineProductSeries',
     ]
 
-from zope.schema import Bool, Choice, Datetime, Int, TextLine
-from zope.interface import Interface, Attribute
-
-from canonical.launchpad.fields import (
-    ContentNameField, NoneableDescription, ParticipatingPersonChoice,
-    PublicPersonChoice, Title)
-from canonical.launchpad.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
-from lp.code.interfaces.branch import IBranch
-from lp.bugs.interfaces.bugtarget import IBugTarget
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
-from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasDrivers)
-from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.milestone import (
-    IHasMilestones, IMilestone)
-from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.productrelease import IProductRelease
-from lp.blueprints.interfaces.specificationtarget import (
-    ISpecificationGoal)
-from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
-from canonical.launchpad.interfaces.validation import validate_url
-from canonical.launchpad.validators import LaunchpadValidationError
-
-from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
-from canonical.launchpad.webapp.url import urlparse
-from canonical.launchpad import _
-
-from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
-
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
-    export_as_webservice_entry, export_factory_operation, export_operation_as,
-    export_read_operation, exported, operation_parameters,
-    rename_parameters_as)
+    export_as_webservice_entry,
+    export_factory_operation,
+    export_operation_as,
+    export_read_operation,
+    exported,
+    operation_parameters,
+    rename_parameters_as,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    ReferenceChoice,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Field,
+    Int,
+    TextLine,
+    )
+
+from lp import _
+from lp.app.errors import NameLookupFailed
+from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.name import name_validator
+from lp.app.validators.url import validate_url
+from lp.blueprints.interfaces.specificationtarget import ISpecificationGoal
+from lp.bugs.interfaces.bugtarget import (
+    IBugTarget,
+    IHasExpirableBugs,
+    IHasOfficialBugTags,
+    )
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
+from lp.code.interfaces.branch import IBranch
+from lp.registry.interfaces.milestone import (
+    IHasMilestones,
+    IMilestone,
+    )
+from lp.registry.interfaces.productrelease import IProductRelease
+from lp.registry.interfaces.role import (
+    IHasAppointedDriver,
+    IHasOwner,
+    )
+from lp.registry.interfaces.series import (
+    ISeriesMixin,
+    SeriesStatus,
+    )
+from lp.services.fields import (
+    ContentNameField,
+    PersonChoice,
+    Title,
+    )
+from lp.services.webapp.url import urlparse
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
+    )
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode,
+    )
 
 
 class ProductSeriesNameField(ContentNameField):
@@ -92,24 +131,15 @@ class IProductSeriesEditRestricted(Interface):
         """Create a new milestone for this ProjectSeries."""
 
 
-class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
-                           IBugTarget, ISpecificationGoal, IHasMilestones):
+class IProductSeriesPublic(Interface):
     """Public IProductSeries properties."""
-    # XXX Mark Shuttleworth 2004-10-14: Would like to get rid of id in
-    # interfaces, as soon as SQLobject allows using the object directly
-    # instead of using object.id.
     id = Int(title=_('ID'))
 
-    product = exported(
-        Choice(title=_('Project'), required=True, vocabulary='Product'),
-        exported_as='project')
+    def userCanView(user):
+        """True if the given user has access to this product."""
 
-    status = exported(
-        Choice(
-            title=_('Status'), required=True, vocabulary=DistroSeriesStatus,
-            default=DistroSeriesStatus.DEVELOPMENT))
 
-    parent = Attribute('The structural parent of this series - the product')
+class IProductSeriesLimitedView(Interface):
 
     name = exported(
         ProductSeriesNameField(
@@ -121,6 +151,24 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
                 "or 'trunk'."),
             constraint=name_validator))
 
+    product = exported(
+        ReferenceChoice(title=_('Project'), required=True,
+            vocabulary='Product', schema=Interface),  # really IProduct
+        exported_as='project')
+    productID = Attribute('The product ID.')
+
+
+class IProductSeriesView(
+    ISeriesMixin, IHasAppointedDriver, IHasOwner,
+    ISpecificationGoal, IHasMilestones, IHasOfficialBugTags, IHasExpirableBugs,
+    IHasTranslationImports, IHasTranslationTemplates, IServiceUsage):
+    status = exported(
+        Choice(
+            title=_('Status'), required=True, vocabulary=SeriesStatus,
+            default=SeriesStatus.DEVELOPMENT))
+
+    parent = Attribute('The structural parent of this series - the product')
+
     datecreated = exported(
         Datetime(title=_('Date Registered'),
                  required=True,
@@ -128,12 +176,12 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         exported_as='date_created')
 
     owner = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_('Owner'), required=True, vocabulary='ValidOwner',
             description=_('Project owner, either a valid Person or Team')))
 
     driver = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_("Release manager"),
             description=_(
                 "The person or team responsible for decisions about features "
@@ -152,19 +200,10 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     displayname = exported(
         TextLine(
             title=_('Display Name'),
-            description=_('Display name, in this case we have removed the '
-                          'underlying database field, and this attribute '
-                          'just returns the name.')),
+            description=_(
+                "Display name.  In this case we have removed the underlying "
+                "database field, and this attribute just returns the name.")),
         exported_as='display_name')
-
-    summary = exported(
-        NoneableDescription(title=_("Summary"),
-             description=_('A single paragraph that explains the goals of '
-                           'of this series and the intended users. '
-                           'For example: "The 2.0 series of Apache '
-                           'represents the current stable series, '
-                           'and is recommended for all new deployments".'),
-             required=True))
 
     releases = exported(
         CollectionField(
@@ -185,42 +224,20 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     sourcepackages = Attribute(_("List of distribution packages for this "
         "product series"))
 
-    milestones = exported(
+    milestones = exported(doNotSnapshot(
         CollectionField(
             title=_("The visible milestones associated with this "
                     "project series, ordered by date expected."),
             readonly=True,
-            value_type=Reference(schema=IMilestone)),
+            value_type=Reference(schema=IMilestone))),
         exported_as='active_milestones')
 
-    all_milestones = exported(
+    all_milestones = exported(doNotSnapshot(
         CollectionField(
             title=_("All milestones associated with this project series, "
                     "ordered by date expected."),
             readonly=True,
-            value_type=Reference(schema=IMilestone)))
-
-    drivers = exported(
-        CollectionField(
-            title=_(
-                'A list of the people or teams who are drivers for this '
-                'series. This list is made up of any drivers or owners '
-                'from this project series, the project and if it exists, '
-                'the relevant project group.'),
-            readonly=True,
-            value_type=Reference(schema=IPerson)))
-
-    bug_supervisor = CollectionField(
-        title=_('Currently just a reference to the project bug '
-                'supervisor.'),
-        readonly=True,
-        value_type=Reference(schema=IPerson))
-
-    security_contact = PublicPersonChoice(
-        title=_('Security Contact'),
-        description=_('Currently just a reference to the project '
-                      'security contact.'),
-        required=False, vocabulary='ValidPersonOrTeam')
+            value_type=Reference(schema=IMilestone))))
 
     branch = exported(
         ReferenceChoice(
@@ -231,12 +248,12 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
             description=_("The Bazaar branch for this series.  Leave blank "
                           "if this series is not maintained in Bazaar.")))
 
-    translations_autoimport_mode = Choice(
+    translations_autoimport_mode = exported(Choice(
         title=_('Import settings'),
         vocabulary=TranslationsBranchImportMode,
         required=True,
         description=_("Specify which files will be imported from the "
-                      "source code branch."))
+                      "source code branch.")), as_of="devel")
 
     potemplate_count = Int(
         title=_("The total number of POTemplates in this series."),
@@ -251,17 +268,18 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         schema=IBranch,
         required=False,
         description=_(
-            "A Bazaar branch to commit translation snapshots to. "
-            "Leave blank to disable."))
-
-    translations_branch = ReferenceChoice(
-        title=_("Translations export branch"),
-        vocabulary='HostedBranchRestrictedOnOwner',
-        schema=IBranch,
-        required=False,
-        description=_(
             "A Bazaar branch to commit translation snapshots to.  "
             "Leave blank to disable."))
+
+    def getCachedReleases():
+        """Gets a cached copy of this series' releases.
+
+        Returns None if there is no release."""
+
+    def getLatestRelease():
+        """Gets the most recent release in the series.
+
+        Returns None if there is no release."""
 
     def getRelease(version):
         """Get the release in this series that has the specified version.
@@ -273,6 +291,10 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         distroseries. This will use a Packaging record if one exists, but
         it will also work through the ancestry of the distroseries to try
         to find a Packaging entry that may be relevant."""
+
+    def getUbuntuTranslationFocusPackage():
+        """Return the SourcePackage that packages this project in Ubuntu's
+        translation focus or current series or any series, in that order."""
 
     def setPackaging(distroseries, sourcepackagename, owner):
         """Create or update a Packaging record for this product series,
@@ -290,12 +312,15 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         """Return the POTemplate with this name for the series."""
 
     # where are the tarballs released from this branch placed?
-    releasefileglob = TextLine(title=_("Release URL pattern"),
+    releasefileglob = exported(
+        TextLine(title=_("Release URL pattern"),
         required=False, constraint=validate_release_glob,
         description=_('A URL pattern that matches releases that are part '
                       'of this series.  Launchpad automatically scans this '
                       'site to import new releases.  Example: '
-                      'http://ftp.gnu.org/gnu/emacs/emacs-21.*.tar.gz'))
+                      'http://ftp.gnu.org/gnu/emacs/emacs-21.*.tar.gz')),
+        exported_as='release_finder_url_pattern')
+
     releaseverstyle = Attribute("The version numbering style for this "
         "series of releases.")
 
@@ -308,14 +333,43 @@ class IProductSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
     @export_read_operation()
     @export_operation_as('get_timeline')
     def getTimeline(include_inactive):
-        """Return basic timeline data useful for creating a diagram."""
+        """Return basic timeline data useful for creating a diagram.
+
+        The number of milestones returned is limited.
+        """
 
 
 class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic,
-                     IStructuralSubscriptionTarget):
+                     IProductSeriesView, IProductSeriesLimitedView,
+                     IStructuralSubscriptionTarget, IBugTarget):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     export_as_webservice_entry('project_series')
 
+
+class ITimelineProductSeries(Interface):
+    """Minimal product series info for the timeline."""
+
+    # XXX: EdwinGrubbs 2010-11-18 bug=677671
+    # lazr.restful can't batch a DecoratedResultSet returning basic
+    # python types such as dicts, so this interface is necessary.
+    export_as_webservice_entry('timeline_project_series')
+
+    name = IProductSeries['name']
+
+    status = IProductSeries['status']
+
+    product = IProductSeries['product']
+
+    is_development_focus = exported(
+        Bool(title=_("Is series the development focus of the project"),
+             required=True))
+
+    uri = exported(
+        TextLine(title=_("Series URI"), required=False,
+            description=_('foo')))
+
+    landmarks = exported(
+        Field(title=_("List of milestones and releases")))
 
 
 class IProductSeriesSet(Interface):
@@ -333,8 +387,19 @@ class IProductSeriesSet(Interface):
         Return the default value if there is no such series.
         """
 
-    def getSeriesForBranches(branches):
-        """Return the ProductSeries associated with a branch in branches."""
+    def findByTranslationsImportBranch(
+            branch, force_translations_upload=False):
+        """Find all series importing translations from the branch.
+
+        Returns all product series that have the given branch set as their
+        branch and that have translation imports enabled on it.
+        :param branch: The branch to filter for.
+        XXX: henninge 2010-03-16 bug=521095: The following parameter should
+        go away once force_translations_upload becomes a product series
+        instead of a boolean.
+        :param force_translations_upload: Actually ignore if translations are
+        enabled for this series.
+        """
 
 
 class NoSuchProductSeries(NameLookupFailed):

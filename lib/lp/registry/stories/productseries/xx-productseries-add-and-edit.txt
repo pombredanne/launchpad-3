@@ -43,13 +43,11 @@ Now we are redirected to the Overview page of the product series we just added
     >>> browser.url
     'http://launchpad.dev/firefox/stable'
 
-    >>> print extract_text(
-    ...     first_tag_by_class(browser.contents, 'documentDescription'))
+    >>> print extract_text(find_tag_by_id(browser.contents, 'description'))
     Product series add testing
 
-    >>> content = find_main_content(browser.contents)
-    >>> print content.find('ul').find('a')
-    <a class="sprite branch" href="http://code.launchpad.dev/~mark/firefox/release-0.9.2">lp://dev/firefox/stable</a>
+    >>> browser.getLink('lp://dev/~mark/firefox/release-0.9.2')
+    <Link ... url='http://code.launchpad.dev/~mark/firefox/release-0.9.2'>
 
 
 Editing a series
@@ -98,17 +96,9 @@ of firefox:
 
 The new values are then shown in the series' page.
 
-    >>> print extract_text(find_tag_by_id(browser.contents, 'series-details'))
-    Project: Mozilla Firefox...
+    >>> content = find_tag_by_id(browser.contents, 'series-details')
+    >>> print extract_text(find_tag_by_id(content, 'series-name'))
     Series: unstable
-    Status: Experimental
-    Project drivers: Sample Person
-    Release manager: None Appoint release manager
-
-    >>> content = find_main_content(browser.contents)
-    >>> print content.find('ul').find('a')
-    <a class="sprite branch" href="http://code.launchpad.dev/~name12/firefox/main">lp://dev/firefox/unstable</a>
-
 
 And if we try to add another series with the same name to same product, we
 should get a nice error message.
@@ -116,7 +106,7 @@ should get a nice error message.
     >>> browser.open('http://launchpad.dev/firefox/+addseries')
 
     >>> browser.getControl('Name').value = 'unstable'
-    >>> browser.getControl('Summary').value = 'Another series with the same name'
+    >>> browser.getControl('Summary').value = 'The same name'
     >>> browser.getControl('Register Series').click()
 
     >>> for message in find_tags_by_class(browser.contents, 'message'):
@@ -136,4 +126,4 @@ we can create structural bug subscriptions.
     >>> print browser.url
     http://launchpad.dev/firefox/unstable/+subscribe
     >>> print browser.title
-    Bug subscriptions for Mozilla Firefox unstable series
+    Subscribe : Series unstable : Mozilla Firefox

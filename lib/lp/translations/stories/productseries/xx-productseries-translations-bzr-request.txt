@@ -12,7 +12,7 @@ import" that leads to the page to request such imports.
     ...                   'Basic test@canonical.com:test')
     >>> browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk/')
-    >>> browser.getLink('Request Bazaar import').click()
+    >>> browser.getLink('Request an import from bazaar').click()
     >>> print browser.url
     http://translations.l...d.dev/evolution/trunk/+request-bzr-import
 
@@ -55,17 +55,17 @@ The request is made by clicking on a button labeled
     ...     browser.contents, 'field.actions.request_import')
     >>> print request_button
     <input type="submit"...value="Request one-time import"...
-    >>> browser.getControl('Request one-time import').click()
+    >>> browser.getControl("Request one-time import").click()
     >>> print browser.url
-    http://translations.l...d.dev/evolution/trunk/+request-bzr-import
+    http://translations.launchpad.dev/evolution/trunk
     >>> print "\n".join(get_feedback_messages(browser.contents))
     The import has been requested.
 
 == The request page without a branch ==
 The official Bazaar branch gets removed from the product series.
 
-    >>> browser.open('http://launchpad.dev/evolution/trunk/+linkbranch')
-    >>> browser.getControl(name='field.branch').value = ''
+    >>> browser.open('http://launchpad.dev/evolution/trunk/+setbranch')
+    >>> browser.getControl(name='field.branch_location').value = ''
     >>> browser.getControl('Update').click()
 
 Since the product series does not have a branch set now, requesting an
@@ -81,7 +81,7 @@ set the branch.
     Please set it first.
     >>> browser.getLink('Please set it first.').click()
     >>> print browser.url
-    http://launchpad.dev/evolution/trunk/+linkbranch
+    http://launchpad.dev/evolution/trunk/+setbranch
 
 The request button is missing completely from the page.
 

@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -10,21 +10,24 @@ import _pythonpath
 
 from zope.component.interfaces import ComponentLookupError
 
-from canonical.config import config
+from lp.services.config import config
+from lp.services.mail.incoming import handleMail
+from lp.services.mail.mailbox import IMailBox
 from lp.services.scripts.base import (
-    LaunchpadCronScript, LaunchpadScriptFailure)
-from canonical.launchpad.mail.incoming import handleMail
-from canonical.launchpad.interfaces import IMailBox
+    LaunchpadCronScript,
+    LaunchpadScriptFailure,
+    )
 
 
 class ProcessMail(LaunchpadCronScript):
     usage = """%prog [options]
 
     """ + __doc__
+
     def main(self):
         try:
             handleMail(self.txn)
-        except ComponentLookupError, lookup_error:
+        except ComponentLookupError as lookup_error:
             if lookup_error.args[0] != IMailBox:
                 raise
             raise LaunchpadScriptFailure(

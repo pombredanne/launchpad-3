@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -8,14 +8,16 @@
 __metaclass__ = type
 
 import _pythonpath
+
 from optparse import OptionParser
 
-from canonical.database.sqlbase import connect
-from canonical.launchpad.scripts import db_options
 from fti import quote_identifier
+from lp.services.database.sqlbase import connect
+from lp.services.scripts import db_options
+
 
 def main(options):
-    con = connect(options.dbuser)
+    con = connect()
     cur = con.cursor()
     cur.execute("""
         SELECT relname FROM pg_class,pg_namespace

@@ -12,14 +12,18 @@ __all__ = [
     'IIrcIDSet',
     ]
 
-from zope.schema import Int, TextLine
-from zope.interface import Interface
-
 from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry,
+    exported,
+    )
 from lazr.restful.fields import Reference
+from zope.interface import Interface
+from zope.schema import (
+    Int,
+    TextLine,
+    )
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.role import IHasOwner
 
 
@@ -27,7 +31,7 @@ class IIrcID(IHasOwner):
     """A person's nickname on an IRC network."""
     export_as_webservice_entry('irc_id')
     id = Int(title=_("Database ID"), required=True, readonly=True)
-    # schema=Interface will be overriden in person.py because of circular
+    # schema=Interface will be overridden in person.py because of circular
     # dependencies.
     person = exported(
         Reference(

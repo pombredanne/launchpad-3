@@ -3,28 +3,15 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
 <body>
 
-<metal:portlets fill-slot="portlets">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:portlets>
-
 <div metal:fill-slot="main"
      tal:define="user_can_edit_memberships context/required:launchpad.Edit;
                  active_member_count context/active_member_count">
-
-  <h1>Members of
-    &#8220;<span tal:replace="context/displayname" />&#8221;
-  </h1>
-
-  <p>Active, pending and former members of this team.</p>
 
   <ul>
     <li tal:condition="active_member_count"
@@ -34,7 +21,7 @@
 
       <p>
         There are <span tal:replace="active_member_count">15</span>
-        direct members of the 
+        direct members of the
         "<span tal:replace="context/displayname">Ubuntu Members</span>" team,
         and <span tal:replace="context/all_member_count">23</span> people are
         members in total, directly and indirectly through other team
@@ -98,16 +85,26 @@
         <tal:navigation
           content="structure view/active_memberships/@@+navigation-links-lower" />
       </div>
+      <div style="float: right; margin-top: 1em;"
+           tal:define="link view/menu:overview/add_member"
+           tal:condition="link/enabled">
+        <a tal:replace="structure link/fmt:link" />
+      </div>
       <br />
     </li>
 
     <li tal:condition="not: active_member_count">
       <h2>
-        &#8220;<span tal:replace="context/displayname" />&#8221; has no 
+        &#8220;<span tal:replace="context/displayname" />&#8221; has no
         members
       </h2>
 
       <p>This team doesn't have any members yet.</p>
+
+      <div tal:define="link view/menu:overview/add_member"
+           tal:condition="link/enabled">
+        <a tal:replace="structure link/fmt:link" />
+      </div>
     </li>
     <br />
 
@@ -201,69 +198,71 @@
           </tbody>
         </table>
 
-        <ul class="edit" tal:condition="user_can_edit_memberships">
-          <li>
-            <a href="+editproposedmembers"
-            >Approve or decline members</a>
-          </li>
-        </ul>
+        <div style="float:right">
+          <a tal:define="overview_menu context/menu:overview"
+             tal:replace="structure overview_menu/proposed_members/fmt:link"
+             />
+        </div>
+
       </tal:proposed>
     </li>
     <br />
 
     <li tal:condition="view/inactive_memberships/batch/total"
         tal:define="inactive_batch nocall:view/inactive_memberships/currentBatch">
-      <a name="former"></a>
-      <h2>Former members</h2>
+      <div tal:condition="user_can_edit_memberships">
+        <a name="former"></a>
+        <h2>Former members</h2>
 
-      <p>
-        These are the members whose subscriptions have expired, or were
-        deactivated by themselves or by a team administrator.
-      </p>
+        <p>
+          These are the members whose subscriptions have expired, or were
+          deactivated by themselves or by a team administrator.
+        </p>
 
-      <div class="lesser" id="inactive-top-navigation">
-        <tal:navigation
-          content="structure view/inactive_memberships/@@+navigation-links-upper" />
-      </div>
-      <table class="listing sortable" id="inactivemembers">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Joined in</th>
-            <th>Status</th>
-            <th>&nbsp;</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr tal:repeat="membership inactive_batch">
-            <tal:block define="member membership/person">
-            <td>
-              <a tal:attributes="href member/fmt:url"
-                 tal:content="member/displayname" />
-            </td>
-            <td
-              tal:content="membership/datejoined/fmt:date"
-            >2005-04-01</td>
+        <div class="lesser" id="inactive-top-navigation">
+          <tal:navigation
+            content="structure view/inactive_memberships/@@+navigation-links-upper" />
+        </div>
+        <table class="listing sortable" id="inactivemembers">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Joined in</th>
+              <th>Status</th>
+              <th>&nbsp;</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tal:repeat="membership inactive_batch">
+              <tal:block define="member membership/person">
+              <td>
+                <a tal:attributes="href member/fmt:url"
+                  tal:content="member/displayname" />
+              </td>
+              <td
+                tal:content="membership/datejoined/fmt:date"
+              >2005-04-01</td>
 
-            <td tal:condition="membership/isExpired">
-                Expired on
-                <span tal:replace="membership/dateexpires/fmt:date" />
-            </td>
-            <td
-              tal:condition="not: membership/isExpired"
-              tal:content="membership/status/title" />
-            <td tal:condition="user_can_edit_memberships">
-              <a tal:attributes="href membership/fmt:url"
-                ><img src="/@@/edit"
-                      title="Change membership duration or status" /></a>
-            </td>
-            </tal:block>
-          </tr>
-        </tbody>
-      </table>
-      <div class="lesser">
-        <tal:navigation
-          content="structure view/inactive_memberships/@@+navigation-links-lower" />
+              <td tal:condition="membership/isExpired">
+                  Expired on
+                  <span tal:replace="membership/dateexpires/fmt:date" />
+              </td>
+              <td
+                tal:condition="not: membership/isExpired"
+                tal:content="membership/status/title" />
+              <td tal:condition="user_can_edit_memberships">
+                <a tal:attributes="href membership/fmt:url"
+                  ><img src="/@@/edit"
+                        title="Change membership duration or status" /></a>
+              </td>
+              </tal:block>
+            </tr>
+          </tbody>
+        </table>
+        <div class="lesser">
+          <tal:navigation
+            content="structure view/inactive_memberships/@@+navigation-links-lower" />
+        </div>
       </div>
     </li>
   </ul>

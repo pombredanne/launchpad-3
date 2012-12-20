@@ -1,4 +1,5 @@
-= Team Membership/Participation =
+Team Membership/Participation
+=============================
 
 When a person joins a team, we store the relationship in the TeamMembership
 table. In this table we store the membership status, the join date and the
@@ -12,33 +13,40 @@ First of all, create some teams:
 
     >>> import pytz
     >>> from datetime import datetime, timedelta
-    >>> from canonical.launchpad.interfaces import (
-    ...     TeamSubscriptionPolicy, TeamMembershipStatus,
-    ...     TeamMembershipRenewalPolicy)
+    >>> from lp.registry.interfaces.person import (
+    ...     TeamMembershipRenewalPolicy,
+    ...     TeamMembershipPolicy,
+    ...     )
+    >>> from lp.registry.interfaces.teammembership import TeamMembershipStatus
 
 XXX: This doctest needs a lot of cleanups!
 -- Guilherme Salgado, 2006-12-15
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
-    >>> foobar = personset.getByName('name16')
-    >>> reviewer = foobar
+    >>> jblack = personset.getByName('jblack')
+    >>> nopriv = personset.getByName('no-priv')
+    >>> jdub = personset.getByName('jdub')
+    >>> reviewer = nopriv
     >>> t1 = personset.newTeam(
-    ...     foobar, 't1', 't1',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    ...     jblack, 't1', 't1',
+    ...     membership_policy=TeamMembershipPolicy.OPEN)
     >>> t2 = personset.newTeam(
-    ...     foobar, 't2', 't2',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    ...     nopriv, 't2', 't2',
+    ...     membership_policy=TeamMembershipPolicy.OPEN)
     >>> t3 = personset.newTeam(
-    ...     foobar, 't3', 't3',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.MODERATED)
+    ...     jdub, 't3', 't3',
+    ...     membership_policy=TeamMembershipPolicy.MODERATED)
     >>> t4 = personset.newTeam(
-    ...     foobar, 't4', 't4',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    ...     nopriv, 't4', 't4',
+    ...     membership_policy=TeamMembershipPolicy.OPEN)
     >>> t5 = personset.newTeam(
-    ...     foobar, 't5', 't5',
-    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    ...     nopriv, 't5', 't5',
+    ...     membership_policy=TeamMembershipPolicy.OPEN)
+    >>> t6 = personset.newTeam(
+    ...     jdub, 't6', 't6',
+    ...     membership_policy=TeamMembershipPolicy.MODERATED)
 
     # Make sure the teams have predictable (and different) creation dates as
     # some of our tests depend on that.
@@ -48,17 +56,18 @@ XXX: This doctest needs a lot of cleanups!
     >>> removeSecurityProxy(t3).datecreated = oldest + timedelta(hours=2)
     >>> removeSecurityProxy(t4).datecreated = oldest + timedelta(hours=3)
     >>> removeSecurityProxy(t5).datecreated = oldest + timedelta(hours=4)
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 
-== Adding new members ==
+Adding new members
+------------------
 
 One way of adding new members to a team is by having the user himself join the
 team he wants.
 
     >>> salgado = personset.getByName('salgado')
-    >>> login_person(salgado)
+    >>> ignored = login_person(salgado)
     >>> salgado.join(t3)
     >>> salgado.join(t4)
 
@@ -66,24 +75,24 @@ Note that since t3 is a MODERATED team, Salgado is not really added as a
 member of that team --somebody has to approve his membership first:
 
     >>> [m.displayname for m in t4.allmembers]
-    [u'Foo Bar', u'Guilherme Salgado']
+    [u'Guilherme Salgado', u'No Privileges Person']
 
     >>> [m.displayname for m in t3.allmembers]
-    [u'Foo Bar']
-    >>> login_person(t3.teamowner)
+    [u'Jeff Waugh']
+    >>> ignored = login_person(t3.teamowner)
     >>> t3.setMembershipData(salgado, TeamMembershipStatus.APPROVED, reviewer)
     >>> flush_database_updates()
     >>> [m.displayname for m in t3.allmembers]
-    [u'Foo Bar', u'Guilherme Salgado']
+    [u'Guilherme Salgado', u'Jeff Waugh']
 
-The join() method is not allowed for teams whose subscription policy is
+The join() method is not allowed for teams whose membership policy is
 RESTRICTED. And it'll be a no-op in case the user has already joined the
 given team.
 
     >>> launchpad = personset.getByName('launchpad')
-    >>> launchpad.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED
+    >>> launchpad.membership_policy == TeamMembershipPolicy.RESTRICTED
     True
-    >>> login_person(salgado)
+    >>> ignored = login_person(salgado)
     >>> salgado.join(launchpad)
     Traceback (most recent call last):
     ...
@@ -103,25 +112,27 @@ approved.  Note, though, that in the case of teams we need to pass a
 requester to the join() method.
 
     >>> ubuntu_team = personset.getByName('ubuntu-team')
-    >>> login_person(ubuntu_team.teamowner)
+    >>> ignored = login_person(ubuntu_team.teamowner)
     >>> ubuntu_team.join(t3, ubuntu_team.teamowner)
-    >>> t3.subscriptionpolicy
-    <DBItem TeamSubscriptionPolicy.MODERATED...
+    >>> t3.membership_policy
+    <DBItem TeamMembershipPolicy.MODERATED...
     >>> ubuntu_team in t3.proposedmembers
     True
 
-    >>> t2.subscriptionpolicy
-    <DBItem TeamSubscriptionPolicy.OPEN...
+    >>> t2.membership_policy
+    <DBItem TeamMembershipPolicy.OPEN...
     >>> ubuntu_team.join(t2, ubuntu_team.teamowner)
     >>> ubuntu_team in t2.activemembers
     True
 
     # Clean things up to not upset the other tests.
-    >>> login_person(t2.teamowner)
+    >>> ignored = login_person(t2.teamowner)
     >>> t2.setMembershipData(
     ...     ubuntu_team, TeamMembershipStatus.DEACTIVATED, t2.teamowner)
     >>> ubuntu_team in t2.activemembers
     False
+    >>> [m.displayname for m in t2.allmembers]
+    [u'No Privileges Person']
     >>> login(ANONYMOUS)
 
 Another API for adding members is ITeam.addMember(), which ensures the given
@@ -132,23 +143,23 @@ Only the team owner or a launchpad admin can call the addMember method.
 Other users must use the join method if they are going to add themselves
 to a team.
 
-    >>> from zope.security.interfaces import Unauthorized
     >>> mark = personset.getByName('mark')
-    >>> try:
-    ...     t3.addMember(
-    ...         salgado, reviewer=mark, status=TeamMembershipStatus.ADMIN)
-    ... except Unauthorized, info:
-    ...     print Unauthorized, info
-    ... else:
-    ...     print "No exception raised"
-    zope.security.interfaces.Unauthorized (..., 'addMember', 'launchpad.Edit')
+    >>> t3.addMember(salgado, reviewer=mark,
+    ...     status=TeamMembershipStatus.ADMIN)
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
 
     # Log in as the team owner.
-    >>> login_person(t3.teamowner)
+    >>> ignored = login_person(t3.teamowner)
+
+If the member was added (i.e. he wasn't already a member of the team),
+addMember returns a tuple with True plus the new membership status.
 
     >>> t3.addMember(
     ...     salgado, reviewer=mark, status=TeamMembershipStatus.ADMIN)
-    >>> from canonical.launchpad.interfaces import ITeamMembershipSet
+    (True, <DBItem TeamMembershipStatus.ADMIN...)
+    >>> from lp.registry.interfaces.teammembership import ITeamMembershipSet
     >>> membershipset = getUtility(ITeamMembershipSet)
     >>> flush_database_updates()
     >>> membership = membershipset.getByPersonAndTeam(salgado, t3)
@@ -159,44 +170,68 @@ to a team.
     >>> salgado in t3.activemembers
     True
 
+addMember returns (True, PROPOSED) also when the member is added as a
+proposed member.
+
     >>> marilize = personset.getByName('marilize')
     >>> t3.addMember(
     ...     marilize, reviewer=mark, status=TeamMembershipStatus.PROPOSED)
+    (True, <DBItem TeamMembershipStatus.PROPOSED...)
     >>> flush_database_updates()
     >>> marilize in t3.activemembers
     False
 
+If addMember is called with a person that is already a member, it
+returns a tuple with False and the current status of the membership.
+
+    >>> t3.addMember(
+    ...     salgado, reviewer=mark, status=TeamMembershipStatus.ADMIN)
+    (False, <DBItem TeamMembershipStatus.ADMIN...)
+    >>> t3.addMember(
+    ...     marilize, reviewer=mark, status=TeamMembershipStatus.PROPOSED)
+    (False, <DBItem TeamMembershipStatus.PROPOSED...)
+
 As expected, the membership object implements ITeamMembership.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import ITeamMembership
+    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.registry.interfaces.teammembership import ITeamMembership
     >>> verifyObject(ITeamMembership, membership)
     True
 
 Note that, by default, the ITeam.addMember() API works slightly different
 when the added member is a team. In that case the team will actually be
-invited to be a member and one of the team's admins will have to accpet the
+invited to be a member and one of the team's admins will have to accept the
 invitation before the team is made a member.
 
-    >>> t1.addMember(t2, reviewer)
+    >>> ignored = login_person(t1.teamowner)
+
+    # If the reviewer were also an admin of the team being added,
+    # the status would go to APPROVED instead of INVITED.
+    >>> t2.teamowner != t1.teamowner
+    True
+    >>> t1.addMember(t2, reviewer=t1.teamowner)
+    (True, <DBItem TeamMembershipStatus.INVITED...)
     >>> membership = membershipset.getByPersonAndTeam(t2, t1)
     >>> membership.status == TeamMembershipStatus.INVITED
     True
     >>> [m.displayname for m in t1.allmembers]
-    [u'Foo Bar']
+    [u'James Blackwell']
 
 Once one of the t2 admins approve the membership, t2 is shown as a member
-of t1.
+of t1 and the owner of t2 is an indirect member.
 
-    >>> login_person(t2.teamowner)
+    >>> ignored = login_person(t2.teamowner)
     >>> t2.acceptInvitationToBeMemberOf(t1, comment='something')
+    >>> [m.displayname for m in t1.activemembers]
+    [u'James Blackwell', u't2']
     >>> [m.displayname for m in t1.allmembers]
-    [u'Foo Bar', u't2']
+    [u'James Blackwell', u'No Privileges Person', u't2']
 
 A team admin can also decline an invitation made to his team.
 
     >>> t2.addMember(t3, reviewer=mark)
-    >>> login_person(t3.teamowner)
+    (True, <DBItem TeamMembershipStatus.INVITED...)
+    >>> ignored = login_person(t3.teamowner)
     >>> t3.declineInvitationToBeMemberOf(t2, comment='something')
     >>> membership = membershipset.getByPersonAndTeam(t3, t2)
     >>> membership.status == TeamMembershipStatus.INVITATION_DECLINED
@@ -207,20 +242,40 @@ add teams as members of other teams. We can do that by passing an extra
 force_team_add=True to addMember(). We'll use that to add t3 as a member of
 t2, thus making all t3 members be considered members of t2 as well.
 
-    >>> login_person(t3.teamowner)
-    >>> t2.addMember(t3, reviewer=mark, force_team_add=True)
+    >>> ignored = login_person(t2.teamowner)
+
+    # If the reviewer is also an admin of the team being added,
+    # force_team_add is unnecessary, and we can't prove that that
+    # argument works.
+    >>> t3.teamowner != t2.teamowner
+    True
+    >>> t2.addMember(t3, reviewer=t2.teamowner, force_team_add=True)
+    (True, <DBItem TeamMembershipStatus.APPROVED...)
     >>> [m.displayname for m in t2.allmembers]
-    [u'Foo Bar', u'Guilherme Salgado', u't3']
+    [u'Guilherme Salgado', u'Jeff Waugh', u'No Privileges Person', u't3']
 
 And members of t1 as well, since t2 is a member of t1.
 
     >>> [m.displayname for m in t1.allmembers]
-    [u'Foo Bar', u'Guilherme Salgado', u't2', u't3']
+    [u'Guilherme Salgado', u'James Blackwell', u'Jeff Waugh',
+    u'No Privileges Person', u't2', u't3']
+
+
+Passing in force_team_add=True is not necessary if the reviewer is the
+admin of the team being added.
+
+    >>> ignored = login_person(t3.teamowner)
+    >>> t6.addMember(t3, reviewer=t3.teamowner)
+    (True, <DBItem TeamMembershipStatus.APPROVED...)
+    >>> [m.displayname for m in t6.allmembers]
+    [u'Guilherme Salgado', u'Jeff Waugh', u't3']
 
 Can we add t2 as a member of t3? No, we prevent this kind of loop, and users
 can't do this because our vocabularies won't allow members that would cause
 loops.
 
+    >>> foobar = personset.getByEmail('foo.bar@canonical.com')
+    >>> ignored = login_person(foobar)
     >>> t3.addMember(t2, reviewer)
     Traceback (most recent call last):
     ...
@@ -230,16 +285,21 @@ loops.
 Adding t2 as a member of t5 will add all t2 members as t5 members too.
 
     >>> t5.addMember(t2, reviewer, force_team_add=True)
+    (True, <DBItem TeamMembershipStatus.APPROVED...)
     >>> [m.displayname for m in t5.allmembers]
-    [u'Foo Bar', u'Guilherme Salgado', u't2', u't3']
+    [u'Guilherme Salgado', u'Jeff Waugh', u'No Privileges Person',
+    u't2', u't3']
 
 Adding t5 and t1 as members of t4 will add all t5 and t1 members as t4
 members too.
 
     >>> t4.addMember(t5, reviewer, force_team_add=True)
+    (True, <DBItem TeamMembershipStatus.APPROVED...)
     >>> t4.addMember(t1, reviewer, force_team_add=True)
+    (True, <DBItem TeamMembershipStatus.APPROVED...)
     >>> [m.displayname for m in t4.allmembers]
-    [u'Foo Bar', u'Guilherme Salgado', u't1', u't2', u't3', u't5']
+    [u'Guilherme Salgado', u'James Blackwell', u'Jeff Waugh',
+    u'No Privileges Person', u't1', u't2', u't3', u't5']
 
     >>> flush_database_updates()
 
@@ -276,7 +336,7 @@ t2 can't use its leave() method to leave t5 because it's a team and teams
 take no actions. One of t5 administrators have to go and remove t2 from t5
 if t2 shouldn't be a member of t5 anymore.
 
-    >>> login_person(t5.teamowner)
+    >>> ignored = login_person(t5.teamowner)
     >>> t5.setMembershipData(t2, TeamMembershipStatus.DEACTIVATED, reviewer)
 
 Removing t2 from t5 will have implications in all teams that have t5 as a
@@ -286,23 +346,25 @@ t5 had only one member and two other indirect members. Now that t2 is not its
 member anymore, it doesn't have any members apart from its owner.
 
     >>> [m.displayname for m in t5.allmembers]
-    [u'Foo Bar']
+    [u'No Privileges Person']
 
 Removing t2 from t5 won't remove it from t4, because t2 is also a member of
 t1, which is a member of t4.
 
     >>> [m.displayname for m in t4.allmembers]
-    [u'Foo Bar', u'Guilherme Salgado', u't1', u't2', u't3', u't5']
+    [u'Guilherme Salgado', u'James Blackwell', u'Jeff Waugh',
+    u'No Privileges Person', u't1', u't2', u't3', u't5']
 
 Nothing changes in t1, because t5 wasn't one of its members.
 
     >>> [m.displayname for m in t1.allmembers]
-    [u'Foo Bar', u'Guilherme Salgado', u't2', u't3']
+    [u'Guilherme Salgado', u'James Blackwell', u'Jeff Waugh',
+    u'No Privileges Person', u't2', u't3']
 
 If 'Guilherme Salgado' decides to leave t3, he'll also be removed from t1
 and t2, but not from t4, because he's a direct member of t4.
 
-    >>> login_person(salgado)
+    >>> ignored = login_person(salgado)
     >>> salgado.leave(t3)
     >>> salgado in t1.allmembers
     False
@@ -331,34 +393,51 @@ Let's see...
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> t3.addMember(cprov, reviewer)
+    (True, <DBItem TeamMembershipStatus.APPROVED...)
     >>> [m.displayname for m in t3.allmembers]
-    [u'Celso Providelo', u'Foo Bar']
+    [...u'Celso Providelo'...
 
     >>> [m.displayname for m in t2.allmembers]
-    [u'Celso Providelo', u'Foo Bar', u't3']
+    [...u'Celso Providelo'...
 
     >>> [m.displayname for m in t1.allmembers]
-    [u'Celso Providelo', u'Foo Bar', u't2', u't3']
+    [...u'Celso Providelo'...
 
     >>> [m.displayname for m in t4.allmembers]
-    [u'Celso Providelo', u'Foo Bar', u'Guilherme Salgado', u't1', u't2',
-     u't3', u't5']
+    [...u'Celso Providelo'...
 
 
-It's important to note that even if Foo Bar leaves the team he's the owner,
-he'll retains his rights over the team because he's the team's owner. This
-ensures we'll never have teams which can't be managed.
+It's important to note that even if the owner leaves the team, which
+removes his membership, he will still be the team's owner and retain his
+rights over it. This ensures we'll never have teams which can't be
+managed. This does not imply that the owner will be a member of the team.
 
-    >>> login_person(foobar)
-    >>> foobar.leave(t5)
+    >>> ignored = login_person(t5.teamowner)
+    >>> t5.teamowner.leave(t5)
     >>> flush_database_updates()
     >>> [m.displayname for m in t5.allmembers]
     []
-    >>> foobar.inTeam(t5)
+    >>> t5.teamowner.inTeam(t5)
+    False
+
+The team owner can make themselves a member again even if the team is
+restricted:
+
+    >>> t5.teamowner.join(t5, requester=t5.teamowner)
+    >>> flush_database_updates()
+    >>> t5.teamowner in t5.allmembers
+    True
+    >>> t5.teamowner.inTeam(t5)
     True
 
+And escalate their privileges back to administrator:
 
-== Changing membership data ==
+    >>> membership = membershipset.getByPersonAndTeam(t5.teamowner, t5)
+    >>> membership.setStatus(TeamMembershipStatus.ADMIN, t5.teamowner)
+    True
+
+Changing membership data
+------------------------
 
 The only bits of a TeamMembership that can be changed are its status, expiry
 date, reviewer[comment] and the date the user joined. From these ones, the
@@ -370,8 +449,8 @@ an extra check to ensure that doesn't happen.
 
     # Foo Bar is a launchpad admin, but even so he can't change a membership's
     # status/expiry-date by hand.
-    >>> login('foo.bar@canonical.com')
-    >>> membership = foobar.myactivememberships[0]
+    >>> ignored = login_person(foobar)
+    >>> membership = foobar.team_memberships[0]
     >>> membership.status = None
     Traceback (most recent call last):
     ...
@@ -395,14 +474,21 @@ good work, so we'll approve his membership.
     None
 
 When we approve his membership, the datejoined will contain the date that it
-was approved.
+was approved. It returns True to indicate that the status was changed.
 
     >>> membership.setStatus(TeamMembershipStatus.APPROVED, foobar)
+    True
     >>> print membership.status.title
     Approved
     >>> utc_now = datetime.now(pytz.timezone('UTC'))
     >>> membership.datejoined.date() == utc_now.date()
     True
+
+If setStatus is called again with the same status, it returns False,
+to indicate that the status didn't change.
+
+    >>> membership.setStatus(TeamMembershipStatus.APPROVED, foobar)
+    False
 
 Other status updates won't change datejoined, regardless of the status.
 That's because datejoined stores the date in which the membership was first
@@ -419,6 +505,7 @@ made active.
 
     >>> foobar_on_buildd.setStatus(
     ...     TeamMembershipStatus.DEACTIVATED, foobar)
+    True
     >>> print foobar_on_buildd.status.title
     Deactivated
     >>> foobar_on_buildd.datejoined <= utc_now
@@ -426,6 +513,7 @@ made active.
 
     >>> foobar_on_buildd.setStatus(
     ...     TeamMembershipStatus.APPROVED, foobar)
+    True
     >>> print foobar_on_buildd.status.title
     Approved
     >>> foobar_on_buildd.datejoined <= utc_now
@@ -451,7 +539,8 @@ the new expiry date is not in the past.
     AssertionError: ...
     >>> foobar_on_buildd.setExpirationDate(tomorrow, foobar)
 
-Team owners can also renew any memberships of the team they own.
+Team owners and admins can also renew any memberships of the team they
+own or administer.
 
     >>> landscape = getUtility(IPersonSet).getByName(
     ...     'landscape-developers')
@@ -465,29 +554,19 @@ Team owners can also renew any memberships of the team they own.
     True
     >>> sampleperson_on_landscape.setExpirationDate(tomorrow, sampleperson)
 
-In the case of a mere team admin, though, he can only change the expiry
-date of other's memberships, not his own.
-
     >>> cprov_on_buildd = membershipset.getByPersonAndTeam(
     ...     cprov, buildd_admins)
     >>> buildd_admins.teamowner.name
     u'name16'
     >>> print cprov_on_buildd.status.title
     Administrator
-
     >>> foobar_on_buildd.canChangeExpirationDate(cprov)
     True
     >>> foobar_on_buildd.setExpirationDate(tomorrow, cprov)
 
-    >>> cprov_on_buildd.canChangeExpirationDate(cprov)
-    False
-    >>> cprov_on_buildd.setExpirationDate(tomorrow, cprov)
-    Traceback (most recent call last):
-    ...
-    AssertionError: ...
 
-
-== Flagging expired memberships ==
+Flagging expired memberships
+----------------------------
 
 The expired memberships are flagged by a cronscript that runs daily. This
 script simply flags all active memberships which reached their expiry date as
@@ -557,43 +636,9 @@ expire on that date or before.
      (u'ubuntu-team', u'guadamen'), (u'name16', u'launchpad-buildd-admins'),
      (u'name12', u'landscape-developers')]
 
-Now we commit the changes and run the cronscript.
-XXX: flush_database_updates() shouldn't be needed. This seems to be
-Bug 3989 -- StuarBishop 20060713
 
-    >>> flush_database_updates()
-    >>> transaction.commit()
-
-    >>> import subprocess
-    >>> process = subprocess.Popen(
-    ...     'cronscripts/flag-expired-memberships.py -q', shell=True,
-    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    ...     stderr=subprocess.PIPE)
-    >>> (out, err) = process.communicate()
-    >>> out, err
-    ('', '')
-    >>> process.returncode
-    0
-    >>> transaction.abort()
-
-Here we can see that the membership that was active is now flagged as expired
-while the one that was inactive hasn't changed.
-
-    >>> foobar_on_admins = membershipset.getByPersonAndTeam(
-    ...     personset.getByName('name16'), personset.getByName('admins'))
-    >>> foobar_on_admins.status.title
-    'Expired'
-    >>> foobar_on_admins.last_changed_by.name
-    u'janitor'
-
-    >>> sp_on_ubuntu_translators = membershipset.getByPersonAndTeam(
-    ...     personset.getByName('name12'),
-    ...     personset.getByName('ubuntu-translators'))
-    >>> sp_on_ubuntu_translators.status.title
-    'Deactivated'
-
-
-== Renewing team memberships ==
+Renewing team memberships
+-------------------------
 
 A team membership can be renewed before it has been expired by either
 changing its dateexpires (which can be done only by admins of the
@@ -615,7 +660,7 @@ still active.
 
 The member himself can't change the expiration date of his membership.
 
-    >>> login_person(karl)
+    >>> ignored = login_person(karl)
     >>> karl_on_mirroradmins.setExpirationDate(tomorrow, karl)
     Traceback (most recent call last):
     ...
@@ -623,7 +668,7 @@ The member himself can't change the expiration date of his membership.
 
 Only a team admin can.
 
-    >>> login_person(mirror_admins.teamowner)
+    >>> ignored = login_person(mirror_admins.teamowner)
     >>> karl_on_mirroradmins.setExpirationDate(
     ...     tomorrow, mirror_admins.teamowner)
     >>> karl_on_mirroradmins.dateexpires == tomorrow
@@ -649,11 +694,9 @@ active and set to expire tomorrow).
     >>> karl_on_mirroradmins.canBeRenewedByMember()
     True
 
-    >>> login_person(karl)
+    >>> ignored = login_person(karl)
     >>> karl.renewTeamMembership(mirror_admins)
 
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(karl_on_mirroradmins)
 
 Now the membership can't be renewed by the member as it's not going to
 expire soon.
@@ -666,12 +709,13 @@ expire soon.
     Approved
 
 
-== Querying team memberships ==
+Querying team memberships
+-------------------------
 
-You can check a person's direct memberships by using myactivememberships:
+You can check a person's direct memberships by using team_memberships:
 
     >>> [(membership.team.name, membership.status.title)
-    ...  for membership in salgado.myactivememberships]
+    ...  for membership in salgado.team_memberships]
     [(u'hwdb-team', 'Approved'), (u'landscape-developers', 'Approved'),
      (u'admins', 'Administrator'), (u't4', 'Approved')]
 
@@ -680,7 +724,7 @@ member_memberships:
 
     >>> [(membership.person.name, membership.status.title)
     ...  for membership in t3.member_memberships]
-    [(u'cprov', 'Approved'), (u'name16', 'Administrator')]
+    [(u'cprov', 'Approved'), (u'jdub', 'Administrator')]
 
 A team has a number of other methods that return the people which are members
 of it, all based on Person.getMembersByStatus:
@@ -698,7 +742,7 @@ except shorter)
 
 We can also change the sort order of the results of getMembersByStatus.
 
-    >>> login_person(cprov)
+    >>> ignored = login_person(cprov)
     >>> cprov.leave(t3)
     >>> flush_database_updates()
 
@@ -713,21 +757,25 @@ We can also change the sort order of the results of getMembersByStatus.
     [u'Celso Providelo (cprov)', u'Guilherme Salgado (salgado)']
 
 
-== Finding team administrators ==
+Finding team administrators
+---------------------------
 
 Another convenient method is getDirectAdministrators(), which returns the
 admin members plus the owner in case he is not one of the admin members.
 
     >>> [admin.unique_displayname for admin in t3.adminmembers]
-    [u'Foo Bar (name16)']
+    [u'Jeff Waugh (jdub)']
     >>> list(t3.getDirectAdministrators()) == list(t3.adminmembers)
     True
 
-    >>> shipit_admins = personset.getByName('shipit-admins')
-    >>> shipit_admins.adminmembers.count() == 0
+    >>> from lp.testing import person_logged_in
+    >>> owner = factory.makePerson()
+    >>> adminless_team = factory.makeTeam(owner=owner)
+    >>> with person_logged_in(owner):
+    ...     owner.leave(adminless_team)
+    >>> adminless_team.adminmembers.count() == 0
     True
-    >>> owner = shipit_admins.teamowner
-    >>> list(shipit_admins.getDirectAdministrators()) == [owner]
+    >>> list(adminless_team.getDirectAdministrators()) == [owner]
     True
 
 Note that the team administrators can contain teams, so if you want to
@@ -741,7 +789,7 @@ is a direct administrator of the guadamen team):
     >>> [person.name for person in guadamen_team.getDirectAdministrators()]
     [u'name16', u'ubuntu-team']
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
     >>> ubuntu_team = personset.getByName('ubuntu-team')
     >>> cprov.inTeam(ubuntu_team)
     True
@@ -756,11 +804,23 @@ is a direct administrator of the guadamen team):
 There is also the getAdministratedTeams() method that returns all the
 teams for which the person/team has admin rights.
 
+    >>> cprov_team = factory.makeTeam(owner=cprov, name="cprov-team")
+    >>> [team.name for team in cprov.getAdministratedTeams()]
+    [u'canonical-partner-dev', u'cprov-team', u'guadamen',
+     u'launchpad-buildd-admins']
+
+If a team is merged it will not show up in the set of administered teams.
+
+    >>> login('foo.bar@canonical.com')
+    >>> membershipset.deactivateActiveMemberships(
+    ...     cprov_team, "Merging", foobar)
+    >>> personset.merge(cprov_team, guadamen_team, cprov_team.teamowner)
     >>> [team.name for team in cprov.getAdministratedTeams()]
     [u'canonical-partner-dev', u'guadamen', u'launchpad-buildd-admins']
 
 
-== Querying a person for team participation ==
+Querying a person for team participation
+----------------------------------------
 
 Team membership is direct; team participation is indirect, people being
 participants of teams by virtue of being members of other teams which are in
@@ -771,6 +831,7 @@ teams_participated_in attribute works recursively, listing all teams the
 person is an active member of as well as teams those teams are an active
 member of.
 
+    >>> login('celso.providelo@canonical.com')
     >>> print '\n'.join(sorted(
     ...     team.name for team in salgado.teams_participated_in))
     admins
@@ -782,8 +843,9 @@ member of.
 Adding admins as a member of t1 will make Salgado a member of t1 as well.
 
     >>> admins = getUtility(IPersonSet).getByName('admins')
-    >>> login_person(t1.teamowner)
+    >>> ignored = login_person(t1.teamowner)
     >>> t1.addMember(admins, reviewer=t1.teamowner, force_team_add=True)
+    (True, <DBItem TeamMembershipStatus.APPROVED...)
     >>> flush_database_updates()
     >>> print '\n'.join(sorted(
     ...     team.name for team in salgado.teams_participated_in))
@@ -794,10 +856,12 @@ Adding admins as a member of t1 will make Salgado a member of t1 as well.
     t1
     t4
 
-On the other hand, making t2 a member of admins won't change anything
+On the other hand, making t3 a member of admins won't change anything
 for Salgado.
 
-    >>> admins.addMember(t2, reviewer=admins.teamowner, force_team_add=True)
+    >>> ignored = login_person(foobar)
+    >>> admins.addMember(t3, reviewer=admins.teamowner, force_team_add=True)
+    (True, <DBItem TeamMembershipStatus.APPROVED...)
     >>> flush_database_updates()
     >>> print '\n'.join(sorted(
     ...     team.name for team in salgado.teams_participated_in))
@@ -807,93 +871,3 @@ for Salgado.
     mailing-list-experts
     t1
     t4
-
-
-== Membership caches ==
-
-Person instances have membership caches (_inTeam_cache) to avoid the
-need to reissue identical membership queries repeatedly. (This test uses
-Person directly to allow us access to an unproxied object, since
-_inTeam_cache is private, and TeamMembershipSet directly to allow us to
-call TeamMembership.setStatus, which is private).
-
-    >>> from lp.registry.model.person import Person
-    >>> from lp.registry.model.teammembership import TeamMembershipSet
-    >>> no_priv = Person.selectOneBy(name='no-priv')
-    >>> no_priv.inTeam(admins)
-    False
-    >>> no_priv._inTeam_cache
-    {25: False}
-
-This cache is cleared when memberships are created:
-
-    >>> membership = TeamMembershipSet().new(
-    ...     no_priv, admins, TeamMembershipStatus.APPROVED, admins.teamowner)
-    >>> no_priv._inTeam_cache
-    {}
-    >>> no_priv.inTeam(admins)
-    True
-    >>> no_priv._inTeam_cache
-    {25: True}
-
-Or changed:
-
-    >>> membership.setStatus(TeamMembershipStatus.DEACTIVATED, mark)
-    >>> no_priv._inTeam_cache
-    {}
-    >>> no_priv.inTeam(admins)
-    False
-
-
-== Email to invalid users ==
-
-There are cases where teams have deactivated or suspended users as members.
-This is a data error that needs fixing, but should not interfere with
-any notification processes. An OOPS is reported in such cases and the
-method ignores the user.
-
-Bad user joins a team, and he is approved. An admin later suspends him.
-
-    >>> from canonical.launchpad.interfaces.account import AccountStatus
-    >>> from canonical.launchpad.interfaces.emailaddress import (
-    ...     EmailAddressStatus)
-
-    >>> bad_user =  factory.makePerson(
-    ...     email='bad-user@canonical.com',
-    ...     name='bad-user',
-    ...     password='invalid')
-
-    >>> login('bad-user@canonical.com')
-    >>> bad_user.join(t3)
-
-    >>> login_person(t3.teamowner)
-    >>> t3.setMembershipData(
-    ...     bad_user, TeamMembershipStatus.APPROVED, reviewer)
-
-    >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import IMasterObject
-    >>> IMasterObject(bad_user.account).status = AccountStatus.SUSPENDED
-    >>> IMasterObject(bad_user.preferredemail).status = EmailAddressStatus.OLD
-    >>> removeSecurityProxy(bad_user)._preferredemail_cached = None
-    >>> transaction.commit()
-
-    >>> [m.displayname for m in t3.allmembers]
-    [u'Bad-user', u'Foo Bar']
-    >>> bad_user.is_valid_person
-    False
-    >>> print bad_user.preferredemail
-    None
-
-The teams's notifications do not fail when they process bad user.
-
-    >>> bad_membership = membershipset.getByPersonAndTeam(bad_user, t3)
-    >>> bad_membership.setExpirationDate(utc_now + timedelta(days=9), foobar)
-    >>> bad_membership.sendExpirationWarningEmail()
-
-    >>> t3.renewal_policy = TeamMembershipRenewalPolicy.AUTOMATIC
-    >>> t3.defaultrenewalperiod = 1
-    >>> removeSecurityProxy(bad_membership).dateexpires = utc_now
-    >>> bad_membership.sendAutoRenewalNotification()
-
-    >>> bad_membership.setStatus(TeamMembershipStatus.EXPIRED, bad_user)
-

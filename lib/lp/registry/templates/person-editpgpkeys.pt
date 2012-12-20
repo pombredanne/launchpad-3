@@ -9,16 +9,11 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
   <body>
   <div metal:fill-slot="main">
-    <h1>Change your OpenPGP keys</h1>
-
     <p tal:condition="view/error_message"
        tal:content="structure view/error_message/escapedtext" class="error message"
       >Error message.</p>
@@ -41,34 +36,18 @@
     </div>
 
     <div tal:condition="view/key_retrieval_failed" class="error message">
-      Launchpad could not import your OpenPGP key.
+      <strong>Launchpad could not import your OpenPGP key</strong>
       <ul>
-        <li>Did you enter your complete fingerprint correctly? A
-        fingerprint is a long sequence of numbers and letters.
-        You should use the output produced by the command:
-        <blockquote>
-        <kbd>gpg --fingerprint</kbd>
-        </blockquote>
-        </li>
+        <li>Did you enter your complete fingerprint correctly?
+        (<a href="/+help-registry/import-pgp-key.html"
+        target="help">Help with fingerprints</a>)</li>
 
-        <li>Have you published your key to a public key
-        server? You can do that by by entering in a terminal:
-        <blockquote>
-        <kbd>gpg --keyserver keyserver.ubuntu.com --send-keys</kbd>
-        </blockquote>
-        </li>
-
-        <li>Has your key been automatically mirrored to the Ubuntu key
-        server? Keys sometimes take up to an hour to be synchronized
-        between servers. You can check if it has <a tal:attributes="href
-        view/keyserver_url">by querying the Ubuntu key server directly</a>.
-        If it hasn't, you can publish directly to our server by entering in a
-        terminal:
-        <blockquote>
-        <kbd>gpg --keyserver keyserver.ubuntu.com --send-keys</kbd>
-        </blockquote>
-        </li>
+        <li>Is your key in the Ubuntu keyserver yet?
+            You may have to wait between ten minutes (if you pushed
+            directly to the Ubuntu key server) and one hour (if you pushed
+            your key to another server). (<a href="/+help-registry/openpgp-keys.html" target="help">Help with publishing keys</a>)</li>
       </ul>
+
     </div>
 
     <tal:has_key condition="view/key">
@@ -110,15 +89,15 @@
       <a href="/codeofconduct">code of conduct</a>.</p>
 
     <p>In both cases, you need to use your OpenPGP key. Here you can tell Launchpad which keys you want to use.
-       (<a href="/+help/openpgp-keys.html" target="help">Learn more about OpenPGP keys</a>)</p>
+       (<a href="/+help-registry/openpgp-keys.html" target="help">Learn more about OpenPGP keys</a>)</p>
 
-    <form tal:condition="context/gpgkeys/count"
+    <form tal:condition="context/gpg_keys/count"
           name="gpg_actions" action="" method="POST">
       <input type="hidden" name="action" value="deactivate_gpg" />
 
       <h2>Your active keys</h2>
 
-      <div tal:repeat="key context/gpgkeys">
+      <div tal:repeat="key context/gpg_keys">
         <label>
           <input type="checkbox" name="DEACTIVATE_GPGKEY"
                  tal:attributes="value key/id"/>
@@ -128,19 +107,23 @@
       </div>
       <div><input type="submit" value="Deactivate Key" /></div>
 
-      <p><strong>Note:</strong> If you deactivate a key here, Launchpad will automatically disable any features that
-      use that key, such as a signed code of conduct. Also, the key will be deactivated on Launchpad only.</p>
+      <p>
+        <strong>Note:</strong> deactivating a key in Launchpad disables all
+        Launchpad features that use that key such as signed codes of conduct.
+        Deactivating the key in Launchpad does not alter the key outside of
+        Launchpad.
+      </p>
 
     </form>
 
-    <form tal:condition="context/pendinggpgkeys" name="gpg_actions"
+    <form tal:condition="context/pending_gpg_keys" name="gpg_actions"
           action="" method="POST">
       <input type="hidden" name="action" value="remove_gpgtoken" />
 
       <h2>Keys pending validation</h2>
 
       <div>
-        <label tal:repeat="fingerprint context/pendinggpgkeys">
+        <label tal:repeat="fingerprint context/pending_gpg_keys">
           <input type="checkbox" name="REMOVE_GPGTOKEN"
                  tal:attributes="value fingerprint"/>
           <span tal:replace="fingerprint">TOKEN</span>
@@ -150,7 +133,7 @@
       <input type="submit" value="Cancel Validation for Selected Keys" />
     </form>
 
-    <form tal:condition="context/inactivegpgkeys" name="gpg_actions"
+    <form tal:condition="context/inactive_gpg_keys" name="gpg_actions"
           action="" method="POST">
       <input type="hidden" name="action" value="reactivate_gpg" />
 
@@ -158,7 +141,7 @@
 
       <p>You can reactivate any of these keys for use in Launchpad whenever you choose.</p>
 
-      <div tal:repeat="key context/inactivegpgkeys">
+      <div tal:repeat="key context/inactive_gpg_keys">
         <label>
         <input type="checkbox" name="REACTIVATE_GPGKEY"
                tal:attributes="value key/id"/>
@@ -173,15 +156,22 @@
       <input type="hidden" name="action" value="claim_gpg" />
       <h2>Import an OpenPGP key</h2>
 
-      <p>To start using an OpenPGP key with your Launchpad account, simply paste its fingerprint below. (<a href="/+help/import-pgp-key.html" target="help">How to get the fingerprint</a>)
+      <p>To start using an OpenPGP key with your Launchpad account, simply
+        paste its fingerprint below. The key must be registered with the
+        Ubuntu key server.
+        (<a href="/+help-registry/import-pgp-key.html" target="help">How to get the
+        fingerprint</a>)
+      </p>
 
-          <table>
+          <table class="form" id="launchpad-form-widgets">
             <tbody>
               <tr>
+                <div style="margin-bottom: 2.0 em;">
                 <th><label>Fingerprint:</label></th>
                 <td><input type="text" size="50" name="fingerprint" /></td>
+                </div>
               </tr>
-              <tr class="discreet">
+              <tr class="lesser">
                 <th>Example:</th>
                 <td>
                   <code>27E0 7815 B47C 0397 90D5&nbsp;&nbsp;8589 27D9 A27B F3F9 6058</code>
@@ -190,11 +180,14 @@
             </tbody>
           </table>
           <p>
-            Next, Launchpad will e-mail you using
+            Next, Launchpad will send e-mail to you at
             <code tal:content="context/preferredemail/email"/> with instructions
             on finishing the process.
           </p>
-          <div><input type="submit" name="import" value="Import Key"/></div>
+          <div>
+            <input type="submit" name="import" value="Import Key"/>
+            or&nbsp;<a tal:attributes="href view/cancel_url">Cancel</a>
+          </div>
 
       </form>
     </div>

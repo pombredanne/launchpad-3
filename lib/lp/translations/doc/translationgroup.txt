@@ -1,8 +1,9 @@
-= Translation Groups =
+Translation Groups
+==================
 
     >>> from zope.component import getUtility
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login('daf@canonical.com')
 
 Here are various sets of things that we'll need.
@@ -11,16 +12,16 @@ Here are various sets of things that we'll need.
     ...     ITranslationGroupSet)
     >>> translation_group_set = getUtility(ITranslationGroupSet)
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> product_set = getUtility(IProductSet)
 
     >>> from lp.translations.interfaces.translator import ITranslatorSet
     >>> translator_set = getUtility(ITranslatorSet)
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> language_set = getUtility(ILanguageSet)
 
     >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
@@ -57,18 +58,17 @@ Let's make it the translation group for Evolution.
 
 Let's only allow translators from that group to translate.
 
-    >>> from lp.translations.interfaces.translationgroup import (
-    ...     TranslationPermission)
+    >>> from lp.translations.enums import TranslationPermission
     >>> evolution.translationpermission = TranslationPermission.CLOSED
 
 No Privileges Person isn't allowed to translate into Welsh.
 
-   >>> series = evolution.getSeries('trunk')
-   >>> subset = potemplate_set.getSubset(productseries=series)
-   >>> potemplate = subset['evolution-2.2']
-   >>> pofile = potemplate.newPOFile('cy')
-   >>> pofile.canEditTranslations(no_priv)
-   False
+    >>> series = evolution.getSeries('trunk')
+    >>> subset = potemplate_set.getSubset(productseries=series)
+    >>> potemplate = subset['evolution-2.2']
+    >>> pofile = potemplate.newPOFile('cy')
+    >>> pofile.canEditTranslations(no_priv)
+    False
 
 Let's add him to the group.
 
@@ -157,3 +157,41 @@ is a part of:
     cy
     foo-translators
     None
+
+
+fetchTranslatorData
+-------------------
+
+Use fetchTranslator data to get all members of a translation group,
+with their respective assigned languages, in one go.  This saves
+repeated querying.
+
+    >>> group = factory.makeTranslationGroup()
+    >>> list(group.fetchTranslatorData())
+    []
+
+    >>> de_team = factory.makeTeam(name='de-team')
+    >>> nl_team = factory.makeTeam(name='nl-team')
+    >>> la_team = factory.makeTeam(name='la-team')
+    >>> de_translator = factory.makeTranslator('de', group, person=de_team)
+    >>> nl_translator = factory.makeTranslator('nl', group, person=nl_team)
+    >>> la_translator = factory.makeTranslator('la', group, person=la_team)
+    >>> transaction.commit()
+
+The method returns tuples of respectively a Translator ("translation
+group membership entry"), its language, and the actual team or person
+assigned to that language.
+
+    >>> for (translator, language, team) in group.fetchTranslatorData():
+    ...     print translator.language.code, language.code, team.name
+    nl nl nl-team
+    de de de-team
+    la la la-team
+
+The members are sorted by language name in English.
+
+    >>> for (translator, language, person) in group.fetchTranslatorData():
+    ...     print language.englishname
+    Dutch
+    German
+    Latin

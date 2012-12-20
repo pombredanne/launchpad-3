@@ -10,28 +10,33 @@ __metaclass__ = type
 __all__ = ["BugBranch",
            "BugBranchSet"]
 
-from sqlobject import ForeignKey, IN, StringCol
-
-from zope.component import getUtility
+from sqlobject import (
+    ForeignKey,
+    IN,
+    IntCol,
+    StringCol,
+    )
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.database.enumcol import EnumCol
-
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.bugs.interfaces.bugbranch import IBugBranch, IBugBranchSet
+from lp.bugs.interfaces.bugbranch import (
+    IBugBranch,
+    IBugBranchSet,
+    )
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import SQLBase
 
 
 class BugBranch(SQLBase):
-    """See canonical.launchpad.interfaces.IBugBranch."""
+    """See `IBugBranch`."""
     implements(IBugBranch, IHasBranchTarget)
 
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     bug = ForeignKey(dbName="bug", foreignKey="Bug", notNull=True)
+    branch_id = IntCol(dbName="branch", notNull=True)
     branch = ForeignKey(dbName="branch", foreignKey="Branch", notNull=True)
     revision_hint = StringCol(default=None)
 
@@ -59,47 +64,28 @@ class BugBranchSet:
     implements(IBugBranchSet)
 
     def getBugBranch(self, bug, branch):
-        "See `IBugBranchSet`."
+        """See `IBugBranchSet`."""
         return BugBranch.selectOneBy(bugID=bug.id, branchID=branch.id)
 
-    def getBugBranchesForBranches(self, branches, user):
-        "See IBugBranchSet."
+    def getBranchesWithVisibleBugs(self, branches, user):
+        """See `IBugBranchSet`."""
+        # Avoid circular imports.
+        from lp.bugs.model.bugtaskflat import BugTaskFlat
+        from lp.bugs.model.bugtasksearch import get_bug_privacy_filter
+
         branch_ids = [branch.id for branch in branches]
         if not branch_ids:
             return []
-        where_clauses = []
 
-        # Select only bug branch links for the branches specified,
-        # and join with the Bug table.
-        where_clauses.append("""
-            BugBranch.branch in %s AND
-            BugBranch.bug = Bug.id""" % sqlvalues(branch_ids))
-
-        admins = getUtility(ILaunchpadCelebrities).admin
-        if user:
-            if not user.inTeam(admins):
-                # Enforce privacy-awareness for logged-in, non-admin users,
-                # so that they can only see the private bugs that they're
-                # allowed to see.
-                where_clauses.append("""
-                    (Bug.private = FALSE OR
-                     Bug.id in (
-                         SELECT Bug.id
-                         FROM Bug, BugSubscription, TeamParticipation
-                         WHERE Bug.id = BugSubscription.bug AND
-                             TeamParticipation.person = %(personid)s AND
-                             BugSubscription.person = TeamParticipation.team))
-                             """ % sqlvalues(personid=user.id))
-        else:
-            # Anonymous user; filter to include only public bugs in
-            # the search results.
-            where_clauses.append("Bug.private = FALSE")
-
-        return BugBranch.select(
-            ' AND '.join(where_clauses), clauseTables=['Bug'])
+        visible = get_bug_privacy_filter(user)
+        return IStore(BugBranch).find(
+            BugBranch.branchID,
+            BugBranch.branch_id.is_in(branch_ids),
+            BugTaskFlat.bug_id == BugBranch.bugID,
+            visible).config(distinct=True)
 
     def getBugBranchesForBugTasks(self, tasks):
-        "See IBugBranchSet."
+        """See `IBugBranchSet`."""
         bug_ids = [task.bugID for task in tasks]
         if not bug_ids:
             return []

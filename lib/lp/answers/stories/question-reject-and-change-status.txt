@@ -35,6 +35,12 @@ He needs to enter a message explaining the rejection:
     There is 1 error.
     You must provide an explanation message.
 
+At this point the user might decide this is a bad idea, so there is a
+cancel link to take him back to the question:
+
+    >>> print admin_browser.getLink('Cancel').url
+    http://answers.launchpad.dev/firefox/+question/2
+
 Entering an explanation message and clicking the 'Reject' button,
 will reject the question.
 
@@ -52,16 +58,16 @@ its status is changed to 'Invalid';
 
     >>> def print_question_status(browser):
     ...     print extract_text(
-    ...         find_tag_by_id(browser.contents, 'question-details'))
+    ...         find_tag_by_id(browser.contents, 'question-status'))
 
     >>> print_question_status(admin_browser)
-    Invalid ...
+    Status: Invalid ...
 
 and the rejection message is added to the question board.
 
     >>> content = find_main_content(admin_browser.contents)
     >>> print content.findAll('div', 'boardCommentBody')[-1].renderContents()
-    <p>Rejecting because it's a duplicate of <a...>bug #1</a>.</p>
+    <p>Rejecting because it&#x27;s a duplicate of <a...>bug #1</a>.</p>
 
 The call to help with this problem is not displayed.
 
@@ -108,6 +114,11 @@ The form has a select widget displaying the current status.
     >>> admin_browser.getControl('Status', index=0).displayValue
     ['Invalid']
 
+There is also a cancel link should the user decide otherwise:
+
+    >>> print admin_browser.getLink('Cancel').url
+    http://answers.launchpad.dev/firefox/+question/2
+
 The user needs to select a status and enter a message explaining the
 status change:
 
@@ -115,7 +126,7 @@ status change:
     >>> for error in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print error.renderContents()
     There are 2 errors.
-    You didn't change the status.
+    You didn&#x27;t change the status.
     You must provide an explanation message.
 
 To correct the mistake of the previous example, the administrator would
@@ -136,11 +147,11 @@ Once the operation is completed, a confirmation message is displayed;
 its status is updated;
 
     >>> print_question_status(admin_browser)
-    Open ...
+    Status: Open ...
 
 and the explanation message is added to the question discussion:
 
     >>> content = find_main_content(admin_browser.contents)
     >>> print content.findAll('div', 'boardCommentBody')[-1].renderContents()
-    <p>Setting status back to 'Open'. Questions similar to a bug report
-    should be linked to it, not rejected.</p>
+    <p>Setting status back to &#x27;Open&#x27;. Questions similar to a
+    bug report should be linked to it, not rejected.</p>

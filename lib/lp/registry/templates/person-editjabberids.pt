@@ -3,44 +3,25 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
-  <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Jabber IDs</h1>
-    </metal:heading>
+<body>
+<div metal:fill-slot="main">
+<div metal:use-macro="context/@@launchpad_form/form">
+  <div metal:fill-slot="widgets">
 
-  <metal:leftportlets fill-slot="portlets_one">
-  </metal:leftportlets>
-
-  <metal:rightportlets fill-slot="portlets_two">
-  </metal:rightportlets>
-
-  <div metal:fill-slot="main">
-
-    <p tal:condition="view/error_message" 
-      tal:content="structure view/error_message/escapedtext" class="error message" />
-
-    <form name="edit_jabber" action="" method="POST">
     <table>
 
-      <div tal:condition="context/jabberids">
-
-        <tr><td colspan="2"><h2>Existing Jabber IDs</h2></td></tr>
+      <tal:existing_jabber condition="context/jabberids">
 
         <tr>
-          <td><label>Jabber ID:</label></td>
+          <td><label>Existing Jabber IDs:</label></td>
         </tr>
 
         <tr tal:repeat="jabber context/jabberids">
-          <td>
-            <input tal:attributes="name string:jabberid_${jabber/jabberid};
-                                   value jabber/jabberid"
-                   type="text" style="margin-bottom: 0.5em;"/>
+          <td tal:content="jabber/jabberid"
+              class="jabberid">
           </td>
 
           <td>
@@ -51,34 +32,20 @@
             </label>
           </td>
         </tr>
+      </tal:existing_jabber>
 
-      </div>
+      <tal:widget define="widget nocall:view/widgets/jabberid">
+        <metal:block use-macro="context/@@launchpad_form/widget_row" />
+      </tal:widget>
 
-    <tr>
-      <td colspan="2"><h2>New Jabber ID</h2></td>
-    </tr>
-    
-    <tr>
-      <td><label>Jabber ID:</label></td>
-    </tr>
+      <tr>
+        <td class="formHelp">Example: yourname@jabber.org</td>
+      </tr>
+    </table>
 
-    <tr>
-      <td>
-        <input name="newjabberid" type="text" />
-      </td>
-    </tr>
-
-    <tr>
-      <td class="formHelp">Example: yourname@jabber.org</td>
-    </tr>
-  </table>
-
-  <div class="formControls">
-    <input type="submit" value="Save Changes" name="SAVE" />
   </div>
-
-  </form>
-  </div>
+</div>
+</div>
 
 </body>
 </html>

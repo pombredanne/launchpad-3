@@ -5,10 +5,8 @@
 
 # Initial setup for PPA cronscripts.
 
-# Export LPCONFIG and define common variables.
-LPCONFIG=ppa
-export LPCONFIG
-LPCURRENT=/srv/launchpad.net/codelines/current
+# DO NOT set LPCONFIG here, it should come from the crontab or the shell.
+# Define common variables.
 PPAROOT=/srv/launchpad.net/ppa-archive
 P3AROOT=/srv/launchpad.net/private-ppa-archive
 LOCKFILE=$PPAROOT/.lock

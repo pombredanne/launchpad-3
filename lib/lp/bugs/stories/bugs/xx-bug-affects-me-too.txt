@@ -4,19 +4,20 @@ Users can mark bugs as affecting them. Let's create a sample bug to
 try this out.
 
    >>> login(ANONYMOUS)
-   >>> from canonical.launchpad.webapp import canonical_url
+   >>> from lp.services.webapp import canonical_url
    >>> test_bug = factory.makeBug()
    >>> test_bug_url = canonical_url(test_bug)
    >>> logout()
 
 The user goes to the bug's index page, and finds a statement that the
-bug is not marked as affecting them.
+bug affects one other person (in this instance, the person who filed
+the bug).
 
    >>> user_browser.open(test_bug_url)
    >>> print extract_text(find_tag_by_id(
    ...     user_browser.contents, 'affectsmetoo').find(
    ...         None, 'static'))
-   This bug doesn't affect me
+   This bug affects 1 person. Does this bug affect you?
 
 Next to the statement is a link containing an edit icon.
 
@@ -45,14 +46,7 @@ clear to the user that they have marked this bug as affecting them.
    >>> print extract_text(find_tag_by_id(
    ...     user_browser.contents, 'affectsmetoo').find(
    ...         None, 'static'))
-   This bug affects me too
-
-Next to it, we also see the 'hot bug' icon, to indicate that the user
-has marked the bug as affecting them.
-
-   >>> print find_tag_by_id(
-   ...     user_browser.contents, 'affectsmetoo').img['src']
-   /@@/flame-icon
+   This bug affects you and 1 other person
 
 On second thoughts, the user realises that this bug does not affect
 them, so they click on the edit link once more.
@@ -69,7 +63,28 @@ Back at the bug page, the text changes once again.
    >>> print extract_text(find_tag_by_id(
    ...     user_browser.contents, 'affectsmetoo').find(
    ...         None, 'static'))
-   This bug doesn't affect me
+   This bug affects 1 person, but not you
+
+
+== Anonymous users ==
+
+Anonymous users just see the number of affected users.
+
+   >>> anon_browser.open(test_bug_url)
+   >>> print extract_text(find_tag_by_id(
+   ...     anon_browser.contents, 'affectsmetoo'))
+   This bug affects 1 person
+
+If no one is marked as affected by the bug, the message does not
+appear at all to anonymous users.
+
+   >>> login('test@canonical.com')
+   >>> test_bug.markUserAffected(test_bug.owner, False)
+   >>> logout()
+
+   >>> anon_browser.open(test_bug_url)
+   >>> print find_tag_by_id(anon_browser.contents, 'affectsmetoo')
+   None
 
 
 == Static and dynamic support ==
@@ -96,14 +111,14 @@ dynamic (Javascript enabled) scenarios.
    >>> dynamic_content is not None
    True
 
-The dynamic content is hidden by the presence of the "unseen" CSS
+The dynamic content is hidden by the presence of the "hidden" CSS
 class.
 
    >>> print static_content.get('class')
    static
 
    >>> print dynamic_content.get('class')
-   dynamic unseen
+   dynamic hidden
 
 It is the responsibilty of Javascript running in the page to unhide
 the dynamic content and hide the static content.

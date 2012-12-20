@@ -3,18 +3,20 @@
 
 """Test the doctests in the product module."""
 
-# XXX sinzui 2009-04-03 bug=354881: This test harness shold be removed
+# XXX sinzui 2009-04-03 bug=354881: This test harness should be removed
 # and the inline tests moved to docs/
 
 __metaclass__ = type
 
+from doctest import DocTestSuite
 import unittest
 
-from doctest import DocTestSuite
-
-from canonical.launchpad.testing.systemdocs import setUp, tearDown
-from canonical.testing import LaunchpadFunctionalLayer
 from lp.registry.interfaces import product
+from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.systemdocs import (
+    setUp,
+    tearDown,
+    )
 
 
 def test_suite():

@@ -18,7 +18,7 @@ translators.
     ...     'http://translations.launchpad.dev/'
     ...     '+groups/testing-translation-team/es/+admin')
     >>> print carlos_browser.title
-    Edit Spanish translation team in Just a testing team
+    Just a testing team...
 
 This way he can also set the documentation URL.
 
@@ -70,14 +70,15 @@ the documentation url through the edit view.
     ...     test_browser.open(
     ...         'http://translations.launchpad.dev/'
     ...         '+groups/testing-translation-team/eo/+admin')
-    ... except Unauthorized, e:
+    ... except Unauthorized as e:
     ...     print e
     (...'launchpad.Admin')
     >>> test_browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     '+groups/testing-translation-team/eo/+edit')
     >>> print test_browser.title
-    Set Esperanto guidelines for Just a testing team
+    Set Esperanto guidelines...
+
     >>> test_browser.getControl('Translation guidelines').value = (
     ...     'http://www.launchpad.net/')
     >>> test_browser.getControl('Set guidelines').click()
@@ -92,9 +93,11 @@ the documentation url through the edit view.
     Just a testing team
     Esperanto
     http://www.launchpad.net/
+    Edit
 
 
-== Notification display ==
+Notification display
+--------------------
 
 You can see on Spanish Evolution translation page how are translation
 instructions displayed.
@@ -102,8 +105,8 @@ instructions displayed.
     >>> evolution_spanish_url = ('http://translations.launchpad.dev/'
     ...     'evolution/trunk/+pots/evolution-2.2/es/+translate')
 
-    >>> # We've already confirmed setting URLs works: define methods
-    >>> # to change them more easily.
+    # We've already confirmed setting URLs works: define methods
+    # to change them more easily.
     >>> def set_group_url(browser, url):
     ...     group_edit_url = ("http://translations.launchpad.dev/"
     ...         "+groups/testing-translation-team/+edit")

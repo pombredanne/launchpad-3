@@ -6,15 +6,22 @@
 __metaclass__ = type
 __all__ = ['Country', 'CountrySet', 'Continent']
 
+from sqlobject import (
+    ForeignKey,
+    SQLRelatedJoin,
+    StringCol,
+    )
 from zope.interface import implements
 
-from sqlobject import StringCol, SQLRelatedJoin, ForeignKey
-
-from canonical.database.constants import DEFAULT
-from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
+from lp.services.database.constants import DEFAULT
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import SQLBase
 from lp.services.worlddata.interfaces.country import (
-    ICountry, ICountrySet, IContinent)
+    IContinent,
+    ICountry,
+    ICountrySet,
+    )
 
 
 class Country(SQLBase):
@@ -57,6 +64,17 @@ class CountrySet:
         for row in Country.select():
             yield row
 
+    def getByName(self, name):
+        """See `ICountrySet`."""
+        return IStore(Country).find(Country, name=name).one()
+
+    def getByCode(self, code):
+        """See `ICountrySet`."""
+        return IStore(Country).find(Country, iso3166code2=code).one()
+
+    def getCountries(self):
+        """See `ICountrySet`."""
+        return IStore(Country).find(Country).order_by(Country.iso3166code2)
 
 class Continent(SQLBase):
     """See IContinent."""

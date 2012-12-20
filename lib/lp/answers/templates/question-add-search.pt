@@ -13,6 +13,7 @@
 <body>
 
 <metal:main fill-slot="main">
+  <tal:answers_enabled condition="view/context_uses_answers">
   <metal:form use-macro="context/@@launchpad_form/form">
 
     <div metal:fill-slot="extra_info">
@@ -38,6 +39,18 @@
     </div>
 
   </metal:form>
+  </tal:answers_enabled>
+
+  <tal:answers_disabled condition="not: view/context_uses_answers">
+      <div class="highlight-message">
+        <a tal:replace="structure context/fmt:link">Alsa Utils</a>
+        <strong>does not use</strong> Launchpad as its answer forum.
+        <a tal:attributes="href context/menu:overview/configure_answers/fmt:url"
+           tal:condition="context/required:launchpad.Edit">
+          Change this <span class="sprite edit action-icon">Edit</span>
+        </a>
+      </div>
+  </tal:answers_disabled>
 </metal:main>
 
 </body>

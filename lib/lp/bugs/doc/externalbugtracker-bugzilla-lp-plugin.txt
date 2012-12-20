@@ -26,6 +26,17 @@ which it shares some functionality.
     True
 
 
+Getting the tracker to use
+--------------------------
+
+Instances of BugzillaLPPlugin always assume that they are the
+appropriate bug tracker to use. They do not sniff the remote system to
+check for support; they assume that has been done elsewhere.
+
+    >>> bugzilla.getExternalBugTrackerToUse() is bugzilla
+    True
+
+
 Authentication
 --------------
 
@@ -44,17 +55,14 @@ doing the authentication work with the remote server. We'll override the
 _handleLoginToken() method of TestBugzillaXMLRPCTransport so that it can
 work with the right database user.
 
-    >>> from canonical.config import config
-    >>> from canonical.testing import LaunchpadZopelessLayer
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestInternalXMLRPCTransport)
+    >>> from lp.testing.dbuser import lp_dbuser
 
     >>> class ZopelessBugzillaXMLRPCTransport(TestBugzillaXMLRPCTransport):
     ...     def _handleLoginToken(self, token_text):
-    ...         LaunchpadZopelessLayer.switchDbUser('launchpad')
-    ...         self._consumeLoginToken(token_text)
-    ...         LaunchpadZopelessLayer.switchDbUser(
-    ...             config.checkwatches.dbuser)
+    ...         with lp_dbuser():
+    ...             self._consumeLoginToken(token_text)
 
     >>> test_transport = ZopelessBugzillaXMLRPCTransport(
     ...     'http://example.com/')
@@ -193,8 +201,8 @@ The bug data is stored as a list of dicts:
     >>> def print_bugs(bugs):
     ...     for bug in sorted(bugs):
     ...         print "Bug %s:" % bug
-    ...         for key in sorted(bugzilla._bugs[bug]):
-    ...             print "    %s: %s" % (key, bugzilla._bugs[bug][key])
+    ...         for key in sorted(bugs[bug]):
+    ...             print "    %s: %s" % (key, bugs[bug][key])
     ...         print "\n"
 
     >>> print_bugs(bugzilla._bugs)
@@ -202,14 +210,15 @@ The bug data is stored as a list of dicts:
         alias:
         assigned_to: test@canonical.com
         component: GPPSystems
-        creation_time: 20080610T16:19:53
+        creation_time: 2008-06-10 16:19:53
         id: 1
         internals:...
         is_open: True
-        last_change_time: 20080610T16:19:53
+        last_change_time: 2008-06-10 16:19:53
         priority: P1
         product: Marvin
         resolution: FIXED
+        see_also:...
         severity: normal
         status: RESOLVED
         summary: That bloody robot still exists.
@@ -218,14 +227,15 @@ The bug data is stored as a list of dicts:
         alias: bug-two
         assigned_to: marvin@heartofgold.ship
         component: Crew
-        creation_time: 20080611T09:23:12
+        creation_time: 2008-06-11 09:23:12
         id: 2
         internals:...
         is_open: True
-        last_change_time: 20080611T09:24:29
+        last_change_time: 2008-06-11 09:24:29
         priority: P1
         product: HeartOfGold
         resolution:
+        see_also:...
         severity: high
         status: NEW
         summary: Collect unknown persons in docking bay 2.
@@ -302,7 +312,7 @@ Getting remote statuses
 -----------------------
 
 BugzillaLPPlugin doesn't have any special functionality for getting
-remote statuses. See the "Getting remote statuses" section of 
+remote statuses. See the "Getting remote statuses" section of
 externalbugtracker-bugzilla-api.txt for details of getting remote
 statuses from Bugzilla APIs.
 
@@ -321,15 +331,14 @@ BugzillaLPPlugin implments the ISupportsCommentImport interface, which
 means that we can use it to import comments from the remote Bugzilla
 instance.
 
-    >>> from canonical.launchpad.interfaces import ISupportsCommentImport
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentImport
     >>> verifyObject(ISupportsCommentImport, bugzilla)
     True
 
 To test the comment importing methods we need to add an example bug,
 bugtracker and a couple of bugwatches.
 
-    >>> from canonical.database.sqlbase import commit
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> from lp.registry.interfaces.person import IPersonSet
@@ -339,22 +348,17 @@ bugtracker and a couple of bugwatches.
 
     >>> bug_tracker = new_bugtracker(BugTrackerType.BUGZILLA)
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-
-    >>> sample_person = getUtility(IPersonSet).getByEmail(
-    ...     'test@canonical.com')
-    >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> bug = firefox.createBug(
-    ...     CreateBugParams(sample_person, "Yet another test bug",
-    ...         "Yet another test description.",
-    ...         subscribe_owner=False))
-
-    >>> bug_watch = bug.addWatch(bug_tracker, '1', sample_person)
-    >>> bug_watch_two = bug.addWatch(bug_tracker, '2', sample_person)
-    >>> bug_watch_broken = bug.addWatch(bug_tracker, '42', sample_person)
-    >>> commit()
-
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> with lp_dbuser():
+    ...     sample_person = getUtility(IPersonSet).getByEmail(
+    ...         'test@canonical.com')
+    ...     firefox = getUtility(IProductSet).getByName('firefox')
+    ...     bug = firefox.createBug(
+    ...         CreateBugParams(sample_person, "Yet another test bug",
+    ...             "Yet another test description.",
+    ...             subscribe_owner=False))
+    ...     bug_watch = bug.addWatch(bug_tracker, '1', sample_person)
+    ...     bug_watch_two = bug.addWatch(bug_tracker, '2', sample_person)
+    ...     bug_watch_broken = bug.addWatch(bug_tracker, '42', sample_person)
 
 
 getCommentIds()
@@ -363,8 +367,11 @@ getCommentIds()
 ISupportsCommentImport.getCommentIds() is the method used to get all the
 comment IDs for a given bug on a remote bugtracker.
 
+    >>> remote_bug = bug_watch.remotebug
+    >>> transaction.commit()
+
     >>> bugzilla.xmlrpc_transport.print_method_calls = True
-    >>> bug_comment_ids = bugzilla.getCommentIds(bug_watch)
+    >>> bug_comment_ids = bugzilla.getCommentIds(remote_bug)
     CALLED Launchpad.comments({'bug_ids': [1], 'include_fields': ['id']})
 
     >>> print sorted(bug_comment_ids)
@@ -373,7 +380,10 @@ comment IDs for a given bug on a remote bugtracker.
 getCommentIds() can only be called if initializeRemoteBugDB() has been
 called and the bug exists locally.
 
-    >>> bugzilla.getCommentIds(bug_watch_broken)
+    >>> remote_bug = bug_watch_broken.remotebug
+    >>> transaction.commit()
+
+    >>> bugzilla.getCommentIds(remote_bug)
     Traceback (most recent call last):
       ...
     BugNotFound: 42
@@ -383,11 +393,14 @@ fetchComments()
 ---------------
 
 ISupportsCommentImport.fetchComments() is the method used to fetch a
-given set of comments from the remote bugtracker. It takes a bug watch
-and a list of the comment IDs to retrieve for that bug watch.
+given set of comments from the remote bugtracker. It takes a remote
+bug ID and a list of the comment IDs to retrieve for that bug watch.
+
+    >>> remote_bug = bug_watch.remotebug
+    >>> transaction.commit()
 
     >>> bugzilla.xmlrpc_transport.print_method_calls = False
-    >>> bugzilla.fetchComments(bug_watch, ['1', '3'])
+    >>> bugzilla.fetchComments(remote_bug, ['1', '3'])
 
 The comments will be stored in the bugs dict as a dict of comment id =>
 comment dict mappings under the key 'comments'.
@@ -403,13 +416,13 @@ comment dict mappings under the key 'comments'.
         id: 1
         number: 1
         text: I'd really appreciate it if Marvin would enjoy life a bit.
-        time: 20080616T12:44:29
+        time: 2008-06-16 12:44:29
     Comment 3:
         author: marvin
         id: 3
         number: 2
         text: Life? Don't talk to me about life.
-        time: 20080616T13:22:29
+        time: 2008-06-16 13:22:29
 
 
 Pushing comments to remote systems
@@ -452,12 +465,18 @@ authorization cookie so that it gets regenerated.
 
 The comment will be stored on the remote server with the other comments.
 
+    >>> remote_bug = bug_watch.remotebug
+    >>> transaction.commit()
+
     >>> bugzilla.xmlrpc_transport.print_method_calls = False
-    >>> print sorted(bugzilla.getCommentIds(bug_watch))
+    >>> print sorted(bugzilla.getCommentIds(remote_bug))
     ['1', '3', '5']
 
-    >>> bugzilla.fetchComments(bug_watch, ['5'])
-    >>> message = bugzilla.getMessageForComment(bug_watch, '5', sample_person)
+    >>> transaction.commit()
+
+    >>> bugzilla.fetchComments(remote_bug, ['5'])
+    >>> message = bugzilla.getMessageForComment(
+    ...     remote_bug, '5', sample_person)
     >>> print message.text_contents
     This is a new remote comment.
     <BLANKLINE>
@@ -501,13 +520,16 @@ set.
 setLaunchpadBugId() is used to set the Launchpad bug ID for a given
 remote bug.
 
+    >>> transaction.commit()
+
 setLaunchpadBugId() requires authentication.
 
     >>> bugzilla.xmlrpc_transport.print_method_calls = True
     >>> bugzilla.xmlrpc_transport.expireCookie(
     ...     bugzilla.xmlrpc_transport.auth_cookie)
 
-    >>> bugzilla.setLaunchpadBugId(1, 10)
+    >>> bugzilla.setLaunchpadBugId(
+    ...     1, 10, 'http://bugs.launchpad.dev/bugs/xxx')
     Using XML-RPC to generate token.
     CALLED Launchpad.login({'token': '...'})
     Successfully validated the token.
@@ -547,14 +569,15 @@ bug IDs if those bugs belong to one of a given set of products.
         alias: bug-two
         assigned_to: marvin@heartofgold.ship
         component: Crew
-        creation_time: 20080611T09:23:12
+        creation_time: 2008-06-11 09:23:12
         id: 2
         internals:...
         is_open: True
-        last_change_time: 20080611T09:24:29
+        last_change_time: 2008-06-11 09:24:29
         priority: P1
         product: HeartOfGold
         resolution:
+        see_also: []
         severity: high
         status: NEW
         summary: Collect unknown persons in docking bay 2.

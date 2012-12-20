@@ -6,9 +6,10 @@ use of Launchpad, so we want to draw attention to them. The list of
 projects is stored in the FeaturedProject table, and managed through the
 PillarNameSet.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPillarNameSet, IProductSet, IProjectSet
-    ...     )
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.pillar import IPillarNameSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> pillar_set = getUtility(IPillarNameSet)
     >>> def isFeatured(project):
     ...     return project in getUtility(IPillarNameSet).featured_projects
@@ -31,7 +32,7 @@ We'll make sure our isFeatured() test is working:
 
     >>> isFeatured(getUtility(IProductSet).getByName('bazaar'))
     True
-    >>> isFeatured(getUtility(IProjectSet).getByName('gnome'))
+    >>> isFeatured(getUtility(IProjectGroupSet).getByName('gnome'))
     True
     >>> isFeatured(getUtility(IDistributionSet).getByName('ubuntu'))
     True
@@ -55,7 +56,7 @@ projects:
     >>> isFeatured(evolution)
     True
 
-    >>> apache = getUtility(IProjectSet).getByName('apache')
+    >>> apache = getUtility(IProjectGroupSet).getByName('apache')
     >>> isFeatured(apache)
     False
     >>> added = pillar_set.add_featured_project(apache)

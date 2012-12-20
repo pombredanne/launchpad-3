@@ -4,7 +4,7 @@ There are a number of pages for packages under the distribution
 hierarchy. This test verifies some peculiar features in that hierarchy.
 
 
-== distribution/+source redirects home ==
+== $(distribution)/+source redirects home ==
 
 Check that going to $distribution/+source redirects to $distribution.
 
@@ -13,7 +13,7 @@ Check that going to $distribution/+source redirects to $distribution.
   'http://launchpad.dev/ubuntu'
 
 
-== Distribution Source Package Releases offer dgettable URLs ==
+== DistroSeriesSourcePackageRelease offer dgettable URLs ==
 
 One useful tool for fetching source packages is dget, which pulls a DSC
 file and then grabs its dependencies. In Launchpad, we model a virtual
@@ -22,20 +22,23 @@ actually redirects individual entries to librarian URLs.
 
 The commercial package lists three files:
 
-  >>> browser.open("http://launchpad.dev/ubuntu/breezy-autotest/+source/commercialpackage/1.0-1")
+  >>> browser.open(
+  ...     'http://launchpad.dev/ubuntu/breezy-autotest/+source/'
+  ...     'commercialpackage/1.0-1')
   >>> print extract_text(find_tag_by_id(browser.contents, 'files'))
   commercialpackage_1.0.orig.tar.gz (179 bytes)
   commercialpackage_1.0-1.diff.gz (610 bytes)
   commercialpackage_1.0-1.dsc (567 bytes)
 
-If you check out the URL for the DSC, you'll see it's in the
-+files virtual directory:
+If you check out the URL for the DSC, you'll see it's in the +files
+virtual directory:
 
-  >>> suburl = browser.getLink("commercialpackage_1.0-1.dsc").url
-  >>> suburl
-  'http://launchpad.dev/ubuntu/breezy-autotest/+source/commercialpackage/1.0-1/+files/commercialpackage_1.0-1.dsc'
+  >>> file_link = browser.getLink("commercialpackage_1.0-1.dsc")
+  >>> print file_link.url
+  http://.../+files/commercialpackage_1.0-1.dsc
+
   >>> from urlparse import urlsplit
-  >>> path = urlsplit(suburl)[2]
+  >>> path = urlsplit(file_link.url)[2]
 
 And if you go to fetch it, you'll see it's actually a librarian URL:
 
@@ -44,5 +47,5 @@ And if you go to fetch it, you'll see it's actually a librarian URL:
   ... """ % path)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:58000/68/commercialpackage_1.0-1.dsc
+  Location: http://.../68/commercialpackage_1.0-1.dsc
   ...

@@ -2,17 +2,13 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  class="portlet" id="portlet-conflicts">
+  tal:define="relationships view/conflicts"
+  tal:condition="relationships/has_items"
+  class="first yui-u" id="portlet-conflicts">
 
-  <h2>Conflicts</h2>
-
-  <div class="portletBody portletContent"
-       id="conflicts"
-       tal:define="relationships view/conflicts">
-
-     <tal:block condition="relationships/has_items"
-                replace="structure relationships/@@+render-list"/>
-
-  </div>
+  <dl id="conflicts">
+    <dt>Conflicts:</dt>
+    <tal:block replace="structure relationships/@@+render-list"/>
+  </dl>
 
 </div>

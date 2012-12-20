@@ -22,11 +22,11 @@ release in the series.
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/firefox/+milestone/1.0')
     >>> browser.getLink('Create release').click()
-    >>> browser.url
-    'http://launchpad.dev/firefox/+milestone/1.0/+addrelease'
+    >>> print browser.url
+    http://launchpad.dev/firefox/+milestone/1.0/+addrelease
 
-    >>> browser.title
-    'Publish the release of Mozilla Firefox 1.0'
+    >>> print browser.title
+    Create a new release for Mozilla Firefox...
 
 Links to previous releases from the series are listed.
 
@@ -52,15 +52,9 @@ After creating the release, Sample Person sees the release page.
     >>> browser.url
     'http://launchpad.dev/firefox/+milestone/1.0'
 
-There is a warning that the milestone has been deactivated.
-
-    >>> print get_feedback_messages(browser.contents)
-    [u'The 1.0 milestone for this project release was deactivated so
-       that bugs and blueprints cannot be associated with this release.']
-
 The release's information is displayed in the page.
 
-    >>> print extract_text(find_tag_by_id(browser.contents, 'release_notes'))
+    >>> print extract_text(find_tag_by_id(browser.contents, 'release-notes'))
     Released 1.0
     >>> print extract_text(find_tag_by_id(browser.contents, 'changelog'))
     Fix Foo
@@ -113,13 +107,14 @@ has a productrelease.
 The release owner can edit the release via its +edit form:
 
     >>> browser.open('http://launchpad.dev/firefox/trunk/1.0')
-    >>> browser.getLink('Change details', index=1).click()
+    >>> browser.getLink('Change release details', index=1).click()
     >>> print browser.title
-    Edit details of Mozilla Firefox 1.0 in Launchpad
+    Edit Mozilla Firefox 1.0 release details...
+
     >>> browser.getControl('Changelog').value = 'This is not a joke.'
     >>> browser.getControl('Change').click()
     >>> print browser.title
-    Mozilla Firefox 1.0
+    1.0 : Series trunk : Mozilla Firefox
 
 
 == Editing permissions extend to product and series owners ==
@@ -127,15 +122,15 @@ The release owner can edit the release via its +edit form:
 If the product or series owner is a team, members can edit a product
 release too.
 
-    >>> from lp.registry.model.product import Product
     >>> from lp.registry.model.person import Person
+    >>> from lp.registry.model.product import Product
     >>> tomcat = Product.selectOneBy(name='tomcat')
     >>> print tomcat.owner.name
     ubuntu-team
 
 Let's add a release as Jeff:
 
-    >>> browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+    >>> browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:test')
     >>> browser.open('http://launchpad.dev/tomcat/trunk/+addmilestone')
     >>> browser.getControl('Name').value = '0.6.6.6'
     >>> browser.getControl('Register Milestone').click()
@@ -149,21 +144,22 @@ Let's add a release as Jeff:
 
 Celso is a member of ubuntu-team, so he can edit this release too:
 
-    >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:cprov')
+    >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:test')
     >>> browser.open('http://launchpad.dev/tomcat/trunk/0.6.6.6')
-    >>> browser.getLink('Change details', index=1).click()
+    >>> browser.getLink('Change release details', index=0).click()
     >>> print browser.title
-    Edit details of Tomcat 0.6.6.6 in Launchpad
+    Edit Tomcat 0.6.6.6 release details...
+
     >>> browser.getControl('Changelog').value = 'Fixes 3 bugs.'
     >>> browser.getControl('Change').click()
     >>> print browser.title
-    Tomcat 0.6.6.6
+    0.6.6.6 : Series trunk : Tomcat
 
 And if no-priv owns the series...
 
     >>> no_priv = Person.selectOneBy(name="no-priv")
     >>> tomcat.getSeries('trunk').owner = no_priv
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 ... he can edit existing releases as well, even if they are owned by
@@ -171,10 +167,11 @@ others:
 
     >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/tomcat/trunk/0.6.6.6')
-    >>> browser.getLink('Change details').click()
+    >>> browser.getLink('Change release details', index=0).click()
     >>> print browser.title
-    Edit details of Tomcat 0.6.6.6 in Launchpad
+    Edit Tomcat 0.6.6.6 release details...
+
     >>> browser.getControl('Changelog').value = 'Fixes 4 bugs.'
     >>> browser.getControl('Change').click()
     >>> print browser.title
-    Tomcat 0.6.6.6
+    0.6.6.6 : Series trunk : Tomcat

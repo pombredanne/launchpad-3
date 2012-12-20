@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for foreign branch support."""
@@ -7,18 +7,22 @@ __metaclass__ = type
 
 import os
 import time
-import unittest
-
-import CVS
-import pysvn
 
 from bzrlib.tests import TestCaseWithTransport
+import CVS
+import subvertpy.client
+import subvertpy.ra
+import subvertpy.wc
 
 from lp.codehosting.codeimport.foreigntree import (
-    CVSWorkingTree, SubversionWorkingTree)
+    CVSWorkingTree,
+    SubversionWorkingTree,
+    )
 from lp.codehosting.codeimport.tests.servers import (
-    CVSServer, SubversionServer)
-from canonical.testing import BaseLayer
+    CVSServer,
+    SubversionServer,
+    )
+from lp.testing.layers import BaseLayer
 
 
 class TestSubversionWorkingTree(TestCaseWithTransport):
@@ -31,17 +35,18 @@ class TestSubversionWorkingTree(TestCaseWithTransport):
         :param original_url: The URL of the Subversion branch.
         :param new_path: The path of the checkout.
         """
-        client = pysvn.Client()
-        [(path, local_info)] = client.info2(new_path, recurse=False)
-        [(path, remote_info)] = client.info2(original_url, recurse=False)
-        self.assertEqual(original_url, local_info['URL'])
-        self.assertEqual(remote_info['rev'].number, local_info['rev'].number)
+        working_copy = subvertpy.wc.WorkingCopy(None, new_path)
+        entry = working_copy.entry(new_path)
+
+        remote = subvertpy.ra.RemoteAccess(original_url)
+        self.assertEqual(original_url, entry.url)
+        self.assertEqual(entry.revision, remote.get_latest_revnum())
 
     def setUp(self):
-        TestCaseWithTransport.setUp(self)
+        super(TestSubversionWorkingTree, self).setUp()
         svn_server = SubversionServer('repository_path')
-        svn_server.setUp()
-        self.addCleanup(svn_server.tearDown)
+        svn_server.start_server()
+        self.addCleanup(svn_server.stop_server)
         self.svn_branch_url = svn_server.makeBranch(
             'trunk', [('README', 'original')])
 
@@ -94,7 +99,7 @@ class TestSubversionWorkingTree(TestCaseWithTransport):
         tree2 = SubversionWorkingTree(self.svn_branch_url, 'tree2')
         tree2.checkout()
 
-        client = pysvn.Client()
+        client = subvertpy.client.Client()
         client.propset(
             'svn:externals', 'external http://foo.invalid/svn/something',
             tree.local_path)
@@ -120,13 +125,13 @@ class TestCVSWorkingTree(TestCaseWithTransport):
             self.cvs_server.getRoot(), self.module_name, local_path)
 
     def setUp(self):
-        TestCaseWithTransport.setUp(self)
+        super(TestCVSWorkingTree, self).setUp()
         self.cvs_server = CVSServer('repository_path')
-        self.cvs_server.setUp()
+        self.cvs_server.start_server()
         self.module_name = 'test_module'
         self.cvs_server.makeModule(
             self.module_name, [('README', 'Random content\n')])
-        self.addCleanup(self.cvs_server.tearDown)
+        self.addCleanup(self.cvs_server.stop_server)
 
     def test_path(self):
         # The local path is passed to the constructor and available as
@@ -174,7 +179,6 @@ class TestCVSWorkingTree(TestCaseWithTransport):
 
         self.assertFileEqual(new_content, 'working_tree2/README')
 
-
     def test_update(self):
         # update() fetches any changes to the branch from the remote branch.
         # We test this by checking out the same branch twice, making
@@ -201,7 +205,3 @@ class TestCVSWorkingTree(TestCaseWithTransport):
         tree2.update()
         readme_path = os.path.join(tree2.local_path, 'README')
         self.assertFileEqual(new_content, readme_path)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

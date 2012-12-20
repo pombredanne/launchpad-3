@@ -4,15 +4,28 @@
 __metaclass__ = type
 __all__ = ['ArchiveArch', 'ArchiveArchSet']
 
+from storm.expr import (
+    And,
+    LeftJoin,
+    )
+from storm.locals import (
+    Int,
+    Reference,
+    Storm,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.soyuz.interfaces.archivearch import (
-    IArchiveArch, IArchiveArchSet)
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-
-from storm.locals import Int, Reference, Storm
+    IArchiveArch,
+    IArchiveArchSet,
+    )
+from lp.soyuz.model.processor import ProcessorFamily
 
 
 class ArchiveArch(Storm):
@@ -55,3 +68,18 @@ class ArchiveArchSet:
         results = results.order_by(ArchiveArch.id)
 
         return results
+
+    def getRestrictedFamilies(self, archive):
+        """See `IArchiveArchSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        origin = (
+            ProcessorFamily,
+            LeftJoin(
+                ArchiveArch,
+                And(ArchiveArch.archive == archive.id,
+                    ArchiveArch.processorfamily == ProcessorFamily.id)))
+        result_set = store.using(*origin).find(
+            (ProcessorFamily, ArchiveArch),
+            (ProcessorFamily.restricted == True))
+
+        return result_set.order_by(ProcessorFamily.name)

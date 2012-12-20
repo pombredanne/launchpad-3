@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # Quick hack makefile to (re)create the Launchpad database.
@@ -10,10 +10,6 @@ PYTHON=../../bin/py
 # The database dump to restore on database creation
 SAMPLEDATA=../sampledata/current.sql
 SAMPLEDATA_DEV=../sampledata/current-dev.sql
-
-# The database dump to create
-NEWSAMPLEDATA=../sampledata/newsampledata.sql
-NEWSAMPLEDATA_DEV=../sampledata/newsampledata-dev.sql
 
 # The database dump to create for lint reports
 LINTDATA=../sampledata/lintdata.sql
@@ -42,39 +38,43 @@ DROPDB=${PYTHON} ../../utilities/pgmassacre.py
 # The command we use to drop (if exists) and recreate a database.
 CREATEDB=${PYTHON} ../../utilities/pgmassacre.py -t
 
-HEADER="-- Copyright 2009 Canonical Ltd.  This software is licensed under \
-	the\n-- GNU Affero General Public License version 3 (see the file \
+YEAR=$(shell date +'%Y')
+HEADER="-- Copyright 2010-${YEAR} Canonical Ltd.  This software is licensed \
+  under the\n-- GNU Affero General Public License version 3 (see the file \
 	LICENSE)."
 
 # The command used (in conjunction with $(call)) to dump the contents of the
 # given database ($1) into an SQL file ($2).
-build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q; \
-	echo $(HEADER) > $(2); \
-    pg_dump --schema=public --disable-triggers -a -D -O -d ${1} \
-    | grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
-    | $(PYTHON) sort_sql.py >> $(2); \
-    $(PYTHON) fti.py --force -d ${1} -q
+build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q && \
+	echo $(HEADER) > $(2) && \
+    echo -n "-- Created using " >> $(2) && \
+    pg_dump --version >> $(2) && \
+    pg_dump --schema=public --disable-triggers -a --column-inserts -O ${1} \
+    | grep -v "\( TOC \|INSERT INTO launchpaddatabase\|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
+    | $(PYTHON) sort_sql.py >> $(2) && \
+    $(PYTHON) fti.py --live-rebuild -d ${1} -q
 
 
 # The latest schema dump from production. Database patches are relative
-# to this baseline. This dump should be updated every production rollout
+# to this baseline. This dump should be updated occasionally from production
 # to ensure that the development database remains in sync with reality
 # on production. It is generated using newbaseline.py in
 # bzr+ssh://devpad.canonical.com/code/stub/dbascripts
-# 
-REV=2109
+#
+REV=2209
 BASELINE=launchpad-${REV}-00-0.sql
-MD5SUM=8a2e8fb0c3665cf1b07487fe3650816e  launchpad-2109-00-0.sql
+MD5SUM=cc7a493c924196409a22392a16443d52  launchpad-2209-00-0.sql
+
 default: all
 
 # Create a launchpad_ftest_template DB and load the test sample data into it.
-test: create 
+test: create
 	@ echo "* Creating database \"$(TEMPLATE_WITH_TEST_SAMPLEDATA)\"."
 	@ ${CREATEDB} ${EMPTY_DBNAME} ${TEMPLATE_WITH_TEST_SAMPLEDATA}
 	@ echo "* Loading sample data"
 	@ psql -v ON_ERROR_STOP=1 -d ${TEMPLATE_WITH_TEST_SAMPLEDATA} -f $(SAMPLEDATA) > /dev/null
 	@ echo "* Rebuilding full text indexes"
-	@ ${PYTHON} fti.py --force -q -d ${TEMPLATE_WITH_TEST_SAMPLEDATA}
+	@ ${PYTHON} fti.py --live-rebuild -q -d ${TEMPLATE_WITH_TEST_SAMPLEDATA}
 	@ echo "* Resetting sequences"
 	@ ${PYTHON} reset_sequences.py -d ${TEMPLATE_WITH_TEST_SAMPLEDATA}
 	@ echo "* Disabling autovacuum"
@@ -91,7 +91,7 @@ dev: test
 	@ echo "* Loading sample data"
 	@ psql -v ON_ERROR_STOP=1 -d ${TEMPLATE_WITH_DEV_SAMPLEDATA} -f $(SAMPLEDATA_DEV) > /dev/null
 	@ echo "* Rebuilding full text indexes"
-	@ ${PYTHON} fti.py --force -q -d ${TEMPLATE_WITH_DEV_SAMPLEDATA}
+	@ ${PYTHON} fti.py --live-rebuild -q -d ${TEMPLATE_WITH_DEV_SAMPLEDATA}
 	@ echo "* Resetting sequences"
 	@ ${PYTHON} reset_sequences.py -d ${TEMPLATE_WITH_DEV_SAMPLEDATA}
 	@ echo "* Disabling autovacuum"
@@ -107,31 +107,16 @@ dev: test
 # database schema, full text indexes and grants into it.
 # It will also create session DBs for the test and dev environments.
 # No sample data is added at this point.
-create: check
+create:
 	@ echo "* If this fails you need to run as the postgresql superuser"
 	@ echo "* eg. sudo -u postgres make create"
 	@ echo
 	@ echo "* Creating database \"$(EMPTY_DBNAME)\"."
-	@ ${CREATEDB} template1 ${EMPTY_DBNAME}
-	@ if ! `createlang -l ${EMPTY_DBNAME} | grep -qs plpythonu`; then \
-		echo "* Installing PL/PythonU"; \
-		createlang -d ${EMPTY_DBNAME} plpythonu; \
-	fi
-	@ if ! `createlang -l ${EMPTY_DBNAME} | grep -qs plpgsql`; then \
-		echo "* Installing PL/PgSQL"; \
-	    	createlang -d ${EMPTY_DBNAME} plpgsql; \
-	fi
-	@ echo "* Creating functions"
-	@ psql -d ${EMPTY_DBNAME} -f trusted.sql   | grep : | cat
-	@ psql -d ${EMPTY_DBNAME} -f testfuncs.sql | grep : | cat
-	@ echo "* Installing tsearch2 into ts2 schema"
-	@ ${PYTHON} fti.py -q --setup-only -d ${EMPTY_DBNAME}
+	@ ${CREATEDB} template0 ${EMPTY_DBNAME}
 	@ echo "* Loading base database schema"
 	@ psql -d ${EMPTY_DBNAME} -f ${BASELINE} | grep : | cat
 	@ echo "* Patching the database schema"
 	@ ${PYTHON} upgrade.py -d ${EMPTY_DBNAME}
-	@ echo "* Setting up full text indexes"
-	@ ${PYTHON} fti.py -q -d ${EMPTY_DBNAME}
 	@ echo "* Security setup"
 	@ ${PYTHON} security.py -q -d ${EMPTY_DBNAME}
 	@ echo "* Disabling autovacuum"
@@ -139,15 +124,13 @@ create: check
 	@ echo "* Vacuuming"
 	@ vacuumdb -fz ${EMPTY_DBNAME}
 
-	@ echo "* Creating session databases '${SESSION_DBNAME}' (if necessary)"
+	@ echo "* Creating session database '${SESSION_DBNAME}' (if necessary)"
 	@if [ "$$((`psql -l | grep -w ${SESSION_DBNAME} | wc -l`))" = '0' ]; \
-	    then ${CREATEDB} template1 ${SESSION_DBNAME} ; \
-	    createlang plpgsql ${SESSION_DBNAME}; \
+	    then ${CREATEDB} template0 ${SESSION_DBNAME} ; \
 	    psql -q -d ${SESSION_DBNAME} -f launchpad_session.sql ; \
 	fi
 	@ echo "* Creating session database '${TEST_SESSION_DBNAME}'"
-	@ ${CREATEDB} template1 ${TEST_SESSION_DBNAME}
-	@ createlang plpgsql ${TEST_SESSION_DBNAME}
+	@ ${CREATEDB} template0 ${TEST_SESSION_DBNAME}
 	@ psql -q -d ${TEST_SESSION_DBNAME} -f launchpad_session.sql
 
 # Confirm that launchpad-XX-00-0.sql hasn't been messed with - this file
@@ -177,14 +160,11 @@ doc:
 	postgresql_autodoc -d ${DBNAME_DEV} -f launchpad -t html
 	tidy -asxhtml launchpad.html > ,launchpad.html || mv ,launchpad.html launchpad.html
 
-diagram:
-	${PYTHON} diagram.py
-
 newsampledata_test:
-	$(call build_new_sampledata,${TEST_PLAYGROUND_DBNAME},${NEWSAMPLEDATA})
+	$(call build_new_sampledata,${TEST_PLAYGROUND_DBNAME},${SAMPLEDATA})
 
 newsampledata_dev:
-	$(call build_new_sampledata,${DBNAME_DEV},${NEWSAMPLEDATA_DEV})
+	$(call build_new_sampledata,${DBNAME_DEV},${SAMPLEDATA_DEV})
 
 newsampledata: newsampledata_dev newsampledata_test
 

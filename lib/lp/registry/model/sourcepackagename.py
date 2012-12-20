@@ -7,19 +7,32 @@ __metaclass__ = type
 __all__ = [
     'SourcePackageName',
     'SourcePackageNameSet',
-    'getSourcePackageDescriptions'
-]
+    'getSourcePackageDescriptions',
+    ]
 
+from sqlobject import (
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
 from zope.interface import implements
 
-from sqlobject import SQLObjectNotFound
-from sqlobject import StringCol, SQLMultipleJoin
-
-from canonical.database.sqlbase import SQLBase, quote_like, cursor, sqlvalues
-
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
+from lp.app.validators.name import valid_name
+from lp.registry.errors import (
+    InvalidName,
+    NoSuchSourcePackageName,
+    )
 from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageName, ISourcePackageNameSet, NoSuchSourcePackageName)
+    ISourcePackageName,
+    ISourcePackageNameSet,
+    )
+from lp.services.database.sqlbase import (
+    cursor,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import ensure_unicode
 
 
 class SourcePackageName(SQLBase):
@@ -37,6 +50,9 @@ class SourcePackageName(SQLBase):
     def __unicode__(self):
         return self.name
 
+    def __repr__(self):
+        return "<%s '%s'>" % (self.__class__.__name__, self.name)
+
     def ensure(klass, name):
         try:
             return klass.byName(name)
@@ -49,33 +65,32 @@ class SourcePackageNameSet:
     implements(ISourcePackageNameSet)
 
     def __getitem__(self, name):
-        """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
+        """See `ISourcePackageNameSet`."""
+        name = ensure_unicode(name)
         try:
             return SourcePackageName.byName(name)
         except SQLObjectNotFound:
             raise NoSuchSourcePackageName(name)
 
     def get(self, sourcepackagenameid):
-        """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
+        """See `ISourcePackageNameSet`."""
         try:
             return SourcePackageName.get(sourcepackagenameid)
         except SQLObjectNotFound:
             raise NotFoundError(sourcepackagenameid)
 
     def getAll(self):
-        """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
+        """See `ISourcePackageNameSet`."""
         return SourcePackageName.select()
 
-    def findByName(self, name):
-        """Find sourcepackagenames by its name or part of it."""
-        query = "name ILIKE '%%' || %s || '%%'" % quote_like(name)
-        return SourcePackageName.select(query)
-
     def queryByName(self, name):
-        """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
+        """See `ISourcePackageNameSet`."""
         return SourcePackageName.selectOneBy(name=name)
 
     def new(self, name):
+        if not valid_name(name):
+            raise InvalidName(
+                "%s is not a valid name for a source package." % name)
         return SourcePackageName(name=name)
 
     def getOrCreateByName(self, name):
@@ -115,15 +130,16 @@ def getSourcePackageDescriptions(
     cur = cursor()
     cur.execute("""SELECT DISTINCT BinaryPackageName.name,
                           SourcePackageName.name
-                     FROM BinaryPackageRelease, SourcePackageName, Build,
-                          SourcePackageRelease, BinaryPackageName
+                     FROM BinaryPackageRelease, SourcePackageName,
+                          BinaryPackageBuild, SourcePackageRelease,
+                          BinaryPackageName
                     WHERE
                        BinaryPackageName.id =
                            BinaryPackageRelease.binarypackagename AND
-                       BinaryPackageRelease.build = Build.id AND
+                       BinaryPackageRelease.build = BinaryPackageBuild.id AND
                        SourcePackageRelease.sourcepackagename =
                            SourcePackageName.id AND
-                       Build.sourcepackagerelease =
+                       BinaryPackageBuild.source_package_release =
                            SourcePackageRelease.id AND
                        %s
                    ORDER BY BinaryPackageName.name,
@@ -132,7 +148,7 @@ def getSourcePackageDescriptions(
 
     descriptions = {}
     for binarypackagename, sourcepackagename in cur.fetchall():
-        if not descriptions.has_key(sourcepackagename):
+        if not sourcepackagename in descriptions:
             descriptions[sourcepackagename] = (
                 "Source of: %s" % binarypackagename)
         else:
@@ -142,4 +158,3 @@ def getSourcePackageDescriptions(
                 description = ", %s" % binarypackagename
             descriptions[sourcepackagename] += description
     return descriptions
-

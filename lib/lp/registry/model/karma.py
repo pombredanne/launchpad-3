@@ -16,25 +16,39 @@ __all__ = [
     'KarmaContextMixin',
     ]
 
+from sqlobject import (
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from sqlobject.sqlbuilder import AND
+from storm.expr import Desc
 from zope.interface import implements
 
-from sqlobject import (
-    ForeignKey, IntCol, StringCol, SQLObjectNotFound,
-    SQLMultipleJoin)
-from sqlobject.sqlbuilder import AND
-
-from canonical.database.sqlbase import SQLBase, sqlvalues, cursor
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.event.interfaces import IKarmaAssignedEvent
-from canonical.launchpad.webapp.interfaces import NotFoundError
-
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.karma import (
-    IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaCacheManager,
-    IKarmaCategory, IKarmaContext, IKarmaTotalCache)
+    IKarma,
+    IKarmaAction,
+    IKarmaActionSet,
+    IKarmaAssignedEvent,
+    IKarmaCache,
+    IKarmaCacheManager,
+    IKarmaCategory,
+    IKarmaContext,
+    IKarmaTotalCache,
+    )
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 
 
 class KarmaAssignedEvent:
@@ -130,7 +144,7 @@ class KarmaCache(SQLBase):
     product = ForeignKey(
         dbName='product', foreignKey='Product', notNull=False)
     project = ForeignKey(
-        dbName='project', foreignKey='Project', notNull=False)
+        dbName='project', foreignKey='ProjectGroup', notNull=False)
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution', notNull=False)
     sourcepackagename = ForeignKey(
@@ -142,8 +156,8 @@ class KarmaCacheManager:
     """See IKarmaCacheManager."""
     implements(IKarmaCacheManager)
 
-    def new(self, value, person_id, category_id, product_id=None, distribution_id=None,
-            sourcepackagename_id=None, project_id=None):
+    def new(self, value, person_id, category_id, product_id=None,
+            distribution_id=None, sourcepackagename_id=None, project_id=None):
         """See IKarmaCacheManager."""
         return KarmaCache(
             karmavalue=value, person=person_id, category=category_id,
@@ -155,17 +169,18 @@ class KarmaCacheManager:
                          project_id=None):
         """See IKarmaCacheManager."""
         entry = self._getEntry(
-            person_id=person_id, category_id=category_id, product_id=product_id,
-            distribution_id=distribution_id, project_id=project_id,
-            sourcepackagename_id=sourcepackagename_id)
+            person_id=person_id, category_id=category_id,
+            product_id=product_id, distribution_id=distribution_id,
+            project_id=project_id, sourcepackagename_id=sourcepackagename_id)
         if entry is None:
             raise NotFoundError("KarmaCache not found: %s" % vars())
         else:
             entry.karmavalue = value
             entry.syncUpdate()
 
-    def _getEntry(self, person_id, category_id, product_id=None, distribution_id=None,
-                  sourcepackagename_id=None, project_id=None):
+    def _getEntry(self, person_id, category_id, product_id=None,
+                  distribution_id=None, sourcepackagename_id=None,
+                  project_id=None):
         """Return the KarmaCache entry with the given arguments.
 
         Return None if it's not found.
@@ -228,34 +243,22 @@ class KarmaContextMixin:
     def getTopContributors(self, category=None, limit=None):
         """See IKarmaContext."""
         from lp.registry.model.person import Person
+        store = IStore(Person)
         if IProduct.providedBy(self):
-            where_clause = "product = %d" % self.id
+            condition = KarmaCache.productID == self.id
         elif IDistribution.providedBy(self):
-            where_clause = "distribution = %d" % self.id
-        elif IProject.providedBy(self):
-            where_clause = "project = %d" % self.id
+            condition = KarmaCache.distributionID == self.id
+        elif IProjectGroup.providedBy(self):
+            condition = KarmaCache.projectID == self.id
         else:
             raise AssertionError(
                 "Not a product, project or distribution: %r" % self)
 
         if category is not None:
-            category_filter = " AND category = %s" % sqlvalues(category)
-        else:
-            category_filter = " AND category IS NULL"
-        if limit is not None:
-            limit_filter = " LIMIT %d" % limit
-        query = """
-            SELECT person, karmavalue
-            FROM KarmaCache
-            WHERE %(where_clause)s
-            %(category_filter)s
-            ORDER BY karmavalue DESC
-            %(limit)s
-            """ % {'where_clause': where_clause, 'limit': limit_filter,
-                   'category_filter': category_filter}
-
-        cur = cursor()
-        cur.execute(query)
-        return [(Person.get(person_id), karmavalue)
-                for person_id, karmavalue in cur.fetchall()]
-
+            category = category.id
+        contributors = store.find(
+            (Person, KarmaCache.karmavalue),
+            KarmaCache.personID == Person.id,
+            KarmaCache.categoryID == category, condition).order_by(
+                Desc(KarmaCache.karmavalue)).config(limit=limit)
+        return list(contributors)

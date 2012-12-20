@@ -65,6 +65,7 @@ Each binary publication exposes a number of properties:
 
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(pubs['entries'][0])
+    architecture_specific: True
     archive_link: u'http://.../~cprov/+archive/ppa'
     binary_package_name: u'mozilla-firefox'
     binary_package_version: u'1.0'
@@ -90,44 +91,213 @@ Each binary publication exposes a number of properties:
 Security
 ========
 
-When Celso's PPA becomes private ...
+Create a private PPA for Celso with some binaries.
 
     >>> login("foo.bar@canonical.com")
-
     >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
-
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> cprov.archive.buildd_secret = 'boing'
-    >>> cprov.archive.private = True
-
-    >>> transaction.commit()
-
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> from lp.soyuz.enums import PackagePublishingStatus
+    >>> cprov_db = getUtility(IPersonSet).getByName('cprov')
+    >>> ubuntu_db = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> cprov_private_ppa_db = factory.makeArchive(
+    ...     private=True, owner=cprov_db, name="p3a",
+    ...     distribution=ubuntu_db)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> test_publisher.prepareBreezyAutotest()
+    >>> private_source_pub = test_publisher.getPubBinaries(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     binaryname='privacy-test-bin',
+    ...     archive=cprov_private_ppa_db)
     >>> logout()
 
 Only Celso (or anyone who participates on the PPA owner team) has
 access to the PPA publications.
 
+    >>> cprov_private_ppa = webservice.get("/~cprov/+archive/p3a").jsonBody()
     >>> cprov_bins_response = webservice.named_get(
-    ...     cprov_archive['self_link'], 'getPublishedBinaries')
-    >>> print cprov_bins_response.getOutput()
+    ...     cprov_private_ppa['self_link'], 'getPublishedBinaries')
+    >>> print cprov_bins_response
     HTTP/1.1 200 Ok
     ...
 
 Any other user attempt would result in a 401 error.
 
     >>> response = user_webservice.named_get(
-    ...     cprov_archive['self_link'], 'getPublishedBinaries')
-    >>> print response.getOutput()
+    ...     cprov_private_ppa['self_link'], 'getPublishedBinaries')
+    >>> print response
     HTTP/1.1 401 Unauthorized
     ...
 
 If the user attempts to access the publication URL directly they will
 also fail in their quest.
 
+    >>> pubs = cprov_bins_response.jsonBody()
     >>> private_publication_url = pubs['entries'][0]['self_link']
     >>> response = user_webservice.get(private_publication_url)
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 401 Unauthorized
     ...
 
+
+Download counts
+===============
+
+We can retrieve the total download count for a binary in this archive.
+
+    >>> webservice.named_get(
+    ...     pubs['entries'][0]['self_link'], 'getDownloadCount').jsonBody()
+    0
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> from datetime import date
+    >>> from lp.services.worlddata.interfaces.country import ICountrySet
+    >>> australia = getUtility(ICountrySet)['AU']
+
+    >>> firefox_db = cprov_db.archive.getAllPublishedBinaries(
+    ...     name='mozilla-firefox')[0]
+    >>> firefox_db.archive.updatePackageDownloadCount(
+    ...     firefox_db.binarypackagerelease, date(2010, 2, 21), australia, 10)
+    >>> firefox_db.archive.updatePackageDownloadCount(
+    ...     firefox_db.binarypackagerelease, date(2010, 2, 23), None, 8)
+
+    >>> logout()
+
+    >>> firefox = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedBinaries',
+    ...     binary_name='mozilla-firefox').jsonBody()['entries'][0]
+    >>> webservice.named_get(
+    ...     firefox['self_link'], 'getDownloadCount').jsonBody()
+    18
+
+Detailed download counts are also available from the getDownloadCounts method.
+
+    >>> counts = webservice.named_get(
+    ...     firefox['self_link'], 'getDownloadCounts').jsonBody()['entries']
+    >>> len(counts)
+    2
+
+A detailed count object can be retrieved by its URL.
+
+    >>> pprint_entry(webservice.get(counts[1]['self_link']).jsonBody())
+    archive_link: u'http://.../~cprov/+archive/ppa'
+    binary_package_name: u'mozilla-firefox'
+    binary_package_version: u'1.0'
+    count: 10
+    country_link: u'http://.../+countries/AU'
+    day: u'2010-02-21'
+    resource_type_link: u'http://.../#binary_package_release_download_count'
+    self_link: u'http://.../~cprov/+archive/ppa/+binaryhits/mozilla-firefox/1.0/hppa/2010-02-21/AU'
+
+We can also filter by date.
+
+    >>> counts = webservice.named_get(
+    ...     firefox['self_link'], 'getDownloadCounts',
+    ...     start_date='2010-02-22').jsonBody()['entries']
+    >>> len(counts)
+    1
+
+    >>> pprint_entry(webservice.get(counts[0]['self_link']).jsonBody())
+    archive_link: u'http://.../~cprov/+archive/ppa'
+    binary_package_name: u'mozilla-firefox'
+    binary_package_version: u'1.0'
+    count: 8
+    country_link: None
+    day: u'2010-02-23'
+    resource_type_link: u'http://.../#binary_package_release_download_count'
+    self_link: u'http://.../~cprov/+archive/ppa/+binaryhits/mozilla-firefox/1.0/hppa/2010-02-23/unknown'
+
+But other URLs result in a 404.
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+binaryhits/moz')
+    HTTP/1.1 404 Not Found
+    ...
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+binaryhits/phoenix/1.0/hppa/2010-02-23/unknown')
+    HTTP/1.1 404 Not Found
+    ...
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+binaryhits/mozilla-firefox/1.1/hppa/2010-02-23/unknown')
+    HTTP/1.1 404 Not Found
+    ...
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+binaryhits/mozilla-firefox/1.0/foo/2010-02-23/unknown')
+    HTTP/1.1 404 Not Found
+    ...
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+binaryhits/mozilla-firefox/1.0/hppa/2010-02-25/unknown')
+    HTTP/1.1 404 Not Found
+    ...
+
+    >>> print webservice.get(
+    ...     '/~cprov/+archive/ppa/+binaryhits/mozilla-firefox/1.0/hppa/2010-02-23/XX')
+    HTTP/1.1 404 Not Found
+    ...
+
+getDailyDownloadTotals returns a dict mapping dates to total counts.
+
+    >>> webservice.named_get(
+    ...     firefox['self_link'], 'getDailyDownloadTotals').jsonBody()
+    {u'2010-02-21': 10, u'2010-02-23': 8}
+
+
+Overrides
+=========
+
+    >>> from lp.services.webapp.interfaces import OAuthPermission
+    >>> from lp.testing.pages import webservice_for_person
+    >>> login("foo.bar@canonical.com")
+    >>> override_source = test_publisher.getPubSource(
+    ...     archive=cprov_db.archive, sourcename="testoverrides")
+    >>> override_binaries = test_publisher.getPubBinaries(
+    ...     binaryname="testoverrides", pub_source=override_source,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> logout()
+    >>> cprov_webservice = webservice_for_person(
+    ...     cprov_db, permission=OAuthPermission.WRITE_PUBLIC)
+
+    >>> cprov_archive_devel = webservice.get(
+    ...     "/~cprov/+archive/ppa", api_version="devel").jsonBody()
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive_devel["self_link"], "getPublishedBinaries",
+    ...     api_version="devel", binary_name="testoverrides").jsonBody()
+    >>> print pubs["entries"][0]["section_name"]
+    base
+    >>> print pubs["entries"][0]["priority_name"]
+    STANDARD
+    >>> package = pubs["entries"][0]["self_link"]
+
+Anonymous users can't change overrides.
+
+    >>> response = webservice.named_post(
+    ...     package, "changeOverride", api_version="devel",
+    ...     new_section="admin", new_priority="optional")
+    >>> print response
+    HTTP/1.1 401 Unauthorized
+    ...
+
+The owner of a PPA can change overrides.
+
+    >>> response = cprov_webservice.named_post(
+    ...     package, "changeOverride", api_version="devel",
+    ...     new_section="admin", new_priority="optional")
+    >>> print response
+    HTTP/1.1 200 Ok
+    ...
+
+The override change takes effect:
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive["self_link"], "getPublishedBinaries",
+    ...     binary_name="testoverrides").jsonBody()
+    >>> print pubs["entries"][0]["section_name"]
+    admin
+    >>> print pubs["entries"][0]["priority_name"]
+    OPTIONAL

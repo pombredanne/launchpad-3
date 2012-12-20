@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Email notifications related to code imports."""
@@ -7,33 +7,57 @@ __metaclass__ = type
 
 import textwrap
 
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.helpers import (
-    get_contact_email_addresses, get_email_template)
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
-    BranchSubscriptionNotificationLevel, CodeImportEventDataType,
-    CodeImportEventType, CodeImportReviewStatus, RevisionControlSystems)
+    BranchSubscriptionNotificationLevel,
+    CodeImportEventDataType,
+    CodeImportEventType,
+    CodeImportReviewStatus,
+    RevisionControlSystems,
+    )
 from lp.registry.interfaces.person import IPerson
-from canonical.launchpad.mail import format_address, simple_sendmail
-from canonical.launchpad.webapp import canonical_url
+from lp.services.config import config
+from lp.services.mail.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
+    )
+from lp.services.mail.sendmail import (
+    format_address,
+    simple_sendmail,
+    )
+from lp.services.webapp import canonical_url
 
 
 def new_import(code_import, event):
     """Email the vcs-imports team about a new code import."""
-    if event.user is None:
+    if (event.user is None
+        or IUnauthenticatedPrincipal.providedBy(event.user)):
         # If there is no logged in user, then we are most likely in a
         # test.
         return
-
     user = IPerson(event.user)
     subject = 'New code import: %s/%s' % (
-        code_import.product.name, code_import.branch.name)
-    body = get_email_template('new-code-import.txt') % {
+        code_import.branch.target.name, code_import.branch.name)
+    if code_import.rcs_type == RevisionControlSystems.CVS:
+        location = '%s, %s' % (code_import.cvs_root, code_import.cvs_module)
+    else:
+        location = code_import.url
+    rcs_type_map = {
+        RevisionControlSystems.CVS: 'CVS',
+        RevisionControlSystems.SVN: 'subversion',
+        RevisionControlSystems.BZR_SVN: 'subversion',
+        RevisionControlSystems.GIT: 'git',
+        RevisionControlSystems.BZR: 'bazaar',
+        }
+    body = get_email_template('new-code-import.txt', app='code') % {
         'person': code_import.registrant.displayname,
-        'branch': canonical_url(code_import.branch)}
+        'branch': canonical_url(code_import.branch),
+        'rcs_type': rcs_type_map[code_import.rcs_type],
+        'location': location,
+        }
 
     from_address = format_address(
         user.displayname, user.preferredemail.email)
@@ -41,7 +65,9 @@ def new_import(code_import, event):
     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     headers = {'X-Launchpad-Branch': code_import.branch.unique_name,
                'X-Launchpad-Message-Rationale':
-                   'Operator @%s' % vcs_imports.name}
+                   'Operator @%s' % vcs_imports.name,
+               'X-Launchpad-Notification-Type': 'code-import',
+               }
     for address in get_contact_email_addresses(vcs_imports):
         simple_sendmail(from_address, address, subject, body, headers)
 
@@ -94,17 +120,14 @@ def make_email_body_for_code_import_update(
             body.append(
                 details_change_prefix + '\n' + new_details +
                 "\ninstead of:\n" + old_details)
-    elif code_import.rcs_type == RevisionControlSystems.SVN:
-        if CodeImportEventDataType.OLD_SVN_BRANCH_URL in event_data:
-            old_url = event_data[CodeImportEventDataType.OLD_SVN_BRANCH_URL]
+    elif code_import.rcs_type in (RevisionControlSystems.SVN,
+                                  RevisionControlSystems.BZR_SVN,
+                                  RevisionControlSystems.GIT,
+                                  RevisionControlSystems.BZR):
+        if CodeImportEventDataType.OLD_URL in event_data:
+            old_url = event_data[CodeImportEventDataType.OLD_URL]
             body.append(
-                details_change_prefix + '\n    ' +code_import.svn_branch_url +
-                "\ninstead of:\n    " + old_url)
-    elif code_import.rcs_type == RevisionControlSystems.GIT:
-        if CodeImportEventDataType.OLD_GIT_REPO_URL in event_data:
-            old_url = event_data[CodeImportEventDataType.OLD_GIT_REPO_URL]
-            body.append(
-                details_change_prefix + '\n    ' +code_import.git_repo_url +
+                details_change_prefix + '\n    ' + code_import.url +
                 "\ninstead of:\n    " + old_url)
     else:
         raise AssertionError(
@@ -133,10 +156,11 @@ def code_import_updated(code_import, event, new_whiteboard, person):
     headers = {'X-Launchpad-Branch': branch.unique_name}
 
     subject = 'Code import %s/%s status: %s' % (
-        code_import.product.name, branch.name,
+        code_import.branch.target.name, branch.name,
         code_import.review_status.title)
 
-    email_template = get_email_template('code-import-status-updated.txt')
+    email_template = get_email_template(
+        'code-import-status-updated.txt', app='code')
     template_params = {
         'body': make_email_body_for_code_import_update(
             code_import, event, new_whiteboard),
@@ -168,7 +192,7 @@ def code_import_updated(code_import, event, new_whiteboard, person):
                 template_params['rationale'] = (
                     'You are receiving this email as you are subscribed '
                     'to the branch.')
-                if not subscription.person.isTeam():
+                if not subscription.person.is_team:
                     # Give the users a link to unsubscribe.
                     template_params['unsubscribe'] = (
                         "\nTo unsubscribe from this branch go to "

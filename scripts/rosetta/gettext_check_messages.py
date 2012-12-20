@@ -1,4 +1,4 @@
-#! /usr/bin/python2.4
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -23,7 +23,8 @@ __metaclass__ = type
 import _pythonpath
 
 from lp.translations.scripts.gettext_check_messages import (
-    GettextCheckMessages)
+    GettextCheckMessages,
+    )
 
 
 if __name__ == '__main__':

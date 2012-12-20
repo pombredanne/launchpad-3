@@ -1,13 +1,17 @@
-= Private and Private Membership Team Creation =
+Private Team Creation
+=====================
 
-Private and Private membership teams may only be created by commercial
-admins (launchpad.Commercial permission).  This permission is
-controlled in the UI by only displaying the 'visibility' control to
-commercial admins.
+Private teams may only be created by commercial admins
+(launchpad.Commercial permission).  This permission is controlled in
+the UI by only displaying the 'visibility' control to commercial
+admins.
 
 Unprivileged users do not see the visibility widget.
 
-    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.person import (
+    ...     IPersonSet,
+    ...     PersonVisibility,
+    ...     )
     >>> personset = getUtility(IPersonSet)
     >>> nopriv = personset.getByEmail('no-priv@canonical.com')
     >>> login('no-priv@canonical.com')
@@ -40,20 +44,19 @@ And real admins see the visibility widget too.
     >>> 'visibility' in [field.__name__ for field in view.form_fields]
     True
 
-When creating a private membership team, the team subscription policy
-must be 'Restricted.'
+When creating a private team, the team membership policy must be
+'Restricted.'
 
     >>> login('foo.bar@canonical.com')
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
     >>> form = {
     ...     'field.name': 'super-secret',
     ...     'field.displayname': 'Shhhh',
-    ...     'field.description': 'my own team description',
     ...     'field.defaultmembershipperiod': '365',
-    ...     'field.defaultrenewalperiod': '365',
-    ...     'field.subscriptionpolicy': 'OPEN',
+    ...     'field.defaultrenewalperiod': '',
+    ...     'field.membership_policy': 'OPEN',
     ...     'field.renewal_policy': 'NONE',
-    ...     'field.visibility': 'Private Membership',
+    ...     'field.visibility': 'PRIVATE',
     ...     'field.actions.create': 'Create',
     ...     }
     >>> view = create_initialized_view(
@@ -65,45 +68,18 @@ must be 'Restricted.'
 
     >>> for error in view.errors:
     ...     print error
-    Private teams must have a Restricted subscription policy.
-
-Likewise for a private team.
-
-    >>> login('foo.bar@canonical.com')
-    >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
-    >>> form = {
-    ...     'field.name': 'super-secret2',
-    ...     'field.displayname': 'Shhhh',
-    ...     'field.description': 'my own team description',
-    ...     'field.defaultmembershipperiod': '365',
-    ...     'field.defaultrenewalperiod': '365',
-    ...     'field.subscriptionpolicy': 'OPEN',
-    ...     'field.renewal_policy': 'NONE',
-    ...     'field.visibility': 'Private',
-    ...     'field.actions.create': 'Create',
-    ...     }
-    >>> view = create_initialized_view(
-    ...     personset, '+newteam',
-    ...     form=form, principal=foo_bar)
-
-    >>> print len(view.request.notifications)
-    0
-
-    >>> for error in view.errors:
-    ...     print error
-    Private teams must have a Restricted subscription policy.
+    Private teams must have a Restricted membership policy.
 
 When the inputs are correct the admin can successfully create the team.
 
     >>> form = {
     ...     'field.name': 'super-secret2',
     ...     'field.displayname': 'Shhhh',
-    ...     'field.description': 'my own team description',
     ...     'field.defaultmembershipperiod': '365',
-    ...     'field.defaultrenewalperiod': '365',
-    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.defaultrenewalperiod': '',
+    ...     'field.membership_policy': 'RESTRICTED',
     ...     'field.renewal_policy': 'NONE',
-    ...     'field.visibility': 'Private',
+    ...     'field.visibility': 'PRIVATE',
     ...     'field.actions.create': 'Create',
     ...     }
     >>> view = create_initialized_view(
@@ -121,12 +97,11 @@ Commercial admins can create a team too.
     >>> form = {
     ...     'field.name': 'secret-team',
     ...     'field.displayname': 'Shhhh',
-    ...     'field.description': 'my own team description',
     ...     'field.defaultmembershipperiod': '365',
     ...     'field.defaultrenewalperiod': '365',
-    ...     'field.subscriptionpolicy': 'RESTRICTED',
-    ...     'field.renewal_policy': 'NONE',
-    ...     'field.visibility': 'Private Membership',
+    ...     'field.membership_policy': 'RESTRICTED',
+    ...     'field.renewal_policy': 'ONDEMAND',
+    ...     'field.visibility': 'PRIVATE',
     ...     'field.actions.create': 'Create',
     ...     }
     >>> view = create_initialized_view(
@@ -143,52 +118,20 @@ Commercial admins can create a team too.
     >>> transaction.commit()
     >>> secret_team = personset.getByName('secret-team')
     >>> print secret_team.visibility.name
-    PRIVATE_MEMBERSHIP
-
-Admins can successfully create a private membership team.
-
-    >>> login('foo.bar@canonical.com')
-    >>> form = {
-    ...     'field.name': 'super-secret',
-    ...     'field.displayname': 'Shhhh',
-    ...     'field.description': 'my own team description',
-    ...     'field.defaultmembershipperiod': '365',
-    ...     'field.defaultrenewalperiod': '365',
-    ...     'field.subscriptionpolicy': 'RESTRICTED',
-    ...     'field.renewal_policy': 'NONE',
-    ...     'field.visibility': 'Private Membership',
-    ...     'field.actions.create': 'Create',
-    ...     }
-    >>> view = create_initialized_view(
-    ...     personset, '+newteam',
-    ...     form=form, principal=foo_bar)
-
-    >>> print len(view.request.notifications)
-    0
-
-    >>> print len(view.errors)
-    0
-
-    >>> import transaction
-    >>> transaction.commit()
-    >>> super_secret = personset.getByName('super-secret')
-    >>> print super_secret.visibility.name
-    PRIVATE_MEMBERSHIP
-
+    PRIVATE
 
 Admins who attempt to create a new team with the name of an existing
 team get the normal error message.
 
     >>> login('foo.bar@canonical.com')
     >>> form = {
-    ...     'field.name': 'super-secret',
+    ...     'field.name': 'secret-team',
     ...     'field.displayname': 'Shhhh',
-    ...     'field.description': 'my own team description',
     ...     'field.defaultmembershipperiod': '365',
-    ...     'field.defaultrenewalperiod': '365',
-    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.defaultrenewalperiod': '',
+    ...     'field.membership_policy': 'RESTRICTED',
     ...     'field.renewal_policy': 'NONE',
-    ...     'field.visibility': 'Private Membership',
+    ...     'field.visibility': 'PRIVATE',
     ...     'field.actions.create': 'Create',
     ...     }
     >>> view = create_initialized_view(
@@ -200,19 +143,18 @@ team get the normal error message.
 
     >>> for error in view.errors:
     ...     print view.getFieldError(error.field_name)
-    super-secret is already in use by another person or team.
+    secret-team is already in use by another person or team.
 
 Regular users who try to create a team with a name that is already
 taken by a private team get the blacklist message.
 
     >>> login('no-priv@canonical.com')
     >>> form = {
-    ...     'field.name': 'super-secret',
+    ...     'field.name': 'secret-team',
     ...     'field.displayname': 'Shhhh',
-    ...     'field.description': 'my own team description',
     ...     'field.defaultmembershipperiod': '365',
-    ...     'field.defaultrenewalperiod': '365',
-    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.defaultrenewalperiod': '',
+    ...     'field.membership_policy': 'RESTRICTED',
     ...     'field.renewal_policy': 'NONE',
     ...     'field.actions.create': 'Create',
     ...     }
@@ -225,10 +167,13 @@ taken by a private team get the blacklist message.
 
     >>> for error in view.errors:
     ...     print view.getFieldError(error.field_name)
-    The name 'super-secret' has been blocked by the Launchpad administrators.
+    The name &#x27;secret-team&#x27; has been blocked by the Launchpad
+    administrators.  Contact Launchpad Support if you want to use this
+    name.
 
 
-= Private Team Editing =
+Private Team Editing
+--------------------
 
 The same as when creating a new team, only commercial admins are given
 the option of changing a team's visibility.
@@ -248,7 +193,7 @@ the option of changing a team's visibility.
     >>> 'visibility' in [field.__name__ for field in view.form_fields]
     True
 
-And a non-public team must have restricted membership.
+And a private team must have restricted membership.
 
     >>> login('foo.bar@canonical.com')
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
@@ -256,16 +201,15 @@ And a non-public team must have restricted membership.
     >>> form = {
     ...     'field.name': 'super-secret3',
     ...     'field.displayname': 'Shhhh',
-    ...     'field.description': 'my own team description',
     ...     'field.defaultmembershipperiod': '365',
-    ...     'field.defaultrenewalperiod': '365',
-    ...     'field.subscriptionpolicy': 'OPEN',
+    ...     'field.defaultrenewalperiod': '',
+    ...     'field.membership_policy': 'OPEN',
     ...     'field.renewal_policy': 'NONE',
-    ...     'field.visibility': 'Private Membership',
+    ...     'field.visibility': 'PRIVATE',
     ...     'field.actions.save': 'Save',
     ...     }
     >>> view = create_initialized_view(
-    ...     super_secret, '+edit',
+    ...     secret_team, '+edit',
     ...     form=form, principal=foo_bar)
 
     >>> print len(view.request.notifications)
@@ -273,18 +217,17 @@ And a non-public team must have restricted membership.
 
     >>> for error in view.errors:
     ...     print error
-    Private teams must have a Restricted subscription policy.
+    Private teams must have a Restricted membership policy.
 
-= Visibility transitions =
+Visibility transitions
+----------------------
 
 A team can only change visibility if the new state will not leak any
 data or put the team into an inconsistent state.  The rules are:
 
-Private -> anything: Fail
-Private Membership -> Private : OK
-Private Membership -> Public : OK
-Public -> Private/PMT : OK, if the team only has the permitted artifacts
-Public -> Private/PMT : Fail, if the team has a restricted artifact
+Private -> Public: Fail
+Public -> Private : OK, if the team only has the permitted artifacts
+Public -> Private : Fail, if the team has a restricted artifact
 
 Private teams cannot be made public.
 
@@ -292,12 +235,11 @@ Private teams cannot be made public.
     >>> form = {
     ...     'field.name': 'super-secret-two',
     ...     'field.displayname': 'New Display Name',
-    ...     'field.description': 'my own team description',
     ...     'field.defaultmembershipperiod': '365',
-    ...     'field.defaultrenewalperiod': '365',
-    ...     'field.subscriptionpolicy': 'OPEN',
+    ...     'field.defaultrenewalperiod': '',
+    ...     'field.membership_policy': 'OPEN',
     ...     'field.renewal_policy': 'NONE',
-    ...     'field.visibility': 'Public',
+    ...     'field.visibility': 'PUBLIC',
     ...     'field.actions.save': 'Save',
     ...     }
     >>> view = create_initialized_view(
@@ -322,81 +264,13 @@ displayname for the team is the old value.
     >>> print super_secret2.displayname
     Shhhh
 
-Private teams cannot become private membership.
-
-    >>> form = {
-    ...     'field.name': 'super-secret-two',
-    ...     'field.displayname': 'New Display Name',
-    ...     'field.description': 'my own team description',
-    ...     'field.defaultmembershipperiod': '365',
-    ...     'field.defaultrenewalperiod': '365',
-    ...     'field.subscriptionpolicy': 'RESTRICTED',
-    ...     'field.renewal_policy': 'NONE',
-    ...     'field.visibility': 'Private Membership',
-    ...     'field.actions.save': 'Save',
-    ...     }
-    >>> view = create_initialized_view(
-    ...     super_secret2, '+edit',
-    ...     form=form, principal=foo_bar)
-
-    >>> for notification in view.request.notifications:
-    ...     print notification.message
-    A private team cannot change visibility.
-
-    >>> print len(view.errors)
-    0
-
-Private Membership teams can be made private.
-
-    >>> from lp.registry.interfaces.person import PersonVisibility
-    >>> login('foo.bar@canonical.com')
-    >>> team = factory.makeTeam(
-    ...     owner=foo_bar,
-    ...     visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
-
-    >>> form = {
-    ...     'field.subscriptionpolicy': 'RESTRICTED',
-    ...     'field.visibility': 'Private',
-    ...     'field.actions.save': 'Save',
-    ...     }
-    >>> view = create_initialized_view(
-    ...     team, '+edit',
-    ...     form=form, principal=foo_bar)
-
-    >>> print len(view.request.notifications)
-    0
-    >>> print len(view.errors)
-    0
-
-Private Membership teams can be made public.
-
-    >>> from lp.registry.interfaces.person import PersonVisibility
-    >>> login('foo.bar@canonical.com')
-    >>> team = factory.makeTeam(
-    ...     owner=foo_bar,
-    ...     visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
-
-    >>> form = {
-    ...     'field.subscriptionpolicy': 'RESTRICTED',
-    ...     'field.visibility': 'Public',
-    ...     'field.actions.save': 'Save',
-    ...     }
-    >>> view = create_initialized_view(
-    ...     team, '+edit',
-    ...     form=form, principal=foo_bar)
-
-    >>> print len(view.request.notifications)
-    0
-    >>> print len(view.errors)
-    0
-
 Public teams can be made private if the only artifacts they have are
 those permitted by private teams.
 
     >>> def createTeamArtifacts(team, team_owner):
     ...     # A bug subscription.
     ...     bug = factory.makeBug()
-    ...     priv_subscription = bug.subscribe(team, team_owner)
+    ...     bug.subscribe(team, team_owner)
     ...     bugtask = bug.default_bugtask
     ...     bugtask.transitionToAssignee(team)
     ...     # A branch.
@@ -407,20 +281,14 @@ those permitted by private teams.
     ...         BranchSubscriptionNotificationLevel,
     ...         CodeReviewNotificationLevel)
     ...     branch = factory.makeBranch()
-    ...     subscription = branch.subscribe(
+    ...     branch.subscribe(
     ...         team,
     ...         BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...         BranchSubscriptionDiffSize.WHOLEDIFF,
-    ...         CodeReviewNotificationLevel.STATUS)
-    ...     # A branch visibility rule.
-    ...     from lp.code.enums import BranchVisibilityRule
-    ...     from lp.registry.interfaces.product import IProductSet
-    ...     evolution = getUtility(IProductSet).getByName('evolution')
-    ...     evolution.setBranchVisibilityTeamPolicy(
-    ...         team, BranchVisibilityRule.PRIVATE)
+    ...         CodeReviewNotificationLevel.STATUS, team_owner)
     ...     # A PPA.
-    ...     from lp.soyuz.interfaces.archive import (
-    ...         ArchivePurpose, IArchiveSet)
+    ...     from lp.soyuz.enums import ArchivePurpose
+    ...     from lp.soyuz.interfaces.archive import IArchiveSet
     ...     from lp.registry.interfaces.distribution import (
     ...         IDistributionSet)
     ...     ubuntu = getUtility(IDistributionSet)['ubuntu']
@@ -433,11 +301,12 @@ those permitted by private teams.
     ...     private_archive.private = True
     ...     # A private PPA subscription.
     ...     login('foo.bar@canonical.com')
-    ...     another_team = factory.makeTeam(owner=team_owner,
-    ...                                     visibility=PersonVisibility.PRIVATE)
+    ...     another_team = factory.makeTeam(
+    ...         owner=team_owner,
+    ...         visibility=PersonVisibility.PRIVATE)
     ...     # We must login as the archive owner to add the subscription.
     ...     login_person(team_owner)
-    ...     subscription = private_archive.newSubscription(
+    ...     private_archive.newSubscription(
     ...         subscriber=another_team,
     ...         registrant=team_owner)
 
@@ -447,13 +316,11 @@ those permitted by private teams.
     ...     owner=foo_bar,
     ...     visibility=PersonVisibility.PUBLIC)
 
-    >>> # Now let's create a bunch of allowable artifacts.
     >>> createTeamArtifacts(team, foo_bar)
 
-    >>> # With all of those artifacts in place we can still transition to private.
     >>> form = {
-    ...     'field.visibility': 'Private',
-    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.visibility': 'PRIVATE',
+    ...     'field.membership_policy': 'RESTRICTED',
     ...     'field.actions.save': 'Save',
     ...     }
     >>> view = create_initialized_view(
@@ -471,18 +338,14 @@ change to Private.
     ...     owner=foo_bar,
     ...     visibility=PersonVisibility.PUBLIC)
 
-    >>> # Now let's create a bunch of allowable artifacts.
     >>> createTeamArtifacts(team, foo_bar)
 
-    >>> # Create a forbidden artifact.  Private teams cannot own bug trackers.
     >>> bug_tracker = factory.makeBugTracker()
     >>> bug_tracker.owner = team
 
-    >>> # With the addtion of hte bug tracker artifact the team will not
-    >>> # be allowed to transition to Private.
     >>> form = {
-    ...     'field.visibility': 'Private',
-    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.visibility': 'PRIVATE',
+    ...     'field.membership_policy': 'RESTRICTED',
     ...     'field.actions.save': 'Save',
     ...     }
     >>> view = create_initialized_view(
@@ -492,56 +355,12 @@ change to Private.
     0
     >>> for error in view.errors:
     ...     print error
-    This team cannot be converted to Private since it is referenced by a bugtracker.
-
-The artifacts we have for the team will prevent it from transitioning
-from Public to Private Membership.
-
-    >>> login('foo.bar@canonical.com')
-    >>> team = factory.makeTeam(
-    ...     owner=foo_bar,
-    ...     visibility=PersonVisibility.PUBLIC)
-
-    >>> createTeamArtifacts(team, foo_bar)
-    >>> form = {
-    ...     'field.visibility': 'Private Membership',
-    ...     'field.subscriptionpolicy': 'RESTRICTED',
-    ...     'field.actions.save': 'Save',
-    ...     }
-    >>> view = create_initialized_view(
-    ...     team, '+edit',
-    ...     form=form, principal=foo_bar)
-
-    >>> print len(view.request.notifications)
-    0
-    >>> for error in view.errors:
-    ...     print error
-    This team cannot be converted to Private Membership since it is referenced by a branch, a branchsubscription,
-    a branchvisibilitypolicy, a bugsubscription, a bugtask and an archive.
-
-A team with no artifacts can be converted from Public to Private Membership.
-
-    >>> login('foo.bar@canonical.com')
-    >>> team = factory.makeTeam(
-    ...     owner=foo_bar,
-    ...     visibility=PersonVisibility.PUBLIC)
-
-    >>> form = {
-    ...     'field.visibility': 'Private Membership',
-    ...     'field.subscriptionpolicy': 'RESTRICTED',
-    ...     'field.actions.save': 'Save',
-    ...     }
-    >>> view = create_initialized_view(
-    ...     team, '+edit',
-    ...     form=form, principal=foo_bar)
-
-    >>> print len(view.request.notifications)
-    0
-    >>> print len(view.errors)
-    0
+    This team cannot be converted to Private since it is referenced by a
+    bugtracker.
 
 
-= Use of 'private-' prefix =
+Use of 'private-' prefix
+------------------------
 
 Commercial admins can create private projects with the 'private-' prefix.
 
@@ -549,12 +368,11 @@ Commercial admins can create private projects with the 'private-' prefix.
     >>> form = {
     ...     'field.name': 'private-super-secret',
     ...     'field.displayname': 'Shhhh',
-    ...     'field.description': 'my own team description',
     ...     'field.defaultmembershipperiod': '365',
-    ...     'field.defaultrenewalperiod': '365',
-    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.defaultrenewalperiod': '',
+    ...     'field.membership_policy': 'RESTRICTED',
     ...     'field.renewal_policy': 'NONE',
-    ...     'field.visibility': 'Private',
+    ...     'field.visibility': 'PRIVATE',
     ...     'field.actions.create': 'Create',
     ...     }
     >>> view = create_initialized_view(
@@ -573,12 +391,11 @@ users will get a blacklist message.
     >>> form = {
     ...     'field.name': 'private-top-secret',
     ...     'field.displayname': 'Shhhh',
-    ...     'field.description': 'my own team description',
     ...     'field.defaultmembershipperiod': '365',
-    ...     'field.defaultrenewalperiod': '365',
-    ...     'field.subscriptionpolicy': 'RESTRICTED',
+    ...     'field.defaultrenewalperiod': '',
+    ...     'field.membership_policy': 'RESTRICTED',
     ...     'field.renewal_policy': 'NONE',
-    ...     'field.visibility': 'Private',
+    ...     'field.visibility': 'PRIVATE',
     ...     'field.actions.create': 'Create',
     ...     }
     >>> view = create_initialized_view(
@@ -590,4 +407,6 @@ users will get a blacklist message.
 
     >>> for error in view.errors:
     ...     print view.getFieldError(error.field_name)
-    The name 'private-top-secret' has been blocked by the Launchpad administrators.
+    The name &#x27;private-top-secret&#x27; has been blocked by the
+    Launchpad administrators. Contact Launchpad Support if you want to
+    use this name.

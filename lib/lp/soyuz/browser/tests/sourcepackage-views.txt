@@ -1,13 +1,13 @@
 = SourcePackage View Classes =
 
   >>> from zope.component import queryMultiAdapter
-  >>> from zope.publisher.browser import TestRequest
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from lp.services.webapp.servers import LaunchpadTestRequest
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
 
 Empty request.
 
   >>> mock_form = {}
-  >>> request = TestRequest(form=mock_form)
+  >>> request = LaunchpadTestRequest(form=mock_form)
 
 Retrieve an known Sourcepackage object:
 
@@ -67,8 +67,8 @@ return a IPackageRelationshipSet object (see package-relationship.txt).
 
   >>> firefox_parsed_depends = firefox_view.builddepends
 
-  >>> from canonical.launchpad.webapp.testing import verifyObject
-  >>> from canonical.launchpad.interfaces import IPackageRelationshipSet
+  >>> from lp.soyuz.interfaces.packagerelationship import IPackageRelationshipSet
+  >>> from lp.services.webapp.testing import verifyObject
   >>> verifyObject(IPackageRelationshipSet, firefox_parsed_depends)
   True
 

@@ -7,12 +7,13 @@ translations, version control, etc. We call these entities
 ProductSeries.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IProductSeries, IProductSet)
-    >>> from lp.translations.interfaces.translationimportqueue import (
+    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.productseries import IProductSeries
+    >>> from lp.translations.interfaces.hastranslationimports import (
     ...     IHasTranslationImports)
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
 
 First, get a product that has some ProductSeries in the sample data.
 
@@ -49,12 +50,12 @@ And verify that it looks like the series we think it should be.
 It's also possible to ask a product for all its associated series.
 
     >>> onedotzero = firefox.getSeries('1.0')
-    >>> list(firefox.serieses) == [onedotzero, trunk]
+    >>> list(firefox.series) == [onedotzero, trunk]
     True
 
 A ProductSeries can also be fetched with the IProductSeriesSet utility.
 
-    >>> from canonical.launchpad.interfaces import IProductSeriesSet
+    >>> from lp.registry.interfaces.productseries import IProductSeriesSet
 
     >>> firefox_1_0 = getUtility(IProductSeriesSet).get(2)
     >>> print firefox_1_0.product.name
@@ -72,14 +73,24 @@ owner or driver can call Product.newSeries().
     ...
     Unauthorized: (..., 'newSeries', 'launchpad.Driver')
 
-    >>> login_person(firefox.owner)
-    >>> emacs_series = firefox.newSeries(firefox.owner , 'emacs', summary)
+    >>> ignored = login_person(firefox.owner)
+    >>> emacs_series = firefox.newSeries(
+    ...     firefox.owner , 'emacs', summary,
+    ...     releasefileglob='ftp://gnu.org/emacs*.gz')
+    >>> print emacs_series.name
+    emacs
+
+    >>> print emacs_series.summary
+    Port of Firefox to the Emacs operating system.
+
+    >>> print emacs_series.releasefileglob
+    ftp://gnu.org/emacs*.gz
 
 When a driver creates a series, he is also the driver of the new series
 to make him the release manager.
 
     >>> firefox.driver = series_driver
-    >>> login_person(series_driver)
+    >>> ignored = login_person(series_driver)
     >>> emacs2 = firefox.newSeries(series_driver , 'emacs2', summary)
     >>> print emacs2.driver.name
     driver
@@ -99,11 +110,11 @@ Let's check that the new series is properly associated to its product.
 
 = Drivers and release managers =
 
-A driver for an IProduct or IProject cannot modify a product series.
+A driver for an IProduct or IProjectGroup cannot modify a product series.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
-    >>> login_person(series_driver)
+    >>> ignored = login_person(series_driver)
     >>> print emacs_series.owner.name
     name12
     >>> print emacs_series.driver
@@ -114,9 +125,9 @@ A driver for an IProduct or IProject cannot modify a product series.
 A person appointed to the series driver has the release manager role and can
 edit a product series.
 
-    >>> login_person(firefox.owner)
+    >>> ignored = login_person(firefox.owner)
     >>> emacs_series.driver = series_driver
-    >>> login_person(series_driver)
+    >>> ignored = login_person(series_driver)
     >>> check_permission('launchpad.Edit', emacs_series)
     True
 
@@ -180,12 +191,12 @@ Basically, we can filter by completeness, and by whether or not the spec
 is informational.
 
     >>> onezero = firefox.getSeries("1.0")
-    >>> from canonical.launchpad.interfaces import SpecificationFilter
+    >>> from lp.blueprints.enums import SpecificationFilter
 
 We will create two specs for onezero and use them to demonstrate the
 filtering.
 
-    >>> from canonical.database.constants import UTC_NOW
+    >>> from lp.services.database.constants import UTC_NOW
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> from lp.blueprints.model.specification import Specification
     >>> a = Specification(name='a', title='A', summary='AA', owner=carlos,
@@ -200,8 +211,10 @@ filtering.
 Now, we will make one of them accepted, the other declined, and both of
 them informational.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     SpecificationDefinitionStatus, SpecificationImplementationStatus)
+    >>> from lp.blueprints.enums import (
+    ...     SpecificationDefinitionStatus,
+    ...     SpecificationImplementationStatus,
+    ...     )
     >>> a.definition_status = b.definition_status = SpecificationDefinitionStatus.APPROVED
     >>> a.implementation_status = SpecificationImplementationStatus.INFORMATIONAL
     >>> b.implementation_status = SpecificationImplementationStatus.INFORMATIONAL
@@ -210,13 +223,13 @@ them informational.
     >>> b.declineBy(b.owner)
     >>> shim = b.updateLifecycleStatus(b.owner)
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 If we ask for ALL specs we should see them both.
 
     >>> filter = [SpecificationFilter.ALL]
-    >>> for s in onezero.specifications(filter=filter):
+    >>> for s in onezero.specifications(None, filter=filter):
     ...     print s.name
     a
     b
@@ -225,23 +238,23 @@ With a productseries, we can ask for ACCEPTED, PROPOSED and DECLINED
 specs:
 
     >>> filter=[SpecificationFilter.ACCEPTED]
-    >>> for spec in onezero.specifications(filter=filter):
+    >>> for spec in onezero.specifications(None, filter=filter):
     ...     print spec.name, spec.goalstatus.title
     a Accepted
 
     >>> filter=[SpecificationFilter.PROPOSED]
-    >>> onezero.specifications(filter=filter).count()
+    >>> onezero.specifications(None, filter=filter).count()
     0
 
     >>> filter=[SpecificationFilter.DECLINED]
-    >>> onezero.specifications(filter=filter).count()
+    >>> onezero.specifications(None, filter=filter).count()
     1
 
 We should see one informational spec if we ask just for that, the
 accepted one.
 
     >>> filter = [SpecificationFilter.INFORMATIONAL]
-    >>> for s in onezero.specifications(filter=filter):
+    >>> for s in onezero.specifications(None, filter=filter):
     ...     print s.name
     a
 
@@ -249,21 +262,21 @@ If we specifically ask for declined informational, we will get that:
 
     >>> filter = [
     ...    SpecificationFilter.INFORMATIONAL, SpecificationFilter.DECLINED]
-    >>> for s in onezero.specifications(filter=filter):
+    >>> for s in onezero.specifications(None, filter=filter):
     ...     print s.name
     b
 
 There are is one completed, accepted spec for 1.0:
 
     >>> filter = [SpecificationFilter.COMPLETE]
-    >>> for spec in onezero.specifications(filter=filter):
+    >>> for spec in onezero.specifications(None, filter=filter):
     ...    print spec.name, spec.is_complete, spec.goalstatus.title
     a True Accepted
 
 There is one completed, declined spec:
 
     >>> filter = [SpecificationFilter.COMPLETE, SpecificationFilter.DECLINED]
-    >>> for spec in onezero.specifications(filter=filter):
+    >>> for spec in onezero.specifications(None, filter=filter):
     ...    print spec.name, spec.is_complete, spec.goalstatus.title
     b True Declined
 
@@ -278,7 +291,7 @@ Now lets make b incomplete, but accepted.
 And if we ask just for specs, we get BOTH the incomplete and the
 complete ones that have been accepted.
 
-    >>> for spec in onezero.specifications():
+    >>> for spec in onezero.specifications(None):
     ...     print spec.name, spec.is_complete, spec.goalstatus.title
     a True Accepted
     b False Accepted
@@ -286,7 +299,7 @@ complete ones that have been accepted.
 We can search for text in specifications (in this case there are no
 matches):
 
-    >>> print len(list(onezero.specifications(filter=['new'])))
+    >>> print len(list(onezero.specifications(None, filter=['new'])))
     0
 
 
@@ -323,7 +336,7 @@ Products, projects and product series have drivers, who are people that
 have permission to approve bugs and features for specific releases. The
 rules are that:
 
- 1. a "driver" can be set on either Project, Product or ProductSeries
+ 1. a "driver" can be set on either ProjectGroup, Product or ProductSeries
 
  2. drivers are only actually relevant on a ProductSeries, because thats
     the granularity at which we track spec/bug targeting
@@ -346,7 +359,7 @@ We test these rules below. We will create the project, product and
 series directly so that we don't have to deal with security permissions
 checks when setting and resetting the driver attributes.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> login('foo.bar@canonical.com')
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> mark = getUtility(IPersonSet).getByName('mark')
@@ -377,7 +390,6 @@ If there is a project on the product, we would expect the project owner:
 If there is NO project on the product, then we expect the product owner:
 
     >>> product.project = None
-    >>> flush_database_updates()
     >>> for d in series.drivers:
     ...     print d.name
     mark
@@ -387,73 +399,40 @@ Now lets put the project back:
     >>> product.project = project.id
     >>> flush_database_updates()
 
-And lets see what happens if we have an explicit driver on any of
-project, product or series:
+Edgar and cprov will be the drivers.
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> edgar = getUtility(IPersonSet).getByName('edgar')
-    >>> danner = getUtility(IPersonSet).getByName('danner')
-    >>> jblack = getUtility(IPersonSet).getByName('jblack')
 
-    >>> project.driver = danner
-    >>> flush_database_updates()
-    >>> for d in series.drivers:
-    ...     print d.name
-    danner
+Edgar becomes the driver of the project group and thus also drives the
+series.
 
-    >>> project.driver = None
-    >>> product.driver = edgar
-    >>> flush_database_updates()
+    >>> project.driver = edgar
     >>> for d in series.drivers:
     ...     print d.name
     edgar
 
-    >>> project.driver = None
-    >>> product.driver = None
+In addition cprov is made driver of the series. Both are drivers now.
+
     >>> series.driver = cprov
-    >>> flush_database_updates()
+    >>> for d in series.drivers:
+    ...     print d.name
+    cprov
+    edgar
+
+With just a driver on the series, the owner of the project group is reported
+as driver, too.
+
+    >>> project.driver = None
     >>> for d in series.drivers:
     ...     print d.name
     carlos
     cprov
 
-OK, now let's test pairs of drivers:
+Without a project group, the driver role falls back to the product owner.
 
-    >>> project.driver = None
-    >>> product.driver = edgar
-    >>> series.driver = cprov
-    >>> flush_database_updates()
+    >>> product.project = None
     >>> for d in series.drivers:
     ...     print d.name
     cprov
-    edgar
-
-    >>> project.driver = mark
-    >>> product.driver = danner
-    >>> series.driver = None
-    >>> flush_database_updates()
-    >>> for d in series.drivers:
-    ...     print d.name
-    danner
     mark
-
-    >>> project.driver = jdub
-    >>> product.driver = None
-    >>> series.driver = edgar
-    >>> flush_database_updates()
-    >>> for d in series.drivers:
-    ...     print d.name
-    edgar
-    jdub
-
-And finally the case where they are all set:
-
-    >>> project.driver = cprov
-    >>> product.driver = danner
-    >>> series.driver = edgar
-    >>> flush_database_updates()
-    >>> for d in series.drivers:
-    ...     print d.name
-    cprov
-    danner
-    edgar

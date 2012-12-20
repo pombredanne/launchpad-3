@@ -7,20 +7,28 @@
 
 __metaclass__ = type
 
+from lazr.restful.declarations import (
+    call_with,
+    collection_default_content,
+    export_as_webservice_collection,
+    export_factory_operation,
+    export_read_operation,
+    operation_for_version,
+    operation_parameters,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import Reference
+from lazr.restful.interface import copy_field
 from zope.interface import Attribute
 
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtarget import IBugTarget
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
-
-from lazr.restful.fields import Reference
-from lazr.restful.declarations import (
-    call_with, collection_default_content, export_as_webservice_collection,
-    export_factory_operation, operation_parameters, REQUEST_USER)
+from lp.services.webapp.interfaces import ILaunchpadApplication
 
 
 __all__ = [
     'IMaloneApplication',
+    'IPrivateMaloneApplication',
     ]
 
 
@@ -31,6 +39,22 @@ class IMaloneApplication(ILaunchpadApplication):
     def searchTasks(search_params):
         """Search IBugTasks with the given search parameters."""
 
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        bug_id=copy_field(IBug['id']),
+        related_bug=Reference(schema=IBug)
+    )
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getBugData(user, bug_id, related_bug=None):
+        """Search bugtasks matching the specified criteria.
+
+        The only criteria currently supported is to search for a bugtask with
+        the specified bug id.
+
+        :return: a list of matching bugs represented as json data
+        """
+
     bug_count = Attribute("The number of bugs recorded in Launchpad")
     bugwatch_count = Attribute("The number of links to external bug trackers")
     bugtask_count = Attribute("The number of bug tasks in Launchpad")
@@ -40,14 +64,10 @@ class IMaloneApplication(ILaunchpadApplication):
         "products and distributions")
     bugtracker_count = Attribute("The number of bug trackers in Launchpad")
     top_bugtrackers = Attribute("The BugTrackers with the most watches.")
-    latest_bugs = Attribute("The latest 5 bugs filed.")
 
-    @collection_default_content(user=REQUEST_USER)
-    def default_bug_list(user):
-        """Return a default list of bugs.
-
-        :param user: The user who's doing the search.
-        """
+    @collection_default_content()
+    def empty_list():
+        """Return an empty set - only exists to keep lazr.restful happy."""
 
     @call_with(owner=REQUEST_USER)
     @operation_parameters(
@@ -57,8 +77,8 @@ class IMaloneApplication(ILaunchpadApplication):
                    "this bug."))
     @export_factory_operation(
         IBug, ['title', 'description', 'tags', 'security_related', 'private'])
-    def createBug(owner, title, description, target, security_related=False,
-                  private=False, tags=None):
+    def createBug(owner, title, description, target, security_related=None,
+                  private=None, tags=None):
         """Create a bug (with an appropriate bugtask) and return it.
 
         :param target: The Product, Distribution or DistributionSourcePackage
@@ -69,9 +89,13 @@ class IMaloneApplication(ILaunchpadApplication):
           * the owner will be subscribed to the bug
 
           * distribution, product and package contacts (whichever ones are
-            applicable based on the bug report target) will bug subscribed to
+            applicable based on the bug report target) will be subscribed to
             all *public bugs only*
 
           * for public upstreams bugs where there is no upstream bug contact,
             the product owner will be subscribed instead
         """
+
+
+class IPrivateMaloneApplication(ILaunchpadApplication):
+    """Private application root for malone."""

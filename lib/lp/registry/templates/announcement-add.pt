@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
@@ -15,9 +12,6 @@
     <metal:yui-dependencies
       use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
   </metal:block>
-
-<metal:portlets fill-slot="portlets">
-</metal:portlets>
 
 <div metal:fill-slot="main">
 

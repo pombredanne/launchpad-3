@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 
@@ -14,179 +11,234 @@
   <metal:block fill-slot="head_epilogue">
     <metal:yui-dependencies
       use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
-    <script type="text/javascript"
-      tal:define="lp_js string:${icingroot}/build"
-      tal:attributes="src string:${lp_js}/registry/milestone_table.js"></script>
-    <script id='milestone-script' type='text/javascript'
+    <script id="milestone-script" type="text/javascript"
       tal:condition="context/menu:overview/create_milestone/enabled"
-      tal:content="structure string:
-      YUI().use(
-        'node', 'lp.milestoneoverlay', 'lp.milestonetable', function (Y) {
-
-        var series_uri = '${view/series_api_uri}';
-        var milestone_form_uri = '${view/milestone_form_uri}';
-        var milestone_row_uri_template = '${view/milestone_row_uri_template}';
-        var milestone_rows_id = '#milestone-rows';
-
-        Y.on('domready', function () {
-            var create_milestone_link = Y.get('.menu-link-create_milestone');
-            create_milestone_link.addClass('js-action');
-            var config = {
-                milestone_form_uri: milestone_form_uri,
-                series_uri: series_uri,
-                next_step: Y.lp.milestonetable.get_milestone_row,
-                activate_node: create_milestone_link
-                };
-            Y.lp.milestoneoverlay.attach_widget(config);
-            var table_config = {
-                milestone_row_uri_template: milestone_row_uri_template,
-                milestone_rows_id: milestone_rows_id
-                }
-            Y.lp.milestonetable.setup(table_config);
-        });
-    });" />
+      tal:content="view/register_milestone_script"></script>
+    <tal:uses_launchpad_bugtracker
+       condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD">
+      <script type="text/javascript">
+          LPJS.use('lp.registry.structural_subscription', function(Y) {
+              var module = Y.lp.registry.structural_subscription;
+              Y.on('domready', function() {
+                module.setup({content_box: "#structural-subscription-content-box"});
+              });
+          });
+      </script>
+    </tal:uses_launchpad_bugtracker>
   </metal:block>
 
-  <div metal:fill-slot="main"
-    tal:define="overview_menu context/menu:overview;
-                sourcepackages context/sourcepackages">
+    <tal:heading metal:fill-slot="heading">
+      <h1 tal:content="context/title">project 1.x series</h1>
+    </tal:heading>
 
-    <h1>
-      <tal:title content="context/title">Release series details</tal:title>
-      <a tal:replace="structure overview_menu/delete/fmt:icon" />
-      <a tal:replace="structure overview_menu/edit/fmt:icon" />
-    </h1>
-    <table id="series-details" style="margin-bottom: 1em;">
-      <tr>
-        <th>Project:</th>
-        <td><tal:link replace="structure context/product/fmt:link" /></td>
-      </tr>
-      <tr>
-        <th>Series:</th>
-        <td><tal:name replace="context/name" /></td>
-      </tr>
-      <tr>
-        <th>Status:</th>
-        <td>
-          <strong tal:content="context/status/title" />
-        </td>
-      </tr>
-      <tr>
-        <th>Project drivers:</th>
-        <td>
-        <tal:per_driver repeat="driver context/drivers">
-          <a tal:replace="structure driver/fmt:link">driver</a><tal:comma
-            condition="not: repeat/driver/end">,</tal:comma>
-        </tal:per_driver>
-         </td>
-       </tr>
-       <tr>
-         <th>Release manager:</th>
-         <td>
-           <tal:no-driver condition="not: context/driver">None</tal:no-driver>
-           <a
-             tal:condition="context/driver"
-             tal:replace="structure context/driver/fmt:link">series driver</a>
-           <a tal:replace="structure overview_menu/driver/fmt:icon" />
-        </td>
-      </tr>
-    </table>
+    <div metal:fill-slot="main"
+      tal:define="overview_menu context/menu:overview">
 
-    <div id="description">
-      <fieldset>
-        <legend>Summary</legend>
-        <div class="documentDescription"
-          tal:content="structure context/summary/fmt:text-to-html">
-          Summary of the purpose of this series
+      <div class="top-portlet">
+        <div id="description"
+          tal:content="structure context/summary/fmt:text-to-html" />
+
+        <div style="padding-top: 1em"
+             tal:define="auto_resize string:true; include_inactive string:true">
+          <iframe metal:use-macro="context/@@+timeline-macros/timeline-iframe"/>
         </div>
-      </fieldset>
+      </div>
+
+      <div class="yui-g">
+        <div class="yui-u first">
+          <div id="series-details" class="portlet">
+            <h2>Series information</h2>
+
+            <div class="two-column-list">
+              <dl id="series-project">
+                <dt>Project:</dt>
+                <dd><tal:link replace="structure context/product/fmt:link" /></dd>
+              </dl>
+
+              <dl id="series-name">
+                <dt>Series:</dt>
+                <dd><tal:name replace="context/name" /></dd>
+              </dl>
+
+              <dl id="series-drivers">
+                <dt>Project drivers:</dt>
+                <dd>
+                  <tal:per_driver repeat="driver context/drivers">
+                    <a tal:replace="structure driver/fmt:link">driver</a><tal:comma
+                      condition="not: repeat/driver/end">,</tal:comma>
+                  </tal:per_driver>
+                </dd>
+              </dl>
+
+              <dl id="series-release-manager">
+                <dt>Release manager:</dt>
+                <dd>
+                  <tal:no-driver condition="not: context/driver">None</tal:no-driver>
+                  <a
+                    tal:condition="context/driver"
+                    tal:replace="structure context/driver/fmt:link">series driver</a>
+                  <a tal:replace="structure overview_menu/driver/fmt:icon" />
+                 </dd>
+               </dl>
+
+              <dl id="series-status">
+                <dt>Status:</dt>
+                <dd>
+                  <tal:status content="context/status/title" />
+                  <a tal:replace="structure overview_menu/edit/fmt:icon" />
+                </dd>
+              </dl>
+
+              <dl id="series-focus">
+                <dt>Project development focus:</dt>
+                <dd>
+                  is
+                  <tal:not condition="not: context/is_development_focus">not</tal:not>
+                  the focus of development.
+                  <a tal:replace="structure context/product/menu:overview/edit/fmt:icon" />
+                </dd>
+              </dl>
+            </div>
+
+            <dl id="series-releasefileglob" style="margin-bottom: 1em;"
+              title="Launchpad automatically scans sites to import releases">
+              <dt>Release URL pattern:</dt>
+              <dd>
+                <tal:no-pattern condition="not: context/releasefileglob">
+                  None</tal:no-pattern>
+                <a
+                  tal:condition="context/releasefileglob"
+                  tal:replace="structure context/releasefileglob" />
+                <a tal:replace="structure overview_menu/edit/fmt:icon" />
+               </dd>
+            </dl>
+
+            <p>
+              <a tal:replace="structure overview_menu/rdf/fmt:icon-link" />
+            </p>
+          </div>
+        </div>
+
+        <div class="yui-u">
+          <div tal:replace="structure context/@@+code-summary" />
+
+          <p tal:condition="context/branch/required:launchpad.View|nothing">
+            <a tal:replace="structure context/branch/menu:context/source/fmt:link"/>
+          </p>
+        </div>
+      </div>
+
+      <div class="portlet">
+        <h2>Milestones and releases</h2>
+
+        <tal:comment condition="nothing">
+          This DIV is necessary for the table-actions:nth-child stylesheet.
+        </tal:comment>
+        <div>
+          <table tal:replace="structure context/@@+table-releases" />
+
+          <ul class="table-actions" style="margin-bottom: 1em;">
+            <li>
+              <a tal:replace="structure overview_menu/create_milestone/fmt:icon-link" />
+            </li>
+            <li>
+              <a tal:replace="structure overview_menu/create_release/fmt:icon-link" />
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="yui-g">
+        <div class="yui-u first">
+          <div
+            tal:content="structure context/@@+portlet-latestbugs"
+            tal:condition="context/@@+get-involved/official_malone" />
+
+          <div tal:content="structure context/@@+portlet-packages"
+               tal:condition="not: context/product/private" />
+        </div>
+
+        <div class="yui-u">
+          <div
+            tal:content="structure context/@@+portlet-latestspecs"
+            tal:condition="context/@@+get-involved/blueprints_usage/enumvalue:LAUNCHPAD" />
+
+          <div tal:replace="structure context/product/@@+portlet-coming-sprints" />
+
+          <div class="portlet">
+            <h2>Related series, milestones, and releases</h2>
+
+            <ul id="related-series">
+              <li>
+                <a class="sprite info"
+                  tal:attributes="href context/product/menu:overview/series/fmt:url">View
+                  series for the
+                  <tal:project replace="context/product/displayname" /> project</a>
+              </li>
+              <li>
+                <a class="sprite info"
+                  tal:attributes="href context/product/menu:overview/milestones/fmt:url">View
+                  milestones for the
+                  <tal:project replace="context/product/displayname" /> project</a>
+              </li>
+              <li>
+                <a class="sprite info"
+                  tal:attributes="href context/product/menu:overview/downloads/fmt:url">View
+                  downloads for the
+                  <tal:project replace="context/product/displayname" /> project</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="yui-u">
+          <div id="structural-subscription-content-box"></div>
+        </div>
+      </div>
     </div>
 
-    <div>
-      <a tal:replace="structure overview_menu/subscribe/fmt:link-icon" />
-    </div>
+    <tal:side metal:fill-slot="side"
+      define="overview_menu context/menu:overview">
+      <div id="global-actions" class="portlet">
+        <ul>
+          <li tal:condition="overview_menu/edit/enabled">
+            <a tal:replace="structure overview_menu/edit/fmt:link" />
+          </li>
+          <li tal:condition="overview_menu/delete/enabled">
+            <a tal:replace="structure overview_menu/delete/fmt:link" />
+          </li>
+          <li tal:condition="overview_menu/subscribe_to_bug_mail/enabled|nothing">
+            <a tal:replace="structure overview_menu/subscribe_to_bug_mail/fmt:link" />
+          </li>
+          <li tal:condition="overview_menu/edit_bug_mail/enabled|nothing">
+            <a tal:replace="structure overview_menu/edit_bug_mail/fmt:link" />
+          </li>
+        </ul>
+      </div>
 
-    <div style="padding-top: 2em"
-         tal:define="auto_resize string:true; include_inactive string:true">
-      <iframe metal:use-macro="context/@@+timeline-macros/timeline-iframe"/>
-    </div>
+      <tal:privacy replace="structure context/@@+portlet-privacy" />
 
-    <h2 style="margin-top: 2em;">Milestones and releases</h2>
+      <div id="downloads" class="top-portlet downloads"
+        tal:define="release view/latest_release_with_download_files">
+        <h2>Downloads</h2>
 
-    <table tal:replace="structure context/@@+table-releases" />
+        <tal:release condition="release">
+          <tal:downloads replace="structure release/@@+portlet-downloads"/>
+        </tal:release>
 
-    <div>
-      <a tal:replace="structure overview_menu/create_milestone/fmt:icon-link" />
-      &nbsp;
-      <a tal:replace="structure overview_menu/create_release/fmt:icon-link" />
-    </div>
+        <p class="alternate">
+          <a class="sprite info"
+            tal:define="link context/product/menu:overview/downloads"
+            tal:condition="release"
+            tal:attributes="href link/fmt:url;
+                            title link/summary">All downloads</a>
+           <tal:no-files condition="not: release">
+             <tal:name replace="context/displayname" /> does not have any
+              download files.
+           </tal:no-files>
+        </p>
+      </div>
 
-    <h2 style="margin-top: 2em;">Code for this series</h2>
-
-    <div tal:replace="structure context/@@+code-summary" />
-
-    <div>
-      <a
-        tal:condition="not: context/branch"
-        tal:replace="structure overview_menu/link_branch/fmt:icon-link" />
-      <a
-        tal:condition="context/branch"
-        tal:replace="structure overview_menu/link_branch/fmt:link-icon" />
-    </div>
-
-    <h2 style="margin-top: 2em;">Distribution packaging</h2>
-
-    <p id="distribution-packaging-explanation">
-      <tal:distro condition="sourcepackages">
-      This series is packaged in the following distribution series:
-      </tal:distro>
-      <tal:no-distro condition="not: sourcepackages">
-      This series is not packaged in any distribution series.
-      </tal:no-distro>
-    </p>
-
-    <ul id="distribution-packaging" class="source package"
-      tal:condition="sourcepackages">
-      <li class="packages"
-        tal:repeat="package sourcepackages">
-        <a tal:attributes="href package/fmt:url"><tal:distro
-          tal:content="package/distroseries/distribution/displayname">
-          Ubuntu</tal:distro>
-          <tal:series tal:replace="package/distroseries/displayname">
-          Warty</tal:series>
-          <tal:package tal:content="package/name">firefox</tal:package></a>
-      </li>
-    </ul>
-
-    <div>
-      <a tal:replace="structure overview_menu/ubuntupkg/fmt:icon-link" />
-      &nbsp;
-      <a tal:replace="structure overview_menu/add_package/fmt:icon-link" />
-    </div>
-
-    <h2 style="margin-top: 2em;">Related series, milestones, and releases</h2>
-
-    <ul id="related-series">
-      <li>
-        <a tal:attributes="href context/product/fmt:url/+series">All
-          series for the
-          <tal:project replace="context/product/displayname" /> project</a>
-      </li>
-      <li>
-        <a tal:attributes="href context/product/fmt:url/+milestones">All
-          milestones for the
-          <tal:project replace="context/product/displayname" /> project</a>
-      </li>
-      <li>
-        <a tal:attributes="href context/product/fmt:url/+download">All
-          downloads for the
-          <tal:project replace="context/product/displayname" /> project</a>
-      </li>
-    </ul>
-
-    <p>
-      <a tal:replace="structure overview_menu/rdf/fmt:icon-link" />
-    </p>
-  </div>
-</body>
+      <div tal:replace="structure context/@@+get-involved" />
+    </tal:side>
+  </body>
 </html>

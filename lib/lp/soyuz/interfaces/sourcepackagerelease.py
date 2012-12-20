@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -13,25 +13,36 @@ __all__ = [
     ]
 
 
-from zope.schema import TextLine
-from zope.interface import Interface, Attribute
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    List,
+    TextLine,
+    )
 
-from canonical.launchpad import _
+from lp import _
 
 
 class ISourcePackageRelease(Interface):
     """A source package release, e.g. apache-utils 2.0.48-3"""
 
     id = Attribute("SourcePackageRelease identifier")
+    creatorID = Attribute("DB ID of creator")
     creator = Attribute("Person that created this release")
+    maintainerID = Attribute("DB ID of the maintainer")
     maintainer = Attribute("The person in general responsible for this "
         "release")
     version = Attribute("A version string")
     dateuploaded = Attribute("Date of Upload")
     urgency = Attribute("Source Package Urgency")
+    dscsigningkeyID = Attribute("DB ID of the DSC Signing Key")
     dscsigningkey = Attribute("DSC Signing Key")
     component = Attribute("Source Package Component")
     format = Attribute("The Source Package Format")
+    changelog = Attribute("LibraryFileAlias containing debian/changelog.")
     changelog_entry = Attribute("Source Package Change Log Entry")
     change_summary = Attribute(
         "The message on the latest change in this release. This is usually "
@@ -90,11 +101,20 @@ class ISourcePackageRelease(Interface):
     files = Attribute("IBinaryPackageFile entries for this "
         "sourcepackagerelease")
     sourcepackagename = Attribute("SourcePackageName table reference")
+    sourcepackagenameID = Attribute("SourcePackageName id.")
     upload_distroseries = Attribute("The distroseries in which this package "
         "was first uploaded in Launchpad")
     publishings = Attribute("MultipleJoin on SourcepackagePublishing")
 
+    user_defined_fields = List(
+        title=_("Sequence of user-defined fields as key-value pairs."))
 
+    homepage = TextLine(
+        title=_("Homepage"),
+        description=_(
+        "Upstream project homepage as set in the package. This URL is not "
+        "sanitized."),
+        required=False)
 
     # read-only properties
     name = Attribute('The sourcepackagename for this release, as text')
@@ -115,8 +135,6 @@ class ISourcePackageRelease(Interface):
     distrosourcepackage = Attribute(
         "The magic DistroSourcePackage for the sourcepackagename and "
         "distribution of this object.")
-    productrelease = Attribute("The best guess we have as to the Launchpad "
-        "ProductRelease associated with this SourcePackageRelease.")
 
     current_publishings = Attribute("A list of the current places where "
         "this source package is published, in the form of a list of "
@@ -135,10 +153,36 @@ class ISourcePackageRelease(Interface):
         "The `PackageUpload` record corresponding to original upload of "
         "this source package release. It's 'None' if it is a source "
         "imported by Gina.")
+    uploader = Attribute(
+        "The user who uploaded the package.")
+
+    # Really ISourcePackageRecipeBuild -- see _schema_circular_imports.
+    source_package_recipe_build = Reference(
+        schema=Interface,
+        description=_("The `SourcePackageRecipeBuild` which produced this "
+            "source package release, or None if it was created from a "
+            "traditional upload."),
+        title=_("Source package recipe build"),
+        required=False, readonly=True)
 
     def addFile(file):
         """Add the provided library file alias (file) to the list of files
         in this package.
+        """
+
+    def getFileByName(filename):
+        """Return the corresponding `ILibraryFileAlias` in this context.
+
+        The following file types (and extension) can be looked up in the
+        SourcePackageRelease context:
+
+         * Source files: '.orig.tar.gz', 'tar.gz', '.diff.gz' and '.dsc'.
+
+        :param filename: the exact filename to be looked up.
+
+        :raises NotFoundError if no file could be found.
+
+        :return the corresponding `ILibraryFileAlias` if the file was found.
         """
 
     def createBuild(distroarchseries, pocket, archive, processor=None,
@@ -167,13 +211,13 @@ class ISourcePackageRelease(Interface):
         argument remains untouched.
         """
 
-    def attachTranslationFiles(tarball_alias, is_published, importer=None):
+    def attachTranslationFiles(tarball_alias, by_maintainer, importer=None):
         """Attach a tarball with translations to be imported into Rosetta.
 
         :tarball_alias: is a Librarian alias that references to a tarball with
             translations.
-        :is_published: indicates if the imported files are already published by
-            upstream.
+        :by_maintainer: indicates if the imported files where uploaded by
+            the maintainer of the project or package.
         :importer: is the person that did the import.
 
         raise DownloadFailed if we are not able to fetch the file from
@@ -198,6 +242,26 @@ class ISourcePackageRelease(Interface):
             `PackageDiff` record matching the request being made.
 
         :return: the corresponding `IPackageDiff` record.
+        """
+
+    def getPackageSize():
+        """Get the size total (in KB) of files comprising this package.
+
+        Please note: empty packages (i.e. ones with no files or with
+        files that are all empty) have a size of zero.
+
+        :return: total size (in KB) of this package
+        """
+
+    def aggregate_changelog(since_version):
+        """Get all the changelogs since the version specified.
+
+        :param since_version: Return changelogs of all versions
+            after since_version up to and including the version of the
+            sourcepackagerelease for this publication.
+        :return: A concatenated set of changelogs of all the required
+            versions, with a blank line between each.  If there is no
+            changelog, or there is an error parsing it, None is returned.
         """
 
 

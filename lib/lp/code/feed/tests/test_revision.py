@@ -6,17 +6,22 @@
 __metaclass__ = type
 
 from datetime import datetime
-import unittest
 
 from pytz import UTC
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.feed.branch import (
-    ProductRevisionFeed, revision_feed_id, RevisionListingFeed)
+    ProductRevisionFeed,
+    revision_feed_id,
+    RevisionListingFeed,
+    )
 from lp.code.interfaces.revision import IRevisionSet
-from lp.testing import login_person, TestCaseWithFactory
+from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestRevisionFeedId(TestCaseWithFactory):
@@ -135,7 +140,3 @@ class TestProductRevisionFeed(TestCaseWithFactory):
         branch.destroySelf()
         feed = self._createFeed(product)
         self.assertEqual([], feed.getItems())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

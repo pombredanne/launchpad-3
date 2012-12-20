@@ -1,157 +1,94 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
-# This makefile is used for two task:
-#
-#  - Build a replicated development environment
-#  - Build and replicate the staging database
-#
-# To build a replicated development environment:
-#
-#  $ make -C database/replication devsetup
-#  $ make run
+# This makefile is used to build and replicate the staging database.
+# To build a replicated development environent, replicate your 9.1 main
+# cluster with standard PG 9.1 streaming replication per the PG docs.
 #
 # To test the staging rebuild script:
 #
+#  $ mkdir -p /srv/staging.launchpad.net/staging-logs
 #  $ cd database/replication
 #  $ pg_dump --format=c launchpad_dev > launchpad.dump
-#  $ make stagingsetup STAGING_CONFIG=dev-staging STAGING_DUMP=launchpad.dump
+#  $ make stagingsetup \
+#        STAGING_CONFIG=dev-staging STAGING_DUMP=launchpad.dump
 #  $ make stagingswitch STAGING_CONFIG=dev-staging
 #
+# To restore a dogfood database:
+#
+#  $ cd database/replication
+#  $ make dogfood DOGFOOD_DBNAME=launchpad_dogfood DOGFOOD_DUMP=launchpad.dump
+#
 
-# This used to be 10 seconds, so we always ran staging lagged to detect
-# replication glitches more easily. However, this does not play well
-# with DBLoopTuner, as it correctly blocks when it detects lag.
-# We should put this back when DBLoopTuner is more intelligent, perhaps
-# pulling the allowable lag setting from a config file.
-LAG=0 seconds
+# For real restores, this is being run on an 8 core system. Let pg_restore
+# run multiprocess.
+## No multiprocess for now - don't want to overflow replication
+## MULTIPROC=-j 4
+MULTIPROC=
 
-DEV_CONFIG=replicated-development
 NEW_STAGING_CONFIG=staging-setup # For building the db with a different name.
-STAGING_CONFIG=staging # For swapping fresh db into place.
+STAGING_CONFIG=staging-db # For swapping fresh db into place.
 STAGING_DUMP=launchpad.dump # Dumpfile to build new staging from.
 STAGING_TABLESPACE=pg_default # 'pg_default' for default
+STAGING_LOGDIR=/srv/staging.launchpad.net/staging-logs
+DOGFOOD_DBNAME=launchpad_dogfood
+DOGFOOD_DUMP=launchpad.dump
 
-_CONFIG=overridden-on-command-line
-_SLAVE_TABLESPACE=pg_default
+STAGING_PGBOUNCER=psql -p 6432 -U pgbouncer -d pgbouncer
 
 PGMASSACRE=../../utilities/pgmassacre.py
 
+CREATEDB=createdb --encoding=UTF8 --locale=C --template=template0
+
+# Turn off output silencing so we can see details of staging deployments.
+# Without the timestamps, we are unable to estimate production deployment
+# times.
+#SHHH=../../utilities/shhh.py
+SHHH=
+
 default:
-	echo Usage: make [start|stop|restart]
+	echo Need a target
 
-start:
-	./slon_ctl.py --lag="${LAG}" start
-
-stop:
-	./slon_ctl.py stop
-
-restart: stop start
-
-devsetup:
-	make _prelim LPCONFIG=${DEV_CONFIG} \
-	    _MASTER=launchpad_dev _SLAVE=launchpad_dev_slave LAG="0 seconds"
-	
-	# Build the master database
-	LPCONFIG=${DEV_CONFIG} make -C ../schema
-	
-	# Replicate it
-	make _replicate LPCONFIG=${DEV_CONFIG} \
-	    _MASTER=launchpad_dev _SLAVE=launchpad_dev_slave LAG="0 seconds"
-	
-	# Replicate it again, so we can test with multiple slaves.
-	-${PGMASSACRE} launchpad_dev_slave2
-	createdb --encoding=UTF8 launchpad_dev_slave2
-	LPCONFIG=${DEV_CONFIG} ./slon_ctl.py start \
-		 node3_node 'dbname=launchpad_dev_slave2 user=slony'
-	LPCONFIG=${DEV_CONFIG} ./new-slave.py 3 launchpad_dev_slave2
-	LPCONFIG=${DEV_CONFIG} ../schema/security.py -d launchpad_dev_slave2
-	
-	# Regenerate the preamble for manual slonik(1) usage.
-	LPCONFIG=${DEV_CONFIG} ./preamble.py > preamble.sk
-
-	# Restart slon daemons with default lag setting.
-	LPCONFIG=${DEV_CONFIG} ./slon_ctl.py stop
-	LPCONFIG=${DEV_CONFIG} ./slon_ctl.py --lag="${LAG}" start
-
-
-# Build _new staging databases from a production dump.
+# Destroy the existing staging db and reload it from dump. We no longer
+# have enough disk space to build it in a holding area and swap it into
+# place.
+stagingsetup: DUMPLIST:=$(shell tempfile --suffix=.lst --prefix=lpstag)
 stagingsetup:
-	make _prelim LPCONFIG=${NEW_STAGING_CONFIG} \
-	    _MASTER=lpmain_staging_new _SLAVE=lpmain_staging_slave_new \
-	    LAG="0 seconds"
-	# Create the DB with the desired default tablespace.
-	createdb --encoding UTF8 --tablespace ${STAGING_TABLESPACE} \
-	    lpmain_staging_new
-	# Restore the DB schema. Don't restore permissions - it will blow
-	# up when roles don't exist in this cluster, and we rebuild it later
-	# with security.py anyway.
-	pg_restore --dbname=lpmain_staging_new \
-	    --no-acl --exit-on-error ${STAGING_DUMP}
-	# Uninstall Slony-I if it is installed - a pg_dump of a DB with
-	# Slony-I installed isn't usable without this step.
-	LPCONFIG=${NEW_STAGING_CONFIG} ./repair-restored-db.py
-	# Setup replication
-	make _replicate LPCONFIG=${NEW_STAGING_CONFIG} LAG="0 seconds" \
-	    _MASTER=lpmain_staging_new _SLAVE=lpmain_staging_slave_new \
-	    _SLAVE_TABLESPACE=${STAGING_TABLESPACE}
-
-# Switch the _new staging databases into place.
-stagingswitch:
-	# Stop Slony-I daemons - don't confuse the poor darlings.
-	-LPCONFIG=${NEW_STAGING_CONFIG} ./slon_ctl.py stop
-	-LPCONFIG=${STAGING_CONFIG} ./slon_ctl.py stop
-	# Kill the existing staging database if it exists.
+	${STAGING_PGBOUNCER} -c 'kill launchpad_staging'
+	${STAGING_PGBOUNCER} -c 'kill launchpad_staging_slave'
 	-${PGMASSACRE} lpmain_staging
-	-${PGMASSACRE} lpmain_staging_slave
-	# Rename the newly build staging databases.
-	psql -d template1 -c \
-	    "ALTER DATABASE lpmain_staging_new RENAME TO lpmain_staging;"
-	psql -d template1 -c "\
-	    ALTER DATABASE lpmain_staging_slave_new \
-	    RENAME TO lpmain_staging_slave;"
-	# Fix the paths to match.
-	psql -d lpmain_staging -U slony -c \
-	"UPDATE _sl.sl_path SET pa_conninfo=replace(pa_conninfo, '_new', '')"
-	psql -d lpmain_staging_slave -U slony -c \
-	"UPDATE _sl.sl_path SET pa_conninfo=replace(pa_conninfo, '_new', '')"
-	# Start the slon daemons, with requested lag.
-	LPCONFIG=${STAGING_CONFIG} ./slon_ctl.py --lag="${LAG}" start
+	# Create the DB with the desired default tablespace.
+	${CREATEDB} --tablespace ${STAGING_TABLESPACE} lpmain_staging
+	# Restore the database. We need to restore permissions, despite
+	# later running security.py, to pull in permissions granted on
+	# production to users not maintained by security.py.
+	pg_restore --list ${STAGING_DUMP} | grep -v 'TRIGGER public _sl_' \
+	    > ${DUMPLIST}
+	pg_restore --dbname=lpmain_staging --no-owner ${EXIT_ON_ERROR} \
+	    --use-list=${DUMPLIST} ${MULTIPROC} ${STAGING_DUMP}
+	rm ${DUMPLIST}
+	# Apply database patches.
+	@echo Running upgrade.py `date`.
+	LPCONFIG=${STAGING_CONFIG} ${SHHH} ../schema/upgrade.py \
+	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
+	@echo Running security.py `date`
+	LPCONFIG=${STAGING_CONFIG} ${SHHH} ../schema/security.py \
+	    --log-file=INFO:${STAGING_LOGDIR}/dbupgrade.log
+	@echo Setting feature flags
+	psql -d lpmain_staging -c "INSERT INTO featureflag (flag, scope, priority, value) VALUES ('profiling.enabled', 'team:launchpad', 0, 'on')"
+	${STAGING_PGBOUNCER} -c 'resume launchpad_staging'
+	${STAGING_PGBOUNCER} -c 'resume launchpad_staging_slave'
 
-_prelim:
-	@echo LPCONFIG currently ${LPCONFIG}
-	# Create the slony PostgreSQL superuser if necessary.
-	-createuser --superuser slony
-	# Stop the slon daemons and wait a bit for connections to drop.
-	-./slon_ctl.py stop
-	sleep 5
-	# Drop any existing databases if they exist
-	${PGMASSACRE} ${_MASTER}
-	${PGMASSACRE} ${_SLAVE}
+stagingswitch:
+	echo Nothing to do. Staging already built inplace.
 
-_replicate:
-	@echo LPCONFIG currently ${LPCONFIG}
-	# Start the slon daemon for the master.
-	./slon_ctl.py start \
-		 node1_node "dbname=${_MASTER} user=slony"
-	# Initialize the cluster and create replication sets.
-	./initialize.py
-	# Create the soon-to-be-slave database, empty at this point.
-	createdb --encoding=UTF8 --tablespace=${_SLAVE_TABLESPACE} ${_SLAVE}
-	# Start the slon daemon for the slave
-	./slon_ctl.py start node2_node "dbname=${_SLAVE} user=slony"
-	# Setup the slave
-	./new-slave.py 2 "dbname=${_SLAVE}"
-	# Upgrade all databases in the cluster and reset security.
-	../schema/upgrade.py
-	../schema/fti.py
-	../schema/security.py --cluster -U slony
-	# Migrate tables to the authdb replication set, creating the set
-	# and subscribing nodes to it as necessary.
-	./populate_auth_replication_set.py -U slony
-	# Restart slon daemons with default lag setting.
-	./slon_ctl.py stop
-	./slon_ctl.py --lag="${LAG}" start
-	# Generate a preamble for manual slonik(1) usage.
-	./preamble.py > preamble.sk
-
+dogfood: DUMPLIST:=$(shell tempfile --suffix=.lst --prefix=lpdogf)
+dogfood:
+	${CREATEDB} ${DOGFOOD_DBNAME}
+	pg_restore --list ${DOGFOOD_DUMP} | grep -v 'TRIGGER public _sl_' \
+	    > ${DUMPLIST}
+	pg_restore --dbname=${DOGFOOD_DBNAME} --no-acl --no-owner \
+	    --use-list=${DUMPLIST} ${EXIT_ON_ERROR} ${DOGFOOD_DUMP}
+	rm ${DUMPLIST}
+	../schema/upgrade.py -d ${DOGFOOD_DBNAME}
+	../schema/security.py -d ${DOGFOOD_DBNAME}

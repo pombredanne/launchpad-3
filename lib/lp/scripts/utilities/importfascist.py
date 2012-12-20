@@ -1,14 +1,14 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import __builtin__
 import atexit
 import itertools
-import types
 from operator import attrgetter
+import types
+
 
 original_import = __builtin__.__import__
-database_root = 'canonical.launchpad.database'
 naughty_imports = set()
 
 # Silence bogus warnings from Hardy's python-pkg-resources package.
@@ -16,67 +16,77 @@ import warnings
 warnings.filterwarnings('ignore', category=UserWarning, append=True,
                         message=r'Module .*? is being added to sys.path')
 
+
 def text_lines_to_set(text):
     return set(line.strip() for line in text.splitlines() if line.strip())
 
 
-# zope.testing.doctest: called as part of creating a DocTestSuite.
-permitted_database_imports = text_lines_to_set("""
-    canonical.archivepublisher.deathrow
-    canonical.archivepublisher.domination
-    canonical.archivepublisher.ftparchive
-    canonical.archivepublisher.publishing
-    lp.codehosting.inmemory
-    canonical.launchpad.browser.branchlisting
-    lp.code.browser.branchlisting
-    canonical.launchpad.feed.branch
-    lp.code.feed.branch
-    canonical.launchpad.interfaces.person
-    canonical.launchpad.scripts.garbo
-    canonical.launchpad.scripts.librarian_apache_log_parser
-    canonical.launchpad.vocabularies.dbobjects
-    lp.registry.vocabularies
-    canonical.librarian.client
-    canonical.librarian.db
-    zope.testing.doctest
-    """)
-# It's not worth creating a *Set utility for ParsedApacheLog, to be used only
-# in librarian_apache_log_parser, so instead we allow that module to import
-# from launchpad.database above.
+# Sometimes, third-party modules don't export all of their public APIs through
+# __all__. The following dict maps from such modules to a list of attributes
+# that are allowed to be imported, whether or not they are in __all__.
+valid_imports_not_in_all = {
+    'bzrlib.lsprof': set(['BzrProfiler']),
+    'cookielib': set(['domain_match']),
+    'email.Utils': set(['mktime_tz']),
+    'openid.fetchers': set(['Urllib2Fetcher']),
+    'storm.database': set(['STATE_DISCONNECTED']),
+    'textwrap': set(['dedent']),
+    'testtools.testresult.real': set(['_details_to_str']),
+    'twisted.internet.threads': set(['deferToThreadPool']),
+    'zope.component': set(
+        ['adapter',
+         'ComponentLookupError',
+         'provideAdapter',
+         'provideHandler',
+         ]),
+    }
 
 
-warned_database_imports = text_lines_to_set("""
-    canonical.launchpad.scripts.ftpmaster
-    canonical.launchpad.scripts.gina.handlers
-    canonical.launchpad.browser.distroseries
-    canonical.launchpad.scripts.builddmaster
-    lp.translations.scripts.po_import
-    canonical.launchpad.systemhomes
-    canonical.rosetta
-    """)
+unsafe_parts = set(['browser', 'feed', 'xmlrpc', 'widgets'])
+
+dubious = [
+    'lp.answers.browser.question',
+    'lp.app.browser.vocabulary',
+    'lp.blueprints.browser.sprint',
+    'lp.bugs.browser.bug',
+    'lp.bugs.browser.bugalsoaffects',
+    'lp.bugs.browser.bugsubscription',
+    'lp.bugs.browser.bugtarget',
+    'lp.bugs.browser.bugtask',
+    'lp.bugs.browser.person',
+    'lp.code.browser.branchlisting',
+    'lp.code.browser.sourcepackagerecipe',
+    'lp.registry.browser.distroseries',
+    'lp.registry.browser.distroseriesdifference',
+    'lp.registry.browser.milestone',
+    'lp.registry.browser.pillar',
+    'lp.registry.browser.person',
+    'lp.registry.browser.project',
+    'lp.registry.browser.sourcepackage',
+    'lp.soyuz.browser.archive',
+    'lp.soyuz.browser.builder',
+    'lp.soyuz.browser.queue',
+    'lp.translations.browser.potemplate',
+    'lp.translations.browser.serieslanguage',
+    'lp.translations.browser.sourcepackage',
+    'lp.translations.browser.translationlinksaggregator',
+    'lp.translations.browser.translationtemplatesbuild',
+    ]
 
 
 def database_import_allowed_into(module_path):
-    """Return True if database code is allowed to be imported into the given
-    module path.  Otherwise, returns False.
+    """Return True if model code can be imported into the module path.
 
     It is allowed if:
         - The import was made with the __import__ hook.
-        - The importer is from within canonical.launchpad.database.
         - The importer is a 'test' module.
-        - The importer is in the set of permitted_database_imports.
-        - The importer is within a model module or package.
-
-    Note that being in the set of warned_database_imports does not make
-    the import allowed.
-
+        - The importer is in a nodule that does not face users.
+        - The import is recognised to be dubious, but not a priority to fix.
     """
-    if (module_path == '__import__ hook' or
-        module_path.startswith('canonical.launchpad.database') or
-        '.model' in module_path or
-        is_test_module(module_path)):
-        return True
-    return module_path in permitted_database_imports
+    module_parts = set(module_path.split('.'))
+    return (unsafe_parts.isdisjoint(module_parts)
+        or is_test_module(module_path)
+        or module_path in dubious)
 
 
 def is_test_module(module_path):
@@ -85,9 +95,7 @@ def is_test_module(module_path):
     Otherwise returns False.
     """
     name_splitted = module_path.split('.')
-    return ('tests' in name_splitted or
-            'ftests' in name_splitted or
-            'testing' in name_splitted)
+    return ('tests' in name_splitted or 'testing' in name_splitted)
 
 
 class attrsgetter:
@@ -146,25 +154,25 @@ class NotInModuleAllPolicyViolation(JackbootError):
 
 
 class NotFoundPolicyViolation(JackbootError):
-    """import of zope.exceptions.NotFoundError into
-    canonical.launchpad.database.
-    """
+    """import of zope.exceptions.NotFoundError into lp models modules."""
 
     def __init__(self, import_into):
         JackbootError.__init__(self, import_into, '')
 
     def format_message(self):
         return ('%s\nDo not import zope.exceptions.NotFoundError.\n'
-                'Use canonical.launchpad.interfaces.NotFoundError instead.'
+                'Use lp.app.errors.NotFoundError instead.'
                 % self.import_into)
 
 
-# pylint: disable-msg=W0102,W0602
-def import_fascist(name, globals={}, locals={}, fromlist=[]):
+# The names of the arguments form part of the interface of __import__(...),
+# and must not be changed, as code may choose to invoke __import__ using
+# keyword arguments - e.g. the encodings module in Python 2.6.
+def import_fascist(name, globals={}, locals={}, fromlist=[], level=-1):
     global naughty_imports
 
     try:
-        module = original_import(name, globals, locals, fromlist)
+        module = original_import(name, globals, locals, fromlist, level)
     except ImportError:
         # XXX sinzui 2008-04-17 bug=277274:
         # import_fascist screws zope configuration module which introspects
@@ -176,13 +184,12 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
         # module.
         if name.startswith('zope.app.layers.'):
             name = name[16:]
-            module = original_import(name, globals, locals, fromlist)
+            module = original_import(name, globals, locals, fromlist, level)
         else:
             raise
     # Python's re module imports some odd stuff every time certain regexes
     # are used.  Let's optimize this.
-    # Also, 'dedent' is not in textwrap.__all__.
-    if name == 'sre' or name == 'textwrap':
+    if name == 'sre':
         return module
 
     # Mailman 2.1 code base is originally circa 1998, so yeah, no __all__'s.
@@ -199,48 +206,58 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
         # We could find out by jumping up the stack a frame.
         # Let's not for now.
         import_into = '__import__ hook'
-    if (import_into.startswith('canonical.launchpad.database') and
-        name == 'zope.exceptions'):
+
+    # Check the "NotFoundError" policy.
+    if ('.model.' in import_into and name == 'zope.exceptions'):
         if fromlist and 'NotFoundError' in fromlist:
             raise NotFoundPolicyViolation(import_into)
-    if (name.startswith(database_root) and
-        not database_import_allowed_into(import_into)):
+
+    # Check the database import policy.
+    if '.model.' in name and not database_import_allowed_into(import_into):
         error = DatabaseImportPolicyViolation(import_into, name)
         naughty_imports.add(error)
-        # Raise an error except in the case of browser.traversers.
-        # This exception to raising an error is only temporary, until
-        # browser.traversers is cleaned up.
-        if import_into not in warned_database_imports:
-            raise error
 
-    if fromlist is not None and import_into.startswith('canonical'):
+    # Check the import from __all__ policy.
+    if fromlist is not None and import_into.startswith('lp'):
         # We only want to warn about "from foo import bar" violations in our
         # own code.
-        if list(fromlist) == ['*'] and not hasattr(module, '__all__'):
-            # "from foo import *" is naughty if foo has no __all__
-            error = FromStarPolicyViolation(import_into, name)
-            naughty_imports.add(error)
-            raise error
-        elif (list(fromlist) != ['*'] and hasattr(module, '__all__') and
-              not is_test_module(import_into)):
-            # "from foo import bar" is naughty if bar isn't in foo.__all__
-            # (and foo actually has an __all__).  Unless foo is within a tests
-            # or ftests module or bar is itself a module.
+        fromlist = list(fromlist)
+        module_all = getattr(module, '__all__', None)
+        if module_all is None:
+            if fromlist == ['*']:
+                # "from foo import *" is naughty if foo has no __all__
+                error = FromStarPolicyViolation(import_into, name)
+                naughty_imports.add(error)
+                raise error
+        else:
+            if fromlist == ['*']:
+                # "from foo import *" is allowed if foo has an __all__
+                return module
+            if is_test_module(import_into):
+                # We don't bother checking imports into test modules.
+                return module
+            allowed_fromlist = valid_imports_not_in_all.get(
+                name, set())
             for attrname in fromlist:
-                if (attrname in ('adapter', 'provideHandler')
-                    and module.__name__ == 'zope.component'):
-                    # 'adapter' and 'provideHandler' are not in
-                    # zope.component.__all__, but that's where they should be
-                    # imported from.
+                # Check that each thing we are importing into the module is
+                # either in __all__, is a module itself, or is a specific
+                # exception.
+                if attrname == '__doc__':
+                    # You can always import __doc__.
                     continue
-                if attrname != '__doc__' and attrname not in module.__all__:
-                    if not isinstance(
-                        getattr(module, attrname, None), types.ModuleType):
-                        error = NotInModuleAllPolicyViolation(
-                            import_into, name, attrname)
-                        naughty_imports.add(error)
-                        # Not raising on NotInModuleAllPolicyViolation yet.
-                        #raise error
+                if isinstance(
+                    getattr(module, attrname, None), types.ModuleType):
+                    # You can import modules even when they aren't declared in
+                    # __all__.
+                    continue
+                if attrname in allowed_fromlist:
+                    # Some things can be imported even if they aren't in
+                    # __all__.
+                    continue
+                if attrname not in module_all:
+                    error = NotInModuleAllPolicyViolation(
+                        import_into, name, attrname)
+                    naughty_imports.add(error)
     return module
 
 
@@ -248,7 +265,6 @@ def report_naughty_imports():
     if naughty_imports:
         print
         print '** %d import policy violations **' % len(naughty_imports)
-        current_type = None
 
         database_violations = []
         fromstar_violations = []
@@ -256,7 +272,7 @@ def report_naughty_imports():
         sorting_map = {
             DatabaseImportPolicyViolation: database_violations,
             FromStarPolicyViolation: fromstar_violations,
-            NotInModuleAllPolicyViolation: notinall_violations
+            NotInModuleAllPolicyViolation: notinall_violations,
             }
         for error in naughty_imports:
             sorting_map[error.__class__].append(error)

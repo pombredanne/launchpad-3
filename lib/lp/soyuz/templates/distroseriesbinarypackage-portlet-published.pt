@@ -4,9 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet" id="portlet-published">
 
-  <h2>Published as</h2>
-
-  <div class="portletBody portletContent">
+  <h2>Published versions</h2>
 
     <ul tal:condition="context/current_publishings">
       <li class="binary package" tal:repeat="pub context/current_publishings">
@@ -29,5 +27,4 @@
     <p tal:condition="not: context/current_publishings">
       <i>Not published at present.</i>
     </p>
-  </div>
 </div>

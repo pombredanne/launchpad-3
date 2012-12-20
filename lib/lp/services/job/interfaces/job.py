@@ -9,23 +9,32 @@ __metaclass__ = type
 
 __all__ = [
     'IJob',
+    'IJobSource',
+    'IRunnableJob',
+    'ITwistedJobSource',
     'JobStatus',
-    'LeaseHeld',
     ]
 
 
-from zope.interface import Interface, Attribute
-from zope.schema import Choice, Datetime, Int, Text
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    )
 
-from canonical.launchpad import _
-
-
-class LeaseHeld(Exception):
-    """Raised when attempting to acquire a list that is already held."""
-
-    def __init__(self):
-        Exception.__init__(self, 'Lease is already held.')
+from lp import _
+from lp.registry.interfaces.person import IPerson
 
 
 class JobStatus(DBEnumeratedType):
@@ -55,9 +64,18 @@ class JobStatus(DBEnumeratedType):
         The job was run, but failed.  Will not be run again.
         """)
 
+    SUSPENDED = DBItem(4, """
+        Suspended
+
+        The job is suspended, so should not be run.
+        """)
+
 
 class IJob(Interface):
     """Basic attributes of a job."""
+
+    job_id = Int(title=_(
+        'A unique identifier for this job.'))
 
     scheduled_start = Datetime(
         title=_('Time when the IJob was scheduled to start.'))
@@ -79,23 +97,48 @@ class IJob(Interface):
     attempt_count = Int(title=_(
         'The number of attempts to perform this job that have been made.'))
 
+    max_retries = Int(title=_(
+        'The number of retries permitted before this job permanently fails.'))
+
+    requester = Reference(
+        IPerson, title=_("The person who requested the job"),
+        required=False, readonly=True
+        )
+
+    is_pending = Bool(
+        title=_("Whether or not this job's status is such that it "
+                "could eventually complete."))
+
     def acquireLease(duration=300):
         """Acquire the lease for this Job, or raise LeaseHeld."""
 
-    def start():
+    def getTimeout():
+        """Determine how long this job can run before timing out."""
+
+    def start(manage_transaction=False):
         """Mark the job as started."""
 
-    def complete():
+    def complete(manage_transaction=False):
         """Mark the job as completed."""
 
-    def fail():
+    def fail(manage_transaction=False):
         """Indicate that the job has failed permanently.
 
         Only running jobs can fail.
         """
 
-    def queue():
+    def queue(manage_transaction=False, abort_transaction=False):
         """Mark the job as queued for processing."""
+
+    def suspend(manage_transaction=False):
+        """Mark the job as suspended.
+
+        Only waiting jobs can be suspended."""
+
+    def resume():
+        """Mark the job as waiting.
+
+        Only suspended jobs can be resumed."""
 
 
 class IRunnableJob(IJob):
@@ -107,8 +150,24 @@ class IRunnableJob(IJob):
         :param oops: The oops produced by this Job.
         """
 
+    def getOopsVars():
+        """Return a list of variables to appear in the OOPS.
+
+        These vars should help determine why the jobs OOPsed.
+        """
+
+    def getOperationDescription():
+        """Describe the operation being performed, for use in oops emails.
+
+        Should grammatically fit the phrase "error while FOO", e.g. "error
+        while sending mail."
+        """
+
     user_error_types = Attribute(
         'A tuple of exception classes which result from user error.')
+
+    retry_error_types = Attribute(
+        'A tuple of exception classes which should cause a retry.')
 
     def notifyUserError(e):
         """Notify interested parties that this job encountered a user error.
@@ -118,3 +177,26 @@ class IRunnableJob(IJob):
 
     def run():
         """Run this job."""
+
+    def celeryRunOnCommit():
+        """Request Celery to run this job on transaction commit."""
+
+
+class IJobSource(Interface):
+    """Interface for creating and getting jobs."""
+
+    memory_limit = Int(
+        title=_('Maximum amount of memory which may be used by the process.'))
+
+    def iterReady():
+        """Iterate through all jobs."""
+
+    def contextManager():
+        """Get a context for running this kind of job in."""
+
+
+class ITwistedJobSource(IJobSource):
+    """Interface for a job source that is usable by the TwistedJobRunner."""
+
+    def get(id):
+        """Get a job by its id."""

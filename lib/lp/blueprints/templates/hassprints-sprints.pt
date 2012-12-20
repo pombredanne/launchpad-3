@@ -3,33 +3,31 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 <body>
 
-  <div metal:fill-slot="main">
+  <metal:main metal:fill-slot="main">
 
-  <tal:has-sprints condition="context/sprints">
-    <h1>Events related to <span tal:replace="context/displayname" /></h1>
+    <div class="top-portlet">
+      <tal:has-sprints define="sprints context/sprints"
+                       condition="sprints">
+        <h1>Events related to <span tal:replace="context/displayname" /></h1>
 
-    <div tal:define="sprints context/sprints" tal:condition="sprints">
-      <table>
-        <tal:per_sprint repeat="sprint sprints"
-                        replace="structure sprint/@@+listing-detailed" />
-      </table>
-    </div>
-  </tal:has-sprints>
+        <table>
+          <tal:per_sprint repeat="sprint sprints"
+                          replace="structure sprint/@@+listing-detailed" />
+        </table>
+      </tal:has-sprints>
 
-  <tal:no-sprints condition="not: context/sprints">
-    <h1>There are no events related to
-      <span tal:replace="context/displayname" />
-    </h1>
+      <tal:no-sprints condition="not: context/sprints">
+        <h1>There are no events related to
+          <span tal:replace="context/displayname" />
+        </h1>
   </tal:no-sprints>
 
-  </div>
+    </div>
+  </metal:main>
 </body>
 </html>

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0631
@@ -12,41 +12,42 @@ the sources and binarypackages.
 __metaclass__ = type
 
 
-__all__ = ['AbstractPackageData', 'SourcePackageData', 'BinaryPackageData']
+__all__ = [
+    'BinaryPackageData',
+    'get_dsc_path',
+    'PoolFileNotFound',
+    'prioritymap',
+    'SourcePackageData',
+    ]
 
-import re
-import os
 import glob
-import tempfile
-import shutil
+import os
+import re
 import rfc822
+import shutil
+import tempfile
 
-from canonical import encoding
-
+from lp.app.validators.version import valid_debian_version
 from lp.archivepublisher.diskpool import poolify
-from lp.soyuz.scripts.gina.changelog import parse_changelog
-
-from canonical.database.constants import UTC_NOW
-
+from lp.archiveuploader.changesfile import ChangesFile
+from lp.archiveuploader.utils import (
+    DpkgSourceError,
+    extract_dpkg_source,
+    )
 from lp.registry.interfaces.gpg import GPGKeyAlgorithm
-from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
-from lp.soyuz.interfaces.publishing import PackagePublishingPriority
-from canonical.launchpad.scripts import log
-from lp.soyuz.scripts.gina import call
-
-from canonical.launchpad.validators.version import valid_debian_version
-
+from lp.services import encoding
+from lp.services.database.constants import UTC_NOW
+from lp.services.scripts import log
+from lp.soyuz.enums import PackagePublishingPriority
+from lp.soyuz.scripts.gina import (
+    call,
+    ExecutionError,
+    )
+from lp.soyuz.scripts.gina.changelog import parse_changelog
 
 #
 # Data setup
 #
-
-urgencymap = {
-    "low": SourcePackageUrgency.LOW,
-    "medium": SourcePackageUrgency.MEDIUM,
-    "high": SourcePackageUrgency.HIGH,
-    "emergency": SourcePackageUrgency.EMERGENCY,
-    }
 
 prioritymap = {
     "required": PackagePublishingPriority.REQUIRED,
@@ -59,9 +60,8 @@ prioritymap = {
     "source": PackagePublishingPriority.EXTRA,
 }
 
-GPGALGOS = {}
-for item in GPGKeyAlgorithm.items:
-    GPGALGOS[item.value] = item.name
+GPGALGOS = dict((item.value, item.name) for item in GPGKeyAlgorithm.items)
+
 
 #
 # Helper functions
@@ -72,6 +72,8 @@ def stripseq(seq):
 
 
 epoch_re = re.compile(r"^\d+:")
+
+
 def get_dsc_path(name, version, component, archive_root):
     pool_root = os.path.join(archive_root, "pool")
     version = epoch_re.sub("", version)
@@ -98,10 +100,13 @@ def get_dsc_path(name, version, component, archive_root):
     raise PoolFileNotFound("File %s not in archive" % filename)
 
 
-def unpack_dsc(package, version, component, archive_root):
+def unpack_dsc(package, version, component, distro_name, archive_root):
     dsc_name, dsc_path, component = get_dsc_path(package, version,
                                                  component, archive_root)
-    call("dpkg-source -sn -x %s" % dsc_path)
+    try:
+        extract_dpkg_source(dsc_path, ".", vendor=distro_name)
+    except DpkgSourceError as e:
+        raise ExecutionError("Error %d unpacking source" % e.result)
 
     version = re.sub("^\d+:", "", version)
     version = re.sub("-[^-]+$", "", version)
@@ -109,18 +114,16 @@ def unpack_dsc(package, version, component, archive_root):
     return source_dir, dsc_path
 
 
-def read_dsc(package, version, component, archive_root):
+def read_dsc(package, version, component, distro_name, archive_root):
     source_dir, dsc_path = unpack_dsc(package, version, component,
-                                      archive_root)
+                                      distro_name, archive_root)
 
     dsc = open(dsc_path).read().strip()
 
     fullpath = os.path.join(source_dir, "debian", "changelog")
     changelog = None
     if os.path.exists(fullpath):
-        clfile = open(fullpath)
-        changelog = parse_changelog(clfile)
-        clfile.close()
+        changelog = open(fullpath).read().strip()
     else:
         log.warn("No changelog file found for %s in %s" %
                  (package, source_dir))
@@ -140,12 +143,13 @@ def read_dsc(package, version, component, archive_root):
 
     return dsc, changelog, copyright
 
+
 def parse_person(val):
-    if "," in val:
-        # Some emails have ',' like "Adam C. Powell, IV
-        # <hazelsct@debian.org>". rfc822.parseaddr seems to do not
-        # handle this properly, so we munge them here
-        val = val.replace(',','')
+    """Parse a full email address into human-readable name and address."""
+    # Some addresses have commas in them, as in: "Adam C. Powell, IV
+    # <hazelsct@debian.example.com>". rfc822.parseaddr seems not to
+    # handle this properly, so we munge them here.
+    val = val.replace(',', '')
     return rfc822.parseaddr(val)
 
 
@@ -159,45 +163,6 @@ def parse_section(v):
     else:
         return v
 
-
-def get_person_by_key(keyrings, key):
-    # XXX kiko 2005-10-23: Untested, should probably be a method.
-    if key and key not in ("NOSIG", "None", "none"):
-        command = ("gpg --no-options --no-default-keyring "
-                   "--with-colons --fingerprint %s %s" % (key, keyrings))
-        h = os.popen(command, "r")
-        for line in h.readlines():
-            if line.startswith("pub"):
-                break
-        else:
-            log.warn("Broke parsing gpg output for %s" % key)
-            return None
-
-        line = line.split(":")
-        algo = int(line[3])
-        if GPGALGOS.has_key(algo):
-            algochar = GPGALGOS[algo]
-        else:
-            algochar = "?" % algo
-        # STRIPPED GPGID Support by cprov 20041004
-        #          id = line[2] + algochar + "/" + line[4][-8:]
-        id = line[4][-8:]
-        algorithm = algo
-        keysize = line[2]
-        user, rest = line[9].split("<", 1)
-        email = rest.split(">")[0].lower()
-        if line[1] == "-":
-            is_revoked = 0
-        else:
-            is_revoked = 1
-
-        h = os.popen("gpg --export --no-default-keyring %s "
-                     "--armor %s" % (keyrings, key), "r")
-        armor = h.read().strip()
-
-        return (user, email, id, armor, is_revoked, algorithm, keysize)
-    else:
-        return None
 
 #
 # Exception classes
@@ -264,7 +229,7 @@ class AbstractPackageData:
         if missing:
             raise MissingRequiredArguments(missing)
 
-    def process_package(self, kdb, archive_root, keyrings):
+    def process_package(self, distro_name, archive_root):
         """Process the package using the files located in the archive.
 
         Raises PoolFileNotFound if a file is not found in the pool.
@@ -275,30 +240,23 @@ class AbstractPackageData:
         cwd = os.getcwd()
         os.chdir(tempdir)
         try:
-            self.do_package(archive_root)
+            self.do_package(distro_name, archive_root)
         finally:
             os.chdir(cwd)
         # We only rmtree if everything worked as expected; otherwise,
         # leave it around for forensics.
         shutil.rmtree(tempdir)
 
-        # XXX kiko 2005-10-18: Katie is disabled for the moment;
-        # hardcode the date_uploaded and c'est la vie.
-        # if not self.do_katie(kdb, keyrings):
-        #    return False
         self.date_uploaded = UTC_NOW
-        self.is_processed = True
         return True
 
-    def do_package(self, archive_root):
-        raise NotImplementedError
-
-    def do_katie(self, kdb, keyrings):
+    def do_package(self, distro_name, archive_root):
+        """To be provided by derived class."""
         raise NotImplementedError
 
 
 class SourcePackageData(AbstractPackageData):
-    """This Class holds important data to a given sourcepackagerelease."""
+    """Important data relating to a given `SourcePackageRelease`."""
 
     # Defaults, overwritten by __init__
     directory = None
@@ -308,23 +266,24 @@ class SourcePackageData(AbstractPackageData):
     build_depends_indep = ""
     build_conflicts = ""
     build_conflicts_indep = ""
-    # XXX kiko 2005-10-30: This isn't stored at all.
     standards_version = ""
     section = None
     format = None
-
-    # XXX kiko 2005-11-05: Not used anywhere.
-    priority = None
-
-    is_processed = False
-    is_created = False
 
     # These arguments /must/ have been set in the Sources file and
     # supplied to __init__ as keyword arguments. If any are not, a
     # MissingRequiredArguments exception is raised.
     _required = [
-        'package', 'binaries', 'version', 'maintainer', 'section',
-        'architecture', 'directory', 'files', 'component']
+        'package',
+        'binaries',
+        'version',
+        'maintainer',
+        'section',
+        'architecture',
+        'directory',
+        'files',
+        'component',
+        ]
 
     def __init__(self, **args):
         for k, v in args.items():
@@ -345,33 +304,26 @@ class SourcePackageData(AbstractPackageData):
             elif k == 'Maintainer':
                 displayname, emailaddress = parse_person(v)
                 try:
-                    self.maintainer = (encoding.guess(displayname),
-                                       emailaddress)
+                    self.maintainer = (
+                        encoding.guess(displayname),
+                        emailaddress,
+                        )
                 except UnicodeDecodeError:
-                    raise DisplayNameDecodingError("Could not decode "
-                                                   "name %s" % displayname)
+                    raise DisplayNameDecodingError(
+                        "Could not decode name %s" % displayname)
             elif k == 'Files':
                 self.files = []
                 files = v.split("\n")
                 for f in files:
                     self.files.append(stripseq(f.split(" ")))
-            elif k == 'Uploaders':
-                # XXX kiko 2005-10-19: We don't do anything with this data,
-                # but I suspect we should.
-                people = stripseq(v.split(","))
-                self.uploaders = [person.split(" ", 1) for person in people]
             else:
                 setattr(self, k.lower().replace("-", "_"), v)
 
         if self.section is None:
-            # XXX kiko 2005-11-05: Untested and disabled.
-            # if kdb:
-            #     log.warn("Source package %s lacks section, "
-            #              "looking it up..." % self.package)
-            #     self.section = kdb.getSourceSection(self.package)
             self.section = 'misc'
-            log.warn("Source package %s lacks section, assumed %r" %
-                     (self.package, self.section))
+            log.warn(
+                "Source package %s lacks section, assumed %r",
+                self.package, self.section)
 
         if '/' in self.section:
             # this apparently happens with packages in universe.
@@ -380,47 +332,53 @@ class SourcePackageData(AbstractPackageData):
 
         AbstractPackageData.__init__(self)
 
-
-    def do_package(self, archive_root):
+    def do_package(self, distro_name, archive_root):
         """Get the Changelog and urgency from the package on archive.
 
         If successful processing of the package occurs, this method
         sets the changelog and urgency attributes.
         """
         dsc, changelog, copyright = read_dsc(
-            self.package, self.version, self.component, archive_root)
+            self.package, self.version, self.component, distro_name,
+            archive_root)
 
         self.dsc = encoding.guess(dsc)
         self.copyright = encoding.guess(copyright)
+        parsed_changelog = None
+        if changelog:
+            parsed_changelog = parse_changelog(changelog.split('\n'))
 
         self.urgency = None
         self.changelog = None
-        if changelog and changelog[0]:
-            cldata = changelog[0]
-            if cldata.has_key("changes"):
+        self.changelog_entry = None
+        if parsed_changelog and parsed_changelog[0]:
+            cldata = parsed_changelog[0]
+            if 'changes' in cldata:
                 if cldata["package"] != self.package:
                     log.warn("Changelog package %s differs from %s" %
                              (cldata["package"], self.package))
                 if cldata["version"] != self.version:
                     log.warn("Changelog version %s differs from %s" %
                              (cldata["version"], self.version))
-                self.changelog = encoding.guess(cldata["changes"])
+                self.changelog_entry = encoding.guess(cldata["changes"])
+                self.changelog = changelog
                 self.urgency = cldata["urgency"]
             else:
                 log.warn("Changelog empty for source %s (%s)" %
                          (self.package, self.version))
 
-    def ensure_complete(self, kdb):
+    def ensure_complete(self):
         if self.format is None:
             # XXX kiko 2005-11-05: this is very funny. We care so much about
             # it here, but we don't do anything about this in handlers.py!
-            log.warn("Invalid format in %s, assumed %r" %
-                     (self.package, "1.0"))
             self.format = "1.0"
+            log.warn(
+                "Invalid format in %s, assumed %r", self.package, self.format)
 
-        if self.urgency not in urgencymap:
-            log.warn("Invalid urgency in %s, %r, assumed %r" %
-                     (self.package, self.urgency, "low"))
+        if self.urgency not in ChangesFile.urgency_map:
+            log.warn(
+                "Invalid urgency in %s, %r, assumed %r",
+                self.package, self.urgency, "low")
             self.urgency = "low"
 
 
@@ -431,9 +389,20 @@ class BinaryPackageData(AbstractPackageData):
     # They are passed in as keyword arguments. If any are not set, a
     # MissingRequiredArguments exception is raised.
     _required = [
-        'package', 'installed_size', 'maintainer', 'section',
-        'architecture', 'version', 'filename', 'component',
-        'size', 'md5sum', 'description', 'summary', 'priority']
+        'package',
+        'installed_size',
+        'maintainer',
+        'section',
+        'architecture',
+        'version',
+        'filename',
+        'component',
+        'size',
+        'md5sum',
+        'description',
+        'summary',
+        'priority',
+        ]
 
     # Set in __init__
     source = None
@@ -459,11 +428,8 @@ class BinaryPackageData(AbstractPackageData):
     # Overwritten in do_package, optionally
     shlibs = None
 
-    #
-    is_processed = False
-    is_created = False
-    #
     source_version_re = re.compile(r'([^ ]+) +\(([^\)]+)\)')
+
     def __init__(self, **args):
         for k, v in args.items():
             if k == "Maintainer":
@@ -486,8 +452,6 @@ class BinaryPackageData(AbstractPackageData):
                         "not a valid integer: %r" % v)
             else:
                 setattr(self, k.lower().replace("-", "_"), v)
-            # XXX kiko 2005-11-03: "enhances" is not used and not stored
-            # anywhere, same for "pre_depends"
 
         if self.source:
             # We need to handle cases like "Source: myspell
@@ -522,17 +486,19 @@ class BinaryPackageData(AbstractPackageData):
 
         if self.section is None:
             self.section = 'misc'
-            log.warn("Binary package %s lacks a section, assumed %r" %
-                     (self.package, self.section))
+            log.warn(
+                "Binary package %s lacks a section, assumed %r",
+                self.package, self.section)
 
         if self.priority is None:
             self.priority = 'extra'
-            log.warn("Binary package %s lacks valid priority, assumed %r" %
-                     (self.package, self.priority))
+            log.warn(
+                "Binary package %s lacks valid priority, assumed %r",
+                self.package, self.priority)
 
         AbstractPackageData.__init__(self)
 
-    def do_package(self, archive_root):
+    def do_package(self, distro_name, archive_root):
         """Grab shared library info from .deb."""
         fullpath = os.path.join(archive_root, self.filename)
         if not os.path.exists(fullpath):

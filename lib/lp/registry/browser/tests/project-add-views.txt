@@ -15,25 +15,24 @@ The first step requires all of name, summary, displayname to be given.  These
 are forwarded in the form data to the second step.  The title is also
 forwarded, but is only required by the Zope machinery, not the view.
 
-    >>> form = {'field.actions.continue': 'Continue'}
+    >>> from lp.registry.browser.product import ProjectAddStepOne
+    >>> form = {
+    ...     'field.actions.continue': 'Continue',
+    ...     'field.__visited_steps__': ProjectAddStepOne.step_name,
+    ...     'field.displayname': '',
+    ...     'field.name': '',
+    ...     'field.summary': '',
+    ... }
 
     >>> view = create_initialized_view(product_set, name='+new', form=form)
-    Traceback (most recent call last):
-    ...
-    KeyError: 'displayname'
+    >>> for error in view.view.errors:
+    ...     print error
+    ('displayname', 'Name', RequiredMissing())
+    ('name', 'URL', RequiredMissing())
+    ('summary', u'Summary', RequiredMissing())
 
     >>> form['field.displayname'] = 'Snowdog'
-    >>> view = create_initialized_view(product_set, name='+new', form=form)
-    Traceback (most recent call last):
-    ...
-    KeyError: 'name'
-
     >>> form['field.name'] = 'snowdog'
-    >>> view = create_initialized_view(product_set, name='+new', form=form)
-    Traceback (most recent call last):
-    ...
-    KeyError: 'summary'
-
     >>> form['field.summary'] = 'By-tor and the Snowdog'
     >>> view = create_initialized_view(product_set, name='+new', form=form)
 
@@ -43,8 +42,7 @@ count.  The first step has no search results.
     # Because of the way the multistep view works, we need to test the
     # steps individually.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from lp.registry.browser.product import ProjectAddStepOne
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
     >>> form['field.__visited_steps__'] = ProjectAddStepOne.step_name
     >>> request = LaunchpadTestRequest(form=form, method='POST')
@@ -63,10 +61,12 @@ information in the label.
 
     >>> from lp.registry.browser.product import ProjectAddStepTwo
     >>> form = {
-    ...     'displayname': 'Snowdog',
-    ...     'name': 'snowdog',
-    ...     'title': 'The Snowdog',
-    ...     'summary': 'By-tor and the Snowdog',
+    ...     'field.actions.continue': 'Continue',
+    ...     'field.__visited_steps__': ProjectAddStepTwo.step_name,
+    ...     'field.displayname': 'Snowdog',
+    ...     'field.name': 'snowdog',
+    ...     'field.title': 'The Snowdog',
+    ...     'field.summary': 'By-tor and the Snowdog',
     ...     }
 
     >>> request = LaunchpadTestRequest(form=form, method='POST')
@@ -80,12 +80,6 @@ information in the label.
     >>> view.search_results_count
     0
 
-The second step's page also includes some special things if the user is in the
-vcs_imports celebrity.  Foo Bar is in this team.
-
-    >>> view.isVCSImport()
-    True
-
 The second step also has a iterator over all the search results, of which
 there are currently none.
 
@@ -96,7 +90,7 @@ The prospective project's name, displayname and summary are used to search
 existing projects for possible matches.  By tweaking the project summary, we
 can see that there are search results available.
 
-    >>> form['summary'] = 'My Snowdog ate your Firefox'
+    >>> form['field.summary'] = 'My Snowdog ate your Firefox'
 
     >>> request = LaunchpadTestRequest(form=form, method='POST')
     >>> view = ProjectAddStepTwo(product_set, request)
@@ -120,8 +114,8 @@ The search results are displayed on the page.
     firefox
     mozilla
 
-The project's license has not yet been selected, so posting this form will
-result in an error, since the license is required.
+The project's licence has not yet been selected, so posting this form will
+result in an error, since the licence is required.
 
     >>> form.update({
     ...     'field.__visited_steps__': '%s|%s' % (
@@ -134,13 +128,14 @@ result in an error, since the license is required.
     >>> view.initialize()
     >>> for error in view.errors:
     ...     print error
-    You must select at least one license.  If you select Other/Proprietary
-    or Other/OpenSource you must include a description of the license.
+    You must select at least one licence.  If you select Other/Proprietary
+    or Other/OpenSource you must include a description of the licence.
 
-When an open source license is selected, the project is created.
+When an open source licence is selected, the project is created.
 
     # The form keys have the 'field.' prefix here because the form data will
     # be processed.
+    >>> registrant = factory.makePerson()
     >>> form = {
     ...     'field.displayname': 'Snowdog',
     ...     'field.name': 'snowdog',
@@ -148,6 +143,7 @@ When an open source license is selected, the project is created.
     ...     'field.summary': 'By-tor and the Snowdog',
     ...     'field.licenses': ['PYTHON'],
     ...     'field.license_info': '',
+    ...     'field.owner': registrant.name,
     ...     'field.__visited_steps__': '%s|%s' % (
     ...         ProjectAddStepOne.step_name, ProjectAddStepTwo.step_name),
     ...     'field.actions.continue': 'Continue',
@@ -162,134 +158,6 @@ When an open source license is selected, the project is created.
     Snowdog
 
 
-Feedback notification
----------------------
-
-When projects are created with the Other/Proprietary license, a message is
-sent to feedback@launchpad.net.
-
-    >>> form = {
-    ...     'field.displayname': 'Badger',
-    ...     'field.name': 'badger',
-    ...     'field.title': 'The Badger',
-    ...     'field.summary': "There's the Badger!",
-    ...     'field.licenses': ['OTHER_PROPRIETARY'],
-    ...     'field.license_info': '',
-    ...     'field.__visited_steps__': '%s|%s' % (
-    ...         ProjectAddStepOne.step_name, ProjectAddStepTwo.step_name),
-    ...     'field.actions.continue': 'Continue',
-    ...     }
-    >>> request = LaunchpadTestRequest(form=form, method='POST')
-    >>> view = ProjectAddStepTwo(product_set, request)
-    >>> view.initialize()
-
-However, when a proprietary license is selected, a description is required.
-
-    >>> for error in view.errors:
-    ...     print error
-    A description of the "Other/Proprietary" license you checked is required.
-
-    >>> form['field.license_info'] = 'The Badger(tm) License'
-    >>> request = LaunchpadTestRequest(form=form, method='POST')
-    >>> view = ProjectAddStepTwo(product_set, request)
-    >>> view.initialize()
-    >>> view.errors
-    []
-
-    >>> print product_set.getByName('badger').displayname
-    Badger
-
-    >>> transaction.commit()
-    >>> from lp.testing.mail_helpers import print_emails
-    >>> print_emails()
-    From: Launchpad <noreply@launchpad.net>
-    To: feedback@launchpad.net
-    Subject: Project License Submitted for badger by name16
-    Please review this project's licenses.
-    http://launchpad.dev/badger
-    <BLANKLINE>
-    User: Foo Bar (name16)
-    <BLANKLINE>
-    <BLANKLINE>
-    Project Name: badger
-    <BLANKLINE>
-    <BLANKLINE>
-    Project Summary:
-        There's the Badger!
-    <BLANKLINE>
-    <BLANKLINE>
-    Licenses:
-        Other/Proprietary
-    <BLANKLINE>
-    <BLANKLINE>
-    License info:
-        The Badger(tm) License
-    <BLANKLINE>
-    ----------------------------------------
-
-Similarly, when a non-standard open source license is chosen, the license
-details are required...
-
-    >>> form = {
-    ...     'field.displayname': 'Cougar',
-    ...     'field.name': 'cougar',
-    ...     'field.title': 'The Cougar',
-    ...     'field.summary': "There's the Cougar!",
-    ...     'field.licenses': ['OTHER_OPEN_SOURCE'],
-    ...     'field.license_info': '',
-    ...     'field.__visited_steps__': '%s|%s' % (
-    ...         ProjectAddStepOne.step_name, ProjectAddStepTwo.step_name),
-    ...     'field.actions.continue': 'Continue',
-    ...     }
-    >>> request = LaunchpadTestRequest(form=form, method='POST')
-    >>> view = ProjectAddStepTwo(product_set, request)
-    >>> view.initialize()
-
-    >>> for error in view.errors:
-    ...     print error
-    A description of the "Other/Open Source" license you checked is required.
-
-...and when provided, an email is sent to feedback.
-
-    >>> form['field.license_info'] = 'The Free Cougar License'
-    >>> request = LaunchpadTestRequest(form=form, method='POST')
-    >>> view = ProjectAddStepTwo(product_set, request)
-    >>> view.initialize()
-    >>> view.errors
-    []
-
-    >>> print product_set.getByName('cougar').displayname
-    Cougar
-
-    >>> transaction.commit()
-    >>> from lp.testing.mail_helpers import print_emails
-    >>> print_emails()
-    From: Launchpad <noreply@launchpad.net>
-    To: feedback@launchpad.net
-    Subject: Project License Submitted for cougar by name16
-    Please review this project's licenses.
-    http://launchpad.dev/cougar
-    <BLANKLINE>
-    User: Foo Bar (name16)
-    <BLANKLINE>
-    <BLANKLINE>
-    Project Name: cougar
-    <BLANKLINE>
-    <BLANKLINE>
-    Project Summary:
-        There's the Cougar!
-    <BLANKLINE>
-    <BLANKLINE>
-    Licenses:
-        Other/Open Source
-    <BLANKLINE>
-    <BLANKLINE>
-    License info:
-        The Free Cougar License
-    <BLANKLINE>
-    ----------------------------------------
-
-
 Duplicate projects
 ------------------
 
@@ -298,7 +166,7 @@ that's checked for duplicates is the 'name' field.
 
     >>> form = {
     ...     'field.displayname': 'Cougar',
-    ...     'field.name': 'badger',
+    ...     'field.name': 'snowdog',
     ...     'field.title': 'The Cougar',
     ...     'field.summary': "There's the Cougar!",
     ...     'field.__visited_steps__': ProjectAddStepOne.step_name,
@@ -311,4 +179,4 @@ that's checked for duplicates is the 'name' field.
     >>> for error in view.errors:
     ...     print error
     ('name', 'URL',
-     LaunchpadValidationError(u'badger is already used by another project'))
+     LaunchpadValidationError(u'snowdog is already used by another project'))

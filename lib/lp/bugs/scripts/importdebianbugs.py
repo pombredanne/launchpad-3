@@ -5,28 +5,29 @@
 
 __metaclass__ = type
 
+import transaction
 from zope.component import getUtility
 
-from canonical.database.sqlbase import ZopelessTransactionManager
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.scripts.logger import log
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.externalbugtracker import get_external_bugtracker
 from lp.bugs.interfaces.bugtask import IBugTaskSet
-from lp.bugs.scripts.checkwatches import BugWatchUpdater
+from lp.bugs.scripts.checkwatches import CheckwatchesMaster
+from lp.services.scripts.logger import log
 
 
-def import_debian_bugs(bugs_to_import):
+def import_debian_bugs(bugs_to_import, logger=None):
     """Import the specified Debian bugs into Launchpad."""
+    if logger is None:
+        logger = log
     debbugs = getUtility(ILaunchpadCelebrities).debbugs
-    txn = ZopelessTransactionManager._installed
     external_debbugs = get_external_bugtracker(debbugs)
-    bug_watch_updater = BugWatchUpdater(txn, log)
+    bug_watch_updater = CheckwatchesMaster(transaction, logger)
     debian = getUtility(ILaunchpadCelebrities).debian
     for debian_bug in bugs_to_import:
         existing_bug_ids = [
             str(bug.id) for bug in debbugs.getBugsWatching(debian_bug)]
         if len(existing_bug_ids) > 0:
-            log.warning(
+            logger.warning(
                 "Not importing debbugs #%s, since it's already linked"
                 " from LP bug(s) #%s." % (
                     debian_bug, ', '.join(existing_bug_ids)))
@@ -37,10 +38,11 @@ def import_debian_bugs(bugs_to_import):
         [debian_task] = bug.bugtasks
         bug_watch_updater.updateBugWatches(
             external_debbugs, [debian_task.bugwatch])
+        target = getUtility(ILaunchpadCelebrities).ubuntu
+        if debian_task.sourcepackagename:
+            target = target.getSourcePackage(debian_task.sourcepackagename)
         getUtility(IBugTaskSet).createTask(
-            bug, getUtility(ILaunchpadCelebrities).bug_watch_updater,
-            distribution=getUtility(ILaunchpadCelebrities).ubuntu,
-            sourcepackagename=debian_task.sourcepackagename)
-        log.info(
+            bug, getUtility(ILaunchpadCelebrities).bug_watch_updater, target)
+        logger.info(
             "Imported debbugs #%s as Launchpad bug #%s." % (
                 debian_bug, bug.id))

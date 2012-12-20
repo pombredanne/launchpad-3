@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -13,9 +13,12 @@ import _pythonpath
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.interfaces import IDistributionSet
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.scripts.base import LaunchpadCronScript
+from lp.soyuz.model.distributionsourcepackagecache import (
+    DistributionSourcePackageCache,
+    )
+from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 
 
 class PackageCacheUpdater(LaunchpadCronScript):
@@ -47,13 +50,14 @@ class PackageCacheUpdater(LaunchpadCronScript):
         PPA archives caches are consolidated in a Archive row to optimize
         searches across PPAs.
         """
-        for distroseries in distribution.serieses:
+        for distroseries in distribution.series:
             self.updateDistroSeriesCache(distroseries, archive)
 
-        distribution.removeOldCacheItems(archive, log=self.logger)
+        DistributionSourcePackageCache.removeOld(
+            distribution, archive, log=self.logger)
 
-        updates = distribution.updateCompleteSourcePackageCache(
-            archive=archive, ztm=self.txn, log=self.logger)
+        updates = DistributionSourcePackageCache.updateAll(
+            distribution, archive=archive, ztm=self.txn, log=self.logger)
 
         if updates > 0:
             self.txn.commit()
@@ -64,10 +68,11 @@ class PackageCacheUpdater(LaunchpadCronScript):
             distroseries.distribution.name, distroseries.name,
             archive.displayname))
 
-        distroseries.removeOldCacheItems(archive=archive, log=self.logger)
+        DistroSeriesPackageCache.removeOld(
+            distroseries, archive=archive, log=self.logger)
 
-        updates = distroseries.updateCompletePackageCache(
-            archive=archive, ztm=self.txn, log=self.logger)
+        updates = DistroSeriesPackageCache.updateAll(
+            distroseries, archive=archive, ztm=self.txn, log=self.logger)
 
         if updates > 0:
             self.txn.commit()
@@ -101,6 +106,5 @@ class PackageCacheUpdater(LaunchpadCronScript):
 
 if __name__ == '__main__':
     script = PackageCacheUpdater(
-        'update-cache', dbuser=config.statistician.dbuser)
+        'update-cache', dbuser="update-pkg-cache")
     script.lock_and_run()
-

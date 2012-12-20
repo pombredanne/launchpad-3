@@ -1,50 +1,70 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0231
+# pylint: disable-msg=W0231,E0702,W0108
 
 """Helper classes for testing ExternalSystem."""
 
 __metaclass__ = type
 
+from copy import deepcopy
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from httplib import HTTPMessage
 import os
-import re
 import random
+import re
+from StringIO import StringIO
 import time
+from urllib2 import (
+    BaseHandler,
+    Request,
+    )
 import urlparse
 import xmlrpclib
 
-from StringIO import StringIO
-from datetime import datetime, timedelta
-from httplib import HTTPMessage
-from urllib2 import BaseHandler, HTTPError, Request
-
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.database.sqlbase import commit, ZopelessTransactionManager
 from lp.bugs.externalbugtracker import (
-    BugNotFound, BugTrackerConnectError, Bugzilla, DebBugs,
-    ExternalBugTracker, Mantis, RequestTracker, Roundup, SourceForge,
-    Trac)
+    BATCH_SIZE_UNLIMITED,
+    BugNotFound,
+    BugTrackerConnectError,
+    Bugzilla,
+    DebBugs,
+    ExternalBugTracker,
+    Mantis,
+    RequestTracker,
+    Roundup,
+    SourceForge,
+    Trac,
+    )
 from lp.bugs.externalbugtracker.trac import (
-    FAULT_TICKET_NOT_FOUND, LP_PLUGIN_BUG_IDS_ONLY, LP_PLUGIN_FULL,
-    LP_PLUGIN_METADATA_AND_COMMENTS, LP_PLUGIN_METADATA_ONLY)
-from lp.bugs.externalbugtracker.xmlrpc import (
-    UrlLib2Transport)
-from canonical.launchpad.ftests import login, logout
-from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
-from lp.bugs.interfaces.externalbugtracker import (
-    UNKNOWN_REMOTE_IMPORTANCE, UNKNOWN_REMOTE_STATUS)
-from canonical.launchpad.database import BugTracker
+    FAULT_TICKET_NOT_FOUND,
+    LP_PLUGIN_BUG_IDS_ONLY,
+    LP_PLUGIN_FULL,
+    LP_PLUGIN_METADATA_AND_COMMENTS,
+    LP_PLUGIN_METADATA_ONLY,
+    )
+from lp.bugs.externalbugtracker.xmlrpc import UrlLib2Transport
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
-from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from lp.bugs.interfaces.externalbugtracker import (
+    UNKNOWN_REMOTE_IMPORTANCE,
+    UNKNOWN_REMOTE_STATUS,
+    )
+from lp.bugs.model.bugtracker import BugTracker
 from lp.bugs.scripts import debbugs
-from canonical.launchpad.testing.systemdocs import ordered_dict_as_string
-from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.bugs.xmlrpc.bug import ExternalBugTrackerTokenAPI
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.testing import celebrity_logged_in
+from lp.testing.dbuser import lp_dbuser
+from lp.testing.systemdocs import ordered_dict_as_string
 
 
 def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
@@ -55,33 +75,26 @@ def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
     closed. After returning from this function, a new connection using
     the checkwatches db user is created.
     """
-    assert ZopelessTransactionManager._installed is not None, (
-        "This function can only be used for Zopeless tests.")
-    LaunchpadZopelessLayer.switchDbUser('launchpad')
-    owner = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
-    bugtracker_set = getUtility(IBugTrackerSet)
-    index = 1
-    name = '%s-checkwatches' % (bugtracker_type.name.lower(),)
-    while bugtracker_set.getByName("%s-%d" % (name, index)) is not None:
-        index += 1
-    name += '-%d' % index
-    bugtracker = BugTracker(
-        name=name,
-        title='%s *TESTING*' % (bugtracker_type.title,),
-        bugtrackertype=bugtracker_type,
-        baseurl=base_url,
-        summary='-', contactdetails='-',
-        owner=owner)
-    commit()
-    LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    with lp_dbuser():
+        owner = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+        bugtracker_set = getUtility(IBugTrackerSet)
+        index = 1
+        name = '%s-checkwatches' % (bugtracker_type.name.lower())
+        while bugtracker_set.getByName("%s-%d" % (name, index)) is not None:
+            index += 1
+        name += '-%d' % index
+        BugTracker(
+            name=name,
+            title='%s *TESTING*' % (bugtracker_type.title),
+            bugtrackertype=bugtracker_type,
+            baseurl=base_url,
+            summary='-', contactdetails='-',
+            owner=owner)
     return getUtility(IBugTrackerSet).getByName(name)
 
 
 def read_test_file(name):
-    """Return the contents of the test file named :name:
-
-    Test files are located in lib/canonical/launchpad/ftests/testfiles
-    """
+    """Return the contents of the test file named :name:"""
     file_path = os.path.join(os.path.dirname(__file__), 'testfiles', name)
 
     test_file = open(file_path, 'r')
@@ -131,18 +144,18 @@ def convert_python_status(status, resolution):
         'rejected': 8,
         'remind': 9,
         'wontfix': 10,
-        'worksforme': 11
-    }
+        'worksforme': 11,
+        }
 
     return "%s:%s" % (status_map[status], resolution_map[resolution])
 
+
 def set_bugwatch_error_type(bug_watch, error_type):
     """Set the last_error_type field of a bug watch to a given error type."""
-    login('foo.bar@canonical.com')
-    bug_watch.remotestatus = None
-    bug_watch.last_error_type = error_type
-    bug_watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
-    logout()
+    with celebrity_logged_in('admin'):
+        bug_watch.remotestatus = None
+        bug_watch.last_error_type = error_type
+        bug_watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
 
 
 class TestExternalBugTracker(ExternalBugTracker):
@@ -151,6 +164,8 @@ class TestExternalBugTracker(ExternalBugTracker):
     Implements all the methods required of an `IExternalBugTracker`
     implementation, though it doesn't actually do anything.
     """
+
+    batch_size = BATCH_SIZE_UNLIMITED
 
     def __init__(self, baseurl='http://example.com/'):
         super(TestExternalBugTracker, self).__init__(baseurl)
@@ -243,9 +258,10 @@ class TestBugzilla(Bugzilla):
         return self
 
     def _getBugsToTest(self):
-        """Return a dict with bugs in the form bug_id: (status, resolution)"""
-        return {3224: ('RESOLVED', 'FIXED'),
-                328430: ('UNCONFIRMED', '')}
+        """Return a dict with bugs in the form
+           bug_id: (status, resolution, priority, severity)"""
+        return {3224: ('RESOLVED', 'FIXED', 'MINOR', 'URGENT'),
+                328430: ('UNCONFIRMED', '', 'MEDIUM', 'NORMAL')}
 
     def _readBugItemFile(self):
         """Reads in the file for an individual bug item.
@@ -269,7 +285,7 @@ class TestBugzilla(Bugzilla):
         else:
             raise AssertionError('Unknown page: %s' % page)
 
-    def _postPage(self, page, form):
+    def _postPage(self, page, form, repost_on_redirect=False):
         """POST to the specified page.
 
         :form: is a dict of form variables being POSTed.
@@ -282,23 +298,25 @@ class TestBugzilla(Bugzilla):
             buglist_xml = read_test_file(self.buglist_file)
             bug_ids = str(form[self.bug_id_form_element]).split(',')
             bug_li_items = []
-            status_tag = None
             for bug_id in bug_ids:
                 bug_id = int(bug_id)
                 if bug_id not in self.bugzilla_bugs:
                     #Unknown bugs aren't included in the resulting xml.
                     continue
-                bug_status, bug_resolution = self.bugzilla_bugs[int(bug_id)]
+                bug_status, bug_resolution, bug_priority, bug_severity = \
+                            self.bugzilla_bugs[int(bug_id)]
                 bug_item = self._readBugItemFile() % {
                     'bug_id': bug_id,
                     'status': bug_status,
                     'resolution': bug_resolution,
+                    'priority': bug_priority,
+                    'severity': bug_severity,
                     }
                 bug_li_items.append(bug_item)
             return buglist_xml % {
                 'bug_li_items': '\n'.join(bug_li_items),
-                'page': page
-            }
+                'page': page,
+                }
         else:
             raise AssertionError('Unknown page: %s' % page)
 
@@ -312,8 +330,8 @@ class TestWeirdBugzilla(TestBugzilla):
     bug_item_file = 'weird_non_ascii_bug_li_item.xml'
 
     def _getBugsToTest(self):
-        return {2000: ('ASSIGNED', ''),
-                123543: ('RESOLVED', 'FIXED')}
+        return {2000: ('ASSIGNED', '', 'HIGH', 'BLOCKER'),
+                123543: ('RESOLVED', 'FIXED', 'HIGH', 'BLOCKER')}
 
 
 class TestBrokenBugzilla(TestBugzilla):
@@ -321,8 +339,13 @@ class TestBrokenBugzilla(TestBugzilla):
     bug_item_file = 'broken_bug_li_item.xml'
 
     def _getBugsToTest(self):
-        return {42: ('ASSIGNED', ''),
-                2000: ('RESOLVED', 'FIXED')}
+        return {42: ('ASSIGNED', '', 'HIGH', 'BLOCKER'),
+                2000: ('RESOLVED', 'FIXED', 'LOW', 'BLOCKER')}
+
+
+class AnotherBrokenBugzilla(TestBrokenBugzilla):
+    """Test parsing of a Bugzilla which returns broken XML."""
+    bug_item_file = 'unescaped_control_character.xml'
 
 
 class TestIssuezilla(TestBugzilla):
@@ -335,8 +358,8 @@ class TestIssuezilla(TestBugzilla):
     bug_id_form_element = 'id'
 
     def _getBugsToTest(self):
-        return {2000: ('RESOLVED', 'FIXED'),
-                123543: ('ASSIGNED', '')}
+        return {2000: ('RESOLVED', 'FIXED', 'LOW', 'BLOCKER'),
+                123543: ('ASSIGNED', '', 'HIGH', 'BLOCKER')}
 
 
 class TestOldBugzilla(TestBugzilla):
@@ -349,12 +372,13 @@ class TestOldBugzilla(TestBugzilla):
     bug_id_form_element = 'id'
 
     def _getBugsToTest(self):
-        return {42: ('RESOLVED', 'FIXED'),
-                123543: ('ASSIGNED', '')}
+        return {42: ('RESOLVED', 'FIXED', 'LOW', 'BLOCKER'),
+                123543: ('ASSIGNED', '', 'HIGH', 'BLOCKER')}
 
 
 class FakeHTTPConnection:
     """A fake HTTP connection."""
+
     def putheader(self, header, value):
         print "%s: %s" % (header, value)
 
@@ -367,7 +391,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
     utc_offset = 0
     print_method_calls = False
 
-    bugs = {
+    _bugs = {
         1: {'alias': '',
             'assigned_to': 'test@canonical.com',
             'component': 'GPPSystems',
@@ -379,6 +403,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
             'priority': 'P1',
             'product': 'Marvin',
             'resolution': 'FIXED',
+            'see_also': [],
             'severity': 'normal',
             'status': 'RESOLVED',
             'summary': "That bloody robot still exists.",
@@ -394,6 +419,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
             'priority': 'P1',
             'product': 'HeartOfGold',
             'resolution': '',
+            'see_also': [],
             'severity': 'high',
             'status': 'NEW',
             'summary': 'Collect unknown persons in docking bay 2.',
@@ -401,14 +427,14 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         }
 
     # Map aliases onto bugs.
-    bug_aliases = {
+    _bug_aliases = {
         'bug-two': 2,
         }
 
     # Comments are mapped to bug IDs.
     comment_id_index = 4
     new_comment_time = datetime(2008, 6, 20, 11, 42, 42)
-    bug_comments = {
+    _bug_comments = {
         1: {
             1: {'author': 'trillian',
                 'id': 1,
@@ -442,25 +468,34 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
     # Map namespaces onto method names.
     methods = {
-        'Launchpad': [
+        'Launchpad': (
             'add_comment',
             'comments',
             'get_bugs',
             'login',
             'time',
             'set_link',
-            ],
-        'Test': ['login_required']
+            ),
+        'Test': ['login_required'],
         }
 
     # Methods that require authentication.
-    auth_required_methods = [
+    auth_required_methods = (
         'add_comment',
         'login_required',
         'set_link',
-        ]
+        )
 
     expired_cookie = None
+
+    def __init__(self, *args, **kwargs):
+        """Ensure mutable class data is copied to the instance."""
+        # UrlLib2Transport is not a new style class so 'super' cannot be
+        # used.
+        UrlLib2Transport.__init__(self, *args, **kwargs)
+        self.bugs = deepcopy(TestBugzillaXMLRPCTransport._bugs)
+        self.bug_aliases = deepcopy(self._bug_aliases)
+        self.bug_comments = deepcopy(self._bug_comments)
 
     def expireCookie(self, cookie):
         """Mark the cookie as expired."""
@@ -469,8 +504,15 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
     @property
     def auth_cookie(self):
         cookies = self.cookie_processor.cookiejar._cookies
-        return cookies.get(
-            'example.com', {}).get('', {}).get('Bugzilla_logincookie')
+
+        assert len(cookies) < 2, (
+            "There should only be cookies for one domain.")
+
+        if len(cookies) == 1:
+            [(domain, domain_cookies)] = cookies.items()
+            return domain_cookies.get('', {}).get('Bugzilla_logincookie')
+        else:
+            return None
 
     @property
     def has_valid_auth_cookie(self):
@@ -518,17 +560,12 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         if local_datetime is None:
             local_datetime = datetime(2008, 5, 1, 1, 1, 1)
 
-        # We return xmlrpc dateTimes rather than doubles since that's
-        # what BugZilla will return.
-        local_time = xmlrpclib.DateTime(local_datetime.timetuple())
-
         utc_offset_delta = timedelta(seconds=self.utc_offset)
         utc_date_time = local_datetime - utc_offset_delta
 
-        utc_time = xmlrpclib.DateTime(utc_date_time.timetuple())
         return {
-            'local_time': local_time,
-            'utc_time': utc_time,
+            'local_time': local_datetime,
+            'utc_time': utc_date_time,
             'tz_name': self.timezone,
             }
 
@@ -584,7 +621,6 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
             "One of ('ids', 'products') should be specified")
 
         bugs_to_return = []
-        bugs = dict(self.bugs)
 
         # We enforce permissiveness, since we'll always call this method
         # with permissive=True in the Real World.
@@ -592,14 +628,14 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         assert permissive, "get_bugs() must be called with permissive=True"
 
         # If a changed_since argument is specified, marshall it into a
-        # datetime so that we can use it for comparisons.
-        # XXX 2008-08-05 gmb (bug 254999):
-        #     We can remove these lines once we upgrade to python 2.5.
+        # datetime so that we can use it for comparisons. Even though
+        # xmlrpclib in Python 2.5 groks datetime, by the time this
+        # method is called xmlrpclib has already converted all
+        # datetimes to xmlrpclib.DateTime.
         changed_since = arguments.get('changed_since')
         if changed_since is not None:
-            changed_since_timetuple = time.strptime(
-                str(changed_since), '%Y%m%dT%H:%M:%S')
-            changed_since = datetime(*changed_since_timetuple[:6])
+            changed_since = datetime.strptime(
+                changed_since.value, '%Y%m%dT%H:%M:%S')
 
         # If we have some products but no bug_ids we just get all the
         # bug IDs for those products and stuff them in the bug_ids list
@@ -635,14 +671,6 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
                 bug_dict['product'] not in products):
                 continue
 
-            # Update the DateTime fields of the bug dict so that they
-            # look like ones that would be sent over XML-RPC.
-            for time_field in ('creation_time', 'last_change_time'):
-                datetime_value = bug_dict[time_field]
-                timestamp = time.mktime(datetime_value.timetuple())
-                xmlrpc_datetime = xmlrpclib.DateTime(timestamp)
-                bug_dict[time_field] = xmlrpc_datetime
-
             bugs_to_return.append(bug_dict)
 
         # "Why are you returning a list here?" I hear you cry. Well,
@@ -653,15 +681,9 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
     def _copy_comment(self, comment, fields_to_return=None):
         # Copy wanted fields.
-        comment = dict(
+        return dict(
             (key, value) for (key, value) in comment.iteritems()
             if fields_to_return is None or key in fields_to_return)
-        # Replace the time field with an XML-RPC DateTime.
-        if 'time' in comment:
-            comment['time'] = xmlrpclib.DateTime(
-                comment['time'].timetuple())
-        return comment
-
 
     def comments(self, arguments):
         """Return comments for a given set of bugs."""
@@ -694,7 +716,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         assert 'id' in arguments, (
             "Bug.add_comment() must always be called with an id parameter.")
         assert 'comment' in arguments, (
-            "Bug.add_comment() must always be called with an comment "
+            "Bug.add_comment() must always be called with a comment "
             "parameter.")
 
         bug_id = arguments['id']
@@ -762,9 +784,11 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
     # Map namespaces onto method names.
     methods = {
         'Bug': [
+            'add_comment',
             'comments',
             'get',
             'search',
+            'update_see_also',
             ],
         'Bugzilla': [
             'time',
@@ -776,6 +800,7 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
 
     # Methods that require authentication.
     auth_required_methods = [
+        'add_comment',
         'login_required',
         ]
 
@@ -785,7 +810,7 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
         ]
 
     # A list of comments on bugs.
-    bug_comments = {
+    _bug_comments = {
         1: {
             1: {'author': 'trillian',
                 'bug_id': 1,
@@ -820,6 +845,10 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
                 },
             },
         }
+
+    def __init__(self, *args, **kwargs):
+        """Ensure mutable class data is copied to the instance."""
+        TestBugzillaXMLRPCTransport.__init__(self, *args, **kwargs)
 
     def version(self):
         """Return the version of Bugzilla being used."""
@@ -907,8 +936,17 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
             # different when passed to TestBugzillaXMLRPCTransport.comments.
             del comments_args['ids']
             comments_args['bug_ids'] = arguments['ids']
-            [return_dict] = TestBugzillaXMLRPCTransport.comments(
+            [returned_dict] = TestBugzillaXMLRPCTransport.comments(
                 self, comments_args)
+
+            # We need to move the comments for each bug in to a
+            # 'comments' dict.
+            bugs_dict = returned_dict['bugs']
+            bug_comments_dict = {}
+            for bug_id, comment_list in bugs_dict.items():
+                bug_comments_dict[bug_id] = {'comments': comment_list}
+
+            return_dict = {'bugs': bug_comments_dict}
         else:
             return_dict = {'bugs': {}}
 
@@ -927,6 +965,142 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
         # length-1 dict to deal with.
         return [return_dict]
 
+    def add_comment(self, arguments):
+        """Add a comment to a bug."""
+        assert 'id' in arguments, (
+            "Bug.add_comment() must always be called with an id parameter.")
+        assert 'comment' in arguments, (
+            "Bug.add_comment() must always be called with an comment "
+            "parameter.")
+
+        bug_id = arguments['id']
+        comment = arguments['comment']
+
+        # If the bug doesn't exist, raise a fault.
+        if int(bug_id) not in self.bugs:
+            raise xmlrpclib.Fault(101, "Bug #%s does not exist." % bug_id)
+
+        # If we don't have comments for the bug already, create an empty
+        # comment dict.
+        if bug_id not in self.bug_comments:
+            self.bug_comments[bug_id] = {}
+
+        # Work out the number for the new comment on that bug.
+        if len(self.bug_comments[bug_id]) == 0:
+            comment_number = 1
+        else:
+            comment_numbers = sorted(self.bug_comments[bug_id].keys())
+            latest_comment_number = comment_numbers[-1]
+            comment_number = latest_comment_number + 1
+
+        # Add the comment to the bug.
+        comment_id = self.comment_id_index + 1
+        comment_dict = {
+            'author': 'launchpad',
+            'bug_id': bug_id,
+            'id': comment_id,
+            'is_private': False,
+            'time': self.new_comment_time,
+            'text': comment,
+            }
+        self.bug_comments[bug_id][comment_number] = comment_dict
+
+        self.comment_id_index = comment_id
+
+        # We have to return a list here because xmlrpclib will try to
+        # expand sequences of length 1. Trying to do that on a dict will
+        # cause it to explode.
+        return [{'id': comment_id}]
+
+    def update_see_also(self, arguments):
+        """Update the see_also references for a bug."""
+        assert 'ids' in arguments, (
+            "You must specify a set of IDs with which to work.")
+        assert ('add' in arguments or 'remove' in arguments), (
+            "You must specify a list of links to add or remove.")
+
+        changes = {}
+
+        for bug_id in arguments['ids']:
+            bug_id = int(bug_id)
+
+            # If the bug ID doesn't exist, raise a Fault.
+            if bug_id not in self.bugs:
+                raise xmlrpclib.Fault(101, "Bug #%s does not exist." % bug_id)
+
+            see_also_list = self.bugs[bug_id].get('see_also', [])
+
+            # Remove any items first. That way, if they're also in the
+            # 'add' section they'll get re-added.
+            for url in arguments.get('remove', []):
+                if url not in see_also_list:
+                    continue
+
+                if changes.get(bug_id) is None:
+                    changes[bug_id] = {}
+
+                if changes[bug_id].get('see_also') is None:
+                    changes[bug_id]['see_also'] = {}
+
+                if changes[bug_id]['see_also'].get('removed') is None:
+                    changes[bug_id]['see_also']['removed'] = []
+
+                see_also_list.remove(url)
+                changes[bug_id]['see_also']['removed'].append(url)
+
+            # Add any items to the list.
+            for url in arguments.get('add', []):
+                if url in see_also_list:
+                    # Ignore existing urls.
+                    continue
+
+                if ('launchpad' not in url and
+                    'show_bug.cgi' not in url):
+                    raise xmlrpclib.Fault(
+                        112, "Bug URL %s is invalid." % url)
+
+                if changes.get(bug_id) is None:
+                    changes[bug_id] = {}
+
+                if changes[bug_id].get('see_also') is None:
+                    changes[bug_id]['see_also'] = {}
+
+                if changes[bug_id]['see_also'].get('added') is None:
+                    changes[bug_id]['see_also']['added'] = []
+
+                see_also_list.append(url)
+                changes[bug_id]['see_also']['added'].append(url)
+
+            # Replace the bug's existing see_also list.
+            self.bugs[bug_id]['see_also'] = see_also_list
+
+        # We have to return a list here because xmlrpclib will try to
+        # expand sequences of length 1. Trying to do that on a dict will
+        # cause it to explode.
+        return [{'changes': changes}]
+
+
+class NoAliasTestBugzillaAPIXMLRPCTransport(TestBugzillaAPIXMLRPCTransport):
+    """A TestBugzillaAPIXMLRPCTransport that has no bug aliases."""
+
+    bugs = {
+        1: {'assigned_to': 'test@canonical.com',
+            'component': 'GPPSystems',
+            'creation_time': datetime(2008, 6, 10, 16, 19, 53),
+            'id': 1,
+            'internals': {},
+            'is_open': True,
+            'last_change_time': datetime(2008, 6, 10, 16, 19, 53),
+            'priority': 'P1',
+            'product': 'Marvin',
+            'resolution': 'FIXED',
+            'see_also': [],
+            'severity': 'normal',
+            'status': 'RESOLVED',
+            'summary': "That bloody robot still exists.",
+            },
+        }
+
 
 class TestMantis(Mantis):
     """Mantis ExternalSystem for use in tests.
@@ -939,7 +1113,7 @@ class TestMantis(Mantis):
 
     def _getPage(self, page):
         if self.trace_calls:
-            print "CALLED _getPage(%r)" % (page,)
+            print "CALLED _getPage(%r)" % (page)
         if page == "csv_export.php":
             return read_test_file('mantis_example_bug_export.csv')
         elif page.startswith('view.php?id='):
@@ -948,18 +1122,10 @@ class TestMantis(Mantis):
         else:
             return ''
 
-    def _postPage(self, page, form):
+    def _postPage(self, page, form, repost_on_redirect=False):
         if self.trace_calls:
-            print "CALLED _postPage(%r, ...)" % (page,)
+            print "CALLED _postPage(%r, ...)" % (page)
         return ''
-
-    def cleanCache(self):
-        """Clean the csv_data cache."""
-        # Remove the self._csv_data_cached_value if it exists.
-        try:
-            del self._csv_data_cached_value
-        except AttributeError:
-            pass
 
 
 class TestTrac(Trac):
@@ -986,11 +1152,11 @@ class TestTrac(Trac):
         """See `Trac`."""
         return self.supports_single_exports
 
-    def urlopen(self, url):
+    def urlopen(self, url, data=None):
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
-
+        url = url.get_full_url()
         if self.trace_calls:
-            print "CALLED urlopen(%r)" % (url,)
+            print "CALLED urlopen(%r)" % (url)
 
         if self.csv_export_file is not None:
             csv_export_file = self.csv_export_file
@@ -1022,7 +1188,8 @@ class MockTracRemoteBug:
         return {
             'id': self.id,
             'status': self.status,
-            'resolution': self.resolution,}
+            'resolution': self.resolution,
+            }
 
 
 class TestInternalXMLRPCTransport:
@@ -1038,11 +1205,8 @@ class TestInternalXMLRPCTransport:
     def request(self, host, handler, request, verbose=None):
         args, method_name = xmlrpclib.loads(request)
         method = getattr(self, method_name)
-        LaunchpadZopelessLayer.switchDbUser('launchpad')
-        result = method(*args)
-        LaunchpadZopelessLayer.txn.commit()
-        LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
-        return result
+        with lp_dbuser():
+            return method(*args)
 
     def newBugTrackerToken(self):
         token_api = ExternalBugTrackerTokenAPI(None, None)
@@ -1325,9 +1489,9 @@ class TestRoundup(Roundup):
     batch_size = None
     trace_calls = False
 
-    def urlopen(self, url):
+    def urlopen(self, url, data=None):
         if self.trace_calls:
-            print "CALLED urlopen(%r)" % (url,)
+            print "CALLED urlopen(%r)" % (url.get_full_url())
 
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
 
@@ -1379,7 +1543,7 @@ class TestSourceForge(SourceForge):
 
     def _getPage(self, page):
         if self.trace_calls:
-            print "CALLED _getPage(%r)" % (page,)
+            print "CALLED _getPage(%r)" % (page)
 
         page_re = re.compile('support/tracker.php\?aid=([0-9]+)')
         bug_id = page_re.match(page).groups()[0]
@@ -1462,19 +1626,38 @@ class TestDebBugs(DebBugs):
         return bug
 
 
-class Urlib2TransportTestInfo:
+class UrlLib2TransportTestInfo:
     """A url info object for use in the test, returning
     a hard-coded cookie header.
     """
     cookies = 'foo=bar'
+
     def getheaders(self, header):
         """Return the hard-coded cookie header."""
         if header.lower() in ('cookie', 'set-cookie', 'set-cookie2'):
             return [self.cookies]
 
 
-class Urlib2TransportTestHandler(BaseHandler):
+class UrlLib2TransportTestHandler(BaseHandler):
     """A test urllib2 handler returning a hard-coded response."""
+
+    def __init__(self):
+        self.redirect_url = None
+        self.raise_error = None
+        self.response = None
+        self.accessed_urls = []
+
+    def setRedirect(self, new_url):
+        """The next call of default_open() will redirect to `url`."""
+        self.redirect_url = new_url
+
+    def setError(self, error, url):
+        """Raise `error` when `url` is accessed."""
+        self.raise_error = error
+        self.raise_url = url
+
+    def setResponse(self, response):
+        self.response = response
 
     def default_open(self, req):
         """Catch all requests and return a hard-coded response.
@@ -1482,47 +1665,61 @@ class Urlib2TransportTestHandler(BaseHandler):
         The response body is an XMLRPC response. In addition we set the
         info of the response to contain a cookie.
         """
-        assert (
-            isinstance(req, Request),
+        assert isinstance(req, Request), (
             'Expected a urllib2.Request, got %s' % req)
 
-        if 'testError' in req.data:
-            raise HTTPError(
-                req.get_full_url(), 500, 'Internal Error', {}, None)
-
-        elif ('testRedirect' in req.data and
-              'redirected' not in req.get_full_url()):
-            # Big hack to make calls to testRedirect act as though a 302
-            # has been received. Note the slightly cheaty check for
-            # 'redirected' in the URL. This is to stop urllib2 from
-            # whinging about infinite loops.
-            redirect_url = urlappend(
-                req.get_full_url(), 'redirected')
-
+        self.accessed_urls.append(req.get_full_url())
+        if (self.raise_error is not None and
+              req.get_full_url() == self.raise_url):
+            error = self.raise_error
+            self.raise_error = None
+            raise error
+        elif self.redirect_url is not None:
             headers = HTTPMessage(StringIO())
-            headers['location'] = redirect_url
-
+            headers['location'] = self.redirect_url
             response = StringIO()
             response.info = lambda: headers
-            response.geturl = lambda: req.get_full_url()
+            response.geturl = req.get_full_url
             response.code = 302
             response.msg = 'Moved'
+            self.redirect_url = None
             response = self.parent.error(
-                'http', req, response, 302, 'Moved',
-                headers)
-
-        else:
-            xmlrpc_response = xmlrpclib.dumps(
-                (req.get_full_url(),), methodresponse=True)
-            response = StringIO(xmlrpc_response)
-            info = Urlib2TransportTestInfo()
+                'http', req, response, 302, 'Moved', headers)
+        elif self.response is not None:
+            response = StringIO(self.response)
+            info = UrlLib2TransportTestInfo()
             response.info = lambda: info
             response.code = 200
-            response.geturl = lambda: req.get_full_url()
+            response.geturl = req.get_full_url
+            response.msg = ''
+            self.response = None
+        else:
+            xmlrpc_response = xmlrpclib.dumps(
+                (req.get_full_url(), ), methodresponse=True)
+            response = StringIO(xmlrpc_response)
+            info = UrlLib2TransportTestInfo()
+            response.info = lambda: info
+            response.code = 200
+            response.geturl = req.get_full_url
             response.msg = ''
 
         return response
 
-def patch_transport_opener(transport):
-    """Patch the transport's opener to use a test handler."""
-    transport.opener.add_handler(Urlib2TransportTestHandler())
+
+def ensure_response_parser_is_expat(transport):
+    """Ensure the transport always selects the Expat-based response parser.
+
+    The response parser is chosen by xmlrpclib at runtime from a number of
+    choices, but the main Launchpad production environment selects Expat at
+    present.
+
+    Developer's machines could have other packages, `python-reportlab-accel`
+    (which provides the `sgmlop` module) for example, that cause different
+    response parsers to be chosen.
+    """
+    def getparser():
+        target = xmlrpclib.Unmarshaller(
+            use_datetime=transport._use_datetime)
+        parser = xmlrpclib.ExpatParser(target)
+        return parser, target
+    transport.getparser = getparser

@@ -142,7 +142,7 @@ an error.
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> cprov_ppa = cprov.getPPAByName('ppa')
-    >>> cprov_ppa.enabled = False
+    >>> cprov_ppa.disable()
 
     >>> import transaction
     >>> transaction.commit()
@@ -166,8 +166,8 @@ Uploading to named PPA that does not exist fails.
 
 We will create a 'beta' PPA for Celso.
 
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> beta_ppa = getUtility(IArchiveSet).new(
     ...     ArchivePurpose.PPA, cprov, 'beta')
 
@@ -240,7 +240,7 @@ So, here is a binary upload path to the primary archive:
 
 The same for a PPA:
 
-    >>> cprov_ppa.enabled = True
+    >>> cprov_ppa.enable()
     >>> check_upload('%s/ubuntu' % cprov_ppa.id)
     Archive: ppa
     Distribution: ubuntu

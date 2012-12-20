@@ -43,7 +43,7 @@ answer should have exactly those strings.
     >>> print browser.url
     http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=19&batch=1
     >>> print find_tag_by_id(browser.contents, 'msgset_149_es_translation_0_new')
-    <textarea ... name="msgset_149_es_translation_0_new" ...>
+    <textarea ... name="msgset_149_es_translation_0_new"...>
 
     foo
 
@@ -63,7 +63,7 @@ change the test, to be 100% sure that the textarea content is the right one.
     >>> print find_tag_by_id(
     ...     browser.contents,
     ...     'msgset_149_es_translation_0_new') #doctest: -NORMALIZE_WHITESPACE
-    <textarea ... name="msgset_149_es_translation_0_new" ...>
+    <textarea ... name="msgset_149_es_translation_0_new"...>
     foo</textarea>
 
 Now, Check that even though the user forgot the trailing new line char,
@@ -82,7 +82,7 @@ Launchpad adds it automatically.
 We were redirected to the next form, the translation was accepted.
 
     >>> print browser.url
-    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate?batch=1&start=0
+    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate?batch=1
 
 Get previous page to check that the save translation is the right one.
 
@@ -95,7 +95,7 @@ And, as we can see, we get the trailing new line char
     23.
     <input type="hidden" name="msgset_165" />
     --
-    <code>%s</code>: option `<code>%s</code>' is ambiguous...
+    <code>%s</code>: option `<code>%s</code>&#x27; is ambiguous...
     --
     <code>%s</code>: la opcion «<code>%s</code>» es ambigua<img alt="" src="/@@/translation-newline" /><br />
     --
@@ -112,7 +112,7 @@ Now, we do the right submit, with one trailing new line...
 We were redirected to the next form, the translation was accepted.
 
     >>> print browser.url
-    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate?batch=1&start=0
+    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate?batch=1
 
 Get previous page to check that the save translation is the right one.
 
@@ -125,7 +125,7 @@ And, as we can see, we get the same output, just one trailing newline char.
     23.
     <input type="hidden" name="msgset_165" />
     --
-    <code>%s</code>: option `<code>%s</code>' is ambiguous...
+    <code>%s</code>: option `<code>%s</code>&#x27; is ambiguous...
     --
     <code>%s</code>: la opcion «<code>%s</code>» es ambigua<img alt="" src="/@@/translation-newline" /><br />
     --
@@ -142,7 +142,7 @@ Last check, the user sends two new line chars instead of just one...
 We were redirected to the next form, the translation was accepted.
 
     >>> print browser.url
-    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate?batch=1&start=0
+    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate?batch=1
 
 Get previous page to check that the save translation is the right one.
 
@@ -155,7 +155,7 @@ And Launchpad comes to the rescue and stores just one!
     23.
     <input type="hidden" name="msgset_165" />
     --
-    <code>%s</code>: option `<code>%s</code>' is ambiguous...
+    <code>%s</code>: option `<code>%s</code>&#x27; is ambiguous...
     --
     <code>%s</code>: la opcion «<code>%s</code>» es ambigua<img alt="" src="/@@/translation-newline" /><br />
     --

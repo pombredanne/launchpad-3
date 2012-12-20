@@ -8,25 +8,31 @@ describes the appearance.
 Public PPAs appear like any other launchpad page.
 
     >>> browser.open("http://launchpad.dev/~cprov/+archive")
-    >>> print extract_text(find_tag_by_id(browser.contents, 'privacy'))
-    This archive is public
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> body_el = BeautifulSoup(browser.contents).first('body')
+    >>> 'private' in body_el['class']
+    False
 
 == Private presentation ==
 
-Let's make "cprov's" PPA private.  To do this we need to be an
-admin, and go to his admin page.
+Let's create a private PPA for Celso and see what it looks like.
 
-    >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
-    >>> admin_browser.getLink("Administer archive").click()
-    >>> admin_browser.getControl(name="field.private").value = True
-    >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
-    >>> admin_browser.getControl("Save").click()
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> login('admin@canonical.com')
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> private_ppa = factory.makeArchive(
+    ...     owner=cprov, name="p3a", distribution=ubuntu, private=True)
+    >>> logout()
 
-When the PPA is marked private it gains the standard Launchpad
+When the PPA is private it gains the standard Launchpad
 presentation for private items.
 
     >>> cprov_browser = setupBrowser(
-    ...     auth='Basic celso.providelo@canonical.com:cprov')
-    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive")
-    >>> print extract_text(find_tag_by_id(cprov_browser.contents, 'privacy'))
-    This archive is private
+    ...     auth='Basic celso.providelo@canonical.com:test')
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/p3a")
+    >>> body_el = BeautifulSoup(cprov_browser.contents).first('body')
+    >>> 'private' in body_el['class']
+    True

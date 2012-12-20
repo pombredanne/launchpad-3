@@ -11,12 +11,15 @@ __all__ = [
 
 from sqlobject import SQLObjectNotFound
 
-from canonical.database.sqlbase import sqlvalues, cursor
+from lp.services.database.sqlbase import (
+    cursor,
+    sqlvalues,
+    )
+from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.model.pofile import POFile
 from lp.translations.model.translationmessage import TranslationMessage
-from lp.translations.interfaces.translations import TranslationConstants
-from lp.translations.utilities.gettext_po_parser import (
-    POHeader, plural_form_mapper)
+from lp.translations.utilities.gettext_po_parser import POHeader
+from lp.translations.utilities.pluralforms import plural_form_mapper
 
 
 def get_mapping_for_pofile_plurals(pofile):

@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -11,7 +11,8 @@ import _pythonpath
 
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.translations.scripts.verify_pofile_stats import (
-    VerifyPOFileStatsProcess)
+    VerifyPOFileStatsProcess,
+    )
 
 
 class VerifyPOFileStats(LaunchpadCronScript):

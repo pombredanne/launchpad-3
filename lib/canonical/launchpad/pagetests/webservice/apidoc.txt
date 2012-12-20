@@ -1,9 +1,0 @@
-= API Documentation =
-
-The up-to-date Launchpad API documentation is available from
-http://launchpad.dev/+apidoc.
-
-    >>> browser.open('http://launchpad.dev/+apidoc')
-    >>> print browser.title
-    Launchpad Web Service API
-

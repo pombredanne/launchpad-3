@@ -1,11 +1,12 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Browser views for ITranslationImportQueue."""
+"""Browser views for `ITranslationImportQueue`."""
 
 __metaclass__ = type
 
 __all__ = [
+    'escape_js_string',
     'TranslationImportQueueEntryNavigation',
     'TranslationImportQueueEntryView',
     'TranslationImportQueueNavigation',
@@ -13,30 +14,71 @@ __all__ = [
     ]
 
 import os
-from os.path import basename, splitext
+
 from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IContextSourceBinder
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from canonical.database.constants import UTC_NOW
-from lp.translations.browser.hastranslationimports import (
-    HasTranslationImportsView)
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
+from lp.app.browser.tales import DateTimeFormatterAPI
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
+from lp.app.validators.name import valid_name
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueueEntry, IEditTranslationImportQueueEntry,
-    ITranslationImportQueue, RosettaImportStatus,
-    SpecialTranslationImportTargetFilter, TranslationFileType)
+from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
+from lp.services.database.constants import UTC_NOW
+from lp.services.webapp import (
+    canonical_url,
+    GetitemNavigation,
+    )
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.translations.browser.hastranslationimports import (
+    HasTranslationImportsView,
+    )
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from canonical.launchpad.webapp.interfaces import (
-    NotFoundError, UnexpectedFormData)
+from lp.translations.interfaces.translationimporter import (
+    ITranslationImporter,
+    )
+from lp.translations.interfaces.translationimportqueue import (
+    IEditTranslationImportQueueEntry,
+    ITranslationImportQueue,
+    ITranslationImportQueueEntry,
+    SpecialTranslationImportTargetFilter,
+    TranslationFileType,
+    )
+from lp.translations.utilities.template import (
+    make_domain,
+    make_name,
+    )
 
-from canonical.launchpad.webapp import (
-    action, canonical_url, GetitemNavigation, LaunchpadFormView)
-from canonical.launchpad.validators.name import valid_name
+
+def replace(string, replacement):
+    """In `string,` replace `replacement`[0] with `replacement`[1]."""
+    return string.replace(*replacement)
+
+
+def escape_js_string(string):
+    """Escape `string` for use as a string in a JS <script> tag."""
+    replacements = [
+        ('\\', '\\\\'),
+        ('"', '\\"'),
+        ("'", "\\'"),
+        ('\n', '\\n'),
+        ]
+    return reduce(replace, replacements, string)
+
 
 class TranslationImportQueueEntryNavigation(GetitemNavigation):
 
@@ -48,20 +90,25 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
     label = "Review import queue entry"
     schema = IEditTranslationImportQueueEntry
 
+    max_series_to_display = 3
+
+    page_title = 'Translation import queue entry'
+
     @property
     def initial_values(self):
         """Initialize some values on the form, when it's possible."""
         field_values = {}
         if self.request.method == 'POST':
-            # We got a form post, we don't need to do any initialisation.
+            # We got a form post, we don't need to do any initialization.
             return field_values
         # Fill the know values.
         field_values['path'] = self.context.path
-        (fname, fext) = splitext(self.context.path)
-        if fext.lower() == '.po':
-            file_type = TranslationFileType.PO
-        elif fext.lower() == '.pot':
+
+        importer = getUtility(ITranslationImporter)
+        if importer.isTemplateName(self.context.path):
             file_type = TranslationFileType.POT
+        elif importer.isTranslationName(self.context.path):
+            file_type = TranslationFileType.PO
         else:
             file_type = TranslationFileType.UNSPEC
         field_values['file_type'] = file_type
@@ -77,17 +124,20 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 field_values['languagepack'] = (
                     self.context.potemplate.languagepack)
         if (file_type in (TranslationFileType.POT,
-                          TranslationFileType.UNSPEC) and
-                          self.context.potemplate is not None):
-            field_values['name'] = (
-                self.context.potemplate.name)
-            field_values['translation_domain'] = (
-                self.context.potemplate.translation_domain)
+                          TranslationFileType.UNSPEC)):
+            potemplate = self.context.potemplate
+            if potemplate is None:
+                domain = make_domain(self.context.path)
+                field_values['name'] = make_name(domain)
+                field_values['translation_domain'] = domain
+            else:
+                field_values['name'] = potemplate.name
+                field_values['translation_domain'] = (
+                    potemplate.translation_domain)
         if file_type in (TranslationFileType.PO, TranslationFileType.UNSPEC):
             field_values['potemplate'] = self.context.potemplate
             if self.context.pofile is not None:
                 field_values['language'] = self.context.pofile.language
-                field_values['variant'] = self.context.pofile.variant
             else:
                 # The entries that are translations usually have the language
                 # code
@@ -95,9 +145,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 language_set = getUtility(ILanguageSet)
                 filename = os.path.basename(self.context.path)
                 guessed_language, file_ext = filename.split(u'.', 1)
-                (language, variant) = (
-                    language_set.getLanguageAndVariantFromString(
-                        guessed_language))
+                language = language_set.getLanguageByCode(guessed_language)
                 if language is not None:
                     field_values['language'] = language
                     # Need to warn the user that we guessed the language
@@ -105,23 +153,125 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                     self.request.response.addWarningNotification(
                         "Review the language selection as we guessed it and"
                         " could not be accurate.")
-                if variant is not None:
-                    field_values['variant'] = variant
 
         return field_values
 
     @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        referrer = self.referrer_url
+        if referrer is None:
+            translationimportqueue_set = getUtility(ITranslationImportQueue)
+            return canonical_url(translationimportqueue_set)
+        else:
+            return referrer
+
+    @property
+    def referrer_url(self):
+        referrer = self.request.getHeader('referer')
+        if referrer != canonical_url(self.context):
+            return referrer
+        else:
+            return None
+
+    @property
+    def import_target(self):
+        """The entry's `ProductSeries` or `SourcePackage`."""
+        productseries = self.context.productseries
+        distroseries = self.context.distroseries
+        sourcepackagename = self.context.sourcepackagename
+        if distroseries is None:
+            return productseries
+        else:
+            factory = getUtility(ISourcePackageFactory)
+            return factory.new(sourcepackagename, distroseries)
+
+    @property
+    def productseries_templates_link(self):
+        """Return link to `ProductSeries`' templates.
+
+        Use this only if the entry is attached to a `ProductSeries`.
+        """
+        assert self.context.productseries is not None, (
+            "Entry is not attached to a ProductSeries.")
+
+        template_count = self.context.productseries.potemplate_count
+        if template_count == 0:
+            return "no templates"
+        else:
+            link = "%s/+templates" % canonical_url(
+                self.context.productseries, rootsite='translations')
+            if template_count == 1:
+                word = "template"
+            else:
+                word = "templates"
+            return '<a href="%s">%d %s</a>' % (link, template_count, word)
+
+    def _composeProductSeriesLink(self, productseries):
+        """Produce HTML to link to `productseries`."""
+        return '<a href="%s">%s</a>' % (
+            canonical_url(productseries, rootsite='translations'),
+            productseries.name)
+
+    @property
+    def product_translatable_series(self):
+        """Summarize whether `Product` has translatable series.
+
+        Use this only if the entry is attached to a `ProductSeries`.
+        """
+        assert self.context.productseries is not None, (
+            "Entry is not attached to a ProductSeries.")
+
+        product = self.context.productseries.product
+        translatable_series = list(product.translatable_series)
+        if len(translatable_series) == 0:
+            return "Project has no translatable series."
+        else:
+            max_series_to_display = self.max_series_to_display
+            links = [
+                self._composeProductSeriesLink(series)
+                for series in translatable_series[:max_series_to_display]]
+            links_text = ', '.join(links)
+            if len(translatable_series) > max_series_to_display:
+                tail = ", ..."
+            else:
+                tail = "."
+            return "Project has translatable series: " + links_text + tail
+
+    @property
+    def status_change_date(self):
+        """Show date of last status change.
+
+        Says nothing at all if the entry's status has not changed since
+        upload.
+        """
+        change_date = self.context.date_status_changed
+        if change_date == self.context.dateimported:
+            return ""
+        else:
+            formatter = DateTimeFormatterAPI(change_date)
+            return "Last changed %s." % formatter.displaydate()
+
+    @property
     def next_url(self):
-        """Return the URL of the main import queue at 'rosetta/imports'."""
-        translationimportqueue_set = getUtility(ITranslationImportQueue)
-        return canonical_url(translationimportqueue_set)
+        """See `LaunchpadFormView`."""
+        # The referer header we want is only available before the view's
+        # form submits to itself. This field is a hidden input in the form.
+        referrer = self.request.form.get('next_url')
+
+        if (referrer is not None
+            and referrer.startswith(self.request.getApplicationURL())):
+            return referrer
+        else:
+            translationimportqueue_set = getUtility(ITranslationImportQueue)
+            return canonical_url(translationimportqueue_set)
 
     def initialize(self):
         """Remove some fields based on the entry handled."""
         self.field_names = ['file_type', 'path', 'sourcepackagename',
-                            'name', 'translation_domain', 'languagepack',
                             'potemplate', 'potemplate_name',
-                            'language', 'variant']
+                            'name', 'translation_domain', 'languagepack',
+                            'language']
 
         if self.context.productseries is not None:
             # We are handling an entry for a productseries, this field is not
@@ -132,7 +282,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             # Only show languagepack for Ubuntu packages.
             self.field_names.remove('languagepack')
 
-        # Execute default initialisation.
+        # Execute default initialization.
         LaunchpadFormView.initialize(self)
 
 # XXX: HenningEggers 2008-11-21 bug=300608: This code is too generic to be in
@@ -175,52 +325,59 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 productseries=self.context.productseries)
         return potemplate_subset
 
-    def _validatePath(self, file_type, path):
-        path_changed = False # Flag for change_action
-        if path == None or path.strip() == "":
-            self.setFieldError('path', 'The file name is missing.')
+    def _findObjectionToFilePath(self, file_type, path):
+        """Return textual objection, if any, to setting this file path."""
+        importer = getUtility(ITranslationImporter)
+        if file_type == TranslationFileType.POT:
+            if not importer.isTemplateName(path):
+                return "This filename is not appropriate for a template."
         else:
-            (fname, fext) = splitext(basename(path))
-            if len(fname) == 0:
-                self.setFieldError('path',
-                                   'The file name is incomplete.')
-            if (file_type == TranslationFileType.POT and
-                    fext.lower() != '.pot' and fext.lower() != '.xpi'):
-                self.setFieldError('path',
-                                   'The file name must end with ".pot".')
-            if (file_type == TranslationFileType.PO and
-                    fext.lower() != '.po' and fext.lower() != '.xpi'):
-                self.setFieldError('path',
-                                   'The file name must end with ".po".')
+            if not importer.isTranslationName(path):
+                return "This filename is not appropriate for a translation."
 
-            if self.context.path != path:
-                # The Rosetta Expert decided to change the path of the file.
-                # Before accepting such change, we should check first whether
-                # there is already another entry with that path in the same
-                # context (sourcepackagename/distroseries or productseries).
-                if file_type == TranslationFileType.POT:
-                    potemplate_set = getUtility(IPOTemplateSet)
-                    existing_file = (
-                        potemplate_set.getPOTemplateByPathAndOrigin(
-                            path, self.context.productseries,
-                            self.context.distroseries,
-                            self.context.sourcepackagename))
-                else:
-                    pofile_set = getUtility(IPOFileSet)
-                    existing_file = pofile_set.getPOFileByPathAndOrigin(
-                        path, self.context.productseries,
-                        self.context.distroseries,
-                        self.context.sourcepackagename)
-                if existing_file is None:
-                    # There is no other pofile in the given path for this
-                    # context, let's change it as requested by admins.
-                    path_changed = True
-                else:
-                    # We already have an IPOFile in this path, let's notify
-                    # the user about that so they choose another path.
-                    self.setFieldError('path',
-                        'There is already a file in the given path.')
-        return path_changed
+        if path == self.context.path:
+            # No change, so no objections.
+            return None
+
+        # The Rosetta Expert decided to change the path of the file.
+        # Before accepting such change, we should check first whether
+        # there is already another entry with that path in the same
+        # context (sourcepackagename/distroseries or productseries).
+        # A duplicate name will confuse the auto-approval
+        # process.
+        if file_type == TranslationFileType.POT:
+            potemplate_set = getUtility(IPOTemplateSet)
+            existing_file = potemplate_set.getPOTemplateByPathAndOrigin(
+                path, self.context.productseries, self.context.distroseries,
+                self.context.sourcepackagename)
+            already_exists = existing_file is not None
+        else:
+            pofile_set = getUtility(IPOFileSet)
+            existing_files = pofile_set.getPOFilesByPathAndOrigin(
+                path, self.context.productseries,
+                self.context.distroseries,
+                self.context.sourcepackagename)
+            already_exists = not existing_files.is_empty()
+
+        if already_exists:
+            # We already have an IPOFile in this path, let's notify
+            # the user about that so they choose another path.
+            return "There is already a file in the given path."
+
+        return None
+
+    def _validatePath(self, file_type, path):
+        """Should the entry's path be updated?"""
+        if path is None or path.strip() == "":
+            self.setFieldError('path', "The file name is missing.")
+            return False
+
+        objection = self._findObjectionToFilePath(file_type, path)
+        if objection is None:
+            return True
+        else:
+            self.setFieldError('path', objection)
+            return False
 
     def _validatePOT(self, data):
         name = data.get('name')
@@ -306,8 +463,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
         if (self.context.sourcepackagename is not None and
             potemplate.sourcepackagename is not None and
-            self.context.sourcepackagename != potemplate.sourcepackagename
-            ):
+            self.context.sourcepackagename != potemplate.sourcepackagename):
             # We got the template from a different package than the one
             # selected by the user where the import should done, so we
             # note it here.
@@ -331,7 +487,6 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
         path = data.get('path')
         language = data.get('language')
-        variant = data.get('variant')
 
         # Use manual potemplate, if given.
         # man_potemplate is set in validate().
@@ -340,11 +495,11 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         else:
             potemplate = data.get('potemplate')
 
-        pofile = potemplate.getPOFileByLang(language.code, variant)
+        pofile = potemplate.getPOFileByLang(language.code)
         if pofile is None:
             # We don't have such IPOFile, we need to create it.
             pofile = potemplate.newPOFile(
-                language.code, variant, self.context.importer)
+                language.code, self.context.importer)
         self.context.pofile = pofile
         if (self.context.sourcepackagename is not None and
             potemplate.sourcepackagename is not None and
@@ -359,10 +514,10 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             self.context.path = path
             # We got a path to store as the new one for the POFile.
             pofile.setPathIfUnique(path)
-        elif self.context.is_published:
-            # This entry comes from upstream, which means that the path we
-            # got is exactly the right one. If it's different from what
-            # pofile has, that would mean that either the entry changed
+        elif self.context.by_maintainer:
+            # This entry was uploaded by the maintainer, which means that the
+            # path we got is exactly the right one. If it's different from
+            # what pofile has, that would mean that either the entry changed
             # its path since previous upload or that we had to guess it
             # and now that we got the right path, we should fix it.
             pofile.setPathIfUnique(self.context.path)
@@ -388,8 +543,22 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         # Store the associated IPOTemplate.
         self.context.potemplate = potemplate
 
-        self.context.setStatus(RosettaImportStatus.APPROVED)
+        self.context.setStatus(RosettaImportStatus.APPROVED, self.user)
         self.context.date_status_changed = UTC_NOW
+
+    @property
+    def js_domain_mapping(self):
+        """Return JS code mapping templates' names to translation domains."""
+        target = self.import_target
+        if target is None:
+            contents = ""
+        else:
+            contents = ", \n".join([
+                "'%s': '%s'" % (
+                    escape_js_string(template.name),
+                    escape_js_string(template.translation_domain))
+                for template in target.getCurrentTranslationTemplates()])
+        return "var template_domains = {%s};" % contents
 
 
 class TranslationImportQueueNavigation(GetitemNavigation):
@@ -397,13 +566,13 @@ class TranslationImportQueueNavigation(GetitemNavigation):
 
 
 class TranslationImportQueueView(HasTranslationImportsView):
-    """View class used for Translation Import Queue management."""
-    label = 'Translation files waiting to be imported.'
+    """The global Translation Import Queue."""
+
+    label = "Translation import queue"
 
     def initialize(self):
         """Useful initialization for this view class."""
-        self._initial_values = {}
-        LaunchpadFormView.initialize(self)
+        super(TranslationImportQueueView, self).initialize()
         target_filter = self.widgets['filter_target']
         if target_filter.hasInput() and not target_filter.hasValidInput():
             raise UnexpectedFormData("Unknown target.")
@@ -448,7 +617,11 @@ class TranslationImportTargetVocabularyFactory:
 
     def __call__(self, context):
         import_queue = getUtility(ITranslationImportQueue)
-        targets = import_queue.getRequestTargets()
+        if hasattr(self, 'view'):
+            user = self.view.user
+        else:
+            user = None
+        targets = import_queue.getRequestTargets(user)
         filtered_targets = set()
 
         # Read filter_status, in order to mark targets that have requests with
@@ -465,7 +638,8 @@ class TranslationImportTargetVocabularyFactory:
                 try:
                     status = RosettaImportStatus.items[status_filter]
                     filtered_targets = set(
-                        import_queue.getRequestTargets(status))
+                        import_queue.getRequestTargets(
+                            user=None, status=status))
                 except LookupError:
                     # Unknown status.  Ignore.
                     pass

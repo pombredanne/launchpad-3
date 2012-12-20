@@ -3,40 +3,45 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/main_only"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad">
 
 <body>
 
+<metal:side fill-slot="side">
 
-<h1 metal:fill-slot="heading"
-    tal:content="view/heading">Bazaar branches</h1>
+  <div tal:define="menu context/menu:branches"
+       tal:condition="view/show_action_menu"
+       class="first portlet">
+  </div>
+
+  <tal:summary replace="structure context/@@+codesummary"/>
+
+</metal:side>
 
 <div metal:fill-slot="main"
      tal:define="branches view/branches">
 
-  <div style="float:right" id="floating-links"
-       tal:define="menu context/menu:branches">
-    <div tal:define="link menu/addbranch"
-         tal:condition="link/enabled"
-         tal:content="structure link/render" />
-  </div>
+  <p id="junk-branch-directions" tal:condition="view/show_junk_directions">
+    You can push (upload) personal branches
+    (those not related to a project) with the following command:
+    <br/>
+    <tt class="command">bzr push lp:~<tal:name
+      replace="view/user/name"/>/+junk/<em>BRANCHNAME</em></tt>
+  </p>
 
-  <div id="no-branch-message" tal:condition="not: view/has_branches">
+  <div id="no-branch-message" tal:condition="view/is_branch_count_zero">
     <p tal:content="view/no_branch_message">
       There are no branches related to Eric the Viking today.
     </p>
   </div>
 
-  <tal:summary replace="structure context/@@+codesummary"/>
-
-  <tal:has-branches condition="view/has_branches">
-
+  <tal:has-branches condition="not: view/is_branch_count_zero">
     <tal:branchlisting
         content="structure branches/@@+branch-listing" />
   </tal:has-branches>
 
-  <div tal:replace="structure context/@@+portlet-teambranches" />
+  <tal:teambranches replace="structure context/@@+portlet-teambranches" />
 </div>
 </body>
 </html>

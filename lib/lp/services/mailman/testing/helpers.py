@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'apply_for_list',
     'collect_archive_message_ids',
     'create_list',
     'ensure_addresses_are_disabled',
@@ -15,43 +14,49 @@ __all__ = [
     'get_size',
     'pending_hold_ids',
     'print_mailman_hold',
-    'review_list',
     'run_mailman',
     'subscribe',
     'unsubscribe',
     ]
 
 
-import os
-import re
-import time
-import errno
-import pickle
 import datetime
-import transaction
+import errno
+import os
+import pickle
+import re
+from subprocess import (
+    PIPE,
+    Popen,
+    )
+import time
 
-from subprocess import Popen, PIPE
+# This is where the Mailman command line scripts live.
+import Mailman
+from Mailman import mm_cfg
+from Mailman.Errors import NotAMemberError
+from Mailman.MailList import MailList
+from Mailman.MemberAdaptor import (
+    BYUSER,
+    ENABLED,
+    )
+from Mailman.Utils import list_names
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import login, logout
-from canonical.launchpad.testing.browser import Browser
-from lp.testing.factory import LaunchpadObjectFactory
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.tests import mailinglists_helper
 from lp.services.mailman.testing.layers import MailmanLayer
+from lp.testing import (
+    celebrity_logged_in,
+    person_logged_in,
+    )
+from lp.testing.browser import Browser
+from lp.testing.factory import LaunchpadObjectFactory
 
-# pylint: disable-msg=F0401
-from Mailman import mm_cfg
-from Mailman.Errors import NotAMemberError
-from Mailman.MailList import MailList
-from Mailman.MemberAdaptor import BYUSER, ENABLED
-from Mailman.Utils import list_names
 
-
-# This is where the Mailman command line scripts live.
-import Mailman
 MAILMAN_PKGDIR = os.path.dirname(Mailman.__file__)
 MAILMAN_BINDIR = os.path.join(os.path.dirname(MAILMAN_PKGDIR), 'bin')
 
@@ -64,7 +69,7 @@ def get_size(path):
     """Return the size of a file, or -1 if it doesn't exist."""
     try:
         return os.stat(path).st_size
-    except OSError, error:
+    except OSError as error:
         if error.errno == errno.ENOENT:
             # Return -1 when the file does not exist, so it always
             # compares less than an existing but empty file.
@@ -73,39 +78,23 @@ def get_size(path):
         raise
 
 
-def review_list(list_name, status='approve'):
-    """Helper for approving a mailing list."""
-    browser = Browser('foo.bar@canonical.com:test')
-    browser.open('http://launchpad.dev:8085/+mailinglists')
-    browser.getControl(name='field.' + list_name).value = [status]
-    browser.getControl('Submit').click()
-    result = MailmanLayer.xmlrpc_watcher.wait_for_create(list_name)
-    if result is not None:
-        # The watch timed out.
-        print result
-        return None
-    login('foo.bar@canonical.com')
-    mailing_list = getUtility(IMailingListSet).get(list_name)
-    logout()
-    return mailing_list
-
-
 def create_list(team_name):
     """Do everything you need to do to make the team's list live."""
     displayname = SPACE.join(
         word.capitalize() for word in team_name.split('-'))
     browser = Browser('no-priv@canonical.com:test')
     # Create the team.
-    browser.open('http://launchpad.dev:8085/people/+newteam')
+    browser.open('%s/people/+newteam' % MailmanLayer.appserver_root_url())
     browser.getControl(name='field.name').value = team_name
     browser.getControl('Display Name').value = displayname
-    browser.getControl(name='field.subscriptionpolicy').displayValue = [
+    browser.getControl(name='field.membership_policy').displayValue = [
         'Open Team']
     browser.getControl('Create').click()
     # Create the mailing list.
-    browser.getLink('Configure mailing list').click()
-    browser.getControl('Apply for Mailing List').click()
-    mailing_list = review_list(team_name)
+    browser.getLink('Create a mailing list').click()
+    browser.getControl('Create new Mailing List').click()
+    list_set = getUtility(IMailingListSet)
+    mailing_list = list_set.get(team_name)
     # pylint: disable-msg=F0401
     assert team_name in list_names(), (
         'Mailing list was not created: %s (found: %s)' %
@@ -128,42 +117,41 @@ def subscribe(first_name, team_name, use_alt_address=False):
     """Do everything you need to subscribe a person to a mailing list."""
     # Create the person if she does not already exist, and join her to the
     # team.
-    login('foo.bar@canonical.com')
-    person_set = getUtility(IPersonSet)
-    person = person_set.getByName(first_name.lower())
-    if person is None:
-        person = LaunchpadObjectFactory().makePersonByName(first_name)
-    team = getUtility(IPersonSet).getByName(team_name)
-    person.join(team)
-    # Subscribe her to the list.
-    mailing_list = getUtility(IMailingListSet).get(team_name)
-    if use_alt_address:
-        alternative_email = mailinglists_helper.get_alternative_email(person)
-        mailing_list.subscribe(person, alternative_email)
-    else:
-        mailing_list.subscribe(person)
+    with celebrity_logged_in('admin'):
+        person_set = getUtility(IPersonSet)
+        person = person_set.getByName(first_name.lower())
+        if person is None:
+            person = LaunchpadObjectFactory().makePersonByName(first_name)
+        team = getUtility(IPersonSet).getByName(team_name)
+        person.join(team)
+        # Subscribe her to the list.
+        mailing_list = getUtility(IMailingListSet).get(team_name)
+        if use_alt_address:
+            alternative_email = mailinglists_helper.get_alternative_email(
+                person)
+            mailing_list.subscribe(person, alternative_email)
+        else:
+            mailing_list.subscribe(person)
     transaction.commit()
-    logout()
     return ensure_membership(team_name, person)
 
 
 def unsubscribe(first_name, team_name):
     """Unsubscribe the named person from the team's mailing list."""
-    login('foo.bar@canonical.com')
-    person_set = getUtility(IPersonSet)
-    person = person_set.getByName(first_name.lower())
-    assert person is not None, 'No such person: %s' % first_name
-    mailing_list = getUtility(IMailingListSet).get(team_name)
-    mailing_list.unsubscribe(person)
-    transaction.commit()
-    # Unsubscribing does not make the person a non-member, but it does disable
-    # all their addresses.
-    addresses = [
-        removeSecurityProxy(email).email
-        for email in person.validatedemails
-        ]
-    addresses.append(removeSecurityProxy(person.preferredemail).email)
-    logout()
+    with celebrity_logged_in('admin'):
+        person_set = getUtility(IPersonSet)
+        person = person_set.getByName(first_name.lower())
+        assert person is not None, 'No such person: %s' % first_name
+        mailing_list = getUtility(IMailingListSet).get(team_name)
+        mailing_list.unsubscribe(person)
+        transaction.commit()
+        # Unsubscribing does not make the person a non-member, but it
+        # does disable all their addresses.
+        addresses = [
+            removeSecurityProxy(email).email
+            for email in person.validatedemails
+            ]
+        addresses.append(removeSecurityProxy(person.preferredemail).email)
     return ensure_addresses_are_disabled(team_name, *addresses)
 
 
@@ -213,7 +201,7 @@ def collect_archive_message_ids(team_name):
             archived_files = [file_name
                               for file_name in os.listdir(mhonarc_path)
                               if file_name.endswith('.html')]
-        except OSError, error:
+        except OSError as error:
             if error.errno != errno.ENOENT:
                 raise
             # Sleep and try again.
@@ -234,13 +222,6 @@ def collect_archive_message_ids(team_name):
                 message_ids.append(mo.group('id'))
                 break
     return sorted(message_ids)
-
-
-def apply_for_list(browser, team_name):
-    """Like mailinglists_helper.apply_for_list() but with the right rooturl.
-    """
-    mailinglists_helper.apply_for_list(
-        browser, team_name, 'http://launchpad.dev:8085/')
 
 
 def _membership_test(team_name, people, predicate):
@@ -266,11 +247,12 @@ def _membership_test(team_name, people, predicate):
         if isinstance(person, basestring):
             member_addresses.add(person)
         else:
-            for email in person.validatedemails:
-                member_addresses.add(removeSecurityProxy(email).email)
-            # Also add the preferred address.
-            preferred = removeSecurityProxy(person.preferredemail).email
-            member_addresses.add(preferred)
+            with person_logged_in(person):
+                for email in person.validatedemails:
+                    member_addresses.add(email.email)
+                # Also add the preferred address.
+                preferred = removeSecurityProxy(person.preferredemail).email
+                member_addresses.add(preferred)
     assert len(member_addresses) > 0, 'No valid addresses found'
     mailing_list = MailList(team_name, lock=False)
     until = datetime.datetime.now() + MAILING_LIST_CHECK_INTERVAL

@@ -9,9 +9,12 @@ __all__ = []
 
 import unittest
 
-from canonical.testing import LaunchpadFunctionalLayer
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
+from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 
 
 def test_suite():

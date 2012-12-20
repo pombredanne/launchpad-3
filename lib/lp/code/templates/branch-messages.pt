@@ -115,6 +115,12 @@
          tal:condition="branch/mirror_status_message"
          tal:content="branch/mirror_status_message">
     </div>
+    <div id="upgrade-pending"
+         class="warning message" style="font-weight: normal"
+         tal:condition="branch/upgrade_pending">
+         An upgrade of this branch is in progress.
+    </div>
+
   </tal:hosted-branch>
 
 </div>

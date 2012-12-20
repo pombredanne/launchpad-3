@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
@@ -16,16 +16,18 @@
 
   <div id="maincontent">
 
-  <p tal:content="structure context/fmt:link" />
+    <p>
+        A bug may need fixing in more than one project. You may add another
+        project for this bug here.
+        <a href="/+help-bugs/also-affects-project-help.html" target="help"
+        class="sprite maybe action-icon">(?)</a>
+    </p>
 
-  <div metal:use-macro="context/@@launchpad_form/form">
+    <p tal:content="structure context/fmt:link" />
+
+    <div metal:use-macro="context/@@launchpad_form/form"></div>
 
   </div>
-
-  </div>
-
-  <div id="portlets"
-       tal:content="structure context/bug/@@+portlet-notified" />
 
 </div>
 

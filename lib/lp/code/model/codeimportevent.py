@@ -13,21 +13,32 @@ __all__ = [
     ]
 
 
-from sqlobject import StringCol, ForeignKey
-
-from zope.interface import implements
 from lazr.enum import DBItem
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
+from zope.interface import implements
 
-from canonical.database.constants import DEFAULT
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
 from lp.code.enums import (
-    CodeImportEventDataType, CodeImportEventType,
-    CodeImportMachineOfflineReason, RevisionControlSystems)
+    CodeImportEventDataType,
+    CodeImportEventType,
+    CodeImportMachineOfflineReason,
+    RevisionControlSystems,
+    )
 from lp.code.interfaces.codeimportevent import (
-    ICodeImportEvent, ICodeImportEventSet, ICodeImportEventToken)
+    ICodeImportEvent,
+    ICodeImportEventSet,
+    ICodeImportEventToken,
+    )
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import SQLBase
 
 
 class CodeImportEvent(SQLBase):
@@ -136,12 +147,14 @@ class CodeImportEventSet:
                 data_type=CodeImportEventDataType.MESSAGE,
                 data_value=message)
 
-    def newOnline(self, machine, user=None, message=None):
+    def newOnline(self, machine, user=None, message=None, _date_created=None):
         """See `ICodeImportEventSet`."""
         assert machine is not None, "machine must not be None"
+        if _date_created is None:
+            _date_created = UTC_NOW
         event = CodeImportEvent(
             event_type=CodeImportEventType.ONLINE,
-            machine=machine, person=user)
+            machine=machine, person=user, date_created=_date_created)
         self._recordMessage(event, message)
         return event
 
@@ -256,13 +269,14 @@ class CodeImportEventSet:
 
     def _iterSourceDetails(self, code_import):
         """Yield key-value tuples describing the source of the import."""
-        if code_import.rcs_type == RevisionControlSystems.SVN:
-            yield 'SVN_BRANCH_URL', code_import.svn_branch_url
+        if code_import.rcs_type in (RevisionControlSystems.SVN,
+                                    RevisionControlSystems.BZR_SVN,
+                                    RevisionControlSystems.GIT,
+                                    RevisionControlSystems.BZR):
+            yield 'URL', code_import.url
         elif code_import.rcs_type == RevisionControlSystems.CVS:
             yield 'CVS_ROOT', code_import.cvs_root
             yield 'CVS_MODULE', code_import.cvs_module
-        elif code_import.rcs_type == RevisionControlSystems.GIT:
-            yield 'GIT_REPO_URL', code_import.git_repo_url
         else:
             raise AssertionError(
                 "Unknown RCS type: %s" % (code_import.rcs_type,))

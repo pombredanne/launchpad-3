@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -11,20 +11,30 @@ __all__ = [
     'DistroSeriesSourcePackageRelease',
     ]
 
-from operator import attrgetter
+from operator import itemgetter
 
+from lazr.delegates import delegates
+from storm.expr import (
+    And,
+    Desc,
+    Join,
+    )
+from storm.store import Store
 from zope.interface import implements
 
-from canonical.database.sqlbase import sqlvalues
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageRelease)
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory)
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
-    IDistroSeriesSourcePackageRelease)
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    IDistroSeriesSourcePackageRelease,
+    )
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
-from lazr.delegates import delegates
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 
 
 class DistroSeriesSourcePackageRelease:
@@ -37,7 +47,9 @@ class DistroSeriesSourcePackageRelease:
     delegates(ISourcePackageRelease, context='sourcepackagerelease')
 
     def __init__(self, distroseries, sourcepackagerelease):
+        assert IDistroSeries.providedBy(distroseries)
         self.distroseries = distroseries
+        assert ISourcePackageRelease.providedBy(sourcepackagerelease)
         self.sourcepackagerelease = sourcepackagerelease
 
     @property
@@ -58,9 +70,8 @@ class DistroSeriesSourcePackageRelease:
     @property
     def title(self):
         """See `IDistroSeriesSourcePackageRelease`."""
-        return '%s %s (source) in %s %s' % (
-            self.name, self.version, self.distribution.name,
-            self.distroseries.name)
+        return '"%s" %s source package in %s' % (
+            self.name, self.version, self.distroseries.title)
 
     @property
     def version(self):
@@ -103,7 +114,7 @@ class DistroSeriesSourcePackageRelease:
 
         # Import DistributionSourcePackageRelease here to avoid circular
         # imports (and imported directly from database to avoid long line)
-        from canonical.launchpad.database import (
+        from lp.soyuz.model.distributionsourcepackagerelease import (
             DistributionSourcePackageRelease)
 
         distro_builds = DistributionSourcePackageRelease(
@@ -112,7 +123,7 @@ class DistroSeriesSourcePackageRelease:
 
         return (
             [build for build in distro_builds
-                if build.distroarchseries.distroseries == self.distroseries])
+             if build.distro_arch_series.distroseries == self.distroseries])
 
     @property
     def files(self):
@@ -122,38 +133,40 @@ class DistroSeriesSourcePackageRelease:
     @property
     def binaries(self):
         """See `IDistroSeriesSourcePackageRelease`."""
-        clauseTables = [
-            'BinaryPackageRelease',
-            'DistroArchSeries',
-            'Build',
-            'BinaryPackagePublishingHistory'
-        ]
+        # Avoid circular imports.
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+        store = Store.of(self.distroseries)
+        result_row = (
+            BinaryPackageRelease, BinaryPackageBuild, BinaryPackageName)
 
-        query = """
-        BinaryPackageRelease.build=Build.id AND
-        DistroArchSeries.id =
-            BinaryPackagePublishingHistory.distroarchseries AND
-        BinaryPackagePublishingHistory.binarypackagerelease=
-            BinaryPackageRelease.id AND
-        DistroArchSeries.distroseries=%s AND
-        BinaryPackagePublishingHistory.archive IN %s AND
-        Build.sourcepackagerelease=%s
-        """ % sqlvalues(self.distroseries,
-                        self.distroseries.distribution.all_distro_archive_ids,
-                        self.sourcepackagerelease)
-
-        return BinaryPackageRelease.select(
-                query, prejoinClauseTables=['Build'], orderBy=['-id'],
-                clauseTables=clauseTables, distinct=True)
-
-    @property
-    def meta_binaries(self):
-        """See `IDistroSeriesSourcePackageRelease`."""
-        binary_pkg_names = sorted(
-            set([pkg.binarypackagename for pkg in self.binaries]),
-            key=attrgetter('name'))
-        return [self.distroseries.getBinaryPackage(name)
-                for name in binary_pkg_names]
+        tables = (
+            BinaryPackageRelease,
+            Join(
+                BinaryPackageBuild,
+                BinaryPackageBuild.id == BinaryPackageRelease.buildID),
+            Join(
+                BinaryPackagePublishingHistory,
+                BinaryPackageRelease.id ==
+                BinaryPackagePublishingHistory.binarypackagereleaseID),
+            Join(
+                DistroArchSeries,
+                DistroArchSeries.id ==
+                BinaryPackagePublishingHistory.distroarchseriesID),
+            Join(
+                BinaryPackageName,
+                BinaryPackageName.id ==
+                BinaryPackageRelease.binarypackagenameID))
+        archive_ids = list(
+            self.distroseries.distribution.all_distro_archive_ids)
+        binaries = store.using(*tables).find(
+            result_row,
+            And(
+                DistroArchSeries.distroseriesID == self.distroseries.id,
+                BinaryPackagePublishingHistory.archiveID.is_in(archive_ids),
+                BinaryPackageBuild.source_package_release ==
+                self.sourcepackagerelease))
+        binaries.order_by(Desc(BinaryPackageRelease.id)).config(distinct=True)
+        return DecoratedResultSet(binaries, itemgetter(0))
 
     @property
     def changesfile(self):
@@ -171,7 +184,7 @@ class DistroSeriesSourcePackageRelease:
         # location.
         for binary in self.binaries:
             if binary.architecturespecific:
-                considered_arches = [binary.build.distroarchseries]
+                considered_arches = [binary.build.distro_arch_series]
             else:
                 considered_arches = self.distroseries.architectures
 
@@ -192,42 +205,20 @@ class DistroSeriesSourcePackageRelease:
     @property
     def publishing_history(self):
         """See `IDistroSeriesSourcePackage`."""
-        return SourcePackagePublishingHistory.select("""
-            distroseries = %s AND
-            archive IN %s AND
-            sourcepackagerelease = %s
-            """ % sqlvalues(
-                    self.distroseries,
-                    self.distroseries.distribution.all_distro_archive_ids,
-                    self.sourcepackagerelease),
-            orderBy='-datecreated')
+        res = Store.of(self.distroseries).find(
+            SourcePackagePublishingHistory,
+            SourcePackagePublishingHistory.archiveID.is_in(
+                self.distroseries.distribution.all_distro_archive_ids),
+            SourcePackagePublishingHistory.distroseries == self.distroseries,
+            SourcePackagePublishingHistory.sourcepackagerelease ==
+                self.sourcepackagerelease)
+        return res.order_by(
+            Desc(SourcePackagePublishingHistory.datecreated),
+            Desc(SourcePackagePublishingHistory.id))
 
     @property
     def current_publishing_record(self):
         """An internal property used by methods of this class to know where
         this release is or was published.
         """
-        pub_hist = self.publishing_history
-        if pub_hist.count() == 0:
-            return None
-        return pub_hist[0]
-
-    @property
-    def current_published(self):
-        """See `IDistroArchSeriesSourcePackage`."""
-        # Retrieve current publishing info
-        published_status = [
-            PackagePublishingStatus.PENDING,
-            PackagePublishingStatus.PUBLISHED]
-        current = SourcePackagePublishingHistory.selectFirst("""
-        distroseries = %s AND
-        archive IN %s AND
-        sourcepackagerelease = %s AND
-        status IN %s
-        """ % sqlvalues(self.distroseries,
-                        self.distroseries.distribution.all_distro_archive_ids,
-                        self.sourcepackagerelease,
-                        published_status),
-            orderBy=['-datecreated', '-id'])
-
-        return current
+        return self.publishing_history.first()

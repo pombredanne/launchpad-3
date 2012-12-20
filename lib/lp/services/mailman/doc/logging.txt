@@ -1,56 +1,41 @@
-= Logging and OOPS reporting =
+==========================
+Logging and OOPS reporting
+==========================
 
 The Mailman XMLRPCRunner logs errors and reports OOPSes.
 
 
-= MailmanErrorUtility =
-
-The MailmanErrorUtility is a ErrorReportingUtility that is configured
-in the [mailman] section of config.
-
-    >>> from canonical.config import config
-    >>> from canonical.launchpad.mailman.monkeypatches.xmlrpcrunner import (
-    ...     MailmanErrorUtility)
-
-    >>> error_utility = MailmanErrorUtility()
-    >>> error_utility._default_config_section
-    'mailman'
-
-    >>> error_utility.prefix
-    'TMMX'
-    >>> config.mailman.oops_prefix
-    'TMMX'
-
-    >>> error_utility.error_dir
-    '/var/tmp/mailman-xmlrpc.test'
-    >>> config.mailman.error_dir
-    '/var/tmp/mailman-xmlrpc.test'
-
-
-= Error logging =
+Error logging
+=============
 
 The log_exception() function is used by XMLRPCRunner to report known
 exceptions. It reports the OOPS.
 
-    >>> from canonical.launchpad.mailman.monkeypatches.xmlrpcrunner import (
+    >>> from lp.services.mailman.monkeypatches.xmlrpcrunner import (
     ...     log_exception)
 
     >>> def test_log_exception():
     ...     """Raise an error to test log_exception."""
     ...     try:
     ...         raise AssertionError("There is an OOPS in progress.")
-    ...     except AssertionError, error:
+    ...     except AssertionError as error:
     ...         log_exception('Generated Error: %s', error)
 
+    >>> from lp.testing.fixture import CaptureOops
+    >>> capture = CaptureOops()
+    >>> capture.setUp()
     >>> test_log_exception()
-    >>> oops = error_utility.getLastOopsReport()
-    >>> oops.id
-    'OOPS-...TMMX...'
-    >>> oops.type
-    'AssertionError'
-    >>> oops.value
-    'There is an OOPS in progress.'
-    >>> print oops.tb_text
+    >>> oops = capture.oopses[0]
+    >>> capture.cleanUp()
+    >>> print oops['reporter']
+    T-mailman
+    >>> print oops['id']
+    OOPS-...
+    >>> print oops['type']
+    AssertionError
+    >>> print oops['value']
+    There is an OOPS in progress.
+    >>> print oops['tb_text']
     Traceback (most recent call last):
     ...
     AssertionError: There is an OOPS in progress.
@@ -77,4 +62,3 @@ tested by sabotaging the code by adding an undefined name ('defect') to
 the _create() method. The create-lists-txt test was run to generate a
 "NameError: global name 'defect' is not defined". The error was written
 to the xmlrpc log, and an OOPS was reported.
-

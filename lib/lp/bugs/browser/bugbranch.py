@@ -9,17 +9,37 @@ __all__ = [
     'BugBranchAddView',
     'BugBranchDeleteView',
     'BugBranchPrimaryContext',
+    'BugBranchView',
     ]
 
-from zope.interface import implements
+from lazr.restful.interfaces import IWebServiceClientRequest
+from lazr.restful.utils import smartquote
+from zope.component import (
+    adapts,
+    getMultiAdapter,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
-from canonical.lazr.utils import smartquote
-
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
+from lp import _
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.bugs.interfaces.bugbranch import IBugBranch
+from lp.code.browser.branchmergeproposal import (
+    latest_proposals_for_each_branch,
+    )
+from lp.code.enums import BranchLifecycleStatus
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.services.webapp.interfaces import IPrimaryContext
 
 
 class BugBranchPrimaryContext:
@@ -38,7 +58,7 @@ class BugBranchAddView(LaunchpadFormView):
     # widget, we set the LaunchpadFormView attribute for_input to True
     # to get the read only fields rendered as input widgets.
     for_input = True
-
+    page_title = 'Add branch'
     field_names = ['branch']
 
     @action(_('Continue'), name='continue')
@@ -53,6 +73,10 @@ class BugBranchAddView(LaunchpadFormView):
     @property
     def next_url(self):
         return canonical_url(self.context)
+
+    @property
+    def label(self):
+        return 'Add a branch to bug #%i' % self.context.bug.id
 
     cancel_url = next_url
 
@@ -72,9 +96,28 @@ class BugBranchDeleteView(LaunchpadEditFormView):
 
     cancel_url = next_url
 
-    @action('Delete', name='delete')
+    @action('Remove link', name='delete')
     def delete_action(self, action, data):
         self.context.bug.unlinkBranch(self.context.branch, self.user)
+
+    label = 'Remove bug branch link'
+
+
+class BugBranchView(LaunchpadView):
+    """Simple view to cache related branch information."""
+
+    @cachedproperty
+    def merge_proposals(self):
+        """Return a list of active proposals for the branch."""
+        branch = self.context.branch
+        return latest_proposals_for_each_branch(branch.landing_targets)
+
+    @property
+    def show_branch_status(self):
+        """Show the branch status if merged and there are no proposals."""
+        lifecycle_status = self.context.branch.lifecycle_status
+        return (len(self.merge_proposals) == 0 and
+                lifecycle_status == BranchLifecycleStatus.MERGED)
 
 
 class BranchLinkToBugView(LaunchpadFormView):
@@ -105,5 +148,19 @@ class BranchLinkToBugView(LaunchpadFormView):
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
         bug = data['bug']
-        bug_branch = bug.linkBranch(
-            branch=self.context, registrant=self.user)
+        bug.linkBranch(branch=self.context, registrant=self.user)
+
+
+class BugBranchXHTMLRepresentation:
+    adapts(IBugBranch, IWebServiceClientRequest)
+    implements(Interface)
+
+    def __init__(self, branch, request):
+        self.branch = branch
+        self.request = request
+
+    def __call__(self):
+        """Render `BugBranch` as XHTML using the webservice."""
+        branch_view = getMultiAdapter(
+            (self.branch, self.request), name="+bug-branch")
+        return branch_view()

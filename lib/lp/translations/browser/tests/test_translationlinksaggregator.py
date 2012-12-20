@@ -3,16 +3,15 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import ServiceUsage
+from lp.services.webapp import canonical_url
 from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadZopelessLayer
-
-from canonical.launchpad.webapp import canonical_url
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.browser.translationlinksaggregator import (
-    TranslationLinksAggregator)
+    TranslationLinksAggregator,
+    )
 from lp.translations.model.productserieslanguage import ProductSeriesLanguage
 
 
@@ -21,6 +20,7 @@ class DumbAggregator(TranslationLinksAggregator):
 
     The `describe` method returns a tuple of its arguments.
     """
+
     def describe(self, target, link, covered_sheets):
         """See `TranslationLinksAggregator`."""
         return (target, link, covered_sheets)
@@ -130,7 +130,8 @@ class TestTranslationLinksAggregator(TestCaseWithFactory):
         # For package POFiles in the same template but different
         # languages, we link to the template.
         package = self.factory.makeSourcePackage()
-        package.distroseries.distribution.official_rosetta = True
+        package.distroseries.distribution.translations_usage = (
+            ServiceUsage.LAUNCHPAD)
         template = self.factory.makePOTemplate(
             distroseries=package.distroseries,
             sourcepackagename=package.sourcepackagename)
@@ -148,7 +149,8 @@ class TestTranslationLinksAggregator(TestCaseWithFactory):
         # package's template list.  There is no "source package series
         # language" page.
         package = self.factory.makeSourcePackage()
-        package.distroseries.distribution.official_rosetta = True
+        package.distroseries.distribution.translations_usage = (
+            ServiceUsage.LAUNCHPAD)
         template1 = self.factory.makePOTemplate(
             distroseries=package.distroseries,
             sourcepackagename=package.sourcepackagename)
@@ -209,7 +211,8 @@ class TestTranslationLinksAggregator(TestCaseWithFactory):
         removeSecurityProxy(product_pofile).unreviewed_count = 1
 
         package = self.factory.makeSourcePackage()
-        package.distroseries.distribution.official_rosetta = True
+        package.distroseries.distribution.translations_usage = (
+            ServiceUsage.LAUNCHPAD)
         package_template = self.factory.makePOTemplate(
             distroseries=package.distroseries,
             sourcepackagename=package.sourcepackagename)
@@ -224,7 +227,7 @@ class TestTranslationLinksAggregator(TestCaseWithFactory):
             (product, canonical_url(product_pofile), [product_pofile]),
             (package, canonical_url(package_pofile), [package_pofile]),
             ]
-        self.assertEqual(expected, descriptions)
+        self.assertContentEqual(expected, descriptions)
 
     def test_aggregate_bundles_productseries(self):
         # _aggregateTranslationTargets describes POFiles for the same
@@ -246,7 +249,8 @@ class TestTranslationLinksAggregator(TestCaseWithFactory):
         # _aggregateTranslationTargets describes POFiles for the same
         # ProductSeries together.
         package = self.factory.makeSourcePackage()
-        package.distroseries.distribution.official_rosetta = True
+        package.distroseries.distribution.translations_usage = (
+            ServiceUsage.LAUNCHPAD)
         template1 = self.factory.makePOTemplate(
             distroseries=package.distroseries,
             sourcepackagename=package.sourcepackagename)
@@ -263,7 +267,3 @@ class TestTranslationLinksAggregator(TestCaseWithFactory):
 
         expected = [(package, canonical_url(package), pofiles)]
         self.assertEqual(expected, descriptions)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

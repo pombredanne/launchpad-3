@@ -1,7 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 """Person interfaces."""
 
@@ -10,130 +8,233 @@ __metaclass__ = type
 __all__ = [
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
+    'ICanonicalSSOAPI',
+    'ICanonicalSSOApplication',
     'IHasStanding',
-    'INewPerson',
-    'INewPersonForm',
     'IObjectReassignment',
     'IPerson',
-    'IPersonChangePassword',
     'IPersonClaim',
-    'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
+    'IPersonEditRestricted',
+    'IPersonPublic',
     'IPersonSet',
+    'IPersonSettings',
+    'IPersonLimitedView',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
+    'ISoftwareCenterAgentAPI',
+    'ISoftwareCenterAgentApplication',
     'ITeam',
     'ITeamContactAddressForm',
-    'ITeamCreation',
     'ITeamReassignment',
     'ImmutableVisibilityError',
-    'InvalidName',
-    'JoinNotAllowed',
-    'NameAlreadyTaken',
     'NoSuchPerson',
     'PersonCreationRationale',
-    'PersonVisibility',
     'PersonalStanding',
-    'PrivatePersonLinkageError',
     'PRIVATE_TEAM_PREFIX',
     'TeamContactMethod',
-    'TeamMembershipRenewalPolicy',
-    'TeamSubscriptionPolicy',
-    'validate_person_not_private_membership',
+    'TeamEmailAddressError',
+    'validate_person',
+    'validate_person_or_closed_team',
     'validate_public_person',
+    'validate_membership_policy',
     ]
 
+import httplib
 
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    EnumeratedType,
+    Item,
+    )
+from lazr.lifecycle.snapshot import doNotSnapshot
+from lazr.restful.declarations import (
+    call_with,
+    collection_default_content,
+    error_status,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_factory_operation,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    LAZR_WEBSERVICE_EXPORTED,
+    mutator_for,
+    operation_for_version,
+    operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
+    rename_parameters_as,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
+from lazr.restful.interface import copy_field
+from zope.component import getUtility
 from zope.formlib.form import NoInputData
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
-from zope.interface import Attribute, Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
-from zope.component import getUtility
-from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    List,
+    Object,
+    Text,
+    TextLine,
+    )
 
-from lazr.restful.interface import copy_field
-from lazr.restful.declarations import (
-    LAZR_WEBSERVICE_EXPORTED, REQUEST_USER, call_with,
-    collection_default_content, export_as_webservice_collection,
-    export_as_webservice_entry, export_factory_operation,
-    export_read_operation, export_write_operation, exported,
-    operation_parameters, operation_returns_collection_of,
-    operation_returns_entry, rename_parameters_as, webservice_error)
-from lazr.restful.fields import CollectionField, Reference
-
-from canonical.launchpad import _
-
-from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad.fields import (
-    BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
-    MugshotImageUpload, ParticipatingPersonChoice, PasswordField,
-    PublicPersonChoice, StrippedTextLine, is_private_membership,
-    is_valid_public_person)
-from canonical.launchpad.interfaces.account import AccountStatus, IAccount
-from canonical.launchpad.interfaces.emailaddress import IEmailAddress
-from lp.app.interfaces.rootcontext import IRootContext
-from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
+from lp import _
+from lp.answers.interfaces.questionsperson import IQuestionsPerson
+from lp.app.errors import NameLookupFailed
+from lp.app.interfaces.headings import IRootContext
+from lp.app.interfaces.launchpad import (
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    IPrivacy,
+    )
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.email import email_validator
+from lp.app.validators.name import name_validator
+from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
+from lp.bugs.interfaces.bugtarget import IHasBugs
+from lp.code.interfaces.hasbranches import (
+    IHasBranches,
+    IHasMergeProposals,
+    IHasRequestedReviews,
+    )
+from lp.code.interfaces.hasrecipes import IHasRecipes
+from lp.registry.enums import (
+    EXCLUSIVE_TEAM_POLICY,
+    INCLUSIVE_TEAM_POLICY,
+    PersonVisibility,
+    TeamMembershipPolicy,
+    TeamMembershipRenewalPolicy,
+    )
+from lp.registry.errors import (
+    InclusiveTeamLinkageError,
+    PrivatePersonLinkageError,
+    TeamMembershipPolicyError,
+    )
+from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
-from lp.services.worlddata.interfaces.language import ILanguage
-from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
 from lp.registry.interfaces.location import (
-    IHasLocation, ILocationRecord, IObjectWithLocation, ISetLocation)
+    IHasLocation,
+    IObjectWithLocation,
+    ISetLocation,
+    )
 from lp.registry.interfaces.mailinglistsubscription import (
-    MailingListAutoSubscribePolicy)
-from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
-from lp.blueprints.interfaces.specificationtarget import (
-    IHasSpecifications)
+    MailingListAutoSubscribePolicy,
+    )
+from lp.registry.interfaces.ssh import ISSHKey
 from lp.registry.interfaces.teammembership import (
-    ITeamMembership, ITeamParticipation, TeamMembershipStatus)
-from canonical.launchpad.interfaces.validation import (
-    validate_new_team_email, validate_new_person_email)
+    ITeamMembership,
+    ITeamParticipation,
+    TeamMembershipStatus,
+    )
 from lp.registry.interfaces.wikiname import IWikiName
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.email import email_validator
-from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
-from canonical.launchpad.webapp.authorization import check_permission
+from lp.services.database.sqlbase import block_implicit_flushes
+from lp.services.fields import (
+    BlacklistableContentNameField,
+    IconImageUpload,
+    is_public_person,
+    is_public_person_or_closed_team,
+    LogoImageUpload,
+    MugshotImageUpload,
+    PersonChoice,
+    PublicPersonChoice,
+    StrippedTextLine,
+    )
+from lp.services.identity.interfaces.account import (
+    AccountStatus,
+    IAccount,
+    )
+from lp.services.identity.interfaces.emailaddress import IEmailAddress
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import ILaunchpadApplication
+from lp.services.worlddata.interfaces.language import ILanguage
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
+
 
 PRIVATE_TEAM_PREFIX = 'private-'
 
 
-class PrivatePersonLinkageError(ValueError):
-    """An attempt was made to link a private person/team to something."""
-
-
 @block_implicit_flushes
-def validate_person(obj, attr, value, validate_func):
+def validate_person_common(obj, attr, value, validate_func,
+                           error_class=PrivatePersonLinkageError):
     """Validate the person using the supplied function."""
     if value is None:
         return None
     assert isinstance(value, (int, long)), (
         "Expected int for Person foreign key reference, got %r" % type(value))
 
-    # XXX sinzui 2009-04-03 bug=354881: We do not want to import from the
-    # DB. This needs cleaning up.
+    # Importing here to avoid a cyclic import.
     from lp.registry.model.person import Person
     person = Person.get(value)
-    if validate_func(person):
-        raise PrivatePersonLinkageError(
+    if not validate_func(person):
+        raise error_class(
             "Cannot link person (name=%s, visibility=%s) to %s (name=%s)"
             % (person.name, person.visibility.name,
                obj, getattr(obj, 'name', None)))
     return value
 
 
+def validate_person(obj, attr, value):
+    """Validate the person is a real person with no other restrictions."""
+
+    def validate(person):
+        return IPerson.providedBy(person)
+
+    return validate_person_common(obj, attr, value, validate)
+
+
 def validate_public_person(obj, attr, value):
     """Validate that the person identified by value is public."""
+
     def validate(person):
-        return not is_valid_public_person(person)
+        return is_public_person(person)
 
-    return validate_person(obj, attr, value, validate)
+    return validate_person_common(obj, attr, value, validate)
 
 
-def validate_person_not_private_membership(obj, attr, value):
-    """Validate that the person (value) is not a private membership team."""
-    return validate_person(obj, attr, value, is_private_membership)
+def validate_person_or_closed_team(obj, attr, value):
+
+    def validate(person):
+        return is_public_person_or_closed_team(person)
+
+    return validate_person_common(
+        obj, attr, value, validate, error_class=InclusiveTeamLinkageError)
+
+
+def validate_membership_policy(obj, attr, value):
+    """Validate the team membership_policy."""
+    if value is None:
+        return None
+
+    # If we are just creating a new team, it can have any membership policy.
+    if getattr(obj, '_SO_creating', True):
+        return value
+
+    team = obj
+    existing_membership_policy = getattr(team, 'membership_policy', None)
+    if value == existing_membership_policy:
+        return value
+    if value in INCLUSIVE_TEAM_POLICY:
+        team.checkInclusiveMembershipPolicyAllowed(policy=value)
+    if value in EXCLUSIVE_TEAM_POLICY:
+        team.checkExclusiveMembershipPolicyAllowed(policy=value)
+    return value
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -293,91 +394,11 @@ class PersonCreationRationale(DBEnumeratedType):
         commented on.
         """)
 
-class TeamMembershipRenewalPolicy(DBEnumeratedType):
-    """TeamMembership Renewal Policy.
+    SOFTWARE_CENTER_PURCHASE = DBItem(16, """
+        Created by purchasing commercial software through Software Center.
 
-    How Team Memberships can be renewed on a given team.
-    """
-
-    NONE = DBItem(10, """
-        invite them to apply for renewal
-
-        Memberships can be renewed only by team administrators or by going
-        through the normal workflow for joining the team.
-        """)
-
-    ONDEMAND = DBItem(20, """
-        invite them to renew their own membership
-
-        Memberships can be renewed by the members themselves a few days before
-        it expires. After it expires the member has to go through the normal
-        workflow for joining the team.
-        """)
-
-    AUTOMATIC = DBItem(30, """
-        renew their membership automatically, also notifying the admins
-
-        Memberships are automatically renewed when they expire and a note is
-        sent to the member and to team admins.
-        """)
-
-
-class TeamSubscriptionPolicy(DBEnumeratedType):
-    """Team Subscription Policies
-
-    The policies that apply to a team and specify how new subscriptions must
-    be handled. More information can be found in the TeamMembershipPolicies
-    spec.
-    """
-
-    MODERATED = DBItem(1, """
-        Moderated Team
-
-        All subscriptions for this team are subject to approval by one of
-        the team's administrators.
-        """)
-
-    OPEN = DBItem(2, """
-        Open Team
-
-        Any user can join and no approval is required.
-        """)
-
-    RESTRICTED = DBItem(3, """
-        Restricted Team
-
-        New members can only be added by one of the team's administrators.
-        """)
-
-
-class PersonVisibility(DBEnumeratedType):
-    """The visibility level of person or team objects.
-
-    Currently, only teams can have their visibility set to something
-    besides PUBLIC.
-    """
-
-    PUBLIC = DBItem(1, """
-        Public
-
-        Everyone can view all the attributes of this person.
-        """)
-
-    PRIVATE_MEMBERSHIP = DBItem(20, """
-        Private Membership
-
-        Only Launchpad admins and team members can view the
-        membership list for this team.  The team is severely restricted in the
-        roles it can assume.
-        """)
-
-    PRIVATE = DBItem(30, """
-        Private
-
-        Only Launchpad admins and team members can view the membership list
-        for this team or its name.  The team roles are restricted to
-        subscribing to bugs, being bug supervisor, owning code branches, and
-        having a PPA.
+        A purchase of commercial software (ie. subscriptions to a private
+        and commercial archive) was made via Software Center.
         """)
 
 
@@ -390,9 +411,6 @@ class PersonNameField(BlacklistableContentNameField):
     teams.
     """
     errormessage = _("%s is already in use by another person or team.")
-
-    blacklistmessage = _("The name '%s' has been blocked by the Launchpad "
-                         "administrators.")
 
     @property
     def _content_iface(self):
@@ -428,32 +446,70 @@ class PersonNameField(BlacklistableContentNameField):
         super(PersonNameField, self)._validate(input)
 
 
-class IPersonChangePassword(Interface):
-    """The schema used by Person +changepassword form."""
+def team_membership_policy_can_transition(team, policy):
+    """Can the team can change its membership policy?
 
-    currentpassword = PasswordField(
-        title=_('Current password'), required=True, readonly=False)
+    Returns True when the policy can change. or raises an error. OPEN teams
+    cannot be members of MODERATED or RESTRICTED teams. OPEN teams
+    cannot have PPAs. Changes from between OPEN and the two closed states
+    can be blocked by team membership and team artifacts.
 
-    password = PasswordField(
-        title=_('New password'), required=True, readonly=False)
+    We only perform the check if a membership policy is transitioning from
+    open->closed or visa versa. So if a team already has a closed subscription
+    policy, it is always allowed to transition to another closed policy.
+
+    :param team: The team to change.
+    :param policy: The TeamMembershipPolicy to change to.
+    :raises TeamMembershipPolicyError: Raised when a membership constrain
+        or a team artifact prevents the policy from being set.
+    """
+    if team is None or policy == team.membership_policy:
+        # The team is being initialized or the policy is not changing.
+        return True
+    elif (policy in INCLUSIVE_TEAM_POLICY
+          and team.membership_policy in EXCLUSIVE_TEAM_POLICY):
+        team.checkInclusiveMembershipPolicyAllowed(policy)
+    elif (policy in EXCLUSIVE_TEAM_POLICY
+          and team.membership_policy in INCLUSIVE_TEAM_POLICY):
+        team.checkExclusiveMembershipPolicyAllowed(policy)
+    return True
+
+
+class TeamMembershipPolicyChoice(Choice):
+    """A valid team membership policy."""
+
+    def _getTeam(self):
+        """Return the context if it is a team or None."""
+        if IPerson.providedBy(self.context):
+            return self.context
+        else:
+            return None
+
+    def constraint(self, value):
+        """See `IField`."""
+        team = self._getTeam()
+        policy = value
+        try:
+            return team_membership_policy_can_transition(team, policy)
+        except TeamMembershipPolicyError:
+            return False
+
+    def _validate(self, value):
+        """Ensure the TeamMembershipPolicy is valid for state of the team.
+
+        Returns True if the team can change its membership policy to the
+        `TeamMembershipPolicy`, otherwise raise TeamMembershipPolicyError.
+        """
+        team = self._getTeam()
+        policy = value
+        team_membership_policy_can_transition(team, policy)
+        super(TeamMembershipPolicyChoice, self)._validate(value)
 
 
 class IPersonClaim(Interface):
     """The schema used by IPerson's +claim form."""
 
     emailaddress = TextLine(title=_('Email address'), required=True)
-
-
-class INewPerson(Interface):
-    """The schema used by IPersonSet's +newperson form."""
-
-    emailaddress = StrippedTextLine(
-        title=_('Email address'), required=True,
-        constraint=validate_new_person_email)
-    displayname = StrippedTextLine(title=_('Display name'), required=True)
-    creation_comment = Text(
-        title=_('Creation reason'), required=True,
-        description=_("The reason why you're creating this profile."))
 
 
 # This has to be defined here to avoid circular import problems.
@@ -473,24 +529,113 @@ class IHasStanding(Interface):
         description=_("The reason the person's standing is what it is."))
 
 
-class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
-                    IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
-                    IHasLocation, IObjectWithLocation, IPrivacy):
-    """Public attributes for a Person."""
+class IPersonSettings(Interface):
+    """Settings for a person (not a team!) that are used relatively rarely.
+
+    We store these attributes on a separate object, PersonSettings, to which
+    the Person class delegates.  This makes it possible to shrink the size of
+    the person record.
+
+    In the future, perhaps we will adapt IPerson to IPersonSettings when
+    we want these attributes instead of delegating, so we can shrink the
+    class, too.
+
+    We also may want TeamSettings and PersonTeamSettings in the future.
+    """
+
+    selfgenerated_bugnotifications = Bool(
+        title=_("Send me bug notifications for changes I make"),
+        required=False, default=False)
+
+
+class IPersonPublic(IPrivacy):
+    """Public attributes for a Person.
+
+    Very few attributes on a person can be public because private teams
+    are also persons. The public attributes are generally information
+    needed by the system to determine if the principal in the current
+    interaction can work with the object.
+    """
 
     id = Int(title=_('ID'), required=True, readonly=True)
-    account = Object(schema=IAccount)
-    accountID = Int(title=_('Account ID'), required=True, readonly=True)
-    password = PasswordField(
-        title=_('Password'), required=True, readonly=False)
-    karma = exported(
-        Int(title=_('Karma'), readonly=True,
-            description=_('The cached total karma for this person.')))
-    homepage_content = exported(
-        Text(title=_("Homepage Content"), required=False,
-             description=_(
-                 "The content of your home page. Edit this and it will be "
-                 "displayed for all the world to see.")))
+    # This is redefined from IPrivacy.private because the attribute is
+    # read-only. It is a summary of the team's visibility.
+    private = exported(Bool(
+            title=_("This team is private"),
+            readonly=True, required=False,
+            description=_("Private teams are visible only to "
+                          "their members.")))
+    is_valid_person = Bool(
+        title=_("This is an active user and not a team."), readonly=True)
+    is_valid_person_or_team = exported(
+        Bool(title=_("This is an active user or a team."), readonly=True),
+        exported_as='is_valid')
+    is_team = exported(
+        Bool(title=_('Is this object a team?'), readonly=True))
+    account_status = Choice(
+        title=_("The status of this person's account"), required=False,
+        readonly=True, vocabulary=AccountStatus)
+    account_status_comment = Text(
+        title=_("Why are you deactivating your account?"), required=False,
+        readonly=True)
+    visibility = exported(
+        Choice(title=_("Visibility"),
+               description=_(
+                   "Anyone can see a public team's data. Only team members "
+                   "and Launchpad admins can see private team data. "
+                   "Private teams cannot become public."),
+               required=True, vocabulary=PersonVisibility,
+               default=PersonVisibility.PUBLIC, readonly=True))
+
+    def anyone_can_join():
+        """Quick check as to whether a team allows anyone to join."""
+
+    def checkAllowVisibility():
+        """Is the user allowed to see the visibility field.
+
+        :param: The user.
+        :return: True if they can, otherwise False.
+        """
+
+    @mutator_for(visibility)
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(visibility=copy_field(visibility))
+    @export_write_operation()
+    @operation_for_version("beta")
+    def transitionVisibility(visibility, user):
+        """Set visibility of IPerson.
+
+        :param visibility: The PersonVisibility to change to.
+        :param user: The user requesting the change.
+        :raises: `ImmutableVisibilityError` when the visibility can not
+            be changed.
+        :return: None.
+        """
+
+    def isMergePending():
+        """Is this person due to be merged with another?"""
+
+
+class IPersonLimitedView(IHasIcon, IHasLogo):
+    """IPerson attributes that require launchpad.LimitedView permission."""
+
+    name = exported(
+        PersonNameField(
+            title=_('Name'), required=True, readonly=False,
+            constraint=name_validator,
+            description=_(
+                "A short unique name, beginning with a lower-case "
+                "letter or number, and containing only letters, "
+                "numbers, dots, hyphens, or plus signs.")))
+    displayname = exported(
+        StrippedTextLine(
+            title=_('Display Name'), required=True, readonly=False,
+            description=_(
+                "Your name as you would like it displayed throughout "
+                "Launchpad. Most people use their full name here.")),
+        exported_as='display_name')
+    unique_displayname = TextLine(
+        title=_('Return a string of the form $displayname ($name).'))
     # NB at this stage we do not allow individual people to have their own
     # icon, only teams get that. People can however have a logo and mugshot
     # The icon is only used for teams; that's why we use /@@/team as the
@@ -504,16 +649,56 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
             "displayed whenever the team name is listed - for example "
             "in listings of bugs or on a person's membership table."))
     iconID = Int(title=_('Icon ID'), required=True, readonly=True)
-
-    logo = LogoImageUpload(
-        title=_("Logo"), required=False,
-        default_image_resource='/@@/person-logo',
-        description=_(
-            "An image of exactly 64x64 pixels that will be displayed in "
-            "the heading of all pages related to you. Traditionally this "
-            "is a logo, a small picture or a personal mascot. It should be "
-            "no bigger than 50kb in size."))
+    logo = exported(
+        LogoImageUpload(
+            title=_("Logo"), required=False,
+            default_image_resource='/@@/person-logo',
+            description=_(
+                "An image of exactly 64x64 pixels that will be displayed in "
+                "the heading of all pages related to you. Traditionally this "
+                "is a logo, a small picture or a personal mascot. It should "
+                "be no bigger than 50kb in size.")))
     logoID = Int(title=_('Logo ID'), required=True, readonly=True)
+    # title is required for the Launchpad Page Layout main template
+    title = Attribute('Person Page Title')
+    is_probationary = exported(
+        Bool(title=_("Is this a probationary user?"), readonly=True))
+
+    @operation_parameters(
+        name=TextLine(required=True, constraint=name_validator))
+    @operation_returns_entry(Interface)  # Really IArchive.
+    @export_read_operation()
+    @operation_for_version("beta")
+    def getPPAByName(name):
+        """Return a PPA with the given name if it exists.
+
+        :param name: A string with the exact name of the ppa being looked up.
+        :raises: `NoSuchPPA` if a suitable PPA could not be found.
+
+        :return: a PPA `IArchive` record corresponding to the name.
+        """
+
+
+class IPersonViewRestricted(IHasBranches, IHasSpecifications,
+                    IHasMergeProposals, IHasMugshot,
+                    IHasLocation, IHasRequestedReviews, IObjectWithLocation,
+                    IHasBugs, IHasRecipes, IHasTranslationImports,
+                    IPersonSettings, IQuestionsPerson):
+    """IPerson attributes that require launchpad.View permission."""
+    account = Object(schema=IAccount)
+    accountID = Int(title=_('Account ID'), required=True, readonly=True)
+    karma = exported(
+        Int(title=_('Karma'), readonly=True,
+            description=_('The cached total karma for this person.')))
+    homepage_content = exported(
+        Text(title=_("Homepage Content"), required=False,
+            description=_("Obsolete. Use description.")))
+
+    description = exported(
+        Text(title=_("Description"), required=False,
+            description=_(
+                "Details about interests and goals. Use plain text, "
+                "paragraphs are preserved and URLs are linked.")))
 
     mugshot = exported(MugshotImageUpload(
         title=_("Mugshot"), required=False,
@@ -525,41 +710,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
             "should be no bigger than 100kb in size. ")))
     mugshotID = Int(title=_('Mugshot ID'), required=True, readonly=True)
 
-    addressline1 = TextLine(
-            title=_('Address'), required=True, readonly=False,
-            description=_('Your address (Line 1)')
-            )
-    addressline2 = TextLine(
-            title=_('Address'), required=False, readonly=False,
-            description=_('Your address (Line 2)')
-            )
-    city = TextLine(
-            title=_('City'), required=True, readonly=False,
-            description=_('The City/Town/Village/etc to where the CDs should '
-                          'be shipped.')
-            )
-    province = TextLine(
-            title=_('Province'), required=True, readonly=False,
-            description=_('The State/Province/etc to where the CDs should '
-                          'be shipped.')
-            )
-    country = Choice(
-            title=_('Country'), required=True, readonly=False,
-            vocabulary='CountryName',
-            description=_('The Country to where the CDs should be shipped.')
-            )
-    postcode = TextLine(
-            title=_('Postcode'), required=True, readonly=False,
-            description=_('The Postcode to where the CDs should be shipped.')
-            )
-    phone = TextLine(
-            title=_('Phone'), required=True, readonly=False,
-            description=_('[(+CountryCode) number] e.g. (+55) 16 33619445')
-            )
-    organization = TextLine(
-            title=_('Organization'), required=False, readonly=False,
-            description=_('The Organization requesting the CDs')
-            )
     languages = exported(
         CollectionField(
             title=_('List of languages known by this person'),
@@ -592,46 +742,36 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     # which contains valid people but not teams, and we don't really need one
     # apart from here.
     registrant = Attribute('The user who created this profile.')
-    # bounty relations
-    ownedBounties = Attribute('Bounties issued by this person.')
-    reviewerBounties = Attribute('Bounties reviewed by this person.')
-    claimedBounties = Attribute('Bounties claimed by this person.')
-    subscribedBounties = Attribute(
-        'Bounties to which this person subscribes.')
 
     oauth_access_tokens = Attribute(_("Non-expired access tokens"))
 
     oauth_request_tokens = Attribute(_("Non-expired request tokens"))
 
-    sshkeys = Attribute(_('List of SSH keys'))
-
-    account_status = Choice(
-        title=_("The status of this person's account"), required=False,
-        readonly=True, vocabulary=AccountStatus)
-
-    account_status_comment = Text(
-        title=_("Why are you deactivating your account?"), required=False,
-        readonly=True)
+    sshkeys = exported(
+             CollectionField(
+                title=_('List of SSH keys'),
+                readonly=False, required=False,
+                value_type=Reference(schema=ISSHKey)))
 
     # Properties of the Person object.
     karma_category_caches = Attribute(
         'The caches of karma scores, by karma category.')
-    is_team = exported(
-        Bool(title=_('Is this object a team?'), readonly=True))
-    is_valid_person = Bool(
-        title=_("This is an active user and not a team."), readonly=True)
-    is_valid_person_or_team = exported(
-        Bool(title=_("This is an active user or a team."), readonly=True),
-        exported_as='is_valid')
-    is_ubuntu_coc_signer = Bool(
-        title=_("Signed Ubuntu Code of Conduct"),
-        readonly=True)
+    is_ubuntu_coc_signer = exported(
+    Bool(title=_("Signed Ubuntu Code of Conduct"),
+            readonly=True))
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")
-    gpgkeys = Attribute("List of valid OpenPGP keys ordered by ID")
-    pendinggpgkeys = Attribute("Set of fingerprints pending confirmation")
-    inactivegpgkeys = Attribute(
+    gpg_keys = exported(
+        CollectionField(
+            title=_("List of valid OpenPGP keys ordered by ID"),
+            readonly=False, required=False,
+            value_type=Reference(schema=IGPGKey)))
+    pending_gpg_keys = CollectionField(
+        title=_("Set of fingerprints pending confirmation"),
+        readonly=False, required=False,
+        value_type=Reference(schema=IGPGKey))
+    inactive_gpg_keys = Attribute(
         "List of inactive OpenPGP keys in LP Context, ordered by ID")
     wiki_names = exported(
         CollectionField(
@@ -649,9 +789,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
                         readonly=True, required=False,
                         value_type=Reference(schema=IJabberID)),
         exported_as='jabber_ids')
-    myactivememberships = exported(
+    team_memberships = exported(
         CollectionField(
-            title=_("All TeamMemberships for Teams this Person is an "
+            title=_("All TeamMemberships for Teams this Team or Person is an "
                     "active member of."),
             value_type=Reference(schema=ITeamMembership),
             readonly=True, required=False),
@@ -708,13 +848,17 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         "Any specifications related to this person, either because the are "
         "a subscriber, or an assignee, or a drafter, or the creator. "
         "Sorted newest-first.")
-    assigned_specs = Attribute(
-        "Specifications assigned to this person, sorted newest first.")
-    assigned_specs_in_progress = Attribute(
-        "Specifications assigned to this person whose implementation is "
-        "started but not yet completed, sorted newest first.")
-    team_mentorships = Attribute(
-        "All the offers of mentoring which are relevant to this team.")
+
+    def findVisibleAssignedInProgressSpecs(user):
+        """List specifications in progress assigned to this person.
+
+        In progress means their implementation is started but not yet
+        completed.  They are sorted newest first.  No more than 5
+        specifications are returned.
+
+        :param user: The use to use for determining visibility.
+        """
+
     teamowner = exported(
         PublicPersonChoice(
             title=_('Team Owner'), required=False, readonly=False,
@@ -722,7 +866,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         exported_as='team_owner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
                       readonly=True)
-
     preferredemail = exported(
         Reference(title=_("Preferred email address"),
                description=_("The preferred email address for this person. "
@@ -759,17 +902,13 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
             "this is set to None, then this Person has not been merged "
             "into another and is still valid"))
 
-    # title is required for the Launchpad Page Layout main template
-    title = Attribute('Person Page Title')
-
     archive = exported(
         Reference(
             title=_("Default PPA"),
             description=_("The PPA named 'ppa' owned by this person."),
             readonly=True, required=False,
             # Really IArchive, see archive.py
-            schema=Interface)
-        )
+            schema=Interface))
 
     ppas = exported(
         CollectionField(
@@ -779,8 +918,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
             readonly=True, required=False,
             # Really IArchive, see archive.py
             value_type=Reference(schema=Interface)))
-
-    entitlements = Attribute("List of Entitlements for this person or team.")
 
     structural_subscriptions = Attribute(
         "The structural subscriptions for this person.")
@@ -829,15 +966,10 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     hardware_submissions = exported(CollectionField(
             title=_("Hardware submissions"),
             readonly=True, required=False,
-            value_type=Reference(schema=Interface))) # HWSubmission
+            value_type=Reference(schema=Interface)))  # HWSubmission
 
-    # This is redefined from IPrivacy.private because the attribute is
-    # read-only. It is a summary of the team's visibility.
-    private = exported(Bool(
-            title=_("This team is private"),
-            readonly=True, required=False,
-            description=_("Private teams are visible only to "
-                          "their members.")))
+    administrated_teams = Attribute(
+        u"the teams that this person/team is an administrator of.")
 
     @invariant
     def personCannotHaveIcon(person):
@@ -849,7 +981,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         # form. IOW, person.inTeam() will raise a NoInputData just like
         # person.teamowner would as it's not present in most of the
         # person-related forms.
-        if person.icon is not None and not person.isTeam():
+        if person.icon is not None and not person.is_team:
             raise Invalid('Only teams can have an icon.')
 
     def convertToTeam(team_owner):
@@ -860,6 +992,67 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         Only Person entries whose account_status is NOACCOUNT and which are
         not teams can be converted into teams.
         """
+
+    @call_with(registrant=REQUEST_USER)
+    @operation_parameters(
+        description=Text(),
+        distroseries=List(value_type=Reference(schema=Interface)),
+        name=TextLine(),
+        recipe_text=Text(),
+        daily_build_archive=Reference(schema=Interface),
+        build_daily=Bool(),
+        )
+    @export_factory_operation(Interface, [])
+    @operation_for_version("beta")
+    def createRecipe(name, description, recipe_text, distroseries,
+                     registrant, daily_build_archive=None, build_daily=False):
+        """Create a SourcePackageRecipe owned by this person.
+
+        :param name: the name to use for referring to the recipe.
+        :param description: A description of the recipe.
+        :param recipe_text: The text of the recipe.
+        :param distroseries: The distroseries to use.
+        :param registrant: The person who created this recipe.
+        :param daily_build_archive: The archive to use for daily builds.
+        :param build_daily: If True, build this recipe daily (if changed).
+        :return: a SourcePackageRecipe.
+        """
+
+    @operation_parameters(name=TextLine(required=True))
+    @operation_returns_entry(Interface)  # Really ISourcePackageRecipe.
+    @export_read_operation()
+    @operation_for_version("beta")
+    def getRecipe(name):
+        """Return the person's recipe with the given name."""
+
+    def getMergeQueue(name):
+        """Return the person's merge queue with the given name."""
+
+    @call_with(requester=REQUEST_USER)
+    @export_read_operation()
+    @operation_for_version("beta")
+    def getArchiveSubscriptionURLs(requester):
+        """Return private archive URLs that this person can see.
+
+        For each of the private archives (PPAs) that this person can see,
+        return a URL that includes the HTTP basic auth data.  The URL
+        returned is suitable for including in a sources.list file.
+        """
+
+    @call_with(requester=REQUEST_USER)
+    @operation_parameters(
+        archive=Reference(schema=Interface))  # Really IArchive
+    @export_write_operation()
+    @operation_for_version("beta")
+    def getArchiveSubscriptionURL(requester, archive):
+        """Get a text line that is suitable to be used for a sources.list
+        entry.
+
+        It will create a new IArchiveAuthToken if one doesn't already exist.
+        """
+
+    def getVisiblePPAs(user):
+        """Return the PPAs for which user has launchpad.View permission."""
 
     def getInvitedMemberships():
         """Return all TeamMemberships of this team with the INVITED status.
@@ -881,6 +1074,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         The results are ordered using Person.sortingColumns.
         """
 
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    @operation_for_version("beta")
     def getBugSubscriberPackages():
         """Return the packages for which this person is a bug subscriber.
 
@@ -915,20 +1111,13 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     # @operation_returns_collection_of(Interface) # Really IPerson
     # @export_read_operation()
     def findPathToTeam(team):
-        """Return the teams that cause this person to be a participant of the
-        given team.
+        """Return the teams providing membership to the given team.
 
         If there is more than one path leading this person to the given team,
         only the one with the oldest teams is returned.
 
         This method must not be called if this person is not an indirect
         member of the given team.
-        """
-
-    def isTeam():
-        """Deprecated.  Use IPerson.is_team instead.
-
-        True if this Person is actually a Team, otherwise False.
         """
 
     # XXX BarryWarsaw 2007-11-29: I'd prefer for this to be an Object() with a
@@ -938,9 +1127,11 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     mailing_list = Attribute(
         _("The team's mailing list, if it has one, otherwise None."))
 
-    def getProjectsAndCategoriesContributedTo(limit=10):
+    def getProjectsAndCategoriesContributedTo(user, limit=10):
         """Return a list of dicts with projects and the contributions made
         by this person on that project.
+
+        Only entries visible to the specified user will be shown.
 
         The list is limited to the :limit: projects this person is most
         active.
@@ -952,9 +1143,11 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
                           the icons which represent that category.
         """
 
-    def getOwnedOrDrivenPillars():
-        """Return Distribution, Project Groups and Projects that this person
-        owns or drives.
+    def getAffiliatedPillars(user):
+        """Return the pillars that this person directly has a role with.
+
+        Returns distributions, project groups, and projects that this person
+        maintains, drives, or is the bug supervisor for.
         """
 
     def getOwnedProjects(match_name=None):
@@ -963,22 +1156,42 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         :param match_name: string optional project name to screen the results.
         """
 
-    def getCommercialSubscriptionVouchers():
+    def isAnyPillarOwner():
+        """Is this person the owner of any pillar?"""
+
+    def getAllCommercialSubscriptionVouchers(voucher_proxy=None):
         """Return all commercial subscription vouchers.
 
-        The vouchers are separated into two lists, unredeemed vouchers and
-        redeemed vouchers.
-        :return: tuple (unredeemed_vouchers, redeemed_vouchers)
+        All of a `Person`s vouchers are returned, regardless of redemption
+        status.  Even vouchers marked inactive are returned.
+        The result is a dictionary, indexed by the three
+        voucher statuses.
+        :return: dict
         """
 
+    def getRedeemableCommercialSubscriptionVouchers(voucher_proxy=None):
+        """Return the set of redeemable vouchers.
+
+        The `Person`s vouchers are returned if they are unredeemed and active.
+
+        The result is a list of vouchers.
+        :return: list
+        """
+
+    def hasCurrentCommercialSubscription():
+        """Return if the user has a current commercial subscription."""
+
     def assignKarma(action_name, product=None, distribution=None,
-                    sourcepackagename=None):
+                    sourcepackagename=None, datecreated=None):
         """Assign karma for the action named <action_name> to this person.
 
         This karma will be associated with the given product or distribution.
         If a distribution is given, then product must be None and an optional
         sourcepackagename may also be given. If a product is given, then
         distribution and sourcepackagename must be None.
+
+        If a datecreated is specified, the karma will be created with that
+        date.  This is how historic karma events can be created.
         """
 
     def latestKarma(quantity=25):
@@ -987,25 +1200,22 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         Return no more than the number given as quantity.
         """
 
-    def iterTopProjectsContributedTo(limit=10):
-        """Iterate over the top projects contributed to.
-
-        Iterate no more than the given limit.
-        """
-
     # XXX: salgado, 2008-08-01: Unexported because this method doesn't take
     # into account whether or not a team's memberships are private.
     # @operation_parameters(team=copy_field(ITeamMembership['team']))
     # @export_read_operation()
     def inTeam(team):
-        """Is this person is a member or the owner of `team`?
+        """Is this person is a member of `team`?
 
         Returns `True` when you ask if an `IPerson` (or an `ITeam`,
         since it inherits from `IPerson`) is a member of himself
         (i.e. `person1.inTeam(person1)`).
 
-        :param team: An object providing `IPerson`, the name of a
-            team, or `None` (in which case `False` is returned).
+        :param team: Either an object providing `IPerson`, the string name of
+            a team or `None`. If a string was supplied the team is looked up.
+        :return: A bool with the result of the membership lookup. When looking
+            up the team from a string finds nothing or team was `None` then
+            `False` is returned.
         """
 
     def clearInTeamCache():
@@ -1015,16 +1225,12 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         used between TeamMembership and Person objects.
         """
 
-    def searchTasks(search_params, *args):
-        """Search IBugTasks with the given search parameters.
+    def getLatestSynchronisedPublishings():
+        """Return `SourcePackagePublishingHistory`s synchronised by this
+        person.
 
-        :search_params: a BugTaskSearchParams object
-        :args: any number of BugTaskSearchParams objects
-
-        If more than one BugTaskSearchParams is given, return the union of
-        IBugTasks which match any of them.
-
-        Return an iterable of matching results.
+        This method will only include the latest publishings for each source
+        package name, distribution series combination.
         """
 
     def getLatestMaintainedPackages():
@@ -1047,6 +1253,24 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
 
         This method will only include the latest source package release
         for each source package name, distribution series combination.
+        """
+
+    def hasSynchronisedPublishings():
+        """Are there `SourcePackagePublishingHistory`s synchronised by this
+        person.
+        """
+
+    def hasMaintainedPackages():
+        """Are there `SourcePackageRelease`s maintained by this person."""
+
+    def hasUploadedButNotMaintainedPackages():
+        """Are there `SourcePackageRelease`s created by this person but
+        not maintained by him.
+        """
+
+    def hasUploadedPPAPackages():
+        """Are there `SourcePackageRelease`s uploaded by this person to any
+        PPA.
         """
 
     def isUploader(distribution):
@@ -1077,14 +1301,24 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         The person's membership may be direct or indirect.
         """
 
+    @call_with(user=REQUEST_USER)
+    @operation_returns_collection_of(Interface)  # Really ITeam.
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getOwnedTeams(user=None):
+        """Return the teams that this person owns.
+
+        The iterator includes the teams that the user owns, but it not
+        a member of.
+        """
+
     def getAdministratedTeams():
         """Return the teams that this person/team is an administrator of.
 
         This includes teams for which the person is the owner, a direct
         member with admin privilege, or member of a team with such
-        privileges.
+        privileges.  It excludes teams which have been merged.
         """
-
     def getTeamAdminsEmailAddresses():
         """Return a set containing the email addresses of all administrators
         of this team.
@@ -1093,6 +1327,13 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     def getLatestApprovedMembershipsForPerson(limit=5):
         """Return the <limit> latest approved membrships for this person."""
 
+    def getPathsToTeams():
+        """Return the paths to all teams related to this person."""
+
+    @operation_parameters(
+        language=Reference(schema=ILanguage))
+    @export_write_operation()
+    @operation_for_version("devel")
     def addLanguage(language):
         """Add a language to this person's preferences.
 
@@ -1102,6 +1343,10 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         already, nothing will happen.
         """
 
+    @operation_parameters(
+        language=Reference(schema=ILanguage))
+    @export_write_operation()
+    @operation_for_version("devel")
     def removeLanguage(language):
         """Remove a language from this person's preferences.
 
@@ -1165,141 +1410,139 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         :return: True if the user was subscribed, false if they weren't.
         """
 
-    @operation_parameters(
-        name=TextLine(required=True, constraint=name_validator))
-    @operation_returns_entry(Interface) # Really IArchive.
-    @export_read_operation()
-    def getPPAByName(name):
-        """Return a PPA with the given name if it exists.
+    def checkRename():
+        """Check if a person or team can be renamed.
 
-        :param name: A string with the exact name of the ppa being looked up.
-        :raises: `NoSuchPPA` if a suitable PPA could not be found.
-
-        :return: a PPA `IArchive` record corresponding to the name.
+        :return: a text string of the reason, or None if the rename is
+        allowed.
         """
 
+    def canCreatePPA():
+        """Check if a person or team can create a PPA.
 
-class IPersonViewRestricted(Interface):
-    """IPerson attributes that require launchpad.View permission."""
+        :return: a boolean.
+        """
 
-    name = exported(
-        PersonNameField(
-            title=_('Name'), required=True, readonly=False,
-            constraint=name_validator,
-            description=_(
-                "A short unique name, beginning with a lower-case "
-                "letter or number, and containing only letters, "
-                "numbers, dots, hyphens, or plus signs.")))
-    displayname = exported(
-        StrippedTextLine(
-            title=_('Display Name'), required=True, readonly=False,
-            description=_(
-                "Your name as you would like it displayed throughout "
-                "Launchpad. Most people use their full name here.")),
-        exported_as='display_name')
-    unique_displayname = TextLine(
-        title=_('Return a string of the form $displayname ($name).'))
+    def getAssignedSpecificationWorkItemsDueBefore(date, user):
+        """Return SpecificationWorkItems assigned to this person (or members
+        of this team) and whose milestone is due between today and the given
+        date (inclusive).
+
+        user specifies the user who is viewing the list; items they cannot see
+        are filtered out.  None indicates the anonymous user who can only see
+        public items.
+        """
+
+    def getAssignedBugTasksDueBefore(date, user):
+        """Get all BugTasks assigned to this person (or members of this team)
+        and whose milestone is due between today and the given date
+        (inclusive).
+        """
+
+    participant_ids = List(
+        title=_("The DB IDs of this team's participants"), value_type=Int())
     active_member_count = Attribute(
         "The number of real people who are members of this team.")
     # activemembers.value_type.schema will be set to IPerson once
     # IPerson is defined.
-    activemembers = exported(
-        CollectionField(
-            title=_("List of members with ADMIN or APPROVED status"),
-            value_type=Reference(schema=Interface)),
+    activemembers = Attribute(
+        'List of direct members with ADMIN or APPROVED status')
+    # For the API we need eager loading
+    api_activemembers = exported(
+        doNotSnapshot(
+            CollectionField(
+                title=_(
+                    "List of direct members with ADMIN or APPROVED status"),
+                value_type=Reference(schema=Interface))),
         exported_as='members')
     adminmembers = exported(
-        CollectionField(
-            title=_("List of this team's admins."),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("List of this team's admins."),
+                value_type=Reference(schema=Interface))),
         exported_as='admins')
     all_member_count = Attribute(
         "The total number of real people who are members of this team, "
         "including subteams.")
-    allmembers = exported(
-        CollectionField(
-            title=_("All participants of this team."),
-            description=_(
-                "List of all direct and indirect people and teams who, one "
-                "way or another, are a part of this team. If you want a "
-                "method to check if a given person is a member of a team, "
-                "you should probably look at IPerson.inTeam()."),
-            value_type=Reference(schema=Interface)),
+    all_members_prepopulated = exported(
+        doNotSnapshot(
+            CollectionField(
+                title=_("All participants of this team."),
+                description=_(
+                    "List of all direct and indirect people and teams who, "
+                    "one way or another, are a part of this team. If you "
+                    "want a method to check if a given person is a member "
+                    "of a team, you should probably look at "
+                    "IPerson.inTeam()."),
+                value_type=Reference(schema=Interface))),
         exported_as='participants')
-    approvedmembers = Attribute("List of members with APPROVED status")
+    allmembers = doNotSnapshot(
+        Attribute("List of all members, without checking karma etc."))
+    approvedmembers = doNotSnapshot(
+        Attribute("List of members with APPROVED status"))
     deactivated_member_count = Attribute("Number of deactivated members")
-    deactivatedmembers = Attribute("List of members with DEACTIVATED status")
     deactivatedmembers = exported(
-        CollectionField(
-            title=_(
-                "All members whose membership is in the DEACTIVATED state"),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_(
+                    "All members whose membership is in the "
+                    "DEACTIVATED state"),
+                value_type=Reference(schema=Interface))),
         exported_as='deactivated_members')
     expired_member_count = Attribute("Number of EXPIRED members.")
     expiredmembers = exported(
-        CollectionField(
-            title=_("All members whose membership is in the EXPIRED state"),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("All members whose membership is in the "
+                        "EXPIRED state"),
+                value_type=Reference(schema=Interface))),
         exported_as='expired_members')
-    inactivemembers = Attribute(
-        "List of members with EXPIRED or DEACTIVATED status")
+    inactivemembers = doNotSnapshot(
+        Attribute(
+            "List of members with EXPIRED or DEACTIVATED status"))
     inactive_member_count = Attribute("Number of inactive members")
     invited_members = exported(
-        CollectionField(
-            title=_("All members whose membership is in the INVITED state"),
-            value_type=Reference(schema=Interface)))
+        doNotSnapshot(
+            CollectionField(
+                title=_("All members whose membership is "
+                        "in the INVITED state"),
+                value_type=Reference(schema=Interface))))
+
     invited_member_count = Attribute("Number of members with INVITED status")
     member_memberships = exported(
-        CollectionField(
-            title=_("Active TeamMemberships for this object's members."),
-            description=_(
-                "Active TeamMemberships are the ones with the ADMIN or "
-                "APPROVED status.  The results are ordered using "
-                "Person.sortingColumns."),
-            readonly=True, required=False,
-            value_type=Reference(schema=ITeamMembership)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("Active TeamMemberships for this object's members."),
+                description=_(
+                    "Active TeamMemberships are the ones with the ADMIN or "
+                    "APPROVED status.  The results are ordered using "
+                    "Person.sortingColumns."),
+                readonly=True, required=False,
+                value_type=Reference(schema=ITeamMembership))),
         exported_as='members_details')
-    pendingmembers = Attribute(
-        "List of members with INVITED or PROPOSED status")
+    pendingmembers = doNotSnapshot(
+        Attribute(
+            "List of members with INVITED or PROPOSED status"))
     proposedmembers = exported(
-        CollectionField(
-            title=_("All members whose membership is in the PROPOSED state"),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("All members whose membership is in the "
+                        "PROPOSED state"),
+                value_type=Reference(schema=Interface))),
         exported_as='proposed_members')
     proposed_member_count = Attribute("Number of PROPOSED members")
 
-    mapped_participants_count = Attribute(
-        "The number of mapped participants")
-    unmapped_participants = CollectionField(
-        title=_("List of participants with no coordinates recorded."),
-        value_type=Reference(schema=Interface))
-    unmapped_participants_count = Attribute(
-        "The number of unmapped participants")
-
-    def getMappedParticipants(limit=None):
-        """List of participants with coordinates.
-
-        :param limit: The optional maximum number of items to return.
-        :return: A list of `IPerson` objects
-        """
-
-    def getMappedParticipantsBounds():
-        """Return a dict of the bounding longitudes latitudes, and centers.
-
-        This method cannot be called if there are no mapped participants.
-
-        :return: a dict containing: min_lat, min_lng, max_lat, max_lng,
-            center_lat, and center_lng
-        """
-
-    def getMembersWithPreferredEmails(include_teams=False):
+    def getMembersWithPreferredEmails():
         """Returns a result set of persons with precached addresses.
 
         Persons or teams without preferred email addresses are not included.
         """
 
-    def getMembersWithPreferredEmailsCount(include_teams=False):
-        """Returns the count of persons/teams with preferred emails."""
+    def getMembersWithPreferredEmailsCount():
+        """Returns the count of persons/teams with preferred emails.
+
+        See also getMembersWithPreferredEmails.
+        """
 
     def getDirectAdministrators():
         """Return this team's administrators.
@@ -1310,8 +1553,9 @@ class IPersonViewRestricted(Interface):
         """
 
     @operation_parameters(status=copy_field(ITeamMembership['status']))
-    @operation_returns_collection_of(Interface) # Really IPerson
+    @operation_returns_collection_of(Interface)  # Really IPerson
     @export_read_operation()
+    @operation_for_version("beta")
     def getMembersByStatus(status, orderby=None):
         """Return the people whose membership on this team match :status:.
 
@@ -1325,15 +1569,16 @@ class IPersonEditRestricted(Interface):
     @call_with(requester=REQUEST_USER)
     @operation_parameters(team=copy_field(ITeamMembership['team']))
     @export_write_operation()
+    @operation_for_version("beta")
     def join(team, requester=None, may_subscribe_to_list=True):
-        """Join the given team if its subscriptionpolicy is not RESTRICTED.
+        """Join the given team if its membership_policy is not RESTRICTED.
 
         Join the given team according to the policies and defaults of that
         team:
 
-        - If the team subscriptionpolicy is OPEN, the user is added as
+        - If the team membership_policy is OPEN, the user is added as
           an APPROVED member with a NULL TeamMembership.reviewer.
-        - If the team subscriptionpolicy is MODERATED, the user is added as
+        - If the team membership_policy is MODERATED, the user is added as
           a PROPOSED member and one of the team's administrators have to
           approve the membership.
 
@@ -1351,24 +1596,16 @@ class IPersonEditRestricted(Interface):
 
     @operation_parameters(team=copy_field(ITeamMembership['team']))
     @export_write_operation()
+    @operation_for_version("beta")
     def leave(team):
         """Leave the given team.
 
-        If there's a membership entry for this person on the given team and
-        its status is either APPROVED or ADMIN, we change the status to
-        DEACTIVATED and remove the relevant entries in teamparticipation.
+        This is a convenience method for retractTeamMembership() that allows
+        a user to leave the given team, or to cancel a PENDING membership
+        request.
 
-        Teams cannot call this method because they're not allowed to
-        login and thus can't 'leave' another team. Instead, they have their
-        subscription deactivated (using the setMembershipData() method) by
-        a team administrator.
+        :param team: The team to leave.
         """
-
-    @operation_parameters(
-        visible=copy_field(ILocationRecord['visible'], required=True))
-    @export_write_operation()
-    def setLocationVisibility(visible):
-        """Specify the visibility of a person's location and time zone."""
 
     def setMembershipData(person, status, reviewer, expires=None,
                           comment=None):
@@ -1390,37 +1627,48 @@ class IPersonEditRestricted(Interface):
         status=copy_field(ITeamMembership['status']),
         comment=Text(required=False))
     @export_write_operation()
+    @operation_for_version("beta")
     def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
                   comment=None, force_team_add=False,
                   may_subscribe_to_list=True):
         """Add the given person as a member of this team.
 
-        If the given person is already a member of this team we'll simply
-        change its membership status. Otherwise a new TeamMembership is
-        created with the given status.
+        :param person: If the given person is already a member of this
+            team we'll simply change its membership status. Otherwise a new
+            TeamMembership is created with the given status.
 
-        If the person is actually a team and force_team_add is False, the
-        team will actually be invited to join this one. Otherwise the team
-        is added as if it were a person.
+        :param reviewer: The user who made the given person a member of this
+            team.
 
-        If the person is not a team, and may_subscribe_to_list
-        is True, then the person may be subscribed to the team's
-        mailing list, depending on the list status and the person's
-        auto-subscribe settings.
+        :param comment: String that will be assigned to the
+            proponent_comment, reviwer_comment, or acknowledger comment.
 
-        The given status must be either Approved, Proposed or Admin.
+        :param status: `TeamMembershipStatus` value must be either
+            Approved, Proposed or Admin.
+            If the new member is a team, the status will be changed to
+            Invited unless the user is also an admin of that team.
 
-        The reviewer is the user who made the given person a member of this
-        team.
+        :param force_team_add: If the person is actually a team and
+            force_team_add is False, the team will actually be invited to
+            join this one. Otherwise the team is added as if it were a
+            person.
+
+        :param may_subscribe_to_list: If the person is not a team, and
+            may_subscribe_to_list is True, then the person may be subscribed
+            to the team's mailing list, depending on the list status and the
+            person's auto-subscribe settings.
+
+        :return: A tuple containing a boolean indicating when the
+            membership status changed and the current `TeamMembershipStatus`.
+            This depends on the desired status passed as an argument, the
+            membership policy and the user's privileges.
         """
-
-    def deactivateAllMembers(comment, reviewer):
-        """Deactivate all the members of this team."""
 
     @operation_parameters(
         team=copy_field(ITeamMembership['team']),
         comment=Text())
     @export_write_operation()
+    @operation_for_version("beta")
     def acceptInvitationToBeMemberOf(team, comment):
         """Accept an invitation to become a member of the given team.
 
@@ -1433,12 +1681,35 @@ class IPersonEditRestricted(Interface):
         team=copy_field(ITeamMembership['team']),
         comment=Text())
     @export_write_operation()
+    @operation_for_version("beta")
     def declineInvitationToBeMemberOf(team, comment):
         """Decline an invitation to become a member of the given team.
 
         There must be a TeamMembership for this person and the given team with
         the INVITED status. The status of this TeamMembership will be changed
         to INVITATION_DECLINED.
+        """
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        team=copy_field(ITeamMembership['team']),
+        comment=Text(required=False))
+    @export_write_operation()
+    @operation_for_version("beta")
+    def retractTeamMembership(team, user, comment=None):
+        """Retract this team's membership in the given team.
+
+        If there's a membership entry for this team on the given team and
+        its status is either APPROVED, ADMIN, PENDING, or INVITED, the status
+        is changed and the relevant entries in TeamParticipation.
+
+        APPROVED and ADMIN status are changed to DEACTIVATED.
+        PENDING status is changed to DECLINED.
+        INVITED status is changes to INVITATION_DECLINED.
+
+        :param team: The team to leave.
+        :param user: The user making the retraction.
+        :param comment: An optional explanation about why the change was made.
         """
 
     def renewTeamMembership(team):
@@ -1449,30 +1720,65 @@ class IPersonEditRestricted(Interface):
         DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
         """
 
+    def security_field_changed(subject, change_description,
+        recipient_emails=None):
+        """Trigger email when a secured field like preferredemail changes.
 
-class IPersonCommAdminWriteRestricted(Interface):
-    """IPerson attributes that require launchpad.Admin permission to set."""
+        :param recipient_emails: If supplied custom email addresses to notify.
+            This is used when a new preferred email address is set.
+        :param subject: The subject to use.
+        :param change_description: A textual description to use when notifying
+            about the change.
+        """
 
-    visibility = exported(
-        Choice(title=_("Visibility"),
-               description=_(
-                   "Public visibility is standard.  Private Membership "
-                   "means that a team's members are hidden.  "
-                   "Private means the team is completely "
-                   "hidden [experimental]."
-                   ),
-               required=True, vocabulary=PersonVisibility,
-               default=PersonVisibility.PUBLIC))
+    @operation_parameters(
+        name=TextLine(required=True, constraint=name_validator),
+        displayname=TextLine(required=False),
+        description=TextLine(required=False),
+        private=Bool(required=False),
+        suppress_subscription_notifications=Bool(required=False),
+        )
+    @export_factory_operation(Interface, [])  # Really IArchive.
+    @operation_for_version("beta")
+    def createPPA(name=None, displayname=None, description=None,
+                  private=False, suppress_subscription_notifications=False):
+        """Create a PPA.
+
+        :param name: A string with the name of the new PPA to create. If
+            not specified, defaults to 'ppa'.
+        :param displayname: The displayname for the new PPA.
+        :param description: The description for the new PPA.
+        :param private: Whether or not to create a private PPA. Defaults to
+            False, which means the PPA will be public.
+        :param suppress_subscription_notifications: Whether or not to suppress
+            emails to new subscribers about their subscriptions.  Only
+            meaningful for private PPAs.
+        :raises: `PPACreationError` if an error is encountered
+
+        :return: a PPA `IArchive` record.
+        """
 
 
 class IPersonSpecialRestricted(Interface):
     """IPerson methods that require launchpad.Special permission to use."""
 
-    def deactivateAccount(comment):
+    def canDeactivateAccount():
+        """Verify we safely deactivate this user account.
+
+        :return: True if the person can be deactivated, False otherwise.
+        """
+
+    def canDeactivateAccountWithErrors():
+        """See canDeactivateAccount with the addition of error messages for
+        why the account cannot be deactivated.
+
+        :return tuple: boolean, list of error messages.
+        """
+
+    def deactivateAccount(comment, can_deactivate=None):
         """Deactivate this person's Launchpad account.
 
         Deactivating an account means:
-            - Setting its password to NULL;
             - Removing the user from all teams he's a member of;
             - Changing all his email addresses' status to NEW;
             - Revoking Code of Conduct signatures of that user;
@@ -1480,45 +1786,63 @@ class IPersonSpecialRestricted(Interface):
             - Changing the ownership of products/projects/teams owned by him.
 
         :param comment: An explanation of why the account status changed.
+        :param can_deactivate: Override the check if we can deactivate by
+            supplying a known value. If None, then the method will run the
+            checks.
         """
 
-    def reactivate(comment, password, preferred_email):
+    def reactivate(comment, preferred_email):
         """Reactivate this person and its account.
 
-        Set the account status to ACTIVE, the account's password to the given
-        one and its preferred email address.
+        Set the account status to ACTIVE, and update the preferred email
+        address.
 
         If the person's name contains a -deactivatedaccount suffix (usually
         added by `IPerson`.deactivateAccount(), it is removed.
 
         :param comment: An explanation of why the account status changed.
-        :param password: The user's password.
         :param preferred_email: The `EmailAddress` to set as the account's
             preferred email address. It cannot be None.
         """
 
+    # XXX 2011-04-20, Abel Deuring, Bug=767293: The methods canAccess()
+    # and canWrite() are defined in this interface for two reasons:
+    # 1. The functions zope.security.checker.canWrite() and
+    #    zope.security.checker.canAccess() can at present check only
+    #    permissions for the current user, and this interface is
+    #    protected by the permission launchpad.Special, which
+    #    allows users only access to theirs own object.
+    # 2. Allowing users access to check permissions for other persons
+    #    than themselves might leak information.
+    def canAccess(obj, attribute):
+        """True if this person can access the given attribute of the object.
 
-class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
-              IPersonCommAdminWriteRestricted, IPersonSpecialRestricted,
-              IHasStanding, ISetLocation, IRootContext):
+        :param obj: The object to be checked.
+        :param attributes: The name of an attribute to check.
+        :return: True if the person can access the attribute of the given
+            object, else False.
+        """
+
+    def canWrite(obj, attribute):
+        """True if this person can write the given attribute of the object.
+
+        :param obj: The object to be checked.
+        :param attribute: The name an attribute to check.
+        :return: True if the person can change the attribute of the given
+            object, else False.
+        """
+
+
+class IPerson(IPersonPublic, IPersonLimitedView, IPersonViewRestricted,
+              IPersonEditRestricted, IPersonSpecialRestricted, IHasStanding,
+              ISetLocation, IRootContext):
     """A Person."""
     export_as_webservice_entry(plural_name='people')
 
 
 # Set the schemas to the newly defined interface for classes that deferred
 # doing so when defined.
-PublicPersonChoice.schema = IPerson
-ParticipatingPersonChoice.schema = IPerson
-
-
-class INewPersonForm(IPerson):
-    """Interface used to create new Launchpad accounts.
-
-    The only change with `IPerson` is a customised Password field.
-    """
-
-    password = PasswordField(
-        title=_('Create password'), required=True, readonly=False)
+PersonChoice.schema = IPerson
 
 
 class ITeamPublic(Interface):
@@ -1532,7 +1856,7 @@ class ITeamPublic(Interface):
         renewal policy is is 'On Demand' or 'Automatic', it cannot be None.
         """
         # The person arg is a zope.formlib.form.FormData instance.
-        # Instead of checking 'not person.isTeam()' or 'person.teamowner',
+        # Instead of checking 'not person.is_team' or 'person.teamowner',
         # we check for a field in the schema to identify this as a team.
         try:
             renewal_policy = person.renewal_policy
@@ -1541,31 +1865,34 @@ class ITeamPublic(Interface):
             return
 
         renewal_period = person.defaultrenewalperiod
-        automatic, ondemand = [TeamMembershipRenewalPolicy.AUTOMATIC,
-                               TeamMembershipRenewalPolicy.ONDEMAND]
-        cannot_be_none = renewal_policy in [automatic, ondemand]
-        if ((renewal_period is None and cannot_be_none)
-            or (renewal_period is not None and renewal_period <= 0)):
+        is_required_value_missing = (
+            renewal_period is None
+            and renewal_policy == TeamMembershipRenewalPolicy.ONDEMAND)
+        out_of_range = (
+            renewal_period is not None
+            and (renewal_period <= 0 or renewal_period > 3650))
+        if is_required_value_missing or out_of_range:
             raise Invalid(
-                'You must specify a default renewal period greater than 0.')
+                'You must specify a default renewal period '
+                'from 1 to 3650 days.')
 
     teamdescription = exported(
         Text(title=_('Team Description'), required=False, readonly=False,
-             description=_(
-                "Include information on how to get involved with "
-                "development. Use plain text; URLs will be linkified.")),
+             description=_("Obsolete. Use description.")),
         exported_as='team_description')
 
-    subscriptionpolicy = exported(
-        Choice(title=_('Subscription policy'),
-               vocabulary=TeamSubscriptionPolicy,
-               default=TeamSubscriptionPolicy.MODERATED, required=True,
-               description=_(
-                   "'Moderated' means all subscriptions must be approved. "
-                   "'Open' means any user can join without approval. "
-                   "'Restricted' means new members can be added only by a "
-                   "team administrator.")),
-        exported_as='subscription_policy')
+    membership_policy = exported(
+        TeamMembershipPolicyChoice(title=_('Membership policy'),
+            vocabulary=TeamMembershipPolicy,
+            default=TeamMembershipPolicy.RESTRICTED, required=True,
+            description=_(
+                TeamMembershipPolicy.__doc__.split('\n\n')[1])))
+
+    subscription_policy = exported(
+        TeamMembershipPolicyChoice(title=_('Membership policy'),
+            vocabulary=TeamMembershipPolicy,
+            description=_("Obsolete: use membership_policy"))
+        )
 
     renewal_policy = exported(
         Choice(title=_("When someone's membership is about to expire, "
@@ -1574,7 +1901,7 @@ class ITeamPublic(Interface):
                default=TeamMembershipRenewalPolicy.NONE))
 
     defaultmembershipperiod = exported(
-        Int(title=_('Subscription period'), required=False,
+        Int(title=_('Subscription period'), required=False, max=3650,
             description=_(
                 "Number of days a new subscription lasts before expiring. "
                 "You can customize the length of an individual subscription "
@@ -1583,12 +1910,10 @@ class ITeamPublic(Interface):
         exported_as='default_membership_period')
 
     defaultrenewalperiod = exported(
-        Int(title=_('Renewal period'), required=False,
+        Int(title=_('Self renewal period'), required=False,
             description=_(
-                "Number of days a subscription lasts after being renewed. "
-                "You can customize the lengths of individual renewals, but "
-                "this is what's used for auto-renewed and user-renewed "
-                "memberships.")),
+                "Number of days members can renew their own membership. "
+                "The number can be from 1 to 3650 (10 years).")),
         exported_as='default_renewal_period')
 
     defaultexpirationdate = Attribute(
@@ -1599,11 +1924,63 @@ class ITeamPublic(Interface):
         "The date, according to team's default values, in "
         "which a just-renewed membership will expire.")
 
+    def checkInclusiveMembershipPolicyAllowed(policy='open'):
+        """Check whether this team's membership policy can be open.
+
+        An inclusive membership policy is OPEN or DELEGATED.
+        A exclusive membership policy is MODERATED or RESTRICTED.
+        An exclusive membership policy is required when:
+        - any of the team's super teams are closed.
+        - the team has any active PPAs
+        - it is subscribed or assigned to any private bugs
+        - it owns any pillars
+
+        :param policy: The policy that is being checked for validity. This is
+            an optional parameter used in the message of the exception raised
+            when an open policy is not allowed. Sometimes though, the caller
+            just wants to know if any open policy is allowed without having a
+            particular policy to check. In this case, the method is called
+            without a policy parameter being required.
+        :raises TeamMembershipPolicyError: When the membership policy is
+            not allowed to be open.
+        """
+
+    def checkExclusiveMembershipPolicyAllowed(policy='closed'):
+        """Return true if this team's membership policy must be open.
+
+        An inclusive membership policy is OPEN or DELEGATED.
+        A exclusive membership policy is MODERATED or RESTRICTED.
+        An inclusive membership policy is required when:
+        - any of the team's sub (member) teams are open.
+
+        :param policy: The policy that is being checked for validity. This is
+            an optional parameter used in the message of the exception raised
+            when a closed policy is not allowed. Sometimes though, the caller
+            just wants to know if any closed policy is allowed without having
+            a particular policy to check. In this case, the method is called
+            without a policy parameter being required.
+        :raises TeamMembershipPolicyError: When the membership policy is
+            not allowed to be closed.
+        """
+
 
 class ITeam(IPerson, ITeamPublic):
-    """ITeam extends IPerson.
+    """A group of people and other teams.
 
-    The teamowner should never be None.
+    Launchpadlib example of getting the date a user joined a team::
+
+        def get_join_date(team, user):
+            team = launchpad.people[team]
+            members = team.members_details
+            for member in members:
+                if member.member.name == user:
+                    return member.date_joined
+            return None
+
+    Implementation notes:
+
+    - ITeam extends IPerson.
+    - The teamowner should never be None.
     """
     export_as_webservice_entry('team')
 
@@ -1642,12 +2019,16 @@ class IPersonSet(Interface):
     def getTopContributors(limit=50):
         """Return the top contributors in Launchpad, up to the given limit."""
 
-    def isNameBlacklisted(self, name):
-        """Is the given name blacklisted by Launchpad Administrators?"""
+    def isNameBlacklisted(name, user=None):
+        """Is the given name blacklisted by Launchpad Administrators?
+
+        :param name: The name to be checked.
+        :param user: The `IPerson` that wants to use the name. If the user
+            is an admin for the nameblacklist expression, he can use the name.
+        """
 
     def createPersonAndEmail(
             email, rationale, comment=None, name=None, displayname=None,
-            password=None, passwordEncrypted=False,
             hide_email_addresses=False, registrant=None):
         """Create and return an `IPerson` and `IEmailAddress`.
 
@@ -1668,9 +2049,6 @@ class IPersonSet(Interface):
             (e.g. "when the foo package was imported into Ubuntu Breezy").
         :param name: The person's name.
         :param displayname: The person's displayname.
-        :param password: The person's password.
-        :param passwordEncrypted: Whether or not the given password is
-            encrypted.
         :param registrant: The user who created this person, if any.
         :param hide_email_addresses: Whether or not Launchpad should hide the
             person's email addresses from other users.
@@ -1708,6 +2086,10 @@ class IPersonSet(Interface):
         The comment must be of the following form: "when %(action_details)s"
         (e.g. "when the foo package was imported into Ubuntu Breezy").
 
+        If the email address is already registered and bound to an
+        `IAccount`, the created `IPerson` will have 'hide_email_addresses'
+        flag set to True.
+
         XXX sabdfl 2005-06-14: this should be extended to be similar or
         identical to the other person creation argument lists, so we can
         call it and create a full person if needed. Email would remain the
@@ -1715,22 +2097,64 @@ class IPersonSet(Interface):
         on the displayname or other arguments.
         """
 
+    @operation_parameters(identifier=TextLine(required=True))
+    @operation_returns_entry(IPerson)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getByOpenIDIdentifier(identifier):
+        """Get the person for a given OpenID identifier.
+
+        :param openid_identifier: full OpenID identifier URL for the user.
+        :return: the corresponding `IPerson` or None if the identifier is
+            unknown
+        """
+
+    def getOrCreateByOpenIDIdentifier(openid_identifier, email,
+                                      full_name, creation_rationale, comment):
+        """Get or create a person for a given OpenID identifier.
+
+        This is used when users login. We get the account with the given
+        OpenID identifier (creating one if it doesn't already exist) and
+        act according to the account's state:
+          - If the account is suspended, we stop and raise an error.
+          - If the account is deactivated, we reactivate it and proceed;
+          - If the account is active, we just proceed.
+
+        If there is no existing Launchpad person for the account, we
+        create it.
+
+        :param openid_identifier: OpenID identifier suffix for the user.
+            This is *not* the full URL, just the unique suffix portion.
+        :param email_address: the email address of the user.
+        :param full_name: the full name of the user.
+        :param creation_rationale: When an account or person needs to
+            be created, this indicates why it was created.
+        :param comment: If the account is reactivated or person created,
+            this comment indicates why.
+        :return: a tuple of `IPerson` and a boolean indicating whether the
+            database was updated.
+        :raises AccountSuspendedError: if the account associated with the
+            identifier has been suspended.
+        """
+
     @call_with(teamowner=REQUEST_USER)
     @rename_parameters_as(
         displayname='display_name', teamdescription='team_description',
-        subscriptionpolicy='subscription_policy',
         defaultmembershipperiod='default_membership_period',
         defaultrenewalperiod='default_renewal_period')
     @operation_parameters(
-        subscriptionpolicy=Choice(
-            title=_('Subscription policy'), vocabulary=TeamSubscriptionPolicy,
-            required=False, default=TeamSubscriptionPolicy.MODERATED))
+        membership_policy=Choice(
+            title=_('Membership policy'), vocabulary=TeamMembershipPolicy,
+            required=False, default=TeamMembershipPolicy.MODERATED))
     @export_factory_operation(
         ITeam, ['name', 'displayname', 'teamdescription',
-                'defaultmembershipperiod', 'defaultrenewalperiod'])
+                'defaultmembershipperiod', 'defaultrenewalperiod',
+                'subscription_policy'])
+    @operation_for_version("beta")
     def newTeam(teamowner, name, displayname, teamdescription=None,
-                subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
-                defaultmembershipperiod=None, defaultrenewalperiod=None):
+                membership_policy=TeamMembershipPolicy.MODERATED,
+                defaultmembershipperiod=None, defaultrenewalperiod=None,
+                subscription_policy=None):
         """Create and return a new Team with given arguments."""
 
     def get(personid):
@@ -1740,10 +2164,21 @@ class IPersonSet(Interface):
         email=TextLine(required=True, constraint=email_validator))
     @operation_returns_entry(IPerson)
     @export_read_operation()
+    @operation_for_version("beta")
     def getByEmail(email):
         """Return the person with the given email address.
 
         Return None if there is no person with the given email address.
+        """
+
+    def getByEmails(emails, include_hidden=True):
+        """Search for people with the given email addresses.
+
+        :param emails: A list of email addresses.
+        :param include_hidden: Include people who have opted to hide their
+            email. Defaults to True.
+
+        :return: A `ResultSet` of `IEmailAddress`, `IPerson`.
         """
 
     def getByName(name, ignore_merged=True):
@@ -1773,6 +2208,7 @@ class IPersonSet(Interface):
         text=TextLine(title=_("Search text"), default=u""))
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
+    @operation_for_version("beta")
     def find(text=""):
         """Return all non-merged Persons and Teams whose name, displayname or
         email address match <text>.
@@ -1786,11 +2222,19 @@ class IPersonSet(Interface):
         """
 
     @operation_parameters(
-        text=TextLine(title=_("Search text"), default=u""))
+        text=TextLine(
+            title=_("Search text"), default=u""),
+        created_after=Datetime(
+            title=_("Created after"), required=False),
+        created_before=Datetime(
+            title=_("Created before"), required=False),
+        )
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
+    @operation_for_version("beta")
     def findPerson(text="", exclude_inactive_accounts=True,
-                   must_have_email=False):
+                   must_have_email=False,
+                   created_after=None, created_before=None):
         """Return all non-merged Persons with at least one email address whose
         name, displayname or email address match <text>.
 
@@ -1810,12 +2254,16 @@ class IPersonSet(Interface):
         While we don't have Full Text Indexes in the emailaddress table, we'll
         be trying to match the text only against the beginning of an email
         address.
+
+        If created_before or created_after are not None, they are used to
+        restrict the search to the dates provided.
         """
 
     @operation_parameters(
         text=TextLine(title=_("Search text"), default=u""))
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
+    @operation_for_version("beta")
     def findTeam(text=""):
         """Return all Teams whose name, displayname or email address
         match <text>.
@@ -1828,10 +2276,41 @@ class IPersonSet(Interface):
         address.
         """
 
-    def latest_teams(limit=5):
-        """Return the latest teams registered, up to the limit specified."""
+    def mergeAsync(from_person, to_person, requester, reviewer=None,
+                   delete=False):
+        """Merge a person/team into another asynchronously.
 
-    def merge(from_person, to_person, deactivate_members=False, user=None):
+        This schedules a call to `merge()` to happen outside of the current
+        context/request. The intention is that it is called soon after this
+        method is called but there is no guarantee of that, nor is that call
+        guaranteed to succeed. If either user is in a pending person merge
+        job, None is returned.
+
+        :param from_person: An IPerson or ITeam that is a duplicate.
+        :param to_person: An IPerson or ITeam that is a master.
+        :param requester: The IPerson who requested the merge.  Should not be
+            an ITeam.
+        :param reviewer: An IPerson who approved the ITeam merger.
+        :param delete: The merge is really a deletion.
+        :return: A `PersonMergeJob` or None.
+        """
+
+    def delete(from_person, reviewer):
+        """Delete a person/team.
+
+        The old team (from_person) will be left as an atavism.
+
+        Deleting a person is not supported at this time.
+
+        When deleting teams, from_person must have no IMailingLists
+        associated with and no active members. Any active team members will be
+        deactivated.
+
+        :param from_person: An IPerson or ITeam that is a duplicate.
+        :param reviewer: An IPerson who approved the ITeam merger.
+        """
+
+    def merge(from_person, to_person, reviewer=None):
         """Merge a person/team into another.
 
         The old person/team (from_person) will be left as an atavism.
@@ -1840,17 +2319,15 @@ class IPersonSet(Interface):
         addresses associated with.
 
         When merging teams, from_person must have no IMailingLists
-        associated with and no active members. If it has active members,
-        though, it's possible to have them deactivated before the merge by
-        passing deactivate_members=True. In that case the user who's
-        performing the merge must be provided as well.
+        associated with it. If it has active members they will be deactivated
+        - and reviewer must be supplied.
 
-        We are not yet game to delete the `from_person` entry from the
-        database yet. We will let it roll for a while and see what cruft
-        develops. -- StuartBishop 20050812
+        :param from_person: An IPerson or ITeam that is a duplicate.
+        :param to_person: An IPerson or ITeam that is a master.
+        :param reviewer: An IPerson who approved the ITeam merger.
         """
 
-    def getValidPersons(self, persons):
+    def getValidPersons(persons):
         """Get all the Persons that are valid.
 
         This method is more effective than looking at
@@ -1873,17 +2350,6 @@ class IPersonSet(Interface):
             specified product are returned.
         """
 
-    def getSubscribersForTargets(targets, recipients=None):
-        """Return the set of subscribers for `targets`.
-
-        :param targets: The sequence of targets for which to get the
-                        subscribers.
-        :param recipients: An optional instance of
-                           `BugNotificationRecipients`.
-                           If present, all found subscribers will be
-                           added to it.
-        """
-
     def updatePersonalStandings():
         """Update the personal standings of some people.
 
@@ -1897,6 +2363,23 @@ class IPersonSet(Interface):
 
     def cacheBrandingForPeople(people):
         """Prefetch Librarian aliases and content for personal images."""
+
+    def getPrecachedPersonsFromIDs(
+        person_ids, need_karma=False, need_ubuntu_coc=False,
+        need_location=False, need_archive=False,
+        need_preferred_email=False, need_validity=False):
+        """Lookup person objects from ids with optional precaching.
+
+        :param person_ids: List of person ids.
+        :param need_karma: The karma attribute will be cached.
+        :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
+            cached.
+        :param need_location: The location attribute will be cached.
+        :param need_archive: The archive attribute will be cached.
+        :param need_preferred_email: The preferred email attribute will be
+            cached.
+        :param need_validity: The is_valid attribute will be cached.
+        """
 
 
 class IRequestPeopleMerge(Interface):
@@ -1950,24 +2433,6 @@ class ITeamReassignment(Interface):
         title=_('New'), vocabulary='ValidTeamOwner', required=True)
 
 
-class ITeamCreation(ITeam):
-    """An interface to be used by the team creation form.
-
-    We need this special interface so we can allow people to specify a contact
-    email address for a team upon its creation.
-    """
-
-    contactemail = TextLine(
-        title=_("Contact Email Address"), required=False, readonly=False,
-        description=_(
-            "This is the email address we'll send all notifications to this "
-            "team. If no contact address is chosen, notifications directed "
-            "to this team will be sent to all team members. After finishing "
-            "the team creation, a new message will be sent to this address "
-            "with instructions on how to finish its registration."),
-        constraint=validate_new_team_email)
-
-
 class TeamContactMethod(EnumeratedType):
     """The method used by Launchpad to contact a given team."""
 
@@ -2003,21 +2468,41 @@ class ITeamContactAddressForm(Interface):
         required=True, vocabulary=TeamContactMethod)
 
 
-class JoinNotAllowed(Exception):
-    """User is not allowed to join a given team."""
+class ISoftwareCenterAgentAPI(Interface):
+    """XMLRPC API used by the software center agent."""
+
+    def getOrCreateSoftwareCenterCustomer(openid_identifier, email,
+                                          full_name):
+        """Get or create an LP person based on a given identifier.
+
+        See the method of the same name on `IPersonSet`. This XMLRPC version
+        doesn't require the creation rationale and comment.
+
+        This is added as a private XMLRPC method instead of exposing via the
+        API as it should not be needed long-term. Long term we should allow
+        the software center to create subscriptions to private PPAs without
+        requiring a Launchpad account.
+        """
 
 
+class ICanonicalSSOApplication(ILaunchpadApplication):
+    """XMLRPC application root for ICanonicalSSOAPI."""
+
+
+class ICanonicalSSOAPI(Interface):
+    """XMLRPC API used by the software center agent."""
+
+    def getPersonDetailsByOpenIDIdentifier(openid_identifier):
+        """Get the details of an LP person based on an OpenID identifier."""
+
+
+class ISoftwareCenterAgentApplication(ILaunchpadApplication):
+    """XMLRPC application root for ISoftwareCenterAgentAPI."""
+
+
+@error_status(httplib.FORBIDDEN)
 class ImmutableVisibilityError(Exception):
     """A change in team membership visibility is not allowed."""
-
-
-class InvalidName(Exception):
-    """The name given for a person is not valid."""
-
-
-class NameAlreadyTaken(Exception):
-    """The name given for a person is already in use by other person."""
-    webservice_error(409)
 
 
 class NoSuchPerson(NameLookupFailed):
@@ -2026,29 +2511,41 @@ class NoSuchPerson(NameLookupFailed):
     _message_prefix = "No such person"
 
 
+class TeamEmailAddressError(Exception):
+    """The person cannot be created as a team owns its email address."""
+
+
 # Fix value_type.schema of IPersonViewRestricted attributes.
-for name in ['allmembers', 'activemembers', 'adminmembers', 'proposedmembers',
-             'invited_members', 'deactivatedmembers', 'expiredmembers',
-             'unmapped_participants']:
+for name in [
+    'all_members_prepopulated',
+    'api_activemembers',
+    'adminmembers',
+    'proposedmembers',
+    'invited_members',
+    'deactivatedmembers',
+    'expiredmembers',
+    ]:
     IPersonViewRestricted[name].value_type.schema = IPerson
 
-IPersonPublic['sub_teams'].value_type.schema = ITeam
-IPersonPublic['super_teams'].value_type.schema = ITeam
+IPersonViewRestricted['sub_teams'].value_type.schema = ITeam
+IPersonViewRestricted['super_teams'].value_type.schema = ITeam
 # XXX: salgado, 2008-08-01: Uncomment these when teams_*participated_in are
 # exported again.
-# IPersonPublic['teams_participated_in'].value_type.schema = ITeam
-# IPersonPublic['teams_indirectly_participated_in'].value_type.schema = ITeam
+# IPersonViewRestricted['teams_participated_in'].value_type.schema = ITeam
+# IPersonViewRestricted[
+#   'teams_indirectly_participated_in'].value_type.schema = ITeam
 
 # Fix schema of operation parameters. We need zope.deferredimport!
 params_to_fix = [
     # XXX: salgado, 2008-08-01: Uncomment these when they are exported again.
-    # (IPersonPublic['findPathToTeam'], 'team'),
-    # (IPersonPublic['inTeam'], 'team'),
+    # (IPersonViewRestricted['findPathToTeam'], 'team'),
+    # (IPersonViewRestricted['inTeam'], 'team'),
     (IPersonEditRestricted['join'], 'team'),
     (IPersonEditRestricted['leave'], 'team'),
     (IPersonEditRestricted['addMember'], 'person'),
     (IPersonEditRestricted['acceptInvitationToBeMemberOf'], 'team'),
     (IPersonEditRestricted['declineInvitationToBeMemberOf'], 'team'),
+    (IPersonEditRestricted['retractTeamMembership'], 'team'),
     ]
 for method, name in params_to_fix:
     method.queryTaggedValue(
@@ -2060,6 +2557,8 @@ for method, name in params_to_fix:
 #     'lazr.webservice.exported')['return_type'].value_type.schema = IPerson
 IPersonViewRestricted['getMembersByStatus'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = IPerson
+IPersonViewRestricted['getOwnedTeams'].queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['return_type'].value_type.schema = ITeam
 
 # Fix schema of ITeamMembership fields.  Has to be done here because of
 # circular dependencies.

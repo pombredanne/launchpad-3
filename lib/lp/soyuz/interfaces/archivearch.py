@@ -12,13 +12,13 @@ __all__ = [
     'IArchiveArchSet',
     ]
 
+from lazr.restful.fields import Reference
 from zope.interface import Interface
 from zope.schema import Int
 
-from canonical.launchpad import _
+from lp import _
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.processor import IProcessorFamily
-from lazr.restful.fields import Reference
 
 
 class IArchiveArch(Interface):
@@ -62,3 +62,14 @@ class IArchiveArchSet(Interface):
 
         :return: A (potentially empty) result set of `IArchiveArch` instances.
         """
+
+    def getRestrictedFamilies(archive):
+        """All restricted processor families, paired with `ArchiveArch`
+        instances if associated with `archive`.
+
+        :return: A sequence containing a (`ProcessorFamily`, `ArchiveArch`)
+            2-tuple for each processor family.
+            The second value in the tuple will be None if the given `archive`
+            is not associated with the `ProcessorFamily` yet.
+        """
+

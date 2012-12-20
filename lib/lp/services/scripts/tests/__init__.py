@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -8,44 +8,19 @@ __all__ = [
 
 
 import os
-import canonical
+import subprocess
 
-LP_TREE = os.path.dirname(
-    os.path.dirname(os.path.dirname(canonical.__file__)))
+import lp
+from lp.services.config import config
+
+
+LP_TREE = os.path.dirname(os.path.dirname(os.path.dirname(lp.__file__)))
 
 
 SCRIPT_LOCATIONS = [
     'cronscripts',
     'scripts',
     ]
-
-
-KNOWN_BROKEN = [
-    # Needs mysqldb module
-    'scripts/bugzilla-import.py',
-    'scripts/migrate-bugzilla-initialcontacts.py',
-    # circular import from hell (IHasOwner).
-    'scripts/clean-sourceforge-project-entries.py',
-    'scripts/import-zope-specs.py',
-    'scripts/rosetta/gettext_check_messages.py',
-    'scripts/rosetta/remove-obsolete-translations.py',
-    # sqlobject.DatbaseIndex ?
-    'scripts/linkreport.py',
-    # Python executable without '.py' extension.
-    'scripts/list-team-members',
-    'scripts/queue',
-    # Bad script, no help.
-    'scripts/librarian-report.py',
-    'scripts/rosetta/message-sharing-populate-test.py',
-    'scripts/get-stacked-on-branches.py',
-    ]
-
-
-def is_broken(script_path):
-    for broken_path in KNOWN_BROKEN:
-        if script_path.endswith(broken_path):
-            return True
-    return False
 
 
 def find_lp_scripts():
@@ -61,8 +36,26 @@ def find_lp_scripts():
             for filename in filenames:
                 script_path = os.path.join(path, filename)
                 if (filename.startswith('_') or
-                    not filename.endswith('.py') or
-                    is_broken(script_path)):
+                    not filename.endswith('.py')):
                     continue
                 scripts.append(script_path)
     return sorted(scripts)
+
+
+def run_script(script_relpath, args, expect_returncode=0):
+    """Run a script for testing purposes.
+
+    :param script_relpath: The relative path to the script, from the tree
+        root.
+    :param args: Arguments to provide to the script.
+    :param expect_returncode: The return code expected.  If a different value
+        is returned, and exception will be raised.
+    """
+    script = os.path.join(config.root, script_relpath)
+    args = [script] + args
+    process = subprocess.Popen(
+        args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    if process.returncode != expect_returncode:
+        raise AssertionError('Failed:\n%s\n%s' % (stdout, stderr))
+    return (process.returncode, stdout, stderr)

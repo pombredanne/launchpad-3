@@ -14,7 +14,7 @@ enabling faster searches, faster readings and model constraints.
 
 Let's get one from the database:
 
-   >>> from canonical.launchpad.database import SourcePackageRelease
+   >>> from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
    >>> spr = SourcePackageRelease.get(14)
    >>> spr.name
    u'mozilla-firefox'
@@ -60,11 +60,16 @@ if the 'age' result looks sane:
 Mozilla-firefox 0.9 has got some builds. including a PPA build.  The 'builds'
 property only returns the non-PPA builds.
 
-   >>> from canonical.launchpad.interfaces import IPersonSet
-   >>> from lp.soyuz.model.build import Build
+   >>> from lp.buildmaster.model.packagebuild import PackageBuild
+   >>> from lp.registry.interfaces.person import IPersonSet
+   >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+   >>> from storm.store import Store
    >>> cprov_ppa = getUtility(IPersonSet).getByName('cprov').archive
-   >>> ff_ppa_build = Build.selectBy(
-   ...     archive=cprov_ppa, sourcepackagerelease=spr)
+   >>> ff_ppa_build = Store.of(cprov_ppa).find(
+   ...     BinaryPackageBuild,
+   ...     BinaryPackageBuild.source_package_release == spr,
+   ...     BinaryPackageBuild.package_build == PackageBuild.id,
+   ...     PackageBuild.archive == cprov_ppa)
    >>> ff_ppa_build.count()
    1
    >>> ff_ppa_build[0].archive.purpose.name
@@ -77,16 +82,6 @@ All the builds returned are for non-PPA archives:
    >>> set(build.archive.purpose.name for build in spr.builds)
    set(['PRIMARY'])
 
-We can use the magic productrelease property to map this to a ProductRelease:
-
-   >>> pr = spr.productrelease
-   >>> print pr.product.name
-   firefox
-   >>> print pr.productseries.name
-   trunk
-   >>> print pr.version
-   0.9
-
 We can use the sourcepackage and distrosourcepackage properties to
 grab magical objects representing that package in the distribution to
 which it was uploaded:
@@ -94,28 +89,7 @@ which it was uploaded:
    >>> print spr.sourcepackage.displayname
    mozilla-firefox in Ubuntu Warty
    >>> print spr.distrosourcepackage.displayname
-   mozilla-firefox in ubuntu
-
-It should also work when the version has a dash and packaging revision
-after it:
-
-   >>> spr = SourcePackageRelease.get(16)
-   >>> print spr.name
-   netapplet
-   >>> print spr.version
-   1.0-1
-   >>> pr = spr.productrelease
-   >>> print pr.product.name
-   netapplet
-   >>> print pr.productseries.name
-   trunk
-   >>> print pr.version
-   1.0
-
-If there isn't one, that should return None.
-
-   >>> print SourcePackageRelease.get(20).productrelease
-   None
+   mozilla-firefox in Ubuntu
 
 Check that the uploaded changesfile works:
 
@@ -126,10 +100,10 @@ Check that the uploaded changesfile works:
 Check ISourcePackageRelease.override() behaviour:
 
    >>> spr.component.name, spr.section.name
-   (u'main', u'editors')
+   (u'main', u'base')
 
-   >>> from canonical.launchpad.interfaces import (
-   ...     IComponentSet, ISectionSet)
+   >>> from lp.soyuz.interfaces.component import IComponentSet
+   >>> from lp.soyuz.interfaces.section import ISectionSet
    >>> new_comp = getUtility(IComponentSet)['universe']
    >>> new_sec = getUtility(ISectionSet)['mail']
 
@@ -150,9 +124,10 @@ Abort transaction to avoid error propagation of the new attributes:
 Verify the creation of a new ISourcePackageRelease based on the
 IDistroSeries API:
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     IDistributionSet, ISourcePackageNameSet, IGPGKeySet)
-  >>> from canonical.launchpad.interfaces import SourcePackageUrgency
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> from lp.registry.interfaces.gpg import IGPGKeySet
+  >>> from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
+  >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 
   >>> hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
 
@@ -167,6 +142,8 @@ Some of the 20 required arguments are foreign keys or DB contants:
   >>> arg_maintainer = hoary.owner
   >>> arg_creator = hoary.owner
   >>> arg_urgency = SourcePackageUrgency.LOW
+  >>> arg_recipebuild = factory.makeSourcePackageRecipeBuild()
+  >>> changelog = None
 
 The other argurments are strings:
 
@@ -190,10 +167,11 @@ ISourcePackageRelease, it will automatically set the
   >>> new_spr = hoary.createUploadedSourcePackageRelease(
   ...     arg_name, version, arg_maintainer,
   ...     builddepends, builddependsindep, archhintlist, arg_comp, arg_creator,
-  ...     arg_urgency, changelog_entry, dsc, arg_key, arg_sect,
+  ...     arg_urgency, changelog, changelog_entry, dsc, arg_key, arg_sect,
   ...     dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
   ...     dsc_binaries, archive, copyright=copyright,
-  ...      build_conflicts=None, build_conflicts_indep=None)
+  ...     build_conflicts=None, build_conflicts_indep=None,
+  ...     source_package_recipe_build=arg_recipebuild)
 
   >>> new_spr.upload_distroseries.name
   u'hoary'
@@ -203,6 +181,8 @@ ISourcePackageRelease, it will automatically set the
   True
   >>> new_spr.copyright
   u'smashed debian/copyright ...'
+  >>> new_spr.source_package_recipe_build == arg_recipebuild
+  True
 
 Throw away the DB changes:
 
@@ -217,13 +197,14 @@ Let's get a sample SourcePackageRelease:
 
 == Package sizes ==
 
-The size of a package can be obtained via a private SourcePackageRelease
-method.
+The size of a source package can be obtained via the getPackageSize() method.
+It returns the sum of the size of all files comprising the source package (in
+kilo-bytes).
 
     >>> spr = SourcePackageRelease.get(14)
     >>> spr.name
     u'mozilla-firefox'
-    >>> spr._getPackageSize()
+    >>> spr.getPackageSize()
     9690.0
 
 Verify that empty packages have a size of zero.
@@ -233,7 +214,7 @@ Verify that empty packages have a size of zero.
     ...     name="linux-source-2.6.15")
     >>> spr = SourcePackageRelease.selectOneBy(
     ...     sourcepackagename=linux_src, version='2.6.15.3')
-    >>> spr._getPackageSize()
+    >>> spr.getPackageSize()
     0.0
 
 
@@ -264,11 +245,11 @@ the same permission on it.
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
     >>> login('foo.bar@canonical.com')
-    >>> cprov.archive.buildd_secret = 'boing'
-    >>> cprov.archive.private = True
+    >>> cprov_private_ppa = factory.makeArchive(
+    ...     owner=cprov, private=True, name='pppa')
 
     >>> private_publication = test_publisher.getPubSource(
-    ...     archive=cprov.archive)
+    ...     archive=cprov_private_ppa)
 
     >>> test_sourcepackagerelease = private_publication.sourcepackagerelease
     >>> print test_sourcepackagerelease.title
@@ -277,12 +258,12 @@ the same permission on it.
     >>> published_archives = test_sourcepackagerelease.published_archives
     >>> for archive in published_archives:
     ...     print archive.displayname
-    PPA for Celso Providelo
+    PPA named pppa for Celso Providelo
 
 'foo - 666' sourcepackagerelease is only published in Celso's Private
 PPA. So, Only Celso and administrators can get 'launchpad.View' on it.
 
-    >>> from canonical.launchpad.webapp.authorization import (
+    >>> from lp.services.webapp.authorization import (
     ...     check_permission)
 
     >>> login('no-priv@canonical.com')
@@ -301,7 +282,7 @@ Once the SourcePackageRelease in question gets copied to a public
 archive, let's say Ubuntu primary archive, it will become publicly
 available.
 
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.registry.interfaces.pocket import (
     ...     PackagePublishingPocket)
 
     >>> public_publication = private_publication.copyTo(
@@ -314,7 +295,7 @@ primary archive, which is public.
     >>> for archive in published_archives:
     ...     print archive.displayname
     Primary Archive for Ubuntu Linux
-    PPA for Celso Providelo
+    PPA named pppa for Celso Providelo
 
 And we can see it's publicly available now, as expected.
 
@@ -338,7 +319,7 @@ Another common scenario is that once the package is unembargoed from the
 private PPA, it gets deleted from that private PPA.  At this point the
 package is still public:
 
-    >>> unused = private_publication.requestDeletion(cprov)
+    >>> private_publication.requestDeletion(cprov)
     >>> transaction.commit()
     >>> login('no-priv@canonical.com')
     >>> check_permission('launchpad.View', test_sourcepackagerelease)
@@ -360,5 +341,5 @@ published_archives shows the superseded/deleted publications still:
     >>> for archive in published_archives:
     ...     print archive.displayname
     Primary Archive for Ubuntu Linux
-    PPA for Celso Providelo
+    PPA named pppa for Celso Providelo
 

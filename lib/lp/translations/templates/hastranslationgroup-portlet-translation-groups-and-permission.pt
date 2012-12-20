@@ -1,22 +1,15 @@
-<div class="portlet" id="portlet-translation-permissions">
-  <h2>Translation permissions</h2>
-  <div class="portletBody">
-    <table>
-      <tr>
-        <th>Translation group:</th>
-        <td tal:condition="not: context/translationgroup">
-          Not assigned
-        </td>
-        <td tal:condition="context/translationgroup">
-          <a tal:attributes="href context/translationgroup/fmt:url"
-             tal:content="context/translationgroup/title" />
-        </td>
-      </tr>
-      <tr>
-        <th>Permissions:</th>
-        <td tal:content="context/translationpermission/title">Open</td>
-      </tr>
-    </table>
-  </div>
+<div id="portlet-translation-permissions"
+     xmlns="http://www.w3.org/1999/xhtml"
+     xmlns:tal="http://xml.zope.org/namespaces/tal">
+  <p id="translation-permissions">
+    <tal:product replace="structure context/fmt:link">This
+      project</tal:product> is translated
+    <tal:hasgroup condition="context/translationgroup">by
+      <a tal:replace="structure context/translationgroup/fmt:link"
+         >translators</a>
+    </tal:hasgroup>
+    with <a target="help" href="/+help-translations/permissions-policies.html"
+            tal:content="context/translationpermission/title">certain</a>
+    permissions.
+  </p>
 </div>
-

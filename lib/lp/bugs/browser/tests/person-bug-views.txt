@@ -1,27 +1,30 @@
-= Person Pages =
+Person Pages
+============
 
 In every person page, the 'Bugs' facet has a series of bug listings for
 that person. These pages provide simple and advanced search forms.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> name16 = getUtility(IPersonSet).get(16)
 
 Let's define a helper function to make it easier to construct a view.
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> def create_view(context, name, form=None):
     ...     view = getMultiAdapter(
     ...         (context, LaunchpadTestRequest(form=form)), name=name)
     ...     view.initialize()
     ...     return view
 
-== Assigned bugs ==
+
+Assigned bugs
+-------------
 
 All bug tasks assigned to this person.
 
 By default, only bugtasks with any of the statuses listed in
-canonical.launchpad.interfaces.UNRESOLVED_BUGTASK_STATUSES are included:
+lp.bugs.interfaces.bugtask.UNRESOLVED_BUGTASK_STATUSES are included:
 
     >>> assigned_bugtasks_view = create_view(name16, '+assignedbugs')
     >>> assigned_bugtasks = list(assigned_bugtasks_view.search().batch)
@@ -43,7 +46,9 @@ Using the advanced form we can query for closed bugs.
     ...     for bugtask in closed_bugtasks]
     [(8, 'FIXRELEASED')]
 
-== Reported bugs ==
+
+Reported bugs
+-------------
 
 All bug tasks reported by someone. By default we'll get assigned and
 unassigned bug tasks.
@@ -87,12 +92,12 @@ assigned.
 Using the advanced form we can also query for closed bugs reported by someone.
 Let's first close a bug setting its status to 'Invalid'.
 
-    >>> from canonical.launchpad.ftests import login
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
+    >>> from lp.testing import login
 
     >>> login("foo.bar@canonical.com")
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> bug_task = reported_bugtasks[1]
     >>> print bug_task.distribution.name
     ubuntu
@@ -128,7 +133,8 @@ And now we query for it.
     >>> flush_database_updates()
 
 
-== Subscribed bugs ==
+Subscribed bugs
+---------------
 
 All bug tasks someone is subscribed to. By default we'll get bug tasks
 with any importance.
@@ -164,7 +170,8 @@ Using the advanced form we can query for closed bugs someone is subscribed to.
     [(8, 'FIXRELEASED', u'name16')]
 
 
-== Bugs for Bug Supervisor ==
+Bugs for Bug Supervisor
+-----------------------
 
 Malone can generate bug reports for packages on which a user is a bug
 supervisor. The Person context is used only to get a list of packages that
@@ -229,21 +236,26 @@ There are helper methods to calculate links to the Open, Critical,
 Unassigned, and In Progress bug lists.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> ubuntu_mozilla_firefox = ubuntu.getSourcePackage("mozilla-firefox")
+    >>> packagebugs_view = create_view(name12, name='+packagebugs')
 
-    >>> packagebugs_search_view.getOpenBugsURL(ubuntu_mozilla_firefox)
+    >>> packagebugs_view.getOpenBugsURL(
+    ...     ubuntu_mozilla_firefox, u'/~name12')
     u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&search=Search'
 
-    >>> packagebugs_search_view.getCriticalBugsURL(ubuntu_mozilla_firefox)
+    >>> packagebugs_view.getCriticalBugsURL(
+    ...     ubuntu_mozilla_firefox, u'/~name12')
     u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.importance=Critical&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&search=Search'
 
-    >>> packagebugs_search_view.getUnassignedBugsURL(ubuntu_mozilla_firefox)
+    >>> packagebugs_view.getUnassignedBugsURL(
+    ...     ubuntu_mozilla_firefox, u'/~name12')
     u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&field.unassigned=on&search=Search'
 
-    >>> packagebugs_search_view.getInProgressBugsURL(ubuntu_mozilla_firefox)
+    >>> packagebugs_view.getInProgressBugsURL(
+    ...     ubuntu_mozilla_firefox, u'/~name12')
     u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=In+Progress&search=Search'
 
 A helper method is used to calculate the package bug search URL for the
@@ -272,7 +284,7 @@ render the overview report.
     >>> ubuntu_firefox_bugcounts = package_bug_counts[0]
 
     >>> ubuntu_firefox_bugcounts['package_name']
-    u'mozilla-firefox in ubuntu'
+    u'mozilla-firefox in Ubuntu'
     >>> ubuntu_firefox_bugcounts['package_search_url']
     u'.../~name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&search=Search'
 
@@ -310,8 +322,8 @@ bug counts, is also available.
 Adding another bug will update the totals returned by
 packagebugs_search_view.total_bug_counts.
 
-    >>> from canonical.launchpad.interfaces import (CreateBugParams,
-    ...     BugTaskImportance)
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.bugs.interfaces.bugtask import BugTaskImportance
     >>> import transaction
     >>> bug_params = CreateBugParams(
     ...     owner=name16,
@@ -358,7 +370,7 @@ other package listed in name16's package bug listing overview, which is
 pmount:
 
     >>> packagebugs_search_view.package_bug_counts[1]['package_name']
-    u'pmount in ubuntu'
+    u'pmount in Ubuntu'
 
     >>> pmount = ubuntu.getSourcePackage('pmount')
     >>> new_bug = pmount.createBug(bug_params)
@@ -418,7 +430,7 @@ be shown on the advanced search form.
     ...     'field.status': [s.title for s in UNRESOLVED_BUGTASK_STATUSES]}
 
     >>> packagebugs_search_view = create_view(
-    ...     name16, name="+packagebugs", form=form)
+    ...     name16, name="+packagebugs-search", form=form)
 
     >>> print pretty(packagebugs_search_view.getMilestoneWidgetValues())
     []
@@ -431,7 +443,7 @@ package bugs search view.
     >>> new_milestone = hoary_series.newMilestone(name='testing')
 
     >>> packagebugs_search_view = create_view(
-    ...     name16, name="+packagebugs", form=form)
+    ...     name16, name="+packagebugs-search", form=form)
 
     >>> print pretty(packagebugs_search_view.getMilestoneWidgetValues())
     [{'checked': False,
@@ -442,13 +454,14 @@ If we deactivate our new milestone it'll disappear from the list again.
 
     >>> new_milestone.active = False
     >>> packagebugs_search_view = create_view(
-    ...     name16, name="+packagebugs", form=form)
+    ...     name16, name="+packagebugs-search", form=form)
 
     >>> print pretty(packagebugs_search_view.getMilestoneWidgetValues())
     []
 
 
-== Bugs commented on by a Person ==
+Bugs commented on by a Person
+-----------------------------
 
 It is possible to search for all the bugs commented on by a specific Person
 using that Person's +commentedbugs page. Since No Privileges Person hasn't
@@ -465,7 +478,7 @@ that bug as being one of the bugs on which he has commented. The bug will be
 listed three times since there are three BugTasks for that particular bug (see
 bug 1357):
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_one.newMessage(no_priv, 'Some message', 'Contents')
     <Message at ...>
@@ -476,7 +489,8 @@ bug 1357):
     [1, 1, 1]
 
 
-== Milestone lists in Person advanced bug search pages ==
+Milestone lists in Person advanced bug search pages
+---------------------------------------------------
 
 The lists of milestones to select from on bug search pages is
 calculated by doing an unmodified search (i.e. as if the user had gone
@@ -487,7 +501,8 @@ bug tasks found.
     >>> user = factory.makePerson()
 
 
-=== Related bugs ===
+Related bugs
+............
 
     >>> related_bugs_view = create_view(
     ...     user, '+bugs', {'advanced': 1})
@@ -512,10 +527,11 @@ relevant milestones remains empty.
 Even if the user files a bug against a product with a milestone, the
 list of relevant milestones remains empty.
 
-    >>> bug = factory.makeBug(product=product, owner=user)
+    >>> bug = factory.makeBug(target=product, owner=user)
+    >>> transaction.commit()
 
     >>> print pretty(list(related_bugs_view.searchUnbatched()))
-    [<BugTask at ...>]
+    [<BugTask ...>]
     >>> print pretty(related_bugs_view.getMilestoneWidgetValues())
     []
 
@@ -523,6 +539,7 @@ Only when a milestone is set for a related bug task does the advanced
 search page allow selection of a milestone.
 
     >>> bug.bugtasks[0].milestone = milestone09
+    >>> transaction.commit()
 
     >>> print pretty(related_bugs_view.getMilestoneWidgetValues())
     [{'checked': False,
@@ -530,7 +547,8 @@ search page allow selection of a milestone.
       'value': ...}]
 
 
-=== Reported bugs ===
+Reported bugs
+.............
 
 Similar behavior is found when searching for reported bugs.
 
@@ -549,7 +567,7 @@ Filing a new bug and assigning a new milestone will make the new
 milestone appear amongst the possible options.
 
     >>> milestone10 = factory.makeMilestone(product=product, name="1.0")
-    >>> bug = factory.makeBug(product=product, owner=user)
+    >>> bug = factory.makeBug(target=product, owner=user)
     >>> bug.bugtasks[0].milestone = milestone10
 
     >>> print pretty(reported_bugs_view.getMilestoneWidgetValues())
@@ -561,7 +579,8 @@ milestone appear amongst the possible options.
       'value': ...}]
 
 
-=== Assigned bugs ===
+Assigned bugs
+.............
 
     >>> assigned_bugs_view = create_view(
     ...     user, '+assignedbugs', {'advanced': 1})
@@ -582,7 +601,8 @@ Once a bug has been assigned, the milestone appears.
       'value': ...}]
 
 
-=== Commented bugs ===
+Commented bugs
+..............
 
     >>> commented_bugs_view = create_view(
     ...     user, '+commentedbugs', {'advanced': 1})
@@ -604,7 +624,8 @@ Once the user has commented, the related milestone does appear.
       'value': ...}]
 
 
-=== Subscribed bugs ===
+Subscribed bugs
+...............
 
     >>> new_user = factory.makePerson()
     >>> subscribed_bugs_view = create_view(
@@ -619,7 +640,7 @@ are found.
 Once new_user has subscribed, the related milestones appear.
 
     >>> bug.subscribe(new_user, new_user)
-    <BugSubscription at ...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
 
     >>> print pretty(subscribed_bugs_view.getMilestoneWidgetValues())
     [{'checked': False,

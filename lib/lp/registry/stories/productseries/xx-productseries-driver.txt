@@ -7,19 +7,18 @@ by appointing someone else as the driver.
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/firefox/1.0')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'series-details'))
-    Project: Mozilla Firefox...
-    Series: 1.0
-    Status: Active Development
+    >>> content  = find_tag_by_id(browser.contents, 'series-details')
+    >>> print extract_text(find_tag_by_id(content, 'series-drivers'))
     Project drivers: Sample Person
+    >>> print extract_text(find_tag_by_id(content, 'series-release-manager'))
     Release manager: None Appoint release manager
 
     >>> browser.getLink('Appoint release manager').click()
 
     >>> browser.url
     'http://launchpad.dev/firefox/1.0/+driver'
-    >>> browser.title
-    'Appoint the release manager for Mozilla Firefox 1.0 series'
+    >>> print browser.title
+    Appoint the release manager for...
     >>> browser.getControl('Release manager').value
     ''
 
@@ -38,10 +37,9 @@ message explains that the driver changed.
 
 Sample Person and Guilherme Salgado are listed as the drivers of Firefox 1.0.
 
-    >>> print extract_text(find_tag_by_id(browser.contents, 'series-details'))
-    Project: Mozilla Firefox...
-    Series: 1.0
-    Status: Active Development
+    >>> content  = find_tag_by_id(browser.contents, 'series-details')
+    >>> print extract_text(find_tag_by_id(content, 'series-drivers'))
     Project drivers: Guilherme Salgado, Sample Person
+    >>> print extract_text(find_tag_by_id(content, 'series-release-manager'))
     Release manager: Guilherme Salgado Appoint release manager
 

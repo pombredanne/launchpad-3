@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser view classes related to bug nominations."""
@@ -14,21 +14,32 @@ __all__ = [
 import datetime
 
 import pytz
-
 from zope.component import getUtility
-from zope.publisher.interfaces import implements, NotFound
+from zope.interface import Interface
+from zope.publisher.interfaces import implements
 
-from canonical.launchpad import _
+from lp import _
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.bugs.browser.bug import BugContextMenu
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.bugs.interfaces.bugnomination import IBugNomination, IBugNominationForm
-from lp.bugs.interfaces.bugtask import INullBugTask
+from lp.bugs.interfaces.bugnomination import (
+    IBugNomination,
+    IBugNominationForm,
+    )
 from lp.bugs.interfaces.cve import ICveSet
-from canonical.launchpad.webapp import (
-    canonical_url, LaunchpadView, LaunchpadFormView, custom_widget, action)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.interfaces import (
+    ILaunchBag,
+    IPrimaryContext,
+    )
 
 
 class BugNominationPrimaryContext:
@@ -44,18 +55,25 @@ class BugNominationView(LaunchpadFormView):
 
     schema = IBugNominationForm
     initial_focus_widget = None
-    custom_widget('nominatable_serieses', LabeledMultiCheckBoxWidget)
+    custom_widget('nominatable_series', LabeledMultiCheckBoxWidget)
 
     def __init__(self, context, request):
         self.current_bugtask = context
         LaunchpadFormView.__init__(self, context, request)
 
     def initialize(self):
-        if INullBugTask.providedBy(self.current_bugtask):
-            # It shouldn't be possible to nominate a bug that hasn't
-            # been reported yet.
-            raise NotFound(self.current_bugtask, '+nominate', self.request)
         LaunchpadFormView.initialize(self)
+        # Update the submit label based on the user's permission.
+        submit_action = self.__class__.actions.byname['actions.submit']
+        if self.userIsReleaseManager():
+            submit_action.label = _("Target")
+        elif self.userIsBugSupervisor():
+            submit_action.label = _("Nominate")
+        else:
+            self.request.response.addErrorNotification(
+                "You do not have permission to nominate this bug.")
+            self.request.response.redirect(
+                canonical_url(self.current_bugtask))
 
     @property
     def label(self):
@@ -68,11 +86,16 @@ class BugNominationView(LaunchpadFormView):
         else:
             return "Nominate bug #%d for series" % self.context.bug.id
 
+    page_title = label
+
     def userIsReleaseManager(self):
         """Does the current user have release management privileges?"""
-        current_bugtask = getUtility(ILaunchBag).bugtask
-        return check_permission(
-            "launchpad.Driver", current_bugtask.target)
+        return self.current_bugtask.userHasDriverPrivileges(self.user)
+
+    def userIsBugSupervisor(self):
+        """Is the current user the bug supervisor?"""
+        return self.current_bugtask.userHasBugSupervisorPrivileges(
+            self.user)
 
     def userCanChangeDriver(self):
         """Can the current user set the release management team?"""
@@ -96,30 +119,31 @@ class BugNominationView(LaunchpadFormView):
     @action(_("Submit"), name="submit")
     def nominate(self, action, data):
         """Nominate bug for series."""
-        serieses = data["nominatable_serieses"]
-        nominated_serieses = []
+        nominatable_series = data["nominatable_series"]
+        nominated_series = []
         approved_nominations = []
 
-        for series in serieses:
+        for series in nominatable_series:
             nomination = self.context.bug.addNomination(
                 target=series, owner=self.user)
 
             # If the user has the permission to approve the nomination,
-            # then nomination was approved automatically.
-            if nomination.isApproved():
+            # we approve it automatically.
+            if nomination.canApprove(self.user):
+                nomination.approve(self.user)
                 approved_nominations.append(
                     nomination.target.bugtargetdisplayname)
             else:
-                nominated_serieses.append(series.bugtargetdisplayname)
+                nominated_series.append(series.bugtargetdisplayname)
 
         if approved_nominations:
             self.request.response.addNotification(
                 "Targeted bug to: %s" %
                 ", ".join(approved_nominations))
-        if nominated_serieses:
+        if nominated_series:
             self.request.response.addNotification(
                 "Added nominations for: %s" %
-                ", ".join(nominated_serieses))
+                ", ".join(nominated_series))
 
     @property
     def next_url(self):
@@ -187,53 +211,57 @@ class BugNominationTableRowView(LaunchpadView):
         return self.request.getNearest(ICveSet) == (None, None)
 
 
-class BugNominationEditView(LaunchpadView):
+class BugNominationEditView(LaunchpadFormView):
     """Browser view class for approving and declining nominations."""
 
-    def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
+    schema = Interface
+    field_names = []
+
+    @property
+    def label(self):
+        return 'Approve or decline nomination for bug #%d in %s' % (
+            self.context.bug.id, self.context.target.bugtargetdisplayname)
+
+    @property
+    def page_title(self):
+        text = 'Review nomination for %s'
+        return text % self.context.target.bugtargetdisplayname
+
+    def initialize(self):
         self.current_bugtask = getUtility(ILaunchBag).bugtask
+        super(BugNominationEditView, self).initialize()
 
-    def getFormAction(self):
-        """Get the string used as the form action."""
-        return (
-            "%s/nominations/%d/+edit-form" % (
-                canonical_url(self.current_bugtask), self.context.id))
+    @property
+    def action_url(self):
+        return "%s/nominations/%d/+editstatus" % (
+            canonical_url(self.current_bugtask),
+            self.context.id)
 
-    def processNominationDecision(self):
-        """Process the decision made on this nomination."""
-        form = self.request.form
-        approve_nomination = form.get("approve")
-        decline_nomination = form.get("decline")
-
-        if not (approve_nomination or decline_nomination):
-            return
-
-        if approve_nomination:
-            self.context.approve(self.user)
-            self.request.response.addNotification(
-                "Approved nomination for %s" %
-                    self.context.target.bugtargetdisplayname)
-        elif decline_nomination:
-            self.context.decline(self.user)
-            self.request.response.addNotification(
-                "Declined nomination for %s" %
-                    self.context.target.bugtargetdisplayname)
-
-        self.request.response.redirect(
-            canonical_url(getUtility(ILaunchBag).bugtask))
-
-    def shouldShowApproveButton(self):
+    def shouldShowApproveButton(self, action):
         """Should the approve button be shown?"""
         return self.context.isProposed() or self.context.isDeclined()
 
-    def shouldShowDeclineButton(self):
+    def shouldShowDeclineButton(self, action):
         """Should the decline button be shown?"""
         return self.context.isProposed()
 
-    def getCurrentBugTaskURL(self):
-        """Return the URL of the current bugtask."""
-        return canonical_url(getUtility(ILaunchBag).bugtask)
+    @action(_("Approve"), name="approve", condition=shouldShowApproveButton)
+    def approve(self, action, data):
+        self.context.approve(self.user)
+        self.request.response.addNotification(
+            "Approved nomination for %s" %
+                self.context.target.bugtargetdisplayname)
+
+    @action(_("Decline"), name="decline", condition=shouldShowDeclineButton)
+    def decline(self, action, data):
+        self.context.decline(self.user)
+        self.request.response.addNotification(
+            "Declined nomination for %s" %
+                self.context.target.bugtargetdisplayname)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.current_bugtask)
 
 
 class BugNominationContextMenu(BugContextMenu):

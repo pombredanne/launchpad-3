@@ -3,34 +3,16 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
-  i18n:domain="malone"
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <div>
-        <tal:icon replace="structure context/image:icon" />
-        <tal:badges replace="structure context/image:badges" />
-        <a tal:attributes="href context/bug/fmt:url">
-        Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
-      </div>
-      <h1 tal:content="context/bug/title">Foo doesn't work</h1>
-    </metal:heading>
-
-<metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/bug/@@+portlet-subscribers" />
-    <div tal:replace="structure context/bug/@@+portlet-duplicates" />
-</metal:rightportlets>
-
-<div metal:fill-slot="main" tal:define="comment view/comment">
-
-  <tal:comment condition="comment/can_be_shown"
-               replace="structure comment/@@+box-expanded-reply">
-  </tal:comment>
-
-</div>
+    <metal:block fill-slot="head_epilogue">
+    </metal:block>
+    <div metal:fill-slot="main" itemprop="mainContentOfPage" tal:define="comment view/comment">
+      <h1 tal:content="view/page_title">Foo doesn't work</h1>
+      <tal:comment replace="structure comment/@@+box-expanded-reply">
+      </tal:comment>
+    </div>
 </body>
 </html>

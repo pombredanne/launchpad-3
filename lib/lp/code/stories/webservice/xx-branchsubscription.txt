@@ -38,6 +38,8 @@ A user can subscribe to a branch through the API.
     resource_type_link: u'http://.../#branch_subscription'
     review_level: u'No email'
     self_link: u'http://.../~farmer-bob/farm/corn/+subscription/farmer-joe'
+    subscribed_by_link: u'http://.../~salgado'
+    web_link: u'http://code.../~farmer-bob/farm/corn/+subscription/farmer-joe'
 
     >>> def print_subscriber_count(branch):
     ...     subscribers = webservice.get(
@@ -91,6 +93,8 @@ was originally subscribed.
     resource_type_link: u'http://.../#branch_subscription'
     review_level: u'Status changes only'
     self_link: u'http://.../~farmer-bob/farm/corn/+subscription/farmer-joe'
+    subscribed_by_link: u'http://.../~salgado'
+    web_link: u'http://code.../~farmer-bob/farm/corn/+subscription/farmer-joe'
 
 
 We print the count, and even though subscribe was called again, there's still

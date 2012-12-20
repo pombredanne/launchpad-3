@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'CveContextMenu',
+    'CveIndexView',
     'CveLinkView',
     'CveSetContextMenu',
     'CveSetNavigation',
@@ -16,14 +17,24 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.batching import BatchNavigator
-
-from lp.bugs.interfaces.cve import ICve, ICveSet
-from canonical.launchpad.validators.cve import valid_cve
-
-from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, GetitemNavigation)
-from canonical.launchpad.webapp.launchpadform import action, LaunchpadFormView
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
+from lp.app.validators.cve import valid_cve
+from lp.bugs.browser.buglinktarget import BugLinksListingView
+from lp.bugs.interfaces.cve import (
+    ICve,
+    ICveSet,
+    )
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    )
+from lp.services.webapp.batching import BatchNavigator
 
 
 class CveSetNavigation(GetitemNavigation):
@@ -61,6 +72,14 @@ class CveSetContextMenu(ContextMenu):
         return Link('', text, summary)
 
 
+class CveIndexView(BugLinksListingView):
+    """CVE index page."""
+
+    @property
+    def page_title(self):
+        return self.context.displayname
+
+
 class CveLinkView(LaunchpadFormView):
     """This view will be used for objects that can be linked to a CVE,
     currently that is only IBug.
@@ -83,7 +102,16 @@ class CveLinkView(LaunchpadFormView):
         self.context.bug.linkCVE(cve, self.user)
         self.request.response.addInfoNotification(
             'CVE-%s added.' % data['sequence'])
-        self.next_url = canonical_url(self.context)
+
+    label = 'Link to CVE report'
+
+    page_title = label
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class CveUnlinkView(CveLinkView):
@@ -95,16 +123,20 @@ class CveUnlinkView(CveLinkView):
         self.context.bug.unlinkCVE(cve, self.user)
         self.request.response.addInfoNotification(
             'CVE-%s removed.' % data['sequence'])
-        self.next_url = canonical_url(self.context)
+
+    @property
+    def label(self):
+        return  'Bug # %s Remove link to CVE report' % self.context.bug.id
+
+    page_title = label
+
+    heading = 'Remove links to bug reports'
 
 
-class CveSetView:
-
-    __used_for__ = ICveSet
+class CveSetView(LaunchpadView):
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
+        super(CveSetView, self).__init__(context, request)
         self.notices = []
         self.results = None
         self.text = self.request.form.get('text', None)
@@ -112,6 +144,9 @@ class CveSetView:
 
         if self.text:
             self.pre_search()
+
+    label = 'Launchpad CVE tracker'
+    page_title = label
 
     def getAllBatched(self):
         return BatchNavigator(self.context.getAll(), self.request)

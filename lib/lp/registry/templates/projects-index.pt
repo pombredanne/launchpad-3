@@ -19,12 +19,11 @@
 
     <div metal:fill-slot="main">
       <p>There are
-      <strong class="registry-stat"
-              tal:content="context/count_all">5</strong>
+      <strong tal:content="context/count_all">5</strong>
       project groups registered in Launchpad.
       </p>
 
-      <form class="central" method="get" accept-charset="UTF-8">
+      <form id="projectgroup-search" class="central" method="get" accept-charset="UTF-8">
       <input size="30" name="text" tal:attributes="value view/search_string" />
         <input
           tal:condition="view/search_requested"
@@ -33,21 +32,26 @@
           tal:condition="not: view/search_requested"
           type="submit" value="Search project groups" />
       </form>
+      <script type="text/javascript">
+          LPJS.use('lp', function (Y) {
+              setFocusByName('text');
+          });
+      </script>
 
       <div tal:condition="view/search_requested">
-          <tal:searching tal:condition="view/search_results">
+          <tal:searching condition="view/search_results">
             <p class="search-results">
               <span tal:replace="view/matches">3</span>
               <span tal:condition="python: view.matches == 1">project
-                  group found</span>
-              <span tal:condition="python: view.matches != 1">projects
-                  groups found</span>
+                group found</span>
+              <span tal:condition="python: view.matches != 1">project
+                groups found</span>
               matching
               &#8220;<tal:string replace="view/search_string" />&#8221;
             </p>
           </tal:searching>
 
-          <table tal:condition="view/matches"
+          <table tal:condition="view/search_results"
                  tal:define="results view/search_results"
                  class="search-results">
             <tbody>
@@ -57,13 +61,14 @@
             </tbody>
          </table>
 
-          <p class="error application-summary"
+          <p class="application-summary"
              tal:condition="not: view/search_results">
-             No project groups matching
+             <span class="sprite error-icon">No project groups matching</span>
              &#8220;<span tal:replace="view/search_string">moz</span>&#8221;
              were found.
           </p>
       </div>
+
       <p class="application-summary">
           In Launchpad, <dfn>project groups</dfn> are special groups of
           software projects that share a development community.  Examples

@@ -15,7 +15,8 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import Int
 
-from canonical.launchpad import _
+from lp import _
+
 
 class MalformedKarmaCacheData(Exception):
     """KarmaCache values are missing product or distribution identifier."""
@@ -42,5 +43,5 @@ class ITranslationsOverview(Interface):
         """
 
 
-class IProjectTranslationsOverview(Interface):
+class IProjectGroupTranslationsOverview(Interface):
     """Overview of translations for a project."""

@@ -15,7 +15,9 @@
         tal:attributes="class string: ${question/image:sprite_css};
                         href question/fmt:url;"
         tal:content="question/title/fmt:shorten/80">question title</a>
-      <br />Posted <tal:when replace="question/datecreated/fmt:displaydate" />
+      <br /><span class="registered">
+        Posted <tal:when replace="question/datecreated/fmt:displaydate" />
+      </span>
     </li>
   </ul>
 </div>

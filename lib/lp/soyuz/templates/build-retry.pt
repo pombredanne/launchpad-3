@@ -8,17 +8,13 @@
 >
 <body>
 
-  <div metal:fill-slot="heading">
-    <h1 tal:content="CONTEXTS/fmt:pagetitle">Retry i386 build of
-    alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE</h1>
-  </div> <!-- heading -->
-
   <div metal:fill-slot="main"
        tal:define="message view/retry_build; error view/error|nothing">
 
-    <tal:can_reset condition="context/can_be_retried">
+    <div class="top-portlet"
+         tal:condition="context/can_be_retried">
       <p>The status of <dfn tal:content="context/title">BUILD</dfn> is
-         <span tal:replace="context/buildstate/title"/>.</p>
+         <span tal:replace="context/status/title"/>.</p>
       <p>Retrying this build will destroy its history and logs.</p>
       <p>By default, this build will be retried only after other pending
          builds; please contact a build daemon administrator if you need
@@ -30,7 +26,7 @@
         <input type="submit" value="Retry Build"/>
         or <a tal:attributes="href context/fmt:url">Cancel</a>
       </form>
-    </tal:can_reset>
+    </div>
 
   </div> <!-- main -->
 

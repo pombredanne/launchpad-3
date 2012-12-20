@@ -1,6 +1,6 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Disable autovacuum on all tables in the database and kill off
@@ -19,12 +19,20 @@ __all__ = []
 # pylint: disable-msg=W0403
 import _pythonpath
 
+from distutils.version import LooseVersion
 from optparse import OptionParser
 import sys
 import time
 
-from canonical.database.sqlbase import connect
-from canonical.launchpad.scripts import logger_options, db_options, logger
+from lp.services.database.sqlbase import (
+    connect,
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    )
+from lp.services.scripts import (
+    db_options,
+    logger,
+    logger_options,
+    )
 
 
 def main():
@@ -40,18 +48,35 @@ def main():
     log = logger(options)
 
     log.debug("Connecting")
-    con = connect(options.dbuser)
-    con.set_isolation_level(0) # Autocommit
+    con = connect()
+    con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     cur = con.cursor()
 
+    cur.execute('show server_version')
+    pg_version = LooseVersion(cur.fetchone()[0])
+
     log.debug("Disabling autovacuum on all tables in the database.")
-    cur.execute("""
-        INSERT INTO pg_autovacuum
-        SELECT pg_class.oid, FALSE, -1,-1,-1,-1,-1,-1,-1,-1
-        FROM pg_class
-        WHERE relkind in ('r','t')
-            AND pg_class.oid NOT IN (SELECT vacrelid FROM pg_autovacuum)
-        """)
+    if pg_version < LooseVersion('8.4.0'):
+        cur.execute("""
+            INSERT INTO pg_autovacuum
+            SELECT pg_class.oid, FALSE, -1,-1,-1,-1,-1,-1,-1,-1
+            FROM pg_class
+            WHERE relkind in ('r','t')
+                AND pg_class.oid NOT IN (SELECT vacrelid FROM pg_autovacuum)
+            """)
+    else:
+        cur.execute("""
+            SELECT nspname,relname
+            FROM pg_namespace, pg_class
+            WHERE relnamespace = pg_namespace.oid
+                AND relkind = 'r' AND nspname <> 'pg_catalog'
+            """)
+        for namespace, table in list(cur.fetchall()):
+            cur.execute("""
+                ALTER TABLE ONLY "%s"."%s" SET (
+                    autovacuum_enabled=false,
+                    toast.autovacuum_enabled=false)
+                """ % (namespace, table))
 
     log.debug("Killing existing autovacuum processes")
     num_autovacuums = -1

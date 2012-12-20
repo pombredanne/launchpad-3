@@ -9,15 +9,19 @@ import logging
 import os
 import unittest
 
-from canonical.config import config
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing import LaunchpadZopelessLayer
+from lp.services.config import config
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 
 
 def archivePublisherSetUp(test):
     setUp(test)
-    LaunchpadZopelessLayer.switchDbUser(config.archivepublisher.dbuser)
+    switch_dbuser(config.archivepublisher.dbuser)
 
 
 def test_suite():

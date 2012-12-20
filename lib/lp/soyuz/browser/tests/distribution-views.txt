@@ -10,6 +10,8 @@ Distribution Soyuz Views
 DistributionArchivesView
 ------------------------
 
+    >>> from lp.registry.interfaces.person import IPersonSet
+
 The DistributionArchivesView includes an archive_list property that
 returns a list of copy archives only for the given distribution (because
 only copy archives are exposed through the distribution/+archives UI):
@@ -29,6 +31,14 @@ And then after creating a copy archive for Ubuntu:
     >>> archives.count()
     1
 
+Disabled archives will be visible:
+
+    >>> foo_bar = getUtility(IPersonSet).getByName('name16')
+    >>> copy_location = factory.makeCopyArchiveLocation(
+    ...     distribution=ubuntu, enabled=False, owner=foo_bar)
+    >>> archives = distro_archives_view.archive_list
+    >>> archives.count()
+    2
 
 DistributionPackageSearchView
 -----------------------------
@@ -77,18 +87,18 @@ instead:
 
     >>> distro_pkg_search_view = create_initialized_view(
     ...     ubuntu, name="+search", form={
-    ...         'text': 'a',
+    ...         'text': u'a',
     ...         'search_type': 'source'
     ...     })
     >>> distro_pkg_search_view.search_by_binary_name
     False
     >>> for package in distro_pkg_search_view.search_results:
     ...     print package.name
-    netapplet
     alsa-utils
+    commercialpackage
     foobar
     mozilla-firefox
-    commercialpackage
+    netapplet
 
 Unless the distribution being searched does not support binaries, in which
 cases it will always be on source:
@@ -104,6 +114,23 @@ cases it will always be on source:
     >>> distro_pkg_search_view.search_by_binary_name
     False
 
+Leading and trailing white-space is stripped from the search text.
+
+    >>> distro_pkg_search_view = create_initialized_view(
+    ...     ubuntu, name="+search",
+    ...     form={'text': ' a '},
+    ...     query_string='text=a')
+    >>> distro_pkg_search_view.text
+    'a'
+
+If there is more than one text parameter value, the last one is used.
+
+    >>> distro_pkg_search_view = create_initialized_view(
+    ...     ubuntu, name="+search",
+    ...     form={'text': ['a','b']},
+    ...     query_string='text=a&text=b')
+    >>> distro_pkg_search_view.text
+    'b'
 
 Exact matches
 .............
@@ -168,9 +195,9 @@ package is available in:
     >>> distro_pkg_search_view.distroseries_names
     {u'mozilla-firefox': u'warty'}
     >>> distro_pkg_search_view = create_initialized_view(
-    ...     ubuntu, name="+search", form={'text': 'foobar'})
+    ...     ubuntu, name="+search", form={'text': 'mozilla-firefox'})
     >>> distro_pkg_search_view.distroseries_names
-    {u'foobar': ''}
+    {u'mozilla-firefox': u'warty'}
 
 Another helper on the DistributionPackageSearchView is the
 matching_binary_names property which can be used by templates to get

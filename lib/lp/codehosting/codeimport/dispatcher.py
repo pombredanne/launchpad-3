@@ -16,8 +16,9 @@ __all__ = [
 import os
 import socket
 import subprocess
+import time
 
-from canonical.config import config
+from lp.services.config import config
 
 
 class CodeImportDispatcher:
@@ -30,14 +31,16 @@ class CodeImportDispatcher:
     """
 
     worker_script = os.path.join(
-        config.root, 'scripts', 'code-import-worker-db.py')
+        config.root, 'scripts', 'code-import-worker-monitor.py')
 
-    def __init__(self, logger):
+    def __init__(self, logger, worker_limit, _sleep=time.sleep):
         """Initialize an instance.
 
         :param logger: A `Logger` object.
         """
         self.logger = logger
+        self.worker_limit = worker_limit
+        self._sleep = _sleep
 
     def getHostname(self):
         """Return the hostname of this machine.
@@ -64,14 +67,38 @@ class CodeImportDispatcher:
 
 
     def findAndDispatchJob(self, scheduler_client):
-        """Check for and dispatch a job if necessary."""
+        """Check for and dispatch a job if necessary.
 
-        job_id = scheduler_client.getJobForMachine(self.getHostname())
+        :return: A boolean, true if a job was found and dispatched.
+        """
+
+        job_id = scheduler_client.getJobForMachine(
+            self.getHostname(), self.worker_limit)
 
         if job_id == 0:
             self.logger.info("No jobs pending.")
-            return
+            return False
 
         self.logger.info("Dispatching job %d." % job_id)
 
         self.dispatchJob(job_id)
+        return True
+
+    def _getSleepInterval(self):
+        """How long to sleep for until asking for a new job.
+
+        The basic idea is to wait longer if the machine is more heavily
+        loaded, so that less loaded slaves get a chance to grab some jobs.
+
+        We assume worker_limit will be roughly the number of CPUs in the
+        machine, so load/worker_limit is roughly how loaded the machine is.
+        """
+        return 5*os.getloadavg()[0]/self.worker_limit
+
+    def findAndDispatchJobs(self, scheduler_client):
+        """Call findAndDispatchJob until no job is found."""
+        while True:
+            found = self.findAndDispatchJob(scheduler_client)
+            if not found:
+                break
+            self._sleep(self._getSleepInterval())

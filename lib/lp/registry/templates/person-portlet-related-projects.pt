@@ -8,31 +8,27 @@
      tal:define="overview_menu context/menu:overview"
      tal:condition="view/first_five_related_projects">
 
-  <h2>Related projects</h2>
+  <h2>
+    <span class="see-all">
+      <a href="+projects" tal:condition="view/has_more_related_projects">
+        Show all
+        <tal:count content="view/related_projects_count">8</tal:count>
+        related projects</a>
+      <a href="+projects" tal:condition="not: view/has_more_related_projects">
+        Show related projects</a>
+    </span>
+    Related projects
+  </h2>
+
+
   <table tal:define="pillarnames view/first_five_related_projects">
     <tbody>
       <tr tal:repeat="pillarname pillarnames">
         <td>
-          <a tal:attributes="href string:/${pillarname/pillar/name};
-                             class pillarname/pillar/image:sprite_css"
-          tal:content="pillarname/pillar/title">Pillar title</a>
+          <a tal:replace="structure pillarname/pillar/fmt:link" />
         </td>
       </tr>
     </tbody>
-    <tfoot>
-      <tr>
-        <td style="padding-top: .5em;">
-          <a href="+projects"
-          tal:condition="view/has_more_related_projects">
-            &raquo; Show all
-            <tal:count content="view/related_projects_count">8</tal:count>
-            related projects</a>
-          <a href="+projects"
-            tal:condition="not: view/has_more_related_projects">
-            &raquo; Show related projects</a>
-        </td>
-      </tr>
-    </tfoot>
   </table>
 </div>
 </tal:root>

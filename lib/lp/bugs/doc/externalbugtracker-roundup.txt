@@ -11,11 +11,11 @@ bug watches on Roundup bug trackers is externalbugtracker.Roundup, which
 implements IExternalBugTracker.
 
     >>> from lp.bugs.externalbugtracker import Roundup
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IExternalBugTracker)
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
+    >>> from lp.bugs.interfaces.externalbugtracker import IExternalBugTracker
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> verifyObject(
     ...     IExternalBugTracker,
     ...     Roundup('http://example.com'))
@@ -116,12 +116,13 @@ fetched as a batch:
 
 First, we create some bug watches to test with:
 
-    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
 
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.ROUNDUP)
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
     ...     example_bug_tracker, '1',
@@ -135,20 +136,24 @@ Collect the Example.com watches:
 
 And have a Roundup instance process them:
 
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> transaction.commit()
+
+    >>> from lp.services.log.logger import FakeLogger
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> txn = LaunchpadZopelessLayer.txn
-    >>> bug_watch_updater = BugWatchUpdater(txn)
+    >>> bug_watch_updater = CheckwatchesMaster(
+    ...     txn, logger=FakeLogger())
     >>> roundup = TestRoundup(example_bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(
     ...     roundup, example_bug_tracker.watches)
-    INFO:...:Updating 1 watches for 1 bugs on http://bugs.some.where
+    INFO Updating 1 watches for 1 bugs on http://bugs.some.where
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1: 1
 
 We'll add some more watches now.
 
-    >>> from canonical.launchpad.interfaces import IBugWatchSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
     >>> print_bugwatches(example_bug_tracker.watches,
     ...     roundup.convertRemoteStatus)
     Remote bug 1: New
@@ -176,7 +181,7 @@ We'll add some more watches now.
     >>> roundup.trace_calls = True
     >>> bug_watch_updater.updateBugWatches(
     ...     roundup, example_bug_tracker.watches)
-    INFO:...:Updating 11 watches for 11 bugs on http://bugs.some.where
+    INFO Updating 11 watches for 11 bugs on http://bugs.some.where
     CALLED urlopen(u'http://.../issue?...@startwith=0')
 
     >>> print_bugwatches(example_bug_tracker.watches,

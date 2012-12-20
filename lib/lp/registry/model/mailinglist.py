@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -15,50 +15,82 @@ __all__ = [
     ]
 
 
-from email import message_from_string
-from email.Header import decode_header, make_header
-from itertools import repeat
+import collections
+import operator
 from socket import getfqdn
 from string import Template
 
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectModifiedEvent,
+    )
+from lazr.lifecycle.snapshot import Snapshot
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Join,
+    )
 from storm.info import ClassAlias
-from storm.expr import And, LeftJoin
 from storm.store import Store
-
-from sqlobject import ForeignKey, StringCol
-
-from zope.component import getUtility, queryAdapter
+from zope.component import (
+    getUtility,
+    queryAdapter,
+    )
 from zope.event import notify
-from zope.interface import implements, providedBy
+from zope.interface import (
+    implements,
+    providedBy,
+    )
 from zope.security.proxy import removeSecurityProxy
 
-from lazr.lifecycle.event import ObjectCreatedEvent, ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
-
-from canonical.cachedproperty import cachedproperty
-from canonical.config import config
-from canonical.database.constants import DEFAULT, UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.launchpad import _
-from canonical.launchpad.database.account import Account
-from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddressSet)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
-from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
-from lp.registry.interfaces.person import validate_public_person
+from lp import _
 from lp.registry.interfaces.mailinglist import (
-    CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
-    IHeldMessageDetails, IMailingList, IMailingListSet,
-    IMailingListSubscription, IMessageApproval, IMessageApprovalSet,
-    MailingListStatus, PURGE_STATES, PostedMessageStatus, UnsafeToPurge)
+    CannotChangeSubscription,
+    CannotSubscribe,
+    CannotUnsubscribe,
+    IHeldMessageDetails,
+    IMailingList,
+    IMailingListSet,
+    IMailingListSubscription,
+    IMessageApproval,
+    IMessageApprovalSet,
+    MailingListStatus,
+    PostedMessageStatus,
+    PURGE_STATES,
+    UnsafeToPurge,
+    )
+from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.config import config
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.identity.interfaces.account import AccountStatus
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
+from lp.services.identity.model.account import Account
+from lp.services.identity.model.emailaddress import EmailAddress
+from lp.services.messages.model.message import Message
+from lp.services.privacy.interfaces import IObjectPrivacy
+from lp.services.propertycache import cachedproperty
 
 
 EMAIL_ADDRESS_STATUSES = (
@@ -171,7 +203,7 @@ class MailingList(SQLBase):
     date_activated = UtcDateTimeCol(notNull=False, default=None)
 
     status = EnumCol(enum=MailingListStatus,
-                     default=MailingListStatus.REGISTERED,
+                     default=MailingListStatus.APPROVED,
                      notNull=True)
 
     # Use a trailing underscore because SQLObject/importfascist doesn't like
@@ -205,27 +237,8 @@ class MailingList(SQLBase):
         return template.safe_substitute(team_name=self.team.name)
 
     def __repr__(self):
-        return '<MailingList for team "%s"; status=%s at %#x>' % (
-            self.team.name, self.status.name, id(self))
-
-    def review(self, reviewer, status):
-        """See `IMailingList`."""
-        # Only mailing lists which are in the REGISTERED state may be
-        # reviewed.  This is the state for newly requested mailing lists.
-        assert self.status == MailingListStatus.REGISTERED, (
-            'Only unreviewed mailing lists may be reviewed')
-        # A registered mailing list may only transition to either APPROVED or
-        # DECLINED state.
-        assert status in (MailingListStatus.APPROVED,
-                          MailingListStatus.DECLINED), (
-            'Reviewed lists may only be approved or declined')
-        # The reviewer must be a Launchpad administrator.
-        assert reviewer is not None and reviewer.hasParticipationEntryFor(
-            getUtility(ILaunchpadCelebrities).mailing_list_experts), (
-            'Reviewer must be a member of the Mailing List Experts team')
-        self.reviewer = reviewer
-        self.status = status
-        self.date_reviewed = UTC_NOW
+        return '<MailingList for team "%s"; status=%s; address=%s at %#x>' % (
+            self.team.name, self.status.name, self.address, id(self))
 
     def startConstructing(self):
         """See `IMailingList`."""
@@ -314,19 +327,15 @@ class MailingList(SQLBase):
             if email.id == self.team.preferredemail.id:
                 self.team.setContactAddress(None)
         assert email.personID == self.teamID, 'Incorrectly linked email.'
-        email.status = EmailAddressStatus.NEW
+        # Anyone with permission to deactivate a list can also set the
+        # email address status to NEW.
+        removeSecurityProxy(email).status = EmailAddressStatus.NEW
 
     def reactivate(self):
         """See `IMailingList`."""
         assert self.status == MailingListStatus.INACTIVE, (
             'Only inactive mailing lists may be reactivated')
         self.status = MailingListStatus.APPROVED
-
-    def cancelRegistration(self):
-        """See `IMailingList`."""
-        assert self.status == MailingListStatus.REGISTERED, (
-            "Only mailing lists in the REGISTERED state can be canceled.")
-        self.destroySelf()
 
     @property
     def is_public(self):
@@ -358,8 +367,7 @@ class MailingList(SQLBase):
             # been changed on an active list.
             self.status = MailingListStatus.MODIFIED
         else:
-            raise AssertionError(
-                'Only registered or usable mailing lists may be modified')
+            raise AssertionError('Only usable mailing lists may be modified')
         self.welcome_message_ = text
 
     welcome_message = property(_get_welcome_message, _set_welcome_message)
@@ -377,14 +385,14 @@ class MailingList(SQLBase):
                              TeamParticipation.team == self.team,
                              MailingListSubscription.person == Person.id,
                              MailingListSubscription.mailing_list == self)
-        return results.order_by(Person.displayname)
+        return results.order_by(Person.displayname, Person.name)
 
     def subscribe(self, person, address=None):
         """See `IMailingList`."""
         if not self.is_usable:
             raise CannotSubscribe('Mailing list is not usable: %s' %
                                   self.team.displayname)
-        if person.isTeam():
+        if person.is_team:
             raise CannotSubscribe('Teams cannot be mailing list members: %s' %
                                   person.displayname)
         if address is not None and address.personID != person.id:
@@ -425,118 +433,6 @@ class MailingList(SQLBase):
         else:
             subscription.email_addressID = address.id
 
-    def getSubscribedAddresses(self):
-        """See `IMailingList`."""
-        store = Store.of(self)
-        # In order to handle the case where the preferred email address is
-        # used (i.e. where MailingListSubscription.email_address is NULL), we
-        # need to UNION, those using a specific address and those using the
-        # preferred address.
-        tables = (
-            EmailAddress,
-            LeftJoin(Account, Account.id == EmailAddress.accountID),
-            LeftJoin(MailingListSubscription,
-                     MailingListSubscription.personID
-                     == EmailAddress.personID),
-            # pylint: disable-msg=C0301
-            LeftJoin(MailingList,
-                     MailingList.id == MailingListSubscription.mailing_listID),
-            LeftJoin(TeamParticipation,
-                     TeamParticipation.personID
-                     == MailingListSubscription.personID),
-            )
-        preferred = store.using(*tables).find(
-            EmailAddress,
-            And(MailingListSubscription.mailing_list == self,
-                TeamParticipation.team == self.team,
-                MailingList.status != MailingListStatus.INACTIVE,
-                MailingListSubscription.email_addressID == None,
-                EmailAddress.status == EmailAddressStatus.PREFERRED,
-                Account.status == AccountStatus.ACTIVE))
-        tables = (
-            EmailAddress,
-            LeftJoin(Account, Account.id == EmailAddress.accountID),
-            LeftJoin(MailingListSubscription,
-                     MailingListSubscription.email_addressID
-                     == EmailAddress.id),
-            # pylint: disable-msg=C0301
-            LeftJoin(MailingList,
-                     MailingList.id == MailingListSubscription.mailing_listID),
-            LeftJoin(TeamParticipation,
-                     TeamParticipation.personID
-                     == MailingListSubscription.personID),
-            )
-        explicit = store.using(*tables).find(
-            EmailAddress,
-            And(MailingListSubscription.mailing_list == self,
-                TeamParticipation.team == self.team,
-                MailingList.status != MailingListStatus.INACTIVE,
-                Account.status == AccountStatus.ACTIVE))
-        # Union the two queries together to give us the complete list of email
-        # addresses allowed to post.  Note that while we're retrieving both
-        # the EmailAddress and Person records, this method is defined as only
-        # returning EmailAddresses.  The reason why we include the Person in
-        # the query is because the consumer of this method will access
-        # email_address.person.displayname, so the prejoin to Person is
-        # critical to acceptable performance.  Indeed, without the prejoin, we
-        # were getting tons of timeout OOPSes.  See bug 259440.
-        for email_address in preferred.union(explicit):
-            yield email_address
-
-    def getSenderAddresses(self):
-        """See `IMailingList`."""
-        store = Store.of(self)
-        # First, we need to find all the members of the team this mailing list
-        # is associated with.  Find all of their validated and preferred email
-        # addresses of those team members.  Every one of those email addresses
-        # are allowed to post to the mailing list.
-        tables = (
-            Person,
-            LeftJoin(Account, Account.id == Person.accountID),
-            LeftJoin(EmailAddress, EmailAddress.personID == Person.id),
-            LeftJoin(TeamParticipation,
-                     TeamParticipation.personID == Person.id),
-            LeftJoin(MailingList,
-                     MailingList.teamID == TeamParticipation.teamID),
-            )
-        team_members = store.using(*tables).find(
-            (EmailAddress, Person),
-            And(TeamParticipation.team == self.team,
-                MailingList.status != MailingListStatus.INACTIVE,
-                Person.teamowner == None,
-                EmailAddress.status.is_in(EMAIL_ADDRESS_STATUSES),
-                Account.status == AccountStatus.ACTIVE,
-                ))
-        # Second, find all of the email addresses for all of the people who
-        # have been explicitly approved for posting to this mailing list.
-        # This occurs as part of first post moderation, but since they've
-        # already been approved for this list, we don't need to wait for three
-        # global approvals.
-        tables = (
-            Person,
-            LeftJoin(Account, Account.id == Person.accountID),
-            LeftJoin(EmailAddress, EmailAddress.personID == Person.id),
-            LeftJoin(MessageApproval,
-                     MessageApproval.posted_byID == Person.id),
-            )
-        approved_posters = store.using(*tables).find(
-            (EmailAddress, Person),
-            And(MessageApproval.mailing_list == self,
-                MessageApproval.status.is_in(MESSAGE_APPROVAL_STATUSES),
-                EmailAddress.status.is_in(EMAIL_ADDRESS_STATUSES),
-                Account.status == AccountStatus.ACTIVE,
-                ))
-        # Union the two queries together to give us the complete list of email
-        # addresses allowed to post.  Note that while we're retrieving both
-        # the EmailAddress and Person records, this method is defined as only
-        # returning EmailAddresses.  The reason why we include the Person in
-        # the query is because the consumer of this method will access
-        # email_address.person.displayname, so the prejoin to Person is
-        # critical to acceptable performance.  Indeed, without the prejoin, we
-        # were getting tons of timeout OOPSes.  See bug 259440.
-        for email_address, person in team_members.union(approved_posters):
-            yield email_address
-
     def holdMessage(self, message):
         """See `IMailingList`."""
         held_message = MessageApproval(message=message,
@@ -547,15 +443,21 @@ class MailingList(SQLBase):
         notify(ObjectCreatedEvent(held_message))
         return held_message
 
-    def getReviewableMessages(self):
+    def getReviewableMessages(self, message_id_filter=None):
         """See `IMailingList`."""
-        return MessageApproval.select("""
-            MessageApproval.mailing_list = %s AND
-            MessageApproval.status = %s AND
-            MessageApproval.message = Message.id
-            """ % sqlvalues(self, PostedMessageStatus.NEW),
-            clauseTables=['Message'],
-            orderBy=['posted_date', 'Message.rfc822msgid'])
+        store = Store.of(self)
+        clauses = [
+            MessageApproval.mailing_listID == self.id,
+            MessageApproval.status == PostedMessageStatus.NEW,
+            MessageApproval.messageID == Message.id,
+            MessageApproval.posted_byID == Person.id
+            ]
+        if message_id_filter is not None:
+            clauses.append(Message.rfc822msgid.is_in(message_id_filter))
+        results = store.find(
+            (MessageApproval, Message, Person), *clauses)
+        results.order_by(MessageApproval.posted_date, Message.rfc822msgid)
+        return DecoratedResultSet(results, operator.itemgetter(0))
 
     def purge(self):
         """See `IMailingList`."""
@@ -567,6 +469,9 @@ class MailingList(SQLBase):
         # a bit tortured, so just do it here.
         if self.status in PURGE_STATES:
             self.status = MailingListStatus.PURGED
+            email = getUtility(IEmailAddressSet).getByEmail(self.address)
+            if email is not None:
+                removeSecurityProxy(email).destroySelf()
         else:
             assert self.status != MailingListStatus.PURGED, 'Already purged'
             raise UnsafeToPurge(self)
@@ -579,8 +484,8 @@ class MailingListSet:
 
     def new(self, team, registrant=None):
         """See `IMailingListSet`."""
-        assert team.isTeam(), (
-            'Cannot register a list for a person who is not a team')
+        if not team.is_team:
+            raise ValueError('Cannot register a list for a user.')
         if registrant is None:
             registrant = team.teamowner
         else:
@@ -595,7 +500,7 @@ class MailingListSet:
                 if registrant.inTeam(admin):
                     break
             else:
-                raise AssertionError(
+                raise ValueError(
                     'registrant is not a team owner or administrator')
         # See if the mailing list already exists.  If so, it must be in the
         # purged state for us to be able to recreate it.
@@ -605,17 +510,31 @@ class MailingListSet:
             return MailingList(team=team, registrant=registrant,
                                date_registered=UTC_NOW)
         else:
-            assert existing_list.status == MailingListStatus.PURGED, (
-                'Mailing list for team "%s" already exists' % team.name)
-            assert existing_list.team == team, 'Team mismatch'
+            if existing_list.status != MailingListStatus.PURGED:
+                raise ValueError(
+                    'Mailing list for team "%s" already exists' % team.name)
+            if existing_list.team != team:
+                raise ValueError('Team mismatch.')
             # It's in the PURGED state, so just tweak the existing record.
             existing_list.registrant = registrant
             existing_list.date_registered = UTC_NOW
             existing_list.reviewer = None
             existing_list.date_reviewed = None
             existing_list.date_activated = None
+            # This is a little wacky, but it's this way for historical
+            # purposes.  When mailing lists required approval before being
+            # created, it was okay to change the welcome message while in the
+            # REGISTERED state.  Now that we don't use REGISTERED any more,
+            # resurrecting a purged mailing list means setting it directly to
+            # the APPROVED state, but we're not allowed to change the welcome
+            # message in that state because it will get us out of sync with
+            # Mailman.  We really don't want to change _set_welcome_message()
+            # because that will have other consequences, so set to REGISTERED
+            # just long enough to set the welcome message, then set to
+            # APPROVED.  Mailman will catch up correctly.
             existing_list.status = MailingListStatus.REGISTERED
             existing_list.welcome_message = None
+            existing_list.status = MailingListStatus.APPROVED
             return existing_list
 
     def get(self, team_name):
@@ -629,9 +548,23 @@ class MailingListSet:
             """ % sqlvalues(team_name),
             clauseTables=['Person'])
 
+    def _getTeamIdsAndMailingListIds(self, team_names):
+        """Return a tuple of team and mailing list Ids for the team names."""
+        store = IStore(MailingList)
+        tables = (
+            Person,
+            Join(MailingList, MailingList.team == Person.id))
+        results = set(store.using(*tables).find(
+            (Person.id, MailingList.id),
+            And(Person.name.is_in(team_names),
+                Person.teamowner != None)))
+        team_ids = [result[0] for result in results]
+        list_ids = [result[1] for result in results]
+        return team_ids, list_ids
+
     def getSubscribedAddresses(self, team_names):
         """See `IMailingListSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        store = IStore(MailingList)
         # In order to handle the case where the preferred email address is
         # used (i.e. where MailingListSubscription.email_address is NULL), we
         # need to UNION, those using a specific address and those using the
@@ -639,35 +572,21 @@ class MailingListSet:
         Team = ClassAlias(Person)
         tables = (
             EmailAddress,
-            LeftJoin(Account, Account.id == EmailAddress.accountID),
-            LeftJoin(MailingListSubscription,
-                     MailingListSubscription.personID
-                     == EmailAddress.personID),
-            # pylint: disable-msg=C0301
-            LeftJoin(MailingList,
-                     MailingList.id == MailingListSubscription.mailing_listID),
-            LeftJoin(TeamParticipation,
-                     TeamParticipation.personID
-                     == MailingListSubscription.personID),
-            LeftJoin(Person,
-                     Person.id == TeamParticipation.personID),
-            LeftJoin(Team,
-                     Team.id == MailingList.teamID),
-            )
-        team_ids = set(
-            team.id for team in store.find(
-                Person,
-                And(Person.name.is_in(team_names),
-                    Person.teamowner != None))
-            )
-        list_ids = set(
-            mailing_list.id for mailing_list in store.find(
+            Join(Person, Person.id == EmailAddress.personID),
+            Join(Account, Account.id == Person.accountID),
+            Join(TeamParticipation, TeamParticipation.personID == Person.id),
+            Join(
+                MailingListSubscription,
+                MailingListSubscription.personID == Person.id),
+            Join(
                 MailingList,
-                MailingList.teamID.is_in(team_ids)))
+                MailingList.id == MailingListSubscription.mailing_listID),
+            Join(Team, Team.id == MailingList.teamID),
+            )
+        team_ids, list_ids = self._getTeamIdsAndMailingListIds(team_names)
         # Find all the people who are subscribed with their preferred address.
         preferred = store.using(*tables).find(
-            (EmailAddress, MailingListSubscription, TeamParticipation,
-             Person, Team),
+            (EmailAddress.email, Person.displayname, Team.name),
             And(MailingListSubscription.mailing_listID.is_in(list_ids),
                 TeamParticipation.teamID.is_in(team_ids),
                 MailingList.teamID == TeamParticipation.teamID,
@@ -676,40 +595,24 @@ class MailingListSet:
                 EmailAddress.status == EmailAddressStatus.PREFERRED,
                 Account.status == AccountStatus.ACTIVE))
         # Sort by team name.
-        by_team = {}
-        for address, subscription, participation, person, team in preferred:
-            assert team.name in team_names, (
-                'Unexpected team name in results: %s' % team.name)
-            value = (person.displayname, address.email)
-            by_team.setdefault(team.name, set()).add(value)
-        tables = (
-            EmailAddress,
-            LeftJoin(Account, Account.id == EmailAddress.accountID),
-            LeftJoin(MailingListSubscription,
-                     MailingListSubscription.email_addressID
-                     == EmailAddress.id),
-            # pylint: disable-msg=C0301
-            LeftJoin(MailingList,
-                     MailingList.id == MailingListSubscription.mailing_listID),
-            LeftJoin(TeamParticipation,
-                     TeamParticipation.personID
-                     == MailingListSubscription.personID),
-            LeftJoin(Person,
-                     Person.id == TeamParticipation.personID),
-            LeftJoin(Team,
-                     Team.id == MailingList.teamID),
-            )
+        by_team = collections.defaultdict(set)
+        for email, display_name, team_name in preferred:
+            assert team_name in team_names, (
+                'Unexpected team name in results: %s' % team_name)
+            value = (display_name, email.lower())
+            by_team[team_name].add(value)
         explicit = store.using(*tables).find(
-            (EmailAddress, MailingList, Person, Team),
+            (EmailAddress.email, Person.displayname, Team.name),
             And(MailingListSubscription.mailing_listID.is_in(list_ids),
                 TeamParticipation.teamID.is_in(team_ids),
                 MailingList.status != MailingListStatus.INACTIVE,
+                EmailAddress.id == MailingListSubscription.email_addressID,
                 Account.status == AccountStatus.ACTIVE))
-        for address, mailing_list, person, team in explicit:
-            assert team.name in team_names, (
-                'Unexpected team name in results: %s' % team.name)
-            value = (person.displayname, address.email)
-            by_team.setdefault(team.name, set()).add(value)
+        for email, display_name, team_name in explicit:
+            assert team_name in team_names, (
+                'Unexpected team name in results: %s' % team_name)
+            value = (display_name, email.lower())
+            by_team[team_name].add(value)
         # Turn the results into a mapping of lists.
         results = {}
         for team_name, address_set in by_team.items():
@@ -718,7 +621,7 @@ class MailingListSet:
 
     def getSenderAddresses(self, team_names):
         """See `IMailingListSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        store = IStore(MailingList)
         # First, we need to find all the members of all the mailing lists for
         # the given teams.  Find all of their validated and preferred email
         # addresses of those team members.  Every one of those email addresses
@@ -726,36 +629,21 @@ class MailingListSet:
         Team = ClassAlias(Person)
         tables = (
             Person,
-            LeftJoin(Account, Account.id == Person.accountID),
-            LeftJoin(EmailAddress, EmailAddress.personID == Person.id),
-            LeftJoin(TeamParticipation,
-                     TeamParticipation.personID == Person.id),
-            LeftJoin(MailingList,
-                     MailingList.teamID == TeamParticipation.teamID),
-            LeftJoin(Team,
-                     Team.id == MailingList.teamID),
+            Join(Account, Account.id == Person.accountID),
+            Join(EmailAddress, EmailAddress.personID == Person.id),
+            Join(TeamParticipation, TeamParticipation.personID == Person.id),
+            Join(MailingList, MailingList.teamID == TeamParticipation.teamID),
+            Join(Team, Team.id == MailingList.teamID),
             )
-        team_ids = set(
-            team.id for team in store.find(
-                Person,
-                And(Person.name.is_in(team_names),
-                    Person.teamowner != None))
-            )
+        team_ids, list_ids = self._getTeamIdsAndMailingListIds(team_names)
         team_members = store.using(*tables).find(
-            (EmailAddress, MailingList, Person, Team),
+            (Team.name, Person.displayname, EmailAddress.email),
             And(TeamParticipation.teamID.is_in(team_ids),
                 MailingList.status != MailingListStatus.INACTIVE,
                 Person.teamowner == None,
                 EmailAddress.status.is_in(EMAIL_ADDRESS_STATUSES),
                 Account.status == AccountStatus.ACTIVE,
                 ))
-        # Sort allowed posters by team/mailing list.
-        by_team = {}
-        for address, mailing_list, person, team in team_members:
-            assert team.name in team_names, (
-                'Unexpected team name in results: %s' % team.name)
-            value = (person.displayname, address.email)
-            by_team.setdefault(team.name, set()).add(value)
         # Second, find all of the email addresses for all of the people who
         # have been explicitly approved for posting to the team mailing lists.
         # This occurs as part of first post moderation, but since they've
@@ -763,41 +651,33 @@ class MailingListSet:
         # for three global approvals.
         tables = (
             Person,
-            LeftJoin(Account, Account.id == Person.accountID),
-            LeftJoin(EmailAddress, EmailAddress.personID == Person.id),
-            LeftJoin(MessageApproval,
-                     MessageApproval.posted_byID == Person.id),
-            LeftJoin(MailingList,
+            Join(Account, Account.id == Person.accountID),
+            Join(EmailAddress, EmailAddress.personID == Person.id),
+            Join(MessageApproval, MessageApproval.posted_byID == Person.id),
+            Join(MailingList,
                      MailingList.id == MessageApproval.mailing_listID),
-            LeftJoin(Team,
-                     Team.id == MailingList.teamID),
+            Join(Team, Team.id == MailingList.teamID),
             )
-        list_ids = set(
-            mailing_list.id for mailing_list in store.find(
-                MailingList,
-                MailingList.teamID.is_in(team_ids)))
         approved_posters = store.using(*tables).find(
-            (EmailAddress, MessageApproval, Person, Team),
+            (Team.name, Person.displayname, EmailAddress.email),
             And(MessageApproval.mailing_listID.is_in(list_ids),
                 MessageApproval.status.is_in(MESSAGE_APPROVAL_STATUSES),
                 EmailAddress.status.is_in(EMAIL_ADDRESS_STATUSES),
                 Account.status == AccountStatus.ACTIVE,
                 ))
-        for address, message_approval, person, team in approved_posters:
-            assert team.name in team_names, (
-                'Unexpected team name in results: %s' % team.name)
-            value = (person.displayname, address.email)
-            by_team.setdefault(team.name, set()).add(value)
+        # Sort allowed posters by team/mailing list.
+        by_team = collections.defaultdict(set)
+        all_posters = team_members.union(approved_posters)
+        for team_name, person_displayname, email in all_posters:
+            assert team_name in team_names, (
+                'Unexpected team name in results: %s' % team_name)
+            value = (person_displayname, email.lower())
+            by_team[team_name].add(value)
         # Turn the results into a mapping of lists.
         results = {}
         for team_name, address_set in by_team.items():
             results[team_name] = list(address_set)
         return results
-
-    @property
-    def registered_lists(self):
-        """See `IMailingListSet`."""
-        return MailingList.selectBy(status=MailingListStatus.REGISTERED)
 
     @property
     def approved_lists(self):
@@ -871,7 +751,34 @@ class MessageApprovalSet:
 
     def getHeldMessagesWithStatus(self, status):
         """See `IMessageApprovalSet`."""
-        return MessageApproval.selectBy(status=status)
+        # Use the master store as the messages will also be acknowledged and
+        # we want to make sure we are acknowledging the same messages that we
+        # iterate over.
+        return IMasterStore(MessageApproval).find(
+            (Message.rfc822msgid, Person.name),
+            MessageApproval.status == status,
+            MessageApproval.message == Message.id,
+            MessageApproval.mailing_list == MailingList.id,
+            MailingList.team == Person.id)
+
+    def acknowledgeMessagesWithStatus(self, status):
+        """See `IMessageApprovalSet`."""
+        transitions = {
+            PostedMessageStatus.APPROVAL_PENDING:
+                PostedMessageStatus.APPROVED,
+            PostedMessageStatus.REJECTION_PENDING:
+                PostedMessageStatus.REJECTED,
+            PostedMessageStatus.DISCARD_PENDING:
+                PostedMessageStatus.DISCARDED,
+            }
+        try:
+            next_state = transitions[status]
+        except KeyError:
+            raise AssertionError(
+                'Not an acknowledgeable state: %s' % status)
+        approvals = IMasterStore(MessageApproval).find(
+            MessageApproval, MessageApproval.status == status)
+        approvals.set(status=next_state)
 
 
 class HeldMessageDetails:
@@ -885,31 +792,7 @@ class HeldMessageDetails:
         self.message_id = message_approval.message_id
         self.subject = self.message.subject
         self.date = self.message.datecreated
-        self.author = self.message.owner
-
-    @cachedproperty
-    def email_message(self):
-        self.message.raw.open()
-        try:
-            return message_from_string(self.message.raw.read())
-        finally:
-            self.message.raw.close()
-
-    @cachedproperty
-    def sender(self):
-        """See `IHeldMessageDetails`."""
-        originators = self.email_message.get_all('from', [])
-        originators.extend(self.email_message.get_all('reply-to', []))
-        if len(originators) == 0:
-            return 'n/a'
-        unicode_parts = []
-        for bytes, charset in decode_header(originators[0]):
-            if charset is None:
-                charset = 'us-ascii'
-            unicode_parts.append(
-                bytes.decode(charset, 'replace').encode('utf-8'))
-        header = make_header(zip(unicode_parts, repeat('utf-8')))
-        return unicode(header)
+        self.author = self.message_approval.posted_by
 
     @cachedproperty
     def body(self):

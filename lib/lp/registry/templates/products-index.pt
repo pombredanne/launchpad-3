@@ -20,23 +20,17 @@
 
   <div metal:fill-slot="main">
     There are
-    <strong class="registry-stat"
-            tal:content="context/count_all">7</strong>
+    <strong tal:content="context/count_all">7</strong>
     projects registered in Launchpad.
-    <strong class="bugs-stat"
-            tal:content="context/count_buggy">7</strong>
+    <strong tal:content="context/count_buggy">7</strong>
     have bugs reported,
-    <strong class="translations-stat"
-            tal:content="context/count_translatable">7</strong>
+    <strong tal:content="context/count_translatable">7</strong>
     have translations,
-    <strong class="code-stat"
-            tal:content="context/count_codified">7</strong>
+    <strong tal:content="context/count_codified">7</strong>
     have Bazaar branches,
-    <strong class="blueprints-stat"
-            tal:content="context/count_featureful">7</strong>
+    <strong tal:content="context/count_featureful">7</strong>
     have blueprints,
-    and <strong class="answers-stat"
-                tal:content="context/count_answered">7</strong>
+    and <strong tal:content="context/count_answered">7</strong>
     have questions &amp; answers.
 
     <form id="project-search" class="central" method="get"
@@ -52,6 +46,11 @@
         value="Search projects"
         />
     </form>
+    <script type="text/javascript">
+        LPJS.use('lp', function (Y) {
+            setFocusByName('text');
+        });
+    </script>
 
   <tal:searching condition="view/search_requested">
 
@@ -60,17 +59,8 @@
     </p>
 
     <tal:non-empty-search-string condition="view/search_string">
-      <p tal:condition="view/tooManyResultsFound"
-           class="informational message">
-        More than <span tal:replace="view/max_results_to_display" /> projects
-        were found, so we're displaying only the ones that are most relevant
-        to your search terms.
-        If the project you are looking for is not on the list below, please
-        do another search with more relevant search terms.
-      </p>
-
       <tal:searching tal:condition="view/search_results">
-        <p class="search-results">
+        <p id="search-summary" class="search-results">
           <span tal:replace="view/matches">3</span>
           <span tal:condition="python: view.matches == 1">project found</span>
           <span tal:condition="python: view.matches != 1">projects found</span>
@@ -92,10 +82,23 @@
         </tbody>
       </table>
 
-      <div id="application-summary">
-        <p class="error"
-           tal:condition="not: view/search_results">
-          No projects matching
+      <form id="project-search-lower" method="get" accept-charset="UTF-8"
+        tal:attributes="action request/URL"
+        tal:condition="view/search_results">
+        <div id="too-many-matches"
+          tal:condition="view/tooManyResultsFound">
+          <span class="sprite info">
+          More than <span tal:replace="view/max_results_to_display" />
+          projects were found.</span> You can do another search with more
+          relevant search terms.
+        </div>
+        <input size="30" name="text" tal:attributes="value view/search_string" />
+        <input type="submit" value="Search again" />
+      </form>
+
+      <div id="no-matches">
+        <p tal:condition="not: view/search_results">
+          <span class="sprite info">No projects matching</span>
           &#8220;<span tal:replace="view/search_string">moz</span>&#8221;
           were found.
         </p>
@@ -126,35 +129,10 @@
       href="/rosetta/+addquestion">ask the Translations staff</a>.
     </p>
 
-    <div class="left">
-
-      <div class="portlet">
-
-        <h2>Latest teams registered</h2>
-
-        <table>
-          <tbody>
-            <tr tal:repeat="team context/people/latest_teams">
-              <td><a tal:replace="structure team/fmt:link">A-Team</a>
-                  registered
-                  <span tal:attributes="title team/datecreated/fmt:datetime"
-                        tal:content="team/datecreated/fmt:displaydate">
-                    2007-09-17
-                  </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-    </div>
-
-    <div class="right">
-
       <div class="portlet">
         <h2>Latest projects registered</h2>
         <table>
-          <tr tal:repeat="product context/latest">
+          <tr tal:repeat="product view/latest">
             <td>
               <tal:link replace="structure product/fmt:link" />
               registered
@@ -164,7 +142,6 @@
         </table>
         <p><a href="/projects/+all">&raquo; Show all projects</a></p>
       </div>
-    </div>
   </tal:no_search>
 </div>
 </body>

@@ -1,8 +1,10 @@
 = Builder View Classes and Pages =
 
     >>> from zope.component import getMultiAdapter, getUtility
-    >>> from canonical.launchpad.interfaces import IBuilderSet
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
     >>> builder = getUtility(IBuilderSet).get(1)
 
@@ -14,8 +16,6 @@ Get a "mock" request:
 Let's instantiate the view for +index:
 
     >>> builder_view = getMultiAdapter((builder, request), name="+index")
-    >>> builder_view.now()
-    '...'
 
     >>> print builder_view.page_title
     Builder ...Bob The Builder...
@@ -33,7 +33,7 @@ Let's instantiate a view for +history:
 
     >>> builder_view = getMultiAdapter((builder, request), name="+history")
     >>> print builder_view.page_title
-    Build history for ...Bob The Builder...
+    Build history
 
     setupBuildList, build a batched list of build records and store it
     in view.batch, also store the batch navigator in view.batchnav. it
@@ -56,7 +56,7 @@ fields and actions are displayed:
 This page requires launchpad.Edit permission and the builder is owned
 by mark. we nee to log in as mark or any other member of admin team
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("foo.bar@canonical.com")
 
     >>> builder_view = create_initialized_view(builder, name="+edit")
@@ -67,7 +67,6 @@ by mark. we nee to log in as mark or any other member of admin team
     ...     print field_name
     name
     title
-    description
     processor
     url
     manual
@@ -115,7 +114,7 @@ After editing a builder, a relevant notification is added to the view.
 
     >>> for notification in builder_view.request.notifications:
     ...     print notification.message
-    The builder "Bob The Builder" was updated successfully.
+    The builder &quot;Bob The Builder&quot; was updated successfully.
 
 
 == Builders building private jobs ==
@@ -130,29 +129,29 @@ to the user who is trying to access a given content.
 Before checking if it works as expected we will setup an environment
 where builder 'Frog' is building a job from Celso's private PPA.
 
-    >>> from lp.soyuz.model.buildqueue import BuildQueue
-    >>> from canonical.launchpad.interfaces import (
-    ...    IBuilderSet, IPersonSet)
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
+    >>> from lp.buildmaster.model.buildqueue import BuildQueue
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
-    >>> cprov.archive.buildd_secret = "secret"
-    >>> cprov.archive.private = True
+    >>> cprov_private_ppa = factory.makeArchive(
+    ...     owner=cprov, private=True)
 
 SoyuzTestPublisher is used to make a new publication only in Celso's
-PPA.
+private PPA.
 
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> from lp.soyuz.tests.test_publishing import (
     ...      SoyuzTestPublisher)
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
-    >>> from lp.soyuz.interfaces.build import BuildStatus
 
     >>> test_publisher = SoyuzTestPublisher()
     >>> test_publisher.prepareBreezyAutotest()
     >>> private_source_pub = test_publisher.getPubSource(
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     sourcename='privacy-test',
-    ...     archive=cprov.archive)
+    ...     archive=cprov_private_ppa)
     >>> [private_build] = private_source_pub.createMissingBuilds()
 
 Assign the build to the 'frog' builder:
@@ -160,10 +159,11 @@ Assign the build to the 'frog' builder:
     >>> frog = getUtility(IBuilderSet)['frog']
     >>> frog.builderok = True
     >>> private_build.builder = frog
-    >>> private_job = BuildQueue(build=private_build, builder=frog)
+    >>> private_job = private_build.buildqueue_record
+    >>> private_job.builder = frog
     >>> private_job_id = private_job.id
 
-    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from lp.services.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
 At the content class level, all the information about the current job
@@ -172,20 +172,17 @@ is widely available:
  * Frog is OK;
  * Frog 'currentjob' exists;
  * Frog has no 'failnotes';
- * Frog status exposes its 'currentjob'.
 
     >>> print frog.builderok
     True
 
-    >>> print frog.currentjob.build.title
+    >>> build_set = getUtility(IBinaryPackageBuildSet)
+    >>> build = build_set.getByQueueEntry(frog.currentjob)
+    >>> print build.title
     i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE
 
     >>> print frog.failnotes
     None
-
-    >>> print frog.status
-    Building i386 build of privacy-test 666 in ubuntutest breezy-autotest
-        RELEASE [cprov/ppa]
 
 Accessing the view for $builder/+index as a Foo Bar, which has
 launchpad.View permission on the target archive of the 'currentjob',
@@ -198,58 +195,22 @@ all the 'private' information is exposed.
     >>> empty_request = LaunchpadTestRequest(form={})
     >>> admin_view = getMultiAdapter((frog, empty_request), name="+index")
 
-    >>> print admin_view.context
-    <security proxied lp.soyuz.model.builder.Builder ...>
-
     >>> print admin_view.context.builderok
     True
 
-    >>> print admin_view.context.currentjob.build.title
+    >>> build = build_set.getByQueueEntry(admin_view.context.currentjob)
+    >>> print build.title
     i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE
 
     >>> print admin_view.context.failnotes
     None
 
-    >>> print admin_view.context.status
-    Building i386 build of privacy-test 666 in ubuntutest breezy-autotest
-        RELEASE [cprov/ppa]
-
     >>> import datetime
     >>> import pytz
-    >>> private_job.buildstart = (
+    >>> private_job.setDateStarted(
     ...     datetime.datetime.now(pytz.UTC) - datetime.timedelta(10))
     >>> print admin_view.current_build_duration
     10 days...
-
-When accessing the same view as a unprivileged user, No-Priv, the
-sensitive information is hidden (the context class is 'cloaked', see
-browser/builder.py for futher information on this) and the builder
-shows up as 'Building private build'.
-
-    >>> login('no-priv@canonical.com')
-    >>> nopriv_view = getMultiAdapter((frog, empty_request), name="+index")
-
-    >>> print nopriv_view.context
-    <lp.soyuz.browser.builder.HiddenBuilder ...>
-
-    >>> print nopriv_view.context.builderok
-    False
-
-    >>> print nopriv_view.context.currentjob
-    None
-
-    >>> print nopriv_view.context.failnotes
-    None
-
-    >>> print nopriv_view.context.status
-    Building private build
-
-    >>> print nopriv_view.current_build_duration
-    None
-
-XXX cprov 20080214: this is clearly a counterintuitive way to identify
-builders building private jobs. We will certainly have to fine-tune it
-before public release.
 
 Once the private job is gone, Frog 'real' details are exposed publicly
 again.
@@ -258,13 +219,11 @@ again.
     >>> store = Store.of(frog)
     >>> login("foo.bar@canonical.com")
     >>> private_job = store.get(BuildQueue, private_job_id)
-    >>> Store.of(private_job).remove(private_job)
+    >>> private_job.builder = None
+    >>> frog.current_build_behavior = None
 
     >>> login('no-priv@canonical.com')
     >>> nopriv_view = getMultiAdapter((frog, empty_request), name="+index")
-
-    >>> print nopriv_view.context.status
-    Idle
 
     >>> login(ANONYMOUS)
 
@@ -281,7 +240,7 @@ in categories. They are:
  * 'PPA build machines': a group of builders capable of building
    'untrusted' sources, PPA packages. The 'virtualized' build-farm.
 
-    >>> from canonical.launchpad.interfaces import IBuilderSet
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
     >>> builderset = getUtility(IBuilderSet)
 
     >>> builderset_view = getMultiAdapter(
@@ -291,7 +250,7 @@ In order to have a proper dataset for the tests we will populate the
 builder table with several builders for different categories and
 architectures.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
     >>> from lp.soyuz.model.processor import Processor
@@ -299,40 +258,24 @@ architectures.
     >>> amd64 = Processor.selectOneBy(name='amd64')
     >>> hppa = Processor.selectOneBy(name='hppa')
 
-    >>> a_builder = builderset.new(
-    ...     i386, url='http://hamburger', name="hamburger",
-    ...     title="The Hamburger Builder", description="Uhmmm", owner=cprov,
-    ...     virtualized=True)
-
-    >>> a_builder = builderset.new(
-    ...     hppa, url='http://cheese', name="cheese",
-    ...     title="The Cheese Builder", description="Uhmmm", owner=cprov,
-    ...     virtualized=True)
-
-    >>> a_builder = builderset.new(
-    ...     amd64, url='http://bacon', name="bacon",
-    ...     title="The Bacon Builder", description="Uhmmm", owner=cprov,
-    ...     virtualized=True)
-
-    >>> a_builder = builderset.new(
-    ...     i386, url='http://egg', name="egg",
-    ...     title="The Egg Builder", description="Uhmmm", owner=cprov,
-    ...     virtualized=False)
-
-    >>> a_builder = builderset.new(
-    ...     hppa, url='http://ham', name="ham",
-    ...     title="The Ham Builder", description="Uhmmm", owner=cprov,
-    ...     virtualized=False)
-
-    >>> a_builder = builderset.new(
-    ...     amd64, url='http://prosciuto', name="prosciuto",
-    ...     title="The Prosciuto Builder", description="Uhmmm", owner=cprov,
-    ...     virtualized=False)
+    >>> ignored = factory.makeBuilder(
+    ...     name='hamburger', processor=i386, virtualized=True)
+    >>> ignored = factory.makeBuilder(
+    ...     name='cheese', processor=hppa, virtualized=True)
+    >>> ignored = factory.makeBuilder(
+    ...     name='bacon', processor=amd64, virtualized=True)
+    >>> ignored = factory.makeBuilder(
+    ...     name='egg', processor=i386, virtualized=False)
+    >>> ignored = factory.makeBuilder(
+    ...     name='ham', processor=hppa, virtualized=False, manual=True)
+    >>> ignored = factory.makeBuilder(
+    ...     name='prosciuto', processor=amd64, virtualized=False)
 
 Newly created builders will be in manual mode because we don't want
 them going straight into the build farm until tested.
 
-    >>> a_builder.manual
+    >>> ham = builderset.getByName('ham')
+    >>> ham.manual
     True
 
 The 'Other' builder category is a `BuilderCategory` class, which
@@ -340,7 +283,7 @@ contains the following attributes:
 
  * title: the title that will be presented for this category in the UI;
 
- * virtualized: wheter the category represents the virtualized or
+ * virtualized: whether the category represents the virtualized or
    non-virtualized build-farm;
 
  * groups: a property that return all `BuilderGroup` instanced
@@ -352,7 +295,7 @@ contains the following attributes:
     <...BuilderCategory ...>
 
     >>> print builder_category.title
-    Official distribution build machines
+    Official distributions build status
 
     >>> print builder_category.virtualized
     False
@@ -365,40 +308,42 @@ grouped builders within a category in a easy manner.
 
     >>> def print_category(category):
     ...     for group in category.groups:
-    ...         print group.processor_name, group.queue_size
-    ...         for builder in group.builders:
-    ...             print builder.title
+    ...         print group.processor_name, \
+    ...               group.number_of_available_builders, \
+    ...               group.queue_size, \
+    ...               group.duration
 
     >>> print_category(builder_category)
-    386 1
-    Bob The Builder
-    The Egg Builder
-    amd64 0
-    The Prosciuto Builder
-    hppa 0
-    The Ham Builder
+    386    2  1  0:00:30
+    amd64  1  0  None
+    hppa   1  0  None
 
 Each `BuilderGroup` contains the following attributes:
 
  * processor_name: the `Processor` name of all builders in this group;
 
+ * number_of_available_builders: the number of builders available for
+       this processor.
+
  * queue_size: the number of jobs wainting to be processed for one of
    the builders in this group
 
- * builders: a list of `Builder`s in this group.
+ * duration: estimated time that will be used to build all jobs in
+       queue (sum(job_duration)/number_of_available_builders)
 
     >>> [i386_group, amd64_group, hppa_group] = builder_category.groups
 
     >>> print i386_group.processor_name
     386
 
+    >>> print i386_group.number_of_available_builders
+    2
+
     >>> print i386_group.queue_size
     1
 
-    >>> for builder in i386_group.builders:
-    ...     print builder.title
-    Bob The Builder
-    The Egg Builder
+    >>> print i386_group.duration
+    0:00:30
 
 The 'PPA' builder category is also available in BuilderSetView as a
 `BuilderCategory`.
@@ -406,38 +351,37 @@ The 'PPA' builder category is also available in BuilderSetView as a
     >>> builder_category = builderset_view.ppa_builders
 
     >>> print builder_category.title
-    PPA build machines
+    PPA build status
 
     >>> print builder_category.virtualized
     True
 
     >>> print_category(builder_category)
-    386 1
-    The Hamburger Builder
-    The frog builder
-    amd64 0
-    The Bacon Builder
-    hppa 0
-    The Cheese Builder
+    386    2  1  0:00:30
+    amd64  1  0  None
+    hppa   1  0  None
 
 We change the sampledata to create a pending build in for the 386
 processor queue in the PPA category.
 
+    >>> import datetime
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> login('foo.bar@canonical.com')
-
     >>> any_failed_build = cprov.archive.getBuildRecords(
     ...     build_state=BuildStatus.FAILEDTOBUILD)[0]
+    >>> one_minute = datetime.timedelta(seconds=60)
     >>> any_failed_build.retry()
+    >>> removeSecurityProxy(
+    ...     any_failed_build.buildqueue_record).estimated_duration = one_minute
+    >>> transaction.commit()
+    >>> login(ANONYMOUS)
 
 Now the pending build is included in the right category and group.
 
-    >>> login(ANONYMOUS)
+    >>> builderset_view = getMultiAdapter(
+    ...     (builderset, empty_request), name="+index")
     >>> builder_category = builderset_view.ppa_builders
     >>> print_category(builder_category)
-    386 2
-    The Hamburger Builder
-    The frog builder
-    amd64 0
-    The Bacon Builder
-    hppa 0
-    The Cheese Builder
+    386    2  2  0:01:00
+    amd64  1  0  None
+    hppa   1  0  None

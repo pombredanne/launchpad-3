@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -6,27 +6,29 @@ __metaclass__ = type
 import os
 import subprocess
 import sys
-import unittest
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.scripts import FakeLogger
-from lp.soyuz.scripts.ftpmaster import (
-    ObsoleteDistroseries, SoyuzScriptError)
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.config import config
+from lp.services.database.sqlbase import sqlvalues
+from lp.services.log.logger import DevNullLogger
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory,
-    SecureSourcePackagePublishingHistory,
-    SourcePackagePublishingHistory)
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from canonical.testing import LaunchpadZopelessLayer
+    SourcePackagePublishingHistory,
+    )
+from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
+from lp.soyuz.scripts.obsolete_distroseries import ObsoleteDistroseries
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
-class TestObsoleteDistroseriesScript(unittest.TestCase):
+class TestObsoleteDistroseriesScript(TestCase):
     """Test the obsolete-distroseries.py script."""
     layer = LaunchpadZopelessLayer
 
@@ -64,12 +66,13 @@ class TestObsoleteDistroseriesScript(unittest.TestCase):
             "Expected %s, got %s" % (expected, err))
 
 
-class TestObsoleteDistroseries(unittest.TestCase):
+class TestObsoleteDistroseries(TestCaseWithFactory):
     """Test the ObsoleteDistroseries class."""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Set up test data common to all test cases."""
+        super(TestObsoleteDistroseries, self).setUp()
         self.warty = getUtility(IDistributionSet)['ubuntu']['warty']
 
         # Re-process the returned list otherwise it ends up being a list
@@ -84,8 +87,10 @@ class TestObsoleteDistroseries(unittest.TestCase):
         Allow tests to use a set of default options and pass an
         inactive logger to ObsoleteDistroseries.
         """
-        test_args = ['-s', suite,
-                     '-d', distribution,]
+        test_args = [
+            '-s', suite,
+            '-d', distribution,
+            ]
 
         if confirm_all:
             test_args.append('-y')
@@ -93,10 +98,7 @@ class TestObsoleteDistroseries(unittest.TestCase):
         obsoleter = ObsoleteDistroseries(
             name='obsolete-distroseries', test_args=test_args)
         # Swallow all log messages.
-        obsoleter.logger = FakeLogger()
-        def message(self, prefix, *stuff, **kw):
-            pass
-        obsoleter.logger.message = message
+        obsoleter.logger = DevNullLogger()
         obsoleter.setupLocation()
         return obsoleter
 
@@ -104,19 +106,19 @@ class TestObsoleteDistroseries(unittest.TestCase):
         """Return a tuple of sources, binaries published in distroseries."""
         if distroseries is None:
             distroseries = self.warty
-        published_sources = SecureSourcePackagePublishingHistory.select("""
+        published_sources = SourcePackagePublishingHistory.select("""
             distroseries = %s AND
             status = %s AND
             archive IN %s
             """ % sqlvalues(distroseries, PackagePublishingStatus.PUBLISHED,
                             self.main_archive_ids))
-        published_binaries = SecureBinaryPackagePublishingHistory.select("""
-            SecureBinaryPackagePublishingHistory.distroarchseries =
+        published_binaries = BinaryPackagePublishingHistory.select("""
+            BinaryPackagePublishingHistory.distroarchseries =
                 DistroArchSeries.id AND
             DistroArchSeries.DistroSeries = DistroSeries.id AND
             DistroSeries.id = %s AND
-            SecureBinaryPackagePublishingHistory.status = %s AND
-            SecureBinaryPackagePublishingHistory.archive IN %s
+            BinaryPackagePublishingHistory.status = %s AND
+            BinaryPackagePublishingHistory.archive IN %s
             """ % sqlvalues(distroseries, PackagePublishingStatus.PUBLISHED,
                             self.main_archive_ids),
             clauseTables=["DistroArchSeries", "DistroSeries"])
@@ -129,29 +131,10 @@ class TestObsoleteDistroseries(unittest.TestCase):
         obsoleter = self.getObsoleter(suite='warty')
         self.assertRaises(SoyuzScriptError, obsoleter.mainTask)
 
-    def testNothingToDoCase(self):
-        """When there is nothing to do, we expect an exception."""
-        obsoleter = self.getObsoleter()
-        self.warty.status = DistroSeriesStatus.OBSOLETE
-
-        # Get all the published sources in warty.
-        published_sources, published_binaries = (
-            self.getPublicationsForDistroseries())
-
-        # Reset their status to OBSOLETE.
-        for package in published_sources:
-            package.status = PackagePublishingStatus.OBSOLETE
-        for package in published_binaries:
-            package.status = PackagePublishingStatus.OBSOLETE
-
-        # Call the script and ensure it does nothing.
-        self.layer.txn.commit()
-        self.assertRaises(SoyuzScriptError, obsoleter.mainTask)
-
     def testObsoleteDistroseriesWorks(self):
         """Make sure the required publications are obsoleted."""
         obsoleter = self.getObsoleter()
-        self.warty.status = DistroSeriesStatus.OBSOLETE
+        self.warty.status = SeriesStatus.OBSOLETE
 
         # Get all the published sources in warty.
         published_sources, published_binaries = (
@@ -211,6 +194,39 @@ class TestObsoleteDistroseries(unittest.TestCase):
             self.assertTrue(
                 binary.status != PackagePublishingStatus.OBSOLETE)
 
+    def test_schedules_deletion_of_uncondemned_pubs(self):
+        # Any publications that were no longer Published but never
+        # condemned by the dominator get condemned now.
+        # eg. superseded sources that released with published NBS
+        # binaries.
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+        obsolete_series = self.factory.makeDistroSeries(
+            status=SeriesStatus.OBSOLETE)
+        other_series = self.factory.makeDistroSeries(
+            distribution=obsolete_series.distribution,
+            status=SeriesStatus.CURRENT)
+        obsoleter = self.getObsoleter(
+            distribution=obsolete_series.distribution.name,
+            suite=obsolete_series.name)
+
+        pubs = dict()
+        for series in (obsolete_series, other_series):
+            arch = self.factory.makeDistroArchSeries(distroseries=series)
+            pubs[series] = [
+                self.factory.makeSourcePackagePublishingHistory(
+                    distroseries=series,
+                    status=PackagePublishingStatus.SUPERSEDED),
+                self.factory.makeBinaryPackagePublishingHistory(
+                    distroarchseries=arch,
+                    status=PackagePublishingStatus.SUPERSEDED),
+                ]
+
+        for pub in pubs[obsolete_series] + pubs[other_series]:
+            self.assertIs(None, pub.scheduleddeletiondate)
+
+        obsoleter.mainTask()
+
+        for pub in pubs[obsolete_series]:
+            self.assertIsNot(None, pub.scheduleddeletiondate)
+        for pub in pubs[other_series]:
+            self.assertIs(None, pub.scheduleddeletiondate)

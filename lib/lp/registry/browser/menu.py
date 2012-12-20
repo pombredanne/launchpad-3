@@ -14,8 +14,11 @@ __all__ = [
 
 from zope.interface import Interface
 
-from canonical.launchpad.webapp.menu import (
-    Link, NavigationMenu, enabled_with_permission)
+from lp.services.webapp.menu import (
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
 
 
 class TopLevelMenuMixin:
@@ -44,6 +47,11 @@ class TopLevelMenuMixin:
         text = 'Register a team'
         return Link('/people/+newteam', text, icon='add')
 
+    @enabled_with_permission('launchpad.Admin')
+    def register_distribution(self):
+        text = 'Register a distribution'
+        return Link('/distros/+add', text, icon='add')
+
     def create_account(self):
         text = 'Create an account'
         # Only enable this link for anonymous users.
@@ -60,7 +68,7 @@ class TopLevelMenuMixin:
         text = 'Merge people'
         return Link('/people/+adminpeoplemerge', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Moderate')
     def admin_merge_teams(self):
         text = 'Merge teams'
         return Link('/people/+adminteammerge', text, icon='edit')

@@ -8,14 +8,16 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.database.sqlbase import cursor
-from canonical.testing import LaunchpadZopelessLayer
+from lp.services.database.sqlbase import cursor
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import LaunchpadZopelessLayer
+
 
 class PillarNameTriggersTestCase(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        switch_dbuser('testadmin')
 
     def testDistributionTable(self):
         cur = cursor()
@@ -45,12 +47,12 @@ class PillarNameTriggersTestCase(unittest.TestCase):
         # Inserting a new Distribution will populate PillarName
         cur.execute("""
             INSERT INTO Distribution (
-                name, description, domainname, owner, displayname,
-                summary, title, members, mirror_admin
+                name, description, domainname, owner, registrant,
+                displayname, summary, title, members, mirror_admin
                 )
                 VALUES (
-                    'whatever', 'whatever', 'whatever', 1, 'whatever',
-                    'whatever', 'whatever', 1, 1
+                    'whatever', 'whatever', 'whatever', 1, 1,
+                    'whatever', 'whatever', 'whatever', 1, 1
                     )
             """)
         self.failUnless(is_in_sync('whatever'))
@@ -68,7 +70,8 @@ class PillarNameTriggersTestCase(unittest.TestCase):
             """)
         self.failUnless(is_in_sync('whatever2'))
 
-        # Deleting a Distribution removes the corresponding entry in PillarName
+        # Deleting a Distribution removes the corresponding entry in
+        # PillarName
         cur.execute("DELETE FROM Distribution WHERE name='whatever2'")
         cur.execute("SELECT COUNT(*) FROM PillarName WHERE name='whatever2'")
         self.failUnlessEqual(cur.fetchone()[0], 0)
@@ -100,7 +103,8 @@ class PillarNameTriggersTestCase(unittest.TestCase):
 
         # Inserting a new Product will populate PillarName
         cur.execute("""
-            INSERT INTO Product (owner, registrant, name, displayname, title, summary)
+            INSERT INTO Product (
+                owner, registrant, name, displayname, title, summary)
             VALUES (
                 1, 1, 'whatever', 'whatever', 'whatever', 'whatever'
                 )
@@ -150,10 +154,11 @@ class PillarNameTriggersTestCase(unittest.TestCase):
                 """, dict(name=name))
             return cur.fetchone()[0] == 1
 
-        # Inserting a new Project will populate PillarName
+        # Inserting a new ProjectGroup will populate PillarName
         cur.execute("""
             INSERT INTO Project (
-                name, owner, registrant, displayname, title, summary, description
+                name, owner, registrant, displayname, title, summary,
+                description
                 )
                 VALUES (
                     'whatever', 1, 1, 'whatever', 'whatever',
@@ -162,7 +167,7 @@ class PillarNameTriggersTestCase(unittest.TestCase):
             """)
         self.failUnless(is_in_sync('whatever'))
 
-        # Updating the Project.name will propogate changes to PillarName
+        # Updating the ProjectGroup.name will propogate changes to PillarName
         cur.execute("""
             UPDATE Project SET name='whatever2' where name='whatever'
             """)
@@ -175,11 +180,8 @@ class PillarNameTriggersTestCase(unittest.TestCase):
             """)
         self.failUnless(is_in_sync('whatever2'))
 
-        # Deleting a Project removes the corresponding entry in PillarName
+        # Deleting a ProjectGroup removes the corresponding entry in
+        # PillarName.
         cur.execute("DELETE FROM Project WHERE name='whatever2'")
         cur.execute("SELECT COUNT(*) FROM PillarName WHERE name='whatever2'")
         self.failUnlessEqual(cur.fetchone()[0], 0)
-
-
-def test_suite():
-    return unittest.makeSuite(PillarNameTriggersTestCase)

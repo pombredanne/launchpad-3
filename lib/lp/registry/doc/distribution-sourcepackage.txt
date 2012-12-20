@@ -1,22 +1,23 @@
 = Distribution Source Packages =
 
 A distribution source package represents a named source package in a
-distribution, independant of any particular release of that source
+distribution, independent of any particular release of that source
 package.
 
 This is useful for, among other things, tracking bugs in source
 packages, ensuring that bug reports automatically carry forward from one
 distribution series to the next.
 
-== Fetching a Distribution Source Package ==
+Fetching a Distribution Source Package
+--------------------------------------
 
 A common way to fetch a distribution source package is to start with the
 distribution object:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IDistributionSourcePackage)
+    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.distributionsourcepackage import IDistributionSourcePackage
     >>> debian = getUtility(IDistributionSet).getByName("debian")
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
 
@@ -30,15 +31,35 @@ Use IDistribution.getSourcePackage to get a specific package by name:
     >>> verifyObject(IDistributionSourcePackage, debian_firefox)
     True
 
-== Useful features ==
+
+Descriptive attributes
+----------------------
+
+A distribution source package has a name, displayname, title, and a summary.
 
     >>> dsp = ubuntu.getSourcePackage("pmount")
-    >>> dsp.displayname
-    u'pmount in ubuntu'
+    >>> print dsp.name
+    pmount
+
+    >>> print dsp.displayname
+    pmount in Ubuntu
+
+    >>> print dsp.title.encode('ascii', 'ignore')
+    pmount package in Ubuntu
+
+    >>> print dsp.summary
+    pmount: pmount shortdesc
+
+
+Aggregate attributes
+--------------------
+
     >>> dsp.bugtasks().count()
     0
 
-=== Publishing-related properties ===
+
+Publishing-related properties
+-----------------------------
 
 Publishing history of 'pmount in Ubuntu':
 
@@ -59,36 +80,53 @@ Current publishing records for 'pmount in Ubuntu':
 
 Current overall publications:
 
-    >>> alsa_utils = ubuntu.getSourcePackage("alsa-utils")
-    >>> pub = alsa_utils.latest_overall_publication
-    >>> (pub.sourcepackagerelease.sourcepackagename.name,
-    ...  pub.sourcepackagerelease.version,
-    ...  pub.distroseries.name,
-    ...  pub.status)
-    (u'alsa-utils',
-     u'1.0.9a-4ubuntu1',
-     u'hoary',
-     <DBItem PackagePublishingStatus.PUBLISHED, (2) Published>)
-    >>> linux_source = ubuntu.getSourcePackage("linux-source-2.6.15")
-    >>> pub = linux_source.latest_overall_publication
-    >>> (pub.sourcepackagerelease.sourcepackagename.name,
-    ...  pub.sourcepackagerelease.version,
-    ...  pub.distroseries.name,
-    ...  pub.status)
-    (u'linux-source-2.6.15',
-     u'2.6.15.3',
-     u'hoary',
-     <DBItem PackagePublishingStatus.PUBLISHED, (2) Published>)
-    >>> commercial = ubuntu.getSourcePackage("commercialpackage")
-    >>> pub = linux_source.latest_overall_publication
-    >>> (pub.sourcepackagerelease.sourcepackagename.name,
-    ...  pub.sourcepackagerelease.version,
-    ...  pub.distroseries.name,
-    ...  pub.status)
-    (u'linux-source-2.6.15',
-     u'2.6.15.3',
-     u'hoary',
-     <DBItem PackagePublishingStatus.PUBLISHED, (2) Published>)
+A DistributionSourcePackage has a property called 'latest_overall_publication'
+which returns the latest overall relevant publication. Relevant is currently
+defined as being either published or obsolete with published being preferred,
+sorted by distroseries and component with publications in proposed and backports
+excluded.
+
+    >>> from lp.soyuz.enums import PackagePublishingStatus
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> publisher = SoyuzTestPublisher()
+    >>> publisher.prepareBreezyAutotest()
+    >>> warty = ubuntu['warty']
+    >>> hoary = ubuntu['hoary']
+
+This demonstrates the scenario where a newer distroseries becomes obsolete 
+before an older distroseries. The latest_overall_publication property will
+return the publication from the older distroseries because a published
+publication is considered more relevant than an obsolete publication.
+
+Note that the component of the package in the newer obsolete distroseries 
+is 'main' and in the older distroseries it is 'universe'.
+
+    >>> compiz_publication_warty = publisher.getPubSource(
+    ...     sourcename='compiz', version='0.01-1ubuntu1', distroseries=warty,
+    ...     status=PackagePublishingStatus.PUBLISHED, component='universe')
+    >>> compiz_publication_hoary = publisher.getPubSource(
+    ...     sourcename='compiz', version='0.01-1ubuntu1', distroseries=hoary,
+    ...     status=PackagePublishingStatus.OBSOLETE, component='main')
+    >>> compiz = ubuntu.getSourcePackage('compiz')
+    >>> print compiz.latest_overall_publication.component.name
+    universe
+
+When more than one published publication exists in a single distroseries, 
+latest_overall_publication will favor updates over security and security over
+release.
+
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> firefox_publication_warty = publisher.getPubSource(
+    ...     sourcename='firefox', version='0.01-1ubuntu1', distroseries=hoary,
+    ...     status=PackagePublishingStatus.PUBLISHED, component='main',
+    ...     pocket=PackagePublishingPocket.RELEASE)
+    >>> firefox_publication_hoary = publisher.getPubSource(
+    ...     sourcename='firefox', version='0.01-1ubuntu1.1', distroseries=hoary,
+    ...     status=PackagePublishingStatus.PUBLISHED, component='main',
+    ...     pocket=PackagePublishingPocket.SECURITY)
+    >>> firefox = ubuntu.getSourcePackage('firefox')
+    >>> print firefox.latest_overall_publication.pocket.name
+    SECURITY
 
 === Release-related properties ===
 
@@ -125,6 +163,19 @@ Check if 'currentrelease' works with version containing letters
     >>> dsp3.currentrelease.version
     u'cr.g7-37'
 
+=== Distribution Source Package Branches ===
+
+We can use the getBranches() API from IHasBranches to get the related branches
+for a DSP.
+
+    >>> fred = factory.makePerson(name='fred')
+    >>> branch = factory.makePackageBranch(
+    ...     distroseries=hoary, sourcepackagename='pmount', name='tip',
+    ...     owner=fred)
+    >>> [branch] = list(dsp.getBranches())
+    >>> print branch.unique_name
+    ~fred/ubuntu/hoary/pmount/tip
+
 === Grabbing DSPRs ===
 
 To list the current 'pmount in Ubuntu' ISourcePackages, use
@@ -142,8 +193,8 @@ getVersion():
     True
 
     >>> pmount_dspr = dsp.getVersion('0.1-1')
-    >>> pmount_dspr.title
-    u'pmount 0.1-1 (source) in Ubuntu'
+    >>> print pmount_dspr.title
+    "pmount" 0.1-1 source package in Ubuntu
 
     >>> for pub in pmount_dspr.publishing_history:
     ...     print pub.distroseries.name, pub.status.name
@@ -156,14 +207,13 @@ archive (bug #60440):
     >>> ubuntutest = getUtility(IDistributionSet)["ubuntutest"]
     >>> alsa_dsp = ubuntutest.getSourcePackage("alsa-utils")
     >>> alsa_dspr = alsa_dsp.getVersion('1.0.9a-4')
-    >>> alsa_dspr.title
-    u'alsa-utils 1.0.9a-4 (source) in ubuntutest'
+    >>> print alsa_dspr.title
+    "alsa-utils" 1.0.9a-4 source package in ubuntutest
 
     >>> for pub in alsa_dspr.publishing_history:
     ...     is_removed = pub.dateremoved is not None
     ...     print pub.distroseries.name, pub.status.name, is_removed
     breezy-autotest DELETED True
-
 
 == __hash__ ==
 
@@ -192,7 +242,6 @@ This means that packages can be used as keys in dictionaries.
     >>> mapping[ubuntu.getSourcePackage('mozilla-firefox')] is firefox_marker
     True
 
-
 == Upstream links ==
 
 DistributionSourcePackages can be linked to upstream Products. You can
@@ -208,7 +257,6 @@ will be None.
 
     >>> print pmount.upstream_product
     None
-
 
 == Finding archives where this package is published ==
 
@@ -227,7 +275,6 @@ versions of a given source package have been published in.
     ...     name="beta", distribution=ubuntu_test)
 
     # Next publish some sources in them.
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
     >>> gedit_nightly_src_hist = publisher.getPubSource(
     ...     sourcename="gedit", archive=ppa_nightly,
     ...     creator=ppa_nightly.owner,
@@ -245,18 +292,15 @@ versions of a given source package have been published in.
     # karma for their efforts.
     >>> ppa_beta_owner_id = ppa_beta.owner.id
     >>> ppa_nightly_owner_id = ppa_nightly.owner.id
-    >>> transaction.commit()
 
-    >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> LaunchpadZopelessLayer.switchDbUser('karma')
+    >>> from lp.testing.dbuser import switch_dbuser
+    >>> switch_dbuser('karma')
     >>> from lp.registry.model.karma import KarmaTotalCache
     >>> cache_entry = KarmaTotalCache(person=ppa_beta_owner_id,
     ...     karma_total=200)
     >>> cache_entry = KarmaTotalCache(person=ppa_nightly_owner_id,
     ...     karma_total=201)
-    >>> import transaction
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> switch_dbuser('launchpad')
 
 The results of findRelatedArchives() are sorted so that archive containing
 the package created by the person with the greatest karma is first:
@@ -284,6 +328,6 @@ packages in other archives too:
     ...     archive_purpose=None)
     >>> for archive in archive_versions_for_gedit:
     ...     print archive.displayname
-    PPA named nightly for Person...
     Primary Archive for Ubuntu Test
+    PPA named nightly for Person...
     PPA named beta for Person...

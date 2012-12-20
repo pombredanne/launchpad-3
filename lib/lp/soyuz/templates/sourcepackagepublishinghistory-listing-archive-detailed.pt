@@ -2,25 +2,31 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  omit-tag="">
+  omit-tag=""
+  define="newer_version context/newer_distroseries_version">
 
-  <tr class="archive_package_row">
+  <tr tal:attributes="class python: ('archive_package_row ' + (
+                                     newer_version and 'superseded' or ''))">
     <td style="white-space: nowrap">
       <input
         name="field.selected_sources" type="checkbox"
         tal:condition="view/allow_selection"
         tal:attributes="value context/id;
                         id string:field.selected_sources.${context/id}"/>
-      <a class="expander"
-         tal:attributes="id string:pub${context/id}-expander;
-                         href string:+sourcepub/${context/id}/+listing-archive-extra">
-        <img src="/@@/treeCollapsed" alt="Show details" title="Show details"
-             tal:attributes="id string:pub${context/id}-arrow" />
+      <a tal:attributes="
+           href string:+sourcepub/${context/id}/+listing-archive-extra;
+           id string:pub${context/id}-expander"
+         class="sprite expander">
         <img src="/@@/package-source" />
         <tal:source_name replace="context/sourcepackagerelease/title">
           foo - 1.0
         </tal:source_name>
       </a>
+
+      <tal:newer_version tal:condition="newer_version">
+        (<a tal:attributes="href newer_version/fmt:url">Newer version</a>
+         available)
+      </tal:newer_version>
     </td>
     <td>
       <tal:view_changesfile
@@ -28,10 +34,10 @@
         <a tal:condition="changesfile"
            tal:attributes="href changesfile/http_url;
                            title changesfile/filename"
-          >(changesfile)</a>
+          >(changes file)</a>
       </tal:view_changesfile>
     </td>
-    <td tal:condition="context/archive/owner/isTeam"
+    <td tal:condition="context/archive/owner/is_team"
         tal:define="spr context/sourcepackagerelease;
                     signer spr/dscsigningkey/owner|nothing">
       <tal:has_signer condition="signer">
@@ -57,13 +63,13 @@
                           condition="not:view/builds_successful_and_published">
         <a tal:attributes="href build/fmt:url;
                            title build_status_summary/description">
-          <tal:arch content="build/distroarchseries/architecturetag" />
+          <tal:arch content="build/distro_arch_series/architecturetag" />
         </a>
       </tal:related_builds>
     </td>
   </tr>
-  <tr tal:attributes="id string:pub${context/id}" style="display: none">
-    <td colspan="7">
+  <tr tal:attributes="id string:pub${context/id}">
+    <td colspan="7" style="padding: 0px;">
       <div class="package-details"
            tal:attributes="id string:pub${context/id}-container" />
     </td>

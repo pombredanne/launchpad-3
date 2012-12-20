@@ -3,38 +3,42 @@
 
 __metaclass__ = type
 
-from StringIO import StringIO
 import unittest
 
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import flush_database_updates
-from lp.registry.model.distributionmirror import DistributionMirror
-from canonical.launchpad.ftests import login
-from lp.services.worlddata.interfaces.country import ICountrySet
-from lp.registry.interfaces.distributionmirror import (
-    IDistributionMirrorSet, MirrorContent, MirrorFreshness)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distributionmirror import (
+    IDistributionMirrorSet,
+    MirrorContent,
+    MirrorFreshness,
+    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.distributionmirror import DistributionMirror
+from lp.services.database.sqlbase import flush_database_updates
 from lp.services.mail import stub
+from lp.services.worlddata.interfaces.country import ICountrySet
+from lp.testing import (
+    login,
+    login_as,
+    )
+from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import LaunchpadFunctionalLayer
 
-from canonical.testing import LaunchpadFunctionalLayer
-
-
+# XXX Jan 20, 2010, jcsackett: This test case really needs to be updated to
+# TestCaseWithFactory.
 class TestDistributionMirror(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         login('test@canonical.com')
+        self.factory = LaunchpadObjectFactory()
         mirrorset = getUtility(IDistributionMirrorSet)
-        self.cdimage_mirror = getUtility(IDistributionMirrorSet).getByName(
-            'releases-mirror')
-        self.archive_mirror = getUtility(IDistributionMirrorSet).getByName(
-            'archive-mirror')
+        self.cdimage_mirror = mirrorset.getByName('releases-mirror')
+        self.archive_mirror = mirrorset.getByName('archive-mirror')
         self.hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
         self.hoary_i386 = self.hoary['i386']
 
@@ -70,23 +74,47 @@ class TestDistributionMirror(unittest.TestCase):
         self.failUnless(
             self.cdimage_mirror.shouldDisable(expected_file_count))
 
-    def test_delete_all_mirror_cdimage_serieses(self):
+    def test_delete_all_mirror_cdimage_series(self):
         mirror = self.cdimage_mirror.ensureMirrorCDImageSeries(
             self.hoary, flavour='ubuntu')
         mirror = self.cdimage_mirror.ensureMirrorCDImageSeries(
             self.hoary, flavour='edubuntu')
         self.failUnlessEqual(
-            self.cdimage_mirror.cdimage_serieses.count(), 2)
-        self.cdimage_mirror.deleteAllMirrorCDImageSerieses()
+            self.cdimage_mirror.cdimage_series.count(), 2)
+        self.cdimage_mirror.deleteAllMirrorCDImageSeries()
         self.failUnlessEqual(
-            self.cdimage_mirror.cdimage_serieses.count(), 0)
+            self.cdimage_mirror.cdimage_series.count(), 0)
 
     def test_archive_mirror_without_content_freshness(self):
-        self.failIf(self.archive_mirror.source_serieses or
-                    self.archive_mirror.arch_serieses)
+        self.failIf(self.archive_mirror.source_series or
+                    self.archive_mirror.arch_series)
         self.failUnlessEqual(
             self.archive_mirror.getOverallFreshness(),
             MirrorFreshness.UNKNOWN)
+
+    def test_source_mirror_freshness_property(self):
+        self._create_source_mirror(
+            self.hoary, PackagePublishingPocket.RELEASE,
+            self.hoary.components[0], MirrorFreshness.UP)
+        self._create_source_mirror(
+            self.hoary, PackagePublishingPocket.RELEASE,
+            self.hoary.components[1], MirrorFreshness.TWODAYSBEHIND)
+        flush_database_updates()
+        self.failUnlessEqual(
+            removeSecurityProxy(self.archive_mirror).source_mirror_freshness,
+            MirrorFreshness.TWODAYSBEHIND)
+
+    def test_arch_mirror_freshness_property(self):
+        self._create_bin_mirror(
+            self.hoary_i386, PackagePublishingPocket.RELEASE,
+            self.hoary.components[0], MirrorFreshness.UP)
+        self._create_bin_mirror(
+            self.hoary_i386, PackagePublishingPocket.RELEASE,
+            self.hoary.components[1], MirrorFreshness.ONEHOURBEHIND)
+        flush_database_updates()
+        self.failUnlessEqual(
+            removeSecurityProxy(self.archive_mirror).arch_mirror_freshness,
+            MirrorFreshness.ONEHOURBEHIND)
 
     def test_archive_mirror_with_source_content_freshness(self):
         self._create_source_mirror(
@@ -132,15 +160,6 @@ class TestDistributionMirror(unittest.TestCase):
             self.archive_mirror.getOverallFreshness(),
             MirrorFreshness.TWODAYSBEHIND)
 
-    def _create_probe_record(self, mirror):
-        log_file = StringIO()
-        log_file.write("Fake probe, nothing useful here.")
-        log_file.seek(0)
-        library_alias = getUtility(ILibraryFileAliasSet).create(
-            name='foo', size=len(log_file.getvalue()),
-            file=log_file, contentType='text/plain')
-        proberecord = mirror.newProbeRecord(library_alias)
-
     def test_disabling_mirror_and_notifying_owner(self):
         login('karl@canonical.com')
 
@@ -148,7 +167,7 @@ class TestDistributionMirror(unittest.TestCase):
         # If a mirror has been probed only once, the owner will always be
         # notified when it's disabled --it doesn't matter whether it was
         # previously enabled or disabled.
-        self._create_probe_record(mirror)
+        self.factory.makeMirrorProbeRecord(mirror)
         self.failUnless(mirror.enabled)
         log = 'Got a 404 on http://foo/baz'
         mirror.disable(notify_owner=True, log=log)
@@ -166,7 +185,7 @@ class TestDistributionMirror(unittest.TestCase):
 
         # For mirrors that have been probed more than once, we'll only notify
         # the owner if the mirror was previously enabled.
-        self._create_probe_record(mirror)
+        self.factory.makeMirrorProbeRecord(mirror)
         mirror.enabled = True
         mirror.disable(notify_owner=True, log=log)
         # A notification was sent to the owner and other to the mirror admins.
@@ -188,6 +207,25 @@ class TestDistributionMirror(unittest.TestCase):
         transaction.commit()
         self.failUnlessEqual(len(stub.test_emails), 0)
         stub.test_emails = []
+
+    def test_no_email_sent_to_uncontactable_owner(self):
+        # If the owner has no contact address, only the mirror admins are
+        # notified.
+        mirror = self.cdimage_mirror
+        login_as(mirror.owner)
+        # Deactivate the mirror owner to remove the contact address.
+        mirror.owner.deactivateAccount("I hate mirror spam.")
+        login_as(mirror.distribution.mirror_admin)
+        # Clear out notifications about the new team member.
+        transaction.commit()
+        stub.test_emails = []
+
+        # Disabling the mirror results in a single notification to the
+        # mirror admins.
+        self.factory.makeMirrorProbeRecord(mirror)
+        mirror.disable(notify_owner=True, log="It broke.")
+        transaction.commit()
+        self.failUnlessEqual(len(stub.test_emails), 1)
 
 
 class TestDistributionMirrorSet(unittest.TestCase):
@@ -230,8 +268,3 @@ class TestDistributionMirrorSet(unittest.TestCase):
             france, MirrorContent.RELEASE)
         self.failUnless(len(mirrors) > 1, "Not enough mirrors")
         self.failUnlessEqual(main_mirror, mirrors[-1])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

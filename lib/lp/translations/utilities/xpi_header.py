@@ -7,16 +7,22 @@ __all__ = [
     'XpiHeader',
     ]
 
-import cElementTree
+try:
+    import xml.etree.cElementTree as cElementTree
+except ImportError:
+    import cElementTree
 from email.Utils import parseaddr
 from StringIO import StringIO
 
 from zope.interface import implements
 
 from lp.translations.interfaces.translationcommonformat import (
-    ITranslationHeaderData)
+    ITranslationHeaderData,
+    )
 from lp.translations.interfaces.translationimporter import (
-    TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
+    TranslationFormatInvalidInputError,
+    TranslationFormatSyntaxError,
+    )
 
 
 class XpiHeader:
@@ -71,7 +77,7 @@ class XpiHeader:
                     name, email = parseaddr(elem.text)
                     if name != '' and '@' in email:
                         last_name, last_email = name, email
-        except SyntaxError, exception:
+        except SyntaxError as exception:
             raise TranslationFormatSyntaxError(
                 filename='install.rdf', line_number=exception.lineno,
                 message=exception.msg)

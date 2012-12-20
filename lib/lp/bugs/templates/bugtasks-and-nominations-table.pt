@@ -2,102 +2,26 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   omit-tag="">
-<script type="text/javascript">
-  function toggleFormVisibility(row_id) {
-    row = document.getElementById(row_id)
-    edit_icon = document.getElementById(row_id + "-edit")
-    if (row.style.display=="none") {
-      row.style.display = "table-row";
-    } else {
-      row.style.display = "none";
-    }
-    return false;
-  }
-</script>
+    <table
+      id="affected-software"
+      tal:attributes="class python: context.duplicateof and 'duplicate listing' or 'listing'"
+    >
+      <thead>
+        <tr>
+          <th colspan="2">Affects</th>
+          <th>Status</th>
+          <th>Importance</th>
+          <th>Assigned to</th>
+          <th>Milestone</th>
+        </tr>
+      </thead>
 
-<table
-  id="affected-software"
-  tal:attributes="class python: context.duplicateof and 'duplicate listing' or 'listing'"
->
-  <thead>
-    <tr>
-      <th colspan="2">Affects</th>
-      <th>Status</th>
-      <th>Importance</th>
-      <th colspan="2">Assigned to</th>
-      <th>Milestone</th>
-    </tr>
-  </thead>
+      <tbody>
+        <tal:bugtask-or-nomination
+            repeat="task_or_nom_view view/getBugTaskAndNominationViews">
+          <tal:block replace="structure task_or_nom_view" />
+        </tal:bugtask-or-nomination>
+      </tbody>
 
-  <tbody>
-    <tal:bugtask-or-nomination
-        repeat="task_or_nom_view view/getBugTaskAndNominationViews">
-      <tal:block replace="structure task_or_nom_view" />
-    </tal:bugtask-or-nomination>
-  </tbody>
-
-</table>
-
-<div class="actions"
-     tal:define="current_bugtask view/current_bugtask"
-     tal:condition="view/displayAlsoAffectsLinks">
-    <tal:also-affects-links define="context_menu context/menu:context">
-      <tal:addupstream
-        define="link context_menu/addupstream"
-        condition="link/enabled"
-        replace="structure link/render" />
-      <tal:adddistro
-        define="link context_menu/adddistro"
-        condition="link/enabled"
-        replace="structure link/render" />
-      <tal:nominate
-        define="link context_menu/nominate"
-        condition="link/enabled"
-        replace="structure link/render" />
-      <span id="affectsmetoo" style="display: inline"
-            tal:condition="link/enabled"
-            tal:define="link context_menu/affectsmetoo;
-                        affected view/current_user_affected_status">
-
-        <tal:comment condition="nothing">
-          This .static section is shown in browsers with javascript
-          enabled, and before setup_me_too is run.
-        </tal:comment>
-        <span class="static">
-          <tal:affected condition="affected">
-            <img width="14" height="14" src="/@@/flame-icon" alt="" />
-            This bug affects me too
-          </tal:affected>
-          <tal:not-affected condition="not:affected">
-            This bug doesn't affect me
-          </tal:not-affected>
-          <a href="+affectsmetoo">
-            <img class="editicon" src="/@@/edit" alt="Edit" />
-          </a>
-        </span>
-
-        <tal:comment condition="nothing">
-          This .dynamic section is used by setup_me_too to display
-          controls and information in the correct places.
-        </tal:comment>
-        <span class="dynamic unseen">
-          <img src="/@@/flame-icon" alt=""/>
-          <a href="+affectsmetoo" class="js-action"
-             ><span class="value">Does this bug affect you?</span></a>
-          <img class="editicon" src="/@@/edit" alt="Edit" />
-        </span>
-
-        <script type="text/javascript" tal:content="string:
-          YUI().use('event', 'bugs.bugtask_index', function(Y) {
-              Y.on('load', function(e) {
-                  Y.bugs.setup_me_too(${view/current_user_affected_js_status});
-              }, window);
-          });
-          ">
-        </script>
-
-      </span>
-    </tal:also-affects-links>
-</div>
-
+    </table>
 </tal:root>

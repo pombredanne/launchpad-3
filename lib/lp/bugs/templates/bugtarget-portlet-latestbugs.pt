@@ -11,7 +11,9 @@
   <ul>
     <li tal:repeat="bugtask view/latestBugTasks">
       <a tal:replace="structure bugtask/fmt:link" />
-      <br />Reported <tal:when replace="bugtask/datecreated/fmt:displaydate" />
+      <br /><span class="registered">
+        Reported <tal:when replace="bugtask/datecreated/fmt:displaydate" />
+      </span>
     </li>
   </ul>
 </div>

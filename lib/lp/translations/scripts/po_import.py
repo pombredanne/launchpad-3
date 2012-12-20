@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functions used with the Rosetta PO import script."""
@@ -6,240 +6,211 @@
 __metaclass__ = type
 
 
-import time
+__all__ = [
+    'TranslationsImport',
+    ]
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+import sys
+
+import pytz
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad import helpers
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.config import config
+from lp.services.mail.helpers import get_contact_email_addresses
+from lp.services.mail.mailwrapper import MailWrapper
+from lp.services.mail.sendmail import simple_sendmail
+from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.webapp import errorlog
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue, RosettaImportStatus)
-from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad.mailnotification import MailWrapper
+    ITranslationImportQueue,
+    )
 
 
-class ImportProcess:
+class TranslationsImport(LaunchpadCronScript):
     """Import .po and .pot files attached to Rosetta."""
+    # Time goal for one run.  It is not exact.  The script can run for
+    # longer than this, but will know to stop taking on new work.
+    # Since the script is run every 9 or 10 minutes, we set the goal
+    # at 8 minutes.  That leaves a bit of time to complete the last
+    # ongoing batch of imports.
+    time_to_run = timedelta(minutes=8)
 
-    def __init__(self, ztm, logger, max_seconds=3600):
-        """Initialize the ImportProcess object.
+    # Failures to be reported in bulk at closing, so we don't accumulate
+    # thousands of oopses for repetitive errors.
+    failures = None
 
-        Arguments:
+    def __init__(self, *args, **kwargs):
+        super(TranslationsImport, self).__init__(*args, **kwargs)
+        self.failures = {}
 
-        :param ztm: transaction manager to commit our individual imports.
+    def _describeEntry(self, entry):
+        """Identify `entry` in a human-readable way."""
+        if entry.import_into:
+            return "%s (id %d)" % (entry.import_into.title, entry.id)
 
-        :param logger: logging object to log informational messages and errors
-        to.
+        if entry.sourcepackagename:
+            return "'%s' (id %d) in %s %s package %s" % (
+                entry.path, entry.id,
+                entry.distroseries.distribution.name,
+                entry.distroseries.displayname,
+                entry.sourcepackagename.name)
+        else:
+            return "'%s' (id %d) in %s" % (
+                entry.path, entry.id, entry.productseries.title)
 
-        :param max_seconds: "alarm clock": after this many seconds, the job
-        should finish up even if there is more work for it to do.  This is a
-        mere guideline; actual processing time may be longer.
-        """
-        self.ztm = ztm
-        self.logger = logger
-        self.deadline = time.time() + max_seconds
+    def _reportOops(self, reason, entries, exc_info=None):
+        """Register an oops."""
+        if exc_info is None:
+            exc_info = sys.exc_info()
+        description = [
+            ('Reason', reason),
+            ('Entries', str(entries)),
+            ]
+        errorlog.globalErrorUtility.raising(
+            exc_info, errorlog.ScriptRequest(description))
 
-    def run(self):
-        """Execute the import of entries from the queue."""
-        # Get the queue.
+    def _registerFailure(self, entry, reason, traceback=False, abort=False):
+        """Note that a queue entry is unusable in some way."""
+        reason_text = unicode(reason)
+        entry.setStatus(RosettaImportStatus.FAILED,
+                        getUtility(ILaunchpadCelebrities).rosetta_experts)
+        entry.setErrorOutput(reason_text)
+
+        if abort:
+            traceback = True
+
+        description = self._describeEntry(entry)
+        message = "%s -- %s" % (reason_text, description)
+        self.logger.error(message, exc_info=traceback)
+
+        if abort:
+            # Serious enough to stop the script.  Register as an
+            # individual oops.
+            self._reportOops(reason, [description])
+        else:
+            # Register problem for bulk reporting later.
+            if not self.failures.get(reason_text):
+                self.failures[reason_text] = []
+            self.failures[reason_text].append(description)
+
+    def _checkEntry(self, entry):
+        """Sanity-check `entry` before importing."""
+        if entry.import_into is None:
+            self._registerFailure(
+                entry, "Entry is approved but has no place to import to.")
+            return False
+
+        template = entry.potemplate
+        if template:
+            if template.distroseries != entry.distroseries:
+                self._registerFailure(
+                    entry, "Entry was approved for the wrong distroseries.")
+                return False
+            if template.productseries != entry.productseries:
+                self._registerFailure(
+                    entry, "Entry was approved for the wrong productseries.")
+                return False
+
+        return True
+
+    def _shouldNotify(self, person):
+        """Is `person` someone we should send notification emails?"""
+        # We don't notify the vcs-imports team, which owns all mirrored
+        # branches.  Templates generated in the build farm based on
+        # mirrored branches are uploaded in the name of this team, but
+        # there is no point in sending out notifications to them.
+        return person != getUtility(ILaunchpadCelebrities).vcs_imports
+
+    def _importEntry(self, entry):
+        """Perform the import of one entry, and notify the uploader."""
+        target = entry.import_into
+        self.logger.info('Importing: %s' % target.title)
+        (mail_subject, mail_body) = target.importFromQueue(entry, self.logger)
+
+        if mail_subject is not None and self._shouldNotify(entry.importer):
+            # A `mail_subject` of None indicates that there
+            # is no notification worth sending out.
+            from_email = config.rosetta.notification_address
+            katie = getUtility(ILaunchpadCelebrities).katie
+            if entry.importer == katie:
+                # Email import state to Debian imports email.
+                to_email = None
+            else:
+                to_email = get_contact_email_addresses(entry.importer)
+
+            if to_email:
+                text = MailWrapper().format(mail_body)
+                simple_sendmail(from_email, to_email, mail_subject, text)
+
+    def run(self, *args, **kwargs):
+        errorlog.globalErrorUtility.configure('poimport')
+        LaunchpadCronScript.run(self, *args, **kwargs)
+
+    def main(self):
+        """Import entries from the queue."""
+        self.logger.debug("Starting the import process.")
+
+        self.deadline = datetime.now(pytz.UTC) + self.time_to_run
         translation_import_queue = getUtility(ITranslationImportQueue)
 
         # Get the list of each product or distroseries with pending imports.
         # We'll serve these queues in turn, one request each, until either the
         # queue is drained or our time is up.
         importqueues = translation_import_queue.getRequestTargets(
-            RosettaImportStatus.APPROVED)
+            user=None, status=RosettaImportStatus.APPROVED)
 
         if not importqueues:
             self.logger.info("No requests pending.")
             return
 
-        # XXX: JeroenVermeulen 2007-06-20: How on Earth do we test that the
-        # deadline code works?  It's only a small thing, and of course we'll
-        # notice that it works when we stop getting errors about this script
-        # not finishing.  Meanwhile, SteveA has suggested a more general
-        # solution.
-        while importqueues and time.time() < self.deadline:
-            # For fairness, service all queues at least once; don't check for
-            # deadline.  If we stopped halfway through the list of queues, we
-            # would accidentally favour queues that happened to come out at
-            # the front of the list.
+        have_work = True
+
+        while have_work and datetime.now(pytz.UTC) < self.deadline:
+            have_work = False
+
+            # For fairness, service all queues at least once; don't
+            # check for deadlines here or we'd favour some
+            # products/packages over others.
             for queue in importqueues:
-                # Make sure our previous state changes hit the database.
-                # Otherwise, getFirstEntryToImport() might pick up an entry
-                # we've already processed but haven't flushed yet.
-                # XXX: JeroenVermeulen 2007-11-29 bug=3989: should become
-                # unnecessary once Zopeless commit() improves.
-                flush_database_updates()
-
-                entry_to_import = queue.getFirstEntryToImport()
-                if entry_to_import is None:
+                entry = queue.getFirstEntryToImport()
+                if entry is None:
                     continue
 
-                if entry_to_import.import_into is None:
-                    if entry_to_import.sourcepackagename is not None:
-                        package = entry_to_import.sourcepackagename.name
-                    elif entry_to_import.productseries is not None:
-                        package = (
-                            entry_to_import.productseries.product.displayname)
-                    else:
-                        raise AssertionError(
-                            "Import queue entry %d has neither a "
-                            "source package name nor a product series."
-                            % entry_to_import.id)
-                    raise AssertionError(
-                        "Broken translation import queue entry %d (for %s): "
-                        "it's Approved but lacks the place where it should "
-                        "be imported!  A DBA will need to fix this by hand."
-                        % (entry_to_import.id, package))
+                have_work = True
 
-                # Do the import.
-                title = '[Unknown Title]'
                 try:
-                    title = entry_to_import.import_into.title
-                    self.logger.info('Importing: %s' % title)
-
-                    (mail_subject, mail_body) = (
-                        entry_to_import.import_into.importFromQueue(
-                            entry_to_import, self.logger))
-
-                    if mail_subject is not None:
-                        # A `mail_subject` of None indicates that there
-                        # is no notification worth sending out.
-                        from_email = config.rosetta.admin_email
-                        katie = getUtility(ILaunchpadCelebrities).katie
-                        if entry_to_import.importer == katie:
-                            # Email import state to Debian imports email.
-                            to_email = config.rosetta.debian_import_email
-                        else:
-                            to_email = helpers.get_contact_email_addresses(
-                                entry_to_import.importer)
-                        text = MailWrapper().format(mail_body)
-
-                        # XXX: JeroenVermeulen 2007-11-29 bug=29744: email
-                        # isn't transactional in zopeless mode.  That
-                        # means that our current transaction can fail
-                        # after we already sent out a success notification.
-                        # To prevent that, we commit the import (attempt)
-                        # before sending out the email.  That way, the worst
-                        # that can happen is that an email goes missing.
-                        # Once bug 29744 is fixed, this commit must die so
-                        # the email and the import will be in a single
-                        # atomic operation.
-                        self.ztm.commit()
-                        self.ztm.begin()
-
-                        simple_sendmail(
-                            from_email, to_email, mail_subject, text)
-
+                    if self._checkEntry(entry):
+                        self._importEntry(entry)
+                    if self.txn:
+                        self.txn.commit()
                 except KeyboardInterrupt:
-                    self.ztm.abort()
                     raise
-                except AssertionError:
+                except (AssertionError, SystemError) as e:
+                    self._registerFailure(entry, e, abort=True)
                     raise
-                except:
-                    # If we have any exception, log it, abort the transaction
-                    # and set the status to FAILED.
-                    self.logger.error('Got an unexpected exception while'
-                                      ' importing %s' % title, exc_info=1)
-                    # We are going to abort the transaction, need to save the
-                    # id of this entry to update its status.
-                    failed_entry_id = entry_to_import.id
-                    self.ztm.abort()
-                    # Get the needed objects to set the failed entry status as
-                    # FAILED.
-                    self.ztm.begin()
-                    translation_import_queue = getUtility(
-                        ITranslationImportQueue)
-                    entry_to_import = translation_import_queue[
-                        failed_entry_id]
-                    entry_to_import.setStatus(RosettaImportStatus.FAILED)
-                    self.ztm.commit()
-                    self.ztm.begin()
-                    # Go to process next entry.
-                    continue
+                except Exception as e:
+                    if self.txn:
+                        self.txn.abort()
+                    self._registerFailure(entry, e, traceback=True)
+                    if self.txn:
+                        self.txn.commit()
 
-                # As soon as the import is done, we commit the transaction
-                # so it's not lost.
-                try:
-                    self.ztm.commit()
-                    self.ztm.begin()
-                except KeyboardInterrupt:
-                    self.ztm.abort()
-                    raise
-                except:
-                    # If we have any exception, we log it and abort the
-                    # transaction.
-                    self.logger.error(
-                        'We got an unexpected exception while committing the '
-                        'transaction',
-                        exc_info=1)
-                    self.ztm.abort()
-                    self.ztm.begin()
-
-            # Refresh the list of objects with pending imports.
-            importqueues = (
-                translation_import_queue.getRequestTargets(
-                    RosettaImportStatus.APPROVED))
-
-        if not importqueues:
-            self.logger.info("Import requests completed.")
-        else:
+        if have_work:
             self.logger.info("Used up available time.")
+        else:
+            self.logger.info("Import requests completed.")
 
+        self._reportFailures()
 
-class AutoApproveProcess:
-    """Attempt to approve some PO/POT imports without human intervention."""
-    def __init__(self, ztm, logger):
-        self.ztm = ztm
-        self.logger = logger
+        self.logger.debug("Finished the import process.")
 
-    def run(self):
-        """Attempt to approve requests without human intervention.
-
-        Look for entries in translation_import_queue that look like they can
-        be approved automatically.
-
-        Also, detect requests that should be blocked, and block them in their
-        entirety (with all their .pot and .po files); and purges completed or
-        removed entries from the queue.
-        """
-
-        translation_import_queue = getUtility(ITranslationImportQueue)
-
-        # There may be corner cases where an 'optimistic approval' could
-        # import a .po file to the wrong IPOFile (but the right language).
-        # The savings justify that risk.  The problem can only occur where,
-        # for a given productseries/sourcepackage, we have two potemplates in
-        # the same directory, each with its own set of .po files, and for some
-        # reason one of the .pot files has not been added to the queue.  Then
-        # we would import both sets of .po files to that template.  This is
-        # not a big issue because the two templates will rarely share an
-        # identical msgid, and especially because it's not a very common
-        # layout in the free software world.
-        if translation_import_queue.executeOptimisticApprovals(self.ztm):
-            self.logger.info(
-                'The automatic approval system approved some entries.')
-
-        removed_entries = translation_import_queue.cleanUpQueue()
-        if removed_entries > 0:
-            self.logger.info('Removed %d entries from the queue.' %
-                removed_entries)
-            self.ztm.commit()
-            self.ztm.begin()
-
-        # We need to block entries automatically to save Rosetta experts some
-        # work when a complete set of .po files and a .pot file should not be
-        # imported into the system.  We have the same corner case as with the
-        # previous approval method, but in this case it's a matter of changing
-        # the status back from "blocked" to "needs review," or approving it
-        # directly so no data will be lost and a lot of work is saved.
-        blocked_entries = (
-            translation_import_queue.executeOptimisticBlock(self.ztm))
-        if blocked_entries > 0:
-            self.logger.info('Blocked %d entries from the queue.' %
-                blocked_entries)
-            self.ztm.commit()
-
+    def _reportFailures(self):
+        """Bulk-report deferred failures as oopses."""
+        for reason, entries in self.failures.iteritems():
+            self._reportOops(reason, entries)

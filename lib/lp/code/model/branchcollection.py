@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IBranchCollection`."""
@@ -8,34 +8,86 @@ __all__ = [
     'GenericBranchCollection',
     ]
 
-from storm.expr import And, Desc, LeftJoin, Join, Or, Select, Union
+from collections import defaultdict
+from functools import partial
+from operator import attrgetter
 
+from lazr.restful.utils import safe_hasattr
+from storm.expr import (
+    And,
+    Count,
+    Desc,
+    In,
+    Join,
+    LeftJoin,
+    Or,
+    Select,
+    SQL,
+    Union,
+    With,
+    )
+from storm.info import ClassAlias
+from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
-from lp.code.model.branch import Branch
-from lp.code.model.branchmergeproposal import (
-    BranchMergeProposal)
+from lp.app.enums import (
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    )
+from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
+from lp.bugs.model.bugbranch import BugBranch
+from lp.bugs.model.bugtask import BugTask
+from lp.code.enums import BranchMergeProposalStatus
+from lp.code.interfaces.branch import user_has_special_branch_access
+from lp.code.interfaces.branchcollection import (
+    IBranchCollection,
+    InvalidFilter,
+    )
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
+from lp.code.interfaces.seriessourcepackagebranch import (
+    IFindOfficialBranchLinks,
+    )
+from lp.code.model.branch import (
+    Branch,
+    get_branch_privacy_filter,
+    )
+from lp.code.model.branchmergeproposal import BranchMergeProposal
+from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.branchsubscription import BranchSubscription
+from lp.code.model.codeimport import CodeImport
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import CodeReviewVoteReference
+from lp.code.model.revision import Revision
+from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
+from lp.registry.enums import EXCLUSIVE_TEAM_POLICY
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
-from lp.registry.model.person import Owner, Person
+from lp.registry.model.person import (
+    Owner,
+    Person,
+    )
 from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
-from lp.code.interfaces.branch import (
-    user_has_special_branch_access)
-from lp.code.interfaces.branchcollection import (
-    IBranchCollection, InvalidFilter)
-from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.webapp.vocabulary import CountableIterator
+from lp.services.database.bulk import (
+    load_referencing,
+    load_related,
+    )
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import quote
+from lp.services.propertycache import get_property_cache
+from lp.services.searchbuilder import any
+from lp.services.webapp.vocabulary import CountableIterator
 
 
 class GenericBranchCollection:
@@ -44,7 +96,8 @@ class GenericBranchCollection:
     implements(IBranchCollection)
 
     def __init__(self, store=None, branch_filter_expressions=None,
-                 tables=None, exclude_from_search=None):
+                 tables=None, exclude_from_search=None,
+                 asymmetric_filter_expressions=None, asymmetric_tables=None):
         """Construct a `GenericBranchCollection`.
 
         :param store: The store to look in for branches. If not specified,
@@ -56,21 +109,46 @@ class GenericBranchCollection:
         :param tables: A dict of Storm tables to the Join expression.  If an
             expression in branch_filter_expressions refers to a table, then
             that table *must* be in this list.
+        :param asymmetric_filter_expressions: As per branch_filter_expressions
+            but only applies to one side of reflexive joins.
+        :param asymmetric_tables: As per tables, for
+            asymmetric_filter_expressions.
         """
         self._store = store
         if branch_filter_expressions is None:
             branch_filter_expressions = []
-        self._branch_filter_expressions = branch_filter_expressions
+        self._branch_filter_expressions = list(branch_filter_expressions)
         if tables is None:
             tables = {}
         self._tables = tables
+        if asymmetric_filter_expressions is None:
+            asymmetric_filter_expressions = []
+        self._asymmetric_filter_expressions = list(
+            asymmetric_filter_expressions)
+        if asymmetric_tables is None:
+            asymmetric_tables = {}
+        self._asymmetric_tables = asymmetric_tables
         if exclude_from_search is None:
             exclude_from_search = []
         self._exclude_from_search = exclude_from_search
+        self._user = None
 
     def count(self):
         """See `IBranchCollection`."""
-        return self.getBranches().count()
+        return self.getBranches(eager_load=False).count()
+
+    def is_empty(self):
+        """See `IBranchCollection`."""
+        return self.getBranches(eager_load=False).is_empty()
+
+    def ownerCounts(self):
+        """See `IBranchCollection`."""
+        is_team = Person.teamowner != None
+        branch_owners = self._getBranchSelect((Branch.ownerID,))
+        counts = dict(self.store.find(
+            (is_team, Count(Person.id)),
+            Person.id.is_in(branch_owners)).group_by(is_team))
+        return (counts.get(False, 0), counts.get(True, 0))
 
     @property
     def store(self):
@@ -85,71 +163,288 @@ class GenericBranchCollection:
             return self._store
 
     def _filterBy(self, expressions, table=None, join=None,
-                  exclude_from_search=None):
-        """Return a subset of this collection, filtered by 'expressions'."""
+                  exclude_from_search=None, symmetric=True):
+        """Return a subset of this collection, filtered by 'expressions'.
+
+        :param symmetric: If True this filter will apply to both sides
+            of merge proposal lookups and any other lookups that join
+            Branch back onto Branch.
+        """
         # NOTE: JonathanLange 2009-02-17: We might be able to avoid the need
         # for explicit 'tables' by harnessing Storm's table inference system.
         # See http://paste.ubuntu.com/118711/ for one way to do that.
-        tables = self._tables.copy()
         if table is not None:
             if join is None:
                 raise InvalidFilter("Cannot specify a table without a join.")
-            tables[table] = join
-        if exclude_from_search is None:
-            exclude_from_search = []
         if expressions is None:
             expressions = []
+        tables = self._tables.copy()
+        asymmetric_tables = self._asymmetric_tables.copy()
+        if symmetric:
+            if table is not None:
+                tables[table] = join
+            symmetric_expr = self._branch_filter_expressions + expressions
+            asymmetric_expr = list(self._asymmetric_filter_expressions)
+        else:
+            if table is not None:
+                asymmetric_tables[table] = join
+            symmetric_expr = list(self._branch_filter_expressions)
+            asymmetric_expr = (
+                self._asymmetric_filter_expressions + expressions)
+        if exclude_from_search is None:
+            exclude_from_search = []
         return self.__class__(
             self.store,
-            self._branch_filter_expressions + expressions,
+            symmetric_expr,
             tables,
-            self._exclude_from_search + exclude_from_search)
+            self._exclude_from_search + exclude_from_search,
+            asymmetric_expr,
+            asymmetric_tables)
 
-    def _getBranchIdQuery(self):
-        """Return a Storm 'Select' for the branch IDs in this collection."""
-        # XXX: JonathanLange 2009-03-04 bug=337494: getBranches() returns a
-        # decorated set, so we get at the underlying set so we can get at the
-        # private and juicy _get_select.
-        select = self.getBranches().result_set._get_select()
-        select.columns = (Branch.id,)
-        return select
+    def _getBranchSelect(self, columns=(Branch.id,)):
+        """Return a Storm 'Select' for columns in this collection."""
+        branches = self.getBranches(eager_load=False, find_expr=columns)
+        return branches.get_plain_result_set()._get_select()
 
     def _getBranchExpressions(self):
         """Return the where expressions for this collection."""
-        return self._branch_filter_expressions
+        return (self._branch_filter_expressions +
+            self._asymmetric_filter_expressions +
+            self._getBranchVisibilityExpression())
 
-    def getBranches(self):
+    def _getBranchVisibilityExpression(self, branch_class=None):
+        """Return the where clauses for visibility."""
+        return []
+
+    @staticmethod
+    def preloadVisibleStackedOnBranches(branches, user=None):
+        """Preload the chains of stacked on branches related to the given list
+        of branches. Only the branches visible for the given user are
+        preloaded/returned.
+
+        """
+        if len(branches) == 0:
+            return
+        store = IStore(Branch)
+        result = store.execute("""
+            WITH RECURSIVE stacked_on_branches_ids AS (
+                SELECT column1 as id FROM (VALUES %s) AS temp
+                UNION
+                SELECT DISTINCT branch.stacked_on
+                FROM stacked_on_branches_ids, Branch AS branch
+                WHERE
+                    branch.id = stacked_on_branches_ids.id AND
+                    branch.stacked_on IS NOT NULL
+            )
+            SELECT id from stacked_on_branches_ids
+            """ % ', '.join(
+                ["(%s)" % quote(id)
+                 for id in map(attrgetter('id'), branches)]))
+        branch_ids = [res[0] for res in result.get_all()]
+        # Not really sure this is useful: if a given branch is visible by a
+        # user, then I think it means that the whole chain of branches on
+        # which is is stacked on is visible by this user
+        expressions = [Branch.id.is_in(branch_ids)]
+        if user is None:
+            collection = AnonymousBranchCollection(
+                branch_filter_expressions=expressions)
+        else:
+            collection = VisibleBranchCollection(
+                user=user, branch_filter_expressions=expressions)
+        return list(collection.getBranches())
+
+    @staticmethod
+    def preloadDataForBranches(branches):
+        """Preload branches cached associated product series and
+        suite source packages."""
+        caches = dict((branch.id, get_property_cache(branch))
+            for branch in branches)
+        branch_ids = caches.keys()
+        for cache in caches.values():
+            if not safe_hasattr(cache, '_associatedProductSeries'):
+                cache._associatedProductSeries = []
+            if not safe_hasattr(cache, '_associatedSuiteSourcePackages'):
+                cache._associatedSuiteSourcePackages = []
+            if not safe_hasattr(cache, 'code_import'):
+                cache.code_import = None
+        # associatedProductSeries
+        # Imported here to avoid circular import.
+        from lp.registry.model.productseries import ProductSeries
+        for productseries in IStore(ProductSeries).find(
+            ProductSeries,
+            ProductSeries.branchID.is_in(branch_ids)):
+            cache = caches[productseries.branchID]
+            cache._associatedProductSeries.append(productseries)
+        # associatedSuiteSourcePackages
+        series_set = getUtility(IFindOfficialBranchLinks)
+        # Order by the pocket to get the release one first. If changing
+        # this be sure to also change BranchCollection.getBranches.
+        links = series_set.findForBranches(branches).order_by(
+            SeriesSourcePackageBranch.pocket)
+        for link in links:
+            cache = caches[link.branchID]
+            cache._associatedSuiteSourcePackages.append(
+                link.suite_sourcepackage)
+        for code_import in IStore(CodeImport).find(
+            CodeImport, CodeImport.branchID.is_in(branch_ids)):
+            cache = caches[code_import.branchID]
+            cache.code_import = code_import
+
+    def getBranches(self, find_expr=Branch, eager_load=False):
         """See `IBranchCollection`."""
-        tables = [Branch] + self._tables.values()
+        all_tables = set(
+            self._tables.values() + self._asymmetric_tables.values())
+        tables = [Branch] + list(all_tables)
         expressions = self._getBranchExpressions()
-        results = self.store.using(*tables).find(Branch, *expressions)
-        def identity(x):
-            return x
-        # Decorate the result set to work around bug 217644.
-        return DecoratedResultSet(results, identity)
+        resultset = self.store.using(*tables).find(find_expr, *expressions)
 
-    def getMergeProposals(self, statuses=None, for_branches=None):
+        def do_eager_load(rows):
+            branch_ids = set(branch.id for branch in rows)
+            if not branch_ids:
+                return
+            GenericBranchCollection.preloadDataForBranches(rows)
+            load_related(Product, rows, ['productID'])
+            # So far have only needed the persons for their canonical_url - no
+            # need for validity etc in the /branches API call.
+            load_related(Person, rows,
+                ['ownerID', 'registrantID', 'reviewerID'])
+            load_referencing(BugBranch, rows, ['branchID'])
+
+        def cache_permission(branch):
+            if self._user:
+                get_property_cache(branch)._known_viewers = (
+                    set([self._user.id]))
+            return branch
+
+        eager_load_hook = (
+            do_eager_load if eager_load and find_expr == Branch else None)
+        return DecoratedResultSet(
+            resultset, pre_iter_hook=eager_load_hook,
+            result_decorator=cache_permission)
+
+    def getBranchIds(self):
         """See `IBranchCollection`."""
-        expressions = [
-            BranchMergeProposal.source_branchID.is_in(
-                self._getBranchIdQuery()),
+        return self.getBranches(find_expr=Branch.id).get_plain_result_set()
+
+    def getMergeProposals(self, statuses=None, for_branches=None,
+                          target_branch=None, merged_revnos=None,
+                          merged_revision=None, eager_load=False):
+        """See `IBranchCollection`."""
+        if for_branches is not None and not for_branches:
+            # We have an empty branches list, so we can shortcut.
+            return EmptyResultSet()
+        elif merged_revnos is not None and not merged_revnos:
+            # We have an empty revnos list, so we can shortcut.
+            return EmptyResultSet()
+        elif (self._asymmetric_filter_expressions or
+            for_branches is not None or
+            target_branch is not None or
+            merged_revnos is not None or
+            merged_revision is not None):
+            return self._naiveGetMergeProposals(
+                statuses, for_branches, target_branch, merged_revnos,
+                merged_revision, eager_load=eager_load)
+        else:
+            # When examining merge proposals in a scope, this is a moderately
+            # effective set of constrained queries. It is not effective when
+            # unscoped or when tight constraints on branches are present.
+            return self._scopedGetMergeProposals(
+                statuses, eager_load=eager_load)
+
+    def _naiveGetMergeProposals(self, statuses=None, for_branches=None,
+                                target_branch=None, merged_revnos=None,
+                                merged_revision=None, eager_load=False):
+        Target = ClassAlias(Branch, "target")
+        extra_tables = list(set(
+            self._tables.values() + self._asymmetric_tables.values()))
+        tables = [Branch] + extra_tables + [
+            Join(BranchMergeProposal, And(
+                Branch.id == BranchMergeProposal.source_branchID,
+                *(self._branch_filter_expressions +
+                  self._asymmetric_filter_expressions))),
+            Join(Target, Target.id == BranchMergeProposal.target_branchID),
             ]
+        expressions = self._getBranchVisibilityExpression()
+        expressions.extend(self._getBranchVisibilityExpression(Target))
         if for_branches is not None:
             branch_ids = [branch.id for branch in for_branches]
             expressions.append(
                 BranchMergeProposal.source_branchID.is_in(branch_ids))
-        expressions.extend(self._getExtraMergeProposalExpressions())
+        if target_branch is not None:
+            expressions.append(
+                BranchMergeProposal.target_branch == target_branch)
+        if merged_revnos is not None:
+            expressions.append(
+                BranchMergeProposal.merged_revno.is_in(merged_revnos))
+        if merged_revision is not None:
+            expressions.extend([
+                BranchMergeProposal.merged_revno == BranchRevision.sequence,
+                BranchRevision.revision_id == Revision.id,
+                BranchRevision.branch_id ==
+                    BranchMergeProposal.target_branchID,
+                Revision.revision_id == merged_revision
+            ])
+            tables.extend([BranchRevision, Revision])
         if statuses is not None:
             expressions.append(
                 BranchMergeProposal.queue_status.is_in(statuses))
-        return self.store.find(BranchMergeProposal, expressions)
+        resultset = self.store.using(*tables).find(
+            BranchMergeProposal, *expressions)
+        if not eager_load:
+            return resultset
+        else:
+            loader = partial(
+                BranchMergeProposal.preloadDataForBMPs, user=self._user)
+            return DecoratedResultSet(resultset, pre_iter_hook=loader)
 
-    def _getExtraMergeProposalExpressions(self):
-        """Extra storm expressions needed for merge proposal queries.
+    def _scopedGetMergeProposals(self, statuses, eager_load=False):
+        expressions = (
+            self._branch_filter_expressions
+            + self._getBranchVisibilityExpression())
+        with_expr = With(
+            "candidate_branches",
+            Select(
+                Branch.id,
+                tables=[Branch] + self._tables.values(),
+                where=And(*expressions) if expressions else True))
+        expressions = [SQL("""
+            source_branch IN (SELECT id FROM candidate_branches) AND
+            target_branch IN (SELECT id FROM candidate_branches)""")]
+        tables = [BranchMergeProposal]
+        if self._asymmetric_filter_expressions:
+            # Need to filter on Branch beyond the with constraints.
+            expressions += self._asymmetric_filter_expressions
+            expressions.append(
+                BranchMergeProposal.source_branchID == Branch.id)
+            tables.append(Branch)
+            tables.extend(self._asymmetric_tables.values())
+        if statuses is not None:
+            expressions.append(
+                BranchMergeProposal.queue_status.is_in(statuses))
+        resultset = self.store.with_(with_expr).using(*tables).find(
+            BranchMergeProposal, *expressions)
+        if not eager_load:
+            return resultset
+        else:
+            loader = partial(
+                BranchMergeProposal.preloadDataForBMPs, user=self._user)
+            return DecoratedResultSet(resultset, pre_iter_hook=loader)
 
-        Used primarily by the visibility check for target branches.
-        """
-        return []
+    def getMergeProposalsForPerson(self, person, status=None,
+                                   eager_load=False):
+        """See `IBranchCollection`."""
+        # We want to limit the proposals to those where the source branch is
+        # limited by the defined collection.
+        owned = self.ownedBy(person).getMergeProposals(status)
+        reviewing = self.getMergeProposalsForReviewer(person, status)
+        resultset = owned.union(reviewing)
+
+        if not eager_load:
+            return resultset
+        else:
+            loader = partial(
+                BranchMergeProposal.preloadDataForBMPs, user=self._user)
+            return DecoratedResultSet(resultset, pre_iter_hook=loader)
 
     def getMergeProposalsForReviewer(self, reviewer, status=None):
         """See `IBranchCollection`."""
@@ -163,19 +458,85 @@ class GenericBranchCollection:
 
         expressions = [
             CodeReviewVoteReference.reviewer == reviewer,
-            BranchMergeProposal.source_branchID.is_in(
-                self._getBranchIdQuery())]
-        expressions.extend(self._getExtraMergeProposalExpressions())
+            BranchMergeProposal.source_branchID.is_in(self._getBranchSelect())]
+        visibility = self._getBranchVisibilityExpression()
+        if visibility:
+            expressions.append(BranchMergeProposal.target_branchID.is_in(
+                Select(Branch.id, visibility)))
         if status is not None:
             expressions.append(
                 BranchMergeProposal.queue_status.is_in(status))
         proposals = self.store.using(*tables).find(
-            BranchMergeProposal, expressions)
+            BranchMergeProposal, *expressions)
         # Apply sorting here as we can't do it in the browser code.  We need
         # to think carefully about the best places to do this, but not here
         # nor now.
         proposals.order_by(Desc(CodeReviewComment.vote))
         return proposals
+
+    def getExtendedRevisionDetails(self, user, revisions):
+        """See `IBranchCollection`."""
+
+        if not revisions:
+            return []
+        branch = revisions[0].branch
+
+        def make_rev_info(
+                branch_revision, merge_proposal_revs, linked_bugtasks):
+            rev_info = {
+                'revision': branch_revision,
+                'linked_bugtasks': None,
+                'merge_proposal': None,
+                }
+            merge_proposal = merge_proposal_revs.get(branch_revision.sequence)
+            rev_info['merge_proposal'] = merge_proposal
+            if merge_proposal is not None:
+                rev_info['linked_bugtasks'] = linked_bugtasks.get(
+                    merge_proposal.source_branch.id)
+            return rev_info
+
+        rev_nos = [revision.sequence for revision in revisions]
+        merge_proposals = self.getMergeProposals(
+                target_branch=branch, merged_revnos=rev_nos,
+                statuses=[BranchMergeProposalStatus.MERGED])
+        merge_proposal_revs = dict(
+                [(mp.merged_revno, mp) for mp in merge_proposals])
+        source_branch_ids = [mp.source_branch.id for mp in merge_proposals]
+        linked_bugtasks = defaultdict(list)
+
+        if source_branch_ids:
+            # We get the bugtasks for our merge proposal branches
+
+            # First, the bug ids
+            params = BugTaskSearchParams(
+                user=user, status=None,
+                linked_branches=any(*source_branch_ids))
+            bug_ids = getUtility(IBugTaskSet).searchBugIds(params)
+
+            # Then the bug tasks and branches
+            store = IStore(BugBranch)
+            rs = store.using(
+                BugBranch,
+                Join(BugTask, BugTask.bugID == BugBranch.bugID),
+            ).find(
+                (BugTask, BugBranch),
+                BugBranch.bugID.is_in(bug_ids),
+                BugBranch.branchID.is_in(source_branch_ids)
+            )
+
+            # Build up a collection of bugtasks for each branch
+            bugtasks_for_branch = defaultdict(list)
+            for bugtask, bugbranch in rs:
+                bugtasks_for_branch[bugbranch.branch].append(bugtask)
+
+            # Now filter those down to one bugtask per branch
+            for branch, tasks in bugtasks_for_branch.iteritems():
+                linked_bugtasks[branch.id].extend(
+                    filter_bugtasks_by_context(branch.target.context, tasks))
+
+        return [make_rev_info(
+                rev, merge_proposal_revs, linked_bugtasks)
+                for rev in revisions]
 
     def getTeamsWithBranches(self, person):
         """See `IBranchCollection`."""
@@ -183,8 +544,7 @@ class GenericBranchCollection:
         # BranchCollection conceptual model, but we're not quite sure how to
         # fix it just yet.  Perhaps when bug 337494 is fixed, we'd be able to
         # sensibly be able to move this method to another utility class.
-        branch_query = self._getBranchIdQuery()
-        branch_query.columns = (Branch.ownerID,)
+        branch_query = self._getBranchSelect((Branch.ownerID,))
         return self.store.find(
             Person,
             Person.id == TeamParticipation.teamID,
@@ -225,6 +585,18 @@ class GenericBranchCollection:
             table=Distribution,
             join=Join(DistroSeries, Branch.distroseries == DistroSeries.id))
 
+    def officialBranches(self, pocket=None):
+        """See `IBranchCollection`"""
+        if pocket is None:
+            expressions = []
+        else:
+            expressions = [SeriesSourcePackageBranch.pocket == pocket]
+        return self._filterBy(
+            expressions,
+            table=SeriesSourcePackageBranch,
+            join=Join(SeriesSourcePackageBranch,
+                      SeriesSourcePackageBranch.branch == Branch.id))
+
     def inSourcePackage(self, source_package):
         """See `IBranchCollection`."""
         return self._filterBy([
@@ -237,13 +609,43 @@ class GenericBranchCollection:
             Branch.product == None,
             Branch.sourcepackagename == None])
 
+    def isPrivate(self):
+        """See `IBranchCollection`."""
+        return self._filterBy([
+            Branch.information_type.is_in(PRIVATE_INFORMATION_TYPES)])
+
+    def isExclusive(self):
+        """See `IBranchCollection`."""
+        return self._filterBy(
+            [Person.membership_policy.is_in(EXCLUSIVE_TEAM_POLICY)],
+            table=Person,
+            join=Join(Person, Branch.ownerID == Person.id))
+
+    def isSeries(self):
+        """See `IBranchCollection`."""
+        # ProductSeries import's this module.
+        from lp.registry.model.productseries import ProductSeries
+        return self._filterBy(
+            [Branch.id == ProductSeries.branchID],
+            table=ProductSeries,
+            join=Join(ProductSeries, Branch.id == ProductSeries.branchID))
+
     def ownedBy(self, person):
         """See `IBranchCollection`."""
-        return self._filterBy([Branch.owner == person])
+        return self._filterBy([Branch.owner == person], symmetric=False)
+
+    def ownedByTeamMember(self, person):
+        """See `IBranchCollection`."""
+        subquery = Select(
+            TeamParticipation.teamID,
+            where=TeamParticipation.personID == person.id)
+        filter = [In(Branch.ownerID, subquery)]
+
+        return self._filterBy(filter, symmetric=False)
 
     def registeredBy(self, person):
         """See `IBranchCollection`."""
-        return self._filterBy([Branch.registrant == person])
+        return self._filterBy([Branch.registrant == person], symmetric=False)
 
     def relatedTo(self, person):
         """See `IBranchCollection`."""
@@ -254,7 +656,8 @@ class GenericBranchCollection:
                     Select(Branch.id, Branch.registrant == person),
                     Select(Branch.id,
                            And(BranchSubscription.person == person,
-                               BranchSubscription.branch == Branch.id))))])
+                               BranchSubscription.branch == Branch.id))))],
+            symmetric=False)
 
     def _getExactMatch(self, search_term):
         """Return the exact branch that 'search_term' matches, or None."""
@@ -273,7 +676,7 @@ class GenericBranchCollection:
         # of the unique name and sort based on relevance.
         branch = self._getExactMatch(search_term)
         if branch is not None:
-            if branch in self.getBranches():
+            if branch in self.getBranches(eager_load=False):
                 return CountableIterator(1, [branch])
             else:
                 return CountableIterator(0, [])
@@ -306,7 +709,8 @@ class GenericBranchCollection:
 
         # Get the results.
         collection = self._filterBy([Branch.id.is_in(Union(*queries))])
-        results = collection.getBranches().order_by(Branch.name, Branch.id)
+        results = collection.getBranches(eager_load=False).order_by(
+            Branch.name, Branch.id)
         return CountableIterator(results.count(), results)
 
     def scanned(self):
@@ -319,15 +723,29 @@ class GenericBranchCollection:
             [BranchSubscription.person == person],
             table=BranchSubscription,
             join=Join(BranchSubscription,
-                      BranchSubscription.branch == Branch.id))
+                      BranchSubscription.branch == Branch.id),
+            symmetric=False)
 
-    def targetedBy(self, person):
+    def targetedBy(self, person, since=None):
         """See `IBranchCollection`."""
+        clauses = [BranchMergeProposal.registrant == person]
+        if since is not None:
+            clauses.append(BranchMergeProposal.date_created >= since)
         return self._filterBy(
-            [BranchMergeProposal.registrant == person],
+            clauses,
             table=BranchMergeProposal,
             join=Join(BranchMergeProposal,
-                      BranchMergeProposal.target_branch == Branch.id))
+                      BranchMergeProposal.target_branch == Branch.id),
+            symmetric=False)
+
+    def linkedToBugs(self, bugs):
+        """See `IBranchCollection`."""
+        bug_ids = [bug.id for bug in bugs]
+        return self._filterBy(
+            [In(BugBranch.bugID, bug_ids)],
+            table=BugBranch,
+            join=Join(BugBranch, BugBranch.branch == Branch.id),
+            symmetric=False)
 
     def visibleByUser(self, person):
         """See `IBranchCollection`."""
@@ -337,125 +755,106 @@ class GenericBranchCollection:
         if person is None:
             return AnonymousBranchCollection(
                 self._store, self._branch_filter_expressions,
-                self._tables, self._exclude_from_search)
+                self._tables, self._exclude_from_search,
+                self._asymmetric_filter_expressions, self._asymmetric_tables)
         return VisibleBranchCollection(
             person, self._store, self._branch_filter_expressions,
-            self._tables, self._exclude_from_search)
+            self._tables, self._exclude_from_search,
+            self._asymmetric_filter_expressions, self._asymmetric_tables)
 
     def withBranchType(self, *branch_types):
-        return self._filterBy([Branch.branch_type.is_in(branch_types)])
+        return self._filterBy([Branch.branch_type.is_in(branch_types)],
+            symmetric=False)
 
     def withLifecycleStatus(self, *statuses):
         """See `IBranchCollection`."""
-        return self._filterBy([Branch.lifecycle_status.is_in(statuses)])
+        return self._filterBy([Branch.lifecycle_status.is_in(statuses)],
+            symmetric=False)
 
     def modifiedSince(self, epoch):
         """See `IBranchCollection`."""
-        return self._filterBy([Branch.date_last_modified > epoch])
+        return self._filterBy([Branch.date_last_modified > epoch],
+            symmetric=False)
 
     def scannedSince(self, epoch):
         """See `IBranchCollection`."""
-        return self._filterBy([Branch.last_scanned > epoch])
+        return self._filterBy([Branch.last_scanned > epoch], symmetric=False)
+
+    def withIds(self, *branch_ids):
+        """See `IBranchCollection`."""
+        return self._filterBy([Branch.id.is_in(branch_ids)], symmetric=False)
 
 
 class AnonymousBranchCollection(GenericBranchCollection):
     """Branch collection that only shows public branches."""
 
-    def __init__(self, store=None, branch_filter_expressions=None,
-                 tables=None, exclude_from_search=None):
-        super(AnonymousBranchCollection, self).__init__(
-            store=store,
-            branch_filter_expressions=list(branch_filter_expressions),
-            tables=tables, exclude_from_search=exclude_from_search)
-        self._branch_filter_expressions.append(Branch.private == False)
-
-    def _getExtraMergeProposalExpressions(self):
-        """Extra storm expressions needed for merge proposal queries.
-
-        Used primarily by the visibility check for target branches.
-        """
+    def _getBranchVisibilityExpression(self, branch_class=Branch):
+        """Return the where clauses for visibility."""
         return [
-            BranchMergeProposal.target_branchID.is_in(
-                Select(Branch.id, Branch.private == False))]
+            branch_class.information_type.is_in(PUBLIC_INFORMATION_TYPES)]
 
 
 class VisibleBranchCollection(GenericBranchCollection):
     """A branch collection that has special logic for visibility."""
 
     def __init__(self, user, store=None, branch_filter_expressions=None,
-                 tables=None, exclude_from_search=None):
+                 tables=None, exclude_from_search=None,
+                 asymmetric_filter_expressions=None, asymmetric_tables=None):
         super(VisibleBranchCollection, self).__init__(
             store=store, branch_filter_expressions=branch_filter_expressions,
-            tables=tables, exclude_from_search=exclude_from_search)
+            tables=tables, exclude_from_search=exclude_from_search,
+            asymmetric_filter_expressions=asymmetric_filter_expressions,
+            asymmetric_tables=asymmetric_tables)
         self._user = user
-        self._private_branch_ids = self._getPrivateBranchSubQuery()
 
     def _filterBy(self, expressions, table=None, join=None,
-                  exclude_from_search=None):
-        """Return a subset of this collection, filtered by 'expressions'."""
+                  exclude_from_search=None, symmetric=True):
+        """Return a subset of this collection, filtered by 'expressions'.
+
+        :param symmetric: If True this filter will apply to both sides
+            of merge proposal lookups and any other lookups that join
+            Branch back onto Branch.
+        """
         # NOTE: JonathanLange 2009-02-17: We might be able to avoid the need
         # for explicit 'tables' by harnessing Storm's table inference system.
         # See http://paste.ubuntu.com/118711/ for one way to do that.
-        tables = self._tables.copy()
         if table is not None:
             if join is None:
                 raise InvalidFilter("Cannot specify a table without a join.")
-            tables[table] = join
-        if exclude_from_search is None:
-            exclude_from_search = []
         if expressions is None:
             expressions = []
+        tables = self._tables.copy()
+        asymmetric_tables = self._asymmetric_tables.copy()
+        if symmetric:
+            if table is not None:
+                tables[table] = join
+            symmetric_expr = self._branch_filter_expressions + expressions
+            asymmetric_expr = list(self._asymmetric_filter_expressions)
+        else:
+            if table is not None:
+                asymmetric_tables[table] = join
+            symmetric_expr = list(self._branch_filter_expressions)
+            asymmetric_expr = (
+                self._asymmetric_filter_expressions + expressions)
+        if exclude_from_search is None:
+            exclude_from_search = []
         return self.__class__(
             self._user,
             self.store,
-            self._branch_filter_expressions + expressions,
+            symmetric_expr,
             tables,
-            self._exclude_from_search + exclude_from_search)
+            self._exclude_from_search + exclude_from_search,
+            asymmetric_expr,
+            asymmetric_tables)
 
-    def _getPrivateBranchSubQuery(self):
-        """Return a subquery to get the private branches the user can see.
+    def _getBranchVisibilityExpression(self, branch_class=Branch):
+        """Return the where clauses for visibility.
 
-        If the user is None (which is used for anonymous access), then there
-        is no subquery.  Otherwise return the branch ids for the private
-        branches that the user owns or is subscribed to.
+        :param branch_class: The Branch class to use - permits using
+            ClassAliases.
         """
-        # Everyone can see public branches.
-        person = self._user
-        if person is None:
-            # Anonymous users can only see the public branches.
-            return None
-
-        # A union is used here rather than the more simplistic simple joins
-        # due to the query plans generated.  If we just have a simple query
-        # then we are joining across TeamParticipation and BranchSubscription.
-        # This creates a bad plan, hence the use of a union.
-        private_branches = Union(
-            # Private branches the person owns (or a team the person is in).
-            Select(Branch.id,
-                   And(Branch.owner == TeamParticipation.teamID,
-                       TeamParticipation.person == person,
-                       Branch.private == True)),
-            # Private branches the person is subscribed to, either directly or
-            # indirectly.
-            Select(Branch.id,
-                   And(BranchSubscription.branch == Branch.id,
-                       BranchSubscription.person ==
-                       TeamParticipation.teamID,
-                       TeamParticipation.person == person,
-                       Branch.private == True)))
-        return private_branches
-
-    def _getBranchExpressions(self):
-        """Return the where expressions for this collection."""
-        public_branches = Branch.private == False
-        if self._private_branch_ids is None:
-            # Public only.
-            return self._branch_filter_expressions + [public_branches]
-        else:
-            public_or_private = Or(
-                public_branches,
-                Branch.id.is_in(self._private_branch_ids))
-            return self._branch_filter_expressions + [public_or_private]
+        return get_branch_privacy_filter(
+            self._user, branch_class=branch_class)
 
     def visibleByUser(self, person):
         """See `IBranchCollection`."""
@@ -464,19 +863,3 @@ class VisibleBranchCollection(GenericBranchCollection):
         raise InvalidFilter(
             "Cannot filter for branches visible by user %r, already "
             "filtering for %r" % (person, self._user))
-
-    def _getExtraMergeProposalExpressions(self):
-        """Extra storm expressions needed for merge proposal queries.
-
-        Used primarily by the visibility check for target branches.
-        """
-        if self._private_branch_ids is None:
-            # Public only.
-            visible_branches = Select(Branch.id, Branch.private == False)
-        else:
-            visible_branches = Select(
-                Branch.id,
-                Or(Branch.private == False,
-                   Branch.id.is_in(self._private_branch_ids)))
-        return [
-            BranchMergeProposal.target_branchID.is_in(visible_branches)]

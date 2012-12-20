@@ -1,8 +1,0 @@
-Anonymous users can view bug tasks on public bugs.
-
-  >>> print http(r"""
-  ... GET /debian/+source/mozilla-firefox/+bug/3/+viewstatus HTTP/1.1
-  ... """) #doctest: -NORMALIZE_WHITESPACE
-  HTTP/1.1 200 Ok
-  ...Package...
-  ...mozilla-firefox...

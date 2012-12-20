@@ -5,39 +5,64 @@
 
 """Launchpad Pillars share a namespace.
 
-Pillars are currently Product, Project and Distribution.
+Pillars are currently Product, ProjectGroup and Distribution.
 """
 
 __metaclass__ = type
 
 import warnings
 
-from zope.component import getUtility
-from zope.interface import implements
-
-from storm.expr import LeftJoin, NamedFunc, Select
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    StringCol,
+    )
+from storm.expr import LeftJoin
 from storm.info import ClassAlias
 from storm.locals import SQL
 from storm.store import Store
-from sqlobject import ForeignKey, StringCol, BoolCol
+from zope.component import getUtility
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 
-from canonical.config import config
-from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from lp.app.errors import NotFoundError
+from lp.registry.interfaces.distribution import (
+    IDistribution,
+    IDistributionSet,
+    )
+from lp.registry.interfaces.pillar import (
+    IPillarName,
+    IPillarNameSet,
+    IPillarPerson,
+    IPillarPersonFactory,
+    )
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSet,
+    )
+from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.model.featuredproject import FeaturedProject
-from lp.registry.model.productlicense import ProductLicense
-from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.registry.interfaces.distribution import IDistribution, IDistributionSet
-from lp.registry.interfaces.pillar import IPillarName, IPillarNameSet
-from lp.registry.interfaces.product import IProduct, IProductSet, License
-from lp.registry.interfaces.project import IProjectSet
-from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from lp.services.config import config
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.helpers import ensure_unicode
+
 
 __all__ = [
     'pillar_sort_key',
     'HasAliasMixin',
     'PillarNameSet',
     'PillarName',
+    'PillarPerson',
     ]
 
 
@@ -66,6 +91,7 @@ class PillarNameSet:
     def __contains__(self, name):
         """See `IPillarNameSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        name = ensure_unicode(name)
         result = store.execute("""
             SELECT TRUE
             FROM PillarName
@@ -95,19 +121,21 @@ class PillarNameSet:
         # the Project, Product and Distribution tables (and this approach
         # works better with SQLObject too.
 
-
         # Retrieve information out of the PillarName table.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        cur = cursor()
         query = """
             SELECT id, product, project, distribution
             FROM PillarName
-            WHERE (id IN (SELECT alias_for FROM PillarName WHERE name=?)
+            WHERE (id = (SELECT alias_for FROM PillarName WHERE name=?)
                    OR name=?)
-                AND alias_for IS NULL
+                AND alias_for IS NULL%s
+            LIMIT 1
             """
         if ignore_inactive:
-            query += " AND active IS TRUE"
+            query %= " AND active IS TRUE"
+        else:
+            query %= ""
+        name = ensure_unicode(name)
         result = store.execute(query, [name, name])
         row = result.get_one()
         if row is None:
@@ -122,7 +150,7 @@ class PillarNameSet:
         if product is not None:
             return getUtility(IProductSet).get(product)
         elif project is not None:
-            return getUtility(IProjectSet).get(project)
+            return getUtility(IProjectGroupSet).get(project)
         else:
             return getUtility(IDistributionSet).get(distribution)
 
@@ -133,7 +161,7 @@ class PillarNameSet:
         """
         # These classes are imported in this method to prevent an import loop.
         from lp.registry.model.product import Product
-        from lp.registry.model.project import Project
+        from lp.registry.model.projectgroup import ProjectGroup
         from lp.registry.model.distribution import Distribution
         OtherPillarName = ClassAlias(PillarName)
         origin = [
@@ -141,7 +169,7 @@ class PillarNameSet:
             LeftJoin(
                 OtherPillarName, PillarName.alias_for == OtherPillarName.id),
             LeftJoin(Product, PillarName.product == Product.id),
-            LeftJoin(Project, PillarName.project == Project.id),
+            LeftJoin(ProjectGroup, PillarName.project == ProjectGroup.id),
             LeftJoin(
                 Distribution, PillarName.distribution == Distribution.id),
             ]
@@ -158,10 +186,10 @@ class PillarNameSet:
                  Distribution.fti @@ ftq(%(text)s) OR
                  lower(Distribution.title) = lower(%(text)s)
                 )
-            ''' % sqlvalues(text=text))
+            ''' % sqlvalues(text=ensure_unicode(text)))
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         columns = [
-            PillarName, OtherPillarName, Product, Project, Distribution]
+            PillarName, OtherPillarName, Product, ProjectGroup, Distribution]
         for column in extra_columns:
             columns.append(column)
         return store.using(*origin).find(tuple(columns), conditions)
@@ -172,23 +200,15 @@ class PillarNameSet:
 
     def search(self, text, limit):
         """See `IPillarSet`."""
-        # These classes are imported in this method to prevent an import loop.
-        from lp.registry.model.product import (
-            Product, ProductWithLicenses)
+        # Avoid circular import.
+        from lp.registry.model.product import ProductWithLicenses
         if limit is None:
             limit = config.launchpad.default_batch_size
 
-        class Array(NamedFunc):
-            """Storm representation of the array() PostgreSQL function."""
-            name = 'array'
-
-        # Pull out the licenses as a subselect which is converted
-        # into a PostgreSQL array so that multiple licenses per product
+        # Pull out the licences as a subselect which is converted
+        # into a PostgreSQL array so that multiple licences per product
         # can be retrieved in a single row for each product.
-        extra_column = Array(
-            Select(columns=[ProductLicense.license],
-                   where=(ProductLicense.product == Product.id),
-                   tables=[ProductLicense]))
+        extra_column = ProductWithLicenses.composeLicensesColumn()
         result = self.build_search_query(text, [extra_column])
 
         # If the search text matches the name or title of the
@@ -219,18 +239,12 @@ class PillarNameSet:
                 stacklevel=2)
         pillars = []
         # Prefill pillar.product.licenses.
-        for pillar_name, other, product, project, distro, license_ids in (
+        for pillar_name, other, product, project, distro, licenses in (
             result[:limit]):
             pillar = pillar_name.pillar
             if IProduct.providedBy(pillar):
-                licenses = [
-                    License.items[license_id]
-                    for license_id in license_ids]
-                product_with_licenses = ProductWithLicenses(
-                    pillar, tuple(sorted(licenses)))
-                pillars.append(product_with_licenses)
-            else:
-                pillars.append(pillar)
+                pillar = ProductWithLicenses(pillar, licenses)
+            pillars.append(pillar)
         return pillars
 
     def add_featured_project(self, project):
@@ -276,7 +290,7 @@ class PillarName(SQLBase):
     product = ForeignKey(
         foreignKey='Product', dbName='product')
     project = ForeignKey(
-        foreignKey='Project', dbName='project')
+        foreignKey='ProjectGroup', dbName='project')
     distribution = ForeignKey(
         foreignKey='Distribution', dbName='distribution')
     active = BoolCol(dbName='active', notNull=True, default=True)
@@ -324,3 +338,18 @@ class HasAliasMixin:
             assert pillar_name.alias_for == self_pillar, (
                 "Can't remove an alias of another pillar.")
             store.remove(pillar_name)
+
+
+class PillarPerson:
+
+    implements(IPillarPerson)
+
+    classProvides(IPillarPersonFactory)
+
+    def __init__(self, pillar, person):
+        self.pillar = pillar
+        self.person = person
+
+    @staticmethod
+    def create(pillar, person):
+        return PillarPerson(pillar, person)

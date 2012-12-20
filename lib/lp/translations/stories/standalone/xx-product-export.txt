@@ -1,10 +1,11 @@
-= Downloading Product Series Translations =
+Downloading Product Series Translations
+=======================================
 
 Products and product series that use Translations offer complete
 translation downloads.
 
     >>> user_browser.open('http://translations.launchpad.dev/evolution')
-    >>> download = user_browser.getLink('Download "trunk"')
+    >>> download = user_browser.getLink('download')
 
 For products, that option downloads translations for the series that is
 currently the preferred translation target.
@@ -17,7 +18,7 @@ Another way of getting that same export would be to browse to the series
 first and requesting a download there.
 
     >>> user_browser.open('http://translations.launchpad.dev/evolution/trunk')
-    >>> user_browser.getLink('Download').click()
+    >>> user_browser.getLink('download').click()
     >>> user_browser.url
     'http://translations.launchpad.dev/evolution/trunk/+export'
 
@@ -25,7 +26,7 @@ The translations export is implemented by the same machinery that does
 it for source packages (tested and documented separately).
 
     >>> print user_browser.title
-    Download translations for "Evolution trunk series"
+    Download : Translations...
 
     >>> user_browser.getControl('Request Download').click()
     >>> for message in get_feedback_messages(user_browser.contents):
@@ -33,44 +34,47 @@ it for source packages (tested and documented separately).
     Your request has been received.  Expect to receive an email shortly.
 
 
-== Use of Launchpad Translations ==
+Use of Launchpad Translations
+-----------------------------
 
 The Download link is not shown if the product does not use Launchpad
 Translations.
 
     # Use the DB classes directly to avoid having to setup a zope interaction
     # (i.e. login()) and bypass the security proxy.
+    >>> from lp.app.enums import ServiceUsage
     >>> from lp.registry.model.product import Product
     >>> product = Product.byName('evolution')
-    >>> product.official_rosetta = False
+    >>> product.translations_usage = ServiceUsage.NOT_APPLICABLE
     >>> product.sync()
     >>> user_browser.open('http://translations.launchpad.dev/evolution')
-    >>> user_browser.getLink('Download "trunk"')
+    >>> user_browser.getLink('download')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
     >>> # Restore previous state for subsequent tests, and verify
-    >>> product.official_rosetta = True
+    >>> product.translations_usage = ServiceUsage.LAUNCHPAD
     >>> product.sync()
     >>> user_browser.open('http://translations.launchpad.dev/evolution')
-    >>> user_browser.getLink('Download "trunk"') is not None
+    >>> user_browser.getLink('download') is not None
     True
 
 
-== Authorization ==
+Authorization
+-------------
 
 Only logged-in users get the option to request downloads.
 
     >>> anon_browser.open('http://translations.launchpad.dev/evolution/')
-    >>> anon_browser.getLink('Download "trunk"').click()
+    >>> anon_browser.getLink('download').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
 We can't see its placeholder in non-development mode:
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.devmode
     True
     >>> config.devmode = False

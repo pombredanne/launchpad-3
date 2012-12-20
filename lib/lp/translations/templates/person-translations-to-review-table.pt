@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<table class="listing" id="translations-to-review-table">
+<table class="summary" id="translations-to-review-table">
   <tr tal:repeat="target_info view/top_projects_and_packages_to_review">
     <td>
       <tal:product condition="target_info/is_product"
@@ -26,8 +26,10 @@
 	<tal:stringcount replace="target_info/count_wording">
 	  1 string
 	</tal:stringcount>
-	reviewed
-      </a>
+	reviewed </a> in
+    <tal:languages replace="target_info/languages">
+      Spanish
+    </tal:languages>
     </td>
   </tr>
 </table>

@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -9,10 +9,11 @@
 
 import _pythonpath
 
-from lp.services.scripts.base import LaunchpadCronScript
 from lp.bugs.scripts.bugtasktargetnamecaches import (
-    BugTaskTargetNameCacheUpdater)
-from canonical.config import config
+    BugTaskTargetNameCacheUpdater,
+    )
+from lp.services.config import config
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 class UpdateBugTaskTargetNameCaches(LaunchpadCronScript):
@@ -29,5 +30,5 @@ if __name__ == '__main__':
     script = UpdateBugTaskTargetNameCaches(
         'launchpad-targetnamecacheupdater',
         dbuser=config.targetnamecacheupdater.dbuser)
-    script.lock_and_run(implicit_begin=False)
+    script.lock_and_run()
 

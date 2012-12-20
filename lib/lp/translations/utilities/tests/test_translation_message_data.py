@@ -5,12 +5,14 @@
 
 __metaclass__ = type
 
-from unittest import TestCase, defaultTestLoader
+from unittest import TestCase
 
 from lp.translations.interfaces.translationimporter import (
-    TranslationFormatSyntaxError)
+    TranslationFormatSyntaxError,
+    )
 from lp.translations.utilities.translation_common_format import (
-    TranslationMessageData)
+    TranslationMessageData,
+    )
 
 
 class TranslationMessageDataTestCase(TestCase):
@@ -68,11 +70,7 @@ class TranslationMessageDataTestCase(TestCase):
         data.addTranslation(0, 'singular')
         try:
             data.addTranslation(0, 'ralugnis')
-        except TranslationFormatSyntaxError, error:
+        except TranslationFormatSyntaxError as error:
             self.assertEqual(
                 error.represent("(Default text, should not be returned.)"),
                 "Message has more than one translation for plural form 0.")
-
-
-def test_suite():
-    return defaultTestLoader.loadTestsFromName(__name__)

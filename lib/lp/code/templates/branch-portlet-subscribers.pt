@@ -3,55 +3,16 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet" id="portlet-subscribers">
-  <div class="portletBody portletContent"
-       tal:define="context_menu context/menu:context">
-
-    <div tal:condition="not:view/owner_is_registrant">
-      <h2>Registered by</h2>
-      <dl>
-        <dt>
-          <tal:registrant tal:replace="structure context/registrant/fmt:link" />
-        </dt>
-      </dl>
-    </div>
+  <div tal:define="context_menu view/context/menu:context">
 
     <div>
-      <h2>Owner</h2>
-      <dl>
-        <dt>
-          <tal:owner tal:replace="structure context/owner/fmt:link" />
-          <a
-            tal:define="link context_menu/edit"
-            tal:condition="link/enabled"
-            tal:attributes="href link/url">
-            <img src="/@@/edit" tal:attributes="alt link/text" />
-          </a>
-        </dt>
-      </dl>
-    </div>
-
-    <div>
-      <h2>Review Team</h2>
-      <dl>
-        <dt>
-          <tal:owner tal:replace="structure context/code_reviewer/fmt:link" />
-          <a tal:define="link context_menu/reviewer"
-             tal:condition="link/enabled"
-             tal:attributes="href link/url"
-             ><img tal:attributes="alt link/text;title link/text" src="/@@/edit" /></a>
-        </dt>
-      </dl>
-    </div>
-
-    <div>
-      <div class="actions">
+      <div class="section">
       <div
         tal:define="link context_menu/subscription"
         tal:condition="link/enabled"
         id="selfsubscriptioncontainer"
         >
-        <a id="selfsubscription"
-           class="sprite add"
+        <a class="sprite add subscribe-self"
            tal:attributes="href link/url"
            tal:content="link/text" />
       </div>
@@ -61,38 +22,12 @@
         tal:content="structure link/render"
         />
       </div>
-      <h2>Subscribers</h2>
-      <p id="subscriber-list">
-        <noscript>
-          Please enable javascript to view branch subscribers.
-        </noscript>
-      </p>
-      <div id="subscribers-portlet-spinner"
-          style="text-align: center; display: none;">
-        <img src="/@@/spinner" />
-      </div>
+    </div>
+
+    <h2>Subscribers</h2>
+    <div id="branch-subscribers-outer">
+      <div tal:replace="structure context/@@+branch-portlet-subscriber-content"
+           />
     </div>
   </div>
-  <tal:script
-    replace="structure
-    string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
-    <!--
-
-    YUI().use('io-base', 'node', 'code.branchsubscription', function(Y) {
-
-    if(Y.UA.ie) {
-        Y.get('#subscriber-list').set('innerHTML',
-            'Could not load subscribers, javascript is disabled.');
-        return;
-    }
-
-    Y.on('domready', function() {
-        Y.code.branchsubscription.update_subscriber_list();
-    });
-
-    });
-    -->
-  <tal:script replace="structure string:&lt;/script&gt;" />
-
-
 </div>

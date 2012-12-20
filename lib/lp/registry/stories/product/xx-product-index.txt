@@ -1,9 +1,8 @@
-XXX CarlosPerelloMarin 20070919: This test is not complete, we must add much
-more tests and documentation. See bug #141052 for more information.
+Product index
+=============
 
-Check that the product main page works.
-
-= Translation Pages =
+Translation Pages
+-----------------
 
     >>> user_browser.open('http://launchpad.dev/evolution')
 
@@ -13,22 +12,23 @@ The product page has a link to help translate it.
     ...     url='http://translations.launchpad.dev/evolution')
     >>> link.click()
     >>> print user_browser.title
-    Translations of The Evolution Groupware Application in Launchpad
+    Translations : Evolution
 
-It has no external links:
+
+Links and Programming languages
+-------------------------------
+
+Evolution has no external links.
 
     >>> print find_tag_by_id(user_browser.contents, 'external-links-heading')
     None
 
-
-= Links and Programming languages =
-
 Now update Tomcat to actually have this data:
 
     >>> import transaction
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.registry.model.product import Product
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from lp.testing import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
 
     >>> tomcat = Product.selectOneBy(name="tomcat")
@@ -61,8 +61,8 @@ Let's check it out:
     >>> print extract_text(find_tag_by_id(content, 'product-languages'))
     Programming Languages: C++,Xenon and Purple
 
-When the freshmeat or sourceforge URLs are identical to the homepage, we omit
-the homepage:
+When the freshmeat or sourceforge URLs are identical to the homepage, we
+omit the homepage:
 
     >>> login(ANONYMOUS)
 
@@ -105,60 +105,14 @@ the homepage:
     External downloads http://download.url/
 
 
-= Licensing alerts =
+Licensing alerts
+================
 
-A project that has not set a license is marked as 'Unspecified'.
-
-    >>> user_browser.open('http://launchpad.dev/firefox')
-    >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'license-status'))
-    This project&rsquo;s license has not been specified.
-
-If the project doesn't have a license, a portlet is displayed
-to direct the owner to set a license.
-
-    >>> from canonical.launchpad.interfaces import License
-    >>> firefox = Product.selectOneBy(name="firefox")
-    >>> owner_browser = setupBrowser(auth="Basic test@canonical.com:test")
-    >>> owner_browser.open('http://launchpad.dev/firefox')
-    >>> print extract_text(
-    ...     find_tag_by_id(owner_browser.contents, 'license-status'))
-    This project&rsquo;s license has not been specified.
-    >>> print find_tag_by_id(owner_browser.contents,
-    ...                      'portlet-requires-subscription')
-    None
-    >>> print find_tag_by_id(owner_browser.contents,
-    ...                      'portlet-missing-license')
-    <div...Missing license information...</div>
-
-A non-owner does not see the warning that the project
-is missing licensing information.
-
-    >>> user_browser.open('http://launchpad.dev/firefox')
-    >>> print find_tag_by_id(user_browser.contents,
-    ...                      'portlet-missing-license')
-    None
-
-A member of the Launchpad Commercial team will see the warning.
-
-    >>> comm_browser = setupBrowser(
-    ...     auth='Basic commercial-member@canonical.com:test')
-    >>> comm_browser.open('http://launchpad.dev/firefox')
-    >>> print find_tag_by_id(comm_browser.contents,
-    ...                      'portlet-missing-license')
-    <div...Missing license information...</div>
-
-A Launchpad administrator will see the warning.
-
-    >>> admin_browser.open('http://launchpad.dev/firefox')
-    >>> print find_tag_by_id(admin_browser.contents,
-    ...                      'portlet-missing-license')
-    <div...Missing license information...</div>
-
-A project that includes a license of "Other/Open Source" that has not
+A project that includes a licence of "Other/Open Source" that has not
 been reviewed by a Launchpad administrator will be displayed as
 'Unreviewed.'
 
+    >>> from lp.registry.interfaces.product import License
     >>> owner_browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> owner_browser.open('http://launchpad.dev/thunderbird/+edit')
     >>> owner_browser.getControl(name='field.licenses').value = [
@@ -166,73 +120,63 @@ been reviewed by a Launchpad administrator will be displayed as
     >>> owner_browser.getControl(name='field.license_info').value = 'foo'
     >>> owner_browser.getControl('Change').click()
 
-Any user can see that the project's license has not been reviewed.
+Any user can see that the project's licence has not been reviewed.
 
     >>> user_browser.open('http://launchpad.dev/thunderbird')
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'license-status'))
-    This project&rsquo;s license has not been reviewed.
+    This project&rsquo;s licence has not been reviewed.
 
 Changing the state to reviewed but not approved results in the project
 being shown as proprietary.
 
     >>> admin_browser.open('http://launchpad.dev/thunderbird/+review-license')
-    >>> admin_browser.getControl(name='field.license_reviewed').value = True
+    >>> admin_browser.getControl(name='field.project_reviewed').value = True
     >>> admin_browser.getControl(name='field.license_approved').value = False
     >>> admin_browser.getControl('Change').click()
 
     >>> user_browser.open('http://launchpad.dev/thunderbird')
     >>> user_browser.contents
-    '<...This project&rsquo;s license is proprietary...
+    '<...This project&rsquo;s licence is proprietary...
 
-If the project doesn't qualify for free hosting, or if it doesn't
-have much time left on its commercial subscription, a portlet
-is displayed to direct the owner to purchase a subscription.
+If the project doesn't qualify for free hosting, or if it doesn't have
+much time left on its commercial subscription, a portlet is displayed to
+direct the owner to purchase a subscription.
 
+    >>> firefox = Product.selectOneBy(name="firefox")
+    >>> ignored = login_person(firefox.owner)
     >>> firefox.licenses = [License.OTHER_PROPRIETARY]
     >>> flush_database_updates()
     >>> transaction.commit()
+    >>> logout()
     >>> owner_browser.open('http://launchpad.dev/firefox')
     >>> print find_tag_by_id(owner_browser.contents, 'license-status')
-    <...This project&rsquo;s license is proprietary...
+    <...This project&rsquo;s licence is proprietary...
+
     >>> print find_tag_by_id(owner_browser.contents,
-    ...                      'portlet-requires-subscription')
-    <div...Purchasing a subscription is required...</div>
-    >>> print find_tag_by_id(owner_browser.contents,
-    ...                      'portlet-missing-license')
-    None
-    >>> owner_browser.getLink('Purchase a subscription.').click()
-    >>> owner_browser.url
-    'http://launchpad.dev/firefox/+purchase-subscription'
-    >>> print find_tags_by_class(owner_browser.contents, 'error message')
-    []
+    ...     'portlet-requires-subscription')
+    <div...Purchasing a commercial subscription is required...</div>
+
+    >>> owner_browser.getLink('Manage commercial subscriptions').click()
+    >>> print owner_browser.title
+    Commercial subscription vouchers : Sample Person
+
     >>> owner_browser.getLink('Canonical Shop')
     <Link...url='http://ubuntu.recycledmania.com...'>
-    >>> owner_browser.getLink('voucher management page')
-    <Link...url='http://launchpad.dev/~name12/+vouchers'...>
 
-Any user can see that the project's license is proprietary.
+Any user can see that the project's licence is proprietary.
 
     >>> user_browser.open('http://launchpad.dev/firefox')
     >>> user_browser.contents
-    '<...This project&rsquo;s license is proprietary...
+    '<...This project&rsquo;s licence is proprietary...
 
-A non-owner does not see that a commercial subscription is due,
-and the +purchase-subscription page will display an error. A user would
-have to load that page directly, since the link is not displayed.
+A non-owner does not see that a commercial subscription is due.
 
     >>> print find_tag_by_id(user_browser.contents,
     ...                      'portlet-requires-subscription')
     None
-    >>> user_browser.open(
-    ...     'http://launchpad.dev/firefox/+purchase-subscription')
-    >>> print find_tag_by_id(user_browser.contents, 'permission-error')
-    <div...class="error message"...
-    You do not have permission to purchase a subscription for this project...
 
-If the project qualifies for free hosting, neither portlet
-is displayed, and the +purchase-subscription page will display
-an error.
+If the project qualifies for free hosting, tghe portlet is not displayed.
 
     >>> firefox.licenses = [License.GNU_GPL_V2]
     >>> flush_database_updates()
@@ -241,34 +185,29 @@ an error.
     >>> print find_tag_by_id(owner_browser.contents,
     ...                      'portlet-requires-subscription')
     None
-    >>> print find_tag_by_id(owner_browser.contents,
-    ...                      'portlet-missing-license')
-    None
-    >>> owner_browser.open(
-    ...     'http://launchpad.dev/firefox/+purchase-subscription')
-    >>> print find_tag_by_id(owner_browser.contents, 'free-hosting-error')
-    <div...class="error message"...
-    This project does not require a commercial subscription to be purchased...
 
-If the project's license is open source, the license status is not displayed
-on the index page, since most projects fall into this category.
+If the project's licence is open source, the licence status is not
+displayed on the index page, since most projects fall into this
+category.
 
     >>> user_browser.open('http://launchpad.dev/firefox')
     >>> print find_tag_by_id(owner_browser.contents, 'license-status')
     None
 
 
-= Commercial Subscription Expiration =
+Commercial Subscription Expiration
+----------------------------------
 
-If the project has redeemed a voucher for a commercial subscription
-then the expiration date is shown to the project maintainers,
-Launchpad admins, and members of the Launchpad commercial team.
+If the project has redeemed a voucher for a commercial subscription then
+the expiration date is shown to the project maintainers, Launchpad
+admins, and members of the Launchpad commercial team.
 
 Redeem a voucher to enable the subscription.
 
     >>> owner_browser = setupBrowser(auth='Basic bac@canonical.com:test')
     >>> owner_browser.open('http://launchpad.dev/people/+me/+vouchers')
-    >>> owner_browser.getControl(name='field.project').value = 'mega-money-maker'
+    >>> owner_browser.getControl(
+    ...     name='field.project').value = 'mega-money-maker'
     >>> owner_browser.getControl(name='field.voucher').value = [
     ...     'LPCBS12-f78df324-0cc2-11dd-8b6b-bac000000005']
     >>> owner_browser.getControl('Redeem').click()
@@ -301,12 +240,49 @@ Launchpad administrators will see the expiration information.
     Commercial subscription expires ...
 
 
-= Aliases =
+Development
+-----------
 
-When a project has one or more aliases, they're shown on the project's home
-page.
+The project page shows the series that is the focus of development.
+
+    >>> anon_browser.open('http://launchpad.dev/firefox')
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'development-focus'))
+    Mozilla Firefox trunk series  is the current focus of development
+
+The page has a link to view the project's milestones.
+
+    >>> anon_browser.getLink('View milestones')
+    <Link ... url='http://launchpad.dev/firefox/+milestones'>
+
+Project owners and driver can see a link to register series.
+
+    >>> owner_browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> owner_browser.open('http://launchpad.dev/firefox')
+    >>> owner_browser.getLink('Register a series')
+    <Link ... url='http://launchpad.dev/firefox/+addseries'>
+
+
+Aliases
+-------
+
+When a project has one or more aliases, they're shown on the project's
+home page.
 
     >>> Product.byName("firefox").setAliases(['iceweasel', 'snowchicken'])
     >>> anon_browser.open('http://launchpad.dev/firefox')
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'aliases'))
     Also known as: iceweasel, snowchicken
+
+
+Ubuntu packaging
+----------------
+
+If a product is packaged in Ubuntu the links are shown.
+
+    >>> user_browser.open('http://launchpad.dev/firefox')
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'portlet-packages'))
+    All packages
+    Packages in Distributions
+    “mozilla-firefox” source package in Warty Version 0.9 uploaded on...

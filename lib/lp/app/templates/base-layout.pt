@@ -3,33 +3,33 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   define-macro="master"
   tal:define="
-    revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-    version string:Launchpad 2.2.7 (r${revno});
-    devmode modules/canonical.config/config/devmode;
-    rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
-    is_demo modules/canonical.config/config/launchpad/is_demo;
-    is_edge modules/canonical.config/config/launchpad/is_edge;
-    is_lpnet modules/canonical.config/config/launchpad/is_lpnet;
+    revno modules/lp.app.versioninfo/revno | string:unknown;
+    devmode modules/lp.services.config/config/devmode;
+    rooturl modules/lp.services.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
+    is_demo modules/lp.services.config/config/launchpad/is_demo;
+    is_lpnet modules/lp.services.config/config/launchpad/is_lpnet;
+    site_message modules/lp.services.config/config/launchpad/site_message;
     icingroot string:${rooturl}+icing/rev${revno};
-    icingroot_contrib string:${rooturl}+icing-contrib/rev${revno};
+    features request/features;
+    feature_scopes request/features/scopes;
     CONTEXTS python:{'template':template, 'context': context, 'view':view};
   "
-><metal:doctype define-slot="doctype"><tal:doctype tal:replace="structure string:&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Transitional//EN&quot; &quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd&quot;&gt;" /></metal:doctype>
+><metal:doctype define-slot="doctype"><tal:doctype tal:replace="structure string:&lt;!DOCTYPE html&gt;" /></metal:doctype>
 <html
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en" lang="en" dir="ltr">
-  <head tal:define="
-    yui string:${icingroot}/yui/3.0.0pr2/build;
-    lazr_js string:${icingroot}/lazr/build;
-    lp_js string:${icingroot}/build">
-    <title i18n:translate=""
-      tal:content="view/page_title|CONTEXTS/fmt:pagetitle">Launchpad</title>
-
+  <head>
+    <meta charset="UTF-8" />
+    <title tal:content="view/fmt:pagetitle">Page Title</title>
     <link rel="shortcut icon" href="/@@/launchpad.png" />
-
+    <link
+      rel="canonical"
+      tal:define="url view/recommended_canonical_url | nothing"
+      tal:condition="url"
+      tal:attributes="href url"/>
     <tal:atomfeeds define="feed_links view/feed_links | nothing">
       <link rel="alternate" type="application/atom+xml"
         tal:repeat="link feed_links"
@@ -44,91 +44,116 @@
       html, body {background-image: url(/@@/demo) !important;}
     </style>
 
-    <tal:comment condition="nothing">
-      Internet Explorer apparently doubles the horizontal margins of the
-      application tabs, which causes the 'Answers' tab to wrap onto a second
-      row. To work around this, we give IE some speshul CSS:
-    </tal:comment>
-    <!--[if lte IE 7]>
-      <style type="text/css">#lp-apps span {margin: 0 0.125%;}</style>
-    <![endif]-->
-
-    <tal:comment condition="nothing">
-      This CSS collapses the contents of collapsible fieldsets,
-      without the flashing that would result from doing it in JavaScript.
-      activateCollapsibles() removes the class="collapsed" from fieldsets, to
-      re-show their divs, once the children themselves have been collapsed.
-    </tal:comment>
-    <style type="text/css">
-      fieldset.collapsed div, fieldset div.collapsed {display: none;}
-    </style>
-    <noscript>
-      <style type="text/css">
-        fieldset.collapsible div, fieldset div.collapsed {display: block;}
-      </style>
-    </noscript>
+    <tal:view condition="not: view/macro:is-page-contentless">
+      <meta name="description"
+        tal:condition="view/page_description | nothing"
+        tal:attributes="content view/page_description/fmt:strip-email/fmt:shorten/500" />
+    </tal:view>
 
     <metal:page-javascript
         use-macro="context/@@+base-layout-macros/page-javascript" />
-    <metal:block define-slot="head_epilogue"></metal:block>
+    <tal:view condition="not: view/macro:is-page-contentless">
+      <metal:block define-slot="head_epilogue"></metal:block>
+    </tal:view>
   </head>
 
   <body id="document"
+    itemscope=""
+    itemtype="http://schema.org/WebPage"
     tal:attributes="class string:tab-${view/menu:selectedfacetname}
       ${view/macro:pagetype}
-      ${view/context/fmt:public-private-css}
-      yui-skin-sam">
+      ${view/fmt:global-css}
+      yui3-skin-sam">
+          <tal:beta-banner condition="view/beta_features">
+            <div class="beta_banner_container">
+                <noscript ><strong>Some parts of this page are in beta.</strong></noscript>
+            </div>
+          </tal:beta-banner>
+          <tal:private-banner condition="view/private">
+            <div class="private_banner_container">
+                <noscript><strong>The information on this page is private.</strong></noscript>
+            </div>
+          </tal:private-banner>
+        <script type="text/javascript"
+          tal:condition="python: is_lpnet">
+          var _gaq = _gaq || [];
+          _gaq.push(['_setAccount', 'UA-12833497-1']);
+          _gaq.push(['_setDomainName', '.launchpad.net']);
+          _gaq.push(['_setAllowHash', false]);
+          _gaq.push(['_trackPageview']);
+        </script>
+        <script type="text/javascript"
+            tal:condition="python: is_lpnet"
+            tal:attributes="src string:${icingroot}/google-analytics/ga.js"></script>
     <div class="yui-d0">
-      <div id="locationbar">
+      <div id="locationbar" class="login-logout">
         <tal:login replace="structure context/@@login_status" />
-        <tal:hierarchy replace="structure context/@@+hierarchy" />
       </div><!--id="locationbar"-->
 
-      <div class="watermark-apps-portlet top-portlet"
-           tal:condition="view/macro:pagehas/applicationtabs">
-        <span tal:replace="structure context/watermark:logo"></span>
-        <h2 tal:replace="structure context/watermark:heading">
-          Celso Providelo
-        </h2>
-        <metal:heading_nav
-          use-macro="context/@@+base-layout-macros/application-buttons"/>
+      <div id="watermark" class="watermark-apps-portlet"
+        tal:condition="view/macro:has-watermark">
+        <div>
+          <span tal:replace="structure view/watermark:logo"></span>
+        </div>
+        <div class="wide">
+          <h2 tal:replace="structure view/watermark:heading">
+            Celso Providelo
+          </h2>
+          <metal:heading_nav
+            use-macro="context/@@+base-layout-macros/application-buttons"/>
+        </div>
       </div>
 
       <div class="yui-t4"
         tal:omit-tag="not: view/macro:pagehas/portlets">
         <div id="maincontent" class="yui-main">
-
-          <tal:maintenance
-            replace="structure context/@@+maintenancemessage" />
-          <tal:notifications
-            define="notifications request/notifications"
-            condition="notifications">
-            <metal:notifications
-              use-macro="context/@@+base-layout-macros/notifications"/>
-          </tal:notifications>
-
           <div class="yui-b"
             tal:attributes="
               lang view/lang|default_language|default;
               xml:lang view/lang|default_language|default;
               dir view/dir|string:ltr">
-            <div tal:condition="view/macro:pagehas/applicationtabs">
-              <h2
-                tal:condition="context/title|nothing"
-                tal:content="context/title"
-                metal:define-slot="heading" />
-              <tal:breadcrumbs>
-                <!-- future breadcrumb rule -->
+            <div class="context-publication">
+              <h1
+                tal:condition="view/label|nothing"
+                tal:content="view/label"
+                metal:define-slot="heading"
+                >Page Label
+              </h1>
+              <tal:breadcrumbs replace="structure context/@@+hierarchy">
+                ProjectName > Branches > Merge Proposals > fix-for-navigation
               </tal:breadcrumbs>
+              <div id="registration" class="registering"
+                tal:condition="not: view/macro:is-page-contentless">
+                <metal:registering define-slot="registering" />
+              </div>
             </div>
-            <metal:main define-slot="main" />
+
+            <tal:maintenance
+              replace="structure context/@@+maintenancemessage" />
+            <div id="request-notifications">
+              <tal:notifications
+                define="notifications request/notifications"
+                condition="notifications">
+                <metal:notifications
+                  use-macro="context/@@+base-layout-macros/notifications"/>
+              </tal:notifications>
+            </div>
+
+            <tal:view condition="not: view/macro:is-page-contentless">
+              <metal:main define-slot="main" />
+            </tal:view>
+            <tal:limitedview condition="view/macro:is-page-contentless">
+              The information in this page is not shared with you.
+            </tal:limitedview>
           </div><!-- yui-b -->
         </div><!-- yui-main -->
 
-        <div class="yui-b side"
-          tal:condition="view/macro:pagehas/portlets">
-          <metal:portlets define-slot="side" />
-        </div><!-- yui-b side -->
+        <tal:view condition="not: view/macro:is-page-contentless">
+          <div id="side-portlets" class="yui-b side"
+            tal:condition="view/macro:pagehas/portlets">
+            <metal:portlets define-slot="side" />
+          </div><!-- yui-b side -->
+        </tal:view>
       </div><!-- yui-t4 -->
 
       <metal:footer
@@ -154,12 +179,26 @@
 
     <metal:lp-client-cache
       use-macro="context/@@+base-layout-macros/lp-client-cache" />
+    <metal:debug-timeline
+      use-macro="context/@@+base-layout-macros/debug-timeline" />
+    <tal:comment
+        tal:condition="request/features/visible_render_time"
+        define="render_time modules/lp.services.webapp.adapter/summarize_requests;"
+        replace='structure string:&lt;script type="text/javascript"&gt;
+      var render_time = "${render_time}";
+      LPJS.use("node", "lp.ajax_log" , function(Y) {
+        Y.on("domready", function() {
+          var node = Y.one("#rendertime");
+          node.set("innerHTML", render_time);
+          var ajax_log = new Y.lp.ajax_log();
+        });
+      });
+    &lt;/script&gt;' />
   </body>
-</html>
 
 <tal:template>
   <tal:comment
-    define="log modules/canonical.launchpad.webapp.adapter/summarize_requests"
+    define="log modules/lp.services.webapp.adapter/summarize_requests;"
     replace="structure string:&lt;!--
     Facet name: ${view/menu:selectedfacetname}
     Page type: ${view/macro:pagetype}
@@ -169,7 +208,11 @@
 
     At least ${log}
 
-    ${version}
-  --&gt;" />
+    Features: ${request/features/usedFlags}
+
+    r${revno}
+
+    --&gt;" />
 </tal:template>
+</html>
 </metal:page>

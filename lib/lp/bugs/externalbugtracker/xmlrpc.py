@@ -6,16 +6,29 @@
 __metaclass__ = type
 __all__ = [
     'UrlLib2Transport',
-    'XMLRPCRedirectHandler'
+    'XMLRPCRedirectHandler',
     ]
 
 
 from cookielib import Cookie
+from cStringIO import StringIO
 from urllib2 import (
-    build_opener, HTTPCookieProcessor, HTTPError, HTTPRedirectHandler,
-    Request)
-from urlparse import urlparse, urlunparse
-from xmlrpclib import ProtocolError, Transport
+    build_opener,
+    HTTPCookieProcessor,
+    HTTPError,
+    HTTPRedirectHandler,
+    Request,
+    )
+from urlparse import (
+    urlparse,
+    urlunparse,
+    )
+from xmlrpclib import (
+    ProtocolError,
+    Transport,
+    )
+
+from lp.services.utils import traceback_info
 
 
 class XMLRPCRedirectHandler(HTTPRedirectHandler):
@@ -50,14 +63,13 @@ class XMLRPCRedirectHandler(HTTPRedirectHandler):
 class UrlLib2Transport(Transport):
     """An XMLRPC transport which uses urllib2.
 
-    This XMLRPC transport uses the Python urllib2 module to make the
-    request, and connects via the HTTP proxy specified in the
-    environment variable `http_proxy`, i present. It also handles
-    cookies correctly, and in addition allows specifying the cookie
-    explicitly by setting `self.auth_cookie`.
+    This XMLRPC transport uses the Python urllib2 module to make the request,
+    with proxying handled by that module's semantics (though underdocumented).
+    It also handles cookies correctly, and in addition allows specifying the
+    cookie explicitly by setting `self.auth_cookie`.
 
-    Note: this transport isn't fit for general XML-RPC use. It is just
-    good enough for some of our extrnal bug tracker implementations.
+    Note: this transport isn't fit for general XMLRPC use. It is just good
+    enough for some of our external bug tracker implementations.
 
     :param endpoint: The URL of the XMLRPC server.
     """
@@ -65,10 +77,10 @@ class UrlLib2Transport(Transport):
     verbose = False
 
     def __init__(self, endpoint, cookie_jar=None):
+        Transport.__init__(self, use_datetime=True)
         self.scheme, self.host = urlparse(endpoint)[:2]
-        assert (
-            self.scheme in ('http', 'https'),
-            "Unsupported URL schene: %s" % self.scheme)
+        assert self.scheme in ('http', 'https'), (
+            "Unsupported URL scheme: %s" % self.scheme)
         self.cookie_processor = HTTPCookieProcessor(cookie_jar)
         self.redirect_handler = XMLRPCRedirectHandler()
         self.opener = build_opener(
@@ -96,8 +108,16 @@ class UrlLib2Transport(Transport):
         headers = {'Content-type': 'text/xml'}
         request = Request(url, request_body, headers)
         try:
-            response = self._parse_response(self.opener.open(request), None)
-        except HTTPError, he:
+            response = self.opener.open(request).read()
+        except HTTPError as he:
             raise ProtocolError(
                 request.get_full_url(), he.code, he.msg, he.hdrs)
-        return response
+        else:
+            traceback_info(response)
+            # In Python2.6 the api is self._parse_response, in 2.7 it is
+            # self.parse_response and no longer takes the 'sock' argument
+            parse = getattr(self, '_parse_response', None)
+            if parse is not None:
+                # Compatibility with python 2.6
+                return parse(StringIO(response), None)
+            return self.parse_response(StringIO(response))

@@ -14,8 +14,14 @@ __metaclass__ = type
 __all__ = ['ICveReference']
 
 from zope.interface import Interface
-from zope.schema import Int, TextLine, Text
-from canonical.launchpad import _
+from zope.schema import (
+    Int,
+    Text,
+    TextLine,
+    )
+
+from lp import _
+
 
 class ICveReference(Interface):
     """A CVE Reference."""

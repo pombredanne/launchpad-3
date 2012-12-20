@@ -9,12 +9,14 @@ __all__ = [
     ]
 
 from openid.yadis.accept import getAcceptable
-from openid.yadis.constants import YADIS_CONTENT_TYPE, YADIS_HEADER_NAME
-
-from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.webapp import canonical_url
+from openid.yadis.constants import (
+    YADIS_CONTENT_TYPE,
+    YADIS_HEADER_NAME,
+    )
 
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp import canonical_url
 
 
 class XRDSContentNegotiationMixin:
@@ -76,5 +78,3 @@ class XRDSContentNegotiationMixin:
     def openid_server_url(self):
         """The OpenID Server endpoint URL for Launchpad."""
         return CurrentOpenIDEndPoint.getServiceURL()
-
-

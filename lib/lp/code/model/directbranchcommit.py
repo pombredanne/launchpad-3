@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Commit files straight to bzr branch."""
@@ -14,10 +14,20 @@ import os.path
 
 from bzrlib.generate_ids import gen_file_id
 from bzrlib.revision import NULL_REVISION
-from bzrlib.transform import TransformPreview
+from bzrlib.transform import (
+    ROOT_PARENT,
+    TransformPreview,
+    )
 
-from canonical.launchpad.interfaces import IMasterObject
-from lp.codehosting.vfs import make_branch_mirrorer
+from lp.code.errors import StaleLastMirrored
+from lp.codehosting.bzrutils import (
+    get_branch_info,
+    get_stacked_on_url,
+    )
+from lp.services.config import config
+from lp.services.database.lpstorm import IMasterObject
+from lp.services.mail.sendmail import format_address_for_person
+from lp.services.osutils import override_environ
 
 
 class ConcurrentUpdateError(Exception):
@@ -48,45 +58,61 @@ class DirectBranchCommit:
     is_locked = False
     commit_builder = None
 
-    def __init__(self, db_branch, committer=None):
+    def __init__(self, db_branch, committer=None, no_race_check=False,
+                 merge_parents=None, committer_id=None):
         """Create context for direct commit to branch.
 
         Before constructing a `DirectBranchCommit`, set up a server that
-        allows write access to lp-hosted:/// URLs:
+        allows write access to lp-internal:/// URLs:
 
-        bzrserver = get_multi_server(write_hosted=True)
-        bzrserver.setUp()
+        bzrserver = get_rw_server()
+        bzrserver.start_server()
         try:
             branchcommit = DirectBranchCommit(branch)
             # ...
         finally:
-            bzrserver.tearDown()
+            bzrserver.stop_server()
 
         Or in tests, just call `useBzrBranches` before creating a
         `DirectBranchCommit`.
 
         :param db_branch: a Launchpad `Branch` object.
-        :param committer: the `Person` writing to the branch.
+        :param committer: the `Person` writing to the branch.  Defaults to
+            the branch owner.
+        :param no_race_check: don't check for other commits before committing
+            our changes, for use in tests.
+        :param committer_id: Optional identification (typically with email
+            address) of the person doing the commit, for use in bzr.  If not
+            given, the `committer`'s email address will be used instead.
         """
         self.db_branch = db_branch
+
+        self.last_scanned_id = self.db_branch.last_scanned_id
 
         if committer is None:
             committer = db_branch.owner
         self.committer = committer
+        self.committer_id = committer_id
+
+        self.no_race_check = no_race_check
 
         # Directories we create on the branch, and their ids.
         self.path_ids = {}
 
-        mirrorer = make_branch_mirrorer(self.db_branch.branch_type)
-        self.bzrbranch = mirrorer.open(self.db_branch.getPullURL())
+        self.bzrbranch = self.db_branch.getBzrBranch()
+
         self.bzrbranch.lock_write()
         self.is_locked = True
-
         try:
             self.revision_tree = self.bzrbranch.basis_tree()
             self.transform_preview = TransformPreview(self.revision_tree)
             assert self.transform_preview.find_conflicts() == [], (
                 "TransformPreview is not in a consistent state.")
+            if not no_race_check:
+                last_revision = self.bzrbranch.last_revision()
+                if not self._matchingLastMirrored(last_revision):
+                    raise StaleLastMirrored(
+                        db_branch, get_branch_info(self.bzrbranch))
 
             self.is_open = True
         except:
@@ -94,6 +120,13 @@ class DirectBranchCommit:
             raise
 
         self.files = set()
+        self.merge_parents = merge_parents
+
+    def _matchingLastMirrored(self, revision_id):
+        if (self.db_branch.last_mirrored_id is None
+            and revision_id == NULL_REVISION):
+            return True
+        return revision_id == self.db_branch.last_mirrored_id
 
     def _getDir(self, path):
         """Get trans_id for directory "path."  Create if necessary."""
@@ -111,7 +144,7 @@ class DirectBranchCommit:
         if dirname:
             parent_id = self._getDir(parent_dir)
         else:
-            parent_id = None
+            parent_id = ROOT_PARENT
 
         # Create new directory.
         dirfile_id = gen_file_id(path)
@@ -154,49 +187,64 @@ class DirectBranchCommit:
         If it does, raise `ConcurrentUpdateError`.
         """
         assert self.is_locked, "Getting revision on un-locked branch."
-        last_revision = None
+        if self.no_race_check:
+            return
         last_revision = self.bzrbranch.last_revision()
-        if last_revision != self.db_branch.last_scanned_id:
+        if last_revision != self.last_scanned_id:
             raise ConcurrentUpdateError(
                 "Branch has been changed.  Not committing.")
 
-    def commit(self, commit_message):
-        """Commit to branch."""
+    def getBzrCommitterID(self):
+        """Find the committer id to pass to bzr."""
+        if self.committer_id is not None:
+            return self.committer_id
+        elif self.committer.preferredemail is not None:
+            return format_address_for_person(self.committer)
+        else:
+            return '"%s" <%s>' % (
+                self.committer.displayname,
+                config.canonical.noreply_from_address)
+
+    def commit(self, commit_message, txn=None):
+        """Commit to branch.
+
+        :param commit_message: Message for branch's commit log.
+        :param txn: Transaction to commit.  Can be helpful in avoiding
+            long idle times in database transactions.  May be committed
+            more than once.
+        """
         assert self.is_open, "Committing closed DirectBranchCommit."
         assert self.is_locked, "Not locked at commit time."
 
-        builder = None
         try:
             self._checkForRace()
 
-            preview_tree = self.transform_preview.get_preview_tree()
+            if txn:
+                txn.commit()
 
             rev_id = self.revision_tree.get_revision_id()
             if rev_id == NULL_REVISION:
-                parents = []
-            else:
-                parents = [rev_id]
+                if list(self.transform_preview.iter_changes()) == []:
+                    return
+            committer_id = self.getBzrCommitterID()
+            # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+            # required to generate the revision-id.
+            with override_environ(BZR_EMAIL=committer_id):
+                new_rev_id = self.transform_preview.commit(
+                    self.bzrbranch, commit_message, self.merge_parents,
+                    committer=committer_id)
+            IMasterObject(self.db_branch).branchChanged(
+                get_stacked_on_url(self.bzrbranch), new_rev_id,
+                self.db_branch.control_format, self.db_branch.branch_format,
+                self.db_branch.repository_format)
 
-            builder = self.bzrbranch.get_commit_builder(parents)
-
-            list(builder.record_iter_changes(
-                preview_tree, rev_id, self.transform_preview.iter_changes()))
-
-            builder.finish_inventory()
-
-            new_rev_id = builder.commit(commit_message)
-            builder = None
-
-            revno, old_rev_id = self.bzrbranch.last_revision_info()
-            self.bzrbranch.set_last_revision_info(revno + 1, new_rev_id)
-
-            IMasterObject(self.db_branch).requestMirror()
+            if txn:
+                txn.commit()
 
         finally:
-            if builder:
-                builder.abort()
             self.unlock()
             self.is_open = False
+        return new_rev_id
 
     def unlock(self):
         """Release commit lock, if held."""

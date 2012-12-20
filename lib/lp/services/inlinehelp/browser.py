@@ -12,7 +12,8 @@ __all__ = [
     'HelpFolder',
     ]
 
-from canonical.lazr.folder import ExportedFolder
+from lp.app.browser.folder import ExportedFolder
+
 
 class HelpFolder(ExportedFolder):
     """An exported directory containing inline help documentation."""

@@ -11,21 +11,28 @@ __all__ = [
     'ICommercialSubscription',
     ]
 
-from zope.interface import Interface
-from zope.schema import Bool, Datetime, Int, Text, TextLine
-
-from lazr.restful.fields import ReferenceChoice
 from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import ReferenceChoice
+from zope.interface import Interface
+from zope.schema import (
+    Bool,
+    Datetime,
+    Int,
+    Text,
+    TextLine,
+    )
 
-from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from lp import _
+from lp.services.fields import PublicPersonChoice
 
 
 class ICommercialSubscription(Interface):
     """A Commercial Subscription for a Product.
 
-    If the product has a license which does not qualify for free
+    If the product has a licence which does not qualify for free
     hosting, a subscription needs to be purchased.
     """
     # Mark commercial subscriptions as exported entries for the Launchpad API.
@@ -39,7 +46,7 @@ class ICommercialSubscription(Interface):
             required=True,
             readonly=True,
             vocabulary='Product',
-            # Really IProduct.  Set properly below.
+            # Really IProduct. See lp/registry/interfaces/product.py
             schema=Interface,
             description=_(
                 "Project for which this commercial subscription is "
@@ -96,7 +103,8 @@ class ICommercialSubscription(Interface):
             readonly=True,
             description=_("Whether this subscription is active.")))
 
+    def delete():
+        """Delete the expired Commercial Subscription.
 
-# Fix circular dependency issues.
-from lp.registry.interfaces.product import IProduct
-ICommercialSubscription['product'].schema = IProduct
+        :raises: CannotDeleteCommercialSubscription when is_active is True.
+        """

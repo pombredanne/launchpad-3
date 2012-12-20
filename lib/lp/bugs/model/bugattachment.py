@@ -6,19 +6,30 @@
 __metaclass__ = type
 __all__ = ['BugAttachment', 'BugAttachmentSet']
 
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectDeletedEvent,
+    )
+from sqlobject import (
+    ForeignKey,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.store import Store
 from zope.event import notify
 from zope.interface import implements
 
-from lazr.lifecycle.event import ObjectCreatedEvent, ObjectDeletedEvent
-
-from sqlobject import ForeignKey, StringCol, SQLObjectNotFound
-
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
-
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugattachment import (
-    BugAttachmentType, IBugAttachment, IBugAttachmentSet)
+    BugAttachmentType,
+    IBugAttachment,
+    IBugAttachmentSet,
+    )
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import SQLBase
+from lp.services.propertycache import cachedproperty
+
+
 class BugAttachment(SQLBase):
     """A bug attachment."""
 
@@ -36,13 +47,43 @@ class BugAttachment(SQLBase):
         foreignKey='LibraryFileAlias', dbName='libraryfile', notNull=True)
     data = ForeignKey(
         foreignKey='LibraryFileAlias', dbName='libraryfile', notNull=True)
-    message = ForeignKey(
+    _message = ForeignKey(
         foreignKey='Message', dbName='message', notNull=True)
+
+    @cachedproperty
+    def message(self):
+        """This is a cachedproperty to allow message to be an IIndexedMessage.
+
+        This is needed for the bug/attachments API call which needs to index
+        an IIndexedMessage rather than a simple DB model IMessage. See
+        Bug.attachments where the injection occurs.
+        """
+        return self._message
+
+    @property
+    def is_patch(self):
+        """See IBugAttachment."""
+        return self.type == BugAttachmentType.PATCH
 
     def removeFromBug(self, user):
         """See IBugAttachment."""
         notify(ObjectDeletedEvent(self, user))
         self.destroySelf()
+
+    def destroySelf(self):
+        """See IBugAttachment."""
+        # Delete the reference to the LibraryFileContent record right now,
+        # in order to avoid problems with not deleted files as described
+        # in bug 387188.
+        self.libraryfile.content = None
+        super(BugAttachment, self).destroySelf()
+
+    def getFileByName(self, filename):
+        """See IBugAttachment."""
+        if filename == self.libraryfile.filename:
+            return self.libraryfile
+        raise NotFoundError(filename)
+
 
 class BugAttachmentSet:
     """A set for bug attachments."""
@@ -69,7 +110,11 @@ class BugAttachmentSet:
             attach_type = IBugAttachment['type'].default
         attachment = BugAttachment(
             bug=bug, libraryfile=filealias, type=attach_type, title=title,
-            message=message)
+            _message=message)
+        # canonial_url(attachment) (called by notification subscribers
+        # to generate the download URL of the attachments) blows up if
+        # attachment.id is not (yet) set.
+        Store.of(attachment).flush()
         if send_notifications:
             notify(ObjectCreatedEvent(attachment, user=message.owner))
         return attachment

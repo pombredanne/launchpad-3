@@ -73,7 +73,7 @@ takes a single parameter, token, which is a Launchpad LoginToken.
 
 We can use the internal XML-RPC API to generate such a token.
 
-    >>> from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
+    >>> from lp.bugs.xmlrpc.bug import ExternalBugTrackerTokenAPI
     >>> token_api = ExternalBugTrackerTokenAPI(None, None)
     >>> token_text = token_api.newBugTrackerToken()
 
@@ -105,9 +105,9 @@ current UTC time.
     >>> time_dict = server.Launchpad.time()
     >>> for key in sorted(time_dict):
     ...     print "%s: %s" % (key, time_dict[key])
-    local_time: 20080501T01:01:01
+    local_time: 2008-05-01 01:01:01
     tz_name: UTC
-    utc_time: 20080501T01:01:01
+    utc_time: 2008-05-01 01:01:01
 
 We can set the local time value on the remote server to make testing
 more useful.
@@ -122,9 +122,9 @@ more useful.
     >>> time_dict = server.Launchpad.time()
     >>> for key in sorted(time_dict):
     ...     print "%s: %s" % (key, time_dict[key])
-    local_time: 20080515T16:19:53
+    local_time: 2008-05-15 16:19:53
     tz_name: US/Central
-    utc_time: 20080515T22:19:53
+    utc_time: 2008-05-15 22:19:53
 
 
 Launchpad.get_bugs()
@@ -141,17 +141,18 @@ so that they are treated as "key: value" pairs.
     >>> [bug_dict] = return_value['bugs']
     >>> for key in sorted(bug_dict):
     ...     print "%s: %s" % (key, bug_dict[key])
-    alias: 
+    alias:
     assigned_to: test@canonical.com
     component: GPPSystems
-    creation_time: 20080610T16:19:53
+    creation_time: 2008-06-10 16:19:53
     id: 1
     internals:...
     is_open: True
-    last_change_time: 20080610T16:19:53
+    last_change_time: 2008-06-10 16:19:53
     priority: P1
     product: Marvin
     resolution: FIXED
+    see_also: []
     severity: normal
     status: RESOLVED
     summary: That bloody robot still exists.
@@ -166,17 +167,18 @@ one bug will be returned (assuming they all exist and are accessible).
     ...     for key in sorted(bug_dict):
     ...         print "%s: %s" % (key, bug_dict[key])
     ...     print
-    alias: 
+    alias:
     assigned_to: test@canonical.com
     component: GPPSystems
-    creation_time: 20080610T16:19:53
+    creation_time: 2008-06-10 16:19:53
     id: 1
     internals:...
     is_open: True
-    last_change_time: 20080610T16:19:53
+    last_change_time: 2008-06-10 16:19:53
     priority: P1
     product: Marvin
     resolution: FIXED
+    see_also: []
     severity: normal
     status: RESOLVED
     summary: That bloody robot still exists.
@@ -184,14 +186,15 @@ one bug will be returned (assuming they all exist and are accessible).
     alias: bug-two
     assigned_to: marvin@heartofgold.ship
     component: Crew
-    creation_time: 20080611T09:23:12
+    creation_time: 2008-06-11 09:23:12
     id: 2
     internals:...
     is_open: True
-    last_change_time: 20080611T09:24:29
+    last_change_time: 2008-06-11 09:24:29
     priority: P1
     product: HeartOfGold
     resolution:
+    see_also: []
     severity: high
     status: NEW
     summary: Collect unknown persons in docking bay 2.
@@ -206,14 +209,15 @@ Bug aliases can also be used to request remote bugs.
     alias: bug-two
     assigned_to: marvin@heartofgold.ship
     component: Crew
-    creation_time: 20080611T09:23:12
+    creation_time: 2008-06-11 09:23:12
     id: 2
     internals:...
     is_open: True
-    last_change_time: 20080611T09:24:29
+    last_change_time: 2008-06-11 09:24:29
     priority: P1
     product: HeartOfGold
-    resolution: 
+    resolution:
+    see_also: []
     severity: high
     status: NEW
     summary: Collect unknown persons in docking bay 2.
@@ -224,16 +228,7 @@ date / time. This acts as an intersection with the 'ids' parameter,
 allowing Launchpad to get only the recently-updated subset of a given
 set of remote bugs.
 
-    >>> from xmlrpclib import DateTime
-
     >>> changed_since = datetime(2008, 6, 11, 9, 0, 0)
-
-    >>> # We encode changed_since into an XML-RPC DateTime manually.
-    >>> # This is because xmlrpclib can't handle DateTime encoding
-    >>> # within a dict.
-    >>> # XXX 2008-08-05 gmb (bug 254999):
-    >>> #     We can remove this once we upgrade to python 2.5.
-    >>> changed_since = DateTime(changed_since.timetuple())
 
     >>> return_value = server.Launchpad.get_bugs({
     ...     'ids': [1, 2],
@@ -250,14 +245,15 @@ set of remote bugs.
     alias: bug-two
     assigned_to: marvin@heartofgold.ship
     component: Crew
-    creation_time: 20080611T09:23:12
+    creation_time: 2008-06-11 09:23:12
     id: 2
     internals:...
     is_open: True
-    last_change_time: 20080611T09:24:29
+    last_change_time: 2008-06-11 09:24:29
     priority: P1
     product: HeartOfGold
-    resolution: 
+    resolution:
+    see_also: []
     severity: high
     status: NEW
     summary: Collect unknown persons in docking bay 2.
@@ -267,10 +263,6 @@ returned.
 
     >>> from datetime import timedelta
     >>> changed_since = datetime.now() + timedelta(days=42)
-
-    >>> # XXX 2008-08-05 gmb (bug 254999):
-    >>> #     We can remove this once we upgrade to python 2.5.
-    >>> changed_since = DateTime(changed_since.timetuple())
 
     >>> return_value = server.Launchpad.get_bugs({
     ...     'ids': [1, 2],
@@ -299,14 +291,15 @@ only return bugs which affect those products.
     alias: bug-two
     assigned_to: marvin@heartofgold.ship
     component: Crew
-    creation_time: 20080611T09:23:12
+    creation_time: 2008-06-11 09:23:12
     id: 2
     internals:...
     is_open: True
-    last_change_time: 20080611T09:24:29
+    last_change_time: 2008-06-11 09:24:29
     priority: P1
     product: HeartOfGold
-    resolution: 
+    resolution:
+    see_also: []
     severity: high
     status: NEW
     summary: Collect unknown persons in docking bay 2.
@@ -360,13 +353,13 @@ the comments for all of those bugs.
         id: 1
         number: 1
         text: I'd really appreciate it if Marvin would enjoy life a bit.
-        time: 20080616T12:44:29
+        time: 2008-06-16 12:44:29
     <BLANKLINE>
         author: marvin
         id: 3
         number: 2
         text: Life? Don't talk to me about life.
-        time: 20080616T13:22:29
+        time: 2008-06-16 13:22:29
     <BLANKLINE>
     <BLANKLINE>
     Bug 2:
@@ -374,13 +367,13 @@ the comments for all of those bugs.
         id: 2
         number: 1
         text: Bring the passengers to the bridge please Marvin.
-        time: 20080616T13:08:08
+        time: 2008-06-16 13:08:08
     <BLANKLINE>
         author: Ford Prefect <ford.prefect@h2g2.com>
         id: 4
         number: 2
         text: I appear to have become a perfectly safe penguin.
-        time: 20080617T20:28:40
+        time: 2008-06-17 20:28:40
 
 If an ids parameter is specified along with bug_ids, only the comments
 whose IDs are in the list of IDs passed will be returned.
@@ -395,7 +388,7 @@ whose IDs are in the list of IDs passed will be returned.
         id: 1
         number: 1
         text: I'd really appreciate it if Marvin would enjoy life a bit.
-        time: 20080616T12:44:29
+        time: 2008-06-16 12:44:29
     <BLANKLINE>
     <BLANKLINE>
     Bug 2:
@@ -403,7 +396,7 @@ whose IDs are in the list of IDs passed will be returned.
         id: 2
         number: 1
         text: Bring the passengers to the bridge please Marvin.
-        time: 20080616T13:08:08
+        time: 2008-06-16 13:08:08
 
 Passing an include_fields parameter allows us to limit which fields are
 returned for each comment.
@@ -455,7 +448,8 @@ on the remote server.
 
     >>> comment = "Didn't we have a lovely time the day we went to Bangor?"
     >>> bugzilla_transport.auth_cookie = 'open sesame'
-    >>> return_dict = server.Launchpad.add_comment({'id': 1, 'comment': comment})
+    >>> return_dict = server.Launchpad.add_comment(
+    ...     {'id': 1, 'comment': comment})
     >>> print return_dict['comment_id']
     5
 

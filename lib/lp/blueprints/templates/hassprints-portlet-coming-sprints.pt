@@ -16,7 +16,9 @@
         tal:attributes="href sprint/fmt:url"
         tal:content="sprint/title" />
       on <tal:when replace="sprint/time_starts/fmt:date" />
-      <br/>Registered <tal:when replace="sprint/datecreated/fmt:displaydate" />
+      <br/><span class="registered">
+        Registered <tal:when replace="sprint/datecreated/fmt:displaydate" />
+      </span>
     </li>
   </ul>
 </div>

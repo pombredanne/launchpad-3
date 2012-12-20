@@ -27,7 +27,7 @@ class Filter_Logging(unittest.TestCase):
 
 class Filter_Init(unittest.TestCase):
     def testDefaultFiltersProperty(self):
-        """Filter constructor initialises filters property to empty dict."""
+        """Filter constructor initializes filters property to empty dict."""
         from lp.registry.scripts.productreleasefinder.filter import (
             Filter)
         f = Filter()
@@ -110,7 +110,3 @@ class Filter_IsPossibleParentUrl(unittest.TestCase):
         self.assertTrue(f.isPossibleParent("file:///subdir/1.42"))
         self.assertTrue(f.isPossibleParent("file:///subdir/1.abc/"))
         self.assertFalse(f.isPossibleParent("file:///subdir/2.0"))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

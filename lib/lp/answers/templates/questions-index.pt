@@ -2,76 +2,76 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/applicationhome">
+  metal:use-macro="view/macro:page/main_only">
   <body>
-    <h1 metal:fill-slot="heading">Questions and answers</h1>
     <div metal:fill-slot="main">
 
-      <ul class="rollover buttons">
-        <li>
-          <a href="/+tour/community-support"
-             tal:attributes="href string:${rooturl}+tour/community-support">
-            <img
-              alt="Take a tour"
-              src="/+icing/but-lrg-takeatour.gif"
-            />
-          </a>
-        </li>
-      </ul>
-      <form class="central" action="" method="get"
-            tal:attributes="action request/URL">
-        <table>
-          <tbody>
+      <div class="yui-g">
+        <p id="application-summary">
+          Launchpad Answers helps you build a
+          community support network and knowledge base for
+          your project. Encourage new users to ask questions
+          rather than file bugs! (<a href="https://help.launchpad.net/Answers">Read our guide</a>)
+        </p>
+
+        <ul class="rollover buttons">
+          <li>
+            <a href="/+tour/community-support"
+               tal:attributes="href string:${rooturl}+tour/community-support">
+              <img
+                alt="Take a tour"
+                src="/+icing/but-lrg-takeatour.gif"
+              />
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="yui-g">
+        <form id="search-all-questions" class="central" action="" method="get"
+              tal:attributes="action request/URL">
+          <table>
+            <tbody>
+              <tr>
+                <td style="text-align: right;">
+                  <input
+                    id="text"
+                    type="text"
+                    name="field.search_text"
+                    size="50"
+                  />
+                </td>
+                <td>
+                  <input
+                    tal:replace="structure view/search_action/render"
+                    type="submit"
+                    value="Find Answers"
+                  />
+                </td>
+              </tr>
             <tr>
-              <td style="text-align: right;">
-                <input
-                  id="text"
-                  type="text"
-                  name="field.search_text"
-                  size="50"
-                />
-              </td>
-              <td>
-                <input
-                  tal:replace="structure view/search_action/render"
-                  type="submit"
-                  value="Find Answers"
-                />
-              </td>
-            </tr>
-            <tr tal:define="target_widget nocall:view/widgets/scope/target_widget">
-              <td tal:attributes="class view/scope_css_class"
-                  style="text-align: right;">
-
-                <tal:scope
-                  replace="structure view/widgets/scope/renderScopeOptions" />
-
-                  <tal:input replace="structure target_widget/inputField" />
-
-                <tal:sort
-                  replace="structure view/widgets/sort/hidden" />
-                <tal:status
-                  replace="structure view/widgets/status/hidden" />
+              <td colspan="2"
+                tal:attributes="class view/scope_css_class">
+                <input tal:replace="structure view/widgets/scope" />
                 <div class="message"
-                  tal:condition="view/scope_error"
-                  tal:content="structure view/scope_error">
+                  tal:condition="view/widgets/scope/error"
+                  tal:content="structure view/widgets/scope/error">
                   Error message
                 </div>
+                <script type="text/javascript"
+                  tal:define="script view/focusedElementScript"
+                  tal:condition="script"
+                  tal:content="structure script" ></script>
+                <tal:sort
+                    replace="structure view/widgets/sort/hidden" />
+                <tal:status
+                  replace="structure view/widgets/status/hidden" />
               </td>
-              <td tal:content="structure target_widget/chooseLink" />
             </tr>
-          </tbody>
-        </table>
-      </form>
-      <p id="application-summary">
-        Launchpad Answers helps you build a
-        community support network and knowledge base for
-        your project. Encourage new users to ask questions
-        rather than file bugs! (<a href="https://help.launchpad.net/Answers">Read our guide</a>)
-      </p>
+            </tbody>
+          </table>
+        </form>
+      </div>
 
       <div class="columns">
         <div id="most-active-projects" class="three column left">
@@ -88,22 +88,22 @@
 
         <div id="latest-questions-asked" class="three column middle">
           <h2>Latest questions asked</h2>
-          <table>
+          <ul>
             <tal:question
               repeat="question view/latest_questions_asked"
               content="structure question/@@+listing-detailed"
             />
-          </table>
+          </ul>
         </div>
-      
+
         <div id="latest-questions-solved" class="three column right">
           <h2>Latest questions solved</h2>
-          <table>
+          <ul>
             <tal:question
               repeat="question view/latest_questions_solved"
               content="structure question/@@+listing-detailed"
             />
-          </table>
+          </ul>
         </div>
       </div>
 
@@ -132,22 +132,5 @@
 
     </div><!--main-->
 
-  <metal:help fill-slot="help">
-    <p>This page gives you a quick overview of the recent
-    activity in the Launchpad Answer Tracker.
-    </p>
-    <p>To post a new question, navigate to the project
-      you are having a problem with and use the <emph>Ask a Question</emph>
-      button.
-    </p>
-    <p>You can enter a question id in the search text field to quickly
-      navigate to the question.
-    </p>
-    <p><a href="https://help.launchpad.net/AnswerTrackerDocumentation">Extensive
-        documention</a> for the Answer Tracker application is available in the
-      Help wiki.</p>
-  </metal:help>
-
   </body>
 </html>
-<!-- 1-0 inprogress needs search of all answers -->

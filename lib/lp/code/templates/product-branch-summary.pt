@@ -7,93 +7,133 @@
   lang="en"
   dir="ltr"
   i18n:domain="launchpad"
-  id="application-summary">
+  id="branch-summary">
+
+  <div id="unknown" tal:condition="context/codehosting_usage/enumvalue:UNKNOWN">
+    <p>
+      <strong>
+        Launchpad does not know where <tal:project_title replace="context/title" />
+        hosts its code.
+      </strong>
+    </p>
+  </div>
+
+  <div id="external"
+       tal:condition="view/external_visible" tal:define="branch view/branch">
+    <strong>
+      <p tal:condition="not: branch/branch_type/enumvalue:IMPORTED">
+        <tal:project_title replace="context/title" /> hosts its code at
+        <a tal:attributes="href view/mirror_location"
+           tal:content="view/mirror_location"></a>.
+      </p>
+      <p tal:condition="branch/branch_type/enumvalue:IMPORTED">
+        <tal:has-import-data condition="branch/code_import">
+        <tal:project_title replace="context/title" /> hosts its code at
+        <a tal:attributes="href branch/code_import/url"
+           tal:content="branch/code_import/url"></a>.
+        </tal:has-import-data>
+        <tal:no-import-data condition="not: branch/code_import">
+        <tal:project_title replace="context/title" /> hosts its code
+          externally.
+        </tal:no-import-data>
+      </p>
+    </strong>
+    <p tal:condition="context/homepageurl">
+      You can learn more at the project's
+      <a tal:attributes="href context/homepageurl">web page</a>.
+    </p>
+    <p tal:condition="branch/branch_type/enumvalue:MIRRORED">
+      Launchpad has a mirror of the master branch and you can create branches
+      from it.
+    </p>
+    <p tal:condition="branch/branch_type/enumvalue:IMPORTED">
+      Launchpad imports the master branch and you can create branches from
+      it.
+    </p>
+
+    <p tal:condition="branch/branch_type/enumvalue:REMOTE">
+      Launchpad does not have a copy of the remote branch.
+    </p>
+  </div>
 
   <tal:no-branches condition="not: view/branch_count">
     There are no branches for <tal:project-name replace="context/displayname"/>
     in Launchpad.
-    <ul>
-      <li>If there are Bazaar branches of
-      <tal:project-name replace="context/displayname"/>
-      in a publicly accessible location,
-      Launchpad can act as a mirror of the branch by registering a
-      <em>Mirrored</em> branch.
-      <a href="https://help.launchpad.net/CreatingAMirroredBranch">Read more.</a>
-      </li>
-      <li>Launchpad can also act as a primary
-      location for Bazaar branches of
-      <tal:project-name replace="context/displayname"/>.
-      <a href="https://help.launchpad.net/CreatingAHostedBranch">Read more.</a>
-      </li>
+    <tal:can-configure condition="view/can_configure_branches">
+      You can change this by:
 
-      <li>Launchpad can import code from CVS or Subversion into Bazaar
-      branches.
-      <a href="https://help.launchpad.net/VcsImports">Read more.</a>
-      </li>
+      <ul class="bulleted" style="margin-top:1em;">
 
-    </ul>
+        <li>activating code hosting directly on
+        Launchpad. (<a href="https://help.launchpad.net/Code/UploadingABranch">read
+        more</a>)</li>
+
+        <li>asking Launchpad to mirror a Bazaar branch hosted
+        elsewhere. (<a href="https://help.launchpad.net/Code/MirroredBranches">read
+        more</a>)</li>
+
+        <li>asking Launchpad to import code from Git, Subversion, or CVS into a
+        Bazaar branch. (<a href="https://help.launchpad.net/VcsImports">read more</a>)</li>
+      </ul>
+    </tal:can-configure>
   </tal:no-branches>
 
   <tal:has-branches condition="view/branch_count">
-    <p>
-    <strong tal:content="view/branch_count">1234</strong>
-    <tal:branches replace="view/branch_text">branches</tal:branches>
-
-    owned by
-    <tal:individuals condition="view/person_owner_count">
-    <strong tal:content="view/person_owner_count">42</strong>
-    <tal:people replace="view/person_text">people</tal:people
-    ></tal:individuals
-    ><tal:teams condition="view/team_owner_count">
-    <tal:individuals condition="view/person_owner_count">
-      and
-    </tal:individuals>
-    <strong tal:content="view/team_owner_count">1</strong>
-    <tal:people replace="view/team_text">team</tal:people
-    ></tal:teams>,
-
-    <strong tal:content="view/commit_count">23</strong>
-    <tal:commits replace="view/commit_text">commits</tal:commits>
-    <tal:has-committers condition="view/committer_count">
-      by
-    <strong tal:content="view/committer_count">4</strong>
-    <tal:people replace="view/committer_text">people</tal:people>
-    </tal:has-committers>
-    in the last month
-    </p>
-  <p id="merge-counts"
-     tal:define="menu context/menu:branches">
-    <strong class="count" tal:content="view/active_review_count">5</strong>
-    <tal:link
-        define="link menu/active_reviews"
-        replace="structure link/render"
-        />,
-    <strong class="count" tal:content="view/approved_merge_count">5</strong>
-    <tal:link
-        define="link menu/approved_merges"
-        replace="structure link/render"
-        />
-  </p>
     <div tal:condition="view/has_development_focus_branch"
          style="margin: 1em 0"
-         tal:define="config modules/canonical.config/config;
+         tal:define="config modules/lp.services.config/config;
                      dev_focus context/development_focus/branch">
       You can
       <tal:browseable condition="dev_focus/code_is_browseable">
-        <a tal:attributes="href dev_focus/codebrowse_url"
+        <a tal:attributes="href dev_focus/browse_source_url"
            >browse the source code</a> for the development focus branch or get a
            copy of the branch</tal:browseable>
       <tal:not-browseable condition="not: dev_focus/code_is_browseable">
         get a copy of the development focus branch
       </tal:not-browseable>
        using the command:<br/>
-      <tt style="padding-left:2em">bzr branch <tal:project-name replace="dev_focus/bzr_identity"/></tt>
+      <tt class="command">bzr branch <tal:project-name replace="dev_focus/bzr_identity"/></tt>
     </div>
-
   </tal:has-branches>
 
+  <tal:has-user condition="view/user">
+    <p id="push-instructions"
+      tal:condition="not: context/codehosting_usage/enumvalue:UNKNOWN">
+      You can push the branch directly to Launchpad with the command:<br />
+      <tt class="command">
+        bzr push lp:~<tal:user replace="view/user/name"/>/<tal:project replace="context/name"/>/<tal:series replace="context/name"/>
+      </tt>
+      <tal:no-keys condition="not:view/user/sshkeys">
+        <br/>To authenticate with the Launchpad branch upload service,
+        you need to
+        <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
+          register a SSH key</a>.
+      </tal:no-keys>
+    </p>
+  </tal:has-user>
+
+  <div tal:condition="context/codehosting_usage/enumvalue:UNKNOWN">
+    <div
+       tal:condition="not: context/codehosting_usage/enumvalue:LAUNCHPAD"
+       tal:define="configure_codehosting view/configure_codehosting |
+       nothing">
+      <p>
+        <a class="sprite maybe"
+           href="https://help.launchpad.net/Code">Getting started
+          with code hosting in Launchpad</a>.</p>
+
+      <p tal:condition="context/required:launchpad.Edit"
+         id="no-code-edit">
+        <a tal:condition="configure_codehosting"
+           tal:replace="structure configure_codehosting/fmt:link"/>
+      </p>
+    </div>
+  </div>
+
   <p tal:condition="view/latest_release_with_download_files">
-    <img src="/@@/download"/> There are <a href="+download">download files</a>
+    <img src="/@@/download"/> There are
+    <a tal:define="rooturl modules/lp.services.webapp.vhosts/allvhosts/configs/mainsite/rooturl"
+      tal:attributes="href string:${rooturl}${context/name}/+download">download files</a>
     available for <tal:project-name replace="context/displayname"/>.
   </p>
 

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -14,23 +14,52 @@ __all__ = [
 
 import re
 
-from zope.interface import Attribute, Interface
-from zope.schema import Datetime, Choice, Int, TextLine, Timedelta
-from CVS.protocol import CVSRoot, CvsRootError
+from CVS.protocol import (
+    CVSRoot,
+    CvsRootError,
+    )
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_write_operation,
+    exported,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import ReferenceChoice
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    TextLine,
+    Timedelta,
+    )
 
-from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice, URIField
-from canonical.launchpad.validators import LaunchpadValidationError
-from lp.code.enums import CodeImportReviewStatus, RevisionControlSystems
+from lp import _
+from lp.app.validators import LaunchpadValidationError
+from lp.code.enums import (
+    CodeImportReviewStatus,
+    RevisionControlSystems,
+    )
+from lp.code.interfaces.branch import IBranch
+from lp.services.fields import (
+    PublicPersonChoice,
+    URIField,
+    )
 
 
 def validate_cvs_root(cvsroot):
     try:
         root = CVSRoot(cvsroot)
-    except CvsRootError, e:
+    except CvsRootError as e:
         raise LaunchpadValidationError(e)
     if root.method == 'local':
         raise LaunchpadValidationError('Local CVS roots are not allowed.')
+    if not root.hostname:
+        raise LaunchpadValidationError('CVS root is invalid.')
     if root.hostname.count('.') == 0:
         raise LaunchpadValidationError(
             'Please use a fully qualified host name.')
@@ -58,86 +87,61 @@ def validate_cvs_branch(branch):
 class ICodeImport(Interface):
     """A code import to a Bazaar Branch."""
 
+    export_as_webservice_entry()
+
     id = Int(readonly=True, required=True)
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True)
 
-    branch = Choice(
-        title=_('Branch'), required=True, readonly=True, vocabulary='Branch',
-        description=_("The Bazaar branch produced by the import system."))
+    branch = exported(
+        ReferenceChoice(
+            title=_('Branch'), required=True, readonly=True,
+            vocabulary='Branch', schema=IBranch,
+            description=_("The Bazaar branch produced by the "
+                "import system.")))
 
     registrant = PublicPersonChoice(
         title=_('Registrant'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam',
         description=_("The person who initially requested this import."))
 
-    owner = PublicPersonChoice(
-        title=_('Owner'), required=True, readonly=False,
-        vocabulary='ValidPersonOrTeam',
-        description=_("The community contact for this import."))
+    review_status = exported(
+        Choice(
+            title=_("Review Status"), vocabulary=CodeImportReviewStatus,
+            default=CodeImportReviewStatus.REVIEWED, readonly=True,
+            description=_("Only reviewed imports are processed.")))
 
-    assignee = PublicPersonChoice(
-        title=_('Assignee'), required=False, readonly=False,
-        vocabulary='ValidPersonOrTeam',
-        description=_("The person in charge of handling this import."))
+    rcs_type = exported(
+        Choice(title=_("Type of RCS"), readonly=True,
+            required=True, vocabulary=RevisionControlSystems,
+            description=_(
+                "The version control system to import from. "
+                "Can be CVS or Subversion.")))
 
-    product = Choice(
-        title=_("Project"), required=True,
-        readonly=True, vocabulary='Product',
-        description=_("The project this code import belongs to."))
+    url = exported(
+        URIField(title=_("URL"), required=False, readonly=True,
+            description=_("The URL of the VCS branch."),
+            allowed_schemes=["http", "https", "svn", "git", "bzr", "ftp"],
+            allow_userinfo=True,
+            allow_port=True,
+            allow_query=False,      # Query makes no sense in Subversion.
+            allow_fragment=False,   # Fragment makes no sense in Subversion.
+            trailing_slash=False))  # See http://launchpad.net/bugs/56357.
 
-    series = Choice(
-        title=_("Series"),
-        readonly=True, vocabulary='ProductSeries',
-        description=_("The series this import is registered as the "
-                      "code for, or None if there is no such series."))
+    cvs_root = exported(
+        TextLine(title=_("Repository"), required=False, readonly=True,
+            constraint=validate_cvs_root,
+            description=_("The CVSROOT. "
+                "Example: :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome")))
 
-    review_status = Choice(
-        title=_("Review Status"), vocabulary=CodeImportReviewStatus,
-        default=CodeImportReviewStatus.NEW,
-        description=_("Before a code import is performed, it is reviewed."
-            " Only reviewed imports are processed."))
+    cvs_module = exported(
+        TextLine(title=_("Module"), required=False, readonly=True,
+            constraint=validate_cvs_module,
+            description=_("The path to import within the repository."
+                " Usually, it is the name of the project.")))
 
-    rcs_type = Choice(title=_("Type of RCS"),
-        required=True, vocabulary=RevisionControlSystems,
-        description=_(
-            "The version control system to import from. "
-            "Can be CVS or Subversion."))
-
-    svn_branch_url = URIField(title=_("Branch URL"), required=False,
-        description=_(
-            "The URL of a Subversion branch, starting with svn:// or"
-            " http(s)://. Only trunk branches are imported."),
-        allowed_schemes=["http", "https", "svn"],
-        allow_userinfo=False, # Only anonymous access is supported.
-        allow_port=True,
-        allow_query=False,    # Query makes no sense in Subversion.
-        allow_fragment=False, # Fragment makes no sense in Subversion.
-        trailing_slash=False) # See http://launchpad.net/bugs/56357.
-
-    git_repo_url = URIField(title=_("Repo URL"), required=False,
-        description=_(
-            "The URL of the git repository.  The MASTER branch will be "
-            "imported."),
-        allowed_schemes=["git"],
-        allow_userinfo=False, # Only anonymous access is supported.
-        allow_port=True,
-        allow_query=False,    # Query makes no sense in Subversion.
-        allow_fragment=False, # Fragment makes no sense in Subversion.
-        trailing_slash=False) # See http://launchpad.net/bugs/56357.
-
-    cvs_root = TextLine(title=_("Repository"), required=False,
-        constraint=validate_cvs_root,
-        description=_("The CVSROOT. "
-            "Example: :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome"))
-
-    cvs_module = TextLine(title=_("Module"), required=False,
-        constraint=validate_cvs_module,
-        description=_("The path to import within the repository."
-            " Usually, it is the name of the project."))
-
-    date_last_successful = Datetime(
-        title=_("Last successful"), required=False)
+    date_last_successful = exported(
+        Datetime(title=_("Last successful"), required=False, readonly=True))
 
     update_interval = Timedelta(
         title=_("Update interval"), required=False, description=_(
@@ -194,26 +198,46 @@ class ICodeImport(Interface):
         :param user: the user who is requesting the import be tried again.
         """
 
+    @call_with(requester=REQUEST_USER)
+    @export_write_operation()
+    def requestImport(requester, error_if_already_requested=False):
+        """Request that an import be tried soon.
+
+        This method will schedule an import to happen soon for this branch.
+
+        The import must be in the Reviewed state, if not then a
+        CodeImportNotInReviewedState error will be thrown. If using the
+        API then a status code of 400 will result.
+
+        If the import is already running then a CodeImportAlreadyRunning
+        error will be thrown. If using the API then a status code of
+        400 will result.
+
+        The two cases can be distinguished over the API by seeing if the
+        exception names appear in the body of the response.
+
+        If used over the API and the request has already been made then this
+        method will silently do nothing.
+        If called internally then the error_if_already_requested parameter
+        controls whether a CodeImportAlreadyRequested exception will be
+        thrown in that situation.
+
+        :return: None
+        """
+
 
 class ICodeImportSet(Interface):
     """Interface representing the set of code imports."""
 
-    def new(registrant, product, branch_name, rcs_type, svn_branch_url=None,
-            cvs_root=None, cvs_module=None, git_repo_url=None,
-            review_status=None):
-        """Create a new CodeImport."""
+    def new(registrant, target, branch_name, rcs_type, url=None,
+            cvs_root=None, cvs_module=None, review_status=None,
+            owner=None):
+        """Create a new CodeImport.
 
-    def getAll():
-        """Return an iterable of all CodeImport objects."""
-
-    def getActiveImports(text=None):
-        """Return an iterable of all 'active' CodeImport objects.
-
-        Active is defined, somewhat arbitrarily, as having
-        review_status==REVIEWED and having completed at least once.
-
-        :param text: If specifed, limit to the results to those that contain
-            ``text`` in the product or project titles and descriptions.
+        :param target: An `IBranchTarget` that the code is associated with.
+        :param owner: The `IPerson` to set as the owner of the branch, or
+            None to use registrant. registrant must be a member of owner to
+            do this.
         """
 
     def get(id):
@@ -228,18 +252,17 @@ class ICodeImportSet(Interface):
     def getByCVSDetails(cvs_root, cvs_module):
         """Get the CodeImport with the specified CVS details."""
 
-    def getByGitDetails(git_repo_url):
-        """Get the CodeImport with the specified Git details."""
-
-    def getBySVNDetails(svn_branch_url):
-        """Get the CodeImport with the specified SVN details."""
+    def getByURL(url):
+        """Get the CodeImport with the url."""
 
     def delete(id):
         """Delete a CodeImport given its id."""
 
-    def search(review_status):
-        """Find the CodeImports of the given status.
+    def search(review_status=None, rcs_type=None):
+        """Find the CodeImports of the given status and type.
 
         :param review_status: An entry from the `CodeImportReviewStatus`
-                              schema.
+            schema, or None, which signifies 'any status'.
+        :param rcs_type: An entry from the `RevisionControlSystems`
+            schema, or None, which signifies 'any type'.
         """

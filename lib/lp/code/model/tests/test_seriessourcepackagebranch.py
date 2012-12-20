@@ -1,17 +1,17 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Model tests for distro series source package branch links."""
 
 __metaclass__ = type
 
-import unittest
-
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.model.seriessourcepackagebranch import (
-    SeriesSourcePackageBranchSet)
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+    SeriesSourcePackageBranchSet,
+    )
+from lp.code.tests.helpers import make_linked_package_branch
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestSeriesSourcePackageBranchSet(TestCaseWithFactory):
@@ -25,17 +25,8 @@ class TestSeriesSourcePackageBranchSet(TestCaseWithFactory):
 
     def makeLinkedPackageBranch(self, distribution, sourcepackagename):
         """Make a new package branch and make it official."""
-        distro_series = self.factory.makeDistroRelease(distribution)
-        source_package = self.factory.makeSourcePackage(
-            sourcepackagename=sourcepackagename, distroseries=distro_series)
-        branch = self.factory.makePackageBranch(sourcepackage=source_package)
-        pocket = PackagePublishingPocket.RELEASE
-        # It is possible for the param to be None, so reset to the factory
-        # generated one.
-        sourcepackagename = source_package.sourcepackagename
-        self.link_set.new(
-            distro_series, pocket, sourcepackagename, branch, branch.owner)
-        return branch
+        return make_linked_package_branch(
+            self.factory, distribution, sourcepackagename)
 
     def test_findForDistributionSourcePackage(self):
         # Make sure that the find method finds official links for all distro
@@ -66,7 +57,7 @@ class TestSeriesSourcePackageBranchSet(TestCaseWithFactory):
         # SeriesSourcePackageBranchSet.delete removes the link between a
         # particular branch and a (distro_series, pocket, sourcepackagename)
         # tupled.
-        distro_series = self.factory.makeDistroRelease()
+        distro_series = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         sourcepackage = self.factory.makeSourcePackage(
             sourcepackagename=sourcepackagename, distroseries=distro_series)
@@ -84,8 +75,3 @@ class TestSeriesSourcePackageBranchSet(TestCaseWithFactory):
         links = self.link_set.findForSourcePackage(sourcepackage)
         self.assertEqual(
             sorted([branch_release]), sorted([link.branch for link in links]))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

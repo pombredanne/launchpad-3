@@ -13,9 +13,10 @@ __all__ = [
 
 from zope.schema import Object
 
-from canonical.launchpad import _
-from lp.bugs.interfaces.buglink import IBugLink
+from lp import _
 from lp.answers.interfaces.question import IQuestion
+from lp.bugs.interfaces.buglink import IBugLink
+
 
 class IQuestionBug(IBugLink):
     """A link between an IBug and an IQuestion."""

@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -7,21 +7,22 @@
 
 __metatype__ = type
 
-
-import os
-import sys
-from optparse import OptionParser
-from operator import attrgetter
-from textwrap import dedent
-
 # Scripts may have relative imports.
 # pylint: disable-msg=W0403
 import _pythonpath
-import canonical.config
+
+from operator import attrgetter
+from optparse import OptionParser
+import os
+import sys
+from textwrap import dedent
+
 from lazr.config import ImplicitTypeSchema
 
+import lp.services.config
 
-_schema_dir = os.path.abspath(os.path.dirname(canonical.config.__file__))
+
+_schema_dir = os.path.abspath(os.path.dirname(lp.services.config.__file__))
 _root = os.path.dirname(os.path.dirname(os.path.dirname(_schema_dir)))
 
 
@@ -34,7 +35,7 @@ class Configuration:
 
     @classmethod
     def load(cls, conf_path, schema_path=None):
-        """Initialise the Configuration.
+        """Initialize the Configuration.
 
         :conf_path: The path to the lazr.config conf file.
         :schema_path: The path to the lazr.config schema that defines
@@ -125,7 +126,7 @@ def main(argv=None):
     parser = get_option_parser()
     (options, arguments) = parser.parse_args(args=argv[1:])
     if len(arguments) == 0:
-        canonical_config = canonical.config.config
+        canonical_config = lp.services.config.config
         if options.instance_name:
             canonical_config.setInstance(options.instance_name)
         canonical_config._getConfig()

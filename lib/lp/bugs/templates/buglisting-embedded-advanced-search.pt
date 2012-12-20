@@ -3,23 +3,19 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
-  i18n:domain="malone"
->
+  metal:use-macro="view/macro:page/main_side"
+  i18n:domain="launchpad">
 
+<metal:block fill-slot="head_epilogue">
+  <metal:activate-listing use-macro="context/@@+bugtask-macros-tableview/activate_listing_js" />
+</metal:block>
 <body>
-
-    <metal:heading fill-slot="pageheading">
-      <h1 tal:content="view/getSearchPageHeading"></h1>
-    </metal:heading>
-
-  <metal:leftportlets fill-slot="portlets_one">
-  <div tal:condition="view/shouldShowAssignedToTeamPortlet|nothing"
-      tal:content="structure context/@@+portlet-team-assignedbugs" />
-  </metal:leftportlets>
+  <div metal:fill-slot="side">
+    <tal:menu replace="structure context/@@+global-actions" />
+    <tal:portlet-team-bugs condition="view/shouldShowTeamPortlet">
+      <div metal:use-macro="context/@@+team-bugs-macro/show" />
+    </tal:portlet-team-bugs>
+  </div>
 
   <div metal:fill-slot="main">
     <tal:do_not_show_advanced_form
@@ -35,9 +31,6 @@
       <metal:advanced_form
         use-macro="context/@@+bugtask-macros-tableview/advanced_search_form" />
     </tal:show_advanced>
-    <div class="visualClear">&nbsp;</div>
-
   </div>
-
 </body>
 </html>

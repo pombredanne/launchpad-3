@@ -8,46 +8,58 @@ __metaclass__ = type
 __all__ = [
     'SpecificationDependencyAddView',
     'SpecificationDependencyRemoveView',
+    'SpecificationDependencyTreeView',
     ]
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadFormView)
-from lp.blueprints.interfaces.specificationdependency import (
-    ISpecificationDependency, ISpecificationDependencyRemoval)
+from lazr.restful.interface import copy_field
+from zope.component import getUtility
+from zope.interface import Interface
 
-from zope.formlib import form
-from zope.schema import Choice
+from lp import _
+from lp.app.enums import InformationType
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
+from lp.app.interfaces.services import IService
+from lp.blueprints.interfaces.specificationdependency import (
+    ISpecificationDependency,
+    ISpecificationDependencyRemoval,
+    )
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+
+
+class AddSpecificationDependencySchema(Interface):
+
+    dependency = copy_field(
+        ISpecificationDependency['dependency'],
+        readonly=False,
+        description=_(
+            "If another blueprint needs to be fully implemented "
+            "before this feature can be started, then specify that "
+            "dependency here so Launchpad knows about it and can "
+            "give you an accurate project plan.  You can enter the "
+            "name of a blueprint that has the same target, or the "
+            "URL of any blueprint."))
 
 
 class SpecificationDependencyAddView(LaunchpadFormView):
-    schema = ISpecificationDependency
-    field_names = ['dependency']
+    schema = AddSpecificationDependencySchema
     label = _('Depends On')
 
-    def setUpFields(self):
-        """Override the setup to define own fields."""
-        self.form_fields = form.Fields(
-            Choice(
-                __name__='dependency',
-                title=_(u'Depends On'),
-                vocabulary='SpecificationDepCandidates',
-                required=True,
-                description=_(
-                    "If another blueprint needs to be fully implemented "
-                    "before this feature can be started, then specify that "
-                    "dependency here so Launchpad knows about it and can "
-                    "give you an accurate project plan.")),
-            render_context=self.render_context)
-
     def validate(self, data):
-        is_valid = True
-        token = self.request.form.get(self.widgets['dependency'].name)
-        try:
-            self.widgets['dependency'].vocabulary.getTermByToken(token)
-        except LookupError:
-            is_valid = False
-        if not is_valid:
+        """See `LaunchpadFormView.validate`.
+
+        Because it's too hard to set a good error message from inside the
+        widget -- it will be the infamously inscrutable 'Invalid Value' -- we
+        replace it here.
+        """
+        if self.getFieldError('dependency'):
+            token = self.request.form.get(self.widgets['dependency'].name)
             self.setFieldError(
                 'dependency',
                 'There is no blueprint named "%s" in %s, or '
@@ -62,6 +74,10 @@ class SpecificationDependencyAddView(LaunchpadFormView):
     def next_url(self):
         return canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class SpecificationDependencyRemoveView(LaunchpadFormView):
     schema = ISpecificationDependencyRemoval
@@ -73,3 +89,50 @@ class SpecificationDependencyRemoveView(LaunchpadFormView):
     def continue_action(self, action, data):
         self.context.removeDependency(data['dependency'])
         self.next_url = canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+
+class SpecificationDependencyTreeView(LaunchpadView):
+
+    label = "Blueprint dependency tree"
+
+    def __init__(self, *args, **kwargs):
+        super(SpecificationDependencyTreeView, self).__init__(*args, **kwargs)
+        self.service = getUtility(IService, 'sharing')
+
+    @property
+    def page_title(self):
+        return self.label
+
+    @cachedproperty
+    def all_blocked(self):
+        return self.context.all_blocked(self.user)
+
+    @cachedproperty
+    def all_deps(self):
+        return self.context.all_deps(self.user)
+
+    @cachedproperty
+    def dependencies(self):
+        deps = list(self.context.dependencies)
+        if self.user:
+            (ignore, ignore, deps) = self.service.getVisibleArtifacts(
+                self.user, specifications=deps)
+        else:
+            deps = [d for d in deps if
+                d.information_type == InformationType.PUBLIC]
+        return deps
+
+    @cachedproperty
+    def blocked_specs(self):
+        blocked = list(self.context.blocked_specs)
+        if self.user:
+            (ignore, ignore, blocked) = self.service.getVisibleArtifacts(
+                self.user, specifications=blocked)
+        else:
+            blocked = [b for b in blocked if
+                b.information_type == InformationType.PUBLIC]
+        return blocked

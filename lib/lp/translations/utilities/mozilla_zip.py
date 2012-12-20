@@ -7,15 +7,24 @@ __all__ = [
     'MozillaZipTraversal',
     ]
 
-from os.path import splitext, basename
 from cStringIO import StringIO
-from zipfile import BadZipfile, ZipFile
+from os.path import (
+    basename,
+    splitext,
+    )
+from zipfile import (
+    BadZipfile,
+    ZipFile,
+    )
 
 from lp.translations.interfaces.translationimporter import (
-    TranslationFormatInvalidInputError)
+    TranslationFormatInvalidInputError,
+    )
 from lp.translations.utilities.xpi_header import XpiHeader
 from lp.translations.utilities.xpi_manifest import (
-    make_jarpath, XpiManifest)
+    make_jarpath,
+    XpiManifest,
+    )
 
 
 class MozillaZipTraversal:
@@ -44,7 +53,7 @@ class MozillaZipTraversal:
         self.manifest = manifest
         try:
             self.archive = ZipFile(archive, 'r')
-        except BadZipfile, exception:
+        except BadZipfile as exception:
             raise TranslationFormatInvalidInputError(
                 filename=filename, message=str(exception))
 

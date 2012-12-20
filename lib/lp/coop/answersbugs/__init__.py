@@ -4,5 +4,5 @@
 """The Answers - Bugs Collaboration Package
 
 This package contains the code that allows bugs and questions to be linked
-together.
+together, as well as code common to the bugs and answers.
 """

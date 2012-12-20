@@ -3,28 +3,32 @@
 
 """Test harness for Launchpad/Mailman doctests."""
 
-import os
 import errno
+import os
 import shutil
 import unittest
-import transaction
 
 # pylint: disable-msg=F0401
 from Mailman.MailList import MailList
-from Mailman.mm_cfg import MAILMAN_SITE_LIST, QUEUE_DIR, VAR_PREFIX
+from Mailman.mm_cfg import (
+    MAILMAN_SITE_LIST,
+    QUEUE_DIR,
+    VAR_PREFIX,
+    )
 from Mailman.Utils import list_names
+import transaction
 
 import lp.services.mailman.doc
-from lp.services.testing import build_test_suite
-
-from canonical.launchpad.testing.browser import (
-    setUp as setUpBrowser,
-    tearDown as tearDownBrowser)
-from lp.testing.factory import LaunchpadObjectFactory
-from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
-from canonical.testing.layers import LayerProcessController
 from lp.services.mailman.testing import helpers
 from lp.services.mailman.testing.layers import MailmanLayer
+from lp.services.testing import build_test_suite
+from lp.testing.browser import (
+    setUp as setUpBrowser,
+    tearDown as tearDownBrowser,
+    )
+from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.layers import LayerProcessController
+from lp.testing.systemdocs import LayeredDocFileSuite
 
 
 def setUp(testobj):
@@ -79,14 +83,14 @@ def tearDown(testobj):
             VAR_PREFIX, 'backups', '%s.tgz' % team_name)
         try:
             os.remove(backup_file)
-        except OSError, error:
+        except OSError as error:
             if error.errno != errno.ENOENT:
                 raise
         # Delete the MHonArc archives if they exist.
         path = os.path.join(VAR_PREFIX, 'mhonarc', team_name)
         try:
             shutil.rmtree(path)
-        except OSError, error:
+        except OSError as error:
             if error.errno != errno.ENOENT:
                 raise
     # Remove all held messages.

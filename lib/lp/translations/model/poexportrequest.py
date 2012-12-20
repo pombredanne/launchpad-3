@@ -1,25 +1,46 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 
-__all__ = ('POExportRequestSet', 'POExportRequest')
+__all__ = [
+    'POExportRequest',
+    'POExportRequestSet',
+    ]
 
 from sqlobject import ForeignKey
-
+from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
-from canonical.database.enumcol import EnumCol
-
+from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.constants import DEFAULT
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
+from lp.services.database.lpstorm import (
+    IMasterStore,
+    ISlaveStore,
+    )
+from lp.services.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
 from lp.translations.interfaces.poexportrequest import (
-    IPOExportRequest, IPOExportRequestSet)
+    IPOExportRequest,
+    IPOExportRequestSet,
+    )
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from lp.registry.interfaces.person import validate_public_person
+    TranslationFileFormat,
+    )
 
 
 class POExportRequestSet:
@@ -28,7 +49,17 @@ class POExportRequestSet:
     @property
     def entry_count(self):
         """See `IPOExportRequestSet`."""
-        return POExportRequest.select().count()
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(POExportRequest, True).count()
+
+    def estimateBacklog(self):
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        row = store.execute(
+            "SELECT now() - min(date_created) FROM POExportRequest").get_one()
+        if row is None:
+            return None
+        else:
+            return row[0]
 
     def addRequest(self, person, potemplates=None, pofiles=None,
             format=TranslationFileFormat.PO):
@@ -58,13 +89,13 @@ class POExportRequestSet:
             'pofiles': pofile_ids,
             }
 
-        cur = cursor()
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
         if potemplates:
             # Create requests for all these templates, insofar as the same
             # user doesn't already have requests pending for them in the same
             # format.
-            cur.execute("""
+            store.execute("""
                 INSERT INTO POExportRequest(person, potemplate, format)
                 SELECT %(person)s, template.id, %(format)s
                 FROM POTemplate AS template
@@ -81,7 +112,7 @@ class POExportRequestSet:
         if pofiles:
             # Create requests for all these translations, insofar as the same
             # user doesn't already have identical requests pending.
-            cur.execute("""
+            store.execute("""
                 INSERT INTO POExportRequest(
                     person, potemplate, pofile, format)
                 SELECT %(person)s, template.id, pofile.id, %(format)s
@@ -96,36 +127,69 @@ class POExportRequestSet:
                     existing.id IS NULL
                 """ % query_params)
 
-    def popRequest(self):
+    def _getOldestLiveRequest(self):
+        """Return the oldest live request on the master store.
+
+        Due to replication lag, the master store is always a little
+        ahead of the slave store that exports come from.
+        """
+        master_store = IMasterStore(POExportRequest)
+        sorted_by_id = master_store.find(POExportRequest).order_by(
+            POExportRequest.id)
+        return sorted_by_id.first()
+
+    def _getHeadRequest(self):
+        """Return oldest request on the queue."""
+        # Due to replication lag, it's possible that the slave store
+        # still has copies of requests that have already been completed
+        # and deleted from the master store.  So first get the oldest
+        # request that is "live," i.e. still present on the master
+        # store.
+        oldest_live = self._getOldestLiveRequest()
+        if oldest_live is None:
+            return None
+        else:
+            return ISlaveStore(POExportRequest).find(
+                POExportRequest,
+                POExportRequest.id == oldest_live.id).one()
+
+    def getRequest(self):
         """See `IPOExportRequestSet`."""
-        try:
-            request = POExportRequest.select(limit=1, orderBy='id')[0]
-        except IndexError:
-            return None, None, None
+        # Exports happen off the slave store.  To ensure that export
+        # does not happen until requests have been replicated to the
+        # slave, they are read primarily from the slave even though they
+        # are deleted on the master afterwards.
+        head = self._getHeadRequest()
+        if head is None:
+            return None, None, None, None
 
-        person = request.person
-        format = request.format
+        requests = ISlaveStore(POExportRequest).find(
+            POExportRequest,
+            POExportRequest.person == head.person,
+            POExportRequest.format == head.format,
+            POExportRequest.date_created == head.date_created).order_by(
+                POExportRequest.potemplateID)
 
-        query = """
-            person = %s AND
-            format = %s AND
-            date_created = (
-                SELECT date_created
-                FROM POExportRequest
-                ORDER BY id
-                LIMIT 1)""" % sqlvalues(person, format)
-        requests = POExportRequest.select(query, orderBy='potemplate')
-        objects = []
+        summary = [
+            (request.id, request.pofile or request.potemplate)
+            for request in requests
+            ]
 
-        for request in requests:
-            if request.pofile is not None:
-                objects.append(request.pofile)
-            else:
-                objects.append(request.potemplate)
+        sources = [source for request_id, source in summary]
+        request_ids = [request_id for request_id, source in summary]
 
-            POExportRequest.delete(request.id)
+        return head.person, sources, head.format, request_ids
 
-        return person, objects, format
+    def removeRequest(self, request_ids):
+        """See `IPOExportRequestSet`."""
+        if len(request_ids) > 0:
+            # Storm 0.15 does not have direct support for deleting based
+            # on is_in expressions and such, so do it the hard way.
+            ids_string = ', '.join(sqlvalues(*request_ids))
+            IMasterStore(POExportRequest).execute("""
+                DELETE FROM POExportRequest
+                WHERE id in (%s)
+                """ % ids_string)
 
 
 class POExportRequest(SQLBase):
@@ -136,6 +200,7 @@ class POExportRequest(SQLBase):
     person = ForeignKey(
         dbName='person', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
+    date_created = UtcDateTimeCol(dbName='date_created', default=DEFAULT)
     potemplate = ForeignKey(dbName='potemplate', foreignKey='POTemplate',
         notNull=True)
     pofile = ForeignKey(dbName='pofile', foreignKey='POFile')

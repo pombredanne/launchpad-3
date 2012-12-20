@@ -1,24 +1,33 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for SSH session support on the codehosting SSH server."""
 
 __metaclass__ = type
 
-import os
-import sys
-import unittest
+import socket
 
 from twisted.conch.interfaces import ISession
+from twisted.conch.ssh import connection
 from twisted.internet.process import ProcessExitedAlready
 from twisted.internet.protocol import ProcessProtocol
 
-from canonical.config import config
-from lp.codehosting import get_bzr_path, get_bzr_plugins_path
-from lp.codehosting.sshserver.auth import LaunchpadAvatar
+from lp.codehosting import (
+    get_bzr_path,
+    get_BZR_PLUGIN_PATH_for_subprocess,
+    )
+from lp.codehosting.sshserver.daemon import CodehostingAvatar
 from lp.codehosting.sshserver.session import (
-    ExecOnlySession, ForbiddenCommand, RestrictedExecOnlySession)
+    _WaitForExit,
+    ExecOnlySession,
+    ForbiddenCommand,
+    ForkingRestrictedExecOnlySession,
+    lookup_command_template,
+    RestrictedExecOnlySession,
+    )
 from lp.codehosting.tests.helpers import AvatarTestCase
+from lp.services.config import config
+from lp.testing import TestCase
 
 
 class MockReactor:
@@ -35,6 +44,19 @@ class MockReactor:
                          usePTY, childFDs))
         return MockProcessTransport(executable)
 
+    def addReader(self, reader):
+        self.log.append(('addReader', reader))
+
+
+class MockSSHSession:
+    """Just enough of SSHSession to allow checking of reporting to stderr."""
+
+    def __init__(self, log):
+        self.log = log
+
+    def writeExtended(self, channel, data):
+        self.log.append(('writeExtended', channel, data))
+
 
 class MockProcessTransport:
     """Mock transport used to fake speaking with child processes that are
@@ -44,12 +66,17 @@ class MockProcessTransport:
     def __init__(self, executable):
         self._executable = executable
         self.log = []
+        self.session = MockSSHSession(self.log)
+        self.status = None
 
     def closeStdin(self):
         self.log.append(('closeStdin',))
 
     def loseConnection(self):
         self.log.append(('loseConnection',))
+
+    def childConnectionLost(self, childFD, reason=None):
+        self.log.append(('childConnectionLost', childFD, reason))
 
     def signalProcess(self, signal):
         if self._executable == 'raise-os-error':
@@ -60,6 +87,39 @@ class MockProcessTransport:
 
     def write(self, data):
         self.log.append(('write', data))
+
+    def processEnded(self, status):
+        self.log.append(('processEnded', status))
+
+
+class Test_WaitForExit(TestCase):
+
+    def setUp(self):
+        TestCase.setUp(self)
+        self.reactor = MockReactor()
+        self.proc = MockProcessTransport('executable')
+        sock = socket.socket()
+        self.exiter = _WaitForExit(self.reactor, self.proc, sock)
+
+    def test__init__starts_reading(self):
+        self.assertEqual([('addReader', self.exiter)], self.reactor.log)
+
+    def test_dataReceived_ends_cleanly(self):
+        self.exiter.dataReceived('exited\n0\n')
+        self.assertEqual([('processEnded', 0)], self.proc.log)
+
+    def test_dataReceived_ends_with_errno(self):
+        self.exiter.dataReceived('exited\n256\n')
+        self.assertEqual([('processEnded', 256)], self.proc.log)
+
+    def test_dataReceived_bad_data(self):
+        # Note: The dataReceived code calls 'log.err' which ends up getting
+        #      printed during the test run. How do I suppress that or even
+        #      better, check that it does so?
+        #      flush_logged_errors() doesn't seem to do anything.
+        self.exiter.dataReceived('bogus\n')
+        self.assertEqual([('childConnectionLost', 'exit', 'invalid data'),
+                          ('processEnded', (255 << 8))], self.proc.log)
 
 
 class TestExecOnlySession(AvatarTestCase):
@@ -73,7 +133,7 @@ class TestExecOnlySession(AvatarTestCase):
 
     def setUp(self):
         AvatarTestCase.setUp(self)
-        self.avatar = LaunchpadAvatar(self.aliceUserDict, None)
+        self.avatar = CodehostingAvatar(self.aliceUserDict, None)
         # The logging system will try to get the id of avatar.transport, so
         # let's give it something to take the id of.
         self.avatar.transport = object()
@@ -90,7 +150,11 @@ class TestExecOnlySession(AvatarTestCase):
         # openShell closes the connection.
         protocol = MockProcessTransport('bash')
         self.session.openShell(protocol)
-        self.assertEqual(protocol.log[-1], ('loseConnection',))
+        self.assertEqual(
+            [('writeExtended', connection.EXTENDED_DATA_STDERR,
+              'No shells on this server.\r\n'),
+             ('loseConnection',)],
+            protocol.log)
 
     def test_windowChangedNotImplemented(self):
         # windowChanged raises a NotImplementedError. It doesn't matter what
@@ -186,8 +250,8 @@ class TestExecOnlySession(AvatarTestCase):
         self.failUnless(isinstance(session, ExecOnlySession),
                         "ISession(avatar) doesn't adapt to ExecOnlySession. "
                         "Got %r instead." % (session,))
-        self.assertIdentical(self.avatar, session.avatar)
-        self.assertIdentical(reactor, session.reactor)
+        self.assertIs(self.avatar, session.avatar)
+        self.assertIs(reactor, session.reactor)
 
     def test_environment(self):
         # The environment for the executed process can be specified in the
@@ -214,9 +278,9 @@ class TestExecOnlySession(AvatarTestCase):
 class TestRestrictedExecOnlySession(AvatarTestCase):
     """Tests for RestrictedExecOnlySession.
 
-    bzr+ssh requests to the code hosting SSH server ask the server to execute a
-    particular command: 'bzr serve --inet /'. The SSH server rejects all other
-    commands.
+    bzr+ssh requests to the code hosting SSH server ask the server to execute
+    a particular command: 'bzr serve --inet /'. The SSH server rejects all
+    other commands.
 
     When it receives the expected command, the SSH server doesn't actually
     execute the exact given command. Instead, it executes another pre-defined
@@ -225,10 +289,16 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
 
     def setUp(self):
         AvatarTestCase.setUp(self)
-        self.avatar = LaunchpadAvatar(self.aliceUserDict, None)
+        self.avatar = CodehostingAvatar(self.aliceUserDict, None)
         self.reactor = MockReactor()
+
+        def lookup_template(command):
+            if command == 'foo':
+                return 'bar baz %(user_id)s'
+            raise ForbiddenCommand("Not allowed to execute %r." % command)
+
         self.session = RestrictedExecOnlySession(
-            self.avatar, self.reactor, 'foo', 'bar baz %(user_id)s')
+            self.avatar, self.reactor, lookup_template)
 
     def test_makeRestrictedExecOnlySession(self):
         # A RestrictedExecOnlySession is constructed with an avatar, a reactor
@@ -239,9 +309,10 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
             % (self.session,))
         self.assertEqual(self.avatar, self.session.avatar)
         self.assertEqual(self.reactor, self.session.reactor)
-        self.assertEqual('foo', self.session.allowed_command)
         self.assertEqual('bar baz %(user_id)s',
-                         self.session.executed_command_template)
+                         self.session.lookup_command_template('foo'))
+        self.assertRaises(ForbiddenCommand,
+            self.session.lookup_command_template, 'notfoo')
 
     def test_execCommandRejectsUnauthorizedCommands(self):
         # execCommand rejects all commands except for the command specified in
@@ -253,7 +324,11 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
         protocol = MockProcessTransport('cat')
         self.assertEqual(
             None, self.session.execCommand(protocol, 'cat'))
-        self.assertEqual(protocol.log[-1], ('loseConnection',))
+        self.assertEqual(
+            [('writeExtended', connection.EXTENDED_DATA_STDERR,
+             "Not allowed to execute 'cat'.\r\n"),
+             ('loseConnection',)],
+            protocol.log)
 
     def test_getCommandToRunReturnsTemplateCommand(self):
         # When passed the allowed command, getCommandToRun always returns the
@@ -269,17 +344,25 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
         # RestrictedExecOnlySession can be easily registered as an adapter for
         # Conch avatars.
         from twisted.internet import reactor
+
+        def lookup_template(command):
+            if command == 'foo':
+                return 'bar baz'
+            raise ForbiddenCommand(command)
+
         adapter = RestrictedExecOnlySession.getAvatarAdapter(
-            allowed_command='foo', executed_command_template='bar baz')
+            lookup_template)
         session = adapter(self.avatar)
         self.failUnless(
             isinstance(session, RestrictedExecOnlySession),
             "ISession(avatar) doesn't adapt to RestrictedExecOnlySession. "
             "Got %r instead." % (session,))
-        self.assertIdentical(self.avatar, session.avatar)
-        self.assertIdentical(reactor, session.reactor)
-        self.assertEqual('foo', session.allowed_command)
-        self.assertEqual('bar baz', session.executed_command_template)
+        self.assertIs(self.avatar, session.avatar)
+        self.assertIs(reactor, session.reactor)
+        self.assertEqual('bar baz',
+                         session.lookup_command_template('foo'))
+        self.assertRaises(ForbiddenCommand,
+            session.lookup_command_template, 'notfoo')
 
 
 class TestSessionIntegration(AvatarTestCase):
@@ -287,7 +370,7 @@ class TestSessionIntegration(AvatarTestCase):
 
     def setUp(self):
         AvatarTestCase.setUp(self)
-        self.avatar = LaunchpadAvatar(self.aliceUserDict, None)
+        self.avatar = CodehostingAvatar(self.aliceUserDict, None)
 
     def test_avatarAdaptsToRestrictedExecOnlySession(self):
         # When Conch tries to adapt the SSH server avatar to ISession, it
@@ -299,7 +382,7 @@ class TestSessionIntegration(AvatarTestCase):
             "ISession(avatar) doesn't adapt to ExecOnlySession. "
             "Got %r instead." % (session,))
         self.assertEqual(
-            os.path.abspath(get_bzr_plugins_path()),
+            get_BZR_PLUGIN_PATH_for_subprocess(),
             session.environment['BZR_PLUGIN_PATH'])
         self.assertEqual(
             '%s@bazaar.launchpad.dev' % self.avatar.username,
@@ -316,6 +399,44 @@ class TestSessionIntegration(AvatarTestCase):
         self.assertRaises(
             ForbiddenCommand, session.getCommandToRun, 'rm -rf /')
 
+    def test_avatarAdaptsToOnlyRestrictedSession(self):
+        config.push('codehosting-no-forking',
+            "[codehosting]\nuse_forking_daemon: False\n")
+        self.addCleanup(config.pop, 'codehosting-no-forking')
+        session = ISession(self.avatar)
+        self.failIf(isinstance(session, ForkingRestrictedExecOnlySession),
+            "ISession(avatar) shouldn't adapt to "
+            " ForkingRestrictedExecOnlySession when forking is disabled. ")
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    def test_avatarAdaptsToForkingRestrictedExecOnlySession(self):
+        config.push('codehosting-forking',
+            "[codehosting]\nuse_forking_daemon: True\n")
+        self.addCleanup(config.pop, 'codehosting-forking')
+        session = ISession(self.avatar)
+        self.failUnless(
+            isinstance(session, ForkingRestrictedExecOnlySession),
+            "ISession(avatar) doesn't adapt to "
+            " ForkingRestrictedExecOnlySession. "
+            "Got %r instead." % (session,))
+        executable, arguments = session.getCommandToRun(
+            'bzr serve --inet --directory=/ --allow-writes')
+        executable, arguments, env = session.getCommandToFork(
+            executable, arguments, session.environment)
+        self.assertEqual('bzr', executable)
+        self.assertEqual(
+             ['bzr', 'lp-serve',
+              '--inet', str(self.avatar.user_id)],
+             list(arguments))
+
+
+class TestLookupCommand(TestCase):
+
+    def test_other(self):
+        self.assertRaises(ForbiddenCommand, lookup_command_template, 'foo')
+
+    def test_bzr(self):
+        self.assertEquals(
+            config.root + '/bin/py ' + get_bzr_path() +
+            ' lp-serve --inet %(user_id)s',
+            lookup_command_template(
+                'bzr serve --inet --directory=/ --allow-writes'))

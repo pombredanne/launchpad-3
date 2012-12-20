@@ -1,4 +1,5 @@
-= Distribution translations =
+Distribution translations
+=========================
 
 This page shows a list of PO templates contained within all source
 packages for the distroseries that is the translation focus for a
@@ -9,7 +10,7 @@ We can reach it from the main distribution page:
     >>> browser.open('http://launchpad.dev/ubuntu')
     >>> browser.getLink('Translations').click()
     >>> print browser.title
-    Translating Ubuntu
+    Translations : Ubuntu
 
 Check that there aren't disabled languages shown here:
 
@@ -56,18 +57,18 @@ And the other Ubuntu distributions should be there too.
     Other versions of Ubuntu
 
     >>> print extract_text(content.find(id='distroseries-list'))
-    6.6.6 Breezy Badger Autotest
-    5.10 The Grumpy Groundhog Release
-    4.10 The Warty Warthog Release
+    Breezy Badger Autotest (6.6.6)
+    Grumpy (5.10)
+    Warty (4.10)
 
 We are not showing its translation status here, so we should have
 links to their particular translation status.
 
-    >>> print browser.getLink('6.6.6 Breezy Badger Autotest').url
+    >>> print browser.getLink('Breezy Badger Autotest (6.6.6)').url
     http://translations.launchpad.dev/ubuntu/breezy-autotest
-    >>> print browser.getLink('5.10 The Grumpy Groundhog Release').url
+    >>> print browser.getLink('Grumpy (5.10)').url
     http://translations.launchpad.dev/ubuntu/grumpy
-    >>> print browser.getLink('4.10 The Warty Warthog Release').url
+    >>> print browser.getLink('Warty (4.10)').url
     http://translations.launchpad.dev/ubuntu/warty
 
 But we are already showing the status for the translation focus one,
@@ -79,7 +80,18 @@ we should not have a link to it.
     LinkNotFoundError
 
 Let's try now a distribution that lacks a translation focus. Debian is
-a good example. We should get latest release as the translation focus.
+a good example, if enable translations for it.
+
+    >>> from zope.component import getUtility
+    >>> from lp.app.enums import ServiceUsage
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> login('admin@canonical.com')
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> debian.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> transaction.commit()
+    >>> logout()
+
+We should get latest release as the translation focus.
 
     >>> browser.open('http://translations.launchpad.dev/debian')
     >>> browser.url
@@ -98,15 +110,15 @@ And the other Ubuntu distributions should be there too.
     Other versions of Debian
 
     >>> print extract_text(content.find(id='distroseries-list'))
-    3.2 Sid
-    3.0 WOODY
+    Sid (3.2)
+    Woody (3.0)
 
 We are not showing its translation status here, so we should have
 links to their particular translation status.
 
-    >>> print browser.getLink('3.2 Sid').url
+    >>> print browser.getLink('Sid (3.2)').url
     http://translations.launchpad.dev/debian/sid
-    >>> print browser.getLink('3.0 WOODY').url
+    >>> print browser.getLink('Woody (3.0)').url
     http://translations.launchpad.dev/debian/woody
 
 But we are already showing the status for the translation focus one,
@@ -120,14 +132,14 @@ we should not have a link to it.
 Administrator can change the translation focus for a distribution.
 
     >>> editor_browser = setupBrowser(
-    ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+    ...     auth='Basic jeff.waugh@ubuntulinux.com:test')
     >>> editor_browser.open('http://launchpad.dev/ubuntu')
     >>> editor_browser.getLink('Change details').click()
-    >>> editor_browser.getControl('Translation Focus').displayValue
+    >>> editor_browser.getControl('Translation focus').displayValue
     ['ubuntu hoary']
-    >>> editor_browser.getControl('Translation Focus').displayValue = [
+    >>> editor_browser.getControl('Translation focus').displayValue = [
     ...     'ubuntu grumpy']
     >>> editor_browser.getControl('Change', index=3).click()
     >>> editor_browser.getLink('Change details').click()
-    >>> editor_browser.getControl('Translation Focus').displayValue
+    >>> editor_browser.getControl('Translation focus').displayValue
     ['ubuntu grumpy']

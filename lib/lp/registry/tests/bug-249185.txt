@@ -7,20 +7,21 @@ Create some teams.
     >>> devs = factory.makeTeam(person)
     >>> adjutants = factory.makeTeam(person)
 
-    >>> login_person(person)
+    >>> ignored = login_person(person)
     >>> dev1 = factory.makePerson()
-    >>> devs.addMember(dev1, person)
+    >>> ignored = devs.addMember(dev1, person)
 
 Beta testers has lp-devs and adjutants as members.
 
-    >>> beta_testers.addMember(devs, person, force_team_add=True)
-    >>> beta_testers.addMember(adjutants, person, force_team_add=True)
+    >>> ignored = beta_testers.addMember(devs, person, force_team_add=True)
+    >>> ignored = beta_testers.addMember(
+    ...     adjutants, person, force_team_add=True)
     >>> dev1.hasParticipationEntryFor(beta_testers)
     True
 
 Adjutants has lp-devs as member.
 
-    >>> adjutants.addMember(devs, person, force_team_add=True)
+    >>> ignored = adjutants.addMember(devs, person, force_team_add=True)
     >>> dev1.hasParticipationEntryFor(adjutants)
     True
 

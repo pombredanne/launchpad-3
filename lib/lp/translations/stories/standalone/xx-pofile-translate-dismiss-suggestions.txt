@@ -4,6 +4,16 @@ Not all suggestions that are made for a translation do become the current
 translation of a message. If the current translation is good enough, new
 suggestions can be dismissed to keep them off the page.
 
+    >>> from zope.component import getUtility
+    >>> from lp.testing.pages import extract_url_parameter
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
+
+    >>> login(ANONYMOUS)
+    >>> utility = getUtility(IPOTemplateSet)
+    >>> dummy = utility.populateSuggestivePOTemplatesCache()
+    >>> logout()
+
+
 First the admin (or anybody with edit rights) adds a translation.
 
     >>> admin_browser.open('http://translations.launchpad.dev/alsa-utils'
@@ -43,7 +53,7 @@ But it's only a suggestion, so the translation remains unchanged.
     ...                                   'msgset_198_de_translation_0'))
     The great new translation.
     >>> print extract_text(find_tag_by_id(user_browser.contents,
-    ...                                   'msgset_198_de_suggestion_702_0'))
+    ...                                   'msgset_198_de_suggestion_705_0'))
     The really bad suggestion.
 
 In order to get rid of this, the admin chooses to keep the great new

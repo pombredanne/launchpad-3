@@ -1,4 +1,5 @@
-= Searching by tags =
+Searching by tags
+=================
 
 The advanced bug search allows searching for bugs by the tags they are
 tagged with. It is possible to search either inclusively (for bugs
@@ -7,14 +8,15 @@ tagged with all the specified tags).
 
 First, we create some bugs.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IProductSet, CreateBugParams)
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.testing import login, logout
 
     >>> login("no-priv@canonical.com")
     >>> firefox = getUtility(IProductSet).get(4)
-    >>> foobar = getUtility(IPersonSet).get(16)
+    >>> foobar = getUtility(IPersonSet).getByName("name16")
 
 The first bug is tagged with both 'test-tag-1' and 'test-tag-2'.
 
@@ -32,6 +34,18 @@ The second bug is tagged with only 'test-tag-1'.
 
     >>> logout()
 
+We go to the global bug search page and search for bugs with all the tags.
+Only 'test bug a' is returned.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/bugs/+bugs?advanced=1')
+    >>> anon_browser.getControl(
+    ...     name='field.tag').value = 'test-tag-1 test-tag-2'
+    >>> anon_browser.getControl(name='field.tags_combinator').value = ['ALL']
+    >>> anon_browser.getControl('Search', index=1).click()
+    >>> from lp.bugs.tests.bug import print_bugtasks
+    >>> print_bugtasks(anon_browser.contents)
+    16 test bug a  Mozilla Firefox  Undecided   New
+
 We go to the bug search page and search for bugs with any of the tags.
 Both bugs are returned.
 
@@ -40,11 +54,20 @@ Both bugs are returned.
     ...     name='field.tag').value = 'test-tag-1 test-tag-2'
     >>> anon_browser.getControl(name='field.tags_combinator').value = ['ANY']
     >>> anon_browser.getControl('Search', index=1).click()
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'buglisting'))
-    Summary        Importance  Status
-    16 test bug a  Undecided   New
-    17 test bug b  Undecided   New
+    >>> print_bugtasks(anon_browser.contents)
+    16 test bug a  Mozilla Firefox Undecided   New
+    17 test bug b  Mozilla Firefox Undecided   New
+
+Same works for user related bugs:
+
+    >>> anon_browser.open('http://launchpad.dev/~name16/+bugs?advanced=1')
+    >>> anon_browser.getControl(
+    ...     name='field.tag').value = 'test-tag-1 test-tag-2'
+    >>> anon_browser.getControl(name='field.tags_combinator').value = ['ANY']
+    >>> anon_browser.getControl('Search', index=1).click()
+    >>> print_bugtasks(anon_browser.contents)
+    16 test bug a  Mozilla Firefox  Undecided   New
+    17 test bug b  Mozilla Firefox  Undecided   New
 
 When we search for bugs with all the tags, though, only the first bug is
 returned, since it's the only bug with both tags.
@@ -54,7 +77,15 @@ returned, since it's the only bug with both tags.
     ...     name='field.tag').value = 'test-tag-1 test-tag-2'
     >>> anon_browser.getControl(name='field.tags_combinator').value = ['ALL']
     >>> anon_browser.getControl('Search', index=1).click()
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'buglisting'))
-    Summary        Importance  Status
-    16 test bug a  Undecided   New
+    >>> print_bugtasks(anon_browser.contents)
+    16 test bug a  Mozilla Firefox  Undecided   New
+
+And also for user related bugs:
+
+    >>> anon_browser.open('http://launchpad.dev/~name16/+bugs?advanced=1')
+    >>> anon_browser.getControl(
+    ...     name='field.tag').value = 'test-tag-1 test-tag-2'
+    >>> anon_browser.getControl(name='field.tags_combinator').value = ['ALL']
+    >>> anon_browser.getControl('Search', index=1).click()
+    >>> print_bugtasks(anon_browser.contents)
+    16 test bug a  Mozilla Firefox  Undecided   New

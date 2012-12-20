@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211
@@ -11,17 +11,25 @@ __all__ = [
     'ICodeReviewCommentDeletion',
     ]
 
-from zope.interface import Interface
-from zope.schema import Choice, Object, Int, TextLine
-
-from canonical.launchpad import _
-from lp.code.enums import CodeReviewVote
-from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposal)
-from canonical.launchpad.interfaces.message import IMessage
-from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import Interface
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    Object,
+    TextLine,
+    )
+
+from lp import _
+from lp.code.enums import CodeReviewVote
+from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
+from lp.registry.interfaces.person import IPerson
+from lp.services.messages.interfaces.message import IMessage
 
 
 class ICodeReviewComment(Interface):
@@ -39,6 +47,13 @@ class ICodeReviewComment(Interface):
             required=True, readonly=True))
 
     message = Object(schema=IMessage, title=_('The message.'))
+
+    author = exported(
+        Reference(title=_('Comment Author'), schema=IPerson,
+                  required=True, readonly=True))
+
+    date_created = exported(
+        Datetime(title=_('Date Created'), required=True, readonly=True))
 
     vote = exported(
         Choice(
@@ -65,6 +80,14 @@ class ICodeReviewComment(Interface):
             (being plain text or diffs), and a second list being any other
             attachments.
         """
+
+    def getOriginalEmail():
+        """An email object of the original raw email if there was one."""
+
+    as_quoted_email = exported(
+        TextLine(
+            title=_('The message as quoted in email.'),
+            readonly=True))
 
 
 class ICodeReviewCommentDeletion(Interface):

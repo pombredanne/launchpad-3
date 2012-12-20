@@ -1,27 +1,64 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation classes for IDiff, etc."""
 
 __metaclass__ = type
-__all__ = ['Diff', 'PreviewDiff', 'StaticDiff']
+__all__ = [
+    'Diff',
+    'IncrementalDiff',
+    'PreviewDiff',
+    ]
 
+from contextlib import nested
 from cStringIO import StringIO
+import sys
+from uuid import uuid1
 
+from bzrlib import trace
 from bzrlib.diff import show_diff_trees
+from bzrlib.merge import Merge3Merger
+from bzrlib.patches import (
+    parse_patches,
+    Patch,
+    )
+from bzrlib.plugins.difftacular.generate_diff import diff_ignore_branches
 from lazr.delegates import delegates
-from sqlobject import ForeignKey, IntCol, StringCol
-from storm.locals import Int, Reference, Storm, Unicode
+import simplejson
+from sqlobject import (
+    ForeignKey,
+    IntCol,
+    StringCol,
+    )
+from storm.locals import (
+    Int,
+    Reference,
+    Storm,
+    Unicode,
+    )
 from zope.component import getUtility
-from zope.interface import classProvides, implements
+from zope.error.interfaces import IErrorReportingUtility
+from zope.interface import implements
 
-from canonical.config import config
-from canonical.database.sqlbase import SQLBase
-from canonical.uuid import generate_uuid
-
+from lp.app.errors import NotFoundError
 from lp.code.interfaces.diff import (
-    IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    IDiff,
+    IIncrementalDiff,
+    IPreviewDiff,
+    )
+from lp.codehosting.bzrutils import read_locked
+from lp.services.config import config
+from lp.services.database.bulk import load_referencing
+from lp.services.database.sqlbase import SQLBase
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.interfaces.client import (
+    LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
+    )
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
+from lp.services.webapp.adapter import get_request_remaining_seconds
 
 
 class Diff(SQLBase):
@@ -33,7 +70,24 @@ class Diff(SQLBase):
 
     diff_lines_count = IntCol()
 
-    diffstat = StringCol()
+    _diffstat = StringCol(dbName='diffstat')
+
+    def _get_diffstat(self):
+        if self._diffstat is None:
+            return None
+        return dict((key, tuple(value))
+                    for key, value
+                    in simplejson.loads(self._diffstat).items())
+
+    def _set_diffstat(self, diffstat):
+        if diffstat is None:
+            self._diffstat = None
+            return
+        # diffstats should be mappings of path to line counts.
+        assert isinstance(diffstat, dict)
+        self._diffstat = simplejson.dumps(diffstat)
+
+    diffstat = property(_get_diffstat, _set_diffstat)
 
     added_lines_count = IntCol()
 
@@ -44,11 +98,31 @@ class Diff(SQLBase):
         if self.diff_text is None:
             return ''
         else:
-            self.diff_text.open()
+            self.diff_text.open(self._getDiffTimeout())
             try:
                 return self.diff_text.read(config.diff.max_read_size)
             finally:
                 self.diff_text.close()
+
+    def _getDiffTimeout(self):
+        """Return the seconds allocated to get the diff from the librarian.
+
+         the value will be Non for scripts, 2 for the webapp, or if thre is
+         little request time left, the number will be smaller or equal to
+         the remaining request time.
+        """
+        remaining = get_request_remaining_seconds()
+        if remaining is None:
+            return LIBRARIAN_SERVER_DEFAULT_TIMEOUT
+        elif remaining > 2.0:
+            # The maximum permitted time for webapp requests.
+            return 2.0
+        elif remaining > 0.01:
+            # Shave off 1 hundreth of a second off so that the call site
+            # has a chance to recover.
+            return remaining - 0.01
+        else:
+            return remaining
 
     @property
     def oversized(self):
@@ -60,6 +134,88 @@ class Diff(SQLBase):
         return diff_size > config.diff.max_read_size
 
     @classmethod
+    def mergePreviewFromBranches(cls, source_branch, source_revision,
+                                 target_branch, prerequisite_branch=None):
+        """Generate a merge preview diff from the supplied branches.
+
+        :param source_branch: The branch that will be merged.
+        :param source_revision: The revision_id of the revision that will be
+            merged.
+        :param target_branch: The branch that the source will merge into.
+        :param prerequisite_branch: The branch that should be merged before
+            merging the source.
+        :return: A tuple of (`Diff`, `ConflictList`) for a merge preview.
+        """
+        cleanups = []
+        try:
+            for branch in [source_branch, target_branch, prerequisite_branch]:
+                if branch is not None:
+                    branch.lock_read()
+                    cleanups.append(branch.unlock)
+            merge_target = target_branch.basis_tree()
+            if prerequisite_branch is not None:
+                prereq_revision = cls._getLCA(
+                    source_branch, source_revision, prerequisite_branch)
+                from_tree, _ignored_conflicts = cls._getMergedTree(
+                    prerequisite_branch, prereq_revision, target_branch,
+                    merge_target, cleanups)
+            else:
+                from_tree = merge_target
+            to_tree, conflicts = cls._getMergedTree(
+                source_branch, source_revision, target_branch,
+                merge_target, cleanups)
+            return cls.fromTrees(from_tree, to_tree), conflicts
+        finally:
+            for cleanup in reversed(cleanups):
+                cleanup()
+
+    @classmethod
+    def _getMergedTree(cls, source_branch, source_revision, target_branch,
+                  merge_target, cleanups):
+        """Return a tree that is the result of a merge.
+
+        :param source_branch: The branch to merge.
+        :param source_revision: The revision_id of the revision to merge.
+        :param target_branch: The branch to merge into.
+        :param merge_target: The tree to merge into.
+        :param cleanups: A list of cleanup operations to run when all
+            operations are complete.  This will be appended to.
+        :return: a tuple of a tree and the resulting conflicts.
+        """
+        lca = cls._getLCA(source_branch, source_revision, target_branch)
+        merge_base = source_branch.repository.revision_tree(lca)
+        merge_source = source_branch.repository.revision_tree(
+            source_revision)
+        merger = Merge3Merger(
+            merge_target, merge_target, merge_base, merge_source,
+            this_branch=target_branch, do_merge=False)
+
+        def dummy_warning(self, *args, **kwargs):
+            pass
+
+        real_warning = trace.warning
+        trace.warning = dummy_warning
+        try:
+            transform = merger.make_preview_transform()
+        finally:
+            trace.warning = real_warning
+        cleanups.append(transform.finalize)
+        return transform.get_preview_tree(), merger.cooked_conflicts
+
+    @staticmethod
+    def _getLCA(source_branch, source_revision, target_branch):
+        """Return the unique LCA of two branches.
+
+        :param source_branch: The branch to merge.
+        :param source_revision: The revision of the source branch.
+        :param target_branch: The branch to merge into.
+        """
+        graph = target_branch.repository.get_graph(
+            source_branch.repository)
+        return graph.find_unique_lca(
+            source_revision, target_branch.last_revision())
+
+    @classmethod
     def fromTrees(klass, from_tree, to_tree, filename=None):
         """Create a Diff from two Bazaar trees.
 
@@ -69,87 +225,124 @@ class Diff(SQLBase):
         diff_content = StringIO()
         show_diff_trees(from_tree, to_tree, diff_content, old_label='',
                         new_label='')
-        size = diff_content.tell()
-        diff_content.seek(0)
-        return klass.fromFile(diff_content, size, filename)
+        return klass.fromFileAtEnd(diff_content, filename)
 
     @classmethod
-    def fromFile(klass, diff_content, size, filename=None):
+    def fromFileAtEnd(cls, diff_content, filename=None):
+        """Make a Diff from a file object that is currently at its end."""
+        size = diff_content.tell()
+        diff_content.seek(0)
+        return cls.fromFile(diff_content, size, filename)
+
+    @classmethod
+    def fromFile(cls, diff_content, size, filename=None):
         """Create a Diff from a textual diff.
 
         :diff_content: The diff text
         :size: The number of bytes in the diff text.
+        :filename: The filename to store the content with.  Randomly generated
+            if not supplied.
         """
         if size == 0:
             diff_text = None
+            diff_lines_count = 0
+            diff_content_bytes = ''
         else:
             if filename is None:
-                filename = generate_uuid() + '.txt'
+                filename = str(uuid1()) + '.txt'
             diff_text = getUtility(ILibraryFileAliasSet).create(
-                filename, size, diff_content, 'text/x-diff')
-        return klass(diff_text=diff_text)
-
-    def _update(self, diff_content, diffstat, filename):
-        """Update the diff content and diffstat."""
-        # XXX: Tim Penhey, 2009-02-12, bug 328271
-        # If the branch is private we should probably use the restricted
-        # librarian.
-        if diff_content is None or len(diff_content) == 0:
-            self.diff_text = None
-            self.diff_lines_count = 0
+                filename, size, diff_content, 'text/x-diff', restricted=True)
+            diff_content.seek(0)
+            diff_content_bytes = diff_content.read(size)
+            diff_lines_count = len(diff_content_bytes.strip().split('\n'))
+        try:
+            diffstat = cls.generateDiffstat(diff_content_bytes)
+        except Exception:
+            getUtility(IErrorReportingUtility).raising(sys.exc_info())
+            # Set the diffstat to be empty.
+            diffstat = None
+            added_lines_count = None
+            removed_lines_count = None
         else:
-            self.diff_text = getUtility(ILibraryFileAliasSet).create(
-                filename, len(diff_content), StringIO(diff_content),
-                'text/x-diff')
-            self.diff_lines_count = len(diff_content.strip().split('\n'))
-        self.diffstat = diffstat
+            added_lines_count = 0
+            removed_lines_count = 0
+            for path, (added, removed) in diffstat.items():
+                added_lines_count += added
+                removed_lines_count += removed
+        return cls(diff_text=diff_text, diff_lines_count=diff_lines_count,
+                   diffstat=diffstat, added_lines_count=added_lines_count,
+                   removed_lines_count=removed_lines_count)
 
+    @staticmethod
+    def generateDiffstat(diff_bytes):
+        """Generate statistics about the provided diff.
 
-class StaticDiff(SQLBase):
-    """A diff from one revision to another."""
-
-    implements(IStaticDiff)
-
-    classProvides(IStaticDiffSource)
-
-    from_revision_id = StringCol()
-
-    to_revision_id = StringCol()
-
-    diff = ForeignKey(foreignKey='Diff', notNull=True)
-
-    @classmethod
-    def acquire(klass, from_revision_id, to_revision_id, repository,
-                filename=None):
-        """See `IStaticDiffSource`."""
-        existing_diff = klass.selectOneBy(
-            from_revision_id=from_revision_id, to_revision_id=to_revision_id)
-        if existing_diff is not None:
-            return existing_diff
-        from_tree = repository.revision_tree(from_revision_id)
-        to_tree = repository.revision_tree(to_revision_id)
-        diff = Diff.fromTrees(from_tree, to_tree, filename)
-        return klass(
-            from_revision_id=from_revision_id, to_revision_id=to_revision_id,
-            diff=diff)
+        :param diff_bytes: A unified diff, as bytes.
+        :return: A map of {filename: (added_line_count, removed_line_count)}
+        """
+        file_stats = {}
+        # Set allow_dirty, so we don't raise exceptions for dirty patches.
+        patches = parse_patches(diff_bytes.splitlines(True), allow_dirty=True)
+        for patch in patches:
+            if not isinstance(patch, Patch):
+                continue
+            path = patch.newname.split('\t')[0]
+            file_stats[path] = tuple(patch.stats_values()[:2])
+        return file_stats
 
     @classmethod
-    def acquireFromText(klass, from_revision_id, to_revision_id, text,
-                        filename=None):
-        """See `IStaticDiffSource`."""
-        existing_diff = klass.selectOneBy(
-            from_revision_id=from_revision_id, to_revision_id=to_revision_id)
-        if existing_diff is not None:
-            return existing_diff
-        diff = Diff.fromFile(StringIO(text), len(text), filename)
-        return klass(
-            from_revision_id=from_revision_id, to_revision_id=to_revision_id,
-            diff=diff)
+    def generateIncrementalDiff(cls, old_revision, new_revision,
+            source_branch, ignore_branches):
+        """Return a Diff whose contents are an incremental diff.
 
-    def destroySelf(self):
-        diff = self.diff
-        SQLBase.destroySelf(self)
-        diff.destroySelf()
+        The Diff's contents will show the changes made between old_revision
+        and new_revision, except those changes introduced by the
+        ignore_branches.
+
+        :param old_revision: The `Revision` to show changes from.
+        :param new_revision: The `Revision` to show changes to.
+        :param source_branch: The bzr branch containing these revisions.
+        :param ignore_brances: A collection of branches to ignore merges from.
+        :return: a `Diff`.
+        """
+        diff_content = StringIO()
+        read_locks = [read_locked(branch) for branch in [source_branch] +
+                ignore_branches]
+        with nested(*read_locks):
+            diff_ignore_branches(
+                source_branch, ignore_branches, old_revision.revision_id,
+                new_revision.revision_id, diff_content)
+        return cls.fromFileAtEnd(diff_content)
+
+
+class IncrementalDiff(Storm):
+    """See `IIncrementalDiff."""
+
+    implements(IIncrementalDiff)
+
+    delegates(IDiff, context='diff')
+
+    __storm_table__ = 'IncrementalDiff'
+
+    id = Int(primary=True, allow_none=False)
+
+    diff_id = Int(name='diff', allow_none=False)
+
+    diff = Reference(diff_id, 'Diff.id')
+
+    branch_merge_proposal_id = Int(
+        name='branch_merge_proposal', allow_none=False)
+
+    branch_merge_proposal = Reference(
+        branch_merge_proposal_id, "BranchMergeProposal.id")
+
+    old_revision_id = Int(name='old_revision', allow_none=False)
+
+    old_revision = Reference(old_revision_id, 'Revision.id')
+
+    new_revision_id = Int(name='new_revision', allow_none=False)
+
+    new_revision = Reference(new_revision_id, 'Revision.id')
 
 
 class PreviewDiff(Storm):
@@ -157,7 +350,6 @@ class PreviewDiff(Storm):
     implements(IPreviewDiff)
     delegates(IDiff, context='diff')
     __storm_table__ = 'PreviewDiff'
-
 
     id = Int(primary=True)
 
@@ -168,24 +360,82 @@ class PreviewDiff(Storm):
 
     target_revision_id = Unicode(allow_none=False)
 
-    dependent_revision_id = Unicode()
+    prerequisite_revision_id = Unicode(name='dependent_revision_id')
 
     conflicts = Unicode()
 
-    branch_merge_proposal = Reference(
+    @property
+    def has_conflicts(self):
+        return self.conflicts is not None and self.conflicts != ''
+
+    @staticmethod
+    def preloadData(preview_diffs):
+        # Circular imports.
+        from lp.code.model.branchmergeproposal import BranchMergeProposal
+        bmps = load_referencing(
+            BranchMergeProposal, preview_diffs, ['preview_diff_id'])
+        bmps_preview = dict((bmp.preview_diff_id, bmp) for bmp in bmps)
+        for preview_diff in preview_diffs:
+            cache = get_property_cache(preview_diff)
+            cache.branch_merge_proposal = bmps_preview[preview_diff.id]
+
+    _branch_merge_proposal = Reference(
         "PreviewDiff.id", "BranchMergeProposal.preview_diff_id",
         on_remote=True)
 
-    def update(self, diff_content, diffstat,
-               source_revision_id, target_revision_id,
-               dependent_revision_id, conflicts):
-        self.source_revision_id = source_revision_id
-        self.target_revision_id = target_revision_id
-        self.dependent_revision_id = dependent_revision_id
-        self.conflicts = conflicts
+    @cachedproperty
+    def branch_merge_proposal(self):
+        return self._branch_merge_proposal
 
-        filename = generate_uuid() + '.txt'
-        self.diff._update(diff_content, diffstat, filename)
+    @classmethod
+    def fromBranchMergeProposal(cls, bmp):
+        """Create a `PreviewDiff` from a `BranchMergeProposal`.
+
+        Includes a diff from the source to the target.
+        :param bmp: The `BranchMergeProposal` to generate a `PreviewDiff` for.
+        :return: A `PreviewDiff`.
+        """
+        source_branch = bmp.source_branch.getBzrBranch()
+        source_revision = source_branch.last_revision()
+        target_branch = bmp.target_branch.getBzrBranch()
+        target_revision = target_branch.last_revision()
+        preview = cls()
+        preview.source_revision_id = source_revision.decode('utf-8')
+        preview.target_revision_id = target_revision.decode('utf-8')
+        if bmp.prerequisite_branch is not None:
+            prerequisite_branch = bmp.prerequisite_branch.getBzrBranch()
+        else:
+            prerequisite_branch = None
+        preview.diff, conflicts = Diff.mergePreviewFromBranches(
+            source_branch, source_revision, target_branch,
+            prerequisite_branch)
+        preview.conflicts = u''.join(
+            unicode(conflict) + '\n' for conflict in conflicts)
+        return preview
+
+    @classmethod
+    def create(cls, diff_content, source_revision_id, target_revision_id,
+               prerequisite_revision_id, conflicts):
+        """Create a PreviewDiff with specified values.
+
+        :param diff_content: The text of the dift, as bytes.
+        :param source_revision_id: The revision_id of the source branch.
+        :param target_revision_id: The revision_id of the target branch.
+        :param prerequisite_revision_id: The revision_id of the prerequisite
+            branch.
+        :param conflicts: The conflicts, as text.
+        :return: A `PreviewDiff` with specified values.
+        """
+        preview = cls()
+        preview.source_revision_id = source_revision_id
+        preview.target_revision_id = target_revision_id
+        preview.prerequisite_revision_id = prerequisite_revision_id
+        preview.conflicts = conflicts
+
+        filename = str(uuid1()) + '.txt'
+        size = len(diff_content)
+        preview.diff = Diff.fromFile(StringIO(diff_content), size, filename)
+        return preview
 
     @property
     def stale(self):
@@ -193,16 +443,22 @@ class PreviewDiff(Storm):
         # A preview diff is stale if the revision ids used to make the diff
         # are different from the tips of the source or target branches.
         bmp = self.branch_merge_proposal
-        is_stale = False
         if (self.source_revision_id != bmp.source_branch.last_scanned_id or
             self.target_revision_id != bmp.target_branch.last_scanned_id):
             # This is the simple frequent case.
             return True
 
-        # More complex involves the dependent branch too.
-        if (bmp.dependent_branch is not None and
-            (self.dependent_revision_id !=
-             bmp.dependent_branch.last_scanned_id)):
+        # More complex involves the prerequisite branch too.
+        if (bmp.prerequisite_branch is not None and
+            (self.prerequisite_revision_id !=
+             bmp.prerequisite_branch.last_scanned_id)):
             return True
         else:
             return False
+
+    def getFileByName(self, filename):
+        """See `IPreviewDiff`."""
+        if filename == 'preview.diff' and self.diff_text is not None:
+            return self.diff_text
+        else:
+            raise NotFoundError(filename)

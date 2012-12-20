@@ -8,12 +8,6 @@
   >
 <body>
 
-  <div metal:fill-slot="heading">
-    <h1 tal:content="CONTEXTS/fmt:pagetitle">
-      Access to Joe Smith's private archive
-    </h1>
-  </div>
-
   <div metal:fill-slot="main">
 
   <tal:activate condition="not: view/active_token">
@@ -38,7 +32,7 @@
         </tal:archive_name>
          you need to copy the lines below and add them to your system's
          software sources.
-         (<a href="/+help/soyuz/ppa-sources-list.html" target="help">Read
+         (<a href="/+help-soyuz/ppa-sources-list.html" target="help">Read
             about installing</a>)
       </p>
       <tal:entries replace="structure view/sources_list_entries" />
@@ -54,22 +48,22 @@
       </div> <!-- signing-key -->
     </div>
     <div id="regenerate_token" class="portlet" style="clear:both">
-      <h2>Password security</h2>
+      <h2>Reset password</h2>
       <p>If you believe the security of your password for this access
-         has been compromised, you can generate a new one. After you've
+         has been compromised, you reset your password. After you've
          requested a new password, you'll see new "sources.list" entries
          on this page. You'll need to update them on your computer.
       </p>
-      <p>Note: after requesting a new password for your personal
+      <form action="" method="post">
+        <input type="hidden" name="regenerate" value="1" />
+        <input type="submit" name="regenerate_btn" value="Reset Password" />
+      </form>
+      <p>
+         Note: after resetting the password for your personal
          access &mdash; and updating your sources.list with the new
          entries &mdash; you may need to wait for up to ten minutes before
          you can download using the new password.
       </p>
-      <form action="" method="post">
-        <button type="submit" name="regenerate" value="1">
-          Generate new password
-        </button>
-      </form>
     </div>
   </tal:active>
   </div>

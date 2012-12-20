@@ -1,24 +1,61 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
-# GNU Affero General Public License version 3 (see the file LICENSE).
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under
+# the GNU Affero General Public License version 3 (see the file
+# LICENSE).
 
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['Language', 'LanguageSet']
+__all__ = [
+    'Language',
+    'LanguageSet',
+    ]
 
-from zope.interface import implements
 
 from sqlobject import (
-    BoolCol, CONTAINSSTRING, IntCol, SQLObjectNotFound,
-    SQLRelatedJoin, StringCol)
-from storm.locals import Or
+    BoolCol,
+    IntCol,
+    SQLObjectNotFound,
+    SQLRelatedJoin,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Count,
+    Desc,
+    Join,
+    LeftJoin,
+    Or,
+    )
+from zope.interface import implements
 
-from canonical.database.sqlbase import quote_like, SQLBase, sqlvalues
-from canonical.database.enumcol import EnumCol
-from canonical.launchpad.interfaces import ISlaveStore
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
+from lp.registry.model.karma import (
+    KarmaCache,
+    KarmaCategory,
+    )
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.lpstorm import (
+    ISlaveStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import SQLBase
+from lp.services.helpers import ensure_unicode
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.worlddata.interfaces.language import (
-    ILanguageSet, ILanguage, TextDirection)
+    ILanguage,
+    ILanguageSet,
+    TextDirection,
+    )
+# XXX: JonathanLange 2010-11-10 bug=673796: It turns out this module is
+# unusable without spokenin being imported first. So, import spokenin.
+from lp.services.worlddata.model.spokenin import SpokenIn
+
+
+SpokenIn
 
 
 class Language(SQLBase):
@@ -65,6 +102,20 @@ class Language(SQLBase):
         """See `ILanguage`."""
         return '%s (%s)' % (self.englishname, self.code)
 
+    def __repr__(self):
+        return "<%s '%s' (%s)>" % (
+            self.__class__.__name__, self.englishname, self.code)
+
+    @property
+    def guessed_pluralforms(self):
+        """See `ILanguage`."""
+        forms = self.pluralforms
+        if forms is None:
+            # Just take a plausible guess.  The caller needs a number.
+            return 2
+        else:
+            return forms
+
     @property
     def alt_suggestion_language(self):
         """See `ILanguage`.
@@ -75,7 +126,7 @@ class Language(SQLBase):
         Norwegian languages Nynorsk (nn) and Bokmaal (nb) are similar
         and may provide suggestions for each other.
         """
-        if self.code in ['pt_BR',]:
+        if self.code == 'pt_BR':
             return None
         elif self.code == 'nn':
             return Language.byCode('nb')
@@ -108,49 +159,96 @@ class Language(SQLBase):
     @property
     def translators(self):
         """See `ILanguage`."""
-        # XXX CarlosPerelloMarin 2007-03-31 bug=102257:
-        # The KarmaCache table doesn't have a field to store karma per
-        # language, so we are actually returning the people with the most
-        # translation karma that have this language selected in their
-        # preferences.
-        from lp.registry.model.person import Person
-        return Person.select('''
-            PersonLanguage.person = Person.id AND
-            PersonLanguage.language = %s AND
-            KarmaCache.person = Person.id AND
-            KarmaCache.product IS NULL AND
-            KarmaCache.project IS NULL AND
-            KarmaCache.sourcepackagename IS NULL AND
-            KarmaCache.distribution IS NULL AND
-            KarmaCache.category = KarmaCategory.id AND
-            KarmaCategory.name = 'translations'
-            ''' % sqlvalues(self), orderBy=['-KarmaCache.karmavalue'],
-            clauseTables=[
-                'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
+        from lp.registry.model.person import (
+            Person,
+            PersonLanguage,
+            )
+        return IStore(Language).using(
+            Join(
+                Person,
+                LanguageSet._getTranslatorJoins(),
+                Person.id == PersonLanguage.personID),
+            ).find(
+                Person,
+                PersonLanguage.language == self,
+            ).order_by(Desc(KarmaCache.karmavalue))
 
-    def getFullCode(self, variant=None):
+    @cachedproperty
+    def translators_count(self):
         """See `ILanguage`."""
-        if variant:
-            return '%s@%s' % (self.code, variant)
-        else:
-            return self.code
-
-    def getFullEnglishName(self, variant=None):
-        """See `ILanguage`."""
-        if variant:
-            return '%s ("%s" variant)' % (self.englishname, variant)
-        else:
-            return self.englishname
+        return self.translators.count()
 
 
 class LanguageSet:
     implements(ILanguageSet)
 
+    @staticmethod
+    def _getTranslatorJoins():
+        # XXX CarlosPerelloMarin 2007-03-31 bug=102257:
+        # The KarmaCache table doesn't have a field to store karma per
+        # language, so we are actually returning the people with the most
+        # translation karma that have this language selected in their
+        # preferences.
+        from lp.registry.model.person import PersonLanguage
+        return Join(
+            PersonLanguage,
+            Join(
+                KarmaCache,
+                KarmaCategory,
+                And(
+                    KarmaCategory.name == 'translations',
+                    KarmaCache.categoryID == KarmaCategory.id,
+                    KarmaCache.productID == None,
+                    KarmaCache.projectID == None,
+                    KarmaCache.sourcepackagenameID == None,
+                    KarmaCache.distributionID == None)),
+            PersonLanguage.personID ==
+                KarmaCache.personID)
+
+    @property
+    def _visible_languages(self):
+        return Language.select(
+            'visible IS TRUE',
+            orderBy='englishname')
+
     @property
     def common_languages(self):
-        return iter(Language.select(
-            'visible IS TRUE',
-            orderBy='englishname'))
+        """See `ILanguageSet`."""
+        return iter(self._visible_languages)
+
+    def getDefaultLanguages(self, want_translators_count=False):
+        """See `ILanguageSet`."""
+        return self.getAllLanguages(
+            want_translators_count=want_translators_count,
+            only_visible=True)
+
+    def getAllLanguages(self, want_translators_count=False,
+                        only_visible=False):
+        """See `ILanguageSet`."""
+        result = IStore(Language).find(
+                Language,
+                Language.visible == True if only_visible else True,
+            ).order_by(
+            Language.englishname)
+        if want_translators_count:
+            def preload_translators_count(languages):
+                from lp.registry.model.person import PersonLanguage
+                ids = set(language.id for language in languages).difference(
+                    set([None]))
+                counts = IStore(Language).using(
+                    LeftJoin(
+                        Language,
+                        self._getTranslatorJoins(),
+                        PersonLanguage.languageID == Language.id),
+                    ).find(
+                        (Language, Count(PersonLanguage)),
+                        Language.id.is_in(ids),
+                    ).group_by(Language)
+                for language, count in counts:
+                    get_property_cache(language).translators_count = count
+            return DecoratedResultSet(
+                result, pre_iter_hook=preload_translators_count)
+        return result
 
     def __iter__(self):
         """See `ILanguageSet`."""
@@ -161,7 +259,7 @@ class LanguageSet:
         language = self.getLanguageByCode(code)
 
         if language is None:
-            raise NotFoundError, code
+            raise NotFoundError(code)
 
         return language
 
@@ -208,27 +306,6 @@ class LanguageSet:
 
         return languages
 
-    def getLanguageAndVariantFromString(self, language_string):
-        """See `ILanguageSet`."""
-        if language_string is None:
-            return (None, None)
-
-        if u'@' in language_string:
-            # Seems like this entry is using a variant entry.
-            language_code, language_variant = language_string.split(u'@')
-        else:
-            language_code = language_string
-            language_variant = None
-
-        try:
-            language = self[language_code]
-        except NotFoundError:
-            # We don't have such language in our database so we cannot
-            # guess it using this method.
-            return (None, None)
-
-        return (language, language_variant)
-
     def createLanguage(self, code, englishname, nativename=None,
                        pluralforms=None, pluralexpression=None, visible=True,
                        direction=TextDirection.LTR):
@@ -241,11 +318,12 @@ class LanguageSet:
     def search(self, text):
         """See `ILanguageSet`."""
         if text:
+            text = ensure_unicode(text).lower()
             results = ISlaveStore(Language).find(
                 Language, Or(
-                    CONTAINSSTRING(Language.code.lower(), text.lower()),
-                    CONTAINSSTRING(Language.englishname.lower(), text.lower())
-                    )).order_by(Language.englishname)
+                    Language.code.lower().contains_string(text),
+                    Language.englishname.lower().contains_string(
+                        text))).order_by(Language.englishname)
         else:
             results = None
 

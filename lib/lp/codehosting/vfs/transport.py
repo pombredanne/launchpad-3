@@ -16,22 +16,34 @@ __all__ = [
     'AsyncVirtualTransport',
     'get_chrooted_transport',
     'get_readonly_transport',
-    '_MultiServer',
     'SynchronousAdapter',
     'TranslationError',
     ]
 
 
-from bzrlib.errors import (
-    BzrError, InProcessTransport, NoSuchFile, TransportNotPossible)
 from bzrlib import urlutils
+from bzrlib.errors import (
+    BzrError,
+    InProcessTransport,
+    NoSuchFile,
+    TransportNotPossible,
+    )
 from bzrlib.transport import (
-    chroot, get_transport, register_transport, Server, Transport,
-    unregister_transport)
-
+    chroot,
+    get_transport,
+    register_transport,
+    Server,
+    Transport,
+    unregister_transport,
+    )
 from twisted.internet import defer
-from lp.codehosting.bzrutils import ensure_base
-from canonical.twistedsupport import extract_result, gatherResults
+from twisted.python.failure import Failure
+
+from lp.services.twistedsupport import (
+    extract_result,
+    gatherResults,
+    no_traceback_failures,
+    )
 
 
 class TranslationError(BzrError):
@@ -56,9 +68,9 @@ def get_chrooted_transport(url, mkdir=False):
     """Return a chrooted transport serving `url`."""
     transport = get_transport(url)
     if mkdir:
-        ensure_base(transport)
+        transport.create_prefix()
     chroot_server = chroot.ChrootServer(transport)
-    chroot_server.setUp()
+    chroot_server.start_server()
     return get_transport(chroot_server.get_url())
 
 
@@ -67,25 +79,6 @@ def get_readonly_transport(transport):
     if transport.base.startswith('readonly+'):
         return transport
     return get_transport('readonly+' + transport.base)
-
-
-class _MultiServer(Server):
-    """Server that wraps around multiple servers."""
-
-    def __init__(self, *servers):
-        self._servers = servers
-
-    def setUp(self):
-        for server in self._servers:
-            server.setUp()
-
-    def destroy(self):
-        for server in reversed(self._servers):
-            server.destroy()
-
-    def tearDown(self):
-        for server in reversed(self._servers):
-            server.tearDown()
 
 
 class AsyncVirtualTransport(Transport):
@@ -128,7 +121,7 @@ class AsyncVirtualTransport(Transport):
         :param failure: A `twisted.python.failure.Failure`.
         """
         failure.trap(TranslationError)
-        raise NoSuchFile(failure.value.virtual_url_fragment)
+        return Failure(NoSuchFile(failure.value.virtual_url_fragment))
 
     def _call(self, method_name, relpath, *args, **kwargs):
         """Call a method on the backing transport, translating relative,
@@ -140,7 +133,14 @@ class AsyncVirtualTransport(Transport):
         """
         def call_method((transport, path)):
             method = getattr(transport, method_name)
-            return method(path, *args, **kwargs)
+            try:
+                return method(path, *args, **kwargs)
+            except BaseException as e:
+                # It's much cheaper to explicitly construct a Failure than to
+                # let Deferred build automatically, because the automatic one
+                # will capture the traceback and perform an expensive
+                # stringification on it.
+                return Failure(e)
 
         deferred = self._getUnderylingTransportAndPath(relpath)
         deferred.addCallback(call_method)
@@ -178,6 +178,7 @@ class AsyncVirtualTransport(Transport):
 
     def iter_files_recursive(self):
         deferred = self._getUnderylingTransportAndPath('.')
+        @no_traceback_failures
         def iter_files((transport, path)):
             return transport.clone(path).iter_files_recursive()
         deferred.addCallback(iter_files)
@@ -185,6 +186,7 @@ class AsyncVirtualTransport(Transport):
 
     def listable(self):
         deferred = self._getUnderylingTransportAndPath('.')
+        @no_traceback_failures
         def listable((transport, path)):
             return transport.listable()
         deferred.addCallback(listable)
@@ -228,11 +230,12 @@ class AsyncVirtualTransport(Transport):
         from_deferred = self._getUnderylingTransportAndPath(rel_from)
         deferred = gatherResults([to_deferred, from_deferred])
 
+        @no_traceback_failures
         def check_transports_and_rename(
             ((to_transport, to_path), (from_transport, from_path))):
             if to_transport.base != from_transport.base:
-                raise TransportNotPossible(
-                    'cannot move between underlying transports')
+                return Failure(TransportNotPossible(
+                    'cannot move between underlying transports'))
             return getattr(from_transport, 'rename')(from_path, to_path)
 
         deferred.addCallback(check_transports_and_rename)
@@ -260,6 +263,12 @@ class SynchronousAdapter(Transport):
 
     def _abspath(self, relpath):
         return self._async_transport._abspath(relpath)
+
+    def get_segment_parameters(self):
+        return self._async_transport.get_segment_parameters()
+
+    def set_segment_parameter(self, name, value):
+        return self._async_transport.set_segment_parameter(name, value)
 
     def clone(self, offset=None):
         """See `bzrlib.transport.Transport`."""
@@ -384,7 +393,7 @@ class AsyncVirtualServer(Server):
         # safely upcall it.
         # pylint: disable-msg=W0231
         self._scheme = scheme
-        self._is_set_up = False
+        self._is_started = False
 
     def _transportFactory(self, url):
         """Create a transport for this server pointing at `url`.
@@ -413,14 +422,14 @@ class AsyncVirtualServer(Server):
         """Return the URL of this server."""
         return self._scheme
 
-    def setUp(self):
-        """See Server.setUp."""
+    def start_server(self):
+        """See Server.start_server."""
         register_transport(self.get_url(), self._transportFactory)
-        self._is_set_up = True
+        self._is_started = True
 
-    def tearDown(self):
-        """See Server.tearDown."""
-        if not self._is_set_up:
+    def stop_server(self):
+        """See Server.stop_server."""
+        if not self._is_started:
             return
-        self._is_set_up = False
+        self._is_started = False
         unregister_transport(self.get_url(), self._transportFactory)

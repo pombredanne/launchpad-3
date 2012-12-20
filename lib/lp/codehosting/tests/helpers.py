@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Common helpers for codehosting tests."""
@@ -7,11 +7,10 @@ __metaclass__ = type
 __all__ = [
     'AvatarTestCase',
     'adapt_suite',
-    'BranchTestCase',
     'CodeHostingTestProviderAdapter',
-    'CodeHostingRepositoryTestProviderAdapter',
     'create_branch_with_one_revision',
     'deferToThread',
+    'force_stacked_on_url',
     'LoomTestMixin',
     'make_bazaar_branch_and_tree',
     'TestResultWrapper',
@@ -24,26 +23,32 @@ import unittest
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import FileExists
 from bzrlib.plugins.loom import branch as loom_branch
-from bzrlib.tests import TestNotApplicable, TestSkipped
+from bzrlib.tests import (
+    TestNotApplicable,
+    TestSkipped,
+    )
+from testtools.deferredruntest import AsynchronousDeferredRunTest
+from twisted.internet import (
+    defer,
+    threads,
+    )
+from twisted.python.util import mergeFunctionMetadata
 
 from lp.code.enums import BranchType
 from lp.codehosting.vfs import branch_id_to_path
-from canonical.config import config
-from canonical.testing import TwistedLayer
-
-from twisted.internet import defer, threads
-from twisted.python.util import mergeFunctionMetadata
-from twisted.trial.unittest import TestCase as TrialTestCase
+from lp.services.config import config
+from lp.testing import TestCase
 
 
-class AvatarTestCase(TrialTestCase):
+class AvatarTestCase(TestCase):
     """Base class for tests that need a LaunchpadAvatar with some basic sample
     data.
     """
 
-    layer = TwistedLayer
+    run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
+        super(AvatarTestCase, self).setUp()
         # A basic user dict, 'alice' is a member of no teams (aside from the
         # user themself).
         self.aliceUserDict = {
@@ -108,6 +113,7 @@ def deferToThread(f):
     """
     def decorated(*args, **kwargs):
         d = defer.Deferred()
+
         def runInThread():
             return threads._putResultInDeferred(d, f, args, kwargs)
 
@@ -121,8 +127,10 @@ def clone_test(test, new_id):
     """Return a clone of the given test."""
     from copy import deepcopy
     new_test = deepcopy(test)
+
     def make_new_test_id():
         return lambda: new_id
+
     new_test.id = make_new_test_id()
     return new_test
 
@@ -152,7 +160,7 @@ def make_bazaar_branch_and_tree(db_branch):
         "Can only create branches for HOSTED branches: %r"
         % db_branch)
     branch_dir = os.path.join(
-        config.codehosting.hosted_branches_root,
+        config.codehosting.mirrored_branches_root,
         branch_id_to_path(db_branch.id))
     return create_branch_with_one_revision(branch_dir)
 
@@ -178,6 +186,16 @@ def create_branch_with_one_revision(branch_dir, format=None):
     f.close()
     tree.commit('message')
     return tree
+
+
+def force_stacked_on_url(branch, url):
+    """Set the stacked_on url of a branch without standard error-checking.
+
+    Bazaar 1.17 and up make it harder to create branches with invalid
+    stacking.  It's still worth testing that we don't blow up in the face of
+    them, so this function lets us create them anyway.
+    """
+    branch.get_config().set_user_option('stacked_on_location', url)
 
 
 class TestResultWrapper:

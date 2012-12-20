@@ -10,30 +10,48 @@ __all__ = [
     'CodeImportJobWorkflow',
     ]
 
-from sqlobject import ForeignKey, IntCol, SQLObjectNotFound, StringCol
+import datetime
 
+from sqlobject import (
+    ForeignKey,
+    IntCol,
+    SQLObjectNotFound,
+    StringCol,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
-from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.enums import (
-    CodeImportJobState, CodeImportMachineState, CodeImportResultStatus,
-    CodeImportReviewStatus)
+    CodeImportJobState,
+    CodeImportMachineState,
+    CodeImportResultStatus,
+    CodeImportReviewStatus,
+    )
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportjob import (
-    ICodeImportJob, ICodeImportJobSet,
-    ICodeImportJobSetPublic, ICodeImportJobWorkflow)
+    ICodeImportJob,
+    ICodeImportJobSet,
+    ICodeImportJobSetPublic,
+    ICodeImportJobWorkflow,
+    )
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
-from lp.code.interfaces.codeimportresult import  ICodeImportResultSet
-from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from lp.code.interfaces.codeimportresult import ICodeImportResultSet
+from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 
 
 class CodeImportJob(SQLBase):
@@ -102,7 +120,7 @@ class CodeImportJobSet(object):
         except SQLObjectNotFound:
             return None
 
-    def getJobForMachine(self, hostname):
+    def getJobForMachine(self, hostname, worker_limit):
         """See `ICodeImportJobSet`."""
         job_workflow = getUtility(ICodeImportJobWorkflow)
         for job in self.getReclaimableJobs():
@@ -111,7 +129,7 @@ class CodeImportJobSet(object):
         if machine is None:
             machine = getUtility(ICodeImportMachineSet).new(
                 hostname, CodeImportMachineState.ONLINE)
-        elif not machine.shouldLookForJob():
+        elif not machine.shouldLookForJob(worker_limit):
             return None
         job = CodeImportJob.selectOne(
             """id IN (SELECT id FROM CodeImportJob
@@ -140,7 +158,7 @@ class CodeImportJobWorkflow:
 
     implements(ICodeImportJobWorkflow)
 
-    def newJob(self, code_import, date_due=None):
+    def newJob(self, code_import, interval=None):
         """See `ICodeImportJobWorkflow`."""
         assert code_import.review_status == CodeImportReviewStatus.REVIEWED, (
             "Review status of %s is not REVIEWED: %s" % (
@@ -149,23 +167,22 @@ class CodeImportJobWorkflow:
             "Already associated to a CodeImportJob: %s" % (
             code_import.branch.unique_name))
 
+        if interval is None:
+            interval = code_import.effective_update_interval
+
         job = CodeImportJob(code_import=code_import, date_due=UTC_NOW)
 
-        if date_due is None:
-            # Find the most recent CodeImportResult for this CodeImport. We
-            # sort by date_created because we do not have an index on
-            # date_job_started in the database, and that should give the same
-            # sort order.
-            most_recent_result_list = list(CodeImportResult.selectBy(
-                code_import=code_import).orderBy(['-date_created']).limit(1))
+        # Find the most recent CodeImportResult for this CodeImport. We
+        # sort by date_created because we do not have an index on
+        # date_job_started in the database, and that should give the same
+        # sort order.
+        most_recent_result_list = list(CodeImportResult.selectBy(
+            code_import=code_import).orderBy(['-date_created']).limit(1))
 
-            if len(most_recent_result_list) != 0:
-                [most_recent_result] = most_recent_result_list
-                interval = code_import.effective_update_interval
-                date_due = most_recent_result.date_job_started + interval
-                job.date_due = max(job.date_due, date_due)
-        else:
-            job.date_due = date_due
+        if len(most_recent_result_list) != 0:
+            [most_recent_result] = most_recent_result_list
+            date_due = most_recent_result.date_job_started + interval
+            job.date_due = max(job.date_due, date_due)
 
         return job
 
@@ -281,17 +298,28 @@ class CodeImportJobWorkflow:
         # If the import has failed too many times in a row, mark it as
         # FAILING.
         failure_limit = config.codeimport.consecutive_failure_limit
-        if code_import.consecutive_failure_count >= failure_limit:
+        failure_count = code_import.consecutive_failure_count
+        if failure_count >= failure_limit:
             code_import.updateFromData(
                 dict(review_status=CodeImportReviewStatus.FAILING), None)
+        elif status == CodeImportResultStatus.SUCCESS_PARTIAL:
+            interval = datetime.timedelta(0)
+        elif failure_count > 0:
+            interval = (code_import.effective_update_interval *
+                        (2 ** (failure_count - 1)))
+        else:
+            interval = code_import.effective_update_interval
         # Only start a new one if the import is still in the REVIEWED state.
         if code_import.review_status == CodeImportReviewStatus.REVIEWED:
-            self.newJob(code_import)
-        # If the status was successful, update the date_last_successful and
-        # arrange for the branch to be mirrored.
-        if status == CodeImportResultStatus.SUCCESS:
+            self.newJob(code_import, interval=interval)
+        # If the status was successful, update date_last_successful.
+        if status in [CodeImportResultStatus.SUCCESS,
+                      CodeImportResultStatus.SUCCESS_NOCHANGE]:
             naked_import = removeSecurityProxy(code_import)
             naked_import.date_last_successful = result.date_created
+        # If the status was successful and revisions were imported, arrange
+        # for the branch to be mirrored.
+        if status == CodeImportResultStatus.SUCCESS:
             code_import.branch.requestMirror()
         getUtility(ICodeImportEventSet).newFinish(
             code_import, machine)
@@ -315,7 +343,7 @@ class CodeImportJobWorkflow:
             import_job, CodeImportResultStatus.RECLAIMED, None)
         # 3)
         if code_import.review_status == CodeImportReviewStatus.REVIEWED:
-            self.newJob(code_import, UTC_NOW)
+            self.newJob(code_import, datetime.timedelta(0))
         # 4)
         getUtility(ICodeImportEventSet).newReclaim(
             code_import, machine, job_id)

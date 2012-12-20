@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ISpecificationTarget browser views."""
@@ -6,34 +6,109 @@
 __metaclass__ = type
 
 __all__ = [
+    'HasSpecificationsMenuMixin',
     'HasSpecificationsView',
-    'RegisterABlueprintButtonView',
+    'RegisterABlueprintButtonPortlet',
+    'SpecificationAssignmentsView',
+    'SpecificationDocumentationView',
     ]
 
 from operator import itemgetter
 
+from lazr.restful.utils import (
+    safe_hasattr,
+    smartquote,
+    )
+from z3c.ptcompat import ViewPageTemplateFile
+from zope.component import (
+    getMultiAdapter,
+    queryMultiAdapter,
+    )
+
+from lp import _
+from lp.app.enums import service_uses_launchpad
+from lp.app.interfaces.launchpad import (
+    IPrivacy,
+    IServiceUsage,
+    )
+from lp.blueprints.enums import (
+    SpecificationFilter,
+    SpecificationSort,
+    )
+from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
+from lp.blueprints.interfaces.sprint import ISprint
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
-from canonical.launchpad.interfaces.launchpad import IHasDrivers
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.project import IProject, IProjectSeries
-from lp.blueprints.interfaces.specification import (
-    SpecificationFilter, SpecificationSort)
-from lp.blueprints.interfaces.specificationtarget import (
-    ISpecificationTarget)
-from lp.blueprints.interfaces.sprint import ISprint
+from lp.registry.interfaces.projectgroup import (
+    IProjectGroup,
+    IProjectGroupSeries,
+    )
+from lp.registry.interfaces.role import IHasDrivers
+from lp.services.config import config
+from lp.services.helpers import shortlist
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.menu import (
+    enabled_with_permission,
+    Link,
+    )
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.helpers import shortlist
-from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.webapp import canonical_url
-from zope.component import queryMultiAdapter
+
+class HasSpecificationsMenuMixin:
+
+    def listall(self):
+        """Return a link to show all blueprints."""
+        text = 'List all blueprints'
+        return Link('+specs?show=all', text, icon='blueprint')
+
+    def listaccepted(self):
+        """Return a link to show the approved goals."""
+        text = 'List approved blueprints'
+        return Link('+specs?acceptance=accepted', text, icon='blueprint')
+
+    def listproposed(self):
+        """Return a link to show the proposed goals."""
+        text = 'List proposed blueprints'
+        return Link('+specs?acceptance=proposed', text, icon='blueprint')
+
+    def listdeclined(self):
+        """Return a link to show the declined goals."""
+        text = 'List declined blueprints'
+        return Link('+specs?acceptance=declined', text, icon='blueprint')
+
+    def doc(self):
+        text = 'List documentation'
+        return Link('+documentation', text, icon='info')
+
+    def setgoals(self):
+        """Return a link to set the series goals."""
+        text = 'Set series goals'
+        return Link('+setgoals', text, icon='edit')
+
+    def assignments(self):
+        """Return a link to show the people assigned to the blueprint."""
+        text = 'Assignments'
+        return Link('+assignments', text, icon='person')
+
+    def new(self):
+        """Return a link to register a blueprint."""
+        text = 'Register a blueprint'
+        return Link('+addspec', text, icon='add')
+
+    @enabled_with_permission('launchpad.View')
+    def register_sprint(self):
+        text = 'Register a meeting'
+        summary = 'Register a developer sprint, summit, or gathering'
+        return Link('/sprints/+new', text, summary=summary, icon='add')
 
 
 class HasSpecificationsView(LaunchpadView):
@@ -69,26 +144,79 @@ class HasSpecificationsView(LaunchpadView):
     is_project = False
     is_series = False
     is_sprint = False
+    has_wiki = False
     has_drivers = False
 
-    # XXX: jsk: 2007-07-12: This method might be improved by
+    # Templates for the various conditions of blueprints:
+    # * On Launchpad
+    # * External
+    # * Disabled
+    # * Unknown
+    default_template = ViewPageTemplateFile(
+        '../templates/hasspecifications-specs.pt')
+    not_launchpad_template = ViewPageTemplateFile(
+        '../templates/unknown-specs.pt')
+
+    @property
+    def template(self):
+        # Check for the magical "index" added by the browser:page template
+        # machinery. If it exists this is actually the
+        # zope.app.pagetemplate.simpleviewclass.simple class that is magically
+        # mixed in by the browser:page zcml directive the template defined in
+        # the directive should be used.
+        if safe_hasattr(self, 'index'):
+            return super(HasSpecificationsView, self).template
+
+        # Sprints and Persons don't have a usage enum for blueprints, so we
+        # have to fallback to the default.
+        if (ISprint.providedBy(self.context)
+            or IPerson.providedBy(self.context)):
+            return self.default_template
+
+        # ProjectGroups are a special case, as their products may be a
+        # combination of usage settings. To deal with this, check all
+        # products via the involvment menu.
+        if (IProjectGroup.providedBy(self.context)
+            or IProjectGroupSeries.providedBy(self.context)):
+            involvement = getMultiAdapter(
+                (self.context, self.request),
+                name='+get-involved')
+            if service_uses_launchpad(involvement.blueprints_usage):
+                return self.default_template
+            else:
+                return self.not_launchpad_template
+
+        # Otherwise, determine usage and provide the correct template.
+        service_usage = IServiceUsage(self.context)
+        if service_uses_launchpad(service_usage.blueprints_usage):
+            return self.default_template
+        else:
+            return self.not_launchpad_template
+
+    def render(self):
+        return self.template()
+
+    # XXX: jsk: 2007-07-12 bug=173972: This method might be improved by
     # replacing the conditional execution with polymorphism.
-    # See https://bugs.launchpad.net/blueprint/+bug/173972.
     def initialize(self):
-        mapping = {'name': self.context.displayname}
         if IPerson.providedBy(self.context):
             self.is_person = True
-        elif (IDistribution.providedBy(self.context) or
-              IProduct.providedBy(self.context)):
+        elif IDistribution.providedBy(self.context):
             self.is_target = True
             self.is_pillar = True
             self.show_series = True
-        elif IProject.providedBy(self.context):
+        elif IProduct.providedBy(self.context):
+            self.is_target = True
+            self.is_pillar = True
+            self.has_wiki = True
+            self.show_series = True
+        elif IProjectGroup.providedBy(self.context):
             self.is_project = True
             self.is_pillar = True
+            self.has_wiki = True
             self.show_target = True
             self.show_series = True
-        elif IProjectSeries.providedBy(self.context):
+        elif IProjectGroupSeries.providedBy(self.context):
             self.show_milestone = True
             self.show_target = True
             self.show_series = True
@@ -100,12 +228,7 @@ class HasSpecificationsView(LaunchpadView):
             self.is_sprint = True
             self.show_target = True
         else:
-            raise AssertionError, 'Unknown blueprint listing site'
-
-        if self.is_person:
-            self.title = _('Specifications involving $name', mapping=mapping)
-        else:
-            self.title = _('Specifications for $name', mapping=mapping)
+            raise AssertionError('Unknown blueprint listing site.')
 
         if IHasDrivers.providedBy(self.context):
             self.has_drivers = True
@@ -114,68 +237,33 @@ class HasSpecificationsView(LaunchpadView):
             self.specs, self.request,
             size=config.launchpad.default_batch_size)
 
-    def mdzCsv(self):
-        """Quick hack for mdz, to get csv dump of specs."""
-        import csv
-        from StringIO import StringIO
-        output = StringIO()
-        writer = csv.writer(output)
-        headings = [
-            'name',
-            'title',
-            'url',
-            'specurl',
-            'status',
-            'priority',
-            'assignee',
-            'drafter',
-            'approver',
-            'owner',
-            'distroseries',
-            'direction_approved',
-            'man_days',
-            'delivery'
-            ]
-        def dbschema(item):
-            """Format a dbschema sortably for a spreadsheet."""
-            return '%s-%s' % (item.value, item.title)
-        def fperson(person):
-            """Format a person as 'name (full name)', or 'none'"""
-            if person is None:
-                return 'none'
-            else:
-                return '%s (%s)' % (person.name, person.displayname)
-        writer.writerow(headings)
-        for spec in self.context.all_specifications:
-            row = []
-            row.append(spec.name)
-            row.append(spec.title)
-            row.append(canonical_url(spec))
-            row.append(spec.specurl)
-            row.append(dbschema(spec.definition_status))
-            row.append(dbschema(spec.priority))
-            row.append(fperson(spec.assignee))
-            row.append(fperson(spec.drafter))
-            row.append(fperson(spec.approver))
-            row.append(fperson(spec.owner))
-            if spec.distroseries is None:
-                row.append('none')
-            else:
-                row.append(spec.distroseries.name)
-            row.append(spec.direction_approved)
-            row.append(spec.man_days)
-            row.append(dbschema(spec.implementation_status))
-            writer.writerow([unicode(item).encode('utf8') for item in row])
-        self.request.response.setHeader('Content-Type', 'text/plain')
-        return output.getvalue()
+    @property
+    def can_configure_blueprints(self):
+        """Can the user configure blueprints for the `ISpecificationTarget`.
+        """
+        target = self.context
+        if IProduct.providedBy(target) or IDistribution.providedBy(target):
+            return check_permission('launchpad.Edit', self.context)
+        else:
+            return False
+
+    @property
+    def label(self):
+        mapping = {'name': self.context.displayname}
+        if self.is_person:
+            return _('Blueprints involving $name', mapping=mapping)
+        else:
+            return _('Blueprints for $name', mapping=mapping)
+
+    page_title = 'Blueprints'
 
     @cachedproperty
     def has_any_specifications(self):
-        return self.context.has_any_specifications
+        return not self.context._all_specifications.is_empty()
 
     @cachedproperty
     def all_specifications(self):
-        return shortlist(self.context.all_specifications)
+        return shortlist(self.context.all_specifications(self.user))
 
     @cachedproperty
     def searchrequested(self):
@@ -215,7 +303,7 @@ class HasSpecificationsView(LaunchpadView):
 
         # include text for filtering if it was given
         if self.searchtext is not None and len(self.searchtext) > 0:
-            filter.append(self.searchtext)
+            filter.append(self.searchtext.replace('%', '%%'))
 
         # filter on completeness
         if show == 'all':
@@ -240,8 +328,6 @@ class HasSpecificationsView(LaunchpadView):
             filter.append(SpecificationFilter.DRAFTER)
         elif role == 'approver':
             filter.append(SpecificationFilter.APPROVER)
-        elif role == 'feedback':
-            filter.append(SpecificationFilter.FEEDBACK)
         elif role == 'subscriber':
             filter.append(SpecificationFilter.SUBSCRIBER)
 
@@ -257,8 +343,18 @@ class HasSpecificationsView(LaunchpadView):
 
     @property
     def specs(self):
+        if (IPrivacy.providedBy(self.context)
+                and self.context.private
+                and not check_permission('launchpad.View', self.context)):
+            return []
         filter = self.spec_filter
-        return self.context.specifications(filter=filter)
+        return self.context.specifications(self.user, filter=filter)
+
+    @cachedproperty
+    def specs_batched(self):
+        navigator = BatchNavigator(self.specs, self.request, size=500)
+        navigator.setHeadings('specification', 'specifications')
+        return navigator
 
     @cachedproperty
     def spec_count(self):
@@ -268,7 +364,7 @@ class HasSpecificationsView(LaunchpadView):
     def documentation(self):
         filter = [SpecificationFilter.COMPLETE,
                   SpecificationFilter.INFORMATIONAL]
-        return shortlist(self.context.specifications(filter=filter))
+        return shortlist(self.context.specifications(self.user, filter=filter))
 
     @cachedproperty
     def categories(self):
@@ -292,7 +388,7 @@ class HasSpecificationsView(LaunchpadView):
         """
         categories = {}
         for spec in self.specs:
-            if categories.has_key(spec.definition_status):
+            if spec.definition_status in categories:
                 category = categories[spec.definition_status]
             else:
                 category = {}
@@ -304,17 +400,42 @@ class HasSpecificationsView(LaunchpadView):
         return sorted(categories, key=itemgetter('definition_status'))
 
     def getLatestSpecifications(self, quantity=5):
-        """Return <quantity> latest specs created for this target. This
-        is used by the +portlet-latestspecs view.
+        """Return <quantity> latest specs created for this target.
+
+        Only ACCEPTED specifications are returned.  This list is used by the
+        +portlet-latestspecs view.
         """
-        return self.context.specifications(sort=SpecificationSort.DATE,
-            quantity=quantity, prejoin_people=False)
+        return self.context.specifications(self.user,
+            sort=SpecificationSort.DATE, quantity=quantity,
+            prejoin_people=False)
 
 
-class RegisterABlueprintButtonView:
+class SpecificationAssignmentsView(HasSpecificationsView):
+    """View for +assignments pages."""
+    page_title = "Assignments"
+
+    @property
+    def label(self):
+        return smartquote(
+            'Blueprint assignments for "%s"' % self.context.displayname)
+
+
+class SpecificationDocumentationView(HasSpecificationsView):
+    """View for blueprints +documentation page."""
+    page_title = "Documentation"
+
+    @property
+    def label(self):
+        return smartquote('Current documentation for "%s"' %
+                          self.context.displayname)
+
+
+class RegisterABlueprintButtonPortlet:
     """View that renders a button to register a blueprint on its context."""
 
-    def __call__(self):
+    @cachedproperty
+    def target_url(self):
+        """The +addspec URL for the specifiation target or None"""
         # Check if the context has an +addspec view available.
         if queryMultiAdapter(
             (self.context, self.request), name='+addspec'):
@@ -322,28 +443,27 @@ class RegisterABlueprintButtonView:
         else:
             # otherwise find an adapter to ISpecificationTarget which will.
             target = ISpecificationTarget(self.context)
+        if target is None:
+            return None
+        else:
+            return canonical_url(
+                target, rootsite='blueprints', view_name='+addspec')
 
+    def __call__(self):
+        if self.target_url is None:
+            return ''
         return """
-              <a href="%s/+addspec" id="addspec">
-                <img
-                  alt="Register a blueprint"
-                  src="/+icing/but-sml-registerablueprint.gif"
-                />
-              </a>
-        """ % canonical_url(target, rootsite='blueprints')
+            <div id="involvement" class="portlet involvement">
+              <ul>
+                <li class="first">
+                  <a class="menu-link-register_blueprint sprite blueprints"
+                    href="%s">Register a blueprint</a>
+                </li>
+              </ul>
+            </div>
+            """ % self.target_url
 
 
-class HasSpecificationsOnBlueprintsVHostBreadcrumb(Breadcrumb):
+class BlueprintsVHostBreadcrumb(Breadcrumb):
     rootsite = 'blueprints'
-
-    @property
-    def text(self):
-        return 'Blueprints for %s' % self.context.title
-
-
-class PersonOnBlueprintsVHostBreadcrumb(Breadcrumb):
-    rootsite = 'blueprints'
-
-    @property
-    def text(self):
-        return 'Blueprints involving %s' % self.context.displayname
+    text = 'Blueprints'

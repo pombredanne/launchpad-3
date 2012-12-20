@@ -9,7 +9,13 @@ shows contextual directions on how to upload to it.
 We will need multiple browsers, logged in with different users. Set them up
 now.
 
-    >>> name12_browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.testing.pages import setupBrowserFreshLogin
+    >>> login(ANONYMOUS)
+    >>> name12 = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> logout()
+    >>> name12_browser = setupBrowserFreshLogin(name12)
     >>> ddaa_browser = setupBrowser(
     ...     auth='Basic david.allouche@canonical.com:test')
 
@@ -56,9 +62,11 @@ definitive that it is not possible to upload to this branch.
     >>> content = ddaa_browser.contents
     >>> instructions = find_tag_by_id(content, 'upload-directions')
     >>> print instructions.renderContents()
+    <div...
     You cannot upload to this branch. Only
     <a href="http://launchpad.dev/~name12">Sample Person</a>
     can upload to this branch.
+    ...
 
 The user is the owner of the branch and logs in. The page gives the full upload
 URL for the branch.
@@ -67,7 +75,8 @@ URL for the branch.
     >>> content = name12_browser.contents
     >>> instructions = find_tag_by_id(content, 'upload-directions')
     >>> print extract_text(instructions)
-    bzr push lp://dev/~name12/gnome-terminal/pushed
+    Update this branch:
+    bzr push --use-existing lp://dev/~name12/gnome-terminal/pushed
 
 
 == SSH key directions ==
@@ -77,10 +86,8 @@ key registered, point to the SSH keys form.
 
 First, unregister the existing SSH key for Sample Person.
 
-    >>> name12_browser.open('http://launchpad.dev/')
-    >>> name12_browser.getLink('Sample Person').click()
-    >>> name12_browser.getLink('Change details').click()
-    >>> name12_browser.getLink('SSH Keys').click()
+    >>> name12_browser.open(url='http://launchpad.dev/~name12')
+    >>> name12_browser.getLink(url='editsshkeys').click()
     >>> name12_browser.getControl('Remove').click()
 
 The branch page now displays directions and a link to register a SSH key.
@@ -160,9 +167,11 @@ a link to the team.
     >>> content = ddaa_browser.contents
     >>> instructions = find_tag_by_id(content, 'upload-directions')
     >>> print instructions.renderContents()
+    <div...
     You cannot upload to this branch. Members of <a
     href="http://launchpad.dev/~landscape-developers">Landscape
     Developers</a> can upload to this branch.
+    ...
 
 Finally, if the user is a member of the team, we display the same "you can
 upload" message as before. Of course the upload URL looks different, in
@@ -173,7 +182,9 @@ owning team's name.
     >>> content = name12_browser.contents
     >>> instructions = find_tag_by_id(content, 'upload-directions')
     >>> print extract_text(instructions)
-    bzr push lp://dev/~landscape-developers/gnome-terminal/pushed
+    Update this branch:
+    bzr push --use-existing
+    lp://dev/~landscape-developers/gnome-terminal/pushed
 
 
 == Import branch ==

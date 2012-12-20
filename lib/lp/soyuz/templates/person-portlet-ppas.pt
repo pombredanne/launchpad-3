@@ -3,28 +3,38 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
-  <div id="ppas">
-    <div class="section">
-      <div class="portlet">
-        <h2>Personal package archives</h2>
+  <div id="ppas" class="portlet" tal:condition="view/should_show_ppa_section">
+    <h2>Personal package archives</h2>
 
-        <div tal:replace="structure context/@@+ppas-list"/>
+    <tal:ppa tal:define="visible_ppas view/visible_ppas">
+      <metal:ppas-list use-macro="context/@@+macros/ppas-list"/>
+    </tal:ppa>
+    <ul class="horizontal">
+      <tal:can-create-ppa condition="context/canCreatePPA">
+        <li tal:define="link context/menu:overview/activate_ppa"
+            tal:condition="link/enabled"
+            tal:content="structure link/fmt:icon-link" />
+      </tal:can-create-ppa>
+      <tal:cannot-create-ppa condition="not: context/canCreatePPA">
+        <span class="cannot-create-ppa-message">
+          <span class="security sprite"></span>
+          Open or Delegated teams can not create PPAs.&nbsp;
+          <a href="+edit" class="edit sprite action-icon">Edit</a>
+        </span>
+      </tal:cannot-create-ppa>
 
-        <div class="actions">
-           <p><tal:activate_ppa
-             define="link context/menu:overview/activate_ppa"
-             condition="link/enabled"
-             replace="structure link/fmt:icon-link" />
-           </p>
-           <p><tal:is-person condition="not: context/is_team">
-                <tal:view_p3a_subscriptions
-                  define="link context/menu:overview/view_ppa_subscriptions"
-                 condition="link/enabled"
-                 replace="structure link/fmt:icon-link" />
-              </tal:is-person>
-           </p>
-        </div>
-      </div>
-    </div>
+      <tal:is-person condition="not: context/is_team">
+        <li tal:define="link context/menu:overview/view_ppa_subscriptions"
+            tal:condition="link/enabled"
+            tal:replace="structure link/fmt:icon-link" />
+      </tal:is-person>
+
+    </ul>
   </div>
+  <div tal:define="link context/menu:overview/view_recipes"
+       tal:condition="link/enabled">
+    <a tal:replace="structure link/fmt:link" />
+  </div>
+
+
 </tal:root>

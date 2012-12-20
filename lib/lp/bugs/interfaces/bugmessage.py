@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2004-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -13,30 +13,50 @@ __all__ = [
     'IBugMessageSet',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Bool, Bytes, Int, Object, Text, TextLine
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Bytes,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
 
-from canonical.launchpad.fields import Title
+from lp.app.validators.attachment import attachment_size_constraint
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugwatch import IBugWatch
-from canonical.launchpad.interfaces.launchpad import IHasBug
-from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.validators.attachment import (
-    attachment_size_constraint)
+from lp.bugs.interfaces.hasbug import IHasBug
+from lp.registry.interfaces.person import IPerson
+from lp.services.comments.interfaces.conversation import IComment
+from lp.services.fields import Title
+from lp.services.messages.interfaces.message import IMessage
 
 
 class IBugMessage(IHasBug):
     """A link between a bug and a message."""
 
     bug = Object(schema=IBug, title=u"The bug.")
+    # The index field is being populated in the DB; once complete it will be
+    # made required. Whether to make it readonly or not is dependent on UI
+    # considerations. If, once populated, it becomes read-write, we probably
+    # want to ensure that only actions like bug import or spam hiding can
+    # change it, rather than arbitrary API scripts.
+    index = Int(title=u'The comment number', required=False, readonly=False,
+        default=None)
     messageID = Int(title=u"The message id.", readonly=True)
     message = Object(schema=IMessage, title=u"The message.")
     bugwatch = Object(schema=IBugWatch,
         title=u"A bugwatch to which the message pertains.")
+    bugwatchID = Int(title=u'The bugwatch id.', readonly=True)
     remote_comment_id = TextLine(
         title=u"The id this comment has in the bugwatch's bug tracker.")
-    visible = Bool(title=u"This message is visible or not.", required=False,
-        default=True)
+    ownerID = Attribute("The ID of the owner mirrored from the message")
+    owner = Object(schema=IPerson,
+        title=u"The Message owner mirrored from the message.", readonly=True)
 
 
 class IBugMessageSet(Interface):
@@ -81,8 +101,9 @@ class IBugMessageAddForm(Interface):
     filecontent = Bytes(
         title=u"Attachment", required=False,
         constraint=attachment_size_constraint)
-    patch = Bool(title=u"This attachment is a patch", required=False,
-        default=False)
+    patch = Bool(
+        title=u"This attachment contains a solution (patch) for this bug",
+        required=False, default=False)
     attachment_description = Title(title=u'Description', required=False)
     email_me = Bool(
         title=u"E-mail me about changes to this bug report",
@@ -93,7 +114,7 @@ class IBugMessageAddForm(Interface):
         required=False, default=None)
 
 
-class IBugComment(IMessage):
+class IBugComment(IMessage, IComment):
     """A bug comment for displaying in the web UI."""
 
     bugtask = Attribute(
@@ -103,18 +124,9 @@ class IBugComment(IMessage):
         to construct the correct URL.
         """)
     bugwatch = Attribute('The bugwatch to which the comment pertains.')
-    can_be_shown = Bool(
-        title=u'Whether or not the comment can be displayed',
-        readonly=True)
     show_for_admin = Bool(
         title=u'A hidden comment still displayed for admins.',
         readonly=True)
-    index = Int(title=u'The comment number', required=True, readonly=True)
-    was_truncated = Bool(
-        title=u'Whether the displayed text was truncated for display.',
-        readonly=True)
-    text_for_display = Text(
-        title=u'The comment text to be displayed in the UI.', readonly=True)
     display_title = Attribute('Whether or not to show the title.')
     synchronized = Attribute(
         'Has the comment been synchronized with a remote bug tracker?')
@@ -124,3 +136,5 @@ class IBugComment(IMessage):
         "A list of BugActivityItems associated with this comment.")
     show_footer = Attribute(
         "Whether or not to show a footer for the comment.")
+    patches = Attribute(
+        "Patches attched to this comment.")

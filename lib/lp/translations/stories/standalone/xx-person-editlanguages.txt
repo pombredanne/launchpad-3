@@ -1,20 +1,30 @@
 = A person's +editlanguages page =
 
 Carlos is a translator who translates things into Spanish with Rosetta.
-He is on Rosetta About page and wants to change his preferred languages.
+He comes to the main Translations page and wants to change his preferred
+languages.
 
     >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
-    >>> browser.open('http://translations.launchpad.dev/translations/+about')
+    >>> browser.open('http://translations.launchpad.dev/')
 
-So, he looks for the 'Your preferred languages' portlet for the
-'Select Languages...' link, and clicks on that which will take him to
-his +editlanguages page.
+So he looks for the "preferred languages" section on the page.  This
+lists his current preferences.
 
-    >>> portlet = find_portlet(browser.contents, 'Your languages')
-    >>> print extract_text(portlet.find('ul'))
+    >>> def find_languages_section(page):
+    ...     """Return the preferred-languages section on page as text."""
+    ...     tag = find_tag_by_id(page, 'preferred-languages')
+    ...     return extract_text(tag)
+
+    >>> print find_languages_section(browser.contents)
+    Your preferred languages
     Catalan
     Spanish
-    >>> browser.getLink('Select Languages...').click()
+    &... Change your preferred languages...
+
+The 'Change your preferred languages' link takes him to his
++editlanguages page.
+
+    >>> browser.getLink(id="change-languages").click()
     >>> print extract_text(find_main_content(browser.contents).find('h1'))
     Your language preferences
 
@@ -40,25 +50,20 @@ his preferences, Spanish will no longer be selected, and Welsh will.
 
 After he submits the form, he should again be redirected back to
 Rosetta's About page. The 'Your preferred languages' portlet displays
-his two translatable languages. The page displays two messages
-confirming his changes. The 'Your preferred languages' portlet
-displays his translatable languages.
+his two translatable languages. The page also displays two messages
+confirming his changes.
 
     >>> for message in find_tags_by_class(browser.contents, 'message'):
     ...     print message.renderContents()
     Added Welsh to your preferred languages.<br
     />Removed Spanish from your preferred languages.
 
-    # XXX: salgado 2006-11-21 bug 98437:
-    # This test is commented out because redirects will not work
-    # because the HTTP_REFFERER is localhost.
-    #>>> browser.url
-    #'http://launchpad.dev/translations/+about'
-    >>> browser.open('http://translations.launchpad.dev/translations/+about')
-    >>> portlet = find_portlet(browser.contents, 'Your languages')
-    >>> print extract_text(portlet.find('ul'))
+    >>> browser.open('http://translations.launchpad.dev/')
+    >>> print find_languages_section(browser.contents)
+    Your preferred languages
     Catalan
     Welsh
+    &...
 
 Joao, a Brazilian, travels to Liechtenstein for business and views the
 languages page from there.
@@ -101,7 +106,7 @@ information.
     >>> print find_spoken_languages(country_portlet)
     []
     >>> print country_portlet.first('a')['href']
-    http://answers.launchpad.dev/rosetta
+    http://answers.launchpad.dev/launchpad
 
 Back home in Brazil, Joao gets the equivalent for Brazil, where the
 equivalent information is known.
@@ -119,18 +124,20 @@ We also have a page under the launchpad root, called +editmylanguages,
 with launchpad.AnyPerson as permission. This is the page to which we
 direct non-logged in users to edit their preferred languages.
 
-    >>> anon_browser.handleErrors = True
-    >>> anon_browser.open('http://launchpad.dev/+editmylanguages')
-    >>> anon_browser.url
-    'http://launchpad.dev/+editmylanguages/+login'
+The launchpad.AnyPerson permission means that when an anonymous user goes
+to that page, they'll be asked to login.
 
-    >>> anon_browser.open('http://launchpad.dev/+editmylanguages/+login')
-    >>> anon_browser.getControl('E-mail address:', index=0).value = (
-    ...     'no-priv@canonical.com')
-    >>> anon_browser.getControl('Password:').value = 'test'
-    >>> anon_browser.getControl(name='loginpage_submit_login').click()
-    >>> anon_browser.url
-    'http://launchpad.dev/~no-priv/+editlanguages'
+    >>> anon_browser.open('http://launchpad.dev/+editmylanguages')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+But a logged in user will be sent straight to their /~user/+editlanguages
+page.
+
+    >>> browser.open('http://launchpad.dev/+editmylanguages')
+    >>> browser.url
+    'http://launchpad.dev/~name12/+editlanguages'
 
 
 == Adding languages to teams ==
@@ -154,7 +161,7 @@ preferred languages.
     >>> browser.getControl('Save').click()
     >>> for message in find_tags_by_class(browser.contents, 'message'):
     ...     print extract_text(message)
-    Added Spanish to Landscape Developers's preferred languages.
+    Added Spanish to Landscape Developers&#x27;s preferred languages.
 
 
 == Admins may set a Person's languages ==
@@ -167,8 +174,6 @@ Person's page to do it himself.
     >>> admin_browser.open('http://launchpad.dev/~no-priv')
     >>> admin_browser.title
     'No Privileges Person in Launchpad'
-
-    >>> admin_browser.getLink('Change details').click()
     >>> admin_browser.getLink('Set preferred languages').click()
     >>> print extract_text(
     ...     find_main_content(admin_browser.contents).find('h1'))
@@ -178,4 +183,59 @@ Person's page to do it himself.
     >>> admin_browser.getControl('Save').click()
     >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print extract_text(message)
-    Added Esperanto to No Privileges Person's preferred languages.
+    Added Esperanto to No Privileges Person&#x27;s preferred languages.
+
+
+The personal page nags
+----------------------
+
+If you don't have your preferred languages set, your Translations home
+page will nag you about it.
+
+    >>> def find_nag(browser):
+    ...     """Return the nag message as shown in browser, if present."""
+    ...     tag = find_tag_by_id(browser.contents, 'no-languages')
+    ...     if tag:
+    ...         return tag.renderContents()
+    ...     else:
+    ...         return None
+
+Noi, a new user, visits her home page.
+
+    >>> login(ANONYMOUS)
+    >>> noi = factory.makePerson(name='noi', email='noi@example.com')
+    >>> logout()
+
+    >>> noi_browser = setupBrowser('Basic noi@example.com:test')
+    >>> noi_home = 'http://translations.launchpad.dev/~noi'
+    >>> noi_browser.open(noi_home)
+
+The home page reminds her to set her preferred languages.
+
+    >>> print find_nag(noi_browser)
+    You have not selected your preferred languages.
+    Please <a ...>set them now</a>.
+
+The message does not appear for other users looking at Noi's home page.
+
+    >>> user_browser.open(noi_home)
+    >>> print find_nag(user_browser)
+    None
+
+The nag message links to the languages editing page.
+
+    >>> noi_browser.getLink(id='set-languages').click()
+    >>> print noi_browser.title
+    Language preferences...
+
+Once Noi has set one or more preferred languages, the nag message goes
+away.
+
+    >>> login(ANONYMOUS)
+    >>> from lp.services.worlddata.model.language import LanguageSet
+    >>> noi.addLanguage(LanguageSet().getLanguageByCode('lo'))
+    >>> logout()
+
+    >>> noi_browser.open(noi_home)
+    >>> print find_nag(noi_browser)
+    None

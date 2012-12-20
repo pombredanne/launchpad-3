@@ -14,20 +14,34 @@ __all__ = [
     ]
 
 from datetime import datetime
-import pytz
 
-from sqlobject import ForeignKey, IntCol
+import pytz
+from sqlobject import (
+    ForeignKey,
+    IntCol,
+    )
 from zope.interface import implements
 
-from canonical.database.constants import DEFAULT, UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
-from lp.translations.utilities.rosettastats import RosettaStats
-from lp.translations.model.pofile import POFile, DummyPOFile
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.translations.interfaces.distroserieslanguage import (
+    IDistroSeriesLanguage,
+    IDistroSeriesLanguageSet,
+    )
+from lp.translations.model.pofile import (
+    DummyPOFile,
+    POFile,
+    )
 from lp.translations.model.potemplate import get_pofiles_for
 from lp.translations.model.translator import Translator
-from lp.translations.interfaces.distroserieslanguage import (
-    IDistroSeriesLanguage, IDistroSeriesLanguageSet)
+from lp.translations.utilities.rosettastats import RosettaStats
 
 
 class DistroSeriesLanguage(SQLBase, RosettaStats):
@@ -52,16 +66,15 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
 
     @property
     def title(self):
-        return '%s translations of applications in %s, %s' % (
+        return '%s translations of %s %s' % (
             self.language.englishname,
             self.distroseries.distribution.displayname,
-            self.distroseries.title)
+            self.distroseries.displayname)
 
     @property
     def pofiles(self):
         return POFile.select('''
             POFile.language = %s AND
-            POFile.variant IS NULL AND
             POFile.potemplate = POTemplate.id AND
             POTemplate.distroseries = %s AND
             POTemplate.iscurrent = TRUE
@@ -86,13 +99,6 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
             orderBy=['id'],
             clauseTables=['TranslationGroup', 'Distribution',],
             distinct=True)
-
-    @property
-    def translator_count(self):
-        translators = set()
-        for translator in self.translators:
-            translators = translators.union(translator.allmembers)
-        return len(translators)
 
     @property
     def contributor_count(self):
@@ -156,12 +162,11 @@ class DummyDistroSeriesLanguage(RosettaStats):
         self.distroseries = distroseries
         self.messageCount = distroseries.messagecount
         self.dateupdated = datetime.now(tz=pytz.timezone('UTC'))
-        self.translator_count = 0
         self.contributor_count = 0
-        self.title = '%s translations of applications in %s, %s' % (
+        self.title = '%s translations of %s %s' % (
             self.language.englishname,
             self.distroseries.distribution.displayname,
-            self.distroseries.title)
+            self.distroseries.displayname)
 
     @property
     def pofiles(self):

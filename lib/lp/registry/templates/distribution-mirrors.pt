@@ -3,61 +3,67 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 <body>
+  <tal:heading metal:fill-slot="heading">
+    <h1><tal:name replace="view/heading" /> for <tal:context replace="context/title" /></h1>
+  </tal:heading>
 
-<div metal:fill-slot="main">
+<tal:main metal:fill-slot="main">
 
-  <h1>Mirrors of <tal:context replace="context/title" /></h1>
+  <div class="main-portlet">
+    <p class="application-summary"
+       tal:condition="view/description"
+       tal:content="view/description"/>
+    <p tal:define="mirror_count view/mirror_count"
+       tal:condition="mirror_count">
+      <span tal:condition="python: mirror_count == 1">
+        There is <strong>1</strong> mirror</span>
+      <span tal:condition="python: mirror_count != 1">
+        There are
+        <strong tal:content="mirror_count" />
+        mirrors
+      </span>
+      registered for <tal:context replace="context/title" />.
+    </p>
+  </div>
 
+  <div class="top-portlet" style="margin-top: 0.5em;">
   <tal:block define="mirrors_by_country view/getMirrorsGroupedByCountry">
 
-  <div tal:condition="not: mirrors_by_country">
-    <p tal:condition="not: mirrors_by_country">
-      We don't know of any <span tal:replace="view/heading">Archive
-      Mirrors</span> for this distribution. If you know of one, please
-      <a tal:attributes="href string:${context/fmt:url}/+newmirror">register
-      it</a>.
-    </p>
-  </div>
+    <div tal:condition="not: mirrors_by_country">
+      <p>
+        We don't know of any <span tal:replace="view/heading">Archive
+        Mirrors</span> for this distribution.
+        <span tal:condition="context/full_functionality">
+          If you know of one, please
+          <a tal:attributes="href context/fmt:url/+newmirror">register it</a>.
+        </span>
+      </p>
+    </div>
 
-  <div tal:condition="mirrors_by_country"
-       tal:define="show_freshness view/show_freshness">
-    <metal:mirror-list
-      use-macro="context/@@+distributionmirror-macros/mirrors-table" />
-    <p>
-      <tal:total_number replace="view/mirror_count" />
-      mirror(s) registered with a total throughput of
-      <tal:total_throughput replace="view/total_throughput" />.
-    </p>
-  </div>
+    <div tal:condition="mirrors_by_country"
+         tal:define="show_freshness view/show_freshness;
+                     show_mirror_type view/show_mirror_type;
+                     total_mirror_count view/mirror_count;
+                     total_throughput view/total_throughput">
+      <metal:mirror-list
+        use-macro="context/@@+distributionmirror-macros/mirrors-table" />
+    </div>
 
   </tal:block>
+  </div>
+</tal:main>
 
-</div>
-
-<div metal:fill-slot="help">
-  <p>
-    These mirrors are periodically checked for their contents and
-    &#8220;freshness&#8221;; you can see more about these checks by
-    following the "Details" link of each mirror.
-  </p>
-
-  <p>
-    We also provide RSS feeds for both 
-    <a tal:attributes="href string:${context/fmt:url}/+archivemirrors-rss">
-      Archive</a> and
-    <a tal:attributes="href string:${context/fmt:url}/+cdmirrors-rss">
-      Release</a>
-    mirrors.
-  </p>
-
-</div>
+<tal:side metal:fill-slot="side">
+  <tal:menu replace="structure view/@@+global-actions" />
+  <div class="portlet" id="register"
+       tal:condition="view/menu:overview/newmirror/enabled">
+      <a tal:replace="structure view/menu:overview/newmirror/fmt:link" />
+  </div>
+</tal:side>
 
 </body>
 </html>

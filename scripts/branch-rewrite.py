@@ -1,6 +1,6 @@
-#!/usr/bin/python2.4 -u
+#!/usr/bin/python -uS
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0403
@@ -17,17 +17,22 @@ import _pythonpath
 import os
 import sys
 
-# XXX, MichaelHudson, 2009-07-22, bug=402845: This pointless import avoids a
-# circular import killing us.
-from canonical.launchpad.database import account
+import transaction
 
-from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
-from canonical.config import config
 from lp.codehosting.rewrite import BranchRewriter
+from lp.services.config import config
+from lp.services.log.loglevels import (
+    INFO,
+    WARNING,
+    )
 from lp.services.scripts.base import LaunchpadScript
 
 
 class BranchRewriteScript(LaunchpadScript):
+
+    # By default, only emit WARNING and above messages to stderr, which
+    # will end up in the Apache error log.
+    loglevel = WARNING
 
     def add_my_options(self):
         """Make the logging go to a file by default.
@@ -43,6 +48,7 @@ class BranchRewriteScript(LaunchpadScript):
         if not os.path.isdir(log_file_directory):
             os.makedirs(log_file_directory)
         self.parser.defaults['log_file'] = log_file_location
+        self.parser.defaults['log_file_level'] = INFO
 
     def main(self):
         rewriter = BranchRewriter(self.logger)
@@ -50,6 +56,7 @@ class BranchRewriteScript(LaunchpadScript):
         while True:
             try:
                 line = sys.stdin.readline()
+                transaction.abort()
                 # Mod-rewrite always gives us a newline terminated string.
                 if line:
                     print rewriter.rewriteLine(line.strip())
@@ -58,11 +65,18 @@ class BranchRewriteScript(LaunchpadScript):
                     return
             except KeyboardInterrupt:
                 sys.exit()
-            except:
+            except Exception:
                 self.logger.exception('Exception occurred:')
                 print "NULL"
+                # The exception might have been a DisconnectionError or
+                # similar. Cleanup such as database reconnection will
+                # not happen until the transaction is rolled back.
+                try:
+                    transaction.abort()
+                except Exception:
+                    self.logger.exception('Exception occurred in abort:')
 
 
 if __name__ == '__main__':
     BranchRewriteScript("branch-rewrite", dbuser='branch-rewrite').run(
-        isolation=ISOLATION_LEVEL_AUTOCOMMIT)
+        isolation='autocommit')

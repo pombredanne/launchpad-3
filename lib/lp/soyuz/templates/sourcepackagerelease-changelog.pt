@@ -4,7 +4,9 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<pre style="margin: 0"
+  <pre class="changelog"
      tal:attributes="id string:${context/name}_${context/version}"
-     tal:content="structure view/changelog_entry" />
+     tal:content="structure view/changelog_entry"
+    >Changelog example</pre>
+
 </tal:root>

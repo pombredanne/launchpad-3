@@ -3,30 +3,33 @@
 
 __metaclass__ = type
 
-from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
-from zope.proxy import isProxy
-from zope.schema.vocabulary import getVocabularyRegistry
 from lazr.enum import BaseItem
+from zope.component import getUtility
+from zope.proxy import isProxy
+from zope.schema.interfaces import IField
+from zope.schema.vocabulary import getVocabularyRegistry
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
 from lp.bugs.adapters.bugchange import (
-    CveLinkedToBug, CveUnlinkedFromBug)
-from canonical.database.sqlbase import block_implicit_flushes
-from lp.bugs.adapters.bugchange import (
-    BugWatchAdded, BugWatchRemoved)
-from canonical.launchpad.interfaces._schema_circular_imports import IBug, IPerson
+    BugTaskAdded,
+    BugTaskDeleted,
+    BugWatchAdded,
+    BugWatchRemoved,
+    CveLinkedToBug,
+    CveUnlinkedFromBug,
+    )
+from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
-from lp.registry.interfaces.milestone import IMilestone, IProductRelease
+from lp.registry.enums import PersonVisibility
+from lp.registry.interfaces.milestone import IMilestone
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.productrelease import IProductRelease
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.sqlbase import block_implicit_flushes
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
-from lp.bugs.adapters.bugchange import BugTaskAdded
+
 
 vocabulary_registry = getVocabularyRegistry()
-
-
-BUG_INTERESTING_FIELDS = [
-    'name',
-    ]
 
 
 def get_string_representation(obj):
@@ -62,6 +65,14 @@ def what_changed(sqlobject_modified_event):
     fields = sqlobject_modified_event.edited_fields
     changes = {}
     for fieldname in fields:
+        # XXX 2011-01-21 gmb bug=705955:
+        #     Sometimes, something (webservice, I'm looking at you
+        #     here), will create an ObjectModifiedEvent where the
+        #     edited_fields list is actually a list of field instances
+        #     instead of strings. We special-case that here, but we
+        #     shouldn't have to.
+        if IField.providedBy(fieldname):
+            fieldname = fieldname.getName()
         val_before = getattr(before, fieldname, None)
         val_after = getattr(after, fieldname, None)
 
@@ -83,32 +94,13 @@ def what_changed(sqlobject_modified_event):
 
 @block_implicit_flushes
 def record_bug_added(bug, object_created_event):
-    getUtility(IBugActivitySet).new(
-        bug = bug.id,
-        datechanged = UTC_NOW,
-        person = IPerson(object_created_event.user),
-        whatchanged = "bug",
-        message = "added bug")
-
-
-@block_implicit_flushes
-def record_bug_edited(bug_edited, sqlobject_modified_event):
-    # If the event was triggered by a web service named operation, its
-    # edited_fields will be empty. We'll need to check all interesting
-    # fields to see which were actually changed.
-    sqlobject_modified_event.edited_fields = BUG_INTERESTING_FIELDS
-
-    changes = what_changed(sqlobject_modified_event)
-    for changed_field in changes:
-        oldvalue, newvalue = changes[changed_field]
-        getUtility(IBugActivitySet).new(
-            bug=bug_edited.id,
-            datechanged=UTC_NOW,
-            person=IPerson(sqlobject_modified_event.user),
-            whatchanged=changed_field,
-            oldvalue=oldvalue,
-            newvalue=newvalue,
-            message="")
+    activity = getUtility(IBugActivitySet).new(
+        bug=bug.id,
+        datechanged=UTC_NOW,
+        person=IPerson(object_created_event.user),
+        whatchanged="bug",
+        message="added bug")
+    bug.addCommentNotification(bug.initial_message, activity=activity)
 
 
 @block_implicit_flushes
@@ -133,13 +125,14 @@ def record_cve_unlinked_from_bug(bug_cve, event):
 
 @block_implicit_flushes
 def record_bugsubscription_added(bugsubscription_added, object_created_event):
-    getUtility(IBugActivitySet).new(
-        bug=bugsubscription_added.bug,
-        datechanged=UTC_NOW,
-        person=IPerson(object_created_event.user),
-        whatchanged='bug',
-        message='added subscriber %s' % (
-            bugsubscription_added.person.displayname))
+    subscribed_user = bugsubscription_added.person
+    if subscribed_user.visibility == PersonVisibility.PUBLIC:
+        getUtility(IBugActivitySet).new(
+            bug=bugsubscription_added.bug,
+            datechanged=UTC_NOW,
+            person=IPerson(object_created_event.user),
+            whatchanged='bug',
+            message='added subscriber %s' % subscribed_user.displayname)
 
 
 @block_implicit_flushes
@@ -168,6 +161,16 @@ def notify_bugtask_added(bugtask, event):
     IObjectModifiedEvent.
     """
     bugtask.bug.addChange(BugTaskAdded(UTC_NOW, IPerson(event.user), bugtask))
+
+
+@block_implicit_flushes
+def notify_bugtask_deleted(bugtask, event):
+    """A bugtask has been deleted (removed from a bug).
+
+    bugtask must be in IBugTask. event must be anIObjectDeletedEvent.
+    """
+    bugtask.bug.addChange(
+        BugTaskDeleted(UTC_NOW, IPerson(event.user), bugtask))
 
 
 @block_implicit_flushes

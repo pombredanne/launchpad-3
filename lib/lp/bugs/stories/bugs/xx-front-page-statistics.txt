@@ -8,12 +8,11 @@ The Bugs front page shows some statistics:
 * number of CVE bug links
 
     >>> anon_browser.open('http://bugs.launchpad.dev/')
-    >>> statistics = find_tag_by_id(
-    ...     anon_browser.contents, 'application-footer')
-    >>> for text in statistics.findAll(text=True):
-    ...     if text.strip():
-    ...         print text
-    14 bugs reported across 7 projects
+    >>> statistics = find_portlet(
+    ...     anon_browser.contents, 'Statistics')
+    >>> print extract_text(statistics)
+    Statistics
+    15 bugs reported across 7 projects
     including 12 links to 8 bug trackers
     4 bugs are shared across multiple projects
     and 2 bugs are related to CVE entries
@@ -31,4 +30,3 @@ registered in Launchpad...
     >>> anon_browser.getLink('CVE entries').click()
     >>> anon_browser.title
     'Launchpad CVE tracker'
-

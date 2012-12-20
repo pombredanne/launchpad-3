@@ -10,13 +10,17 @@ __metaclass__ = type
 __all__ = [
     'IComponent',
     'IComponentSelection',
-    'IComponentSet'
+    'IComponentSet',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import Choice
 
-from canonical.launchpad import _
+from lp import _
+
 
 class IComponent(Interface):
     """Represents the Component table.
@@ -54,4 +58,3 @@ class IComponentSet(Interface):
 
     def new(name):
         """Create a new component."""
-

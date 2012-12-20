@@ -1,18 +1,12 @@
-= Bug trackers in Launchpad =
+Bug trackers in Launchpad
+=========================
 
-The bug trackers index page has the same navigation as the main Bugs page.
+The bug trackers index page has the same navigation as the main Bugs
+page, with the addition of a breadcrumb itself.
 
     >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers')
-    >>> print_location(user_browser.contents)
-    Hierarchy: Launchpad
-    Tabs:
-    * Launchpad Home - http://launchpad.dev/
-    * Code - http://code.launchpad.dev/
-    * Bugs (selected) - http://bugs.launchpad.dev/
-    * Blueprints - http://blueprints.launchpad.dev/
-    * Translations - http://translations.launchpad.dev/
-    * Answers - http://answers.launchpad.dev/
-    Main heading: Bug trackers registered in Launchpad
+    >>> print user_browser.title
+    Bug trackers registered in Launchpad
 
 The page presents a table with all bugtrackers currently registered:
 
@@ -45,11 +39,11 @@ The page presents a table with all bugtrackers currently registered:
     Email Address
     0
     ------------------------
-    GNU Savannah Bug Tracker
-    http://savannah.gnu.org/
-      --> http://savannah.gnu.org/
+    T&#x27;other Gnome GBugGTracker
+    http://bugzilla.gnome.org/
+      --> http://bugzilla.gnome.org/
     &mdash;
-    Savane
+    Bugzilla
     0
     ------------------------
     ...
@@ -74,6 +68,8 @@ auto-created ones - so the title is also obfuscated.
     &mdash;
     Email Address
     0
+    ------------------------
+    ...
 
 The watch counts match the number of bugs listed, of course:
 
@@ -87,10 +83,11 @@ The listing also displays projects and projects linked to bug trackers.
 Let's link a pair to debbugs:
 
     >>> def link_to_debbugs(name):
-    ...     admin_browser.open("http://launchpad.dev/%s/+edit" % name)
+    ...     admin_browser.open(
+    ...         "http://launchpad.dev/%s/+configure-bugtracker" % name)
     ...     admin_browser.getControl("In a registered bug tracker").click()
     ...     bt = admin_browser.getControl(name="field.bugtracker.bugtracker")
-    ...     bt.value = ["3"]
+    ...     bt.value = 'debbugs'
     ...     admin_browser.getControl("Change").click()
     ...
     >>> link_to_debbugs('upstart')
@@ -145,18 +142,4 @@ register a new tracker:
 
     >>> user_browser.getLink("Register another bug tracker").click()
     >>> user_browser.url
-    'http://launchpad.dev/bugs/bugtrackers/+newbugtracker'
-
-In fact, the link is there twice: once at the top of the page, once at
-the bottom.
-
-    >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers')
-    >>> links = find_tags_by_class(
-    ...     user_browser.contents, 'menu-link-newbugtracker')
-    >>> len(links)
-    2
-
-    >>> for link in links:
-    ...     print extract_text(link)
-    Register another bug tracker
-    Register another bug tracker
+    'http://bugs.launchpad.dev/bugs/bugtrackers/+newbugtracker'

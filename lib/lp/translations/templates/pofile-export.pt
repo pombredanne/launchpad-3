@@ -3,11 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
->
+  metal:use-macro="view/macro:page/main_only">
 
   <body>
     <metal:block fill-slot="head_epilogue">
@@ -17,75 +13,68 @@
     }
     </style>
     <script type="text/javascript">
-    YUI().use('node', 'event', function(Y){
+    LPJS.use('lp.translations.poexport', function(Y){
         Y.on('domready', function(){
-            // The pochanged option is only available for the PO format.
-            var formatlist = Y.get('#div_format select');
-            var checkbox = Y.get('#div_pochanged input');
-            var changedtext = Y.get('#div_pochanged span');
-            function toggle_pochanged() {
-                if (formatlist.get('value') == 'PO') {
-                    changedtext.removeClass('disabledpochanged');
-                    checkbox.set('disabled', false);
-                }
-                else {
-                    changedtext.addClass('disabledpochanged');
-                    checkbox.set('disabled', true);
-                }
-            }
-            formatlist.on('change', toggle_pochanged);
-            // Initialise the state of the controls.
-            toggle_pochanged();
+            Y.lp.translations.poexport.initialize_pofile_export_page();
         });
     });
     </script>
     </metal:block>
     <div metal:fill-slot="main">
-      <div>
-        <a tal:attributes="href context/potemplate/fmt:url"
-           tal:content="context/potemplate/title">
-          evolution 2.10 template
-        </a>
-      </div>
-      <h1>
-        Download
-        <tal:language replace="context/language/englishname">
-          Spanish
-        </tal:language>
-        translation
-      </h1>
-      <form action="" method="post">
-        <div id="div_format" class="field" style="clear: left">
-          <label for="sel_format">Format:</label>
-          <select name="format" id="sel_format">
-            <option
-              tal:repeat="format view/formats"
-              tal:content="format/title"
-              tal:attributes="
-                   value format/value;
-                   selected format/is_default"
-              >PO format</option>
-           </select>
-        </div>
-        <div id="div_pochanged" class="field" style="margin-top: 10px">
-          <input type="checkbox" name="pochanged" id="cb_pochanged"
-                 value="POCHANGED" />
-          <label for="cb_pochanged">
-            <span><noscript><em>PO format only:</em></noscript>
-            Only strings that differ from packaged versions
-            (<a href="https://help.launchpad.net/Translations/PartialPOExport"
-                target="_blank">What's this?</a>).</span>
-          </label>
-        </div>
+      <div class="main-portlet">
         <p>
-          Once the file is ready for download, Launchpad will e-mail
-          <code tal:content="view/user/preferredemail/email">user@domain</code>
-          with a link to the file.
+          Choose the format you want to export
+          <tal:language replace="context/language/englishname">
+            Serbian
+          </tal:language> translations as.  PO format is an editable
+          format which allows you to upload translations back to
+          Launchpad after you have updated them.
         </p>
-        <div class="actions">
-          <input type="submit" value="Confirm Download" />
-        </div>
-      </form>
+        <form action="" method="post" class="translations">
+          <div class="fields">
+            <div id="div_format">
+              <label for="sel_format">Format:</label>
+              <select name="format" id="sel_format">
+                <option
+                   tal:repeat="format view/formats"
+                   tal:content="format/title"
+                   tal:attributes="
+                                   value format/value;
+                                   selected format/is_default"
+                   >PO format</option>
+              </select>
+            </div>
+            <div id="div_pochanged" style="margin-top: 10px"
+                 tal:condition="view/has_pochanged_option">
+              <input type="checkbox" name="pochanged" id="cb_pochanged"
+                     value="POCHANGED" />
+              <label for="cb_pochanged">
+                <span><em id="po-format-only">PO format only:</em>
+                  Only strings that differ from imported versions
+                  (<a href="https://help.launchpad.net/Translations/PartialPOExport"
+                      target="_blank">What's this?</a>).</span>
+              </label>
+            </div>
+          </div>
+          <tal:comment condition="nothing">
+            `user/preferredemail` can be None if someone is coming
+            directly from their email confirmation page, and that data
+            has not yet propagated from the auth store to the main LP
+            store.  See bug #462891 for details.
+          </tal:comment>
+          <p tal:condition="view/user/preferredemail">
+            Once the file is ready for download, Launchpad will e-mail
+            <code tal:content="view/user/preferredemail/email">user@domain</code>
+            with a link to the file.
+          </p>
+          <div class="actions">
+            <p>
+              <input type="submit" value="Request Download" />
+              or <a tal:attributes="href view/cancel_url">Cancel</a>
+            </p>
+          </div>
+        </form>
+      </div>
     </div>
   </body>
 </html>

@@ -3,38 +3,25 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="malone"
 >
-  <body>
-    <metal:heading fill-slot="pageheading">
-      <div>
-        <img alt="" src="/@@/bug" />
-        <a tal:attributes="href context/bug/fmt:url"
-        >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
-        <tal:title replace="context/bug/title">Foo doesn't work</tal:title>
-      </div>
-    </metal:heading>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/bug/@@+portlet-attachments" />
-</metal:rightportlets>
-
+<body>
   <div metal:fill-slot="main">
 
     <div metal:use-macro="context/@@launchpad_form/form">
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      An attachment can provide valuable information about the bug. It
-      can also provide a direct solution to a bug - for example a patch
-      that fixes the bug.
-      <br /><br />
+      <div metal:fill-slot="extra_info" class="documentDescription">
+        An attachment can provide valuable information about the bug. It
+        can also provide a direct solution to a bug - for example a patch
+        that fixes the bug.
+        <small>
+          <a href="https://help.launchpad.net/Bugs/BugAttachments">
+            What is a patch?
+          </a>
+        </small>
+      </div>
     </div>
   </div>
-
-</div>
 </body>
 </html>

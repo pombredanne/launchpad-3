@@ -4,13 +4,15 @@ The base-layout master template
 
 The base-layout master template defines macros that control the layout
 of the page. Any page can use these layout options by including
+
     metal:use-macro="view/macro:page/<layout>"
+
 in the root element of the page template. The base layout template uses the
 YUI grid classes for positioning.
 
+    >>> from lp.services.webapp.publisher import LaunchpadView
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from z3c.ptcompat import ViewPageTemplateFile
-    >>> from canonical.launchpad.webapp.publisher import LaunchpadView
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> user = factory.makePerson(name='waffles')
     >>> request = LaunchpadTestRequest(
@@ -18,8 +20,7 @@ YUI grid classes for positioning.
     ...     PATH_INFO='/~waffles/+layout')
     >>> request.setPrincipal(user)
 
-The view can define the template's title in the page_title property, or
-define it in the pagetitles module.
+The view can define the template's title in the page_title property.
 
     >>> class MainSideView(LaunchpadView):
     ...     """A simple view to test base-layout."""
@@ -31,68 +32,22 @@ The main_side layout uses all the defined features of the base-layout
 template. The example template uses the epilogue, main, and side
 slots. The global search and the applications tabs are present. The
 main and side content are positioned using the "yui-t4", "yui-main",
-"yui-b", and "yui-b side" classes. Several standard Javascript set-up
-functions are called.
+"yui-b", and "yui-b side" classes.
+
+    >>> from lp.testing.pages import find_tag_by_id
 
     >>> view = MainSideView(user, request)
-    >>> print view.render()
-    <!DOCTYPE html ...
-    <html xmlns="http://www.w3.org/1999/xhtml" ... lang="en" dir="ltr">
-      <head>
-        <title>Test base-layout: main_side</title> ...
-        <script type="text/javascript">
-          ...
-            sortables_init();
-            initInlineHelp();
-            Y.lp.activate_collapsibles();
-            activateFoldables();
-            activateConstrainBugExpiration();
-          ...
-        </script>
-        <!-- Extra head content -->
-      </head>
-      <body id="document" class="tab-overview main_side public yui-skin-sam">
-        <div class="yui-d0">
-          <div id="locationbar"> ...
-             <div id="lp-hierarchy" class="home">...
-          <div class="watermark-apps-portlet top-portlet">
-            <img ...
-            <h1>Waffles</h1>
-            <!-- Application Menu -->
-            <ul>...
-          </div>...
-          <div class="yui-t4">
-            <div id="maincontent" class="yui-main">
-              <div class="yui-b" dir="ltr">
-                <div>
-                  <h2>Heading</h2>
-                  <!-- future breadcrumb rule -->
-                </div>
-                <div class="top-portlet">
-                  <p class="registered">
-                    Registered on 2005-09-16
-                    by <a class="sprite team" href="#">Illuminati team</a>
-                  </p>
-                  <p>
-                    Main content of the page.
-                  </p>
-                </div>
-              </div><!-- yui-b -->
-            </div><!-- yui-main -->
-            <div class="yui-b side">
-              <div id="object-actions" class="top-portlet">
-                <h2>Important actions</h2>
-              </div>
-            </div><!-- yui-b side -->
-          </div><!-- yui-t4 -->
-          <div id="footer" class="footer"> ...
-            <form id="globalsearch" ...
-          </div>
-        </div><!-- yui-d0-->
-        <div id="help-pane" class="invisible">...
-        <script>LP.client.cache['context'] ...
-      </body>
-    </html> ...
+    >>> html = view.render()
+    >>> print html
+    <!DOCTYPE html>
+    ...
+      <!--
+        Facet name: overview
+        Page type: main_side
+        Has global search: True
+        Has application tabs: True
+        Has side portlets: True
+    ...
 
 The main_only layout excludes the side slot, the main and epilogue slots are
 rendered. The global search and the applications tabs are present. The
@@ -106,60 +61,17 @@ content to take up all the horizontal space.
     ...     page_title = 'Test base-layout: main_only'
 
     >>> view = MainOnlyView(user, request)
-    >>> print view.render()
-    <!DOCTYPE html ...
-    <html xmlns="http://www.w3.org/1999/xhtml" ... lang="en" dir="ltr">
-      <head>
-        <title>Test base-layout: main_only</title> ...
-        <script type="text/javascript">
-          ...
-            sortables_init();
-            initInlineHelp();
-            Y.lp.activate_collapsibles();
-            activateFoldables();
-            activateConstrainBugExpiration();
-          ...
-        </script>
-        <!-- Extra head content -->
-      </head>
-      <body id="document" class="tab-overview main_only public yui-skin-sam">
-        <div class="yui-d0">
-          <div id="locationbar"> ...
-             <div id="lp-hierarchy" class="home">...
-          <div class="watermark-apps-portlet top-portlet">
-            <img ...
-            <h1>Waffles</h1>
-            <!-- Application Menu -->
-            <ul>...
-          </div>...
-          <div id="maincontent" class="yui-main">
-            <div class="yui-b" dir="ltr">
-              <div>
-                <h2>Waffles</h2>
-                <!-- future breadcrumb rule -->
-              </div>
-              <div class="top-portlet">
-                <h1>Heading</h1>
-                <p class="registered">
-                  Registered on 2005-09-16
-                  by <a class="sprite team" href="#">Illuminati team</a>
-                </p>
-                <p>
-                  Main content of the page.
-                </p>
-              </div>
-            </div><!-- yui-b -->
-          </div><!-- yui-main -->
-            <!-- yui-b side -->
-            <!-- yui-t4 -->
-          <div id="footer" class="footer"> ...
-            <form id="globalsearch" ...
-          </div>
-        </div><!-- yui-d0-->
-        <div id="help-pane" class="invisible">...</div>
-        <script>LP.client.cache['context'] ...
-      </body>
-    </html> ...
+    >>> html = view.render()
+    >>> print html
+    <!DOCTYPE html>
+    ...
+      <!--
+        Facet name: overview
+        Page type: main_only
+        Has global search: True
+        Has application tabs: True
+        Has side portlets: False
+    ...
 
 The searchless template is intended for pages that provide search in the main
 content area, so the global search is not needed. The epilogue and main
@@ -172,139 +84,38 @@ slots are rendered, as are the application tabs.
     ...     page_title = 'Test base-layout: searchless'
 
     >>> view = SearchlessView(user, request)
-    >>> print view.render()
-    <!DOCTYPE html ...
-    <html xmlns="http://www.w3.org/1999/xhtml" ... lang="en" dir="ltr">
-      <head>
-        <title>Test base-layout: searchless</title> ...
-        <script type="text/javascript">
-          ...
-            sortables_init();
-            initInlineHelp();
-            Y.lp.activate_collapsibles();
-            activateFoldables();
-            activateConstrainBugExpiration();
-          ...
-        </script>
-        <!-- Extra head content -->
-      </head>
-      <body id="document" class="tab-overview searchless public yui-skin-sam">
-        <div class="yui-d0">
-          <div id="locationbar">
-            <div id="logincontrol"><a href="...">Log in / Register</a></div>
-            <div id="lp-hierarchy" class="home">...
-          </div><!--id="locationbar"-->
-          <div class="watermark-apps-portlet top-portlet">
-            <img ...
-            <h1>Waffles</h1>
-            <!-- Application Menu -->
-            <ul>...
-          </div>...
-          <div id="maincontent" class="yui-main">
-            <div class="yui-b" dir="ltr">
-              <div>
-                <h2>Waffles</h2>
-                <!-- future breadcrumb rule -->
-              </div>
-              <div class="top-portlet">
-                <h1>Heading</h1>
-                <p class="registered">
-                  Registered on 2005-09-16
-                  by <a class="sprite team" href="#">Illuminati team</a>
-                </p>
-                <p>
-                  Main content of the page.
-                </p>
-              </div>
-            </div><!-- yui-b -->
-          </div><!-- yui-main -->
-            <!-- yui-b side -->
-            <!-- yui-t4 -->
-          <div id="footer" class="footer"> ...
-          </div>
-        </div><!-- yui-d0-->
-        <div id="help-pane" class="invisible">...</div>
-        <script>LP.client.cache['context'] ...
-      </body>
-    </html> ...
-
-The locationless template is intended for pages that provide content outside
-of normal application use. It is for exceptions. The epilogue and main
-slots are rendered. Global search and the application tabs are not included
-in the header. The layout does not have a heading slot to provide the h1
-or breadcrumbs; the template must provide its own h1 element.
-
-    >>> class LocationlessView(LaunchpadView):
-    ...     """A simple view to test base-layout."""
-    ...     __launchpad_facetname__ = 'overview'
-    ...     template = ViewPageTemplateFile('testfiles/locationless.pt')
-    ...     page_title = 'Test base-layout: locationless'
-
-    >>> view = LocationlessView(user, request)
-    >>> content = view.render()
-    >>> print content
-    <!DOCTYPE html ...
-    <html xmlns="http://www.w3.org/1999/xhtml" ... lang="en" dir="ltr">
-      <head>
-        <title>Test base-layout: locationless</title> ...
-        <script type="text/javascript">
-          ...
-            sortables_init();
-            initInlineHelp();
-            Y.lp.activate_collapsibles();
-            activateFoldables();
-            activateConstrainBugExpiration();
-          ...
-        </script>
-        <!-- Extra head content -->
-      </head>
-      <body id="document" class="tab-overview locationless public yui-skin-sam">
-        <div class="yui-d0">
-          <div id="locationbar">
-            <div id="logincontrol"><a href="...">Log in / Register</a></div>
-            <div id="lp-hierarchy" class="home">...<div
-              class="apps-separator"><!-- --></div>
-          </div><!--id="locationbar"-->
-          <div id="maincontent" class="yui-main">
-            <div class="yui-b" dir="ltr">
-              <div class="top-portlet">
-                <h1>Heading</h1>
-                <p class="registered">
-                  Registered on 2005-09-16
-                  by <a class="sprite team" href="#">Illuminati team</a>
-                </p>
-                <p>
-                  Main content of the page.
-                </p>
-              </div>
-            </div><!-- yui-b -->
-          </div><!-- yui-main -->
-            <!-- yui-b side -->
-            <!-- yui-t4 -->
-          <div id="footer" class="footer"> ...
-          </div>
-        </div><!-- yui-d0-->
-        <div id="help-pane" class="invisible">...</div>
-        <script>LP.client.cache['context'] ...
-      </body>
-    </html> ...
+    >>> html = view.render()
+    >>> print html
+    <!DOCTYPE html>
+    ...
+    ...
+      <!--
+        Facet name: overview
+        Page type: searchless
+        Has global search: False
+        Has application tabs: True
+        Has side portlets: False
+    ...
 
 
 Page Diagnostics
 ----------------
 
-The page includes a comment after the document with diagnotic information.
+The page includes a comment after the body with diagnostic information.
 
-    >>> print content[content.index('</html>') + 7:]
+    >>> print html[html.index('</body>') + 7:]
+    ...
     <!--
       Facet name: overview
-      Page type: locationless
+      Page type: searchless
       Has global search: False
-      Has application tabs: False
+      Has application tabs: True
       Has side portlets: False
-      At least ... queries issued in ... seconds
-      Launchpad ... (r...)
+      At least ... queries... issued in ... seconds
+      Features: {...}
+      r...
     -->
+    ...
 
 Page Headings
 -------------
@@ -312,37 +123,45 @@ Page Headings
 The example layouts all used the heading slot to define a heading for their
 test. The template controlled the heading.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
-
     >>> content = find_tag_by_id(view.render(), 'maincontent')
     >>> print content.h1
     <h1>Heading</h1>
 
-The page heading slot's default behaviour is to use the context.title and
-place it in a <h2>.
 
-    >>> class DefaultHeadingView(LaunchpadView):
+Page Footers
+------------
+
+    >>> class BugsMainSideView(MainSideView):
     ...     """A simple view to test base-layout."""
-    ...     __launchpad_facetname__ = 'overview'
-    ...     template = ViewPageTemplateFile(
-    ...         'testfiles/default-heading-slot.pt')
-    ...     page_title = 'Test base-layout: default heading'
-
-    >>> print user.title
-    Waffles
-
-    >>> view = DefaultHeadingView(user, request)
-    >>> content = find_tag_by_id(view.render(), 'maincontent')
-    >>> print content.h2
-    <h2>Waffles</h2>
+    ...     __launchpad_facetname__ = 'bugs'
+    >>> bugs_request = LaunchpadTestRequest(
+    ...     SERVER_URL='http://bugs.launchpad.dev',
+    ...     PATH_INFO='/~waffles/+layout')
+    >>> bugs_request.setPrincipal(user)
+    >>> view = BugsMainSideView(user, bugs_request)
+    >>> footer = find_tag_by_id(html, 'footer')
+    >>> for tag in footer.findAll('a'):
+    ...     print tag.string, tag['href']
+    None http://launchpad.dev/
+    Take the tour http://launchpad.dev/+tour
+    Read the guide https://help.launchpad.net/
+    Canonical&nbsp;Ltd. http://canonical.com/
+    Terms of use http://launchpad.dev/legal
+    Contact Launchpad Support /feedback
+    Blog http://blog.launchpad.net/
+    Careers http://www.canonical.com/about-canonical/careers
+    System status http://identi.ca/launchpadstatus
+    Get the code! https://dev.launchpad.net/
 
 
 Public and private presentation
 -------------------------------
 
-The base-layout master templates uses the fmt:public-private-css formatter to
-add the 'public' or 'private' CSS class to the body tag. When the context is
-private, the 'private' class is added to the body's class attribute.
+The base-layout master templates uses the fmt:global-css formatter to
+add the 'public' or 'private' CSS class to the body tag.
+
+When the context is private, the 'private' class is added to the body's class
+attribute.
 
     >>> from lp.registry.interfaces.person import PersonVisibility
 
@@ -350,16 +169,59 @@ private, the 'private' class is added to the body's class attribute.
     >>> team = factory.makeTeam(
     ...     owner=user, name='a-private-team',
     ...     visibility=PersonVisibility.PRIVATE)
-    >>> view = LocationlessView(team, request)
+    >>> view = MainOnlyView(team, request)
     >>> body = find_tag_by_id(view.render(), 'document')
     >>> print body['class']
-    tab-overview locationless private yui-skin-sam
+    tab-overview
+        main_only
+        private
+        yui3-skin-sam
 
 When the context is public, the 'public' class is in the class attribute.
 
     >>> login(ANONYMOUS)
     >>> team = factory.makeTeam(owner=user, name='a-public-team')
-    >>> view = LocationlessView(team, request)
+    >>> view = MainOnlyView(team, request)
     >>> body = find_tag_by_id(view.render(), 'document')
     >>> print body['class']
-    tab-overview locationless public yui-skin-sam
+    tab-overview main_only public yui3-skin-sam
+
+
+Notifications
+-------------
+
+Notifications are displayed between the breadcrumbs and the page content.
+
+    >>> request.response.addInfoNotification('I cannot do that Dave.')
+    >>> view = MainOnlyView(user, request)
+    >>> body_tag = find_tag_by_id(view.render(), 'maincontent')
+    >>> print str(body_tag)
+    <div id="maincontent" ...
+      ...
+      <div id="request-notifications">
+        <div class="informational message">I cannot do that Dave.</div>
+      </div>
+      <div class="top-portlet">
+      ...
+
+For ajax requests to form views, notifications are added to the response
+headers.
+
+    >>> from lp.app.browser.launchpadform import action, LaunchpadFormView
+    >>> from zope.interface import Interface
+    >>> class FormView(LaunchpadFormView):
+    ...     """A simple view to test notifications."""
+    ...     class schema(Interface):
+    ...         """A default schema."""
+    ...     @action('Test', name='test')
+    ...     def test_action(self, action, data):
+    ...         pass
+
+    >>> extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+    >>> request = LaunchpadTestRequest(
+    ...     method='POST', form={'field.actions.test': 'Test'}, **extra)
+    >>> request.response.addInfoNotification('I cannot do that Dave.')
+    >>> view = FormView(user, request)
+    >>> view.initialize()
+    >>> print request.response.getHeader('X-Lazr-Notifications')
+    [[20, "I cannot do that Dave."]]

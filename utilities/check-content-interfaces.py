@@ -1,4 +1,4 @@
-#! /usr/bin/python2.4
+#! /usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -41,16 +41,19 @@ import _pythonpath
 
 from zope.interface import implementedBy
 from zope.interface.exceptions import (
-    BrokenImplementation, BrokenMethodImplementation)
+    BrokenImplementation,
+    BrokenMethodImplementation,
+    )
 from zope.interface.verify import verifyClass
 
-import canonical.launchpad.database
+
+all_model_names = 'Some miracle process'
 
 def check_content_classes():
     classes_checked = 0
     classes_with_failures = 1
-    for class_name in dir(canonical.launchpad.database):
-        klass = getattr(canonical.launchpad.database, class_name)
+    for class_name in dir(all_model_names):
+        klass = getattr(all_model_names, class_name)
         # Skip names that don't implement anything.
         if getattr(klass, '__implemented__', None) is None:
             continue
@@ -59,11 +62,11 @@ def check_content_classes():
             try:
                 classes_checked += 1
                 result = verifyClass(interface, klass)
-            except BrokenImplementation, e:
+            except BrokenImplementation as e:
                 classes_with_failures += 1
                 print "%s fails to implement %s: missing attribute %s" % (
                     class_name, interface_name, e.name)
-            except BrokenMethodImplementation, e:
+            except BrokenMethodImplementation as e:
                 classes_with_failures += 1
                 print "%s fails to implement %s: invalid method %s: %s" % (
                     class_name, interface_name, e.method, e.mess)

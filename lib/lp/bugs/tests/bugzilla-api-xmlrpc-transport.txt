@@ -66,12 +66,12 @@ the remote server.
     >>> time_dict = server.Bugzilla.time()
     >>> for key in sorted(time_dict):
     ...     print "%s: %s" % (key, time_dict[key])
-    db_time: 20080501T01:01:01
+    db_time: 2008-05-01 01:01:01
     tz_name: UTC
     tz_offset: +0000
     tz_short_name: UTC
-    web_time: 20080501T01:01:01
-    web_time_utc: 20080501T01:01:01
+    web_time: 2008-05-01 01:01:01
+    web_time_utc: 2008-05-01 01:01:01
 
 If the remote server is in a different timezone, the db_time and
 web_time items will be in the server's local timezone whilst
@@ -82,12 +82,12 @@ web_time_utc will be in UTC.
     >>> time_dict = server.Bugzilla.time()
     >>> for key in sorted(time_dict):
     ...     print "%s: %s" % (key, time_dict[key])
-    db_time: 20080501T01:01:01
+    db_time: 2008-05-01 01:01:01
     tz_name: CET
     tz_offset: +0100
     tz_short_name: CET
-    web_time: 20080501T01:01:01
-    web_time_utc: 20080501T00:01:01
+    web_time: 2008-05-01 01:01:01
+    web_time_utc: 2008-05-01 00:01:01
 
 
 Getting bugs from the server
@@ -102,17 +102,18 @@ list of dicts containing those bugs' data.
     >>> [bug_dict] = return_value['bugs']
     >>> for key in sorted(bug_dict):
     ...     print "%s: %s" % (key, bug_dict[key])
-    alias: 
+    alias:
     assigned_to: test@canonical.com
     component: GPPSystems
-    creation_time: 20080610T16:19:53
+    creation_time: 2008-06-10 16:19:53
     id: 1
     internals:...
     is_open: True
-    last_change_time: 20080610T16:19:53
+    last_change_time: 2008-06-10 16:19:53
     priority: P1
     product: Marvin
     resolution: FIXED
+    see_also: []
     severity: normal
     status: RESOLVED
     summary: That bloody robot still exists.
@@ -134,16 +135,7 @@ will cause the method to only return bugs that have changed since that
 date / time.
 
     >>> from datetime import datetime
-    >>> from xmlrpclib import DateTime
     >>> last_change_time = datetime(2008, 6, 11, 9, 0, 0)
-
-    # XXX 2009-08-21 gmb (bug 254999):
-    #     We can remove this once we upgrade to python 2.5. We encode
-    #     last_change_time into an XML-RPC DateTime manually. This is
-    #     because xmlrpclib can't handle DateTime encoding within a
-    #     dict.
-    >>> last_change_time = DateTime(last_change_time.timetuple())
-
     >>> return_value = server.Bug.search({
     ...     'last_change_time': last_change_time,
     ...     })
@@ -157,14 +149,15 @@ date / time.
     alias: bug-two
     assigned_to: marvin@heartofgold.ship
     component: Crew
-    creation_time: 20080611T09:23:12
+    creation_time: 2008-06-11 09:23:12
     id: 2
     internals:...
     is_open: True
-    last_change_time: 20080611T09:24:29
+    last_change_time: 2008-06-11 09:24:29
     priority: P1
     product: HeartOfGold
-    resolution: 
+    resolution:
+    see_also: []
     severity: high
     status: NEW
     summary: Collect unknown persons in docking bay 2.
@@ -173,7 +166,6 @@ Specifying a range of IDs when calling Bug.search() will limit the
 results to those IDs.
 
     >>> last_change_time = datetime(2007, 6, 10, 1, 1, 1)
-    >>> last_change_time = DateTime(last_change_time.timetuple())
     >>> return_value = server.Bug.search({
     ...     'id': [1],
     ...     'last_change_time': last_change_time,
@@ -183,17 +175,18 @@ results to those IDs.
     >>> for bug_dict in bug_dicts:
     ...     for key in sorted(bug_dict):
     ...         print "%s: %s" % (key, bug_dict[key])
-    alias: 
+    alias:
     assigned_to: test@canonical.com
     component: GPPSystems
-    creation_time: 20080610T16:19:53
+    creation_time: 2008-06-10 16:19:53
     id: 1
     internals:...
     is_open: True
-    last_change_time: 20080610T16:19:53
+    last_change_time: 2008-06-10 16:19:53
     priority: P1
     product: Marvin
     resolution: FIXED
+    see_also: []
     severity: normal
     status: RESOLVED
     summary: That bloody robot still exists.
@@ -203,11 +196,6 @@ returned.
 
     >>> from datetime import timedelta
     >>> last_change_time = datetime.now() + timedelta(days=42)
-
-    >>> # XXX 2008-08-05 gmb (bug 254999):
-    >>> #     We can remove this once we upgrade to python 2.5.
-    >>> last_change_time = DateTime(last_change_time.timetuple())
-
     >>> return_value = server.Bug.search({
     ...     'last_change_time': last_change_time,
     ...     })
@@ -229,14 +217,15 @@ It's possible to search for bugs filed on a particular product.
     alias: bug-two
     assigned_to: marvin@heartofgold.ship
     component: Crew
-    creation_time: 20080611T09:23:12
+    creation_time: 2008-06-11 09:23:12
     id: 2
     internals:...
     is_open: True
-    last_change_time: 20080611T09:24:29
+    last_change_time: 2008-06-11 09:24:29
     priority: P1
     product: HeartOfGold
-    resolution: 
+    resolution:
+    see_also: []
     severity: high
     status: NEW
     summary: Collect unknown persons in docking bay 2.
@@ -250,31 +239,33 @@ You can search for more than one product.
     >>> for bug_dict in bug_dicts:
     ...     for key in sorted(bug_dict):
     ...         print "%s: %s" % (key, bug_dict[key])
-    alias: 
+    alias:
     assigned_to: test@canonical.com
     component: GPPSystems
-    creation_time: 20080610T16:19:53
+    creation_time: 2008-06-10 16:19:53
     id: 1
     internals:...
     is_open: True
-    last_change_time: 20080610T16:19:53
+    last_change_time: 2008-06-10 16:19:53
     priority: P1
     product: Marvin
     resolution: FIXED
+    see_also: []
     severity: normal
     status: RESOLVED
     summary: That bloody robot still exists.
     alias: bug-two
     assigned_to: marvin@heartofgold.ship
     component: Crew
-    creation_time: 20080611T09:23:12
+    creation_time: 2008-06-11 09:23:12
     id: 2
     internals:...
     is_open: True
-    last_change_time: 20080611T09:24:29
+    last_change_time: 2008-06-11 09:24:29
     priority: P1
     product: HeartOfGold
-    resolution: 
+    resolution:
+    see_also: []
     severity: high
     status: NEW
     summary: Collect unknown persons in docking bay 2.
@@ -292,7 +283,7 @@ method to print out comments for us.
     ...     for key in sorted(bugs_dict):
     ...         print "Bug %s:" % key
     ...         bug_comments = sorted(
-    ...             bugs_dict[key],
+    ...             bugs_dict[key]['comments'],
     ...             key=operator.itemgetter(sort_key))
     ...
     ...         for comment in bug_comments:
@@ -315,14 +306,14 @@ the comments for those bugs.
         id: 1
         is_private: False
         text: I'd really appreciate it if Marvin would enjoy life a bit.
-        time: 20080616T12:44:29
+        time: 2008-06-16 12:44:29
     <BLANKLINE>
         author: marvin
         bug_id: 1
         id: 3
         is_private: False
         text: Life? Don't talk to me about life.
-        time: 20080616T13:22:29
+        time: 2008-06-16 13:22:29
     <BLANKLINE>
     <BLANKLINE>
     Bug 2:
@@ -331,14 +322,14 @@ the comments for those bugs.
         id: 2
         is_private: False
         text: Bring the passengers to the bridge please Marvin.
-        time: 20080616T13:08:08
+        time: 2008-06-16 13:08:08
     <BLANKLINE>
         author: Ford Prefect <ford.prefect@h2g2.com>
         bug_id: 2
         id: 4
         is_private: False
         text: I appear to have become a perfectly safe penguin.
-        time: 20080617T20:28:40
+        time: 2008-06-17 20:28:40
     <BLANKLINE>
     <BLANKLINE>
 
@@ -360,14 +351,14 @@ those comments in a 'comments' dict.
         id: 1
         is_private: False
         text: I'd really appreciate it if Marvin would enjoy life a bit.
-        time: 20080616T12:44:29
+        time: 2008-06-16 12:44:29
     Comment 4:
         author: Ford Prefect <ford.prefect@h2g2.com>
         bug_id: 2
         id: 4
         is_private: False
         text: I appear to have become a perfectly safe penguin.
-        time: 20080617T20:28:40
+        time: 2008-06-17 20:28:40
     <BLANKLINE>
 
 Note that only comments have been returned when only 'comment_ids' have
@@ -415,3 +406,123 @@ returned for each comment.
         author: Ford Prefect <ford.prefect@h2g2.com>
         id: 4
     <BLANKLINE>
+
+
+Bug.add_comment()
+-----------------------
+
+The Bug.add_comment() method is used to add comments to a remote bug. It
+takes at least two arguments: the ID of the remote comment and the body
+of the comment to be added to it.
+
+add_comment() requires authentication.
+
+    >>> bugzilla_transport.expireCookie(bugzilla_transport.auth_cookie)
+    >>> server.Bug.add_comment({'id': 1, 'comment': "This won't work"})
+    Traceback (most recent call last):
+      ...
+    Fault: <Fault 410: 'Login Required'>
+
+Bug.add_comment() will return the integer comment ID of the new comment
+on the remote server.
+
+    >>> comment = "I'm supposed to write something apposite here."
+    >>> bugzilla_transport.auth_cookie = 'open sesame'
+    >>> return_dict = server.Bug.add_comment({'id': 1, 'comment': comment})
+    >>> return_dict
+    {'id': 5}
+
+The comment will be stored with the other comments on the remote server.
+
+    >>> return_dict = server.Bug.comments({
+    ...     'id': [1], 'comment_ids': [5]})
+    >>> comments_dict = return_dict['comments']
+
+    >>> for comment_id, comment in comments_dict.items():
+    ...     print "Comment %s:" % comment_id
+    ...     for comment_key in sorted(comment):
+    ...         print "    %s: %s" % (
+    ...             comment_key, comment[comment_key])
+    Comment 5:
+        author: launchpad
+        bug_id: 1
+        id: 5
+        is_private: False
+        text: I'm supposed to write something apposite here.
+        time: ...
+
+If add_comment is called on a bug that doesn't exist a fault will be
+raised.
+
+    >>> server.Bug.add_comment({'id': 42, 'comment': "This breaks"})
+    Traceback (most recent call last):
+      ...
+    Fault: <Fault 101: 'Bug #42 does not exist.'>
+
+
+Updating the "See also" links on a bug
+--------------------------------------
+
+It's possible to alter the list of bugs linked to a bug in a Bugzilla
+instance by calling the Bug.update_see_also() method.
+
+URLs can be added to the list of "See also" links by passing them in the
+`add` parameter.
+
+    >>> server.Bug.update_see_also({
+    ...     'ids': [1], 'add': ['https://launchpad.net/bugs/15']})
+    {'changes': {1: {'see_also':
+        {'added': ['https://launchpad.net/bugs/15']}}}}
+
+The URL will now have been added to the bug's see_also list.
+
+    >>> return_value = server.Bug.get(
+    ...     {'ids': [1], 'permissive': True})
+    >>> bug_dict = return_value['bugs'][0]
+    >>> for key in sorted(bug_dict):
+    ...     print "%s: %s" % (key, bug_dict.get(key))
+    alias:
+    assigned_to: test@canonical.com
+    component: GPPSystems
+    creation_time: 2008-06-10 16:19:53
+    id: 1
+    internals:...
+    is_open: True
+    last_change_time: 2008-06-10 16:19:53
+    priority: P1
+    product: Marvin
+    resolution: FIXED
+    see_also: ['https://launchpad.net/bugs/15']
+    severity: normal
+    status: RESOLVED
+    summary: That bloody robot still exists.
+
+Any attempt to add the same URL again will simply be ignored.
+
+    >>> server.Bug.update_see_also({
+    ...     'ids': [1], 'add': ['https://launchpad.net/bugs/15']})
+    {'changes': {}}
+
+Trying to add a non Bugzilla or Launchpad URL will raise a Fault.
+
+    >>> server.Bug.update_see_also({
+    ...     'ids': [1], 'add': ['http://example.com/fail']});
+    Traceback (most recent call last):
+      ...
+    Fault: <Fault 112: 'Bug URL http://example.com/fail is invalid.'>
+
+It's also possible to remove items from a bug's see_also list.
+
+    >>> server.Bug.update_see_also({
+    ...     'ids': [1], 'remove': ['https://launchpad.net/bugs/15']})
+    {'changes': {1: {'see_also':
+        {'removed': ['https://launchpad.net/bugs/15']}}}}
+
+If a URL is passed in both the `add` and `remove` argument, it will be
+added (i.e. `add` overrides `remove`).
+
+    >>> server.Bug.update_see_also({
+    ...     'ids': [1], 'add': ['https://launchpad.net/bugs/14'],
+    ...     'remove': ['https://launchpad.dev/bugs/14']})
+    {'changes': {1: {'see_also':
+        {'added': ['https://launchpad.net/bugs/14']}}}}

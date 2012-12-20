@@ -1,4 +1,16 @@
-= Helper Functions =
+Helper Functions
+================
+
+A quick helper function to list the subscribed people.
+
+    >>> def print_subscribers(contents):
+    ...     subscriptions = find_tags_by_class(
+    ...         contents, 'branch-subscribers')[0]
+    ...     if subscriptions == None:
+    ...         print subscriptions
+    ...         return
+    ...     for subscriber in subscriptions.fetch('div'):
+    ...         print extract_text(subscriber.renderContents())
 
 Another to print the informational message.
 
@@ -8,7 +20,8 @@ Another to print the informational message.
     ...         print extract_text(message[0])
 
 
-= Subscribing to Branches =
+Subscribing to Branches
+=======================
 
 In order to subscribe to a branch, the user must be logged in.
 
@@ -23,8 +36,12 @@ Let us subscribe to one of the branches. First, let's make sure we can see the
 link "Subscribe" from a branch's page.
 
     >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/main')
+    >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/main')
 
+Initially there should be no subscribers.
+
+    >>> print_subscribers(browser.contents)
+    No subscribers.
     >>> browser.getLink('Subscribe').click()
 
 At this stage the defaults that are set for subscriptions
@@ -44,6 +61,11 @@ just subscribed.
     Only send notifications for branch attribute changes such
     as name, description and whiteboard.
     Send email about any code review activity for this branch.
+
+There should be only one person subscribed to the branch now.
+
+    >>> print_subscribers(browser.contents)
+    No Privileges Person
 
 Now, press the back button, and post the subscription form again. We
 should see a message that we are already subscribed.
@@ -77,6 +99,9 @@ informational message for us to see.
     Limit the generated diff to 5000 lines.
     Send email about any code review activity for this branch.
 
+    >>> print_subscribers(browser.contents)
+    No Privileges Person
+
 The page to edit a person's subscription also allows the user to
 unsubscribe.
 
@@ -88,6 +113,8 @@ shown to the user.
 
     >>> print_informational_message(browser.contents)
     You have unsubscribed from this branch.
+    >>> print_subscribers(browser.contents)
+    No subscribers.
 
 Clicking the back button and then clicking on either Change or
 Unsubscribe will give a message that we are not subscribed.
@@ -103,7 +130,8 @@ Unsubscribe will give a message that we are not subscribed.
     You are not subscribed to this branch.
 
 
-== Subscribing someone else ==
+Subscribing someone else
+========================
 
 The 'Subscribe' action listed for branches is for subscribing the logged
 in user.  In order to be able to subscribe teams to branches there needs
@@ -121,7 +149,7 @@ You need to be logged in to see the link.
 
 Any logged in user is able to subscribe others to a branch.
 
-    >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/main')
+    >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> browser.getLink('Subscribe someone else').click()
 
 The process of subscribing others is the same as subscribing the
@@ -149,6 +177,9 @@ specify the person to subscribe.  The person field is required.
     Limit the generated diff to 5000 lines.
     Send email about any code review activity for this branch.
 
+    >>> print_subscribers(browser.contents)
+    Mark Shuttleworth
+
 Subscribing a team is as simple as putting in the team name.
 
     >>> browser.getLink('Subscribe someone else').click()
@@ -159,25 +190,8 @@ Subscribing a team is as simple as putting in the team name.
     >>> browser.getControl('Person').value = 'landscape-developers'
     >>> browser.getControl('Subscribe').click()
 
-The user can only subscribe teams that they are members of.
+The user does not have to be in the team to subscribe them.
 
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print extract_text(message)
-    There is 1 error.
-    You can only subscribe teams that you are a member of.
-
-Sample Person is a member of Landscape Developers.
-
-    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
-    >>> browser.open(
-    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
-    >>> browser.getLink('Subscribe someone else').click()
-    >>> browser.getControl('Notification Level').displayValue = [
-    ...     'Branch attribute and revision notifications']
-    >>> browser.getControl('Generated Diff Size Limit').displayValue = [
-    ...     '1000 lines']
-    >>> browser.getControl('Person').value = 'landscape-developers'
-    >>> browser.getControl('Subscribe').click()
     >>> print_informational_message(browser.contents)
     Landscape Developers has been subscribed to this branch with:
     Send notifications for both branch attribute updates
@@ -185,3 +199,91 @@ Sample Person is a member of Landscape Developers.
     Limit the generated diff to 1000 lines.
     Send email about any code review activity for this branch.
 
+    >>> anon_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
+    >>> print_subscribers(anon_browser.contents)
+    Landscape Developers
+    Mark Shuttleworth
+
+Launchpad administrators can edit anyones branch subsription.
+
+    >>> admin_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
+    >>> print_subscribers(admin_browser.contents)
+    Landscape Developers
+    Mark Shuttleworth
+
+
+Editing a team subscription
+===========================
+
+In order to edit a team subscription the logged in user needs to be a member
+of the team that is subscribed, or must the person who subscribed the team
+to the branch.  There is a link shown in the subscriptions portlet to edit the
+subscription of a team that the logged in user is a member of.
+
+XXX: thumper 2007-06-11, bug 110953
+There should be a central user subscriptions page.  This could then
+be used to traverse to the branch subscriptions instead of through
+the branch itself.
+
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
+    >>> print_subscribers(browser.contents)
+    Landscape Developers
+    Mark Shuttleworth
+
+    >>> browser.getLink(url='+subscription/landscape').click()
+    >>> main_content = find_main_content(browser.contents)
+    >>> print extract_text(main_content.h1)
+    Edit subscription to branch for Landscape Developers
+
+From this page the branch subscription can be altered...
+
+    >>> browser.getControl('Notification Level').displayValue = [
+    ...     'No email']
+    >>> browser.getControl('Change').click()
+
+... or unsubscribed from.
+
+    >>> browser.getLink(url='+subscription/landscape').click()
+    >>> browser.getControl('Unsubscribe').click()
+    >>> print_informational_message(browser.contents)
+    Landscape Developers has been unsubscribed from this branch.
+    >>> print_subscribers(browser.contents)
+    Mark Shuttleworth
+
+
+Private team's in public subscriptions
+======================================
+
+If a private team is subscribed to a publicthe branch, it is visible
+to everyone.
+
+    >>> from lp.testing import login, logout
+    >>> from lp.registry.interfaces.person import PersonVisibility
+    >>> from lp.code.enums import (
+    ...     BranchSubscriptionNotificationLevel,
+    ...     CodeReviewNotificationLevel)
+
+    >>> login('admin@canonical.com')
+    >>> private_team = factory.makeTeam(
+    ...     name='shh', displayname='Shh',
+    ...     visibility=PersonVisibility.PRIVATE)
+    >>> member = factory.makePerson(email='shh@example.com')
+    >>> ignored = private_team.addMember(member, private_team.teamowner)
+    >>> owner = factory.makePerson(name='branch-owner')
+    >>> branch = factory.makeAnyBranch(owner=owner)
+    >>> ignored = branch.subscribe(
+    ...     private_team, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+    ...     CodeReviewNotificationLevel.NOEMAIL, private_team.teamowner)
+    >>> url = canonical_url(branch)
+    >>> logout()
+
+No-priv is not a member of the private team, but he can see the team's
+display name in the subscriber list.
+
+    >>> browser.open(url)
+    >>> print_subscribers(browser.contents)
+    Branch-owner
+    Shh

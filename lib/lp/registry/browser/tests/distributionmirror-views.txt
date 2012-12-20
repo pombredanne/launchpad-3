@@ -7,14 +7,14 @@ Registering a mirror
 Only full functionality distributions may have mirrors.
 IDerivativeDistributions cannot use the form.
 
-    >>> from canonical.launchpad.testing.pages import (
+    >>> from lp.testing.pages import (
     ...     extract_text, find_tag_by_id)
 
     >>> distribution = factory.makeDistribution(name='youbuntu')
     >>> distribution.full_functionality
     False
 
-    >>> login_person(distribution.owner)
+    >>> ignored = login_person(distribution.owner)
     >>> view = create_initialized_view(
     ...     distribution, '+newmirror', principal=distribution.owner)
     >>> content = find_tag_by_id(view.render(), 'not-full-functionality')
@@ -24,12 +24,11 @@ IDerivativeDistributions cannot use the form.
 Ubuntu is an IBaseDistributions and is full functionality. It can have
 mirrors.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> owner = ubuntu.owner.teamowner
-    >>> login_person(owner)
+    >>> ignored = login_person(owner)
     >>> view = create_initialized_view(ubuntu, '+newmirror', principal=owner)
     >>> content = find_tag_by_id(view.render(), 'full-functionality')
     >>> print extract_text(content)
@@ -49,12 +48,14 @@ The view provides a label, page_title, and cancel_url
 A HTTP or FTP URL is required to register a mirror.
 
     >>> view.field_names
-    ['displayname', 'description', 'http_base_url', 'ftp_base_url',
-     'rsync_base_url', 'speed', 'country', 'content', 'official_candidate']
+    ['displayname', 'description', 'whiteboard', 'http_base_url',
+     'ftp_base_url', 'rsync_base_url', 'speed', 'country', 'content',
+     'official_candidate']
 
     >>> form = {
     ...     'field.displayname': 'Illuminati',
     ...     'field.description': 'description',
+    ...     'field.whiteboard': 'whiteboard',
     ...     'field.http_base_url': 'http://secret.me/',
     ...     'field.ftp_base_url': '',
     ...     'field.rsync_base_url': '',
@@ -210,7 +211,7 @@ changed.
 
 Only users with launchpad.Admin can access the view.
 
-    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.services.webapp.authorization import check_permission
 
     >>> check_permission('launchpad.Admin', view)
     True
@@ -239,8 +240,9 @@ The +edit view provides a label, page_title, and cancel_url.
 The user can edit the mirror fields.
 
     >>> view.field_names
-    ['name', 'displayname', 'description', 'http_base_url', 'ftp_base_url',
-     'rsync_base_url', 'speed', 'country', 'content', 'official_candidate']
+    ['name', 'displayname', 'description', 'whiteboard', 'http_base_url',
+     'ftp_base_url', 'rsync_base_url', 'speed', 'country', 'content',
+     'official_candidate']
 
     >>> print mirror.ftp_base_url
     None
@@ -258,6 +260,22 @@ The user can edit the mirror fields.
 
 Only users with launchpad.Edit can access the view.
 
+    >>> check_permission('launchpad.Edit', view)
+    True
+
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.Edit', view)
+    False
+
+
+Reassign distribution mirror
+----------------------------
+
+The mirror owner can reassign the mirror to another user. (The view
+is the common object reassignment view.)
+
+    >>> login('karl@canonical.com')
+    >>> view = create_initialized_view(mirror, '+reassign')
     >>> check_permission('launchpad.Edit', view)
     True
 
@@ -296,7 +314,7 @@ A mirror that have been probed cannot be deleted.
     []
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
-    This mirror has been probed and thus can't be deleted.
+    This mirror has been probed and thus can&#x27;t be deleted.
 
 Deletion is permanent.
 
@@ -307,7 +325,7 @@ Deletion is permanent.
     >>> view.errors
     []
     >>> print view.next_url
-    http://launchpad.dev/ubuntu
+    http://launchpad.dev/ubuntu/+pendingreviewmirrors
 
     >>> transaction.commit()
     >>> print ubuntu.getMirrorByName('secret.me-archive')
@@ -328,8 +346,8 @@ Viewing a mirror
 
 The archive mirror page summarizes the current state of the mirror.
 
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
-    >>> from canonical.launchpad.testing.pages import (
+    >>> from lp.services.webapp.interfaces import ILaunchBag
+    >>> from lp.testing.pages import (
     ...     extract_text, find_tag_by_id)
 
     >>> login('no-priv@canonical.com')
@@ -340,10 +358,35 @@ The archive mirror page summarizes the current state of the mirror.
     ...     archive_mirror, '+index', principal=user)
     >>> content = find_tag_by_id(view.render(), 'maincontent')
 
+The page shows the mirror's owner:
+
+    >>> print extract_text(find_tag_by_id(content, 'owner'))
+    Owner:
+    Mark Shuttleworth
+
 The page shows the mirror status
 
     >>> print extract_text(find_tag_by_id(content, 'status'))
-    Official Ubuntu Linux Mirror registered by Mark Shuttleworth ...
+    Status:
+    Official
+
+The page shows which country the mirror is in:
+
+    >>> print extract_text(find_tag_by_id(content, 'country'))
+    Country:
+    Antarctica
+
+The page shows which kind of mirror a mirror is:
+    
+    >>> print extract_text(find_tag_by_id(content, 'type'))
+    Type:
+    Archive
+
+And which organisation runs a mirror:
+
+    >>> print extract_text(find_tag_by_id(content, 'organisation'))
+    Organisation:
+    None
 
 The page contains a source list...
 
@@ -389,7 +432,7 @@ The last probed information is present.
 
 The information found is also shown.
 
-    >>> print extract_text(find_tag_by_id(content, 'serieses'))
+    >>> print extract_text(find_tag_by_id(content, 'series'))
     Version                     Flavours
     The Hoary Hedgehog Release  Ubuntu, Edubuntu
     The Warty Warthog Release   Ubuntu, Kubuntu
@@ -401,7 +444,8 @@ Mirror admins can also see a whiteboard
     >>> cd_mirror.whiteboard = 'This is a good mirror.'
     >>> view = create_initialized_view(
     ...     cd_mirror, '+index', principal=user)
-    >>> print extract_text(find_tag_by_id(view.render(), 'whiteboard'))
+    >>> whiteboard = find_tag_by_id(view.render(), 'whiteboard')
+    >>> print extract_text(whiteboard.find('dd'))
     This is a good mirror.
 
     >>> login('no-priv@canonical.com')

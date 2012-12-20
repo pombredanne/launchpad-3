@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -12,14 +12,15 @@ Suitable for use in crontab for daily backups.
 __metaclass__ = type
 __all__ = []
 
-import sys
+from datetime import datetime
+import logging
+from optparse import OptionParser
 import os
 import os.path
 import stat
 import subprocess
-import logging
-from datetime import datetime
-from optparse import OptionParser
+import sys
+
 
 MB = float(1024*1024)
 

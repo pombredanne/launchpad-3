@@ -1,9 +1,0 @@
-
-test:
-
-  * that malone bugs are never linked debian packages more than once, no
-    matter how many times the sync process happens.
-  * that the "Mark all merged bugs as duplicates of the lowest-numbered bug"
-    logic works correctly in all cases
-  * that the watch last checked and last updated timestamps are updated
-

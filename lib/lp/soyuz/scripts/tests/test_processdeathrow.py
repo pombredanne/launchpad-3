@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for process-death-row.py script.
@@ -12,21 +12,22 @@ __metaclass__ = type
 
 import datetime
 import os
-import pytz
 import shutil
 import subprocess
 import sys
 from tempfile import mkdtemp
-from unittest import TestCase, TestLoader
+from unittest import TestCase
 
+import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
-from canonical.config import config
-from canonical.launchpad.database import SecureSourcePackagePublishingHistory
+
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from canonical.testing import LaunchpadZopelessLayer
+from lp.services.config import config
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestProcessDeathRow(TestCase):
@@ -101,12 +102,12 @@ class TestProcessDeathRow(TestCase):
 
         cprov = getUtility(IPersonSet).getByName('cprov')
         removeSecurityProxy(cprov.archive).distribution = ubuntutest
-        ppa_pubrecs = cprov.archive.getPublishedSources('iceweasel')
+        ppa_pubrecs = cprov.archive.getPublishedSources(u'iceweasel')
         self.ppa_pubrec_ids = self.markPublishingForRemoval(ppa_pubrecs)
 
         mark = getUtility(IPersonSet).getByName('mark')
         removeSecurityProxy(mark.archive).distribution = ubuntutest
-        ppa_pubrecs = mark.archive.getPublishedSources('iceweasel')
+        ppa_pubrecs = mark.archive.getPublishedSources(u'iceweasel')
         self.ppa_pubrec_ids.extend(self.markPublishingForRemoval(ppa_pubrecs))
 
         # Fill one of the files in cprov PPA just to ensure that deathrow
@@ -133,38 +134,37 @@ class TestProcessDeathRow(TestCase):
         """Mark the given publishing record for removal."""
         pubrec_ids = []
         for pubrec in pubrecs:
-            sspph = SecureSourcePackagePublishingHistory.get(pubrec.id)
-            sspph.status = PackagePublishingStatus.SUPERSEDED
-            sspph.dateremoved = None
-            sspph.scheduleddeletiondate = datetime.datetime(
-                1999, 1, 1, tzinfo=pytz.timezone('UTC'))
+            pubrec.status = PackagePublishingStatus.SUPERSEDED
+            pubrec.dateremoved = None
+            pubrec.scheduleddeletiondate = datetime.datetime(
+                1999, 1, 1, tzinfo=pytz.UTC)
             pubrec_ids.append(pubrec.id)
         return pubrec_ids
 
     def probePublishingStatus(self, pubrec_ids, status):
         """Check if all source publishing records match the given status."""
         for pubrec_id in pubrec_ids:
-            sspph = SecureSourcePackagePublishingHistory.get(pubrec_id)
+            spph = SourcePackagePublishingHistory.get(pubrec_id)
             self.assertEqual(
-                sspph.status, status, "ID %s -> %s (expected %s)" % (
-                sspph.id, sspph.status.title, status.title))
+                spph.status, status, "ID %s -> %s (expected %s)" % (
+                spph.id, spph.status.title, status.title))
 
     def probeRemoved(self, pubrec_ids):
         """Check if all source publishing records were removed."""
         right_now = datetime.datetime.now(pytz.timezone('UTC'))
         for pubrec_id in pubrec_ids:
-            sspph = SecureSourcePackagePublishingHistory.get(pubrec_id)
+            spph = SourcePackagePublishingHistory.get(pubrec_id)
             self.assertTrue(
-                sspph.dateremoved < right_now,
-                "ID %s -> not removed" % (sspph.id))
+                spph.dateremoved < right_now,
+                "ID %s -> not removed" % (spph.id))
 
     def probeNotRemoved(self, pubrec_ids):
         """Check if all source publishing records were not removed."""
         for pubrec_id in pubrec_ids:
-            sspph = SecureSourcePackagePublishingHistory.get(pubrec_id)
+            spph = SourcePackagePublishingHistory.get(pubrec_id)
             self.assertTrue(
-                sspph.dateremoved is None,
-                "ID %s -> removed" % (sspph.id))
+                spph.dateremoved is None,
+                "ID %s -> removed" % (spph.id))
 
     def testDryRun(self):
         """Test we don't delete the file or change the db in dry run mode."""
@@ -205,7 +205,3 @@ class TestProcessDeathRow(TestCase):
         self.probePublishingStatus(
             self.ppa_pubrec_ids, PackagePublishingStatus.SUPERSEDED)
         self.probeRemoved(self.ppa_pubrec_ids)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

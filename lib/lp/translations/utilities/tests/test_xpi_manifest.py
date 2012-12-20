@@ -7,6 +7,9 @@ __metaclass__ = type
 
 import unittest
 
+from lp.translations.interfaces.translationimporter import (
+    TranslationFormatSyntaxError,
+    )
 from lp.translations.utilities.xpi_manifest import XpiManifest
 
 
@@ -38,7 +41,7 @@ class XpiManifestTestCase(unittest.TestCase):
             There are no usable
             locale lines
             in this file.
-            """)
+            """.lstrip())
         self.assertEqual(len(manifest._locales), 0)
         chrome_path, locale = manifest.getChromePathAndLocale('lines')
         self.failIf(chrome_path is not None, "Empty manifest matched a path.")
@@ -61,7 +64,7 @@ class XpiManifestTestCase(unittest.TestCase):
             locale bar en-US bardir/
             locale ixx en-US ixxdir/
             locale gna en-US gnadir/
-            """)
+            """.lstrip())
         self.assertEqual(len(manifest._locales), 4)
         self._checkSortOrder(manifest)
         for dir in ['gna', 'bar', 'ixx', 'foo']:
@@ -107,7 +110,7 @@ class XpiManifestTestCase(unittest.TestCase):
             locale okay fr foodir/
             locale overlong fr foordir/ etc. etc. etc.
             locale incomplete fr
-            """)
+            """.lstrip())
         self.assertEqual(len(manifest._locales), 1)
         chrome_path, locale = manifest.getChromePathAndLocale('foodir/x')
         self.failIf(chrome_path is None, "Garbage lines messed up match.")
@@ -119,7 +122,7 @@ class XpiManifestTestCase(unittest.TestCase):
         manifest = XpiManifest("""
             locale dup fy boppe
             locale dup fy boppe
-            """)
+            """.lstrip())
         self.assertEqual(len(manifest._locales), 1)
 
     def _checkLookup(self, manifest, path, chrome_path, locale):
@@ -162,7 +165,7 @@ class XpiManifestTestCase(unittest.TestCase):
         manifest = XpiManifest("""
             locale short el /ploink/squit
             locale long he /ploink/squittle
-            """)
+            """.lstrip())
         self._checkSortOrder(manifest)
         self._checkLookup(manifest, 'ploink/squit/x', 'short/x', 'el')
         self._checkLookup(manifest, '/ploink/squittle/x', 'long/x', 'he')
@@ -175,7 +178,7 @@ class XpiManifestTestCase(unittest.TestCase):
             locale foo2 ca a/b/
             locale foo3 ca a/b/c/x1
             locale foo4 ca a/b/c/x2
-            """)
+            """.lstrip())
         self._checkSortOrder(manifest)
         self._checkLookup(manifest, 'a/bb', 'foo1/bb', 'ca')
         self._checkLookup(manifest, 'a/bb/c', 'foo1/bb/c', 'ca')
@@ -190,7 +193,7 @@ class XpiManifestTestCase(unittest.TestCase):
         manifest = XpiManifest("""
             locale foo en_GB jar:foo.jar!/dir/
             locale bar id jar:bar.jar!/
-            """)
+            """.lstrip())
         self._checkSortOrder(manifest)
         self._checkLookup(
             manifest, 'jar:foo.jar!/dir/file', 'foo/file', 'en_GB')
@@ -227,7 +230,7 @@ class XpiManifestTestCase(unittest.TestCase):
             locale croatian hr jar:translations.jar!/hr/
             locale docs sr jar:docs.jar!/sr/
             locale docs hr jar:docs.jar!/hr/
-            """)
+            """.lstrip())
         self._checkSortOrder(manifest)
         self._checkLookup(
             manifest, 'jar:translations.jar!/sr/x', 'serbian/x', 'sr')
@@ -242,7 +245,7 @@ class XpiManifestTestCase(unittest.TestCase):
             locale x it jar:dir/x.jar!/subdir/y.jar!/
             locale y it jar:dir/x.jar!/subdir/y.jar!/deep/
             locale z it jar:dir/x.jar!/subdir/z.jar!/
-            """)
+            """.lstrip())
         self._checkSortOrder(manifest)
         self._checkLookup(
             manifest, 'jar:dir/x.jar!/subdir/y.jar!/foo', 'x/foo', 'it')
@@ -291,11 +294,14 @@ class XpiManifestTestCase(unittest.TestCase):
             locale browser en-US jar:locales/
             locale browser en-US jar:locales/en-US.jar!/chrome/
             locale browser en-US jar:locales/en-US.jar!/
-            """)
+            """.lstrip())
         path = manifest.findMatchingXpiPath('browser/gui/print.dtd', 'en-US')
         self.assertEqual(path, "jar:locales/en-US.jar!/chrome/gui/print.dtd")
 
-
-def test_suite():
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)
-
+    def test_blank_line(self):
+        # Manifests must not begin with newline.
+        self.assertRaises(
+            TranslationFormatSyntaxError,
+            XpiManifest, """
+            locale browser en-US jar:locales
+            """)

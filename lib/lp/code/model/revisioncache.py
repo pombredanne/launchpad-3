@@ -8,20 +8,34 @@ __all__ = [
     'GenericRevisionCollection',
     ]
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 import pytz
-from storm.expr import Desc, Func, SQL
+from storm.expr import (
+    Desc,
+    Func,
+    SQL,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from lp.code.interfaces.revisioncache import IRevisionCollection
-from lp.code.model.revision import Revision, RevisionAuthor, RevisionCache
+from lp.code.model.revision import (
+    Revision,
+    RevisionAuthor,
+    RevisionCache,
+    )
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.product import Product
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 
 
 class GenericRevisionCollection:

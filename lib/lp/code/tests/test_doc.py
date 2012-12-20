@@ -9,25 +9,37 @@ import os
 
 from zope.security.management import setSecurityPolicy
 
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setGlobs, tearDown)
-from canonical.launchpad.ftests.test_system_documentation import (
-    branchscannerSetUp)
-from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.testing import LaunchpadZopelessLayer
-
+from lp.services.config import config
 from lp.services.testing import build_test_suite
+from lp.services.webapp.authorization import LaunchpadSecurityPolicy
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setGlobs,
+    setUp,
+    tearDown,
+    )
 
 
 here = os.path.dirname(os.path.realpath(__file__))
 
 
+def branchscannerSetUp(test):
+    """Setup the user for the branch scanner tests."""
+    switch_dbuser(config.branchscanner.dbuser)
+    setUp(test)
+
+
 def zopelessLaunchpadSecuritySetUp(test):
     """Set up a LaunchpadZopelessLayer test to use LaunchpadSecurityPolicy.
 
-    To be able to use LaunchpadZopelessLayer.switchDbUser in a test, we need
-    to run in the Zopeless environment. The Zopeless environment normally runs
-    using the PermissiveSecurityPolicy. If we want the test to cover
+    To be able to use switch_dbuser in a test, we need to run in the
+    Zopeless environment. The Zopeless environment normally runs using the
+    LaunchpadPermissiveSecurityPolicy. If we want the test to cover
     functionality used in the webapp, it needs to use the
     LaunchpadSecurityPolicy.
     """
@@ -46,16 +58,18 @@ special = {
         tearDown=zopelessLaunchpadSecurityTearDown,
         layer=LaunchpadZopelessLayer,
         ),
-    'branch-merge-proposals.txt': LayeredDocFileSuite(
-        '../doc/branch-merge-proposals.txt',
-        setUp=zopelessLaunchpadSecuritySetUp,
-        tearDown=zopelessLaunchpadSecurityTearDown,
-        layer=LaunchpadZopelessLayer,
-        ),
     'revision.txt': LayeredDocFileSuite(
         '../doc/revision.txt',
         setUp=branchscannerSetUp, tearDown=tearDown,
         layer=LaunchpadZopelessLayer
+        ),
+    'codeimport-result.txt': LayeredDocFileSuite(
+        '../doc/codeimport-result.txt',
+        setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer,
+        ),
+    'branch-merge-proposal-notifications.txt': LayeredDocFileSuite(
+        '../doc/branch-merge-proposal-notifications.txt',
+        setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer,
         ),
     }
 

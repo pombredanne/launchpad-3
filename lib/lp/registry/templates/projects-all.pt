@@ -6,18 +6,26 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad"
->
+  metal:use-macro="view/macro:page/main_side"
+  i18n:domain="launchpad">
+
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Projects registered in Launchpad</h1>
-    </metal:heading>
+    <h1 metal:fill-slot="heading">All project groups</h1>
 
-<div metal:fill-slot="main">
+    <tal:side metal:fill-slot="side">
+      <tal:menu replace="structure view/@@+global-actions" />
+      <tal:menu replace="structure context/@@+related-pages" />
+    </tal:side>
 
-    <div tal:repeat="project context"
-         tal:replace="structure project/@@+listing-detailed" />
+    <div metal:fill-slot="main"
+         class="main-portlet">
+      <p>There are
+      <strong tal:content="context/count_all">5</strong>
+      project groups registered in Launchpad.
+      </p>
+
+      <div tal:repeat="project context"
+           tal:replace="structure project/@@+listing-detailed" />
 
     </div>
   </body>

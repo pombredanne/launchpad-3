@@ -3,32 +3,40 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
 <body>
 
-<metal:heading fill-slot="pageheading">
-  <h1>Who's in this team?</h1>
-</metal:heading>
-
 <div metal:fill-slot="main">
 
-<tal:per_member repeat="member view/allmembers">
-  <a tal:condition="member/mugshot"
-     tal:attributes="
-       href member/fmt:url;
-       title member/displayname">
-    <img tal:attributes="src member/mugshot/http_url"/>
-  </a>
-  <span style="white-space: nowrap;" tal:condition="not: member/mugshot">
-    [<a tal:content="member/displayname"
-        tal:attributes="href member/fmt:url">Foo Bar</a>]</span>
-</tal:per_member>
+  <div id="top-navigation" style="margin-bottom: 1em;">
+    <tal:navigation content="structure view/members/@@+navigation-links-upper" />
+  </div>
+
+  <div class="gridflow"
+       tal:define="current_batch nocall:view/members/currentBatch">
+
+    <ul>
+    <tal:per_member repeat="member current_batch">
+      <li>
+        <span>
+          <a tal:attributes="href member/fmt:url;
+                             title member/displayname">
+            <img tal:replace="structure member/image:mugshot" />
+            <div tal:content="member/displayname" />
+          </a>
+        </span>
+      </li>
+    </tal:per_member>
+    </ul>
+
+  </div>
+
+  <div>
+    <tal:navigation content="structure view/members/@@+navigation-links-lower" />
+  </div>
 
 </div>
 </body>

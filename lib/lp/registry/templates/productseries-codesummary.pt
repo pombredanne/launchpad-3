@@ -1,8 +1,8 @@
-<tal:root
+<div class="portlet"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  omit-tag="">
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n">
+  <h2>Code for this series</h2>
 
 <tal:block condition="not: view/user_branch_visible">
   <div id="branch-details">
@@ -19,39 +19,38 @@
         <em><tal:series replace="context/title">evolution MAIN</tal:series></em>.
       </p>
 
-      <p>
-        If the code is already in a Bazaar branch registered with Launchpad
-        <a href="+linkbranch">link the branch to this series</a>.
-      </p>
+      <ul class="bulleted">
+        <li>
+          If the code is already in a Bazaar branch registered with Launchpad
+          <a tal:attributes="href context/menu:overview/set_branch/fmt:url">link
+          the branch to this series</a>.
+        </li>
 
-      <p>
-        If the code is in a Bazaar branch not yet on Launchpad
-        you can either: have the branch mirrored from a remote location by
-        <a tal:attributes="href string:/${context/product/name}/+addbranch">
-          registering a mirrored branch</a>; or push the branch
-          directly to Launchpad.
-      </p>
+        <li>
+          If the code is in a Bazaar branch not yet on Launchpad
+          you can push the branch directly to Launchpad, e.g. with:<br />
+            <tt class="command">
+              bzr push lp:~<tal:user replace="view/user/name"/>/<tal:products replace="context/product/name"/>/<tal:series replace="context/name"/>
+            </tt>
+            <tal:no-keys condition="not:view/user/sshkeys">
+              <br/>To authenticate with the Launchpad branch upload service,
+              you need to
+              <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
+                register a SSH key</a>.
+            </tal:no-keys>
+        </li>
 
-      <tal:no-keys condition="not:view/user/sshkeys">
-        <p id="ssh-key-directions">
-          To authenticate with the Launchpad branch upload service, you need
-          to <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
-          register a SSH key </a>.
-        </p>
-      </tal:no-keys>
-      <tal:user-can-push condition="view/user/sshkeys">
-        <p>
-          You can push a branch to Launchpad for this project with the name
-          <em>trunk</em> using a command line like:<br/>
-          <tt><strong>bzr push lp:~<tal:user replace="view/user/name"/>/<tal:project replace="context/product/name"/>/trunk</strong></tt>
-        </p>
-      </tal:user-can-push>
+        <li>
+          If the code is in Git, CVS, Subversion or an external Bazaar branch you can
+          <a tal:attributes="href view/request_import_link">request that the branch be imported to Bazaar</a>.
+        </li>
+      </ul>
 
-      <p>
-        If the code is in CVS or Subversion you can
-        <a tal:attributes="href view/request_import_link">request that the branch be imported to Bazaar</a>.
-      </p>
-
+      <ul class="horizontal">
+        <li>
+          <a tal:replace="structure context/menu:overview/set_branch/fmt:link" />
+        </li>
+      </ul>
     </tal:edit-link>
 
     <tal:user-cannot-edit condition="not: context/required:launchpad.Edit">
@@ -68,8 +67,24 @@
   <p>The following branch has been registered as the mainline branch
   for this release series:</p>
 
-  <ul id="branch-details"
-      tal:content="structure context/branch/@@+product-summary-listing" />
+  <div id="branch-details">
+    <a id="series-branch" class="sprite branch"
+      tal:attributes="href context/branch/fmt:url"
+      tal:content="view/long_bzr_identity">Mozilla Thunderbird 0.9.1</a>
+    - <a tal:replace="structure context/branch/owner/fmt:link:code/+ownedbranches" />
+    <a
+      tal:replace="structure context/menu:overview/set_branch/fmt:icon" />
+  </div>
+  <div id="branch-revision-details" tal:condition="context/branch/revision_count">
+    <span tal:replace="context/branch/revision_count">35</span> revisions.
+  </div>
+
+  <p>
+    You can get a copy of the development focus branch using the command:<br />
+    <tt class="command">
+      bzr branch <tal:products replace="context/branch/bzr_identity"/>
+    </tt>
+  </p>
 </tal:block>
 
-</tal:root>
+</div>

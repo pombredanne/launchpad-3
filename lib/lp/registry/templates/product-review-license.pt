@@ -12,49 +12,32 @@
 <div metal:fill-slot="main">
   <div class="top-portlet">
     <div metal:use-macro="context/@@launchpad_form/form">
-      <div metal:fill-slot="extra_info">
+      <div metal:fill-slot="extra_info" class="application-summary" >
         <p>
-          Examine the project's overview tab first, then examine if the
-          project is using code, bugs, etc.... Mark the project reviewed now.
+          If you have read the project's essential information, mark it
+          Approved, or if there are issues, just Reviewed.
         </p>
 
         <p>
-          Does the project appear to be legitimate? Are its licenses simple
-          and clearly open and free? Mark the project approved now.
-        </p>
-
-        <p>
-          If the project appears legitimate, yet incomplete, that is fine.
-          Approve the project, consider sending a request to ask the owner to
-          update his project with more details because it will help him
-          get contributors.
-        </p>
-
-        <p>
-          There are a few reasons you may want to withhold approval, and you
-          should contact the project owner if you do.
+          You may need to withhold approval for these common reasons:
         </p>
 
         <ul class="bulleted">
-          <li>
-            The project has no license.
+          <li>The project licence is only "I Don't Know".</li>
+          <li>The project has only <strong>Other/Open source</strong> selected
+              as a licence and the licence info field does not contain a link
+              to the licence, or contains the whole licence.
           </li>
-          <li>
-            The project has only Other/Open source selected as a license and
-            the license info field does not contain a URL to a license, or
-            contains the whole license
+          <li>The <strong>Other/Open source</strong> licence appears to
+              discriminate against who can use the project, or how the
+              project's work can be used.
           </li>
-          <li>
-            The Other/Open source license appears to discriminate against who
-            or how the project's work is used.
-          </li>
-          <li>
-            The project is too vague to know if it is legitimate.
-          </li>
+          <li>The project is <strong>Other/Proprietary</strong></li>
         </ul>
 
         <p>
-          If the project looks like a test, a prank, or spam, deactivate it.
+          <strong>If the project looks like a test, a prank, or spam,
+          deactivate it.</strong>.
         </p>
 
       <input type="hidden" name="next_url"
@@ -62,8 +45,8 @@
       <table class="listing" id="license-listing">
         <thead>
           <tr>
-            <th>Licenses</th>
-            <th>Description of additional licenses</th>
+            <th>Licences</th>
+            <th>Description of additional licences</th>
           </tr>
         </thead>
         <tbody>
@@ -85,8 +68,6 @@
       </div>
     </div>
   </div>
-
-  <tal:menu replace="structure view/@@+related-pages" />
 </div>
 
 </body>

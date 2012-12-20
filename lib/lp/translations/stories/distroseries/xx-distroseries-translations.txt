@@ -1,28 +1,8 @@
-= Distribution series translations =
+Distribution series translations
+================================
 
 This page shows a list of PO templates contained within all source
 packages in a particular distibution series.
-
-We are going to work with visible (Spanish) and non visible
-(Spanish (Spain)) languages.
-
-Here we can see that Spanish (Spain) is not visible.
-
-    >>> admin_browser.open(
-    ...     'http://translations.launchpad.dev/+languages/es_ES/+admin')
-    >>> print admin_browser.getControl('The English name').value
-    Spanish (Spain)
-    >>> admin_browser.getControl('Visible').selected
-    False
-
-But Spanish is visible.
-
-    >>> admin_browser.open(
-    ...     'http://translations.launchpad.dev/+languages/es/+admin')
-    >>> print admin_browser.getControl('The English name').value
-    Spanish
-    >>> admin_browser.getControl('Visible').selected
-    True
 
 In this case, we're asking for the translation overview for Hoary.
 
@@ -50,7 +30,7 @@ But it shows the ones not hidden:
 Launchpad has an option to hide all of the translations for a distribution
 series.  The link to hide translations is not available to anonymous users:
 
-    >>> anon_browser.getLink('Settings')
+    >>> anon_browser.getLink('Change settings')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -65,22 +45,22 @@ And the page is not available either:
 
 ... but the link is available to administrators:
 
-    >>> admin_browser.open('http://translations.launchpad.dev/ubuntu/hoary')
-
-    >>> admin_browser.getLink('Settings').click()
+    >>> dtc_browser = setupDTCBrowser()
+    >>> dtc_browser.open('http://translations.launchpad.dev/ubuntu/hoary')
+    >>> dtc_browser.getLink('Change settings').click()
 
 Once the administrator hides all translations...
 
-    >>> admin_browser.getControl(
+    >>> dtc_browser.getControl(
     ...     'Hide translations for this release').selected = True
-    >>> admin_browser.getControl('Change').click()
-    >>> print admin_browser.url
+    >>> dtc_browser.getControl('Change').click()
+    >>> print dtc_browser.url
     http://translations.launchpad.dev/ubuntu/hoary
 
 ...a notice about the fact shows up on the overview page.
 
     >>> notices = find_tags_by_class(
-    ...     admin_browser.contents, 'visibility-notice')
+    ...     dtc_browser.contents, 'visibility-notice')
     >>> for notice in notices:
     ...     print extract_text(notice)
     Translations for this series are currently hidden.
@@ -101,16 +81,16 @@ the system tells them that they're not allowed to see those pages.
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+lang/es')
     Traceback (most recent call last):
     ...
-    httperror_seek_wrapper: HTTP Error 503: Service Unavailable
+    HTTPError: HTTP Error 503: Service Unavailable
     >>> main_content = find_main_content(user_browser.contents)
     >>> print main_content.findNext('p').renderContents()
     Translations for this release series are not available yet.
 
     >>> user_browser.handleErrors = False
 
-Although, an administrator can see the same page.
+Translations administrator have access series with hidden translations.
 
-    >>> admin_browser.open(
+    >>> dtc_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+lang/es')
 
 Non existing languages are not viewable. English is a special case
@@ -133,8 +113,8 @@ Translation pages for source packages are also unavailable to
 non-administrative users.
 
     >>> user_browser.open(
-    ...     'http://translations.launchpad.dev/ubuntu/hoary/+sources/evolution/'
-    ...     '+pots/evolution-2.2')
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/'
+    ...     '+sources/evolution/+pots/evolution-2.2')
     Traceback (most recent call last):
     ...
     TranslationUnavailable: ...
@@ -142,29 +122,29 @@ non-administrative users.
 However, source package translations are still available to the
 administrators.
 
-    >>> admin_browser.open(
+    >>> dtc_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
-    ...     '+sources/evolution')
+    ...     '+sources/evolution/+pots/evolution-2.2')
 
 There is also an option to set/unset whether translation imports for a
 distribution should be deferred. That option is set also from the same
 form where we hide all translations and an admin is able to change it:
 
-    >>> admin_browser.open('http://translations.launchpad.dev/ubuntu/hoary')
-    >>> admin_browser.getLink('Settings').click()
-    >>> admin_browser.getControl(
+    >>> dtc_browser.open('http://translations.launchpad.dev/ubuntu/hoary')
+    >>> dtc_browser.getLink('Change settings').click()
+    >>> dtc_browser.getControl(
     ...     'Defer translation imports').selected
     False
-    >>> admin_browser.getControl(
+    >>> dtc_browser.getControl(
     ...     'Defer translation imports').selected = True
-    >>> admin_browser.getControl('Change').click()
-    >>> print admin_browser.url
+    >>> dtc_browser.getControl('Change').click()
+    >>> print dtc_browser.url
     http://translations.launchpad.dev/ubuntu/hoary
 
 Once the system accepts the submission, we can see such change applied.
 
-    >>> admin_browser.getLink('Settings').click()
-    >>> admin_browser.getControl(
+    >>> dtc_browser.getLink('Change settings').click()
+    >>> dtc_browser.getControl(
     ...     'Defer translation imports').selected
     True
 

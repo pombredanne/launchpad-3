@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -6,88 +6,18 @@ __metaclass__ = type
 import os
 import subprocess
 import sys
-import unittest
 
-from zope.component import getUtility
-
-from canonical.config import config
-from canonical.launchpad.ftests import import_public_test_keys
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.soyuz.interfaces.packagediff import IPackageDiffSet
-from canonical.launchpad.testing.fakepackager import FakePackager
-from canonical.launchpad.scripts import QuietFakeLogger
-from lp.soyuz.scripts.packagediff import (
-    ProcessPendingPackageDiffs)
-from canonical.launchpad.database import LibraryFileAlias
-from canonical.testing import LaunchpadZopelessLayer
+from lp.services.config import config
+from lp.services.log.logger import BufferLogger
+from lp.soyuz.scripts.packagediff import ProcessPendingPackageDiffs
+from lp.soyuz.tests.soyuz import TestPackageDiffsBase
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
-class TestProcessPendingPackageDiffsScript(unittest.TestCase):
+class TestProcessPendingPackageDiffsScript(TestPackageDiffsBase):
     """Test the process-pending-packagediffs.py script."""
     layer = LaunchpadZopelessLayer
     dbuser = config.uploader.dbuser
-
-    def setUp(self):
-        """Setup proper DB connection and contents for tests
-
-        Connect to the DB as the 'uploader' user (same user used in the
-        script), upload the test packages (see `uploadTestPackages`) and
-        commit the transaction.
-
-        Store the `FakePackager` object used in the test uploads as `packager`
-        so the tests can reuse it if necessary.
-        """
-        self.layer.alterConnection(dbuser='launchpad')
-
-        fake_chroot = LibraryFileAlias.get(1)
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        warty = ubuntu.getSeries('warty')
-        warty['i386'].addOrUpdateChroot(fake_chroot)
-
-        self.layer.txn.commit()
-
-        self.layer.alterConnection(dbuser=self.dbuser)
-        self.packager = self.uploadTestPackages()
-        self.layer.txn.commit()
-
-    def uploadTestPackages(self):
-        """Upload packages for testing `PackageDiff` generation script.
-
-        Upload zeca_1.0-1 and zeca_1.0-2 sources, so a `PackageDiff` between
-        them is created.
-
-        Assert there is not pending `PackageDiff` in the DB before uploading
-        the package and also assert that there is one after the uploads.
-
-        :return: the FakePackager object used to generate and upload the test,
-            packages, so the tests can upload subsequent version if necessary.
-        """
-        # No pending PackageDiff available in sampledata.
-        self.assertEqual(self.getPendingDiffs().count(), 0)
-
-        import_public_test_keys()
-        # Use FakePackager to upload a base package to ubuntu.
-        packager = FakePackager(
-            'zeca', '1.0', 'foo.bar@canonical.com-passwordless.sec')
-        packager.buildUpstream()
-        packager.buildSource()
-        packager.uploadSourceVersion('1.0-1', suite="warty-updates")
-
-        # Upload a new version of the source, so a PackageDiff can
-        # be created.
-        packager.buildVersion('1.0-2', changelog_text="cookies")
-        packager.buildSource(include_orig=False)
-        packager.uploadSourceVersion('1.0-2', suite="warty-updates")
-
-        # Check if there is exactly one pending PackageDiff record and
-        # It's the one we have just created.
-        self.assertEqual(self.getPendingDiffs().count(), 1)
-
-        return packager
-
-    def getPendingDiffs(self):
-        """Pending `PackageDiff` available."""
-        return getUtility(IPackageDiffSet).getPendingDiffs()
 
     def runProcessPendingPackageDiffs(self, extra_args=None):
         """Run process-pending-packagediffs.py.
@@ -123,7 +53,7 @@ class TestProcessPendingPackageDiffsScript(unittest.TestCase):
         :param limit: if passed, it will be used as the 'limit' script
            argument.
 
-        :return the initialised script object using `QuietFakeLogger` and
+        :return the initialized script object using `BufferLogger` and
            the given parameters.
         """
         test_args = []
@@ -132,7 +62,7 @@ class TestProcessPendingPackageDiffsScript(unittest.TestCase):
 
         diff_processor = ProcessPendingPackageDiffs(
             name='process-pending-packagediffs', test_args=test_args)
-        diff_processor.logger = QuietFakeLogger()
+        diff_processor.logger = BufferLogger()
         diff_processor.txn = self.layer.txn
         return diff_processor
 
@@ -147,7 +77,7 @@ class TestProcessPendingPackageDiffsScript(unittest.TestCase):
 
         # The pending PackageDiff request was processed.
         # See doc/package-diff.txt for more information.
-        pending_diffs = getUtility(IPackageDiffSet).getPendingDiffs()
+        pending_diffs = self.getPendingDiffs()
         self.assertEqual(pending_diffs.count(), 0)
 
     def testLimitedRun(self):
@@ -174,6 +104,3 @@ class TestProcessPendingPackageDiffsScript(unittest.TestCase):
         # The next run process the remaining one.
         diff_processor.main()
         self.assertEqual(self.getPendingDiffs().count(), 0)
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

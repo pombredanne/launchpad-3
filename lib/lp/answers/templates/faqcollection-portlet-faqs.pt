@@ -19,14 +19,13 @@
 
   <ul tal:condition="faqs">
     <li tal:repeat="faq faqs">
-      <a class="sprite question"
+      <a class="sprite faq"
         tal:attributes="href faq/fmt:url"
         tal:content="faq/title">How do I do this?</a>
     </li>
   </ul>
 
-  <ul class="horizontal"
-    tal:condition="context/required:launchpad.Moderate">
+  <ul class="horizontal">
     <li>
       <a tal:replace="structure view/menu:answers/create_faq/fmt:link" />
     </li>

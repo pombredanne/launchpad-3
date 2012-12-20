@@ -1,4 +1,5 @@
-= Official Bug Tags =
+fficial Bug Tags
+=================
 
 Project admins can manage the official bug tags by following a link
 from the main bug page.
@@ -52,19 +53,48 @@ administrators but not for ordinary users.
     ...
     Unauthorized...
 
+The link is also available for the bug supervisor.
 
-== Official Tags on Bug Pages ==
+    >>> from lp.testing.sampledata import ADMIN_EMAIL
+    >>> from lp.testing import login, logout
+    >>> login(ADMIN_EMAIL)
+    >>> supervisor = factory.makePerson()
+    >>> youbuntu = factory.makeProduct(name='youbuntu',
+    ...     bug_supervisor=supervisor,
+    ...     official_malone=True)
+    >>> bug_super_browser = setupBrowser(
+    ...     auth='Basic %s:test' % supervisor.preferredemail.email)
+    >>> logout()
+    >>> bug_super_browser.open(
+    ...     'http://bugs.launchpad.dev/youbuntu')
+    >>> bug_super_browser.getLink('Edit official tags').click()
+    >>> print bug_super_browser.url
+    http://bugs.launchpad.dev/youbuntu/+manage-official-tags
+
+The bug supervisor can also set the tags for the product.
+
+    >>> bug_super_browser.getControl('Official Bug Tags').value = 'foo bar'
+    >>> bug_super_browser.getControl('Save').click()
+    >>> print bug_super_browser.url
+    http://bugs.launchpad.dev/youbuntu
+    >>> bug_super_browser.open(
+    ...     'http://bugs.launchpad.dev/youbuntu/+manage-official-tags')
+    >>> print bug_super_browser.getControl('Official Bug Tags').value
+    bar foo
+
+Official Tags on Bug Pages
+--------------------------
 
 Official tags are displayed using a different style from unofficial ones.
 They are grouped together at the beginning of the list.
 
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from lp.services.webapp import canonical_url
+    >>> from lp.bugs.tests.bug import print_bug_tag_anchors
     >>> import transaction
     >>> login('foo.bar@canonical.com')
     >>> gfoobar = factory.makeProduct(name='gfoobar')
     >>> gfoobar.official_bug_tags = [u'alpha', u'charlie']
-    >>> gfoobar_bug = factory.makeBug(product=gfoobar)
+    >>> gfoobar_bug = factory.makeBug(target=gfoobar)
     >>> gfoobar_bug.tags = [u'alpha', u'bravo', u'charlie', u'delta']
     >>> gfoobar_bug_url = canonical_url(gfoobar_bug)
     >>> transaction.commit()
@@ -72,153 +102,21 @@ They are grouped together at the beginning of the list.
 
     >>> browser.open(gfoobar_bug_url)
     >>> tags_div = find_tag_by_id(browser.contents, 'bug-tags')
-    >>> for anchor in tags_div.findAll('a'):
-    ...     if anchor['href'] != '+edit':
-    ...         print anchor['class'], anchor.contents[0]
+    >>> print_bug_tag_anchors(tags_div.findAll('a'))
     official-tag alpha
     official-tag charlie
     unofficial-tag bravo
     unofficial-tag delta
 
 
-== Official Tags in Tags Portlet ==
+Entering Official Tags
+----------------------
 
-The tags portlet displays a mix of official and unofficial tags.
-
-    >>> from canonical.launchpad.interfaces import IProductSet
-    >>> from zope.component import getUtility
-    >>> login('foo.bar@canonical.com')
-    >>> firesocks = factory.makeProduct(name='firesocks')
-    >>> firesocks_bugs_url = canonical_url(firesocks, rootsite='bugs')
-    >>> firesocks.official_bug_tags = [
-    ...     u'official-tag-%02d' % idx for idx in range(1, 13)]
-    >>> fs_bug = factory.makeBug(product=firesocks)
-    >>> fs_bug.tags = [
-    ...     u'unofficial-tag-%02d' % idx for idx in range(1, 13)]
-    >>> transaction.commit()
-    >>> logout()
-
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> def print_tags_portlet(tags_portlet):
-    ...     for section in BeautifulSoup(tags_portlet).findAll(
-    ...             'div', attrs={'class': 'section'}):
-    ...         header = section.find('h2').contents[0]
-    ...         print header
-    ...         print '-' * len(header)
-    ...         for tr in section.findAll('tr'):
-    ...             tag = tr.find('td', attrs={'width': '100%'}).find('a').contents[0]
-    ...             count = tr.findAll('td')[1].contents[0]
-    ...             print '%s   %s' % (tag, count)
-    ...         print
-
-All official tags are displayed, as well as 10 unofficial tags.
-
-    >>> browser.open(firesocks_bugs_url + '/+bugtarget-portlet-tags-content')
-    >>> print_tags_portlet(browser.contents)
-    Official tags
-    -------------
-    official-tag-01   0
-    official-tag-02   0
-    official-tag-03   0
-    official-tag-04   0
-    official-tag-05   0
-    official-tag-06   0
-    official-tag-07   0
-    official-tag-08   0
-    official-tag-09   0
-    official-tag-10   0
-    official-tag-11   0
-    official-tag-12   0
-    <BLANKLINE>
-    Other tags
-    ----------
-    unofficial-tag-01   1
-    unofficial-tag-02   1
-    unofficial-tag-03   1
-    unofficial-tag-04   1
-    unofficial-tag-05   1
-    unofficial-tag-06   1
-    unofficial-tag-07   1
-    unofficial-tag-08   1
-    unofficial-tag-09   1
-    unofficial-tag-10   1
-    <BLANKLINE>
-
-The tags are sorted by popularity.
-
-    >>> login('foo.bar@canonical.com')
-    >>> firesocks = getUtility(IProductSet).getByName('firesocks')
-    >>> fs_bug_2 = factory.makeBug(product=firesocks)
-    >>> fs_bug_2.tags = ['official-tag-05', 'unofficial-tag-05']
-    >>> fs_bug_3 = factory.makeBug(product=firesocks)
-    >>> fs_bug_3.tags = ['official-tag-07']
-    >>> fs_bug_4 = factory.makeBug(product=firesocks)
-    >>> fs_bug_4.tags = ['official-tag-07']
-    >>> transaction.commit()
-    >>> logout()
-
-    >>> browser.open(firesocks_bugs_url + '/+bugtarget-portlet-tags-content')
-    >>> print_tags_portlet(browser.contents)
-    Official tags
-    -------------
-    official-tag-07   2
-    official-tag-05   1
-    official-tag-01   0
-    official-tag-02   0
-    official-tag-03   0
-    official-tag-04   0
-    official-tag-06   0
-    official-tag-08   0
-    official-tag-09   0
-    official-tag-10   0
-    official-tag-11   0
-    official-tag-12   0
-    <BLANKLINE>
-    Other tags
-    ----------
-    unofficial-tag-05   2
-    unofficial-tag-01   1
-    unofficial-tag-02   1
-    unofficial-tag-03   1
-    unofficial-tag-04   1
-    unofficial-tag-06   1
-    unofficial-tag-07   1
-    unofficial-tag-08   1
-    unofficial-tag-09   1
-    unofficial-tag-10   1
-    <BLANKLINE>
-
-If no official tags are defined, the title of the unofficial ones is changed.
-
-    >>> login('foo.bar@canonical.com')
-    >>> firesocks = getUtility(IProductSet).getByName('firesocks')
-    >>> firesocks.official_bug_tags = []
-    >>> transaction.commit()
-    >>> logout()
-
-    >>> browser.open(firesocks_bugs_url + '/+bugtarget-portlet-tags-content')
-    >>> print_tags_portlet(browser.contents)
-    Tags
-    ----
-    official-tag-07   2
-    unofficial-tag-05   2
-    official-tag-05   1
-    unofficial-tag-01   1
-    unofficial-tag-02   1
-    unofficial-tag-03   1
-    unofficial-tag-04   1
-    unofficial-tag-06   1
-    unofficial-tag-07   1
-    unofficial-tag-08   1
-    <BLANKLINE>
-
-
-== Entering Official Tags ==
-
-=== Available Official Tags in Javascript ===
+Available Official Tags in Javascript
+.....................................
 
 The list of available official tags is present on the page as a Javascript
-variable. This list is used to initialise the tag entry widget. The list
+variable. This list is used to initialize the tag entry widget. The list
 comprises of the official tags of all targets for which the bug has a task.
 
     >>> login('foo.bar@canonical.com')
@@ -226,9 +124,9 @@ comprises of the official tags of all targets for which the bug has a task.
     >>> product2 = factory.makeProduct()
     >>> product1.official_bug_tags = [u'eenie', u'meenie']
     >>> product2.official_bug_tags = [u'miney', u'moe']
-    >>> bug = factory.makeBug(product=product1)
+    >>> bug = factory.makeBug(target=product1)
     >>> bug.addTask(target=product2, owner=factory.makePerson())
-    <BugTask at ...>
+    <BugTask ...>
     >>> bug_url = canonical_url(bug)
     >>> transaction.commit()
     >>> logout()
@@ -238,4 +136,3 @@ comprises of the official tags of all targets for which the bug has a task.
     >>> print js
     <script...>var available_official_tags =
     ["eenie", "meenie", "miney", "moe"];</script>
-

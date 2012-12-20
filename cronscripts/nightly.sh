@@ -3,80 +3,52 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# This script performs nightly chores. It should be run from 
+# This script performs nightly chores. It should be run from
 # cron as the launchpad user once a day. Typically the output
 # will be sent to an email address for inspection.
 
-# Note that http/ftp proxies are needed by the product 
+# Note that http/ftp proxies are needed by the product
 # release finder
 
-# Only run this script on loganberry
-THISHOST=`uname -n`
-if [ "loganberry" != "$THISHOST" ]
-then
-        echo "This script must be run on loganberry."
-        exit 1
-fi
 
-# Only run this as the launchpad user
-USER=`whoami`
-if [ "launchpad" != "$USER" ]
-then
-        echo "Must be launchpad user to run this script."
-        exit 1
-fi
-
-
-export LPCONFIG=production
-export http_proxy=http://squid.internal:3128/
-export ftp_proxy=http://squid.internal:3128/
+LOGDIR=$1
+LOGFILE=$LOGDIR/nightly.log
 
 LOCK=/var/lock/launchpad_nightly.lock
 lockfile -r0 -l 259200 $LOCK
 if [ $? -ne 0 ]; then
-    echo Unable to grab $LOCK lock - aborting
+    echo $(date): Unable to grab $LOCK lock - aborting | tee -a $LOGFILE
     ps fuxwww
     exit 1
 fi
 
-cd /srv/launchpad.net/production/launchpad/cronscripts
+cd `dirname $0`
 
-echo == Expiring memberships `date` ==
-python2.4 flag-expired-memberships.py -q
+echo $(date): Grabbed lock >> $LOGFILE
 
-echo == Allocating revision karma `date` ==
-python2.4 allocate-revision-karma.py -q
+echo $(date): Expiring memberships >> $LOGFILE
+python -S flag-expired-memberships.py -q --log-file=DEBUG:$LOGDIR/flag-expired-memberships.log
 
-echo == Recalculating karma `date` ==
-python2.4 foaf-update-karma-cache.py -q
+echo $(date): Allocating revision karma >> $LOGFILE
+python -S allocate-revision-karma.py -q --log-file=DEBUG:$LOGDIR/allocate-revision-karma.log
 
-echo == Updating cached statistics `date` ==
-python2.4 update-stats.py -q
+echo $(date): Recalculating karma >> $LOGFILE
+python -S foaf-update-karma-cache.py -q --log-file=INFO:$LOGDIR/foaf-update-karma-cache.log
 
-echo == Expiring questions `date` ==
-python2.4 expire-questions.py
+echo $(date): Updating cached statistics >> $LOGFILE
+python -S update-stats.py -q --log-file=DEBUG:$LOGDIR/update-stats.log
 
-### echo == Expiring bugs `date` ==
-### python2.4 expire-bugtasks.py
+echo $(date): Expiring questions >> $LOGFILE
+python -S expire-questions.py -q --log-file=DEBUG:$LOGDIR/expire-questions.log
 
-# checkwatches.py is scheduled in the /code/pqm/launchpad_crontabs branch.
-### echo == Updating bug watches `date` ==
-### python2.4 checkwatches.py
+echo $(date): Updating bugtask target name caches >> $LOGFILE
+python -S update-bugtask-targetnamecaches.py -q --log-file=DEBUG:$LOGDIR/update-bugtask-targetnamecaches.log
 
-echo == Updating bugtask target name caches `date` ==
-python2.4 update-bugtask-targetnamecaches.py -q
+echo $(date): Updating personal standings >> $LOGFILE
+python -S update-standing.py -q --log-file=DEBUG:$LOGDIR/update-standing.log
 
-echo == Updating personal standings `date` ==
-python2.4 update-standing.py -q
+echo $(date): Updating CVE database >> $LOGFILE
+python -S update-cve.py -q --log-file=DEBUG:$LOGDIR/update-cve.log
 
-echo == Updating CVE database `date` ==
-python2.4 update-cve.py -q
-
-echo == Updating package cache `date` ==
-python2.4 update-pkgcache.py -q
-
-echo == Product Release Finder `date` ==
-python2.4 product-release-finder.py -q
-
-
+echo $(date): Removing lock >> $LOGFILE
 rm -f $LOCK

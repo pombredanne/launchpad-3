@@ -1,19 +1,22 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+"""Cron job to update Product.remote_product using bug watch information.
+
+This script sets the remote_product string value on Launchpad Products
+by looking it up from one of the product's bug watches.
+"""
+
 # pylint: disable-msg=W0403
-
-"""Cron job to update Product.remote_product using bug watch information.  """
-
-import time
 import _pythonpath
 
-from canonical.config import config
+import time
+
+from lp.bugs.scripts.updateremoteproduct import RemoteProductUpdater
+from lp.services.config import config
 from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.scripts.updateremoteproduct import (
-    RemoteProductUpdater)
 
 
 class UpdateRemoteProduct(LaunchpadCronScript):

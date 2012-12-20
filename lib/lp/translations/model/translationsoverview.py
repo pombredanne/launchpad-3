@@ -6,12 +6,21 @@ __all__ = ['TranslationsOverview']
 
 from zope.interface import implements
 
-from lp.translations.interfaces.translationsoverview import (
-    ITranslationsOverview, MalformedKarmaCacheData)
-from canonical.database.sqlbase import cursor
-
+from lp.app.enums import (
+    InformationType,
+    ServiceUsage,
+    )
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.product import Product
+from lp.services.database.sqlbase import (
+    cursor,
+    sqlvalues,
+    )
+from lp.translations.interfaces.translationsoverview import (
+    ITranslationsOverview,
+    MalformedKarmaCacheData,
+    )
+
 
 class TranslationsOverview:
     implements(ITranslationsOverview)
@@ -37,13 +46,16 @@ class TranslationsOverview:
             new_size = int(round(
                 real_minimum +
                 (size - offset - real_minimum) * multiplier))
-            normalized_sizes.append({'pillar' : pillar,
-                                     'weight' : new_size })
+            normalized_sizes.append({'pillar': pillar, 'weight': new_size})
         return normalized_sizes
 
     def getMostTranslatedPillars(self, limit=50):
         """See `ITranslationsOverview`."""
 
+        # XXX Abel Deuring 2012-10-26 bug=1071751
+         # The expression product.information_type IS NULL can be
+         # removed once we have the DB constraint
+         # "Product.information_type IS NULL".
         query = """
         SELECT LOWER(COALESCE(product_name, distro_name)) AS name,
                product_id,
@@ -63,13 +75,19 @@ class TranslationsOverview:
                      distribution=distribution.id
               WHERE category=3 AND
                     (product IS NOT NULL OR distribution IS NOT NULL) AND
-                    (product.official_rosetta OR distribution.official_rosetta)
+                    (product.translations_usage = %s AND
+                     (product.information_type = %s OR
+                      product.information_type IS NULL) OR
+                    distribution.translations_usage = %s)
               GROUP BY product.displayname, product.id,
                        distribution.displayname, distribution.id
               HAVING SUM(karmavalue) > 0
               ORDER BY total_karma DESC
-              LIMIT %d) AS something
-          ORDER BY name""" % int(limit)
+              LIMIT %s) AS something
+          ORDER BY name""" % sqlvalues(ServiceUsage.LAUNCHPAD,
+                                       InformationType.PUBLIC,
+                                       ServiceUsage.LAUNCHPAD,
+                                       limit)
         cur = cursor()
         cur.execute(query)
 

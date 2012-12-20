@@ -19,7 +19,7 @@ also have a Translations page.)
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+source/alsa-utils')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Ubuntu > ?alsa-utils? package
+    Hierarchy: Ubuntu > ?alsa-utils? package
     Tabs:
     * Overview (selected) - not linked
     * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
@@ -27,11 +27,11 @@ also have a Translations page.)
     * Blueprints - not linked
     * Translations - not linked
     * Answers - http://answers.launchpad.dev/ubuntu/+source/alsa-utils
-    Main heading: ...alsa-utils... source package in Ubuntu
+    Main heading: ...alsa-utils... package in Ubuntu
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/+source/alsa-utils')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Ubuntu > ?alsa-utils? package > Bugs on alsa-utils
+    Hierarchy: Ubuntu > ?alsa-utils? package > Bugs
     Tabs:
     * Overview - http://launchpad.dev/ubuntu/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
@@ -39,7 +39,7 @@ also have a Translations page.)
     * Blueprints - not linked
     * Translations - not linked
     * Answers - http://answers.launchpad.dev/ubuntu/+source/alsa-utils
-    Main heading: Bugs in ...alsa-utils... package in Ubuntu
+    Main heading: Bugs : alsa-utils in Ubuntu
 
 
 == Distribution source package release ==
@@ -52,7 +52,7 @@ source package.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Ubuntu > ?alsa-utils? package
+    Hierarchy: Ubuntu > ?alsa-utils? package > 1.0.9a-4ubuntu1
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
@@ -60,7 +60,7 @@ source package.
     * Blueprints - not linked
     * Translations - not linked
     * Answers - http://answers.launchpad.dev/ubuntu/+source/alsa-utils
-    Main heading: 1.0.9a-4ubuntu1 version
+    Main heading: ?alsa-utils? 1.0.9a-4ubuntu1 source package in Ubuntu
 
 
 == Distribution source package release build ==
@@ -74,7 +74,7 @@ source package release, but that's more than I can chew off for now.)
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1/+build/11')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Ubuntu > ?alsa-utils? package
+    Hierarchy: Ubuntu > ?alsa-utils? package > 1.0.9a-4ubuntu1 > i386 build
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils
@@ -93,32 +93,15 @@ and Answers.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/+source/alsa-utils')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Ubuntu > 5.04 > ?alsa-utils? package
+    Hierarchy: Ubuntu > Hoary (5.04) > ?alsa-utils? source package
     Tabs:
     * Overview (selected) - not linked
     * Code - http://code.launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Bugs - http://bugs.launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Blueprints - not linked
     * Translations - http://translations.launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    * Answers - http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    Main heading: alsa-utils in Ubuntu Hoary
-
-(XXX 20080612 mpt: That should eventually be "?alsa-utils? source package in
-Ubuntu Hoary".)
-
-    >>> anon_browser.open(
-    ...     'http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils')
-    >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Ubuntu > 5.04 > ?alsa-utils? package >
-        Questions for alsa-utils in Ubuntu Hoary
-    Tabs:
-    * Overview - http://launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    * Code - http://code.launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    * Bugs - http://bugs.launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    * Blueprints - not linked
-    * Translations - http://translations.launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    * Answers (selected) - not linked
-    Main heading: Questions for alsa-utils in Ubuntu Hoary
+    * Answers - not linked
+    Main heading: ?alsa-utils? source package in Hoary
 
 
 == Distribution series source package release ==
@@ -132,26 +115,26 @@ series source package.
     ...     'http://launchpad.dev/ubuntu/hoary/'
     ...     '+source/alsa-utils/1.0.9a-4ubuntu1')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Ubuntu > 5.04 > ?alsa-utils? package
+    Hierarchy: Ubuntu > Hoary (5.04) > ?alsa-utils? source package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Bugs - http://bugs.launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Blueprints - not linked
     * Translations - http://translations.launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    * Answers - http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    Main heading: alsa-utils 1.0.9a-4ubuntu1 (source) in ubuntu hoary
+    * Answers - not linked
+    Main heading: ?alsa-utils? 1.0.9a-4ubuntu1 source package in
+        The Hoary Hedgehog Release
 
 
 == Distribution series architecture ==
 
-Distribution series architectures do not have their own Bugs,
-Translations, or anything else, so they are not part of the top-level
-hierarchy. Instead, the hierarchy stops at the distribution series.
+Distribution series architectures pages inherit Code, Bugs, Blueprints and
+Translations from the distribution series.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/hoary/i386')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Ubuntu > 5.04
+    Hierarchy: Ubuntu > Hoary (5.04) > i386
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary
     * Code - http://code.launchpad.dev/ubuntu/hoary
@@ -164,53 +147,36 @@ hierarchy. Instead, the hierarchy stops at the distribution series.
 
 == Distribution series architecture binary package ==
 
-Distribution series architecture binary packages are not part of the
-top-level hierarchy for the same reason as the architectures themselves.
-Instead, the hierarchy stops at the distribution series.
+The distribution series architecture binary packages page inherits Code,
+Bugs, Blueprints and Translations from the distribution series.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/hoary/i386/pmount')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Ubuntu > 5.04
+    Hierarchy: Ubuntu > Hoary (5.04) > i386 > pmount
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary
-    ...
-    Main heading: Binary Package "pmount" in The Hoary Hedgehog Release for
-    i386 (x86)
-
-(XXX mpt 20080613: Eventually this heading should be "?pmount? package in
-Ubuntu Hoary i386". <http://launchpad.net/bugs/241341>)
-
-But they do link back to the distribution series architecture.
-
-    >>> anon_browser.getLink('Ubuntu Hoary i386').click()
-    >>> print anon_browser.url
-    http://launchpad.dev/ubuntu/hoary/i386
+    * Code - http://code.launchpad.dev/ubuntu/hoary
+    * Bugs - http://bugs.launchpad.dev/ubuntu/hoary
+    * Blueprints - http://blueprints.launchpad.dev/ubuntu/hoary
+    * Translations - http://translations.launchpad.dev/ubuntu/hoary
+    * Answers - not linked
+    Main heading: ?pmount? binary package in Ubuntu Hoary i386
 
 
 == Distribution series architecture binary package release ==
 
-Distribution series architecture binary package releases are not part
-of the top-level hierarchy for the same reason as the architectures
-themselves. Instead, the hierarchy stops at the distribution series.
+Distribution series architecture binary package releases pages inherit Code,
+Bugs, Blueprints and Translations from the distribution series.
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/i386/pmount/0.1-1')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Launchpad > Ubuntu > 5.04
+    Hierarchy: Ubuntu > Hoary (5.04) > i386 > pmount > 0.1-1
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary
-    ...
+    * Code - http://code.launchpad.dev/ubuntu/hoary
+    * Bugs - http://bugs.launchpad.dev/ubuntu/hoary
+    * Blueprints - http://blueprints.launchpad.dev/ubuntu/hoary
+    * Translations - http://translations.launchpad.dev/ubuntu/hoary
+    * Answers - not linked
     Main heading: pmount 0.1-1 (i386 binary) in ubuntu hoary
-
-But they do link back to the pages for both the distribution series
-architecture and the distribution series architecture binary package.
-
-    >>> anon_browser.getLink('Ubuntu Hoary i386').click()
-    >>> print anon_browser.url
-    http://launchpad.dev/ubuntu/hoary/i386
-
-    >>> anon_browser.open(
-    ...     'http://launchpad.dev/ubuntu/hoary/i386/pmount/0.1-1')
-    >>> anon_browser.getLink('pmount').click()
-    >>> print anon_browser.url
-    http://launchpad.dev/ubuntu/hoary/i386/pmount

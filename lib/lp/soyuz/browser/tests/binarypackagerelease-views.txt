@@ -1,8 +1,8 @@
 = BinaryPackageRelease Pages =
 
   >>> from zope.component import getMultiAdapter
-  >>> from zope.publisher.browser import TestRequest
-  >>> from canonical.launchpad.database import BinaryPackageRelease
+  >>> from lp.services.webapp.servers import LaunchpadTestRequest
+  >>> from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 
   >>> pmount_bin = BinaryPackageRelease.get(15)
   >>> pmount_bin.name
@@ -12,7 +12,7 @@
 
 Get a "mock" request:
   >>> mock_form = {}
-  >>> request = TestRequest(form=mock_form)
+  >>> request = LaunchpadTestRequest(form=mock_form)
 
 Let's instantiate the view for +portlet-details:
 
@@ -26,8 +26,8 @@ IPackageRelationshipSet. (see package-relationship.txt).
 
   >>> pmount_deps = pmount_view.depends()
 
-  >>> from canonical.launchpad.webapp.testing import verifyObject
-  >>> from canonical.launchpad.interfaces import IPackageRelationshipSet
+  >>> from lp.soyuz.interfaces.packagerelationship import IPackageRelationshipSet
+  >>> from lp.services.webapp.testing import verifyObject
 
   >>> verifyObject(IPackageRelationshipSet, pmount_deps)
   True

@@ -2,36 +2,31 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  id="page-summary"
-  tal:condition="view/show_summary"
-  tal:define="menu context/menu:branches|nothing">
+  id="portlet-person-codesummary"
+  class="portlet"
+  tal:define="menu context/menu:branches; features request/features">
 
-  <p>
-    <strong class="count" tal:content="view/owned_branch_count">100</strong>
-    <tal:link condition="menu"
-        replace="structure menu/owned/render"
-        /><tal:no-link condition="not:menu">owned branches</tal:no-link>,
-    <strong class="count" tal:content="view/registered_branch_count">100</strong>
-    <tal:link condition="menu"
-        replace="structure menu/registered/render"
-        /><tal:no-link condition="not:menu">registered branches</tal:no-link>,
-    <strong class="count" tal:content="view/subscribed_branch_count">100</strong>
-    <tal:link condition="menu"
-        replace="structure menu/subscribed/render"
-        /><tal:no-link condition="not:menu">subscribed branches</tal:no-link>
-  </p>
-  <p id="merge-counts">
-    <strong class="count" tal:content="view/active_review_count">5</strong>
-    <tal:link condition="menu"
-        replace="structure menu/active_reviews/render"
-        /><tal:no-link condition="not:menu">active proposals</tal:no-link>,
-    <strong class="count" tal:content="view/approved_merge_count">5</strong>
-    <tal:link condition="menu"
-        replace="structure menu/approved_merges/render"
-        /><tal:no-link condition="not:menu">approved merges</tal:no-link>,
-    <strong class="count" tal:content="view/requested_review_count">5</strong>
-    <tal:link condition="menu"
-        replace="structure menu/requested_reviews/render"
-        /><tal:no-link condition="not:menu">requested reviews</tal:no-link>
-  </p>
+  <table>
+    <tr class="code-links" tal:condition="menu/owned/enabled">
+      <td tal:content="structure menu/owned/render" />
+    </tr>
+    <tr class="code-links" tal:condition="menu/registered/enabled">
+      <td tal:content="structure menu/registered/render" />
+    </tr>
+    <tr class="code-links" tal:condition="menu/subscribed/enabled">
+      <td tal:content="structure menu/subscribed/render" />
+    </tr>
+    <tr class="code-links"
+        tal:condition="menu/active_reviews/enabled">
+      <td tal:content="structure menu/active_reviews/render" />
+    </tr>
+    <tr tal:condition="features/code.branchmergequeue" id="mergequeue-counts">
+      <td class="code-count" tal:content="menu/mergequeue_count">5</td>
+      <td tal:condition="menu"
+          tal:content="structure menu/mergequeues/render" />
+    </tr>
+    <tr class="code-links" tal:condition="menu/source_package_recipes/enabled">
+      <td tal:content="structure menu/source_package_recipes/render" />
+    </tr>
+  </table>
 </div>

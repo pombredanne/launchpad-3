@@ -14,26 +14,30 @@ __all__ = [
 import datetime
 import gc
 import os
+from shutil import copyfileobj
 import sys
 import tempfile
-from shutil import copyfileobj
 
 from storm.store import Store
+import transaction
 from zope.component import getUtility
 
-import transaction
-
-from canonical.database.sqlbase import sqlvalues, cursor
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.translations.interfaces.languagepack import (
-    ILanguagePackSet,
-    LanguagePackType)
+from lp.services.database.sqlbase import (
+    cursor,
+    sqlvalues,
+    )
+from lp.services.librarian.interfaces.client import (
+    ILibrarianClient,
+    UploadFailed,
+    )
+from lp.services.tarfile_helpers import LaunchpadWriteTarFile
+from lp.translations.enums import LanguagePackType
+from lp.translations.interfaces.languagepack import ILanguagePackSet
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
 from lp.translations.interfaces.vpoexport import IVPOExportSet
-from lp.translations.utilities.translation_export import (
-    LaunchpadWriteTarFile)
-from canonical.librarian.interfaces import ILibrarianClient, UploadFailed
 
 
 def iter_sourcepackage_translationdomain_mapping(series):
@@ -277,7 +281,7 @@ def export_language_pack(distribution_name, series_name, logger,
                 size=size,
                 file=filehandle,
                 contentType='application/x-gtar')
-        except UploadFailed, e:
+        except UploadFailed as e:
             logger.error('Uploading to the Librarian failed: %s', e)
             return None
         except:

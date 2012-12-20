@@ -5,43 +5,43 @@
   omit-tag="">
   <ul>
     <li tal:condition="view/isRemoved">
-      <strong>Removed from disk</strong>
+      Removed from disk
       <span tal:attributes="title context/dateremoved/fmt:datetime"
             tal:content="context/dateremoved/fmt:displaydate" />.
     </li>
     <li tal:condition="view/isPendingRemoval">
-      <strong>Removal requested</strong>
+      Removal requested
       <span tal:attributes="title context/scheduleddeletiondate/fmt:datetime"
          tal:content="context/scheduleddeletiondate/fmt:displaydate" />.
     </li>
     <li tal:condition="view/wasDeleted">
-      <strong>Deleted</strong>
+      Deleted
       <span tal:attributes="title context/datesuperseded/fmt:datetime"
             tal:content="context/datesuperseded/fmt:displaydate" />
       by <a tal:replace="structure context/removed_by/fmt:link"/>
       <div tal:condition="context/removal_comment"
-           tal:content="context/removal_comment" />
+           tal:content="structure context/removal_comment/fmt:text-to-html" />
     </li>
     <li tal:condition="view/wasSuperseded">
-      <strong>Superseded</strong>
+      Superseded
       <span tal:attributes="title context/datesuperseded/fmt:datetime"
             tal:content="context/datesuperseded/fmt:displaydate"/>
       by <span tal:replace="context/supersededby/title" />
     </li>
+    <li tal:content="structure view/recipe_build_details" tal:condition="view/is_source" />
     <li tal:condition="context/datepublished">
-      <strong>Published</strong>
+      Published
       <span tal:attributes="title context/datepublished/fmt:datetime"
             tal:content="context/datepublished/fmt:displaydate" />
     </li>
     <li tal:condition="view/wasCopied">
-      <strong>Copied from</strong>
+      Copied from
       <tal:source_original_location condition="view/is_source">
         <tal:define
           define="linkify_archive view/linkify_source_archive;
                   source context/sourcepackagerelease">
           <tal:message
-            define="archive source/upload_archive;
-                    series source/upload_distroseries;
+            define="series source/upload_distroseries;
                     distro series/distribution;
                     message string:${distro/name} ${series/name} in "
             replace="message" />
@@ -54,13 +54,19 @@
                     message string:${archive/displayname}"
             replace="message" />
         </tal:define>
+        <tal:source_creator condition="context/creator">
+          by <a tal:replace="structure context/creator/fmt:link"/>
+        </tal:source_creator>
+        <tal:source_sponsor condition="context/sponsor">
+          (sponsored by <a tal:replace="structure context/sponsor/fmt:link"/>)
+        </tal:source_sponsor>
       </tal:source_original_location>
       <tal:binary_build_location condition="view/is_binary">
         <tal:message
           define="build context/binarypackagerelease/build;
                   archive build/archive;
                   pocket build/pocket;
-                  arch build/distroarchseries;
+                  arch build/distro_arch_series;
                   series arch/distroseries;
                   distro series/distribution;
                   message string:${distro/name} ${series/name}-${pocket/name/fmt:lower} ${arch/architecturetag} in ${archive/displayname}"
@@ -69,11 +75,4 @@
     </li>
 
   </ul>
-
-  <tal:ppa condition="context/archive/is_ppa">
-    <p tal:condition="view/isRemoved">
-      Removed files can still be downloaded from the Librarian; see below.
-    </p>
-  </tal:ppa>
-
 </tal:root>

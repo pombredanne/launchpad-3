@@ -23,10 +23,6 @@
     tal:content="structure notification/message"
   >A warning notification message</div>
   <div class="informational message"
-    tal:repeat="notification notifications/notice"
-    tal:content="structure notification/message"
-  >A notice notification message</div>
-  <div class="informational message"
     tal:repeat="notification notifications/info"
     tal:content="structure notification/message"
   >An info notification message</div>
@@ -39,240 +35,230 @@
 
 <metal:load-javascript define-macro="load-javascript"
   tal:define="
-      revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-      rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
-      icingroot string:${rooturl}+icing/rev${revno};
-      devmode modules/canonical.config/config/devmode;
-      yui string:${icingroot}/yui/3.0.0pr2/build;
-      lazr_js string:${icingroot}/lazr/build;
-      lp_js string:${icingroot}/build"
+      revno modules/lp.app.versioninfo/revno | string:unknown;
+      icingroot string:/+icing/rev${revno};
+      combo_url view/combo_url;
+      devmode modules/lp.services.config/config/devmode;
+      yui_version view/yui_version;
+      yui_console_debug view/yui_console_debug;"
   >
   <tal:comment replace="nothing">
     This macro just loads javascript files. It doesn't
     do any initialization.
+
+    We load all of the script files from the same host that served the HTML in
+    order to optimize IE caching over SSL. This is inefficient when you cross
+    subdomains (from bugs to code for example) but luckily most users stay
+    within one or two domains.
+
+    XXX mars 2010-04-08
+    We can revisit this IE-only optimization if we remove SSL.  Any changes that
+    affect IE should be tested using webpagetest.org. (See the dev.launchpad.net
+    wiki for details.)
   </tal:comment>
+  <script type="text/javascript">
+    var LP = {
+        cache: {},
+        links: {}
+    };
+  </script>
 
-  <tal:devmode condition="devmode">
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/yui/yui.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/oop/oop.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/event/event.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/dom/dom.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/node/node.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/dump/dump.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/io/io.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/json/json.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/attribute/attribute.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/base/base.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/substitute/substitute.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/anim/anim.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/classnamemanager/classnamemanager.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/plugin/plugin.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/widget/widget.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/widget/widget-position-ext.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/cookie/cookie.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/widget/widget-position.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/widget/widget-position-ext.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/widget/widget-stack.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/widget/widget-stdmod.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/overlay/overlay.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/node-menunav/node-menunav.js"></script>
+  <script type="text/javascript" tal:condition="devmode">
+    LP.devmode = true;
+  </script>
 
+  <tal:js-legacy condition="not: request/features/js.combo_loader.enabled">
     <script type="text/javascript"
-            tal:attributes="src string:${icingroot}/MochiKit.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lazr_js}/lazr/lazr.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lazr_js}/anim/anim.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lazr_js}/inlineedit/editor.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lazr_js}/autocomplete/autocomplete.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lazr_js}/overlay/overlay.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lazr_js}/activator/activator.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lazr_js}/picker/picker.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lazr_js}/formoverlay/formoverlay.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lazr_js}/choiceedit/choiceedit.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lazr_js}/effects/effects.js"></script>
-
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/lp.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/dragscroll.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/picker.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/mapping.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/registry/milestoneoverlay.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/registry/timeline.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/sorttable/sorttable.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/inlinehelp/inlinehelp.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/client/client.js"></script>
-  </tal:devmode>
-  <tal:production condition="not:devmode">
-    <script type="text/javascript"
-            tal:attributes="src string:${icingroot}/build/launchpad.js"></script>
-  </tal:production>
+          tal:attributes="src string:${icingroot}/build/launchpad.js"></script>
+    <script type="text/javascript" tal:content="string:
+       YUI.GlobalConfig = {
+           debug: ${yui_console_debug},
+           fetchCSS: false,
+           timeout: 50,
+           ignore: [
+               'yui2-yahoo', 'yui2-event', 'yui2-dom',
+               'yui2-calendar','yui2-dom-event'
+           ]
+        }
+       ">
+    </script>
+  </tal:js-legacy>
 
   <script type="text/javascript"
       tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
-</metal:load-javascript>
 
+  <tal:js-loader condition="request/features/js.combo_loader.enabled">
+   <script type="text/javascript" tal:attributes="src string:${combo_url}/?${yui_version}/yui/yui-min.js&amp;lp/meta.js&amp;${yui_version}/loader/loader-min.js"></script>
+   <script type="text/javascript" tal:content="string:
+        var raw = null;
+        if (LP.devmode) {
+           raw = 'raw';
+        }
+        YUI.GlobalConfig = {
+            combine: true,
+            comboBase: '${combo_url}/?',
+            root: '${yui_version}/',
+            filter: raw,
+            debug: ${yui_console_debug},
+            fetchCSS: false,
+            maxURLLength: 2000,
+            groups: {
+                lp: {
+                    combine: true,
+                    base: '${combo_url}/?lp/',
+                    comboBase: '${combo_url}/?',
+                    root: 'lp/',
+                    // comes from including lp/meta.js
+                    modules: LP_MODULES,
+                    fetchCSS: false
+                },
+                yui2: {
+                    combine: true,
+                    base: '${combo_url}/?yui2/',
+                    comboBase: '${combo_url}/?',
+                    root: 'yui2/',
+                    fetchCSS: false,
+                    modules: {
+                        'yui2-yahoo': {
+                            path: 'yahoo/yahoo.js'
+                        },
+                        'yui2-event': {
+                            path: 'event/event.js'
+                        },
+                        'yui2-dom': {
+                            path: 'dom/dom.js'
+                        },
+                        'yui2-calendar': {
+                            path: 'calendar/calendar.js'
+                        },
+                        'yui2-dom-event': {
+                            path: 'yahoo-dom-event/yahoo-dom-event.js'
+                        }
+                    }
+                }
+            }
+        }">
+   </script>
+
+  </tal:js-loader>
+  <script type="text/javascript">
+      // we need this to create a single YUI instance all events and code
+      // talks across. All instances of YUI().use should be based off of
+      // LPJS instead.
+      LPJS = new YUI();
+  </script>
+
+</metal:load-javascript>
 
 <metal:page-javascript define-macro="page-javascript"
   tal:define="
-      revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-      rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
-      icingroot_contrib string:${rooturl}+icing-contrib/rev${revno};
-      devmode modules/canonical.config/config/devmode;
-      map_query string:&amp;file=api&amp;v=2&amp;key=${modules/canonical.config/config/google/maps_api_key};">
+      revno modules/lp.app.versioninfo/revno | string:unknown;
+      devmode modules/lp.services.config/config/devmode;">
   <tal:comment replace="nothing">
     Load and initialize the common script used by all pages.
   </tal:comment>
 
-  <tal:needs_json tal:condition="request/needs_json">
-    <script type="text/javascript"
-            tal:attributes="src string:${icingroot_contrib}/json2.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${icingroot_contrib}/JSONScriptRequest.js"></script>
-  </tal:needs_json>
-  <tal:needs-gmap2 condition="request/needs_gmap2">
-    <script type="text/javascript"
-            tal:condition="devmode"
-            tal:attributes="src string:http://maps.google.com/maps?${map_query};"></script>
-    <script type="text/javascript"
-            tal:condition="not: devmode"
-            tal:attributes="src string:https://maps-api-ssl.google.com/maps?oe=utf-8&amp;client=gme-canonical${map_query};"></script>
-  </tal:needs-gmap2>
-
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
-  <script type="text/javascript">
-    YUI().use('node', 'lp', function(Y) {
-        Y.on('load', function(e) {
-            sortables_init();
-            initInlineHelp();
-            Y.lp.activate_collapsibles();
-            activateFoldables();
-            activateConstrainBugExpiration();
-        }, window);
+    <script id="base-layout-load-scripts" type="text/javascript">
+        //<![CDATA[
+        LPJS.use('base', 'node', 'console', 'event',
+            'oop', 'lp', 'lp.app.foldables','lp.app.sorttable',
+            'lp.app.inlinehelp', 'lp.app.links', 'lp.app.longpoll',
+            'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
+            'lp.app.ellipsis', 'lp.code.branchmergeproposal.diff',
+            'lp.views.global',
+             function(Y) {
 
-        // Hook up the function that dismisses the help window if we click
-        // anywhere outside of it.
-        Y.on('click', handleClickOnPage, window);
-    });
-  </script>
+            Y.on("domready", function () {
+                var global_view = new Y.lp.views.Global();
+                global_view.render();
+
+                Y.lp.app.sorttable.SortTable.init();
+                Y.lp.app.inlinehelp.init_help();
+                Y.lp.activate_collapsibles();
+                Y.lp.app.foldables.activate();
+                Y.lp.app.links.check_valid_lp_links();
+                // Longpolling will only start if
+                // LP.cache.longpoll is populated.
+                // We use Y.later to work around a Safari/Chrome 'feature':
+                // The mouse cursor stays 'busy' until all the requests started during
+                // page load are finished.  Hence we want the long poll request to start
+                // right *after* the page has loaded.
+                Y.later(0, Y.lp.app.longpoll, Y.lp.app.longpoll.setupLongPollManager);
+
+            });
+
+            Y.on('lp:context:web_link:changed', function(e) {
+                  window.location = e.new_value;
+            });
+        });
+        //]]>
+    </script>
+    <script id="base-helper-functions" type="text/javascript">
+         //<![CDATA[
+        // This code is pulled from lp.js that needs to be available on every
+        // request. Pulling here to get it outside the scope of the YUI block.
+        function setFocusByName(name) {
+            // Focus the first element matching the given name which can be focused.
+            var nodes = document.getElementsByName(name);
+            var i, node;
+            for (i = 0; i < nodes.length; i++) {
+                node = nodes[i];
+                if (node.focus) {
+                    try {
+                        // Trying to focus a hidden element throws an error in IE8.
+                        if (node.offsetHeight !== 0) {
+                            node.focus();
+                        }
+                    } catch (e) {
+                        LPJS.use('console', function(Y) {
+                            Y.log('In setFocusByName(<' +
+                                node.tagName + ' type=' + node.type + '>): ' + e);
+                        });
+                    }
+                    break;
+                }
+            }
+        }
+
+        function selectWidget(widget_name, event) {
+          if (event && (event.keyCode === 9 || event.keyCode === 13)) {
+              // Avoid firing if user is tabbing through or simply pressing
+              // enter to submit the form.
+              return;
+          }
+          document.getElementById(widget_name).checked = true;
+        }
+        //]]>
+    </script>
 </metal:page-javascript>
-
-
-<metal:launchpad-stylesheet define-macro="launchpad-stylesheet"
-  tal:define="
-      revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-      rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
-      icingroot string:${rooturl}+icing/rev${revno};
-      devmode modules/canonical.config/config/devmode"
-  >
-  <style
-    type="text/css"
-    media="screen, print"
-    tal:condition="not: devmode"
-    tal:content="string:@import url(${icingroot}/+style-slimmer.css);"/>
-  <style
-    type="text/css"
-    media="screen, print"
-    tal:condition="devmode"
-    tal:content="string:@import url(${icingroot}/style.css);"/>
-
-  <link rel="stylesheet" type="text/css"
-      tal:attributes="href
-      string:${icingroot}/lazr/build/lazr/assets/skins/sam/lazr.css"
-      />
-  <link rel="stylesheet" type="text/css"
-      tal:attributes="href
-      string:${icingroot}/lazr/build/inlineedit/assets/skins/sam/editor.css"
-      />
-  <link rel="stylesheet" type="text/css"
-      tal:attributes="href
-      string:${icingroot}/lazr/build/autocomplete/assets/skins/sam/autocomplete.css"
-      />
-  <link rel="stylesheet" type="text/css"
-      tal:attributes="href
-      string:${icingroot}/lazr/build/overlay/assets/skins/sam/pretty-overlay.css"
-      />
-  <link rel="stylesheet" type="text/css"
-      tal:attributes="href
-      string:${icingroot}/lazr/build/formoverlay/assets/formoverlay.css"
-      />
-  <link rel="stylesheet" type="text/css"
-      tal:attributes="href
-      string:${icingroot}/lazr/build/picker/assets/skins/sam/picker.css"
-      />
-  <link rel="stylesheet" type="text/css"
-      tal:attributes="href
-      string:${icingroot}/lazr/build/activator/assets/skins/sam/activator.css"
-      />
-  <link rel="stylesheet" type="text/css"
-      tal:attributes="href
-      string:${icingroot}/lazr/build/choiceedit/assets/choiceedit-core.css"
-      />
-</metal:launchpad-stylesheet>
 
 
 <metal:launchpad-stylesheet-3-0 define-macro="launchpad-stylesheet-3-0"
   tal:define="
-    revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-    rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
-    icingroot string:${rooturl}+icing/rev${revno};
-    yui string:${icingroot}/yui/3.0.0pr2/build;
-    devmode modules/canonical.config/config/devmode">
+    revno modules/lp.app.versioninfo/revno | string:unknown;
+    icingroot string:/+icing/rev${revno}">
   <tal:comment replace="nothing">
-    This macro loads the old stylesheet, then the YUI CSS, and finally
-    the new stylesheet. When no pages use main-template, this can be
-    refactored.
-  </tal:comment>
-  <metal:old-style-sheet use-macro="context/@@+base-layout-macros/launchpad-stylesheet" />
-  <link rel="stylesheet" type="text/css"
-    tal:attributes="href string:${yui}/cssreset/reset.css" />
-  <link rel="stylesheet" type="text/css"
-    tal:attributes="href string:${yui}/cssfonts/fonts.css" />
-  <link rel="stylesheet" type="text/css"
-    tal:attributes="href string:${yui}/cssgrids/grids.css" />
+    This macro loads a single css file containing all our stylesheets.
+    If you need to include a new css file here, add it to
+    buildout-templates/bin/combine-css.in instead.
 
-  <style type="text/css" media="screen, print"
-    tal:content="string:@import url(${icingroot}/style-3-0.css);"/>
+    We load the CSS from the same host that served the HTML in order to optimize
+    IE caching over SSL. This is inefficient when you cross subdomains (from
+    bugs to code for example) but luckily most users stay within one or two
+    domains.
+
+    XXX mars 2010-04-08
+    We can revisit this IE-only optimization if we remove SSL.  Any changes that
+    affect IE should be tested using webpagetest.org. (See the dev.launchpad.net
+    wiki for details.)
+    </tal:comment>
+  <link
+        type="text/css"
+        rel="stylesheet"
+        media="screen, print"
+        tal:attributes="href string:${icingroot}/combo.css" />
 </metal:launchpad-stylesheet-3-0>
 
 
@@ -282,26 +268,24 @@
                       links cache/links;
                       objects cache/objects;">
     <script tal:repeat="key links"
-      tal:content="string:LP.client.links['${key}'] =
+      tal:content="string:LP.links['${key}'] =
                    '${links/?key/fmt:api_url}';">
     </script>
-    <script tal:repeat="key objects"
-      tal:content="string:LP.client.cache['${key}'] =
-                   ${objects/?key/webservice:json};">
-    </script>
   </tal:cache>
-
-  <script tal:condition="context/webservice:is_entry"
-    tal:content="string:LP.client.cache['context'] =
-                 ${context/webservice:json};">
+  <tal:comment condition="nothing">
+    The id of the script block below is used to determine whether this
+    page is loaded by test_lp_client_integration.js.
+  </tal:comment>
+  <script id="json-cache-script"
+          tal:content="string:LP.cache = ${view/getCacheJSON};">
   </script>
 </metal:lp-client-cache>
 
 
 <metal:application-buttons define-macro="application-buttons">
   <!-- Application Menu -->
-  <ul
-    tal:define="facetmenu view/menu:facet">
+  <ul class="facetmenu"
+      tal:define="facetmenu view/menu:facet">
     <tal:facet repeat="link facetmenu">
       <li
         tal:condition="python: link.enabled and link.selected"
@@ -333,38 +317,105 @@
 
 <metal:footer define-macro="footer">
   <div id="footer" class="footer">
-    <div class="lp-arcana">
-      <img src="/@@/launchpad-logo-and-name-hierarchy.png" alt="Launchpad"/>
-      &nbsp;&bull;&nbsp;
-      <a href="/+tour">Take the tour</a>
-      &nbsp;&bull;&nbsp;
-      <a href="https://help.launchpad.net/">Read the guide</a>
-      &nbsp;
-      <form id="globalsearch" method="get" accept-charset="UTF-8"
-        class="sprite-after search-icon"
-        tal:condition="view/macro:pagehas/globalsearch"
-        tal:attributes="action string:${rooturl}+search">
-        <input type="search" id="search-text" name="field.text" />
-      </form>
+    <div class="lp-arcana" tal:condition="not:view/is_root_page|nothing">
+        <div class="lp-branding">
+          <a tal:attributes="href string:${rooturl}"><img src="/@@/launchpad-logo-and-name-hierarchy.png" alt="Launchpad"/></a>
+          &nbsp;&bull;&nbsp;
+          <a tal:attributes="href string:${rooturl}+tour">Take the tour</a>
+          &nbsp;&bull;&nbsp;
+          <a href="https://help.launchpad.net/">Read the guide</a>
+          &nbsp;
+          <form id="globalsearch" method="get" accept-charset="UTF-8"
+            tal:condition="view/macro:pagehas/globalsearch"
+            tal:attributes="action string:${rooturl}+search">
+            <input type="search" id="search-text" name="field.text" />
+            <input type="image" src="/@@/search" style="vertical-align:5%" alt="Search Launchpad"/>
+          </form>
+        </div>
+        <metal:site-message
+          use-macro="context/@@+base-layout-macros/site-message"/>
     </div>
 
     <div class="colophon">
-      &copy; 2004-2009
+      &copy; 2004-2012
       <a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
       &nbsp;&bull;&nbsp;
-      <a href="/legal">Terms of use</a>
+      <a tal:attributes="href string:${rooturl}legal">Terms of use</a>
       &nbsp;&bull;&nbsp;
-      <a href="/feedback"
-        tal:condition="request/lp:person">Contact us</a>
-      <span id="lp-version" tal:condition="not:is_lpnet">
+      <a tal:condition="not: view/user|nothing"
+        href="/feedback">Contact Launchpad Support</a>
+      <a tal:condition="view/user|nothing"
+        href="/support">Contact Launchpad Support</a>
       &nbsp;&bull;&nbsp;
-        <a href="https://help.launchpad.net/LaunchpadReleases"
-          tal:content="version"/>
+      <a href="http://blog.launchpad.net/"
+	>Blog</a>
+      <tal:careers_link condition="not: features/baselayout.careers_link.disabled">
+	&nbsp;&bull;&nbsp;
+	<a href="http://www.canonical.com/about-canonical/careers"
+		>Careers</a>
+      </tal:careers_link>
+      &nbsp;&bull;&nbsp;
+      <a href="http://identi.ca/launchpadstatus"
+        >System status</a>
+      <span id="lp-version">
+      &nbsp;&bull;&nbsp;
+        r<tal:revno replace="revno" />
         <tal:devmode condition="devmode">devmode</tal:devmode>
         <tal:demo condition="is_demo">demo site</tal:demo>
-        <tal:edge condition="is_edge">beta site</tal:edge>
+        (<a href="https://dev.launchpad.net/"
+             >Get the code!</a>)
       </span>
     </div>
   </div>
 </metal:footer>
+
+<metal:site-message define-macro="site-message">
+  <div class="sitemessage" tal:condition="site_message">
+    <tal:site_message tal:content="structure site_message">
+      This site is running pre-release code.
+    </tal:site_message>
+  </div>
+</metal:site-message>
+
+
+<metal:debug-timeline define-macro="debug-timeline">
+  <a tal:condition="request/features/visible_render_time"
+     tal:define="timeline_actions modules/lp.services.webapp.adapter/get_timeline_actions"
+     id="debug_timeline" class="hidden">
+    <table class="debug-timeline listing">
+      <thead>
+        <tr>
+          <th>Duration</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="action timeline_actions">
+          <td class="amount" tal:content="action/duration/fmt:millisecondduration"/>
+          <td style="font-family: monospace; text-align: left;">
+            <pre class="wrap"><span class="action-category" tal:content="action/category"/>: <span class="action-details" tal:content="action/detail"/></pre>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </a>
+</metal:debug-timeline>
+
+
+<metal:plural-msg define-macro="plural-message">
+  <tal:comment condition="nothing">
+    Expected variables to be defined in a containing tag or global:
+    count - value to check to determine plural form
+    singluar - string to use when count == 1
+    plural - string to use when count > 1.  If no plural is given it defaults
+    to the singular value + 's'.
+  </tal:comment>
+  <tal:singular
+    condition="python: count == 1"
+    replace="singular" /><tal:plural
+     define="l_default string:s;
+             l_plural plural | string:$singular$l_default;"
+    condition="python: count != 1"
+    replace="l_plural" /></metal:plural-msg>
 </macros>
+

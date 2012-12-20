@@ -6,15 +6,12 @@ using Javascript after page load.
     >>> anon_browser.getLink(id='tags-content-link').click()
     >>> print anon_browser.url
     http://launchpad.dev/ubuntu/+bugtarget-portlet-tags-content
-    >>> tags_portlet = find_tags_by_class(anon_browser.contents, 'portletBody')[0]
-    >>> for td_tag in tags_portlet('td'):
-    ...     print td_tag.renderContents()
-    <a ...>crash</a>
-    2
-    <a ...>dataloss</a>
-    1
-    <a ...>pebcak</a>
-    1
+    >>> tags_portlet = find_tags_by_class(anon_browser.contents, 'data-list')[0]
+    >>> for a_tag in tags_portlet('a'):
+    ...     print a_tag.renderContents()
+    crash
+    pebcak
+    dataloss
 
 If we click on a tag, only bugs with that tag are displayed:
 
@@ -25,9 +22,9 @@ If we click on a tag, only bugs with that tag are displayed:
     >>> from lp.bugs.tests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
     9 Thunderbird crashes
-      thunderbird Medium Confirmed
+      thunderbird (Ubuntu) Medium Confirmed
     10 another test bug
-       linux-source-2.6.15 Medium New
+       linux-source-2.6.15 (Ubuntu) Medium New
 
 Clicking on a tags shows only bugs that have that specific tag, so if
 we click on another tag, the bugs that were shown previously won't be
@@ -40,7 +37,7 @@ shown.
     'http://launchpad.dev/ubuntu/+bugs?field.tag=dataloss'
     >>> print_bugtasks(anon_browser.contents)
     2 Blackhole Trash folder
-      &mdash; Medium New
+      Ubuntu Medium New
 
 We update bug #2's status to Invalid to demonstrate that the portlet body is
 not available when no tags are relevant:
@@ -52,5 +49,4 @@ not available when no tags are relevant:
     >>> anon_browser.open(
     ...     'http://launchpad.dev/tomcat/+bugtarget-portlet-tags-content')
     >>> print extract_text(anon_browser.contents)
-    <BLANKLINE>
-
+    Tags

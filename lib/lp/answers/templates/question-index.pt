@@ -6,93 +6,119 @@
       i18n:domain="launchpad"
 >
   <head>
-    <style metal:fill-slot="head_epilogue"
-           type="text/css" media="screen">
+    <metal:block fill-slot="head_epilogue">
+    <style type="text/css" media="screen">
   div.confirmBox {
     margin: 0;
     padding-right: 0.5em;
     padding-bottom: 0.5em;
     text-align: right;
-    font-size: smaller;
   }
     </style>
+    <script type="text/javascript">
+        LPJS.use('base', 'node', 'event',
+                'lp.app.comment', 'lp.answers.subscribers',
+            function(Y) {
+        Y.on('domready', function() {
+            LP.cache.comment_context = LP.cache.context;
+            var first_comment = Y.one('.boardComment');
+            if (first_comment !== null) {
+              var cl = new Y.lp.app.comment.CommentList({
+                  comment_list_container: first_comment.get('parentNode')
+              });
+            cl.render();
+            }
+            new Y.lp.answers.subscribers.createQuestionSubscribersLoader();
+        });
+      });
+    </script>
+    </metal:block>
   </head>
   <body>
-    <metal:heading fill-slot="heading">
-      <h1 tal:content="context/title">Bar doesn't work</h1>
-      <div id="question-details">
-        <img alt="Open" title="Open" src="/@@/question"
-          tal:attributes="alt context/status/title;
-                          title context/status/title;" />
-        <span class="questionstatusOPEN"
-          tal:attributes="class string:questionstatus${context/status/name}"
-          tal:content="context/status/title">Open</span>
-        Question #<span tal:replace="context/id">4</span>,
-
-        <tal:answerer condition="context/answerer">
-          solved
-          <span
-            tal:attributes="title context/datecreated/fmt:datetime"
-            tal:content="context/datecreated/fmt:displaydate">2005-10-05</span>
-          by
-          <a tal:replace="structure context/answerer/fmt:link">
-            Foo Bar
-          </a>,
-        </tal:answerer>
-
-        asked
+    <metal:registering fill-slot="registering">
+        Asked by
+        <a tal:replace="structure context/owner/fmt:link" />
         <span
           tal:attributes="title context/datecreated/fmt:datetime"
           tal:content="context/datecreated/fmt:displaydate">2005-10-05</span>
-        by
-        <a
-          tal:attributes="href context/owner/fmt:url"
-          tal:content="context/owner/displayname">Foo Bar</a>
-      </div>
 
-      <div id="question-lang">
-        <b>Language:</b>
-        <span tal:replace="context/language/englishname">English</span><br />
-      </div>
+    </metal:registering>
 
-    </metal:heading>
 
     <metal:portlets fill-slot="side">
+      <div id="involvement" class="portlet">
+        <ul class="involvement">
+          <li class="single">
+            <a tal:attributes="href view/new_question_url"
+               class="sprite answers">
+              Ask a question
+            </a>
+          </li>
+        </ul>
+      </div>
       <div tal:replace="structure context/@@+global-actions" />
-      <div tal:condition="context/reopenings"
-           tal:replace="structure context/@@+portlet-reopenings" />
-      <div tal:replace="structure context/@@+portlet-subscribers" />
-      <div tal:replace="structure context/@@+portlet-bugs" />
+      <tal:subscribers replace="structure context/@@+portlet-subscribers"/>
     </metal:portlets>
 
     <div metal:fill-slot="main">
-
       <tal:description
         define="global description context/description/fmt:obfuscate-email/fmt:text-to-html" />
 
-      <p id="original-bug"
-        tal:define="bug view/original_bug"
-        tal:condition="bug">
-        This question was originally filed as
-        <a href="#"
-          tal:attributes="href bug/fmt:url">bug
-          #<tal:num replace="bug/id" /></a>.
-      </p>
+      <div class="report"
+        tal:content="structure description"/>
 
-      <div
-        class="report"
-        tal:content="structure description"
-        />
+      <div class="portlet">
+        <h2>Question information</h2>
 
-      <div id="related-faq" tal:condition="context/faq">
-        <b>Related FAQ:</b>
-        <a href="#"
-           tal:attributes="href context/faq/fmt:url"
-           tal:content="context/faq/title">FAQ Title</a>
+        <div class="yui-g">
+          <div class="yui-u first">
+             <tal:distro-information content="structure context/@@+portlet-details" />
+          </div>
+
+          <div class="yui-u">
+            <div tal:replace="structure context/@@+portlet-bugs" />
+
+            <p id="original-bug"
+              tal:define="bug view/original_bug"
+              tal:condition="bug">
+              This question was originally filed as
+              <a href="#"
+                tal:attributes="href bug/fmt:url">bug
+                #<tal:num replace="bug/id" /></a>.
+            </p>
+
+            <ul class="horizontal">
+              <li
+                tal:define="link context/menu:answers/linkbug"
+                tal:content="structure link/fmt:link" />
+              <li tal:condition="context/bugs"
+                tal:define="link context/menu:answers/unlinkbug"
+                tal:content="structure link/fmt:link" />
+            </ul>
+
+            <div id="related-faq" style="margin-top: 1em;">
+              <h3>Related FAQ:</h3>
+
+              <p>
+                <a class="sprite faq"
+                  tal:condition="context/faq"
+                  tal:attributes="href context/faq/fmt:url"
+                  tal:content="context/faq/title">FAQ Title</a>
+                <tal:none tal:condition="not: context/faq">
+                  None
+                </tal:none>
+                <a tal:replace="structure context/menu:answers/linkfaq/fmt:icon" />
+               </p>
+            </div>
+
+            <div tal:condition="context/reopenings"
+                 tal:replace="structure context/@@+portlet-reopenings" />
+          </div>
+        </div>
       </div>
 
-      <tal:message repeat="message context/messages">
-        <div tal:replace="structure message/@@+display" />
+      <tal:message repeat="message view/visible_messages">
+      <div tal:replace="structure message/@@+display" />
       </tal:message>
 
       <div id="question"
@@ -110,33 +136,24 @@
           </p>
         </div>
         <div class="yui-g">
-          <ul class="horizontal">
+          <ul class="horizontal" id="horizontal-menu">
             <li tal:define="link context/menu:answers/history"
-                tal:content="structure link/render" />
+                tal:condition="link/enabled"
+                tal:content="structure link/fmt:link" />
             <li tal:define="link context/menu:answers/linkbug"
-                tal:content="structure link/render" />
-            <li tal:define="link context/menu:answers/unlinkbug"
-                tal:content="structure link/render" />
+                tal:condition="link/enabled"
+                tal:content="structure link/fmt:link" />
             <li tal:define="link context/menu:answers/makebug"
-                tal:content="structure link/render" />
+                tal:condition="link/enabled"
+                tal:content="structure link/fmt:link" />
             <li tal:define="link context/menu:answers/linkfaq"
-                tal:content="structure link/render" />
+                tal:condition="link/enabled"
+                tal:content="structure link/fmt:link" />
             <li tal:define="link context/menu:answers/createfaq"
-                tal:content="structure link/render" />
+                tal:condition="link/enabled"
+                tal:content="structure link/fmt:link" />
           </ul>
         </div>
-
-        <table class="listing" xml:lang="en" lang="en" dir="ltr"
-          tal:condition="context/whiteboard">
-          <tbody>
-            <tr>
-              <td><b>Whiteboard:</b></td>
-              <td tal:content="context/whiteboard">
-                whiteboard contents
-              </td>
-            </tr>
-          </tbody>
-        </table>
 
         <div tal:condition="view/hasActions">
           <div metal:use-macro="context/@@launchpad_form/form">
@@ -148,12 +165,12 @@
             </tal:comment>
             <div class="actions" metal:fill-slot="buttons">
               <div>
-                <input tal:replace="structure view/comment_action/render" />
                 <input tal:replace="structure view/answer_action/render" />
                 <input tal:replace="structure view/selfanswer_action/render" />
                 <input tal:replace="structure view/requestinfo_action/render" />
                 <input tal:replace="structure view/giveinfo_action/render" />
                 <input tal:replace="structure view/reopen_action/render" />
+                <input tal:replace="structure view/comment_action/render" />
               </div>
               <p id="answer-button-hint"
                 tal:condition="view/confirm_action/available">
@@ -170,21 +187,6 @@
             To post a message you must <a href="+login">log in</a>.
           </div>
         </tal:not-logged-in>
-      </div>
-
-      <div
-        class="related"
-        id="ask-your-own-question"
-        xml:lang="en" lang="en" dir="ltr"
-        tal:condition="not: view/is_question_owner"
-      >
-        <h2>Got a question of your own?</h2>
-
-        <p>For best results,
-          <a href="+addquestion"
-            tal:attributes="href view/new_question_url">ask your own question
-            separately</a>.
-        </p>
       </div>
     </div>
   </body>

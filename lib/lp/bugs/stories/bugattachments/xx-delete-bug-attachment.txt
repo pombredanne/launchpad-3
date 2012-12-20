@@ -10,14 +10,14 @@ deleted again from the bug attachment edit page.
     >>> user_browser.getControl('Attachment').add_file(
     ...   foo_file, 'text/plain', 'foo.txt')
     >>> user_browser.getControl('Description').value = 'Great deal'
-    >>> user_browser.getControl('Post comment').click()
+    >>> user_browser.getControl('Post Comment').click()
 
 The attachment is now visible on the bug page.
 
     >>> user_browser.open('http://launchpad.dev/bugs/2')
     >>> attachment_portlet = find_portlet(
     ...     user_browser.contents, 'Bug attachments')
-    >>> for li in attachment_portlet.findAll('li', 'download'):
+    >>> for li in attachment_portlet.findAll('li', 'download-attachment'):
     ...     print li.a.renderContents()
     Great deal
 
@@ -36,9 +36,9 @@ If we go to the attachment edit page, there's an option to delete the
 attachment.
 
     >>> import re
-    >>> user_browser.getLink(url=re.compile(r'[+]attachment/\d')).click()
-    >>> user_browser.title
-    'Bug #2 - Edit attachment \xe2\x80\x9cGreat deal\xe2\x80\x9d'
+    >>> user_browser.getLink(url=re.compile(r'[+]attachment/\d$')).click()
+    >>> print user_browser.title
+    Bug #2...
     >>> user_browser.getControl('Delete Attachment') is not None
     True
 
@@ -51,9 +51,9 @@ arent' any other attachments, the portlet won't show up at all.
     'http://.../+bug/2'
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message.renderContents()
-    Attachment "<a href="...">Great deal</a>" has been deleted. It will
-    be possible to download it until it has been automatically removed
-    from the server.
+    Attachment
+    "<a href="http://bugs.launchpad.dev/...+files/foo.txt">Great deal</a>"
+    has been deleted.
 
     >>> print find_portlet(user_browser.contents, 'Bug attachments')
     None
@@ -66,3 +66,9 @@ longer be visible.
     ----------------------------------------
     <p>Oddly enough the bug system seems only capable...</p>
     ----------------------------------------
+
+XXX Abel Deuring, 2009-11-25: We should check here that attempts to
+access the Librarian file for the deleted bug attachment do indeed
+result in a 404 error, in order to avoid future misunderstandings
+about the Librarian file deletion process as described in bug 387188.
+Unfortunately, this is at present not possible, see bug 113083.

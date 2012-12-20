@@ -12,10 +12,13 @@ packages within the distroseries in context:
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'search-results'))
     1 &rarr; 3 of 3 results
-    First &#149; Previous &#149; Next &#149; Last
+    First &bull; Previous &bull; Next &bull; Last
     foobar: foobar is bad
     mozilla-firefox: Mozilla Firefox Web Browser
     at: at the mountains of madness
+    1 &rarr; 3 of 3 results
+    First &bull; Previous &bull; Next &bull; Last
+
 
 == Latest uploads page ==
 
@@ -52,32 +55,5 @@ in production environment):
   >>> anon_browser.open(
   ...     "http://launchpad.dev/ubuntutest/breezy-autotest/"
   ...     "+portlet-latestuploads")
-  >>> "<ul" in anon_browser.contents
-  False
-
-
-== Details portlet ==
-
-The distroseries page contains a details portlet giving more information
-on the series' details.
-
-    >>> anon_browser.open(
-    ...     "http://launchpad.dev/ubuntu/warty/+portlet-details")
-    >>> print extract_text(anon_browser.contents)
-    Drivers: Ubuntu Team
-    Status: Current Stable Release
-    Source packages: 3
-    Binary packages: 4
-
-On series that have no source or binary packages, the portlet will change its
-text slightly to annouce this:
-
-    >>> anon_browser.open(
-    ...     "http://launchpad.dev/debian/sarge/+portlet-details")
-    >>> print extract_text(anon_browser.contents)
-    Drivers: Jeff Waugh Mark Shuttleworth
-    Status: Pre-release Freeze
-    No sources imported or published.
-    No binaries imported or published.
-    Derives from: Debian Woody
-
+  >>> find_tag_by_id(anon_browser.contents, 'no-latest-uploads') is not None
+  True

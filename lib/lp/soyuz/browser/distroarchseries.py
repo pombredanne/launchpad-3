@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -7,30 +7,47 @@ __all__ = [
     'DistroArchSeriesActionMenu',
     'DistroArchSeriesAddView',
     'DistroArchSeriesAdminView',
+    'DistroArchSeriesBreadcrumb',
     'DistroArchSeriesPackageSearchView',
     'DistroArchSeriesNavigation',
     'DistroArchSeriesView',
     ]
 
-from zope.interface import implements, Interface
+from lazr.restful.utils import smartquote
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
-from canonical.launchpad import _
-from lp.soyuz.browser.build import BuildRecordsView
-from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
+from lp import _
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.services.webapp import GetitemNavigation
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.menu import (
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
+from lp.services.webapp.publisher import canonical_url
+from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
-from canonical.launchpad.webapp import (
-    GetitemNavigation, LaunchpadEditFormView)
-from canonical.launchpad.webapp.launchpadform import (
-    action, LaunchpadFormView)
-from canonical.launchpad.webapp.menu import (
-    enabled_with_permission, Link, NavigationMenu)
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.lazr.utils import smartquote
 
 
 class DistroArchSeriesNavigation(GetitemNavigation):
 
     usedfor = IDistroArchSeries
+
+
+class DistroArchSeriesBreadcrumb(Breadcrumb):
+    """Builds a breadcrumb for `DistroArchSeries`."""
+
+    @property
+    def text(self):
+        return self.context.architecturetag
 
 
 class IDistroArchSeriesActionMenu(Interface):
@@ -64,14 +81,13 @@ class DistroArchSeriesPackageSearchView(PackageSearchViewBase):
         return self.context.searchBinaryPackages(self.text)
 
 
-class DistroArchSeriesView(BuildRecordsView,
-                           DistroArchSeriesPackageSearchView):
+class DistroArchSeriesView(DistroArchSeriesPackageSearchView):
     """Default DistroArchSeries view class."""
     implements(IDistroArchSeriesActionMenu)
 
-
-class DistroArchSeriesBuildsView(BuildRecordsView):
-    """View for +builds on a distro arch series."""
+    @property
+    def page_title(self):
+        return self.context.title
 
 
 class DistroArchSeriesAddView(LaunchpadFormView):
@@ -110,7 +126,8 @@ class DistroArchSeriesAdminView(LaunchpadEditFormView):
     schema = IDistroArchSeries
 
     field_names = [
-        'architecturetag', 'official', 'supports_virtualized'
+        'architecturetag', 'official', 'supports_virtualized',
+        'enabled',
         ]
 
     @action(_('Change'), name='update')

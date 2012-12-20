@@ -13,7 +13,7 @@ A ProductSeries can have multiple releases.  Firefox 1.5 (a ProductSeries)
 has ProductReleases 1.5.0.1 and 1.5.0.2
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
 
 First, get a product that has some ProductSeries in the sample data.
 
@@ -46,13 +46,13 @@ Pick the first release from the set.
 
 Add a file alias to the productrelease.
 
-    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from lp.services.webapp.interfaces import ILaunchBag
 
     >>> login("foo.bar@canonical.com")
-    >>> from datetime import datetime
-    >>> from pytz import UTC
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from StringIO import StringIO
+    >>> from datetime import datetime
+    >>> from pytz import UTC
     >>> def add_release_file(release, file_content, name, description,
     ...                      date_uploaded=None):
     ...     user = getUtility(ILaunchBag).user
@@ -132,8 +132,8 @@ The deleted release file will no longer appear in ProductRelease.files.
 
 Deleting files via a GET method is not allowed.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from zope.component import getMultiAdapter
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest(
     ...     environ={'REQUEST_METHOD': 'GET'},
     ...     form={'delete_files': 'Delete Files'})
@@ -150,9 +150,9 @@ reverse order.
 
     >>> from lp.registry.interfaces.productrelease import (
     ...     IProductReleaseSet)
-    >>> series = firefox.serieses
+    >>> series = firefox.series
     >>> release_set = getUtility(IProductReleaseSet)
-    >>> releases = release_set.getReleasesForSerieses(series)
+    >>> releases = release_set.getReleasesForSeries(series)
     >>> for release in releases:
     ...     date = release.datereleased.strftime('%Y-%m-%d %H:%M:%S')
     ...     print release.version, date
@@ -185,7 +185,7 @@ Let's add some release files to the releases for firefox.
     name2
     name1
     name0
-    firefox-0.9.2.orig.tar.gz
+    firefox_0.9.2.orig.tar.gz
 
 Only the product owner can create a new release.
 
@@ -200,7 +200,7 @@ Only the product owner can create a new release.
     >>> milestone.createProductRelease(firefox.owner, now,
     ...                                changelog='New in v2')
     <ProductRelease at ...>
-    >>> for release in release_set.getReleasesForSerieses(series):
+    >>> for release in release_set.getReleasesForSeries(series):
     ...     print release.version
     8.0
     0.9.2

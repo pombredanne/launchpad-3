@@ -15,7 +15,7 @@ We will work within the Ubuntu distribution context only.
 
 The no-operation use case, reflects the sampledata status.
 
-    >>> from canonical.launchpad.scripts.logger import FakeLogger
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.archivepublisher.deathrow import DeathRow
     >>> from lp.archivepublisher.diskpool import DiskPool
 
@@ -35,8 +35,9 @@ Setup `SoyuzTestPublisher` for creating publications for Ubuntu/hoary.
 
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
-    >>> from lp.soyuz.interfaces.publishing import (
-    ...     PackagePublishingPocket, PackagePublishingStatus)
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> from lp.soyuz.enums import (
+    ...     PackagePublishingStatus)
 
     >>> hoary = ubuntu.getSeries('hoary')
 
@@ -105,7 +106,7 @@ Create a chain of dependent source publications:
 They all share a source file.
 
     >>> shared_file = test_publisher.addMockFile(
-    ...     'shared.tar.gz', filecontent='Y')
+    ...     'shared_1.0.tar.gz', filecontent='Y')
     >>> discard = removed_source.sourcepackagerelease.addFile(shared_file)
     >>> discard = postponed_source.sourcepackagerelease.addFile(shared_file)
     >>> discard = published_source.sourcepackagerelease.addFile(shared_file)
@@ -154,13 +155,13 @@ Dependent binary publications.
 
     >>> [postponed_binary] =  removed_binary.copyTo(
     ...     hoary, PackagePublishingPocket.PROPOSED, ubuntu.main_archive)
-    >>> postponed_binary.secure_record.status = (
+    >>> postponed_binary.status = (
     ...     PackagePublishingStatus.SUPERSEDED)
-    >>> postponed_binary.secure_record.scheduleddeletiondate = future_date
+    >>> postponed_binary.scheduleddeletiondate = future_date
 
     >>> [published_binary] =  removed_binary.copyTo(
     ...     hoary, PackagePublishingPocket.UPDATES, ubuntu.main_archive)
-    >>> published_binary.secure_record.status = (
+    >>> published_binary.status = (
     ...     PackagePublishingStatus.PUBLISHED)
 
 Store the 'removable' context in the database as a checkpoint, so it
@@ -192,8 +193,8 @@ Group the test publications according to their purpose:
 
 Publish files on disk and build a list of all created file paths
 
-    >>> from canonical.launchpad.scripts.logger import QuietFakeLogger
-    >>> quiet_disk_pool = DiskPool(pool_path, temp_path, QuietFakeLogger())
+    >>> from lp.services.log.logger import BufferLogger
+    >>> quiet_disk_pool = DiskPool(pool_path, temp_path, BufferLogger())
 
     >>> unique_file_paths = set()
 
@@ -206,7 +207,7 @@ Publish files on disk and build a list of all created file paths
     ...                 pub_file.libraryfilealiasfilename.encode('utf-8')
     ...              )
     ...             unique_file_paths.add(file_path)
-    ...             pub_file.publish(quiet_disk_pool, QuietFakeLogger())
+    ...             pub_file.publish(quiet_disk_pool, BufferLogger())
 
     >>> all_test_file_paths = sorted(unique_file_paths)
 
@@ -227,7 +228,7 @@ the temporary repository.
     obsolete-bin_666_i386.deb:   OK
     obsolete_666.dsc:            OK
     stuck-bin_666_i386.deb:      OK
-    shared.tar.gz:               OK
+    shared_1.0.tar.gz:           OK
     stuck_666.dsc:               OK
     stuck_667.dsc:               OK
     stuck_668.dsc:               OK
@@ -245,7 +246,6 @@ Run DeathRow against the current 'removable' context.
     DEBUG Checking superseded_666.dsc (02129bb861061d1a052c592e2dc6b383)
     DEBUG Checking obsolete_666.dsc (02129bb861061d1a052c592e2dc6b383)
     ...
-    DEBUG Batch ...
     INFO Removing 7 files marked for reaping
     DEBUG Removing superseded/superseded_666.dsc from main
     DEBUG Removing superseded-ignored/superseded-bin_666_i386.deb from main
@@ -264,9 +264,9 @@ A few details to pay attention to in the log output:
    used with different names for two distinct sourcepackages
    (openoffice and openoffice-l10n is an example);
 
- * The source file shared across publications ('shared.tar.gz') wasn't
-   removed as it is still related to a 'live' and a 'future-deletion'
-   publications.
+ * The source file shared across publications ('shared_1.0.tar.gz')
+   wasn't removed as it is still related to a 'live' and a
+   'future-deletion' publications.
 
  * Dependent binaries are only possible via publication copies and are
    only removed 'atomically', i.e. since there is a 'live' publication
@@ -315,7 +315,7 @@ The repository was also left in the expected state.
     obsolete-bin_666_i386.deb:   REMOVED
     obsolete_666.dsc:            REMOVED
     stuck-bin_666_i386.deb:      OK
-    shared.tar.gz:               OK
+    shared_1.0.tar.gz:           OK
     stuck_666.dsc:               REMOVED
     stuck_667.dsc:               OK
     stuck_668.dsc:               OK
@@ -327,9 +327,9 @@ since they are related to only a single file (files can't be
 shared). In order to trigger the consideration of these specific
 publications we have to remove any 'live' publications.
 
-    >>> published_binary.secure_record.status = (
+    >>> published_binary.status = (
     ...    PackagePublishingStatus.SUPERSEDED)
-    >>> published_binary.secure_record.scheduleddeletiondate = past_date
+    >>> published_binary.scheduleddeletiondate = past_date
 
 Now DeathRow considers 'stuck-bin' publications.
 
@@ -342,7 +342,6 @@ Now DeathRow considers 'stuck-bin' publications.
     DEBUG Cannot remove.
     DEBUG Checking stuck-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
     DEBUG Already verified.
-    DEBUG Batch ...
     INFO Removing 0 files marked for reaping
     INFO Total bytes freed: 0
     DEBUG Marking 0 condemned packages as removed.
@@ -353,7 +352,7 @@ imposing quarantine on it. Once the quarantine is lifted, by setting a
 'past' scheduleddeletiondate, the binary file finally gets removed
 from the repository.
 
-    >>> postponed_binary.secure_record.scheduleddeletiondate = past_date
+    >>> postponed_binary.scheduleddeletiondate = past_date
 
 That done, the publication and its files are free to be removed in a
 single pass.
@@ -368,7 +367,6 @@ single pass.
     DEBUG Already verified.
     DEBUG Checking stuck-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
     DEBUG Already verified.
-    DEBUG Batch ...
     INFO Removing 1 files marked for reaping
     DEBUG Removing removed-ignored/stuck-bin_666_i386.deb from main
     INFO Total bytes freed: 1
@@ -388,7 +386,7 @@ The file was removed from the repository.
     obsolete-bin_666_i386.deb:   REMOVED
     obsolete_666.dsc:            REMOVED
     stuck-bin_666_i386.deb:      REMOVED
-    shared.tar.gz:               OK
+    shared_1.0.tar.gz:           OK
     stuck_666.dsc:               REMOVED
     stuck_667.dsc:               OK
     stuck_668.dsc:               OK

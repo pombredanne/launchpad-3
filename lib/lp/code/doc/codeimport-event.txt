@@ -1,9 +1,10 @@
-= Code Import Events =
+Code Import Events
+==================
 
-The code-import events record the audit trail of the code import
-system. Events record a log that can be used to diagnose the interaction
-of the multiple moving parts that form the code-import system and to
-measure the quality of the service.
+The code-import events record the audit trail of the code import system.
+Events record a log that can be used to diagnose the interaction of the
+multiple moving parts that form the code-import system and to measure
+the quality of the service.
 
 CodeImports are hidden from regular users currently. David Allouche is a
 member of the vcs-imports team and can access the objects freely.
@@ -11,14 +12,15 @@ member of the vcs-imports team and can access the objects freely.
     >>> login('david.allouche@canonical.com')
 
 
-== Creating Events ==
+Creating Events
+---------------
 
 Events of each type are created by separate methods in the
 ICodeImportEventSet utility.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.services.webapp.testing import verifyObject
     >>> from lp.code.interfaces.codeimportevent import ICodeImportEventSet
     >>> event_set = getUtility(ICodeImportEventSet)
     >>> verifyObject(ICodeImportEventSet, removeSecurityProxy(event_set))
@@ -76,7 +78,8 @@ the rationale.
     ...     assert_raises(AssertionError, callable, *args)
 
 
-=== CREATE ===
+CREATE
+......
 
 When a CodeImport is created, a CREATE event should be recorded. Any
 authenticated user can create a CodeImport.
@@ -85,32 +88,15 @@ Creating a CodeImport is complicated, and we will create two of them, so
 we define a helper function. Since CodeImportSet.new should record the
 CodeImportEvent, we need to use the CodeImport constructor directly.
 
-    >>> from lp.code.enums import BranchType, CodeImportEventDataType
+    >>> from lp.code.enums import CodeImportEventDataType
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.registry.interfaces.product import IProductSet
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> from lp.code.model.codeimport import CodeImport
-    >>> from lp.code.interfaces.branchnamespace import (
-    ...     get_branch_namespace)
 
     >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
 
-    >>> def new_code_import(name, **kw_details):
-    ...     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-    ...     product = getUtility(IProductSet).getByName('firefox')
-    ...     namespace = get_branch_namespace(vcs_imports, product=product)
-    ...     import_branch = namespace.createBranch(
-    ...         BranchType.IMPORTED, name, vcs_imports, title='Import branch')
-    ...     return CodeImport(
-    ...         registrant=nopriv, owner=nopriv, branch=import_branch,
-    ...         **kw_details)
-
 First we create a Subversion import.
 
-    >>> from lp.code.enums import RevisionControlSystems
-    >>> svn_url = 'svn://svn.example.com/trunk'
-    >>> svn_import = new_code_import('svn-trunk',
-    ...     rcs_type=RevisionControlSystems.SVN, svn_branch_url=svn_url)
+    >>> svn_import = factory.makeCodeImport(
+    ...     svn_branch_url='svn://svn.example.com/trunk')
 
 CodeImportSet.newCreate creates an event from the new CodeImport object
 and the person that created it. Here, the creator is the nopriv user.
@@ -121,8 +107,10 @@ and the person that created it. Here, the creator is the nopriv user.
     >>> svn_create_event = event_set.newCreate(svn_import, nopriv)
     >>> verify_event(svn_create_event)
     CREATE
+
     >>> print svn_create_event.person.name
     no-priv
+
     >>> svn_create_event.code_import == svn_import
     True
 
@@ -131,11 +119,11 @@ retrieved using the items() method.
 
     >>> print_items(svn_create_event)
     CODE_IMPORT <muted>
-    OWNER u'52'
-    REVIEW_STATUS u'NEW'
+    OWNER ...
+    REVIEW_STATUS u'REVIEWED'
     ASSIGNEE None
     UPDATE_INTERVAL None
-    SVN_BRANCH_URL u'svn://svn.example.com/trunk'
+    URL u'svn://svn.example.com/trunk'
 
 The database IDs of the CodeImport is also recorded. It is useful to
 collate events associated with deleted CodeImport objects.
@@ -149,15 +137,14 @@ Different source details are recorded according to the type of the
 import source. For a CVS import, CVS details are recorded instead of the
 Subversion URL.
 
-    >>> cvs_import = new_code_import('cvs-main',
-    ...     rcs_type=RevisionControlSystems.CVS,
+    >>> cvs_import = factory.makeCodeImport(
     ...     cvs_root=':pserver:anonymous@cvs.example.com:/cvsroot',
     ...     cvs_module='hello')
     >>> cvs_create_event = event_set.newCreate(cvs_import, nopriv)
     >>> print_items(cvs_create_event)
     CODE_IMPORT <muted>
-    OWNER u'52'
-    REVIEW_STATUS u'NEW'
+    OWNER ...
+    REVIEW_STATUS u'REVIEWED'
     ASSIGNEE None
     UPDATE_INTERVAL None
     CVS_ROOT u':pserver:anonymous@cvs.example.com:/cvsroot'
@@ -165,19 +152,19 @@ Subversion URL.
 
 And for a Git import, the git details are recorded.
 
-    >>> git_import = new_code_import('git-main',
-    ...     rcs_type=RevisionControlSystems.GIT,
+    >>> git_import = factory.makeCodeImport(
     ...     git_repo_url='git://git.example.org/main.git')
     >>> git_create_event = event_set.newCreate(git_import, nopriv)
     >>> print_items(git_create_event)
     CODE_IMPORT <muted>
-    OWNER u'52'
-    REVIEW_STATUS u'NEW'
+    OWNER ...
+    REVIEW_STATUS u'REVIEWED'
     ASSIGNEE None
     UPDATE_INTERVAL None
-    GIT_REPO_URL u'git://git.example.org/main.git'
+    URL u'git://git.example.org/main.git'
 
-== MODIFY ==
+MODIFY
+------
 
 When a code import is modified, the ICodeImportEventSet utility should
 be used to create an event describing the changes.
@@ -204,7 +191,8 @@ state of the code import.
 Then changes can be applied.
 
     >>> from lp.code.enums import CodeImportReviewStatus
-    >>> svn_import.review_status = CodeImportReviewStatus.REVIEWED
+    >>> removeSecurityProxy(svn_import).review_status = (
+    ...     CodeImportReviewStatus.SUSPENDED)
 
 After applying changes, the newModify method can create an event that
 details the changes that have been applied.
@@ -217,24 +205,26 @@ details the changes that have been applied.
     >>> modify_event = event_set.newModify(svn_import, nopriv, token)
     >>> verify_event(modify_event)
     MODIFY
+
     >>> print modify_event.person.name
     no-priv
+
     >>> modify_event.code_import == svn_import
     True
 
 The event records all the current values, and the old value of
-attributes that have changed. This produces redundant data that makes
-it possible to validate the historical trail for integrity and to detect
+attributes that have changed. This produces redundant data that makes it
+possible to validate the historical trail for integrity and to detect
 when changes were made without creating a correponding event.
 
     >>> print_items(modify_event)
     CODE_IMPORT <muted>
-    OWNER u'52'
-    REVIEW_STATUS u'REVIEWED'
-    OLD_REVIEW_STATUS u'NEW'
+    OWNER ...
+    REVIEW_STATUS u'SUSPENDED'
+    OLD_REVIEW_STATUS u'REVIEWED'
     ASSIGNEE None
     UPDATE_INTERVAL None
-    SVN_BRANCH_URL u'svn://svn.example.com/trunk'
+    URL u'svn://svn.example.com/trunk'
 
 If no change of interest is found, no event is created.
 
@@ -242,60 +232,13 @@ If no change of interest is found, no event is created.
     >>> token = event_set.beginModify(svn_import)
     >>> print event_set.newModify(svn_import, nopriv, token)
     None
+
     >>> len(list(event_set.getAll())) == old_event_set_len
     True
 
-In most events, only the source details for the selected version control
-system are recorded. If the rcs_type changes, we record old and new
-values for all changed attributes to explicitly represent transitions to
-None and from None.
 
-    >>> token = event_set.beginModify(cvs_import)
-    >>> cvs_import.rcs_type = RevisionControlSystems.SVN
-    >>> cvs_import.svn_branch_url = u'svn://svn.example.com/from-cvs'
-    >>> cvs_import.cvs_root = None
-    >>> cvs_import.cvs_module = None
-    >>> modify_event = event_set.newModify(cvs_import, nopriv, token)
-    >>> print_items(modify_event)
-    CODE_IMPORT <muted>
-    OWNER u'52'
-    REVIEW_STATUS u'NEW'
-    ASSIGNEE None
-    UPDATE_INTERVAL None
-    CVS_ROOT None
-    CVS_MODULE None
-    OLD_CVS_ROOT u':pserver:anonymous@cvs.example.com:/cvsroot'
-    OLD_CVS_MODULE u'hello'
-    SVN_BRANCH_URL u'svn://svn.example.com/from-cvs'
-    OLD_SVN_BRANCH_URL None
-
-Aside from source details changes, MODIFY events can record changes to
-the owner, the review_status, the assignee, and the update_interval of a
-code import.
-
-    >>> from datetime import timedelta
-    >>> sample_owner = getUtility(IPersonSet).getByName('name12')
-    >>> sample_assignee = getUtility(IPersonSet).getByName('ddaa')
-    >>> token = event_set.beginModify(svn_import)
-    >>> svn_import.owner = sample_owner
-    >>> svn_import.review_status = CodeImportReviewStatus.SUSPENDED
-    >>> svn_import.assignee = sample_assignee
-    >>> svn_import.update_interval = timedelta(hours=1)
-    >>> modify_event = event_set.newModify(svn_import, nopriv, token)
-    >>> print_items(modify_event)
-    CODE_IMPORT <muted>
-    OWNER u'12'
-    OLD_OWNER u'52'
-    REVIEW_STATUS u'SUSPENDED'
-    OLD_REVIEW_STATUS u'REVIEWED'
-    ASSIGNEE u'23'
-    OLD_ASSIGNEE None
-    UPDATE_INTERVAL u'1:00:00'
-    OLD_UPDATE_INTERVAL None
-    SVN_BRANCH_URL u'svn://svn.example.com/trunk'
-
-
-=== REQUEST ===
+REQUEST
+.......
 
 Users can request that an import be run immediately. When such a request
 is made the requestJob method of the CodeImportJobWorkflowt utility is
@@ -307,8 +250,10 @@ code import job was run.
     >>> request_event = event_set.newRequest(svn_import, nopriv)
     >>> verify_event(request_event)
     REQUEST
+
     >>> print request_event.person.name
     no-priv
+
     >>> print_items(request_event)
     CODE_IMPORT <muted>
 
@@ -321,7 +266,8 @@ useful to collate events associated with deleted CodeImport objects.
     True
 
 
-=== ONLINE ===
+ONLINE
+......
 
 Execution of import jobs is controlled by code-import-controller daemons
 on multiple machines.
@@ -340,10 +286,13 @@ ICodeImportEventSet.newOnline method.
     >>> online_event = event_set.newOnline(machine)
     >>> verify_event(online_event)
     ONLINE
+
     >>> print online_event.machine.hostname
     bazaar-importer
+
     >>> print online_event.person
     None
+
     >>> print_items(online_event)
     <nothing>
 
@@ -355,15 +304,19 @@ case when a user updates the state of the machine through the web UI.
     >>> online_event = event_set.newOnline(apollo, ddaa, 'Fubar was fixed')
     >>> verify_event(online_event)
     ONLINE
+
     >>> print online_event.machine.hostname
     apollo
+
     >>> print online_event.person.name
     ddaa
+
     >>> print_items(online_event)
     MESSAGE u'Fubar was fixed'
 
 
-=== OFFLINE ===
+OFFLINE
+.......
 
 When a controller daemon goes offline, a mutator method on
 CodeImportMachine is called to mark it as no longer running. This method
@@ -379,8 +332,10 @@ ICodeImportSet.newOffline method.
     >>> offline_event = event_set.newOffline(machine, QUIESCED)
     >>> verify_event(offline_event)
     OFFLINE
+
     >>> print offline_event.machine.hostname
     bazaar-importer
+
     >>> print_items(offline_event)
     OFFLINE_REASON u'QUIESCED'
 
@@ -394,24 +349,29 @@ check that it is a legal value.
     AssertionError: reason must be a CodeImportMachineOfflineReason value,
     but was: ...
 
-A new offline event can optionally take a user and a reason.  This is the
-case when a user updates the state of the machine through the web UI.
+A new offline event can optionally take a user and a reason.  This is
+the case when a user updates the state of the machine through the web
+UI.
 
     >>> offline_event = event_set.newOffline(
     ...     apollo, CodeImportMachineOfflineReason.STOPPED,
     ...     ddaa, 'Down for fixing')
     >>> verify_event(offline_event)
     OFFLINE
+
     >>> print offline_event.machine.hostname
     apollo
+
     >>> print offline_event.person.name
     ddaa
+
     >>> print_items(offline_event)
     MESSAGE u'Down for fixing'
     OFFLINE_REASON u'STOPPED'
 
 
-=== QUIESCE ===
+QUIESCE
+.......
 
 When an operator quiesces a machine (this is an administrative
 operation), a QUIESCE event should be created to record the operator's
@@ -427,18 +387,22 @@ explaining why quiescing was requested.
     ...     machine, ddaa, 'Production rollout.')
     >>> verify_event(quiesce_event)
     QUIESCE
+
     >>> print quiesce_event.machine.hostname
     bazaar-importer
+
     >>> print quiesce_event.person.name
     ddaa
+
     >>> print_items(quiesce_event)
     MESSAGE u'Production rollout.'
 
 
-=== START ===
+START
+.....
 
-When a job is allocated to a machine, a START event should be created
-to record which code import is starting and on which machine.
+When a job is allocated to a machine, a START event should be created to
+record which code import is starting and on which machine.
 
     >>> fail_if_argument_is_none(
     ...     event_set.newStart, None, machine)
@@ -449,18 +413,22 @@ to record which code import is starting and on which machine.
     ...     svn_import, machine)
     >>> verify_event(start_event)
     START
+
     >>> print start_event.machine.hostname
     bazaar-importer
+
     >>> print start_event.code_import == svn_import
     True
+
     >>> start_event.items()
     []
 
 
-=== FINISH ===
+FINISH
+......
 
-When a machine finishes a job, successfully or otherwise, a FINISH
-event should be created to record that the job has been finished.
+When a machine finishes a job, successfully or otherwise, a FINISH event
+should be created to record that the job has been finished.
 
     >>> fail_if_argument_is_none(
     ...     event_set.newFinish, None, machine)
@@ -471,15 +439,19 @@ event should be created to record that the job has been finished.
     ...     svn_import, machine)
     >>> verify_event(finish_event)
     FINISH
+
     >>> print finish_event.machine.hostname
     bazaar-importer
+
     >>> print finish_event.code_import == svn_import
     True
+
     >>> finish_event.items()
     []
 
 
-=== KILL ===
+KILL
+....
 
 When a job is killed from outside of the worker, a KILL event records
 that this was done.  The parameters are self-explanatory: code_import
@@ -496,23 +468,27 @@ and machine
 
     >>> print kill_event.code_import == svn_import
     True
+
     >>> print kill_event.person
     None
+
     >>> print kill_event.machine.hostname
     bazaar-importer
+
     >>> kill_event.items()
     []
 
 
-=== RECLAIM ===
+RECLAIM
+.......
 
-The 'code import watchdog' is the name of the component that checks
-the supposedly-running code import jobs and deletes those which have
-not updated their heartbeat fields recently enough.  When it does
-this, a RECLAIM event records the details of what happened.  The
-'newReclaim' method takes as parameters the code import, the machine
-the job was running on and the id of the removed code import job row
-(to make finding the log files on the import slave easier).
+The 'code import watchdog' is the name of the component that checks the
+supposedly-running code import jobs and deletes those which have not
+updated their heartbeat fields recently enough.  When it does this, a
+RECLAIM event records the details of what happened.  The 'newReclaim'
+method takes as parameters the code import, the machine the job was
+running on and the id of the removed code import job row (to make
+finding the log files on the import slave easier).
 
     >>> job_id = 42 # Arbitrary choice.
 
@@ -529,8 +505,10 @@ the job was running on and the id of the removed code import job row
 
     >>> print reclaim_event.code_import == svn_import
     True
+
     >>> print reclaim_event.person
     None
+
     >>> print reclaim_event.machine.hostname
     bazaar-importer
 
@@ -539,3 +517,5 @@ with a RECLAIM event.
 
     >>> print_items(reclaim_event)
     RECLAIMED_JOB_ID u'42'
+
+

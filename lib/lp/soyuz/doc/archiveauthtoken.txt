@@ -7,14 +7,13 @@ users access to a published private archive and are written out to
 
 See also ArchiveSubscriber.txt.
 
-Set cprov's PPA to be a private one:
+First we create a private PPA for Joe.
 
-    >>> login("foo.bar@canonical.com")
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> cprov = getUtility(IPersonSet).getByName("cprov")
-    >>> cprov.archive.buildd_secret = "secret"
-    >>> cprov.archive.private = True
-    >>> logout()
+    >>> login("admin@canonical.com")
+    >>> joe = factory.makePerson(name="joe", displayname="Joe Smith")
+    >>> joe_private_ppa = factory.makeArchive(
+    ...     owner=joe, private=True, name='ppa')
+
 
 == Creating new tokens ==
 
@@ -22,27 +21,33 @@ New tokens are created using IArchive.newAuthToken() but this is only
 possible if there is already a valid subscription for the user for
 that archive.
 
-First, login as name12 and try to create a token for ourselves, even
-though we do not yet have a subscription:
+Create Brad, and his team:
 
-    >>> login("test@canonical.com")
-    >>> name12 = getUtility(IPersonSet).getByName("name12")
-    >>> new_token = cprov.archive.newAuthToken(name12)
+    >>> login("admin@canonical.com")
+    >>> bradsmith = factory.makePerson(
+    ...     name="bradsmith", displayname="Brad Smith",
+    ...     email="brad@example.com")
+    >>> teambrad = factory.makeTeam(
+    ...     owner=bradsmith, displayname="Team Brad", name='teambrad')
+
+Create a subscription for Team Brad to joe's archive:
+
+    >>> ignored = login_person(joe)
+    >>> subscription_to_joe_private_ppa = joe_private_ppa.newSubscription(
+    ...     teambrad, joe)
+    >>> login("brad@example.com")
+
+It is not possible to create a token for the subscribed team.
+
+    >>> joe_private_ppa.newAuthToken(teambrad)
     Traceback (most recent call last):
     ...
-    Unauthorized: You do not have a subscription for
-    PPA for Celso Providelo.
+    NoTokensForTeams: Subscription tokens can be created for individuals
+    only.
 
-Create a subscription for name12 to cprov's archive:
+But now that the subscription is there, we can create a token as Brad.
 
-    >>> login("celso.providelo@canonical.com")
-    >>> subscription_to_cprov_archive = cprov.archive.newSubscription(
-    ...     name12, cprov)
-    >>> login("test@canonical.com")
-
-Now try again to create a token as name12 - this time it works:
-
-    >>> token_with_random_string = cprov.archive.newAuthToken(name12)
+    >>> token_with_random_string = joe_private_ppa.newAuthToken(bradsmith)
 
 By default the tokens are 20 characters long.
 
@@ -51,35 +56,35 @@ By default the tokens are 20 characters long.
 
 It is not possible to create a second token when one already exists:
 
-    >>> new_token = cprov.archive.newAuthToken(name12)
+    >>> new_token = joe_private_ppa.newAuthToken(bradsmith)
     Traceback (most recent call last):
     ...
-    ArchiveSubscriptionError: Sample Person already has a token for
-    PPA for Celso Providelo.
+    ArchiveSubscriptionError: Brad Smith already has a token for
+    PPA for Joe Smith.
 
 So deactivate the old token so that we can create a new token:
 
-    >>> login("celso.providelo@canonical.com")
+    >>> ignored = login_person(bradsmith)
     >>> token_with_random_string.deactivate()
-    >>> login("test@canonical.com")
+    >>> login("brad@example.com")
 
 We can also specify our own token for testing purposes:
 
-    >>> new_token = cprov.archive.newAuthToken(name12, u"testtoken")
+    >>> new_token = joe_private_ppa.newAuthToken(bradsmith, u"testtoken")
 
 The new token is returned and reflects the data:
 
     >>> print new_token.archive.displayname
-    PPA for Celso Providelo
+    PPA for Joe Smith
 
     >>> print new_token.person.name
-    name12
+    bradsmith
 
     >>> print new_token.token
     testtoken
 
     >>> print new_token.archive_url
-    http://name12:testtoken@private-ppa.launchpad.dev/cprov/ppa/ubuntu
+    http://bradsmith:testtoken@private-ppa.launchpad.dev/joe/ppa/...
 
 Commit the new token to the database.
 
@@ -112,9 +117,9 @@ which applies to the person in the token and launchpad admins.
     ...
     Unauthorized:...
 
-Log in as name12, who is the person in the token.
+Log in as Brad Smith, who is the person in the token.
 
-    >>> login("test@canonical.com")
+    >>> login("brad@example.com")
 
 And retrieve the token by id and by token data:
 
@@ -122,17 +127,17 @@ And retrieve the token by id and by token data:
     testtoken
 
     >>> print token_set.getByToken(u"testtoken").person.name
-    name12
+    bradsmith
 
 It's also possible to retrieve a set of all the tokens for an archive.
 
-    >>> tokens = token_set.getByArchive(cprov.archive)
+    >>> tokens = token_set.getByArchive(joe_private_ppa)
     >>> print tokens.count()
     1
 
     >>> for token in tokens:
     ...     print token.person.name
-    name12
+    bradsmith
 
 Tokens can also be retreived by archive and person:
 
@@ -153,7 +158,7 @@ IArchive launchpad.Append (as for creating new tokens) or an admin.
     ...
     Unauthorized:...
 
-    >>> login("celso.providelo@canonical.com")
+    >>> ignored = login_person(joe)
     >>> new_token.deactivate()
 
 Deactivating sets the date_deactivated value.
@@ -163,14 +168,14 @@ Deactivating sets the date_deactivated value.
 
 We can do this as an admin too:
 
-    >>> new_token = cprov.archive.newAuthToken(name12)
+    >>> new_token = joe_private_ppa.newAuthToken(bradsmith)
     >>> login("admin@canonical.com")
     >>> new_token.deactivate()
 
 Deactivating a token stops it being returned from getByArchive().  The
 previous count of 1 is now reduced to 0.
 
-    >>> token_set.getByArchive(cprov.archive).count()
+    >>> token_set.getByArchive(joe_private_ppa).count()
     0
 
 The IArchiveAuthTokenSet.getActiveTokenForArchiveAndPerson() method will

@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -7,9 +7,11 @@
 Watch live PostgreSQL logs for interesting stuff
 """
 
-import re, sys
 from optparse import OptionParser
+import re
 import subprocess
+import sys
+
 
 def get_options(args=None):
     parser = OptionParser()

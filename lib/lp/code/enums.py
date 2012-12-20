@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Enumerations used in the lp/code modules."""
@@ -7,12 +7,10 @@ __metaclass__ = type
 __all__ = [
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
-    'BranchMergeControlStatus',
     'BranchMergeProposalStatus',
     'BranchSubscriptionDiffSize',
     'BranchSubscriptionNotificationLevel',
     'BranchType',
-    'BranchVisibilityRule',
     'CodeImportEventDataType',
     'CodeImportEventType',
     'CodeImportJobState',
@@ -22,13 +20,18 @@ __all__ = [
     'CodeImportReviewStatus',
     'CodeReviewNotificationLevel',
     'CodeReviewVote',
+    'NON_CVS_RCS_TYPES',
     'RevisionControlSystems',
-    'TeamBranchVisibilityRule',
     'UICreatableBranchType',
     ]
 
 from lazr.enum import (
-    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
+    DBEnumeratedType,
+    DBItem,
+    EnumeratedType,
+    Item,
+    use_template,
+    )
 
 
 class BranchLifecycleStatus(DBEnumeratedType):
@@ -72,44 +75,6 @@ class BranchLifecycleStatus(DBEnumeratedType):
     ABANDONED = DBItem(80, "Abandoned")
 
 
-class BranchMergeControlStatus(DBEnumeratedType):
-    """Branch Merge Control Status
-
-    Does the branch want Launchpad to manage a merge queue, and if it does,
-    how does the branch owner handle removing items from the queue.
-    """
-
-    NO_QUEUE = DBItem(1, """
-        Does not use a merge queue
-
-        The branch does not use the merge queue managed by Launchpad.  Merges
-        are tracked and managed elsewhere.  Users will not be able to queue up
-        approved branch merge proposals.
-        """)
-
-    MANUAL = DBItem(2, """
-        Manual processing of the merge queue
-
-        One or more people are responsible for manually processing the queued
-        branch merge proposals.
-        """)
-
-    ROBOT = DBItem(3, """
-        A branch merge robot is used to process the merge queue
-
-        An external application, like PQM, is used to merge in the queued
-        approved proposed merges.
-        """)
-
-    ROBOT_RESTRICTED = DBItem(4, """
-        The branch merge robot used to process the queue is in restricted mode
-
-        When the robot is in restricted mode, normal queued branches are not
-        returned for merging, only those with "Queued for Restricted
-        merging" will be.
-        """)
-
-
 class BranchType(DBEnumeratedType):
     """Branch Type
 
@@ -133,8 +98,8 @@ class BranchType(DBEnumeratedType):
     IMPORTED = DBItem(3, """
         Imported
 
-        Branches that have been converted from some other revision
-        control system into bzr and are made available through Launchpad.
+        Branches that have been imported from an externally hosted
+        branch in bzr or another VCS and are made available through Launchpad.
         """)
 
     REMOTE = DBItem(4, """
@@ -256,7 +221,7 @@ class BranchSubscriptionDiffSize(DBEnumeratedType):
         Limit the generated diff to 500 lines.
         """)
 
-    ONEKLINES  = DBItem(1000, """
+    ONEKLINES = DBItem(1000, """
         1000 lines
 
         Limit the generated diff to 1000 lines.
@@ -268,7 +233,7 @@ class BranchSubscriptionDiffSize(DBEnumeratedType):
         Limit the generated diff to 5000 lines.
         """)
 
-    WHOLEDIFF  = DBItem(-1, """
+    WHOLEDIFF = DBItem(-1, """
         Send entire diff
 
         Don't limit the size of the diff.
@@ -339,40 +304,6 @@ class CodeReviewNotificationLevel(DBEnumeratedType):
         """)
 
 
-class BranchVisibilityRule(DBEnumeratedType):
-    """Branch Visibility Rules for defining branch visibility policy."""
-
-    PUBLIC = DBItem(1, """
-        Public
-
-        Branches are public by default.
-        """)
-
-    PRIVATE = DBItem(2, """
-        Private
-
-        Branches are private by default.
-        """)
-
-    PRIVATE_ONLY = DBItem(3, """
-        Private only
-
-        Branches are private by default. Branch owners are not able
-        to change the visibility of the branches to public.
-        """)
-
-    FORBIDDEN = DBItem(4, """
-        Forbidden
-
-        Users are not able to create branches in the context.
-        """)
-
-
-class TeamBranchVisibilityRule(EnumeratedType):
-    """The valid policy rules for teams."""
-    use_template(BranchVisibilityRule, exclude='FORBIDDEN')
-
-
 class RevisionControlSystems(DBEnumeratedType):
     """Revision Control Systems
 
@@ -388,7 +319,7 @@ class RevisionControlSystems(DBEnumeratedType):
         """)
 
     SVN = DBItem(2, """
-        Subversion
+        Subversion via CSCVS
 
         Imports from SVN using CSCVS.
         """)
@@ -403,6 +334,18 @@ class RevisionControlSystems(DBEnumeratedType):
         Git
 
         Imports from Git using bzr-git.
+        """)
+
+    HG = DBItem(5, """
+        Mercurial
+
+        Imports from Mercurial using bzr-hg. (no longer supported)
+        """)
+
+    BZR = DBItem(6, """
+        Bazaar
+
+        Mirror of a Bazaar branch.
         """)
 
 
@@ -666,6 +609,19 @@ class CodeImportEventDataType(DBEnumeratedType):
         Previous Git repo URL, when recording on import source change.
         """)
 
+    URL = DBItem(240, """
+        Foreign VCS branch URL
+
+        Location of the foreign VCS branch to import.
+        """)
+
+    OLD_URL = DBItem(241, """
+        Previous foreign VCS branch URL
+
+        Previous foreign VCS branch location, when recording an import source
+        change.
+        """)
+
     # Data related to machine events
 
     OFFLINE_REASON = DBItem(410, """Offline Reason
@@ -780,6 +736,20 @@ class CodeImportResultStatus(DBEnumeratedType):
         Import job completed successfully.
         """)
 
+    SUCCESS_NOCHANGE = DBItem(110, """
+        Success with no changes
+
+        Import job completed successfully, but there were no new revisions to
+        import.
+        """)
+
+    SUCCESS_PARTIAL = DBItem(120, """
+        Partial Success
+
+        Import job successfully imported some but not all of the foreign
+        revisions.
+        """)
+
     FAILURE = DBItem(200, """
         Failure
 
@@ -792,35 +762,31 @@ class CodeImportResultStatus(DBEnumeratedType):
         An internal error occurred. This is a problem with Launchpad.
         """)
 
-    CHECKOUT_FAILURE = DBItem(220, """
-        Source Checkout Failed
+    FAILURE_INVALID = DBItem(220, """
+        Foreign branch invalid
 
-        Unable to checkout from the foreign version control
-        system. The import details are probably incorrect or the
-        remote server is down.
+        The import failed because the foreign branch did not exist or
+        was not accessible.
         """)
 
-    IMPORT_FAILURE = DBItem(230, """
-        Bazaar Import Failed
+    FAILURE_UNSUPPORTED_FEATURE = DBItem(230, """
+        Unsupported feature
 
-        The initial import failed to complete. It may be a bug in
-        Launchpad's conversion software or a problem with the remote
-        repository.
+        The import failed because of missing feature support in
+        Bazaar or the Bazaar foreign branch support.
         """)
 
-    UPDATE_FAILURE = DBItem(240, """
-        Source Update Failed
+    FAILURE_FORBIDDEN = DBItem(240, """
+        Forbidden URL
 
-        Unable to update the foreign version control system tree. This
-        is probably a problem with the remote repository.
+        The import failed because the URL of the branch that is imported
+        or the URL of one of the branches that it references is blacklisted.
         """)
 
-    SYNC_FAILURE = DBItem(250, """
-        Bazaar Update Failed
+    FAILURE_REMOTE_BROKEN = DBItem(250, """
+        Broken remote branch
 
-        An update to the existing Bazaar import failed to complete. It
-        may be a bug in Launchpad's conversion software or a problem
-        with the remote repository.
+        The remote branch exists but is corrupted in some way
         """)
 
     RECLAIMED = DBItem(310, """
@@ -837,6 +803,8 @@ class CodeImportResultStatus(DBEnumeratedType):
         completed. It could have been an explicit request to kill the
         job, or the deletion of a CodeImport which had a running job.
         """)
+
+    successes = [SUCCESS, SUCCESS_NOCHANGE, SUCCESS_PARTIAL]
 
 
 class CodeReviewVote(DBEnumeratedType):
@@ -889,3 +857,7 @@ class CodeReviewVote(DBEnumeratedType):
 
         The reviewer needs more information before making a decision.
         """)
+
+NON_CVS_RCS_TYPES = (
+    RevisionControlSystems.SVN, RevisionControlSystems.BZR_SVN,
+    RevisionControlSystems.GIT, RevisionControlSystems.BZR)

@@ -14,14 +14,21 @@ __all__ = [
 
 from zope.interface import Attribute
 from zope.schema import (
-     Datetime,  Int, Object, Text, TextLine)
+    Datetime,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
 
-from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice, Title
-from lp.registry.interfaces.role import IHasOwner
-
+from lp import _
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.faqtarget import IFAQTarget
+from lp.registry.interfaces.role import IHasOwner
+from lp.services.fields import (
+    PublicPersonChoice,
+    Title,
+    )
 
 
 class IFAQ(IHasOwner):
@@ -38,7 +45,7 @@ class IFAQ(IHasOwner):
 
     title = Title(
         title=_('Title'),
-        description=_('The title describing the FAQ, often a question.'),
+        description=_('The title describing this FAQ, often a question.'),
         required=True)
 
     keywords = TextLine(
@@ -49,7 +56,7 @@ class IFAQ(IHasOwner):
     content = Text(
         title=_('Content'),
         description=_(
-            'The answer to the question in plain text. You may choose to '
+            'The answer for this FAQ in plain text. You may choose to '
             'include a URL to an external FAQ.'),
         required=True)
 

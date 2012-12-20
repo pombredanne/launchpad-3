@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View class for requesting translation exports."""
@@ -7,19 +7,27 @@ __metaclass__ = type
 __all__ = ['BaseExportView']
 
 
+from datetime import timedelta
+
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
-from canonical.launchpad import _
-from lp.translations.interfaces.poexportrequest import (
-    IPOExportRequestSet)
-from lp.translations.interfaces.potemplate import (
-    IHasTranslationTemplates)
+from lp import _
+from lp.app.browser.tales import DurationFormatterAPI
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
+    )
+from lp.translations.interfaces.poexportrequest import IPOExportRequestSet
 from lp.translations.interfaces.translationexporter import (
-    ITranslationExporter)
+    ITranslationExporter,
+    )
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from canonical.launchpad.webapp import (canonical_url, LaunchpadView)
+    TranslationFileFormat,
+    )
 
 
 class BaseExportView(LaunchpadView):
@@ -28,6 +36,38 @@ class BaseExportView(LaunchpadView):
     @cachedproperty
     def uses_translations(self):
         return self.context.has_current_translation_templates
+
+    @property
+    def export_queue_status(self):
+        """Summary of queue status."""
+        queue_size = self.request_set.entry_count
+        estimated_backlog = self.request_set.estimateBacklog()
+
+        size_text = self.describeQueueSize(queue_size)
+        backlog_text = self.describeBacklog(estimated_backlog)
+
+        return " ".join((size_text, backlog_text))
+
+    def describeQueueSize(self, queue_size):
+        """Return string describing the given queue size."""
+        if queue_size == 0:
+            return "The export queue is currently empty."
+        elif queue_size == 1:
+            return "There is 1 file request on the export queue."
+        else:
+            return (
+                "There are %d file requests on the export queue."
+                % queue_size)
+
+    def describeBacklog(self, estimated_backlog):
+        """Return string describing the current export backlog."""
+        threshold = timedelta(minutes=10)
+        if estimated_backlog is None or estimated_backlog < threshold:
+            return ""
+
+        formatter = DurationFormatterAPI(estimated_backlog)
+        time_string = formatter.approximateduration()
+        return "The backlog is approximately %s." % time_string
 
     def getDefaultFormat(self):
         """Overridable: return default file format to use for the export."""
@@ -71,13 +111,9 @@ class BaseExportView(LaunchpadView):
             pofiles_ids = None
         return (translation_templates_ids, pofiles_ids)
 
-    def modifyFormat(self, format):
-        """Optional overridable: return format used to export `format` files.
-
-        :param format: What file format to look up an exportable format for.
-        :returns: The modified format.
-        """
-        return format
+    def getExportFormat(self):
+        """Optional overridable: The requested export format."""
+        return self.request.form.get("format")
 
     def initialize(self):
         self.request_set = getUtility(IPOExportRequestSet)
@@ -91,7 +127,7 @@ class BaseExportView(LaunchpadView):
             return
 
         bad_format_message = _("Please select a valid format for download.")
-        format_name = self.modifyFormat(self.request.form.get("format"))
+        format_name = self.getExportFormat()
         if format_name is None:
             self.request.response.addErrorNotification(bad_format_message)
             return
@@ -117,12 +153,14 @@ class BaseExportView(LaunchpadView):
         self.request.response.addInfoNotification(_(
             "Your request has been received. Expect to receive an email "
             "shortly."))
-        self.request.response.redirect(canonical_url(self.context))
+        self.request.response.redirect(
+            canonical_url(self.context, rootsite='translations'))
 
     def formats(self):
         """Return a list of formats available for translation exports."""
 
         class BrowserFormat:
+
             def __init__(self, title, value, is_default=False):
                 self.title = title
                 self.value = value

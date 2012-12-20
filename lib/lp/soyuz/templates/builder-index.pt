@@ -20,7 +20,7 @@
     <div class="top-portlet">
       <span style="float:right;"
         tal:content="structure view/menu:overview/edit/fmt:icon-link" />
-      <p style="max-width: 100%; margin-top: .5em;">
+      <p>
          <tal:title content="context/title">Bob the builder</tal:title>
          builds
          <tal:arch content="context/processor/title">Intel 386</tal:arch>
@@ -29,46 +29,11 @@
        </p>
     </div>
     <div class="yui-ge">
-      <div class="first yui-u">
-        <div class="portlet">
-          <h2>
-            <span class="see-all"><a
-              tal:replace="structure view/menu:overview/history/fmt:link" />
-            </span>
-          Current status</h2>
 
-          <tal:no_job condition="not: job">
-            <p><tal:builder content="context/title" />
-               <tal:builderok condition="context/builderok"
-                 >is idle.</tal:builderok>
-               <tal:buildernok condition="not: context/builderok"
-                 >is deactivated.</tal:buildernok></p>
-          </tal:no_job>
-          <tal:job condition="job">
-            <tal:icon replace="structure job/build/image:icon" />
-            <a tal:attributes="href job/build/fmt:url">
-              <span tal:replace="job/build/title">NAME</span>
-            </a>
-            <p class="sprite">Started
-              <span tal:attributes="title job/buildstart/fmt:datetime"
-                    tal:content="view/current_build_duration/fmt:exactduration"
-                />
-              ago.
-            </p>
-            <tal:logtail condition="job/logtail">
-              <h3>Buildlog</h3>
-              <div tal:content="structure job/logtail/fmt:text-to-html"
-                   id="buildlog-tail" class="logtail">
-                Things are crashing and burning all over the place.
-              </div>
-              <p class="discreet" tal:condition="view/user">
-                Updated on
-                <span tal:replace="structure view/user/fmt:local-time"/>
-              </p>
-            </tal:logtail>
-          </tal:job>
-        </div><!-- portlet -->
+      <div class="first yui-u">
+        <div metal:use-macro="template/macros/status" />
       </div><!-- yui-u -->
+
       <div class="yui-u">
         <div class="portlet">
           <h2>Builder information</h2>
@@ -111,5 +76,72 @@
       <tal:menu replace="structure view/@@+related-pages" />
     </div>
   </div>
+
+
+<metal:macros fill-slot="bogus">
+
+  <metal:macro define-macro="status-summary">
+    <tal:comment replace="nothing">
+      Status summary.
+      :param builder: IBuilder, context builder.
+      :param job: IBuildQueue, job assigned to the builder.
+    </tal:comment>
+
+    <tal:no_job condition="not: job">
+      <tal:builderok condition="builder/builderok">
+        <tal:idle condition="not: builder/manual">
+          <span class="sortkey" tal:content="string:0" />
+          <span class="sprite yes green">Idle</span>
+        </tal:idle>
+        <tal:manual tal:condition="builder/manual">
+          <span class="sortkey" tal:content="string:1" />
+          <span class="sprite info">Manual</span>
+        </tal:manual>
+      </tal:builderok>
+      <tal:buildernok condition="not: builder/builderok">
+        <span class="sortkey" tal:content="string:2" />
+        <span class="sprite no red">Disabled</span>
+      </tal:buildernok>
+    </tal:no_job>
+
+    <tal:job-header condition="job">
+      <span class="sortkey" tal:content="job/id" />
+      <img src="/@@/processing" alt="[building]" />
+      <tal:specific-job replace="structure job/specific_job/@@+current" />
+    </tal:job-header>
+
+  </metal:macro>
+
+
+  <metal:macro define-macro="status">
+    <tal:comment replace="nothing">
+      Status summary.
+      :param job: IBuildQueue, job assigned to the context builder.
+    </tal:comment>
+
+    <div class="portlet">
+      <h2>
+        <span class="see-all"><a
+          tal:replace="structure view/menu:overview/history/fmt:link" />
+        </span>
+      Current status</h2>
+
+      <p tal:define="builder context" id="current-build-summary">
+        <metal:summary use-macro="template/macros/status-summary" />
+      </p>
+
+      <tal:buildernok condition="not: context/builderok">
+        <div tal:content="structure
+                          context/failnotes/fmt:text-to-html" />
+      </tal:buildernok>
+
+      <tal:job condition="job" replace="structure job/@@+current" />
+    </div>
+
+  </metal:macro>
+
+</metal:macros>
+
+
 </body>
 </html>

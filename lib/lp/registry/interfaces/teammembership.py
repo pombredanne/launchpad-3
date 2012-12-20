@@ -8,25 +8,44 @@
 __metaclass__ = type
 
 __all__ = [
+    'ACTIVE_STATES',
     'CyclicalTeamMembershipError',
     'DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT',
+    'IJoinTeamEvent',
+    'ITeamInvitationEvent',
     'ITeamMembership',
     'ITeamMembershipSet',
     'ITeamParticipation',
     'TeamMembershipStatus',
     ]
 
-from zope.schema import Choice, Datetime, Int, Text
-from zope.interface import Attribute, Interface
-from lazr.enum import DBEnumeratedType, DBItem
-
-from lazr.restful.interface import copy_field
-from lazr.restful.fields import Reference
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from lazr.restful.declarations import (
-   call_with, export_as_webservice_entry, export_write_operation, exported,
-   operation_parameters, REQUEST_USER)
+    call_with,
+    export_as_webservice_entry,
+    export_write_operation,
+    exported,
+    operation_parameters,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import Reference
+from lazr.restful.interface import copy_field
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    )
 
-from canonical.launchpad import _
+from lp import _
 
 # One week before a membership expires we send a notification to the member,
 # either inviting him to renew his own membership or asking him to get a team
@@ -95,17 +114,24 @@ class TeamMembershipStatus(DBEnumeratedType):
         """)
 
 
+ACTIVE_STATES = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
+
+
 class ITeamMembership(Interface):
-    """TeamMembership for Users"""
+    """TeamMembership for Users.
+
+    This table includes *direct* team members only.  Indirect memberships are
+    handled by the TeamParticipation table.
+    """
     export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
     team = exported(
         Reference(title=_("Team"), required=True, readonly=True,
-                  schema=Interface)) # Specified in interfaces/person.py.
+                  schema=Interface))  # Specified in interfaces/person.py.
     person = exported(
         Reference(title=_("Member"), required=True, readonly=True,
-                  schema=Interface), # Specified in interfaces/person.py.
+                  schema=Interface),  # Specified in interfaces/person.py.
         exported_as='member')
     proposed_by = Attribute(_('Proponent'))
     reviewed_by = Attribute(
@@ -116,7 +142,7 @@ class ITeamMembership(Interface):
     last_changed_by = exported(
         Reference(title=_('Last person who change this'),
                   required=False, readonly=True,
-                  schema=Interface)) # Specified in interfaces/person.py.
+                  schema=Interface))  # Specified in interfaces/person.py.
 
     datejoined = exported(
         Datetime(title=_("Date joined"), required=False, readonly=True,
@@ -185,7 +211,8 @@ class ITeamMembership(Interface):
 
         A membership can be renewed if the team's renewal policy is ONDEMAND,
         the membership itself is active (status = [ADMIN|APPROVED]) and it's
-        set to expire in less than DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
+        set to expire in less than DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT
+        days.
         """
 
     def sendSelfRenewalNotification():
@@ -196,25 +223,26 @@ class ITeamMembership(Interface):
         ONDEMAND.
         """
 
-    def sendAutoRenewalNotification():
-        """Send an email to the member and to team admins notifying that this
-        membership has been automatically renewed.
-
-        This method must not be called if the team's renewal policy is not
-        AUTOMATIC.
-        """
-
     def sendExpirationWarningEmail():
-        """Send an email to the member warning him that this membership will
-        expire soon.
+        """Send the member an email warning that the membership will expire.
+
+        This method cannot be called for memberships without an expiration
+        date. Emails are not sent to members if their membership has already
+        expired or if the member is no longer active.
+
+        :raises AssertionError: if the member has no expiration date of the
+            team or if the TeamMembershipRenewalPolicy is AUTOMATIC.
         """
 
     @call_with(user=REQUEST_USER)
     @operation_parameters(
         status=copy_field(status),
-        comment=copy_field(reviewer_comment))
+        comment=copy_field(reviewer_comment),
+        silent=Bool(title=_("Do not send notifications of status change.  "
+                            "For use by Launchpad administrators only."),
+                            required=False, default=False))
     @export_write_operation()
-    def setStatus(status, user, comment=None):
+    def setStatus(status, user, comment=None, silent=False):
         """Set the status of this membership.
 
         The user and comment are stored in last_changed_by and
@@ -224,6 +252,8 @@ class ITeamMembership(Interface):
         transition.
 
         The given status must be different than the current status.
+
+        Return True if the status got changed, otherwise False.
         """
 
 
@@ -266,6 +296,16 @@ class ITeamMembershipSet(Interface):
         TeamMembership and I'll return None.
         """
 
+    def deactivateActiveMemberships(team, comment, reviewer):
+        """Deactivate all team members in ACTIVE_STATES.
+
+        This is a convenience method used before teams are deleted.
+
+        :param team: The team to deactivate.
+        :param comment: An explanation for the deactivation.
+        :param reviewer: The user doing the deactivation.
+        """
+
 
 class ITeamParticipation(Interface):
     """A TeamParticipation.
@@ -280,10 +320,10 @@ class ITeamParticipation(Interface):
     id = Int(title=_('ID'), required=True, readonly=True)
     team = Reference(
         title=_("The team"), required=True, readonly=True,
-        schema=Interface) # Specified in interfaces/person.py.
+        schema=Interface)  # Specified in interfaces/person.py.
     person = Reference(
         title=_("The member"), required=True, readonly=True,
-        schema=Interface) # Specified in interfaces/person.py.
+        schema=Interface)  # Specified in interfaces/person.py.
 
 
 class CyclicalTeamMembershipError(Exception):
@@ -293,4 +333,18 @@ class CyclicalTeamMembershipError(Exception):
     any cyclical relationships.  So if A is a member of B and B is
     a member of C then attempting to make C a member of A will
     result in this error being raised.
-    """    
+    """
+
+
+class IJoinTeamEvent(Interface):
+    """A person/team joined (or tried to join) a team."""
+
+    person = Attribute("The person/team who joined the team.")
+    team = Attribute("The team.")
+
+
+class ITeamInvitationEvent(Interface):
+    """A new person/team has been invited to a team."""
+
+    member = Attribute("The person/team who was invited.")
+    team = Attribute("The team.")

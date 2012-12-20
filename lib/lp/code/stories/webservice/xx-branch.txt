@@ -11,8 +11,8 @@ the things on Launchpad.
     >>> import pytz
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.code.enums import BranchLifecycleStatus, BranchType
-    >>> from lp.code.interfaces.branch import IBranch
     >>> from lazr.restful.marshallers import DateTimeFieldMarshaller
+    >>> from lp.code.interfaces.branch import IBranch
 
 To make this document a little more readable, we'll have to define some
 helpers. This one turns a JSON date/time response into a Python
@@ -79,11 +79,12 @@ time goes on.
     >>> fooix = factory.makeProduct(name='fooix')
     >>> branch = factory.makeProductBranch(
     ...     branch_type=BranchType.HOSTED, owner=eric, product=fooix,
-    ...     name='trunk', title='The Fooix Trunk')
+    ...     name='trunk', title='The Fooix Trunk',
+    ...     date_created=datetime(2009, 1, 1, tzinfo=pytz.UTC))
     >>> feature_branch = factory.makeAnyBranch(
     ...     owner=eric, product=fooix, name='feature-branch',
     ...     lifecycle_status=BranchLifecycleStatus.EXPERIMENTAL)
-    >>> feature_branch_bug = factory.makeBug(product=fooix,
+    >>> feature_branch_bug = factory.makeBug(target=fooix,
     ...     title='Stuff needs features')
     >>> feature_branch_spec = factory.makeSpecification(product=fooix,
     ...     title='Super Feature X')
@@ -99,7 +100,7 @@ time goes on.
     ...     feature_branch_spec.name])
     >>> logout()
 
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from lp.testing.pages import webservice_for_person
     >>> service = webservice_for_person(eric)
     >>> fooix_trunk = webservice.get(branch_url).jsonBody()
     >>> from lazr.restful.testing.webservice import pprint_entry
@@ -107,12 +108,15 @@ time goes on.
     branch_format: None
     branch_type: u'Hosted'
     bzr_identity: u'lp://dev/~eric/fooix/trunk'
+    code_import_link: None
     control_format: None
-    date_created: ...
-    date_last_modified: ...
+    date_created: u'2009-01-01T00:00:00+00:00'
+    date_last_modified: u'2009-01-01T00:00:00+00:00'
     dependent_branches_collection_link: u'.../~eric/fooix/trunk/dependent_branches'
     description: None
     display_name: u'lp://dev/~eric/fooix/trunk'
+    explicitly_private: False
+    information_type: u'Public'
     landing_candidates_collection_link: u'.../~eric/fooix/trunk/landing_candidates'
     landing_targets_collection_link: u'.../~eric/fooix/trunk/landing_targets'
     last_mirror_attempt: None
@@ -121,24 +125,28 @@ time goes on.
     last_scanned_id: None
     lifecycle_status: u'Development'
     linked_bugs_collection_link: u'http://.../~eric/fooix/trunk/linked_bugs'
+    merge_queue_config: None
+    merge_queue_link: None
     mirror_status_message: None
     name: u'trunk'
     owner_link: u'.../~eric'
     private: False
     project_link: u'.../fooix'
+    recipes_collection_link: u'http://.../~eric/fooix/trunk/recipes'
     registrant_link: u'.../~eric'
     repository_format: None
     resource_type_link: u'.../#branch'
     reviewer_link: None
     revision_count: 0
     self_link: u'.../~eric/fooix/trunk'
+    sourcepackage_link: None
     spec_links_collection_link: u'.../~eric/fooix/trunk/spec_links'
     subscribers_collection_link: u'http://.../~eric/fooix/trunk/subscribers'
     subscriptions_collection_link: u'http://.../~eric/fooix/trunk/subscriptions'
     unique_name: u'~eric/fooix/trunk'
     url: None
+    web_link: u'http://code.../~eric/fooix/trunk'
     whiteboard: None
-
 
 There is a branch merge proposal with Fooix trunk as the target branch, so it
 should have a branch at the endpoint of landing_candidates.
@@ -181,15 +189,22 @@ The branches of a project are also available.
 
     >>> def print_branch(branch):
     ...     print branch['unique_name'] + ' - ' + branch['lifecycle_status']
-    >>> def print_branches(webservice, url, status=None):
+    >>> def print_branches(webservice, url, status=None, modified_since=None):
     ...     branches = webservice.named_get(
     ...         url, 'getBranches',
-    ...         status=status).jsonBody()
+    ...         status=status, modified_since=modified_since).jsonBody()
     ...     for branch in branches['entries']:
     ...         print_branch(branch)
 
     >>> print_branches(webservice, '/fooix')
     ~eric/fooix/trunk - Development
+    ~eric/fooix/feature-branch - Experimental
+
+The branches can be limited to those that have been modified since a specified
+time.
+
+    >>> print_branches(webservice, '/fooix',
+    ...                modified_since=u'2010-01-01T00:00:00+00:00')
     ~eric/fooix/feature-branch - Experimental
 
 A list of lifecycle statuses can be provided for filtering.
@@ -233,3 +248,56 @@ As with projects, these can be filtered by the branch status.
 
     >>> print_branches(webservice, '/widgets', ('Experimental'))
     ~eric/fooix/feature-branch - Experimental
+
+Differences between versions
+============================
+
+In version 'beta', a branch can be made private or public by invoking
+the named operation 'setPrivate'.
+
+    >>> branch = webservice.get(branch_url).jsonBody()
+    >>> print branch['private']
+    False
+
+    >>> response = webservice.named_post(
+    ...     branch_url, 'setPrivate', api_version='beta', private=True)
+    >>> branch = webservice.get(branch_url).jsonBody()
+    >>> print branch['information_type']
+    Private
+
+In subsequent versions, 'setPrivate' is gone; you have to use the
+'transitionToInformationType' method.
+
+    >>> print webservice.named_post(
+    ...     branch_url, 'setPrivate', api_version='devel', private=True)
+    HTTP/1.1 400 Bad Request
+    ...
+    No such operation: setPrivate
+
+Removing branches
+=================
+
+Branches may have dependencies so it may not necessarily be possible to
+delete them.
+
+    >>> deletable = webservice.named_get('/~eric/fooix/feature-branch',
+    ...                                  'canBeDeleted').jsonBody()
+    >>> print deletable
+    False
+
+    Deleting only works on branches that do not have anything else
+    depending on them.
+
+    >>> response = webservice.delete('/~eric/fooix/feature-branch')
+    >>> print response
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> response = webservice.delete('/~mary/blob/bar')
+    >>> print response
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> print_branches(webservice, '/widgets')
+    ~eric/fooix/trunk - Development
+

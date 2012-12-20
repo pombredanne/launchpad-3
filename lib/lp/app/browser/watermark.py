@@ -9,16 +9,22 @@ __all__ = [
     ]
 
 
-import cgi
-
 from zope.component import queryAdapter
 from zope.interface import implements
 from zope.traversing.interfaces import (
-    IPathAdapter, ITraversable, TraversalError)
+    IPathAdapter,
+    ITraversable,
+    TraversalError,
+    )
 
-from canonical.lazr.canonicalurl import nearest_provides_or_adapted
-
-from lp.app.interfaces.rootcontext import IRootContext
+from lp.app.interfaces.headings import (
+    IEditableContextTitle,
+    IMajorHeadingView,
+    IRootContext,
+    )
+from lp.services.webapp.canonicalurl import nearest_provides_or_adapted
+from lp.services.webapp.escaping import structured
+from lp.services.webapp.publisher import canonical_url
 
 
 class WatermarkTalesAdapter:
@@ -26,39 +32,54 @@ class WatermarkTalesAdapter:
 
     implements(ITraversable)
 
-    def __init__(self, context):
-        self._context = context
+    def __init__(self, view):
+        self._view = view
+        self._context = view.context
 
     @property
     def root_context(self):
         return nearest_provides_or_adapted(self._context, IRootContext)
 
     def heading(self):
-        """Return the heading text for the root context.
+        """Return the heading text for the page.
 
-        If the context itself provides IRootContext then we return an H1,
-        otherwise it is a H2.
+        If the view provides `IEditableContextTitle` then the top heading is
+        rendered from the view's `title_edit_widget` and is generally
+        editable.
+
+        Otherwise, if the context provides `IRootContext` then we return an
+        H1, else an H2.
         """
-        if IRootContext.providedBy(self._context):
-            heading = 'h1'
+        # Check the view; is the title editable?
+        if IEditableContextTitle.providedBy(self._view):
+            return self._view.title_edit_widget()
+        # The title is static, but only the context's index view gets an H1.
+        if IMajorHeadingView.providedBy(self._view):
+            heading = structured('h1')
         else:
-            heading = 'h2'
-
-        root = self.root_context
-        if root is None:
+            heading = structured('h2')
+        # If there is actually no root context, then it's a top-level
+        # context-less page so Launchpad.net is shown as the branding.
+        if self.root_context is None:
             title = 'Launchpad.net'
         else:
-            title = root.title
-
-        return "<%(heading)s>%(title)s</%(heading)s>" % {
-            'heading': heading,
-            'title': cgi.escape(title)
-            }
+            title = self.root_context.title
+        # For non-editable titles, generate the static heading.
+        return structured(
+            "<%(heading)s>%(title)s</%(heading)s>",
+            heading=heading,
+            title=title).escapedtext
 
     def logo(self):
         """Return the logo image for the root context."""
         adapter = queryAdapter(self.root_context, IPathAdapter, 'image')
-        return adapter.logo()
+        if (self.root_context != self._context
+            and self.root_context is not None):
+            return '<a href="%s">%s</a>' % (
+                canonical_url(self.root_context, rootsite='mainsite'),
+                adapter.logo())
+        else:
+            return adapter.logo()
 
     def traverse(self, name, furtherPath):
         if name == "heading":
@@ -66,4 +87,4 @@ class WatermarkTalesAdapter:
         elif name == "logo":
             return self.logo()
         else:
-            raise TraversalError, name
+            raise TraversalError(name)

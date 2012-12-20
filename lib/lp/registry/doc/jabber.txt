@@ -3,8 +3,8 @@
 Jabber IDs are associated with a person and must be created through the
 IJabberIDSet utility.
 
-    >>> from lp.registry.interfaces.role import IHasOwner
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.role import IHasOwner
     >>> from lp.registry.interfaces.jabber import (
     ...     IJabberID, IJabberIDSet)
 
@@ -17,7 +17,7 @@ with the Jabber ID and the Jabber ID itself.
 
 The returned JabberID object provides both IJabberID and IHasOwner.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
     >>> verifyObject(IJabberID, jabber_id)
     True
     >>> verifyObject(IHasOwner, jabber_id)

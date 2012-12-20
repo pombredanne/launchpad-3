@@ -11,30 +11,59 @@ __metaclass__ = type
 __all__ = [
     'add_exception_logging_hook',
     'DenyingServer',
-    'ensure_base',
+    'get_branch_info',
     'get_branch_stacked_on_url',
+    'get_stacked_on_url',
+    'get_vfs_format_classes',
     'HttpAsLocalTransport',
+    'identical_formats',
     'install_oops_handler',
     'is_branch_stackable',
+    'server',
+    'read_locked',
     'remove_exception_logging_hook',
     ]
 
+from contextlib import contextmanager
 import os
 import sys
 
-from bzrlib import config
+from bzrlib import (
+    config,
+    trace,
+    )
 from bzrlib.errors import (
-    NoSuchFile, NotStacked, UnstackableBranchFormat,
-    UnstackableRepositoryFormat)
-from bzrlib.remote import RemoteBzrDir
-from bzrlib import trace
-from bzrlib.transport import register_transport, unregister_transport
+    AppendRevisionsOnlyViolation,
+    NotStacked,
+    UnstackableBranchFormat,
+    UnstackableRepositoryFormat,
+    UnsupportedProtocol,
+    )
+from bzrlib.remote import (
+    RemoteBranch,
+    RemoteBzrDir,
+    RemoteRepository,
+    )
+from bzrlib.transport import (
+    get_transport,
+    register_transport,
+    unregister_transport,
+    )
 from bzrlib.transport.local import LocalTransport
-
-from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility, ScriptRequest)
-
 from lazr.uri import URI
+
+from lp.services.webapp.errorlog import (
+    ErrorReportingUtility,
+    ScriptRequest,
+    )
+
+# Exception classes which are not converted into OOPSes
+NOT_OOPS_EXCEPTIONS = (AppendRevisionsOnlyViolation,)
+
+def should_log_oops(exc):
+    """Return true if exc should trigger an OOPS.
+    """
+    return not issubclass(exc, NOT_OOPS_EXCEPTIONS)
 
 
 def is_branch_stackable(bzr_branch):
@@ -82,11 +111,11 @@ def get_branch_stacked_on_url(a_bzrdir):
     # BzrDir.find_branch_format()), then the branch is not stackable. Bazaar
     # post-1.6 has added 'get_branch_format' to the pre-split-out formats,
     # which we could use instead.
-    find_branch_format = getattr(a_bzrdir, 'find_branch_format', None)
-    if find_branch_format is None:
+    try:
+        format = a_bzrdir.find_branch_format(None)
+    except NotImplementedError:
         raise UnstackableBranchFormat(
             a_bzrdir._format, a_bzrdir.root_transport.base)
-    format = find_branch_format()
     if not format.supports_stacking():
         raise UnstackableBranchFormat(format, a_bzrdir.root_transport.base)
     branch_transport = a_bzrdir.get_branch_transport(None)
@@ -102,30 +131,6 @@ def get_branch_stacked_on_url(a_bzrdir):
     if not stacked_on_url:
         raise NotStacked(a_bzrdir.root_transport.base)
     return stacked_on_url
-
-
-# XXX: JonathanLange 2007-06-13 bugs=120135:
-# This should probably be part of bzrlib.
-def ensure_base(transport):
-    """Make sure that the base directory of `transport` exists.
-
-    If the base directory does not exist, try to make it. If the parent of the
-    base directory doesn't exist, try to make that, and so on.
-    """
-    try:
-        transport.ensure_base()
-    except NoSuchFile:
-        # transport.create_prefix was added in Bazaar 1.15, and _create_prefix
-        # was removed. Check to see if transport has a create_prefix method
-        # and use the old _create_prefix if it's not there.
-        #
-        # This can be removed once Bazaar 1.15 has landed on Launchpad.
-        create_prefix = getattr(transport, 'create_prefix', None)
-        if create_prefix is not None:
-            create_prefix()
-        else:
-            from bzrlib.builtins import _create_prefix
-            _create_prefix(transport)
 
 
 _exception_logging_hooks = []
@@ -165,8 +170,10 @@ def remove_exception_logging_hook(hook_function):
 
 def make_oops_logging_exception_hook(error_utility, request):
     """Make a hook for logging OOPSes."""
+
     def log_oops():
-        error_utility.raising(sys.exc_info(), request)
+        if should_log_oops(sys.exc_info()[0]):
+            error_utility.raising(sys.exc_info(), request)
     return log_oops
 
 
@@ -188,7 +195,6 @@ def make_error_utility(pid=None):
         pid = os.getpid()
     error_utility = ErrorReportingUtility()
     error_utility.configure('bzr_lpserve')
-    error_utility.setOopsToken(str(pid))
     return error_utility
 
 
@@ -203,6 +209,7 @@ def install_oops_handler(user_id):
     request = BazaarOopsRequest(user_id)
     hook = make_oops_logging_exception_hook(error_utility, request)
     add_exception_logging_hook(hook)
+    return hook
 
 
 class HttpAsLocalTransport(LocalTransport):
@@ -242,13 +249,13 @@ class DenyingServer:
         """
         self.schemes = schemes
 
-    def setUp(self):
+    def start_server(self):
         """Prevent transports being created for specified schemes."""
         for scheme in self.schemes:
             register_transport(scheme, self._deny)
         self._is_set_up = True
 
-    def tearDown(self):
+    def stop_server(self):
         """Re-enable creation of transports for specified schemes."""
         if not self._is_set_up:
             return
@@ -260,3 +267,98 @@ class DenyingServer:
         """Prevent creation of transport for 'url'."""
         raise AssertionError(
             "Creation of transport for %r is currently forbidden" % url)
+
+
+def get_vfs_format_classes(branch):
+    """Return the vfs classes of the branch, repo and bzrdir formats.
+
+    'vfs' here means that it will return the underlying format classes of a
+    remote branch.
+    """
+    if isinstance(branch, RemoteBranch):
+        branch._ensure_real()
+        branch = branch._real_branch
+    repository = branch.repository
+    if isinstance(repository, RemoteRepository):
+        repository._ensure_real()
+        repository = repository._real_repository
+    bzrdir = branch.bzrdir
+    if isinstance(bzrdir, RemoteBzrDir):
+        bzrdir._ensure_real()
+        bzrdir = bzrdir._real_bzrdir
+    return (
+        branch._format.__class__,
+        repository._format.__class__,
+        bzrdir._format.__class__,
+        )
+
+
+def identical_formats(branch_one, branch_two):
+    """Check if two branches have the same bzrdir, repo, and branch formats.
+    """
+    return (get_vfs_format_classes(branch_one) ==
+            get_vfs_format_classes(branch_two))
+
+
+def get_stacked_on_url(branch):
+    """Get the stacked-on URL for 'branch', or `None` if not stacked."""
+    try:
+        return branch.get_stacked_on_url()
+    except (NotStacked, UnstackableBranchFormat):
+        return None
+
+
+def get_branch_info(branch):
+    """Get information about the branch for branchChanged.
+
+    :return: a dict containing 'stacked_on_url', 'last_revision_id',
+        'control_string', 'branch_string', 'repository_string'.
+    """
+    info = {}
+    info['stacked_on_url'] = get_stacked_on_url(branch)
+    info['last_revision_id'] = branch.last_revision()
+    # XXX: Aaron Bentley 2008-06-13
+    # Bazaar does not provide a public API for learning about
+    # format markers.  Fix this in Bazaar, then here.
+    info['control_string'] = branch.bzrdir._format.get_format_string()
+    info['branch_string'] = branch._format.get_format_string()
+    info['repository_string'] = branch.repository._format.get_format_string()
+    return info
+
+
+@contextmanager
+def read_locked(branch):
+    branch.lock_read()
+    try:
+        yield
+    finally:
+        branch.unlock()
+
+
+@contextmanager
+def write_locked(branch):
+    """Provide a context in which the branch is write-locked."""
+    branch.lock_write()
+    try:
+        yield
+    finally:
+        branch.unlock()
+
+
+@contextmanager
+def server(server, no_replace=False):
+    run_server = True
+    if no_replace:
+        try:
+            get_transport(server.get_url())
+        except UnsupportedProtocol:
+            pass
+        else:
+            run_server = False
+    if run_server:
+        server.start_server()
+    try:
+        yield server
+    finally:
+        if run_server:
+            server.stop_server()

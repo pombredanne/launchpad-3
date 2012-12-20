@@ -38,3 +38,12 @@ The attendees element contains a list of person elements.
     ...     print "%(displayname)s, %(name)s, %(start)s -> %(end)s" % person
     Celso Providelo, cprov, 2005-10-07T23:30:00Z -> 2005-11-17T00:11:00Z
     Foo Bar, name16, 2005-10-07T23:30:00Z -> 2005-11-17T00:11:00Z
+
+The <unscheduled /> element contains a list of meetings. Each of these
+actually refers to a Specification.
+
+    >>> soup = BSS(browser.contents)
+    >>> meetings = soup.find('unscheduled').findAll('meeting')
+    >>> for meeting in meetings:
+    ...     print "%(id)s: %(name)s, %(lpurl)s" % meeting
+    1: extension-manager-upgrades, .../+spec/extension-manager-upgrades

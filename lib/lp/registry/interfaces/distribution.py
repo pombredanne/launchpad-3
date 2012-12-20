@@ -1,7 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IDistribution."""
 
@@ -16,49 +14,98 @@ __all__ = [
     'IDistributionMirrorMenuMarker',
     'IDistributionPublic',
     'IDistributionSet',
+    'NoPartnerArchive',
     'NoSuchDistribution',
     ]
 
-from zope.schema import Bool, Choice, Datetime, List, Text, TextLine
-from zope.interface import Attribute, Interface
-
-from lazr.restful.fields import CollectionField, Reference
-from lazr.restful.interface import copy_field
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
-   collection_default_content, export_as_webservice_collection,
-   export_as_webservice_entry, export_operation_as,
-   export_read_operation, exported, operation_parameters,
-   operation_returns_collection_of, operation_returns_entry,
-   rename_parameters_as)
+    call_with,
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_operation_as,
+    export_read_operation,
+    exported,
+    operation_for_version,
+    operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
+    rename_parameters_as,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
+from lazr.restful.interface import copy_field
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    List,
+    Object,
+    Text,
+    TextLine,
+    )
 
-from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    Description, PublicPersonChoice, Summary, Title)
-from canonical.launchpad.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
-from lp.app.interfaces.rootcontext import IRootContext
-from lp.registry.interfaces.announcement import IMakesAnnouncements
-from lp.bugs.interfaces.bugtarget import (
-    IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.registry.interfaces.karma import IKarmaContext
-from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasDrivers, IHasSecurityContact, ILaunchpadUsage)
-from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
-from lp.registry.interfaces.milestone import (
-    ICanGetMilestonesDirectly, IHasMilestones)
-from lp.registry.interfaces.pillar import IPillar
-from lp.blueprints.interfaces.specificationtarget import (
-    ISpecificationTarget)
+from lp import _
+from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.app.errors import NameLookupFailed
+from lp.app.interfaces.headings import IRootContext
+from lp.app.interfaces.launchpad import (
+    ILaunchpadUsage,
+    IServiceUsage,
+    )
+from lp.app.validators.name import name_validator
+from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
 from lp.blueprints.interfaces.sprint import IHasSprints
-from lp.translations.interfaces.translationgroup import (
-    IHasTranslationGroup)
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
-from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.fields import (
-    IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
-
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.bugtarget import (
+    IBugTarget,
+    IHasExpirableBugs,
+    IOfficialBugTagTargetPublic,
+    IOfficialBugTagTargetRestricted,
+    )
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
+from lp.registry.interfaces.announcement import IMakesAnnouncements
+from lp.registry.interfaces.distributionmirror import IDistributionMirror
+from lp.registry.interfaces.karma import IKarmaContext
+from lp.registry.interfaces.milestone import (
+    ICanGetMilestonesDirectly,
+    IHasMilestones,
+    )
+from lp.registry.interfaces.oopsreferences import IHasOOPSReferences
+from lp.registry.interfaces.pillar import (
+    IHasSharingPolicies,
+    IPillar,
+    )
+from lp.registry.interfaces.role import (
+    IHasAppointedDriver,
+    IHasDrivers,
+    IHasOwner,
+    )
+from lp.services.fields import (
+    Description,
+    IconImageUpload,
+    LogoImageUpload,
+    MugshotImageUpload,
+    PillarNameField,
+    PublicPersonChoice,
+    Summary,
+    Title,
+    )
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
+from lp.translations.interfaces.translationpolicy import ITranslationPolicy
 
 
 class IDistributionMirrorMenuMarker(Interface):
@@ -67,6 +114,7 @@ class IDistributionMirrorMenuMarker(Interface):
 
 class DistributionNameField(PillarNameField):
     """The pillar for a distribution."""
+
     @property
     def _content_iface(self):
         """Return the interface of this pillar object."""
@@ -81,16 +129,17 @@ class IDistributionDriverRestricted(Interface):
     """IDistribution properties requiring launchpad.Driver permission."""
 
     def newSeries(name, displayname, title, summary, description,
-                  version, parent_series, owner):
+                  version, previous_series, registrant):
         """Creates a new distroseries."""
 
 
 class IDistributionPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
-    IHasBuildRecords, IHasDrivers, IHasMentoringOffers, IHasMilestones,
-    IHasOwner, IHasSecurityContact, IHasSprints, IHasTranslationGroup,
-    IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
-    IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget):
+    IHasBuildRecords, IHasDrivers, IHasMilestones, IHasSharingPolicies,
+    IHasOOPSReferences, IHasOwner, IHasSprints, IHasTranslationImports,
+    ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
+    IOfficialBugTagTargetPublic, IPillar, IServiceUsage,
+    ISpecificationTarget, IHasExpirableBugs):
     """Public IDistribution properties."""
 
     id = Attribute("The distro's unique number.")
@@ -113,8 +162,8 @@ class IDistributionPublic(
         Summary(
             title=_("Summary"),
             description=_(
-                "The distribution summary. A short paragraph "
-                "describing the goals and highlights of the distro."),
+                "A short paragraph to introduce the goals and highlights "
+                "of the distribution."),
             required=True))
     homepage_content = exported(
         Text(
@@ -151,21 +200,33 @@ class IDistributionPublic(
     description = exported(
         Description(
             title=_("Description"),
-            description=_("The distro's description."),
+            description=_(
+                "Details about the distributions's work, highlights, goals, "
+                "and how to contribute. Use plain text, paragraphs are "
+                "preserved and URLs are linked in pages. Don't repeat the "
+                "Summary."),
             required=True))
     domainname = exported(
         TextLine(
-            title=_("Domain name"),
-            description=_("The distro's domain name."), required=True),
+            title=_("Web site URL"),
+            description=_("The distro's web site URL."), required=True),
         exported_as='domain_name')
     owner = exported(
         PublicPersonChoice(
-            title=_("Owner"), vocabulary='ValidOwner',
-            description=_("The distro's owner."), required=True))
+            title=_("Owner"),
+            required=True,
+            vocabulary='ValidPillarOwner',
+            description=_("The restricted team, moderated team, or person "
+                          "who maintains the distribution information in "
+                          "Launchpad.")))
+    registrant = exported(
+        PublicPersonChoice(
+            title=_("Registrant"), vocabulary='ValidPersonOrTeam',
+            description=_("The distro's registrant."), required=True,
+            readonly=True))
     date_created = exported(
         Datetime(title=_('Date created'),
-                 description=_("The date this distribution was registered.")),
-        exported_as='date_created')
+                 description=_("The date this distribution was registered.")))
     driver = exported(
         PublicPersonChoice(
             title=_("Driver"),
@@ -173,55 +234,73 @@ class IDistributionPublic(
                 "The person or team responsible for decisions about features "
                 "and bugs that will be targeted for any series in this "
                 "distribution. Note that you can also specify a driver "
-                "on each series who's permissions will be limited to that "
+                "on each series whose permissions will be limited to that "
                 "specific series."),
             required=False, vocabulary='ValidPersonOrTeam'))
     drivers = Attribute(
         "Presents the distro driver as a list for consistency with "
         "IProduct.drivers where the list might include a project driver.")
-    members = PublicPersonChoice(
+    members = exported(PublicPersonChoice(
         title=_("Members"),
         description=_("The distro's members team."), required=True,
-        vocabulary='ValidPersonOrTeam')
-    mirror_admin = PublicPersonChoice(
+        vocabulary='ValidPersonOrTeam'))
+    mirror_admin = exported(PublicPersonChoice(
         title=_("Mirror Administrator"),
         description=_("The person or team that has the rights to review and "
                       "mark this distribution's mirrors as official."),
-        required=True, vocabulary='ValidPersonOrTeam')
-    lucilleconfig = TextLine(
-        title=_("Lucille Config"),
-        description=_("The Lucille Config."), required=False)
-    archive_mirrors = Attribute(
-        "All enabled and official ARCHIVE mirrors of this Distribution.")
-    cdimage_mirrors = Attribute(
-        "All enabled and official RELEASE mirrors of this Distribution.")
+        required=True, vocabulary='ValidPersonOrTeam'))
+    archive_mirrors = exported(doNotSnapshot(
+        CollectionField(
+            description=_("All enabled and official ARCHIVE mirrors "
+                          "of this Distribution."),
+            readonly=True, value_type=Object(schema=IDistributionMirror))))
+    archive_mirrors_by_country = doNotSnapshot(CollectionField(
+            description=_("All enabled and official ARCHIVE mirrors "
+                          "of this Distribution."),
+            readonly=True, value_type=Object(schema=IDistributionMirror)))
+    cdimage_mirrors = exported(doNotSnapshot(
+        CollectionField(
+            description=_("All enabled and official RELEASE mirrors "
+                          "of this Distribution."),
+            readonly=True, value_type=Object(schema=IDistributionMirror))))
+    cdimage_mirrors_by_country = doNotSnapshot(CollectionField(
+            description=_("All enabled and official ARCHIVE mirrors "
+                          "of this Distribution."),
+            readonly=True, value_type=Object(schema=IDistributionMirror)))
     disabled_mirrors = Attribute(
         "All disabled and official mirrors of this Distribution.")
     unofficial_mirrors = Attribute(
         "All unofficial mirrors of this Distribution.")
     pending_review_mirrors = Attribute(
         "All mirrors of this Distribution that haven't been reviewed yet.")
-    serieses = exported(
+    series = exported(doNotSnapshot(
         CollectionField(
             title=_("DistroSeries inside this Distribution"),
-            # Really IDistroSeries, see below.
-            value_type=Reference(schema=Interface)),
-        exported_as="series")
+            # Really IDistroSeries, see _schema_circular_imports.py.
+            value_type=Reference(schema=Interface))))
+    derivatives = exported(doNotSnapshot(
+        CollectionField(
+            title=_("This Distribution's derivatives"),
+            # Really IDistroSeries, see _schema_circular_imports.py.
+            value_type=Reference(schema=Interface))))
     architectures = List(
         title=_("DistroArchSeries inside this Distribution"))
-    bounties = Attribute(_("The bounties that are related to this distro."))
-    bugCounter = Attribute("The distro bug counter")
-    is_read_only = Attribute(
-        "True if this distro is just monitored by Launchpad, rather than "
-        "allowing you to use Launchpad to actually modify the distro.")
     uploaders = Attribute(_(
         "ArchivePermission records for uploaders with rights to upload to "
         "this distribution."))
+    package_derivatives_email = TextLine(
+        title=_("Package Derivatives Email Address"),
+        description=_(
+            "The email address to send information about updates to packages "
+            "that are derived from another distribution. The sequence "
+            "{package_name} is replaced with the actual package name."),
+        required=False)
 
     # properties
     currentseries = exported(
         Reference(
-            Interface, # Really IDistroSeries, see below
+            # Really IDistroSeries, see _schema_circular_imports.py.
+            Interface,
             title=_("Current series"),
             description=_(
                 "The current development series of this distribution. "
@@ -237,9 +316,9 @@ class IDistributionPublic(
         "get the full functionality of LP")
 
     translation_focus = Choice(
-        title=_("Translation Focus"),
+        title=_("Translation focus"),
         description=_(
-            "The DistroSeries that should get the translation effort focus."),
+            "The release series that translators should focus on."),
         required=False,
         vocabulary='FilteredDistroSeries')
 
@@ -251,28 +330,37 @@ class IDistributionPublic(
     main_archive = exported(
         Reference(
             title=_('Distribution Main Archive.'), readonly=True,
-            schema=Interface)) # Really IArchive, circular import fix below.
+            # Really IArchive, see _schema_circular_imports.py.
+            schema=Interface))
 
-    all_distro_archives = exported(
+    all_distro_archives = exported(doNotSnapshot(
         CollectionField(
-            title=_("A sequence of the distribution's non-PPA Archives."),
+            title=_(
+                "A sequence of the distribution's primary, "
+                "partner and debug archives."),
             readonly=True, required=False,
-            value_type=Reference(schema=Interface)),
-                # Really Iarchive, circular import fix below.
+            value_type=Reference(schema=Interface))),
+                # Really IArchive, see _schema_circular_imports.py.
         exported_as='archives')
 
     all_distro_archive_ids = Attribute(
         "A list containing the IDs of all the non-PPA archives.")
-
-    upstream_report_excluded_packages = Attribute(
-        "A list of the source packages that should not be shown on the "
-        "upstream bug report for this Distribution.")
 
     has_published_binaries = Bool(
         title=_("Has Published Binaries"),
         description=_("True if this distribution has binaries published "
                       "on disk."),
         readonly=True, required=False)
+
+    has_published_sources = Bool(
+        title=_("Has Published Sources"),
+        description=_("True if this distribution has sources published."),
+        readonly=True, required=False)
+
+    redirect_release_uploads = exported(Bool(
+        title=_("Redirect release pocket uploads"),
+        description=_("Redirect release pocket uploads to proposed pocket"),
+        readonly=False, required=True))
 
     def getArchiveIDList(archive=None):
         """Return a list of archive IDs suitable for sqlvalues() or quote().
@@ -289,16 +377,29 @@ class IDistributionPublic(
     def __iter__():
         """Iterate over the series for this distribution."""
 
-    # Really IDistroSeries, see below
+    @operation_parameters(
+        name=TextLine(title=_("Archive name"), required=True))
+    @operation_returns_entry(Interface)
+    @export_read_operation()
+    def getArchive(name):
+        """Return the distribution archive with the given name.
+
+        Only distribution archives are considered -- PPAs will not be found.
+
+        :param name: The name of the archive, e.g. 'partner'
+        """
+
+    # Really IDistroSeries, see _schema_circular_imports.py.
     @operation_returns_collection_of(Interface)
     @export_operation_as(name="getDevelopmentSeries")
     @export_read_operation()
-    def getDevelopmentSerieses():
-        """Return the DistroSerieses which are marked as in development."""
+    def getDevelopmentSeries():
+        """Return the DistroSeries which are marked as in development."""
 
     @operation_parameters(
         name_or_version=TextLine(title=_("Name or version"), required=True))
-    @operation_returns_entry(Interface) # Really IDistroSeries, see below
+    # Really IDistroSeries, see _schema_circular_imports.py.
+    @operation_returns_entry(Interface)
     @export_read_operation()
     def getSeries(name_or_version):
         """Return the series with the name or version given.
@@ -307,15 +408,59 @@ class IDistributionPublic(
             `IDistroSeries.version`.
         """
 
+    # This API is specifically for Ensemble's Principia.  It does not scale
+    # well to distributions of Ubuntu's scale, and is not intended for it.
+    # Therefore, this should probably never be exposed for a webservice
+    # version other than "devel".
+    @operation_parameters(
+        since=Datetime(
+            title=_("Time of last change"),
+            description=_(
+                "Return branches that have new tips since this timestamp."),
+            required=False))
+    @call_with(user=REQUEST_USER)
+    @export_operation_as(name="getBranchTips")
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getBranchTips(user=None, since=None):
+        """Return a list of branches which have new tips since a date.
+
+        Each branch information is a tuple of (branch_unique_name,
+        tip_revision, (official_series*)).
+
+        So for each branch in the distribution, you'll get the branch unique
+        name, the revision id of tip, and if the branch is official for some
+        series, the list of series name.
+
+        :param: user: If specified, shows the branches visible to that user.
+            if not specified, only branches visible to the anonymous user are
+            shown.
+
+        :param since: If specified, limits results to branches modified since
+            that date and time.
+        """
+
+    @operation_parameters(
+        name=TextLine(title=_("Name"), required=True))
+    @operation_returns_entry(IDistributionMirror)
+    @export_read_operation()
     def getMirrorByName(name):
         """Return the mirror with the given name for this distribution or None
         if it's not found.
         """
 
+    @operation_parameters(
+        country=copy_field(IDistributionMirror['country'], required=True),
+        mirror_type=copy_field(IDistributionMirror['content'], required=True))
+    @operation_returns_entry(IDistributionMirror)
+    @export_read_operation()
+    def getCountryMirror(country, mirror_type):
+        """Return the country DNS mirror for a country and content type."""
+
     def newMirror(owner, speed, country, content, displayname=None,
-                  description=None, http_base_url=None, ftp_base_url=None,
-                  rsync_base_url=None, enabled=False,
-                  official_candidate=False):
+                  description=None, http_base_url=None,
+                  ftp_base_url=None, rsync_base_url=None, enabled=False,
+                  official_candidate=False, whiteboard=None):
         """Create a new DistributionMirror for this distribution.
 
         At least one of http_base_url or ftp_base_url must be provided in
@@ -324,7 +469,8 @@ class IDistributionPublic(
 
     @operation_parameters(
         name=TextLine(title=_("Package name"), required=True))
-    # Really returns IDistributionSourcePackage, see below.
+    # Really returns IDistributionSourcePackage, see
+    # _schema_circular_imports.py.
     @operation_returns_entry(Interface)
     @export_read_operation()
     def getSourcePackage(name):
@@ -348,73 +494,45 @@ class IDistributionPublic(
             and the value is a `IDistributionSourcePackageRelease`.
         """
 
-    def ensureRelatedBounty(bounty):
-        """Ensure that the bounty is linked to this distribution. Return
-        None.
-        """
-
     def getDistroSeriesAndPocket(distroseriesname):
         """Return a (distroseries,pocket) tuple which is the given textual
         distroseriesname in this distribution."""
 
-    def getSourcePackageCaches(archive=None):
-        """The set of all source package info caches for this distribution.
+    def getSeriesByStatus(status):
+        """Query context distribution for distroseries with a given status.
 
-        If 'archive' is not given it will return all caches stored for the
-        distribution main archives (PRIMARY and PARTNER).
-        """
-
-    def removeOldCacheItems(archive, log):
-        """Delete any cache records for removed packages.
-
-        Also purges all existing cache records for disabled archives.
-
-        :param archive: target `IArchive`.
-        :param log: the context logger object able to print DEBUG level
-            messages.
-        """
-
-    def updateCompleteSourcePackageCache(archive, log, ztm, commit_chunk=500):
-        """Update the source package cache.
-
-        Consider every non-REMOVED sourcepackage and entirely skips updates
-        for disabled archives.
-
-        :param archive: target `IArchive`;
-        :param log: logger object for printing debug level information;
-        :param ztm:  transaction used for partial commits, every chunk of
-            'commit_chunk' updates is committed;
-        :param commit_chunk: number of updates before commit, defaults to 500.
-
-        :return the number packages updated done
-        """
-
-    def updateSourcePackageCache(sourcepackagename, archive, log):
-        """Update cached source package details.
-
-        Update cache details for a given ISourcePackageName, including
-        generated binarypackage names, summary and description fti.
-        'log' is required and only prints debug level information.
+        :param status: Series status to look for
+        :return: list of `IDistroSeries`
         """
 
     @rename_parameters_as(text="source_match")
     @operation_parameters(
         text=TextLine(title=_("Source package name substring match"),
                       required=True))
-    # Really returns IDistributionSourcePackage, see below.
+    # Really returns IDistributionSourcePackage, see
+    # _schema_circular_imports.py.
     @operation_returns_collection_of(Interface)
     @export_read_operation()
-    def searchSourcePackages(text):
+    def searchSourcePackages(
+        text, has_packaging=None, publishing_distroseries=None):
         """Search for source packages that correspond to the given text.
- 
+
         This method just decorates the result of searchSourcePackageCaches()
         to return DistributionSourcePackages.
         """
 
-    def searchSourcePackageCaches(text):
+    def searchSourcePackageCaches(
+        text, has_packaging=None, publishing_distroseries=None):
         """Search for source packages that correspond to the given text.
 
         :param text: The text that will be matched.
+        :param has_packaging: If True, it will filter out
+            packages with no packaging (i.e. no link to the upstream
+            project). False will do the reverse filtering, and None
+            will do no filtering on this field.
+        :param publishing_distroseries: If it is not None, then
+            it will filter out source packages that do not have a
+            publishing history for the given distroseries.
         :return: A result set containing
             (DistributionSourcePackageCache, SourcePackageName, rank) tuples
             ordered by rank.
@@ -434,38 +552,21 @@ class IDistributionPublic(
         (a substring of) their binary package names.
         """
 
-    def searchBinaryPackagesFTI(package_name):
-        """Do an FTI search on binary packages.
+    def guessPublishedSourcePackageName(pkgname):
+        """Return the "published" SourcePackageName related to pkgname.
 
-        :param package_name: The binary package name to search for.
-        :return: A result set containing DistributionSourcePackageCache
-            objects for the matching binaries found via an FTI search on
-            DistroSeriesPackageCache.
-        """
+        If pkgname corresponds to a source package that was published in
+        any of the distribution series, that's the SourcePackageName that is
+        returned.
 
-    def getFileByName(filename, archive=None, source=True, binary=True):
-        """Find and return a LibraryFileAlias for the filename supplied.
+        If there is any official source package branch linked, then that
+        source package name is returned.
 
-        The file returned will be one of those published in the distribution.
+        Otherwise, try to find a published binary package name and then return
+        the source package name from which it comes from.
 
-        If searching both source and binary, and the file is found in the
-        binary packages it'll return that over a file for a source package.
-
-        If 'archive' is not passed the distribution.main_archive is assumed.
-
-        At least one of source and binary must be true.
-
-        Raises NotFoundError if it fails to find the named file.
-        """
-
-    def guessPackageNames(pkgname):
-        """Try and locate source and binary package name objects that
-        are related to the provided name --  which could be either a
-        source or a binary package name. Returns a tuple of
-        (sourcepackagename, binarypackagename) based on the current
-        publishing status of these binary / source packages. Raises
-        NotFoundError if it fails to find any package published with
-        that name in the distribution.
+        :raises NotFoundError: when pkgname doesn't correspond to either a
+            published source or binary package name in this distribution.
         """
 
     def getAllPPAs():
@@ -501,47 +602,40 @@ class IDistributionPublic(
         If the component_name supplied is unknown, None is returned.
         """
 
-    def getPackagesAndPublicUpstreamBugCounts(limit=50,
-                                              exclude_packages=None):
-        """Return list of tuples of packages, upstreams and public bug counts.
+    def getAllowedBugInformationTypes():
+        """Get the information types that a bug in this distribution can have.
 
-        :param limit: The maximum number of rows to return.
-        :param exclude_packages: A list of source packages to exclude.
-            These should be specified as strings which correspond with
-            SourcePackageName.name.
-        :returns: [(IDistroSourcePackage, IProduct, int, int, int, int), ...]
-
-        This API is quite specialized; it returns a list of up to limit
-        tuples containing IProducts and three different bug counts:
-            - open bugs
-            - triaged bugs
-            - open bugs with an upstream task
-            - open bugs with upstream tasks that are either linked to
-              bug watches or to products that use_malone.
+        :return: A sequence of `InformationType`s.
         """
 
-    def getCustomLanguageCode(sourcepackagename, language_code):
-        """Look up `ICustomLanguageCode`.
+    def getDefaultBugInformationType():
+        """Get the default information type of a new bug in this distro.
 
-        A `SourcePackageName` in a Distribution may override some
-        language codes for translation import purposes.
+        :return: The `InformationType`.
         """
 
     def userCanEdit(user):
         """Can the user edit this distribution?"""
 
 
-class IDistribution(IDistributionEditRestricted, IDistributionPublic,
-                    IRootContext, IStructuralSubscriptionTarget):
-    """An operating system distribution."""
-    export_as_webservice_entry()
+class IDistribution(
+    IDistributionEditRestricted, IDistributionPublic, IHasBugSupervisor,
+    IQuestionTarget, IRootContext, IStructuralSubscriptionTarget):
+    """An operating system distribution.
 
-# Patch the official_bug_tags field to make sure that it's
-# writable from the API, and not readonly like its definition
-# in IHasBugs.
-writable_obt_field = copy_field(IDistribution['official_bug_tags'])
-writable_obt_field.readonly = False
-IDistribution._v_attrs['official_bug_tags'] = writable_obt_field
+    Launchpadlib example: retrieving the current version of a package in a
+    particular distroseries.
+
+    ::
+
+        ubuntu = launchpad.distributions["ubuntu"]
+        archive = ubuntu.main_archive
+        series = ubuntu.current_series
+        print archive.getPublishedSources(exact_match=True,
+            source_name="apport",
+            distro_series=series)[0].source_package_version
+    """
+    export_as_webservice_entry(as_of="beta")
 
 
 class IBaseDistribution(IDistribution):
@@ -569,7 +663,7 @@ class IDistributionSet(Interface):
         """Retrieve a distribution by name"""
 
     @collection_default_content()
-    def getDistros(self):
+    def getDistros():
         """Return all distributions.
 
         Ubuntu and its flavours will always be at the top of the list, with
@@ -586,8 +680,24 @@ class IDistributionSet(Interface):
         """Return the IDistribution with the given name or None."""
 
     def new(name, displayname, title, description, summary, domainname,
-            members, owner, mugshot=None, logo=None, icon=None):
-        """Creaste a new distribution."""
+            members, owner, registrant, mugshot=None, logo=None, icon=None):
+        """Create a new distribution."""
+
+    def getCurrentSourceReleases(distro_to_source_packagenames):
+        """Lookup many distribution source package releases.
+
+        :param distro_to_source_packagenames: A dictionary with
+            its keys being `IDistribution` and its values a list of
+            `ISourcePackageName`.
+        :return: A dict as per `IDistribution.getCurrentSourceReleases`
+        """
+
+    def getDerivedDistributions():
+        """Find derived distributions.
+
+        :return: An iterable of all derived distributions (not including
+            Ubuntu, even if it is technically derived from Debian).
+        """
 
 
 class NoSuchDistribution(NameLookupFailed):
@@ -596,5 +706,10 @@ class NoSuchDistribution(NameLookupFailed):
     _message_prefix = "No such distribution"
 
 
-# Monkey patching to fix circular imports done in
-# _schema_circular_imports.py
+class NoPartnerArchive(Exception):
+    """Raised when a partner archive is needed, but none exists."""
+
+    def __init__(self, distribution):
+        Exception.__init__(
+            self, "Partner archive for distro '%s' not found"
+            % (distribution.name, ))

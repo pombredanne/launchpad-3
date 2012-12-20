@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import ez_setup
+
+
 ez_setup.use_setuptools()
 
 from setuptools import setup, find_packages
@@ -24,38 +26,90 @@ setup(
     # this list should only contain direct dependencies--things imported or
     # used in zcml.
     install_requires=[
+        'ampoule',
+        'auditorclient',
+        'auditorfixture',
+        'BeautifulSoup',
         'bzr',
-        'chameleon.core',
-        'chameleon.zpt',
+        'Chameleon',
+        'cssutils',
+        # Required for pydkim
+        'dnspython',
+        'fixtures',
+        'FeedParser',
         'feedvalidator',
         'funkload',
+        'html5browser',
+        'pygpgme',
+        'python-debian',
+        'python-subunit',
         'launchpadlib',
+        'lazr.batchnavigator',
+        'lazr.config',
+        'lazr.delegates',
+        'lazr.enum',
+        'lazr.lifecycle',
+        'lazr.restful',
+        'lazr.jobrunner',
         'lazr.smtptest',
+        'lazr.testing',
         'lazr.uri',
+        'lpjsmin',
+        # Required for launchpadlib
+        'keyring',
+        'manuel',
+        'Markdown',
         'mechanize',
+        'meliae',
         'mocker',
         'oauth',
+        'oops',
+        'oops_amqp',
+        'oops_datedir_repo',
+        'oops_timeline',
+        'oops_twisted',
+        'oops_wsgi',
+        'paramiko',
+        'pgbouncer',
+        'psycopg2',
+        'python-memcached',
+        'pyasn1',
+        'pydkim',
+        'pystache',
         'python-openid',
         'pytz',
+        'rabbitfixture',
         # This appears to be a broken indirect dependency from zope.security:
         'RestrictedPython',
+        'selenium',
+        'setproctitle',
         'setuptools',
+        'Sphinx',
+        'soupmatchers',
         'sourcecodegen',
         'storm',
+        'subvertpy',
+        'testtools',
+        'timeline',
         'transaction',
+        'Twisted',
+        'txfixtures',
+        'txlongpollfixture',
         'wadllib',
         'z3c.pt',
         'z3c.ptcompat',
         'zc.zservertracelog',
+        'zope.app.apidoc',
         'zope.app.appsetup',
         'zope.app.component',
-        'zope.app.dav', # ./package-includes/dav-configure.zcml
+        'zope.app.dav',  # ./zcml/package-includes/dav-configure.zcml
         'zope.app.error',
         'zope.app.exception',
         'zope.app.file',
         'zope.app.form',
+        'zope.app.onlinehelp',
         'zope.app.pagetemplate',
-        'zope.app.pluggableauth',
+        'zope.app.preference',
         'zope.app.publication',
         'zope.app.publisher',
         'zope.app.security',
@@ -63,6 +117,8 @@ setup(
         'zope.app.server',
         'zope.app.session',
         'zope.app.testing',
+        'zope.app.tree',
+        'zope.app.zcmlfiles',
         'zope.app.wsgi',
         'zope.app.zapi',
         'zope.contenttype',
@@ -75,9 +131,10 @@ setup(
         'zope.formlib',
         'zope.i18n',
         'zope.interface',
-        'zope.hookable', # indirect, via zope.app.component
+        'zope.hookable',  # indirect, via zope.app.component
         'zope.lifecycleevent',
         'zope.location',
+        'zope.login',
         'zope.pagetemplate',
         'zope.publisher',
         'zope.proxy',
@@ -91,12 +148,12 @@ setup(
         'zope.testbrowser',
         'zope.testing',
         'zope.traversing',
-        'zope.viewlet', # only fixing a broken dependency
+        'zope.viewlet',  # only fixing a broken dependency
         # Loggerhead dependencies. These should be removed once
         # bug 383360 is fixed and we include it as a source dist.
         'Paste',
         'PasteDeploy',
-        'SimpleTal'
+        'SimpleTal',
     ],
     url='https://launchpad.net/',
     classifiers=[
@@ -111,14 +168,17 @@ setup(
         ]
     ),
     entry_points=dict(
-        console_scripts=[ # `console_scripts` is a magic name to setuptools
+        console_scripts=[  # `console_scripts` is a magic name to setuptools
             'apiindex = lp.scripts.utilities.apiindex:main',
             'killservice = lp.scripts.utilities.killservice:main',
-            'run = canonical.launchpad.scripts.runlaunchpad:start_launchpad',
-            'harness = canonical.database.harness:python',
+            'jsbuild = lp.scripts.utilities.js.jsbuild:main',
+            'run = lp.scripts.runlaunchpad:start_launchpad',
+            'run-testapp = '
+                'lp.scripts.runlaunchpad:start_testapp',
+            'harness = lp.scripts.harness:python',
             'twistd = twisted.scripts.twistd:run',
-            'start_librarian '
-                '= canonical.launchpad.scripts.runlaunchpad:start_librarian',
+            'start_librarian = '
+                'lp.scripts.runlaunchpad:start_librarian',
         ]
     ),
 )

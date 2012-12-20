@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -12,8 +12,10 @@ __metaclass__ = type
 # pylint: disable-msg=W0403
 import _pythonpath
 
-from fti import ALL_FTI
 import psycopg
+
+from fti import ALL_FTI
+
 
 def main():
     con = psycopg.connect("dbname=launchpad_prod user=postgres")

@@ -5,41 +5,77 @@
 
 __metaclass__ = type
 __all__ = [
+    'branch_changed',
     'BranchFormat',
-    'BRANCH_FORMAT_UPGRADE_PATH',
     'ControlFormat',
+    'CURRENT_BRANCH_FORMATS',
+    'CURRENT_REPOSITORY_FORMATS',
+    'branch_revision_history',
+    'get_ancestry',
+    'get_branch_formats',
     'RepositoryFormat',
-    'REPOSITORY_FORMAT_UPGRADE_PATH',
     ]
 
 
-# Ensure correct plugins are loaded. Do not delete this line.
+# FIRST Ensure correct plugins are loaded. Do not delete this comment or the
+# line below this comment.
 import lp.codehosting
-from bzrlib.branch import (
-    BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
-    BzrBranchFormat6, BzrBranchFormat7, BzrBranchFormat8)
-from bzrlib.bzrdir import (
-    BzrDirFormat4, BzrDirFormat5, BzrDirFormat6, BzrDirMetaFormat1)
-from bzrlib.plugins.loom.branch import (
-    BzrBranchLoomFormat1, BzrBranchLoomFormat6)
-from bzrlib.repofmt.knitrepo import (RepositoryFormatKnit1,
-    RepositoryFormatKnit3, RepositoryFormatKnit4)
-try:
-    from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2a
-    # Shut up, pyflakes.
-    RepositoryFormat2a
-except ImportError:
-    RepositoryFormat2a = None
-from bzrlib.repofmt.pack_repo import (
-    RepositoryFormatKnitPack1, RepositoryFormatKnitPack3,
-    RepositoryFormatKnitPack4, RepositoryFormatKnitPack5,
-    RepositoryFormatKnitPack6, RepositoryFormatKnitPack6RichRoot
-    )
-from bzrlib.repofmt.weaverepo import (
-    RepositoryFormat4, RepositoryFormat5, RepositoryFormat6,
-    RepositoryFormat7)
 
-from lazr.enum import DBEnumeratedType, DBItem
+# Silence lint warning.
+lp.codehosting
+
+from bzrlib.branch import (
+    BranchReferenceFormat,
+    BzrBranchFormat5,
+    BzrBranchFormat6,
+    BzrBranchFormat7,
+    )
+from bzrlib.bzrdir import (
+    BzrDirMetaFormat1,
+    BzrDirMetaFormat1Colo,
+    )
+from bzrlib.errors import (
+    NotStacked,
+    NoSuchRevision,
+    UnstackableBranchFormat,
+    )
+from bzrlib.plugins.loom.branch import (
+    BzrBranchLoomFormat1,
+    BzrBranchLoomFormat6,
+    )
+from bzrlib.plugins.weave_fmt.branch import BzrBranchFormat4
+from bzrlib.plugins.weave_fmt.bzrdir import (
+    BzrDirFormat4,
+    BzrDirFormat5,
+    BzrDirFormat6,
+    )
+from bzrlib.plugins.weave_fmt.repository import (
+    RepositoryFormat4,
+    RepositoryFormat5,
+    RepositoryFormat6,
+    RepositoryFormat7,
+    )
+from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2a
+from bzrlib.repofmt.knitpack_repo import (
+    RepositoryFormatKnitPack1,
+    RepositoryFormatKnitPack3,
+    RepositoryFormatKnitPack4,
+    RepositoryFormatKnitPack5,
+    )
+from bzrlib.revision import (
+    is_null,
+    NULL_REVISION,
+    )
+from bzrlib.repofmt.knitrepo import (
+    RepositoryFormatKnit1,
+    RepositoryFormatKnit3,
+    RepositoryFormatKnit4,
+    )
+from bzrlib.tsort import topo_sort
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 
 
 def _format_enum(num, format, format_string=None, description=None):
@@ -51,7 +87,20 @@ def _format_enum(num, format, format_string=None, description=None):
     return DBItem(num, format_string, description)
 
 
-class BranchFormat(DBEnumeratedType):
+class BazaarFormatEnum(DBEnumeratedType):
+    """Base class for the format enums."""
+
+    @classmethod
+    def get_enum(klass, format_name):
+        """Find the matching enum value for the format name specified."""
+        for value in klass.items:
+            if value.title == format_name:
+                return value
+        else:
+            return klass.UNRECOGNIZED
+
+
+class BranchFormat(BazaarFormatEnum):
     """Branch on-disk format.
 
     This indicates which (Bazaar) format is used on-disk.  The list must be
@@ -87,7 +136,7 @@ class BranchFormat(DBEnumeratedType):
         107, "Bazaar-NG Loom branch format 7\n", "Loom branch format 7")
 
 
-class RepositoryFormat(DBEnumeratedType):
+class RepositoryFormat(BazaarFormatEnum):
     """Repository on-disk format.
 
     This indicates which (Bazaar) format is used on-disk.  The list must be
@@ -183,6 +232,11 @@ class RepositoryFormat(DBEnumeratedType):
         "1.6.1-subtree with B+Tree indices.\n"
         )
 
+    BZR_DEV_8 = DBItem(306,
+        "Bazaar development format 8\n",
+        "2a repository format with support for nested trees.\n"
+        )
+
     BZR_CHK1 = DBItem(400,
         "Bazaar development format - group compression and chk inventory"
         " (needs bzr.dev from 1.14)\n",
@@ -197,14 +251,10 @@ class RepositoryFormat(DBEnumeratedType):
         " and chk inventories\n",
         )
 
-    BZR_CHK_2A = DBItem(415,
-        "Bazaar repository format 2a (needs bzr 1.16 or later)\n",
-        "Development repository format - rich roots, group compression"
-        " and chk inventories\n",
-        )
+    BZR_CHK_2A = _format_enum(415, RepositoryFormat2a)
 
 
-class ControlFormat(DBEnumeratedType):
+class ControlFormat(BazaarFormatEnum):
     """Control directory (BzrDir) format.
 
     This indicates what control directory format is on disk.  Must be updated
@@ -221,49 +271,114 @@ class ControlFormat(DBEnumeratedType):
 
     BZR_METADIR_1 = _format_enum(1, BzrDirMetaFormat1)
 
-
-BRANCH_FORMAT_UPGRADE_PATH = {
-    BranchFormat.UNRECOGNIZED: None,
-    BranchFormat.BRANCH_REFERENCE: None,
-    BranchFormat.BZR_BRANCH_4: BzrBranchFormat8,
-    BranchFormat.BZR_BRANCH_5: BzrBranchFormat8,
-    BranchFormat.BZR_BRANCH_6: BzrBranchFormat8,
-    BranchFormat.BZR_BRANCH_7: BzrBranchFormat8,
-    BranchFormat.BZR_BRANCH_8: None,
-    BranchFormat.BZR_LOOM_1: None,
-    BranchFormat.BZR_LOOM_2: None,
-    BranchFormat.BZR_LOOM_3: None,
-    }
+    BZR_METADIR_1_COLO = _format_enum(2, BzrDirMetaFormat1Colo)
 
 
-REPOSITORY_FORMAT_UPGRADE_PATH = {
-    RepositoryFormat.UNRECOGNIZED: None,
-    RepositoryFormat.BZR_REPOSITORY_4: RepositoryFormatKnitPack6,
-    RepositoryFormat.BZR_REPOSITORY_5: RepositoryFormatKnitPack6,
-    RepositoryFormat.BZR_REPOSITORY_6: RepositoryFormatKnitPack6,
-    RepositoryFormat.BZR_REPOSITORY_7: RepositoryFormatKnitPack6,
-    RepositoryFormat.BZR_KNIT_1: RepositoryFormatKnitPack6,
-    RepositoryFormat.BZR_KNIT_3: RepositoryFormatKnitPack3,
-    RepositoryFormat.BZR_KNIT_4: RepositoryFormatKnitPack6RichRoot,
-    RepositoryFormat.BZR_KNITPACK_1: RepositoryFormatKnitPack6,
-    RepositoryFormat.BZR_KNITPACK_3: None,
-    RepositoryFormat.BZR_KNITPACK_4: RepositoryFormatKnitPack6RichRoot,
-    RepositoryFormat.BZR_KNITPACK_5: None,
-    RepositoryFormat.BZR_KNITPACK_5_RRB: RepositoryFormatKnitPack6RichRoot,
-    RepositoryFormat.BZR_KNITPACK_5_RR: None,
-    RepositoryFormat.BZR_KNITPACK_6: None,
-    RepositoryFormat.BZR_KNITPACK_6_RR: None,
-    RepositoryFormat.BZR_PACK_DEV_0: None,
-    RepositoryFormat.BZR_PACK_DEV_0_SUBTREE: None,
-    RepositoryFormat.BZR_DEV_1: None,
-    RepositoryFormat.BZR_DEV_1_SUBTREE: None,
-    RepositoryFormat.BZR_DEV_2: None,
-    RepositoryFormat.BZR_DEV_2_SUBTREE: None,
-    RepositoryFormat.BZR_CHK1: None,
-    RepositoryFormat.BZR_CHK2: None,
-    RepositoryFormat.BZR_CHK_2A: None
-    }
+# A tuple of branch formats that should not suggest upgrading.
+CURRENT_BRANCH_FORMATS = (
+    None,
+    BranchFormat.UNRECOGNIZED,
+    BranchFormat.BRANCH_REFERENCE,
+    BranchFormat.BZR_BRANCH_7,
+    BranchFormat.BZR_BRANCH_8,
+    BranchFormat.BZR_LOOM_1,
+    BranchFormat.BZR_LOOM_2,
+    BranchFormat.BZR_LOOM_3)
 
-if RepositoryFormat2a is not None:
-    for k in [RepositoryFormat.BZR_CHK1, RepositoryFormat.BZR_CHK2]:
-        REPOSITORY_FORMAT_UPGRADE_PATH[k] = RepositoryFormat2a
+# A tuple of repository formats that should not suggest upgrading.
+CURRENT_REPOSITORY_FORMATS = (
+    None,
+    RepositoryFormat.UNRECOGNIZED,
+    RepositoryFormat.BZR_PACK_DEV_0,
+    RepositoryFormat.BZR_PACK_DEV_0_SUBTREE,
+    RepositoryFormat.BZR_DEV_1,
+    RepositoryFormat.BZR_DEV_1_SUBTREE,
+    RepositoryFormat.BZR_DEV_2,
+    RepositoryFormat.BZR_DEV_2_SUBTREE,
+    RepositoryFormat.BZR_DEV_8,
+    RepositoryFormat.BZR_CHK1,
+    RepositoryFormat.BZR_CHK2,
+    RepositoryFormat.BZR_CHK_2A)
+
+
+def get_branch_formats(bzr_branch):
+    """Return a tuple of format enumerations for the bazaar branch.
+
+    :returns: tuple of (ControlFormat, BranchFormat, RepositoryFormat)
+    """
+    control_string = bzr_branch.bzrdir._format.get_format_string()
+    branch_string = bzr_branch._format.get_format_string()
+    repository_string = bzr_branch.repository._format.get_format_string()
+    return (ControlFormat.get_enum(control_string),
+            BranchFormat.get_enum(branch_string),
+            RepositoryFormat.get_enum(repository_string))
+
+
+def branch_changed(db_branch, bzr_branch=None):
+    """Mark a database branch as changed.
+
+    :param db_branch: The branch to mark changed.
+    :param bzr_branch: (optional) The bzr branch to use to mark the branch
+        changed.
+    """
+    if bzr_branch is None:
+        bzr_branch = db_branch.getBzrBranch()
+    try:
+        stacked_on = bzr_branch.get_stacked_on_url()
+    except (NotStacked, UnstackableBranchFormat):
+        stacked_on = None
+    last_revision = bzr_branch.last_revision()
+    formats = get_branch_formats(bzr_branch)
+    db_branch.branchChanged(stacked_on, last_revision, *formats)
+
+
+def branch_revision_history(branch):
+    """Find the revision history of a branch.
+
+    This is a compatibility wrapper for code that still requires
+    access to the full branch mainline and previously used
+    Branch.revision_history(), which is now deprecated.
+
+    :param branch: Branch object
+    :return: Revision ids on the main branch
+    """
+    branch.lock_read()
+    try:
+        graph = branch.repository.get_graph()
+        ret = list(graph.iter_lefthand_ancestry(
+                branch.last_revision(), (NULL_REVISION,)))
+        ret.reverse()
+        return ret
+    finally:
+        branch.unlock()
+
+
+def get_ancestry(repository, revision_id):
+    """Return a list of revision-ids integrated by a revision.
+
+    The first element of the list is always None, indicating the origin
+    revision.  This might change when we have history horizons, or
+    perhaps we should have a new API.
+
+    This is topologically sorted.
+    """
+    if is_null(revision_id):
+        return set()
+    if not repository.has_revision(revision_id):
+        raise NoSuchRevision(repository, revision_id)
+    repository.lock_read()
+    try:
+        graph = repository.get_graph()
+        keys = set()
+        search = graph._make_breadth_first_searcher([revision_id])
+        while True:
+            try:
+                found, ghosts = search.next_with_ghosts()
+            except StopIteration:
+                break
+            keys.update(found)
+        if NULL_REVISION in keys:
+            keys.remove(NULL_REVISION)
+    finally:
+        repository.unlock()
+    return keys

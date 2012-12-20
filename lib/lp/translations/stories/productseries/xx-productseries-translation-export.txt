@@ -12,7 +12,7 @@ option is presented in the sidebar as "Download translations" on the
 productseries' translations page.
 
     >>> user_browser.open('http://translations.launchpad.dev/evolution/trunk/')
-    >>> user_browser.getLink('Download').click()
+    >>> user_browser.getLink('download').click()
     >>> print user_browser.url
     http://translations.launchpad.dev/evolution/trunk/+export
 
@@ -22,7 +22,7 @@ offer a download link for that series.
 
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/evolution/+translations')
-    >>> user_browser.getLink('Download').click()
+    >>> user_browser.getLink('download').click()
     >>> print user_browser.url
     http://translations.launchpad.dev/evolution/trunk/+export
 
@@ -33,10 +33,10 @@ To prevent spambot activity from becoming a problem, the download option is
 not available to anonymous visitors.
 
     >>> anon_browser.open('http://translations.launchpad.dev/evolution/trunk/')
-    >>> anon_browser.getLink('Download').click()
+    >>> anon_browser.getLink('download')
     Traceback (most recent call last):
     ...
-    Unauthorized:...
+    LinkNotFoundError
 
 
 == Making the request ==
@@ -45,7 +45,7 @@ The logged-in user sees a page that lets them select an export format, and
 request the download.
 
     >>> print user_browser.title
-    Download translations for "Evolution trunk series"
+    Download : Translations...
 
 
 === File format ===
@@ -73,7 +73,7 @@ The most usual and most well-supported format is PO.
 
 An alternative is MO.
 
-    >>> user_browser.getLink('Download').click()
+    >>> user_browser.getLink('download').click()
     >>> user_browser.getControl('Format:').value = ['PO']
     >>> user_browser.getControl('Request Download').click()
     >>> print user_browser.url
@@ -92,14 +92,13 @@ the option to download any.
     >>> user_browser.open('http://translations.launchpad.dev/bzr/trunk/+export')
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
-    This product series does not have any translation files available for
-    download.
+    There are no translations to download in Bazaar trunk series.
 
 On +translate pages for products that do not have any translations, the action
 link for "Download translations" is hidden.
 
     >>> user_browser.open('http://translations.launchpad.dev/bzr/')
-    >>> user_browser.getLink('Download')
+    >>> user_browser.getLink('download')
     Traceback (most recent call last):
     ...
     LinkNotFoundError

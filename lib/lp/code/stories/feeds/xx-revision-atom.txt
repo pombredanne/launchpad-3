@@ -4,7 +4,7 @@ Atom feeds produce XML not HTML.  Therefore we must parse the output as XML
 using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
 
     >>> from BeautifulSoup import BeautifulStoneSoup as BSS
-    >>> from canonical.launchpad.ftests.feeds_helper import (
+    >>> from lp.services.feeds.tests.helper import (
     ...     parse_ids, parse_links, validate_feed)
 
 == Create some specific branches to use for this test ==
@@ -32,10 +32,11 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
     >>> fooey_branch = factory.makeProductBranch(
     ...     name='feature-x', product=fooey, owner=mike)
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> def makeRevision(author, rev_id, log_body):
     ...     global factory, date_generator
     ...     return factory.makeRevision(
-    ...         author=author.preferredemail.email,
+    ...         author=removeSecurityProxy(author).preferredemail.email,
     ...         revision_date=date_generator.next(),
     ...         rev_id=rev_id, log_body=log_body)
     >>> ignored = fooey_branch.createBranchRevision(
@@ -52,11 +53,11 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
     ...     3, makeRevision(
     ...         mary, 'rev3', "Mary's revision"))
 
-    >>> login_person(mike)
+    >>> ignored = login_person(mike)
     >>> team = factory.makeTeam(mike, 'The M Team', name='m-team')
-    >>> team.addMember(mary, mike)
-    >>> from lp.code.interfaces.revision import IRevisionSet
+    >>> ignored = team.addMember(mary, mike)
     >>> from zope.component import getUtility
+    >>> from lp.code.interfaces.revision import IRevisionSet
     >>> revision_set = getUtility(IRevisionSet)
     >>> revision_set.updateRevisionCacheForBranch(fooey_branch)
     >>> revision_set.updateRevisionCacheForBranch(fooix_branch)

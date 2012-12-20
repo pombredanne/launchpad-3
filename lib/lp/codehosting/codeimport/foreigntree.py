@@ -7,10 +7,11 @@ __metaclass__ = type
 __all__ = ['CVSWorkingTree', 'SubversionWorkingTree']
 
 import os
-import subprocess
 
 import CVS
-import pysvn
+import subvertpy
+import subvertpy.client
+import subvertpy.ra
 
 
 class CVSWorkingTree:
@@ -52,25 +53,23 @@ class SubversionWorkingTree:
         self.remote_url = url
         self.local_path = path
 
+    def _get_client(self):
+        username_provider = subvertpy.ra.get_username_provider()
+        auth = subvertpy.ra.Auth([username_provider])
+        auth.set_parameter(subvertpy.AUTH_PARAM_DEFAULT_USERNAME, "lptest2")
+        return subvertpy.client.Client(auth=auth)
+
     def checkout(self):
-        # XXX: JonathanLange 2008-02-19: Can't do this with cscvs yet because
-        # its Repository class assumes that the repository lives on the local
-        # filesystem.
-        svn_client = pysvn.Client()
-        svn_client.checkout(
-            self.remote_url, self.local_path, ignore_externals=True)
+        client = self._get_client()
+        client.checkout(
+            self.remote_url, self.local_path, rev="HEAD",
+            ignore_externals=True)
 
     def commit(self):
-        client = pysvn.Client()
-        client.checkin(self.local_path, 'Log message', recurse=True)
+        client = self._get_client()
+        client.log_msg_func = lambda c: 'Log message'
+        client.commit([self.local_path], recurse=True)
 
     def update(self):
-        # XXX: David Allouche 2006-01-31 bug=82483: A bug in
-        # pysvn prevents us from ignoring svn:externals. We work
-        # around it by shelling out to svn. When cscvs no longer
-        # uses pysvn, we will use the cscvs API again.
-        arguments = ['svn', 'update', '--ignore-externals']
-        retcode = subprocess.call(
-            arguments, cwd=self.local_path, stdout=open('/dev/null', 'w'))
-        if retcode != 0:
-            raise RuntimeError("svn update failed with code %s" % retcode)
+        client = self._get_client()
+        client.update(self.local_path, "HEAD", True, True)

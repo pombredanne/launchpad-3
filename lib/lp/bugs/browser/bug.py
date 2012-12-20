@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBug related view classes."""
@@ -6,15 +6,17 @@
 __metaclass__ = type
 
 __all__ = [
-    'bug_description_xhtml_representation',
+    'BugActivity',
     'BugContextMenu',
     'BugEditView',
     'BugFacets',
+    'BugInformationTypePortletView',
     'BugMarkAsAffectingUserView',
     'BugMarkAsDuplicateView',
     'BugNavigation',
     'BugSecrecyEditView',
     'BugSetNavigation',
+    'BugSubscriptionPortletDetails',
     'BugTextView',
     'BugURL',
     'BugView',
@@ -24,55 +26,113 @@ __all__ = [
     'MaloneView',
     ]
 
-from datetime import datetime, timedelta
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
 import re
 
-import pytz
-from simplejson import dumps
-
-from zope.app.form.browser import TextWidget
-from zope.component import adapter, getUtility
-from zope.event import notify
-from zope import formlib
-from zope.interface import implements, implementer, providedBy, Interface
-from zope.schema import Bool, Choice
-from zope.schema.interfaces import IText
-from zope.security.interfaces import Unauthorized
-
-from lazr.enum import EnumeratedType, Item
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-from lazr.restful.interfaces import (
-    IFieldHTMLRenderer, IWebServiceClientRequest)
+from lazr.restful import (
+    EntryResource,
+    ResourceJSONEncoder,
+    )
+from lazr.restful.interface import copy_field
+from lazr.restful.interfaces import IJSONRequestCache
+from simplejson import dumps
+from zope import formlib
+from zope.app.form.browser import TextWidget
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
+from zope.event import notify
+from zope.interface import (
+    implements,
+    Interface,
+    providedBy,
+    )
+from zope.publisher.defaultview import getDefaultViewName
+from zope.schema import (
+    Bool,
+    Choice,
+    )
+from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import cachedproperty
-
-from canonical.launchpad import _
-from canonical.launchpad.interfaces._schema_circular_imports import IBug
-from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
-from lp.bugs.interfaces.bug import IBugSet
+from lp import _
+from lp.app.browser.informationtype import InformationTypePortletMixin
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
+from lp.app.errors import NotFoundError
+from lp.app.interfaces.services import IService
+from lp.app.vocabularies import InformationTypeVocabulary
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.app.widgets.product import GhostCheckBoxWidget
+from lp.app.widgets.project import ProjectScopeWidget
+from lp.bugs.browser.bugsubscription import BugPortletSubscribersWithDetails
+from lp.bugs.browser.widgets.bug import BugTagsWidget
+from lp.bugs.enums import BugNotificationLevel
+from lp.bugs.interfaces.bug import (
+    IBug,
+    IBugSet,
+    )
+from lp.bugs.interfaces.bugattachment import (
+    BugAttachmentType,
+    IBugAttachmentSet,
+    )
+from lp.bugs.interfaces.bugnomination import IBugNominationSet
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, BugTaskStatus, IBugTask, IFrontPageBugTaskSearch)
+    BugTaskStatus,
+    IBugTask,
+    )
+from lp.bugs.interfaces.bugtasksearch import (
+    BugTaskSearchParams,
+    IFrontPageBugTaskSearch,
+    )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
-from lp.bugs.interfaces.bugattachment import IBugAttachmentSet
-
-from canonical.launchpad.mailnotification import (
-    MailWrapper, format_rfc2822_date)
-from canonical.launchpad.searchbuilder import any, greater_than
-from canonical.launchpad.webapp import (
-    ContextMenu, LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
-    Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
-    custom_widget, redirection, stepthrough, structured)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.tales import FormattersAPI
-
-from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
-from canonical.widgets.bug import BugTagsWidget
-from canonical.widgets.project import ProjectScopeWidget
+from lp.bugs.mail.bugnotificationbuilder import format_rfc2822_date
+from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
+from lp.bugs.model.structuralsubscription import (
+    get_structural_subscriptions_for_bug,
+    )
+from lp.registry.interfaces.person import IPersonSet
+from lp.services.fields import DuplicateBug
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
+from lp.services.mail.mailwrapper import MailWrapper
+from lp.services.propertycache import cachedproperty
+from lp.services.searchbuilder import (
+    any,
+    not_equals,
+    )
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    LaunchpadView,
+    Link,
+    Navigation,
+    StandardLaunchpadFacets,
+    stepthrough,
+    structured,
+    )
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
+from lp.services.webapp.interfaces import (
+    ICanonicalUrlData,
+    ILaunchBag,
+    )
+from lp.services.webapp.publisher import RedirectionView
 
 
 class BugNavigation(Navigation):
@@ -113,7 +173,8 @@ class BugNavigation(Navigation):
         if name.isdigit():
             attachment = getUtility(IBugAttachmentSet)[name]
             if attachment is not None and attachment.bug == self.context:
-                return redirection(canonical_url(attachment), status=301)
+                return self.redirectSubTree(
+                    canonical_url(attachment), status=301)
 
     @stepthrough('+attachment')
     def traverse_attachment(self, name):
@@ -125,6 +186,15 @@ class BugNavigation(Navigation):
             attachment = getUtility(IBugAttachmentSet)[name]
             if attachment is not None and attachment.bug == self.context:
                 return attachment
+
+    @stepthrough('nominations')
+    def traverse_nominations(self, nomination_id):
+        """Traverse to a nomination by id."""
+        if nomination_id.isdigit():
+            try:
+                return getUtility(IBugNominationSet).get(nomination_id)
+            except NotFoundError:
+                return None
 
 
 class BugFacets(StandardLaunchpadFacets):
@@ -155,17 +225,19 @@ class BugSetNavigation(Navigation):
 class BugContextMenu(ContextMenu):
     """Context menu of actions that can be performed upon a Bug."""
     usedfor = IBug
-    links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
-             'adddistro', 'subscription', 'addsubscriber', 'addcomment',
-             'nominate', 'addbranch', 'linktocve', 'unlinkcve',
-             'offermentoring', 'retractmentoring', 'createquestion',
-             'removequestion', 'activitylog', 'affectsmetoo']
+    links = [
+        'editdescription', 'markduplicate', 'visibility', 'addupstream',
+        'adddistro', 'subscription', 'addsubscriber', 'editsubscriptions',
+        'addcomment', 'nominate', 'addbranch', 'linktocve', 'unlinkcve',
+        'createquestion', 'mute_subscription', 'removequestion',
+        'activitylog', 'affectsmetoo']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
         # have to duplicate menu code.
         ContextMenu.__init__(self, getUtility(ILaunchBag).bugtask)
 
+    @cachedproperty
     def editdescription(self):
         """Return the 'Edit description/tags' Link."""
         text = 'Update description / tags'
@@ -199,44 +271,75 @@ class BugContextMenu(ContextMenu):
         elif user is not None and (
             self.context.bug.isSubscribed(user) or
             self.context.bug.isSubscribedToDupes(user)):
-            text = 'Unsubscribe'
-            icon = 'remove'
+            if self.context.bug.isMuted(user):
+                text = 'Subscribe'
+                icon = 'add'
+            else:
+                text = 'Edit subscription'
+                icon = 'edit'
         else:
             text = 'Subscribe'
             icon = 'add'
-        return Link('+subscribe', text, icon=icon)
+        return Link('+subscribe', text, icon=icon, summary=(
+                'When you are subscribed, Launchpad will email you each time '
+                'this bug changes'))
 
     def addsubscriber(self):
         """Return the 'Subscribe someone else' Link."""
         text = 'Subscribe someone else'
-        return Link('+addsubscriber', text, icon='add')
+        return Link(
+            '+addsubscriber', text, icon='add', summary=(
+                'Launchpad will email that person whenever this bugs '
+                'changes'))
+
+    def editsubscriptions(self):
+        """Return the 'Edit subscriptions' Link."""
+        text = 'Edit bug mail'
+        return Link(
+            '+subscriptions', text, icon='edit', summary=(
+                'View and change your subscriptions to this bug'))
+
+    def mute_subscription(self):
+        """Return the 'Mute subscription' Link."""
+        user = getUtility(ILaunchBag).user
+        if self.context.bug.isMuted(user):
+            text = "Unmute bug mail"
+            icon = 'unmute'
+        else:
+            text = "Mute bug mail"
+            icon = 'mute'
+
+        return Link(
+            '+mute', text, icon=icon, summary=(
+                "Mute this bug so that you will not receive emails "
+                "about it."))
 
     def nominate(self):
-        """Return the 'Target/Nominate for release' Link."""
+        """Return the 'Target/Nominate for series' Link."""
         launchbag = getUtility(ILaunchBag)
         target = launchbag.product or launchbag.distribution
         if check_permission("launchpad.Driver", target):
-            text = "Target to release"
+            text = "Target to series"
+            return Link('+nominate', text, icon='milestone')
+        elif (check_permission("launchpad.BugSupervisor", target) or
+            self.user is None):
+            text = 'Nominate for series'
+            return Link('+nominate', text, icon='milestone')
         else:
-            text = 'Nominate for release'
-
-        return Link('+nominate', text, icon='milestone')
+            return Link('+nominate', '', enabled=False, icon='milestone')
 
     def addcomment(self):
         """Return the 'Comment or attach file' Link."""
-        text = 'Add an attachment'
+        text = 'Add attachment or patch'
         return Link('+addcomment', text, icon='add')
 
     def addbranch(self):
         """Return the 'Add branch' Link."""
-        if self.context.bug.linked_branches.count() > 0:
-            text = 'Link another branch'
-        else:
-            text = 'Link a related branch'
+        text = 'Link a related branch'
         return Link('+addbranch', text, icon='add')
 
     def linktocve(self):
-        """Return the 'Link tp CVE' Link."""
+        """Return the 'Link to CVE' Link."""
         text = structured(
             'Link to '
             '<abbr title="Common Vulnerabilities and Exposures Index">'
@@ -246,44 +349,29 @@ class BugContextMenu(ContextMenu):
 
     def unlinkcve(self):
         """Return 'Remove CVE link' Link."""
-        enabled = bool(self.context.bug.cves)
+        enabled = self.context.bug.has_cves
         text = 'Remove CVE link'
         return Link('+unlinkcve', text, icon='remove', enabled=enabled)
 
-    def offermentoring(self):
-        """Return the 'Offer mentorship' Link."""
-        text = 'Offer mentorship'
-        user = getUtility(ILaunchBag).user
-        enabled = self.context.bug.canMentor(user)
-        return Link('+mentor', text, icon='add', enabled=enabled)
-
-    def retractmentoring(self):
-        """Return the 'Retract mentorship' Link."""
-        text = 'Retract mentorship'
-        user = getUtility(ILaunchBag).user
-        # We should really only allow people to retract mentoring if the
-        # bug's open and the user's already a mentor.
-        if user and not self.context.bug.is_complete:
-            enabled = self.context.bug.isMentor(user)
-        else:
-            enabled = False
-        return Link('+retractmentoring', text, icon='remove', enabled=enabled)
+    @property
+    def _bug_question(self):
+        return self.context.bug.getQuestionCreatedFromBug()
 
     def createquestion(self):
         """Create a question from this bug."""
         text = 'Convert to a question'
-        enabled = self.context.bug.getQuestionCreatedFromBug() is None
-        return Link('+create-question', text, enabled=enabled)
+        enabled = self._bug_question is None
+        return Link('+create-question', text, enabled=enabled, icon='add')
 
     def removequestion(self):
         """Remove the created question from this bug."""
         text = 'Convert back to a bug'
-        enabled = self.context.bug.getQuestionCreatedFromBug() is not None
-        return Link('+remove-question', text, enabled=enabled)
+        enabled = self._bug_question is not None
+        return Link('+remove-question', text, enabled=enabled, icon='remove')
 
     def activitylog(self):
         """Return the 'Activity log' Link."""
-        text = 'Activity log'
+        text = 'See full activity log'
         return Link('+activity', text)
 
     def affectsmetoo(self):
@@ -302,6 +390,8 @@ class MaloneView(LaunchpadFormView):
 
     # Test: standalone/xx-slash-malone-slash-bugs.txt
     error_message = None
+
+    page_title = 'Launchpad Bugs'
 
     @property
     def target_css_class(self):
@@ -327,6 +417,9 @@ class MaloneView(LaunchpadFormView):
 
     def _redirectToBug(self, bug_id):
         """Redirect to the specified bug id."""
+        if not isinstance(bug_id, basestring):
+            self.error_message = "Bug %r is not registered." % bug_id
+            return
         if bug_id.startswith("#"):
             # Be nice to users and chop off leading hashes
             bug_id = bug_id[1:]
@@ -337,39 +430,21 @@ class MaloneView(LaunchpadFormView):
         else:
             return self.request.response.redirect(canonical_url(bug))
 
-    def getMostRecentlyFixedBugs(self, limit=5, when=None):
-        """Return the ten most recently fixed bugs."""
-        if when is None:
-            when = datetime.now(pytz.timezone('UTC'))
-        date_closed_limits = [
-            timedelta(days=1),
-            timedelta(days=7),
-            timedelta(days=30),
-            None,
-        ]
-        for date_closed_limit in date_closed_limits:
-            fixed_bugs = []
-            search_params = BugTaskSearchParams(
-                self.user, status=BugTaskStatus.FIXRELEASED,
-                orderby='-date_closed')
-            if date_closed_limit is not None:
-                search_params.date_closed = greater_than(
-                    when - date_closed_limit)
-            fixed_bugtasks = self.context.searchTasks(search_params)
-            # XXX: Bjorn Tillenius 2006-12-13:
-            #      We might end up returning less than :limit: bugs, but in
-            #      most cases we won't, and '4*limit' is here to prevent
-            #      this page from timing out in production. Later I'll fix
-            #      this properly by selecting bugs instead of bugtasks.
-            #      If fixed_bugtasks isn't sliced, it will take a long time
-            #      to iterate over it, even over just 10, because
-            #      Transaction.iterSelect() listifies the result.
-            for bugtask in fixed_bugtasks[:4*limit]:
-                if bugtask.bug not in fixed_bugs:
-                    fixed_bugs.append(bugtask.bug)
-                    if len(fixed_bugs) >= limit:
-                        return fixed_bugs
-        return fixed_bugs
+    @property
+    def most_recently_fixed_bugs(self):
+        """Return the five most recently fixed bugs."""
+        params = BugTaskSearchParams(
+            self.user, status=BugTaskStatus.FIXRELEASED,
+            date_closed=not_equals(None), orderby='-date_closed')
+        return getUtility(IBugSet).getDistinctBugsForBugTasks(
+            self.context.searchTasks(params), self.user, limit=5)
+
+    @property
+    def most_recently_reported_bugs(self):
+        """Return the five most recently reported bugs."""
+        params = BugTaskSearchParams(self.user, orderby='-datecreated')
+        return getUtility(IBugSet).getDistinctBugsForBugTasks(
+            self.context.searchTasks(params), self.user, limit=5)
 
     def getCveBugLinkCount(self):
         """Return the number of links between bugs and CVEs there are."""
@@ -380,58 +455,33 @@ class BugViewMixin:
     """Mix-in class to share methods between bug and portlet views."""
 
     @cachedproperty
+    def is_duplicate_active(self):
+        active = True
+        if self.context.duplicateof is not None:
+            naked_duplicate = removeSecurityProxy(self.context.duplicateof)
+            active = getattr(
+                naked_duplicate.default_bugtask.target, 'active', True)
+        return active
+
+    @cachedproperty
+    def subscription_info(self):
+        return IBug(self.context).getSubscriptionInfo()
+
+    @cachedproperty
     def direct_subscribers(self):
         """Return the list of direct subscribers."""
-        if IBug.providedBy(self.context):
-            return set(self.context.getDirectSubscribers())
-        elif IBugTask.providedBy(self.context):
-            return set(self.context.bug.getDirectSubscribers())
-        else:
-            raise NotImplementedError(
-                'direct_subscribers is not provided by %s' % self)
+        return self.subscription_info.direct_subscribers
 
     @cachedproperty
     def duplicate_subscribers(self):
         """Return the list of subscribers from duplicates.
 
-        Don't use getSubscribersFromDuplicates here because that method
-        omits a user if the user is also a direct or indirect subscriber.
-        getSubscriptionsFromDuplicates doesn't, so find person objects via
-        this method.
+        This includes all subscribers who are also direct or indirect
+        subscribers.
         """
-        if IBug.providedBy(self.context):
-            dupe_subs = self.context.getSubscriptionsFromDuplicates()
-            return set([sub.person for sub in dupe_subs])
-        elif IBugTask.providedBy(self.context):
-            dupe_subs = self.context.bug.getSubscriptionsFromDuplicates()
-            return set([sub.person for sub in dupe_subs])
-        else:
-            raise NotImplementedError(
-                'duplicate_subscribers is not implemented for %s' % self)
+        return self.subscription_info.duplicate_subscribers
 
-    @cachedproperty
-    def subscriber_ids(self):
-        """Return a dictionary mapping a css_name to user name."""
-        subscribers = self.direct_subscribers.union(
-            self.duplicate_subscribers)
-
-        # The current user has to be in subscribers_id so
-        # in case the id is needed for a new subscription.
-        user = getUtility(ILaunchBag).user
-        if user is not None:
-            subscribers.add(user)
-
-        ids = {}
-        for sub in subscribers:
-            ids[sub.name] = 'subscriber-%s' % sub.id
-        return ids
-
-    @property
-    def subscriber_ids_js(self):
-        """Return subscriber_ids in a form suitable for JavaScript use."""
-        return dumps(self.subscriber_ids)
-
-    def subscription_class(self, subscribed_person):
+    def getSubscriptionClassForUser(self, subscribed_person):
         """Return a set of CSS class names based on subscription status.
 
         For example, "subscribed-false dup-subscribed-true".
@@ -446,6 +496,51 @@ class BugViewMixin:
         else:
             return 'subscribed-false %s' % dup_class
 
+    @cachedproperty
+    def _bug_attachments(self):
+        """Get a dict of attachment type -> attachments list."""
+        # Note that this is duplicated with get_comments_for_bugtask
+        # if you are looking to consolidate things.
+        result = {
+            BugAttachmentType.PATCH: [],
+            'other': [],
+            }
+        for attachment in self.context.attachments_unpopulated:
+            info = {
+                'attachment': attachment,
+                'file': ProxiedLibraryFileAlias(
+                    attachment.libraryfile, attachment),
+                }
+            if attachment.type == BugAttachmentType.PATCH:
+                key = attachment.type
+            else:
+                key = 'other'
+            result[key].append(info)
+        return result
+
+    @property
+    def regular_attachments(self):
+        """The list of bug attachments that are not patches."""
+        return self._bug_attachments['other']
+
+    @property
+    def patches(self):
+        """The list of bug attachments that are patches."""
+        return self._bug_attachments[BugAttachmentType.PATCH]
+
+    @property
+    def current_bugtask(self):
+        """Return the current `IBugTask`.
+
+        'current' is determined by simply looking in the ILaunchBag utility.
+        """
+        return getUtility(ILaunchBag).bugtask
+
+
+class BugInformationTypePortletView(InformationTypePortletMixin,
+                                    LaunchpadView):
+    """View class for the information type portlet."""
+
 
 class BugView(LaunchpadView, BugViewMixin):
     """View class for presenting information about an `IBug`.
@@ -459,13 +554,9 @@ class BugView(LaunchpadView, BugViewMixin):
     all the pages off IBugTask instead of IBug.
     """
 
-    @property
-    def current_bugtask(self):
-        """Return the current `IBugTask`.
-
-        'current' is determined by simply looking in the ILaunchBag utility.
-        """
-        return getUtility(ILaunchBag).bugtask
+    @cachedproperty
+    def page_description(self):
+        return IBug(self.context).description
 
     @property
     def subscription(self):
@@ -506,26 +597,128 @@ class BugView(LaunchpadView, BugViewMixin):
 
         return dupes
 
+    def proxiedUrlForLibraryFile(self, attachment):
+        """Return the proxied download URL for a Librarian file."""
+        return ProxiedLibraryFileAlias(
+            attachment.libraryfile, attachment).http_url
 
-class BugWithoutContextView:
+
+class BugActivity(BugView):
+
+    page_title = 'Activity log'
+
+    @property
+    def activity(self):
+        activity = IBug(self.context).activity
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            [a.personID for a in activity], need_validity=True))
+        return activity
+
+
+class BugSubscriptionPortletDetails:
+    """A mixin used to collate bug subscription details for a view."""
+
+    def extractBugSubscriptionDetails(self, user, bug, cache):
+        # We are using "direct" to represent both direct and personal
+        # (not team).
+        self.direct_notifications = False
+        self.direct_all_notifications = False
+        self.direct_metadata_notifications = False
+        self.direct_lifecycle_notifications = False
+        self.other_subscription_notifications = False
+        self.only_other_subscription_notifications = False
+        self.any_subscription_notifications = False
+        self.muted = False
+        if user is not None:
+            has_structural_subscriptions = not (
+                get_structural_subscriptions_for_bug(bug, user).is_empty())
+            self.muted = bug.isMuted(user)
+            psi = PersonSubscriptions(user, bug)
+            if psi.direct.personal:
+                self.direct_notifications = True
+                direct = psi.direct.personal[0]
+                cache['subscription'] = direct.subscription
+                level = direct.subscription.bug_notification_level
+                if level == BugNotificationLevel.COMMENTS:
+                    self.direct_all_notifications = True
+                elif level == BugNotificationLevel.METADATA:
+                    self.direct_metadata_notifications = True
+                else:
+                    assert level == BugNotificationLevel.LIFECYCLE
+                    self.direct_lifecycle_notifications = True
+            self.other_subscription_notifications = bool(
+                has_structural_subscriptions or
+                psi.from_duplicate.count or
+                psi.as_owner.count or
+                psi.as_assignee.count or
+                psi.direct.as_team_member or
+                psi.direct.as_team_admin)
+            cache['other_subscription_notifications'] = bool(
+                self.other_subscription_notifications)
+            self.only_other_subscription_notifications = (
+                self.other_subscription_notifications and
+                not self.direct_notifications)
+            self.any_subscription_notifications = (
+                self.other_subscription_notifications or
+                self.direct_notifications)
+        self.user_should_see_mute_link = (
+            self.any_subscription_notifications or self.muted)
+
+
+class BugSubscriptionPortletView(LaunchpadView,
+                                 BugSubscriptionPortletDetails, BugViewMixin):
+    """View class for the subscription portlet."""
+
+    # We want these strings to be available for the template and for the
+    # JavaScript.
+    notifications_text = {
+        'not_only_other_subscription': _('You are'),
+        'only_other_subscription': _(
+            'You have subscriptions that may cause you to receive '
+            'notifications, but you are'),
+        'direct_all': _('subscribed to all notifications for this bug.'),
+        'direct_metadata': _(
+            'subscribed to all notifications except comments for this bug.'),
+        'direct_lifecycle': _(
+            'subscribed to notifications when this bug is closed or '
+            'reopened.'),
+        'not_direct': _(
+            "not directly subscribed to this bug's notifications."),
+        'muted': _(
+            'Your personal email notifications from this bug are muted.'),
+        }
+
+    def initialize(self):
+        """Initialize the view to handle the request."""
+        LaunchpadView.initialize(self)
+        cache = IJSONRequestCache(self.request).objects
+        self.extractBugSubscriptionDetails(self.user, self.context, cache)
+        cache['bug_is_private'] = self.context.private
+        if self.user:
+            cache['notifications_text'] = self.notifications_text
+
+
+class BugWithoutContextView(RedirectionView):
     """View that redirects to the new bug page.
 
     The user is redirected, to the oldest IBugTask ('oldest' being
     defined as the IBugTask with the smallest ID.)
     """
-    # XXX: BradCrittenden 2009-04-28 This class can go away since the
-    # publisher now takes care of the redirection to a bug task.
-    def redirectToNewBugPage(self):
-        """Redirect the user to the 'first' report of this bug."""
-        # An example of practicality beating purity.
-        self.request.response.redirect(
-            canonical_url(self.context.default_bugtask))
+
+    def __init__(self, context, request):
+        redirected_context = context.default_bugtask
+        viewname = getDefaultViewName(redirected_context, request)
+        cache_view = getMultiAdapter(
+            (redirected_context, request), name=viewname)
+        super(BugWithoutContextView, self).__init__(
+            canonical_url(redirected_context), request, cache_view=cache_view)
 
 
 class BugEditViewBase(LaunchpadEditFormView):
     """Base class for all bug edit pages."""
 
     schema = IBug
+    page_title = 'Edit'
 
     def setUpWidgets(self):
         """Set up the widgets using the bug as the context."""
@@ -541,78 +734,27 @@ class BugEditViewBase(LaunchpadEditFormView):
         """Return the next URL to call when this call completes."""
         return canonical_url(self.context)
 
+    cancel_url = next_url
+
 
 class BugEditView(BugEditViewBase):
     """The view for the edit bug page."""
 
-    field_names = ['title', 'description', 'tags', 'name']
+    field_names = ['title', 'description', 'tags']
     custom_widget('title', TextWidget, displayWidth=30)
     custom_widget('tags', BugTagsWidget)
-    next_url = None
-
-    _confirm_new_tags = False
-
-    def __init__(self, context, request):
-        BugEditViewBase.__init__(self, context, request)
-        self.notifications = []
 
     @property
     def label(self):
         """The form label."""
-        return 'Edit details for bug #%d' % self.context.id
+        return 'Edit details for bug #%d' % self.context.bug.id
 
-    @property
-    def page_title(self):
-        """The page title."""
-        return self.label
-
-    @property
-    def cancel_url(self):
-        """See `LaunchpadFormView`."""
-        return canonical_url(self.context)
-
-    def validate(self, data):
-        """Make sure new tags are confirmed."""
-        if 'tags' not in data:
-            return
-        confirm_action = self.confirm_tag_action
-        if confirm_action.submitted():
-            # Validation is needed only for the change action.
-            return
-        bugtarget = self.context.target
-        newly_defined_tags = set(data['tags']).difference(
-            bugtarget.getUsedBugTags() + bugtarget.official_bug_tags)
-        # Display the confirm button in a notification message. We want
-        # it to be slightly smaller than usual, so we can't simply let
-        # it render itself.
-        confirm_button = (
-            '<input style="font-size: smaller" type="submit"'
-            ' value="%s" name="%s" />' % (
-                confirm_action.label, confirm_action.__name__))
-        for new_tag in newly_defined_tags:
-            self.notifications.append(
-                'The tag "%s" hasn\'t yet been used by %s before.'
-                ' Is this a new tag? %s' % (
-                    new_tag, bugtarget.bugtargetdisplayname, confirm_button))
-            self._confirm_new_tags = True
+    page_title = label
 
     @action('Change', name='change')
-    def edit_bug_action(self, action, data):
+    def change_action(self, action, data):
         """Update the bug with submitted changes."""
-        if not self._confirm_new_tags:
-            self.updateBugFromData(data)
-            self.next_url = canonical_url(self.context)
-
-    @action('Yes, define new tag', name='confirm_tag')
-    def confirm_tag_action(self, action, data):
-        """Define a new tag."""
-        self.actions['field.actions.change'].success(data)
-
-    def render(self):
-        """Render the page with only one submit button."""
-        # The confirmation button shouldn't be rendered automatically.
-        self.actions = [self.edit_bug_action]
-        return BugEditViewBase.render(self)
+        self.updateBugFromData(data)
 
 
 class BugMarkAsDuplicateView(BugEditViewBase):
@@ -620,68 +762,231 @@ class BugMarkAsDuplicateView(BugEditViewBase):
 
     field_names = ['duplicateof']
     label = "Mark bug report as a duplicate"
-
-    @action('Change', name='change')
-    def change_action(self, action, data):
-        """Update the bug."""
-        self.updateBugFromData(data)
-
-
-class BugSecrecyEditView(BugEditViewBase):
-    """Page for marking a bug as a private/public."""
-
-    field_names = ['private', 'security_related']
-    label = "Bug visibility and security"
+    page_title = label
 
     def setUpFields(self):
-        """Make the read-only version of `private` writable."""
-        private_field = Bool(
-            __name__='private',
-            title=_("This bug report should be private"),
-            required=False,
-            description=_("Private bug reports are visible only to "
-                          "their subscribers."),
-            default=False)
-        super(BugSecrecyEditView, self).setUpFields()
-        self.form_fields = self.form_fields.omit('private')
-        self.form_fields = (
-            formlib.form.Fields(private_field) + self.form_fields)
+        """Make the readonly version of duplicateof available."""
+        super(BugMarkAsDuplicateView, self).setUpFields()
+
+        duplicateof_field = DuplicateBug(
+            __name__='duplicateof', title=_('Duplicate Of'), required=True)
+
+        self.form_fields = self.form_fields.omit('duplicateof')
+        self.form_fields = formlib.form.Fields(duplicateof_field)
 
     @property
     def initial_values(self):
         """See `LaunchpadFormView.`"""
-        return {'private': self.context.bug.private,
-                'security_related': self.context.bug.security_related}
+        return {'duplicateof': self.context.bug.duplicateof}
 
-    @action('Change', name='change')
+    @property
+    def next_url(self):
+        """Return the next URL to call when this call completes."""
+        if not self.request.is_ajax:
+            return canonical_url(self.context)
+        return None
+
+    def _validate(self, action, data):
+        if action.name != 'remove':
+            return super(BugMarkAsDuplicateView, self)._validate(action, data)
+        return []
+
+    @action('Set Duplicate', name='change',
+        failure=LaunchpadFormView.ajax_failure_handler)
     def change_action(self, action, data):
         """Update the bug."""
-        # We will modify data later, so take a copy now.
         data = dict(data)
-
-        # We handle privacy changes by hand instead of leaving it to
-        # the usual machinery because we must use bug.setPrivate() to
-        # ensure auditing information is recorded.
+        # We handle duplicate changes by hand instead of leaving it to
+        # the usual machinery because we must use bug.markAsDuplicate().
         bug = self.context.bug
-        bug_before_modification = Snapshot(
-            bug, providing=providedBy(bug))
-        private = data.pop('private')
-        private_changed = bug.setPrivate(
-            private, getUtility(ILaunchBag).user)
-        if private_changed:
-            # Although the call to updateBugFromData later on will
-            # send notification of changes, it will only do so if it
-            # makes the change. We have applied the 'private' change
-            # already, so updateBugFromData will only send an event if
-            # 'security_related' is changed, and we can't have that.
-            notify(ObjectModifiedEvent(
-                    bug, bug_before_modification, ['private']))
-
+        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
+        duplicateof = data.pop('duplicateof')
+        bug.markAsDuplicate(duplicateof)
+        notify(
+            ObjectModifiedEvent(bug, bug_before_modification, 'duplicateof'))
         # Apply other changes.
         self.updateBugFromData(data)
+        return self._duplicate_action_result()
+
+    def shouldShowRemoveButton(self, action):
+        return self.context.bug.duplicateof is not None
+
+    @action('Remove Duplicate', name='remove',
+        condition=shouldShowRemoveButton)
+    def remove_action(self, action, data):
+        """Update the bug."""
+        bug = self.context.bug
+        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
+        bug.markAsDuplicate(None)
+        notify(
+            ObjectModifiedEvent(bug, bug_before_modification, 'duplicateof'))
+        return self._duplicate_action_result()
+
+    def _duplicate_action_result(self):
+        if self.request.is_ajax:
+            bug = self.context.bug
+            launchbag = getUtility(ILaunchBag)
+            launchbag.add(bug.default_bugtask)
+            view = getMultiAdapter(
+                (bug, self.request),
+                name='+bugtasks-and-nominations-table')
+            view.initialize()
+            return view.render()
+        return None
 
 
-class DeprecatedAssignedBugsView:
+class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
+    """Form for marking a bug as a private/public."""
+
+    @property
+    def label(self):
+        return 'Bug #%i - Set information type' % self.context.bug.id
+
+    page_title = label
+
+    field_names = ['information_type', 'validate_change']
+
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+    custom_widget('validate_change', GhostCheckBoxWidget)
+
+    @property
+    def schema(self):
+        """Schema for editing the information type of a `IBug`."""
+        info_types = self.context.bug.getAllowedInformationTypes(self.user)
+
+        class information_type_schema(Interface):
+            information_type_field = copy_field(
+                IBug['information_type'], readonly=False,
+                vocabulary=InformationTypeVocabulary(types=info_types))
+            # A hidden field used to determine if the new information type
+            # should be validated to ensure the bug does not become invisible
+            # after the change.
+            validate_change = Bool(
+                title=u"Validate change", required=False, default=False)
+        return information_type_schema
+
+    @property
+    def next_url(self):
+        """Return the next URL to call when this call completes."""
+        if not self.request.is_ajax:
+            return canonical_url(self.context)
+        return None
+
+    cancel_url = next_url
+
+    @property
+    def initial_values(self):
+        """See `LaunchpadFormView.`"""
+        return {'information_type': self.context.bug.information_type}
+
+    @action('Change', name='change',
+        failure=LaunchpadFormView.ajax_failure_handler)
+    def change_action(self, action, data):
+        """Update the bug."""
+        data = dict(data)
+        bug = self.context.bug
+        information_type = data.pop('information_type')
+        changed_fields = ['information_type']
+        # When the user first submits the form, validate change is True and
+        # so we check that the bug does not become invisible. If the user
+        # confirms they really want to make the change, validate change is
+        # False and we process the change as normal.
+        if self.request.is_ajax:
+            validate_change = data.get('validate_change', False)
+            if (validate_change and
+                information_type in PRIVATE_INFORMATION_TYPES and
+                self._bug_will_be_invisible(information_type)):
+                self.request.response.setStatus(400, "Bug Visibility")
+                return ''
+
+        user_will_be_subscribed = (
+            information_type in PRIVATE_INFORMATION_TYPES and
+            bug.getSubscribersForPerson(self.user).is_empty())
+        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
+        changed = bug.transitionToInformationType(
+            information_type, self.user)
+        if changed:
+            self._handlePrivacyChanged(user_will_be_subscribed)
+            notify(
+                ObjectModifiedEvent(
+                    bug, bug_before_modification, changed_fields,
+                    user=self.user))
+        if self.request.is_ajax:
+            # Avoid circular imports
+            from lp.bugs.browser.bugtask import (
+                can_add_package_task_to_bug,
+                can_add_project_task_to_bug,
+            )
+            if changed:
+                result_data = self._getSubscriptionDetails()
+                result_data['can_add_project_task'] = (
+                    can_add_project_task_to_bug(bug))
+                result_data['can_add_package_task'] = (
+                    can_add_package_task_to_bug(bug))
+                self.request.response.setHeader(
+                    'content-type', 'application/json')
+                return dumps(
+                    result_data, cls=ResourceJSONEncoder,
+                    media_type=EntryResource.JSON_TYPE)
+            else:
+                return ''
+
+    def _bug_will_be_invisible(self, information_type):
+        # Return true if this bug will be totally invisible if it were to be
+        # change to the specified information type.
+        pillars = self.context.bug.affected_pillars
+        service = getUtility(IService, 'sharing')
+        for pillar in pillars:
+            grant_counts = service.getAccessPolicyGrantCounts(pillar)
+            for count_info in grant_counts:
+                if count_info[1] > 0 and count_info[0] == information_type:
+                    return False
+        return True
+
+    def _getSubscriptionDetails(self):
+        cache = dict()
+        # The subscription details for the current user.
+        self.extractBugSubscriptionDetails(self.user, self.context.bug, cache)
+
+        # The subscription details for other users to populate the subscribers
+        # list in the portlet.
+        if IBugTask.providedBy(self.context):
+            bug = self.context.bug
+        else:
+            bug = self.context
+        subscribers_portlet = BugPortletSubscribersWithDetails(
+            bug, self.request)
+        subscription_data = subscribers_portlet.subscriber_data
+        result_data = dict(
+            cache_data=cache,
+            subscription_data=subscription_data)
+        return result_data
+
+    def _handlePrivacyChanged(self, user_will_be_subscribed):
+        """Handle the case where the privacy of the bug has been changed.
+
+        If the bug has been made private and the user is not a direct
+        subscriber, they will be subscribed. If the bug is being made
+        public or the user is already directly subscribed, this is a
+        no-op.
+        """
+        if user_will_be_subscribed:
+            notification_text = (
+                    "Since you marked this bug as private you have "
+                    "automatically been subscribed to it. "
+                    "If you don't want to receive email about "
+                    "this bug you can <a href=\"%s\">mute your "
+                    "subscription</a> or <a href=\"%s\">"
+                    "unsubscribe</a>." % (
+                    canonical_url(
+                        self.context, view_name='+mute'),
+                    canonical_url(
+                        self.context, view_name='+subscribe')))
+            self.request.response.addInfoNotification(
+                structured(notification_text))
+
+
+class DeprecatedAssignedBugsView(RedirectionView):
     """Deprecate the /malone/assigned namespace.
 
     It's important to ensure that this namespace continues to work, to
@@ -689,27 +994,50 @@ class DeprecatedAssignedBugsView:
     to put the assigned bugs report, we'll redirect to the appropriate
     FOAF URL.
     """
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self.status = 303
 
-    def redirect_to_assignedbugs(self):
-        """Redirect the user to their assigned bugs report."""
-        self.request.response.redirect(
-            canonical_url(getUtility(ILaunchBag).user) +
-            "/+assignedbugs")
+    def __call__(self):
+        self.target = canonical_url(
+            getUtility(ILaunchBag).user, view_name='+assignedbugs')
+        super(DeprecatedAssignedBugsView, self).__call__()
 
 
 normalize_mime_type = re.compile(r'\s+')
 
+
 class BugTextView(LaunchpadView):
     """View for simple text page displaying information for a bug."""
+
+    def initialize(self):
+        # If we have made it to here then the logged in user can see the
+        # bug, hence they can see any assignees and subscribers.
+        # The security adaptor will do the job also but we don't want or need
+        # the expense of running several complex SQL queries.
+        authorised_people = []
+        for task in self.bugtasks:
+            if task.assignee is not None:
+                authorised_people.append(task.assignee)
+        authorised_people.extend(self.subscribers)
+        precache_permission_for_objects(
+            self.request, 'launchpad.LimitedView', authorised_people)
+
     @cachedproperty
     def bugtasks(self):
         """Cache bugtasks and avoid hitting the DB twice."""
         return list(self.context.bugtasks)
 
+    @cachedproperty
+    def subscribers(self):
+        """Cache subscribers and avoid hitting the DB twice."""
+        return [sub.person for sub in self.context.subscriptions
+                if self.user or not sub.person.private]
+
     def bug_text(self):
+
         """Return the bug information for text display."""
         bug = self.context
 
@@ -741,15 +1069,23 @@ class BugTextView(LaunchpadView):
         if bug.security_related:
             text.append('security: yes')
 
+        patches = []
         text.append('attachments: ')
-        for attachment in bug.attachments:
+        for attachment in bug.attachments_unpopulated:
+            if attachment.type != BugAttachmentType.PATCH:
+                text.append(' %s' % self.attachment_text(attachment))
+            else:
+                patches.append(attachment)
+
+        text.append('patches: ')
+        for attachment in patches:
             text.append(' %s' % self.attachment_text(attachment))
 
         text.append('tags: %s' % ' '.join(bug.tags))
 
         text.append('subscribers: ')
-        for subscription in bug.subscriptions:
-            text.append(' %s' % subscription.person.unique_displayname)
+        for subscriber in self.subscribers:
+            text.append(' %s' % subscriber.unique_displayname)
 
         return ''.join(line + '\n' for line in text)
 
@@ -780,7 +1116,8 @@ class BugTextView(LaunchpadView):
         if component:
             text.append('component: %s' % component.name)
 
-        if task.assignee:
+        if (task.assignee
+            and check_permission('launchpad.LimitedView', task.assignee)):
             text.append('assignee: %s' % task.assignee.unique_displayname)
         else:
             text.append('assignee: ')
@@ -796,7 +1133,9 @@ class BugTextView(LaunchpadView):
         """Return a text representation of a bug attachment."""
         mime_type = normalize_mime_type.sub(
             ' ', attachment.libraryfile.mimetype)
-        return "%s %s" % (attachment.libraryfile.http_url, mime_type)
+        download_url = ProxiedLibraryFileAlias(
+            attachment.libraryfile, attachment).http_url
+        return "%s %s" % (download_url, mime_type)
 
     def comment_text(self):
         """Return a text representation of bug comments."""
@@ -888,6 +1227,7 @@ class BugMarkAsAffectingUserView(LaunchpadFormView):
 
     field_names = ['affects']
     label = "Does this bug affect you?"
+    page_title = label
 
     custom_widget('affects', LaunchpadRadioWidgetWithDescription)
 
@@ -908,18 +1248,3 @@ class BugMarkAsAffectingUserView(LaunchpadFormView):
         self.context.bug.markUserAffected(
             self.user, data['affects'] == BugAffectingUserChoice.YES)
         self.request.response.redirect(canonical_url(self.context.bug))
-
-
-# XXX mars 2009-05-12 bug=372847
-# This will likely have to change or be removed when the bug description
-# changes from IText to IDescription.
-@adapter(IBug, IText, IWebServiceClientRequest)
-@implementer(IFieldHTMLRenderer)
-def bug_description_xhtml_representation(context, field, request):
-    """Render `IBug.description` as XHTML using the webservice."""
-    formatter = FormattersAPI
-    def renderer(value):
-        nomail  = formatter(value).obfuscate_email()
-        html    = formatter(nomail).text_to_html()
-        return html
-    return renderer

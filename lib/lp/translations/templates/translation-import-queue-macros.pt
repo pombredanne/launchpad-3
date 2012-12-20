@@ -10,16 +10,12 @@
 >
 <body>
   <metal:translation-import-queue define-macro="translation-import-queue-content">
-    <script
-      type="text/javascript"
-      tal:condition="devmode"
-      tal:attributes="src string:${icingroot}/build/translations/translations.js">
-    </script>
+      <script type="text/javascript" tal:content="view/choice_confs_js" />
 
       <script type="text/javascript">
-          YUI().use( 'translations', 'event', function(Y) {
+          LPJS.use('lp.translations.importqueue', 'event', function(Y) {
               Y.on('domready', function(e) {
-                  Y.translations.initialize_import_queue_page(Y);
+                  Y.lp.translations.importqueue.initialize_import_queue_page(Y);
               });
           });
       </script>
@@ -72,7 +68,7 @@
 
             <table id="import-entries-list" class="listing" width="100%">
               <tal:loop repeat="entry view/batchnav/currentBatch">
-                <tr tal:attributes="id entry/id">
+                <tr class="import_entry_row" tal:attributes="id entry/id">
                   <tal:XXX replace="nothing">
                     # XXX: CarlosPerelloMarin 2006-03-09 bug=34213
                     # We are using here
@@ -80,38 +76,42 @@
                     # sometimes, entry/import_into evaluates as false because
                     # __len__ method returns 0.
                   </tal:XXX>
-                  <td tal:condition="entry/import_into/title|nothing" rowspan="3">
-                    <img alt="" src="/@@/download" />
+                  <td rowspan="3">
+                    <span class="download sprite"></span>
                   </td>
-                  <td tal:condition="not: entry/import_into/title|nothing" rowspan="2">
-                    <img alt="" src="/@@/download" />
-                  </td>
-                  <td>
+                  <td class="import_source">
                     <a tal:attributes="href entry/content/http_url"
                        tal:content="entry/path">po/foo.pot</a> in
                     <a tal:condition="entry/sourcepackage"
-                       tal:content="entry/sourcepackage/title"
-                       tal:attributes="href entry/sourcepackage/fmt:url"
-                       >evolution in Ubuntu Hoary</a>
+                       tal:replace="structure entry/sourcepackage/fmt:link">
+                       evolution in Ubuntu Hoary</a>
                     <a tal:condition="entry/productseries"
-                       tal:content="entry/productseries/title"
-                       tal:attributes="href entry/productseries/fmt:url"
-                       >Evolution Series: MAIN</a>
+                       tal:replace="structure entry/productseries/fmt:link">
+                       Evolution Series: MAIN</a>
                   </td>
-                  <td tal:condition="entry/required:launchpad.Edit">
-                    <tal:status define="name string:status_${entry/id}"
-                                replace="structure view/widgets/?name" />
-                  </td>
-                  <td tal:condition="not: entry/required:launchpad.Edit"
-                      tal:content="entry/status/title">Needs Review
-                  </td>
-                  <td>
-                    <tal:block condition="entry/required:launchpad.Admin">
-                      <a tal:attributes="href entry/fmt:url">
-                        <img src="/@@/edit" title="Change this entry" />
-                      </a>
-                    </tal:block>
-                  </td>
+                  <tal:status define="css_status string:translationimportstatus${entry/status/name}"
+                              omit-tag="">
+                    <td class="import_status"
+                        tal:condition="entry/required:launchpad.Edit">
+                      <span class="status-select">
+                        <tal:status define="name string:status_${entry/id}"
+                                    replace="structure view/widgets/?name" />
+                      </span>
+                      <span class="status-choice hidden">
+                        <span tal:attributes="class string:value ${css_status}"
+                              tal:content="entry/status/title">
+                          Needs review</span>
+                        <img class="editicon" src="/@@/edit" />
+                      </span>
+                    </td>
+                    <td tal:condition="not: entry/required:launchpad.Edit"
+                        class="import_status">
+                        <span tal:attributes="class css_status"
+                               tal:content="entry/status/title">
+                            Needs Review
+                        </span>
+                    </td>
+                  </tal:status>
                   <td>
                     <tal:block condition="view/user">
                       <tal:comment replace="nothing">
@@ -125,12 +125,12 @@
                     </tal:block>
                   </td>
                 </tr>
-                <tr class="discreet secondary">
+                <tr class="lesser secondary">
                   <td colspan="3">
-                    Uploaded by 
-                    <a tal:content="entry/importer/displayname"
-                       tal:attributes="href entry/importer/fmt:url"
-                       >Mark Shuttleworth</a>
+                    Uploaded by
+                    <a tal:replace="structure entry/importer/fmt:link">
+                      Mark Shuttleworth
+                    </a>
                     on <span tal:content="entry/dateimported/fmt:datetime">date</span>
                   </td>
                 </tr>
@@ -141,12 +141,29 @@
                   # sometimes, entry/import_into evaluates as false because
                   # __len__ method returns 0.
                 </tal:XXX>
-                <tr tal:condition="entry/import_into/title|nothing" class="discreet secondary">
+                <tr class="lesser secondary">
                   <td colspan="3">
-                    Will be imported into 
-                    <a tal:content="entry/import_into/title"
-                       tal:attributes="href entry/import_into/fmt:url"
-                       >Foo</a>
+                    <span style="margin-right: 0.5em"
+                          tal:condition="entry/import_into/title|nothing" >
+                      Will be imported into
+                      <a tal:content="entry/import_into/title"
+                         tal:attributes="href entry/import_into/fmt:url"
+                         >Foo</a>
+                    </span>
+                    <span style="margin-right: 0.5em"
+                          tal:condition="not:entry/import_into/title|nothing">
+                      No import target selected yet.
+                    </span>
+                    <tal:block condition="entry/required:launchpad.Admin">
+                      <tal:comment condition="nothing">
+                        Our CSS requires the span to abut the "a" tag, with no
+                        intervening whitespace.  If the two are separated, the
+                        edit links stop showing up in Webkit.
+                      </tal:comment>
+                      <a class="sprite edit action-icon"
+                         tal:attributes="href entry/fmt:url"
+                         >Change this entry</a>
+                    </tal:block>
                   </td>
                 </tr>
               </tal:loop>
@@ -154,16 +171,16 @@
             <tal:navigation
                  replace="structure view/batchnav/@@+navigation-links-lower" />
 
-            <script type="text/javascript"
-                    tal:define="script view/focusedElementScript"
-                    tal:condition="script"
-                    tal:content="structure script" />
             <tal:block define="user request/lp:person" condition="user">
-              <div class="actions">
+              <div id="import-queue-submit" class="actions">
                 <input
                   tal:replace="structure view/change_status_action/render" />
               </div>
             </tal:block>
+            <script type="text/javascript"
+                    tal:define="script view/focusedElementScript"
+                    tal:condition="script"
+                    tal:content="structure script" />
           </form>
         </tal:block>
       </div>

@@ -13,7 +13,7 @@ to be added to the bug report. The information is passed as a file
 object to the constructor.
 
     >>> from StringIO import StringIO
-    >>> from lp.bugs.browser.bugtarget import FileBugDataParser
+    >>> from lp.bugs.utilities.filebugdataparser import FileBugDataParser
     >>> parser = FileBugDataParser(StringIO('123456789'))
 
 To make parsing easier and more efficient, it has a buffer where it
@@ -185,6 +185,28 @@ automatically.
     >>> parser._setDataFromHeaders(data, {'Subscribers': 'sub-one SUB-TWO'})
     >>> sorted(data.subscribers)
     [u'sub-one', u'sub-two']
+
+
+==== HWDB submission keys ====
+
+The HWDB-Submission key is turned into a list of strings, available
+through the hwdb_submission_keys attribute.
+
+    >>> data = FileBugData()
+    >>> parser._setDataFromHeaders(
+    ...     data, {'HWDB-Submission': 'submission-one'})
+    >>> list(data.hwdb_submission_keys)
+    [u'submission-one']
+
+Two or more submission keys may be specified, separated by a comma,
+optionally followed by space characters.
+
+    >>> data = FileBugData()
+    >>> parser._setDataFromHeaders(
+    ...     data,
+    ...     {'HWDB-Submission': ' submission-one, two\t,three ,  \nfour  '})
+    >>> data.hwdb_submission_keys
+    [u'four', u'submission-one', u'three', u'two']
 
 
 === Message Parts ===

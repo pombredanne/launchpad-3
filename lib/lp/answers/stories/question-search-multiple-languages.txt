@@ -31,7 +31,7 @@ information.
 
 The questions match the languages inferred from by GeoIP
 127.0.0.1 is mapped to South Africa in the test suite. The language
-control shows the intersection of the the user's languages and the
+control shows the intersection of the user's languages and the
 languages of the target's questions. In this example:
 set(['af', 'en', 'st', 'xh', 'zu']) & set(['en', 'es']) == set(en).
 
@@ -85,6 +85,17 @@ Arabic and is written from right-to-left.
 
 When the project has no questions to search, we do not show the
 language controls.
+
+    >>> # Kubuntu must enable answers to access questions.
+    >>> from zope.component import getUtility
+    >>> from lp.app.enums import ServiceUsage
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+
+    >>> login('admin@canonical.com')
+    >>> getUtility(IDistributionSet)['kubuntu'].answers_usage = (
+    ...     ServiceUsage.LAUNCHPAD)
+    >>> transaction.commit()
+    >>> logout()
 
     >>> anon_browser.open('http://launchpad.dev/kubuntu/+questions')
     >>> anon_browser.getControl(name='field.language')
@@ -178,7 +189,7 @@ this example, Carlos speaks two languages (Spanish and Catalan),
 and Answers adds English to the list of languages. There are no
 Catalan questions, so no Catalan checkbox is displayed.
 
-    >>> from canonical.launchpad.testing.pages import strip_label
+    >>> from lp.testing.pages import strip_label
 
     >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
     >>> browser.open('http://launchpad.dev/distros/ubuntu/+questions')
@@ -208,7 +219,7 @@ English questions. As there are no Japanese or Welsh questions, there
 will not be any controls present for those two languages when
 searching Ubuntu.
 
-    >>> daf_browser = setupBrowser(auth='Basic daf@canonical.com:daf')
+    >>> daf_browser = setupBrowser(auth='Basic daf@canonical.com:test')
     >>> daf_browser.open('http://launchpad.dev/~daf/+editlanguages')
     >>> daf_browser.getControl('English (United Kingdom)').selected
     True
@@ -274,7 +285,7 @@ the preceding page.
 
     >>> user_browser.getLink('Portuguese (Brazil)').click()
     >>> print user_browser.title
-    Portuguese (Brazil) questions in Mozilla Firefox
+    Portuguese (Brazil) questions in Mozilla Firefox : Questions : Mozilla Firefox
 
     >>> language_field = user_browser.getControl(name='field.language')
     >>> print language_field.type
@@ -304,8 +315,8 @@ project. He can see the question on the second page of "My questions"...
     >>> sample_person_browser.open('http://answers.launchpad.dev/ubuntu')
     >>> sample_person_browser.getLink('My questions').click()
     >>> sample_person_browser.getLink('Next').click()
-    >>> sample_person_browser.title
-    'Questions you asked about Ubuntu'
+    >>> print sample_person_browser.title
+    Questions you asked about Ubuntu : Questions : Ubuntu
 
     >>> questions = find_tag_by_id(
     ...     sample_person_browser.contents, 'question-listing')
@@ -322,9 +333,8 @@ project. He can see the question on the second page of "My questions"...
 
     >>> sample_person_browser.getLink(
     ...     'Change your preferred languages').click()
-    >>> sample_person_browser.title
-    'Your language preferences'
+    >>> print sample_person_browser.title
+    Language preferences...
 
     >>> sample_person_browser.getControl('Arabic', index=0).selected
     False
-

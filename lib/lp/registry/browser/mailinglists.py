@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for handling mailing lists."""
@@ -6,112 +6,27 @@
 __metaclass__ = type
 __all__ = [
     'HeldMessageView',
-    'MailingListsReviewView',
     'enabled_with_active_mailing_list',
     ]
 
 
-from cgi import escape
-from operator import itemgetter
 from textwrap import TextWrapper
 from urllib import quote
 
 from zope.component import getUtility
-from zope.interface import Interface
-from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import cachedproperty
-from canonical.launchpad import _
+from lp.app.browser.tales import PersonFormatterAPI
 from lp.registry.interfaces.mailinglist import (
-    IHeldMessageDetails, IMailingListSet, MailingListStatus)
+    IHeldMessageDetails,
+    IMailingListSet,
+    )
 from lp.registry.interfaces.person import ITeam
-from canonical.launchpad.webapp import (
-    LaunchpadFormView, LaunchpadView, action, canonical_url)
-from canonical.launchpad.webapp.interfaces import UnexpectedFormData
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.tales import PersonFormatterAPI
-
-
-class ReviewForm(Interface):
-    """An empty marker schema for the review form."""
-
-
-class MailingListsReviewView(LaunchpadFormView):
-    """Present review page for mailing list creation requests."""
-
-    schema = ReviewForm
-    page_title = 'Pending mailing lists requests'
-
-    @cachedproperty
-    def registered_lists(self):
-        """Return a list of mailing list information dictionaries.
-
-        The view needs a sorted list of dictionaries of information pertaining
-        to each mailing list pending approval.  The dictionaries have three
-        keys:
-
-        * the mailing list's team
-        * the mailing list's team's name
-        * the registrant of the mailing list request
-
-        The dictionaries are sorted by team name.
-
-        :return: Information about all the pending mailing list requests.
-        :rtype: list of dictionaries
-        """
-        list_info = []
-        for mailing_list in self.context.registered_lists:
-            naked_team = removeSecurityProxy(mailing_list.team)
-            list_info.append(dict(
-                # Use PersonFormatterAPI so that private team names aren't
-                # redacted, which doesn't help a mailing list expert much.
-                # This just ensures that the team name is not redacted, even
-                # though the MLE may (still) not have permission to visit the
-                # team page via the link.  That's a different issue and not
-                # one important enough to fix for now.
-                team_link=PersonFormatterAPI(naked_team).link(None),
-                name=naked_team.name,
-                registrant=mailing_list.registrant,
-                ))
-        return sorted(list_info, key=itemgetter('name'))
-
-    @action(_('Submit'), name='submit')
-    def submit_action(self, action, data):
-        """Process the mailing list review form."""
-        for mailing_list in self.context.registered_lists:
-            naked_team = removeSecurityProxy(mailing_list.team)
-            # Find out which disposition the administrator chose for this
-            # mailing list.  If there is no data in the form for this mailing
-            # list, just treat it as having been deferred.
-            action = self.request.form_ng.getOne('field.%s' % naked_team.name)
-            # This essentially acts like a switch statement or if/elifs.  It
-            # looks the action up in a map of allowed actions, watching out
-            # for bogus input.
-            try:
-                status = dict(
-                    approve=MailingListStatus.APPROVED,
-                    decline=MailingListStatus.DECLINED,
-                    hold=None,
-                    )[action]
-            except KeyError:
-                raise UnexpectedFormData(
-                    'Invalid review action for mailing list %s: %s' %
-                    (naked_team.displayname, action))
-            if status is not None:
-                mailing_list.review(self.user, status)
-                self.request.response.addInfoNotification(
-                    structured(
-                        '<a href="%s">%s</a> mailing list was %s',
-                            canonical_url(naked_team),
-                            naked_team.displayname,
-                            status.title.lower()))
-        # Redirect to prevent double posts (and not require
-        # flush_database_updates() :)
-        self.next_url = canonical_url(self.context)
+from lp.services.webapp import LaunchpadView
+from lp.services.webapp.escaping import html_escape
 
 
 class HeldMessageView(LaunchpadView):
-    """A little helper view for for held messages."""
+    """A little helper view for held messages."""
 
     def __init__(self, context, request):
         super(HeldMessageView, self).__init__(context, request)
@@ -127,10 +42,7 @@ class HeldMessageView(LaunchpadView):
         self.subject = self.details.subject
         self.date = self.details.date
         self.widget_name = 'field.' + quote(self.message_id)
-        # The author field is very close to what the details has, except that
-        # the view wants to include a link to the person's overview page.
-        self.author = '<a href="%s">%s</a>' % (
-            canonical_url(self.details.author), self.details.sender)
+        self.author = PersonFormatterAPI(self.details.author).link(None)
 
     def initialize(self):
         """See `LaunchpadView`."""
@@ -158,13 +70,21 @@ class HeldMessageView(LaunchpadView):
             if lineno > 20:
                 break
             if len(line.strip()) == 0:
-                paragraphs.append(u'\n'.join(current_paragraph))
-                paragraphs.append('\n<p>\n')
+                self._append_paragraph(paragraphs, current_paragraph)
                 current_paragraph = []
             else:
                 current_paragraph.append(line)
-        paragraphs.append(u'\n'.join(current_paragraph))
+        self._append_paragraph(paragraphs, current_paragraph)
         self.body_details = u''.join(paragraphs)
+
+    def _append_paragraph(self, paragraphs, current_paragraph):
+        if len(current_paragraph) == 0:
+            # There is nothing to append. The message has multiple
+            # blank lines.
+            return
+        paragraphs.append(u'\n<p>\n')
+        paragraphs.append(u'\n'.join(current_paragraph))
+        paragraphs.append(u'\n</p>\n')
 
     def _remove_leading_blank_lines(self):
         """Strip off any leading blank lines.
@@ -173,7 +93,7 @@ class HeldMessageView(LaunchpadView):
         """
         # Escape the text so that there's no chance of cross-site scripting,
         # then split into lines.
-        text_lines = escape(self.details.body).splitlines()
+        text_lines = html_escape(self.details.body).splitlines()
         # Strip off any whitespace only lines from the start of the message.
         text_lines.reverse()
         while len(text_lines) > 0:
@@ -222,9 +142,10 @@ class enabled_with_active_mailing_list:
     def __get__(self, obj, type=None):
         """Called by the decorator machinery to return a decorated function.
         """
+
         def enable_if_active(*args, **kws):
             link = self._function(obj, *args, **kws)
-            if not ITeam.providedBy(obj.context) or not obj.context.isTeam():
+            if not ITeam.providedBy(obj.context) or not obj.context.is_team:
                 link.enabled = False
             mailing_list = getUtility(IMailingListSet).get(obj.context.name)
             if mailing_list is None or not mailing_list.is_usable:

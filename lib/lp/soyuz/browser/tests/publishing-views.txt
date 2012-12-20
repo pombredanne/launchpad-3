@@ -7,22 +7,22 @@ files. The property returns a sorted list of dictionaries with URLs,
 filenames and filesizes.
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
+    >>> from lp.testing import celebrity_logged_in
 
 We'll create SourcePackagePublishingHistory entries for
 alsa-utils and foobar in ubuntu to test with:
 
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
-    >>> login('foo.bar@canonical.com')
-    >>> stp = SoyuzTestPublisher()
-    >>> stp.prepareBreezyAutotest()
-    >>> alsa_pub = stp.getPubSource(sourcename='alsa-utils-test')
-    >>> foo_pub = stp.getPubSource(sourcename='foobar-test',
-    ...     status=PackagePublishingStatus.DELETED)
-    >>> logout()
+    >>> with celebrity_logged_in('admin'):
+    ...     stp = SoyuzTestPublisher()
+    ...     stp.prepareBreezyAutotest()
+    ...     alsa_pub = stp.getPubSource(sourcename='alsa-utils-test')
+    ...     foo_pub = stp.getPubSource(sourcename='foobar-test',
+    ...         status=PackagePublishingStatus.DELETED)
 
 The base class BasePublishingRecordView provides a few helper methods
 and properties for querying the publishing history record:
@@ -39,14 +39,10 @@ the view property returns 'None provided.'
     >>> view.removal_comment
     u'None provided.'
 
-Otherwise the removal comment will be returned (Note, setting the removal
-comment requires going through the secure record and flushing before
-it will be reflected in the normal record)
+Otherwise the removal comment will be returned
 
     >>> login('foo.bar@canonical.com')
-    >>> foo_pub.secure_record.removal_comment = "It had to go."
-    >>> from canonical.database.sqlbase import flush_database_caches
-    >>> flush_database_caches()
+    >>> foo_pub.removal_comment = "It had to go."
 
     >>> print view.context.removal_comment
     It had to go.
@@ -78,21 +74,21 @@ for each file related with the alsa-utils source publication in ubuntu.
 'iceweasel' source in Celso's PPA contains binary files that can be
 inspected.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
 
     >>> iceweasel_source_pub = cprov.archive.getPublishedSources(
-    ...     'iceweasel')[0]
+    ...     u'iceweasel').first()
 
     >>> ppa_source_view = getMultiAdapter(
     ...     (iceweasel_source_pub, LaunchpadTestRequest()),
     ...     name="+listing-archive-detailed")
 
     >>> ppa_source_view.published_source_and_binary_files
-    [{'url': u'http://launchpad.dev/~cprov/+archive/ppa/+files/firefox-0.9.2.orig.tar.gz',
+    [{'url': u'http://launchpad.dev/~cprov/+archive/ppa/+files/firefox_0.9.2.orig.tar.gz',
       'class': 'source',
       'filesize': 9922560,
-      'filename': u'firefox-0.9.2.orig.tar.gz'},
+      'filename': u'firefox_0.9.2.orig.tar.gz'},
      {'url': u'http://launchpad.dev/~cprov/+archive/ppa/+files/iceweasel-1.0.dsc',
       'class': 'source',
       'filesize': 123,
@@ -142,7 +138,6 @@ This test will fail if we add a new value to the PackagePublishingStatus
 enumeration but neglect to update BasePublishingRecordView.timestamp_map
 accordingly.
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
     >>> from lp.soyuz.browser.publishing import (
     ...     BasePublishingRecordView)
     >>> for pps in PackagePublishingStatus.items:

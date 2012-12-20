@@ -5,13 +5,20 @@
 
 __metaclass__ = type
 __all__ = [
-    'NewRevision',
+    'NewMainlineRevisions',
     'RevisionsRemoved',
     'TipChanged',
     ]
 
 
-class ScannerEvent:
+from zope.component.interfaces import (
+    implements,
+    IObjectEvent,
+    ObjectEvent,
+    )
+
+
+class ScannerEvent(ObjectEvent):
     """Base scanner event."""
 
     def __init__(self, db_branch, bzr_branch):
@@ -20,16 +27,22 @@ class ScannerEvent:
         :param db_branch: The database IBranch.
         :param bzr_branch: The Bazaar branch being scanned.
         """
+        ObjectEvent.__init__(self, db_branch)
         self.db_branch = db_branch
         self.bzr_branch = bzr_branch
 
 
-class NewRevision(ScannerEvent):
+class INewMainlineRevisions(IObjectEvent):
     """A new revision has been found in the branch."""
 
-    def __init__(self, db_branch, bzr_branch, db_revision, bzr_revision,
-                 revno):
-        """Construct a `NewRevision` event.
+
+class NewMainlineRevisions(ScannerEvent):
+    """A new revision has been found in the branch."""
+
+    implements(INewMainlineRevisions)
+
+    def __init__(self, db_branch, bzr_branch, bzr_revisions):
+        """Construct a `NewRevisions` event.
 
         :param db_branch: The database branch.
         :param bzr_branch: The Bazaar branch.
@@ -38,18 +51,17 @@ class NewRevision(ScannerEvent):
         :param revno: The revision number of the new revision, None if not
             mainline.
         """
-        super(NewRevision, self).__init__(db_branch, bzr_branch)
-        self.db_revision = db_revision
-        self.bzr_revision = bzr_revision
-        self.revno = revno
+        ScannerEvent.__init__(self, db_branch, bzr_branch)
+        self.bzr_revisions = bzr_revisions
 
-    def isMainline(self):
-        """Is the new revision a mainline one?"""
-        return self.revno is not None
+
+class ITipChanged(IObjectEvent):
+    """The tip of the branch has changed."""
 
 
 class TipChanged(ScannerEvent):
     """The tip of the branch has changed."""
+    implements(ITipChanged)
 
     def __init__(self, db_branch, bzr_branch, initial_scan):
         """Construct a `TipChanged` event.
@@ -58,7 +70,7 @@ class TipChanged(ScannerEvent):
         :param bzr_branch: The Bazaar branch.
         :param initial_scan: Is this the first scan of the branch?
         """
-        super(TipChanged, self).__init__(db_branch, bzr_branch)
+        ScannerEvent.__init__(self, db_branch, bzr_branch)
         self.initial_scan = initial_scan
 
     @property
@@ -72,8 +84,14 @@ class TipChanged(ScannerEvent):
         return self.bzr_branch.last_revision()
 
 
+class IRevisionsRemoved(IObjectEvent):
+    """Revisions have been removed from the branch."""
+
+
 class RevisionsRemoved(ScannerEvent):
     """Revisions have been removed from the branch."""
+
+    implements(IRevisionsRemoved)
 
     def __init__(self, db_branch, bzr_branch, removed_history):
         """Construct a `RevisionsRemoved` event.
@@ -83,14 +101,20 @@ class RevisionsRemoved(ScannerEvent):
         :param removed_history: The mainline database `IRevision` objects that
             are no longer present in the mainline of the Bazaar branch.
         """
-        super(RevisionsRemoved, self).__init__(db_branch, bzr_branch)
+        ScannerEvent.__init__(self, db_branch, bzr_branch)
         self.removed_history = removed_history
+
+
+class IScanCompleted(IObjectEvent):
+    """The scan has been completed and the database is up-to-date."""
 
 
 class ScanCompleted(ScannerEvent):
     """The scan has been completed and the database is up-to-date."""
 
-    def __init__(self, db_branch, bzr_branch, bzr_ancestry, logger):
+    implements(IScanCompleted)
+
+    def __init__(self, db_branch, bzr_branch, logger, new_ancestry):
         """Construct a `ScanCompleted` event.
 
         :param db_branch: The database branch.
@@ -100,8 +124,8 @@ class ScanCompleted(ScannerEvent):
         :param logger: A Python logger object that's used to report incidental
             information, such as merges that we find.
         """
-        super(ScanCompleted, self).__init__(db_branch, bzr_branch)
-        self.bzr_ancestry = bzr_ancestry
+        ScannerEvent.__init__(self, db_branch, bzr_branch)
+        self.new_ancestry = new_ancestry
         # This is kind of ick. In a strict Zope sense, the logger should
         # probably be a registered utility.
         self.logger = logger

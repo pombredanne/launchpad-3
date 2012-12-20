@@ -1,27 +1,36 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import logging
 import os
 import shutil
+from StringIO import StringIO
 import tempfile
 import unittest
-from StringIO import StringIO
 
+import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.schema import getFields
 
-from canonical.config import config
-from canonical.testing import LaunchpadZopelessLayer, reset_logging
-
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.productrelease import (
-    IProductReleaseFile, UpstreamFileType)
-from lp.registry.scripts.productreleasefinder.filter import (
-    FilterPattern)
+    IProductReleaseFile,
+    UpstreamFileType,
+    )
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.scripts.productreleasefinder.filter import FilterPattern
 from lp.registry.scripts.productreleasefinder.finder import (
-    extract_version, ProductReleaseFinder)
+    extract_version,
+    ProductReleaseFinder,
+    )
+from lp.services.config import config
+from lp.testing import (
+    reset_logging,
+    TestCaseWithFactory,
+    )
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class FindReleasesTestCase(unittest.TestCase):
@@ -51,7 +60,35 @@ class FindReleasesTestCase(unittest.TestCase):
                          ('product2', ['filter3', 'filter4']))
 
 
-class GetFiltersTestCase(unittest.TestCase):
+class FindReleasesDBTestCase(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_findReleases_permissions(self):
+        switch_dbuser(config.productreleasefinder.dbuser)
+        prf = ProductReleaseFinder(self.layer.txn, logging.getLogger())
+        # Test that this raises no exceptions.
+        prf.findReleases()
+
+    def test_getReleaseFileNames(self):
+        product = self.factory.makeProduct()
+        series1 = self.factory.makeProductSeries(product=product)
+        series2 = self.factory.makeProductSeries(product=product)
+        self.factory.makeProductReleaseFile(
+            productseries=series1, filename='foo-1.0.tar.gz')
+        file2 = self.factory.makeProductReleaseFile(
+            productseries=series2, filename='foo-2.0.tar.gz')
+        self.factory.makeProductReleaseFile(
+            productseries=series2, release=file2.productrelease,
+            filename='foo-2.1.tar.gz')
+        expected = set(['foo-1.0.tar.gz', 'foo-2.0.tar.gz', 'foo-2.1.tar.gz'])
+        transaction.commit()
+        prf = ProductReleaseFinder(self.layer.txn, logging.getLogger())
+        found = prf.getReleaseFileNames(product.name)
+        self.assertEqual(expected, found)
+
+
+class GetFiltersTestCase(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
@@ -87,6 +124,27 @@ class GetFiltersTestCase(unittest.TestCase):
             'http://ftp.gnome.org/pub/GNOME/sources/evolution/2.7/'
             'evolution-2.7.1.tar.gz'))
 
+    def test_getFilters_ignore_obsolete(self):
+        # Verify that obsolete series are ignnored.
+        ztm = self.layer.txn
+        ztm.begin()
+        product = self.factory.makeProduct(name="bunny")
+        active_series = product.getSeries('trunk')
+        active_series.releasefileglob = 'http://eg.dom/bunny/trunk/*'
+        obsolete_series = self.factory.makeProductSeries(
+            product=product, name='rabbit')
+        obsolete_series.releasefileglob = 'http://eg.dom/bunny/rabbit/*'
+        obsolete_series.status = SeriesStatus.OBSOLETE
+        ztm.commit()
+        logging.basicConfig(level=logging.CRITICAL)
+        prf = ProductReleaseFinder(ztm, logging.getLogger())
+        product_filters = prf.getFilters()
+        self.assertEqual(1, len(product_filters))
+        found_product, filters = product_filters[0]
+        self.assertEqual('bunny', found_product)
+        self.assertEqual(1, len(filters))
+        self.assertEqual(filters[0].key, 'trunk')
+
 
 class HandleProductTestCase(unittest.TestCase):
 
@@ -102,11 +160,16 @@ class HandleProductTestCase(unittest.TestCase):
     def test_handleProduct(self):
         # test that handleProduct() correctly calls handleRelease()
         class DummyProductReleaseFinder(ProductReleaseFinder):
+
             def __init__(self, ztm, log):
                 ProductReleaseFinder.__init__(self, ztm, log)
                 self.seen_releases = []
 
-            def handleRelease(self, product_name, series_name, url):
+            def getReleaseFileNames(self, product_name):
+                return set()
+
+            def handleRelease(self, product_name, series_name, url,
+                              file_name):
                 self.seen_releases.append((product_name, series_name,
                                            os.path.basename(url)))
 
@@ -136,7 +199,6 @@ class HandleProductTestCase(unittest.TestCase):
                           '/product/2/product-2.*.tar.gz'),
             ]
 
-
         prf.handleProduct('product', filters)
         prf.seen_releases.sort()
         self.assertEqual(len(prf.seen_releases), 4)
@@ -154,9 +216,18 @@ class HandleReleaseTestCase(unittest.TestCase):
 
     layer = LaunchpadZopelessLayer
 
+    def create_tarball(self, file_name):
+        """create a release tarball for testing"""
+        file_path = os.path.join(self.release_root, file_name)
+        try:
+            fp = open(file_path, 'w')
+            fp.write('foo')
+        finally:
+            fp.close()
+        return file_path, file_name
+
     def setUp(self):
-        LaunchpadZopelessLayer.switchDbUser(
-            config.productreleasefinder.dbuser)
+        switch_dbuser(config.productreleasefinder.dbuser)
         self.release_root = tempfile.mkdtemp()
         self.release_url = 'file://' + self.release_root
 
@@ -168,21 +239,13 @@ class HandleReleaseTestCase(unittest.TestCase):
         ztm = self.layer.txn
         logging.basicConfig(level=logging.CRITICAL)
         prf = ProductReleaseFinder(ztm, logging.getLogger())
-
-        # create a release tarball
-        fp = open(os.path.join(
-            self.release_root, 'evolution-42.0.orig.tar.gz'), 'w')
-        fp.write('foo')
-        fp.close()
-
-        self.assertEqual(prf.hasReleaseTarball('evolution', 'trunk', '42.0'),
-                         False)
-
-        prf.handleRelease('evolution', 'trunk',
-                          self.release_url + '/evolution-42.0.orig.tar.gz')
-
-        self.assertEqual(prf.hasReleaseTarball('evolution', 'trunk', '42.0'),
-                         True)
+        alt_file_name = 'evolution-42.0.orig.tar.bz2'
+        file_path, file_name = self.create_tarball(
+            'evolution-42.0.orig.tar.gz')
+        file_names = set()
+        prf.handleRelease('evolution', 'trunk', file_path, file_names)
+        self.assertTrue(file_name in file_names)
+        self.assertFalse(alt_file_name in file_names)
 
         # check to see that the release has been created
         evo = getUtility(IProductSet).getByName('evolution')
@@ -192,8 +255,7 @@ class HandleReleaseTestCase(unittest.TestCase):
         self.assertEqual(release.files.count(), 1)
         fileinfo = release.files[0]
         self.assertEqual(fileinfo.filetype, UpstreamFileType.CODETARBALL)
-        self.assertEqual(fileinfo.libraryfile.filename,
-                         'evolution-42.0.orig.tar.gz')
+        self.assertEqual(fileinfo.libraryfile.filename, file_name)
 
         # verify that the fileinfo object is sane
         self.failUnless(verifyObject(IProductReleaseFile, fileinfo))
@@ -225,15 +287,9 @@ class HandleReleaseTestCase(unittest.TestCase):
 
         logging.basicConfig(level=logging.CRITICAL)
         prf = ProductReleaseFinder(ztm, logging.getLogger())
-
-        # create a release tarball
-        fp = open(os.path.join(
-            self.release_root, 'evolution-2.1.6.tar.gz'), 'w')
-        fp.write('foo')
-        fp.close()
-
-        prf.handleRelease('evolution', 'trunk',
-                          self.release_url + '/evolution-2.1.6.tar.gz')
+        file_path, file_name = self.create_tarball('evolution-2.1.6.tar.gz')
+        file_names = prf.getReleaseFileNames('evolution')
+        prf.handleRelease('evolution', 'trunk', file_path, file_names)
 
         # verify that we now have files attached to the release:
         evo = getUtility(IProductSet).getByName('evolution')
@@ -248,22 +304,50 @@ class HandleReleaseTestCase(unittest.TestCase):
         ztm = self.layer.txn
         logging.basicConfig(level=logging.CRITICAL)
         prf = ProductReleaseFinder(ztm, logging.getLogger())
-
-        # create a release tarball
-        fp = open(os.path.join(
-            self.release_root, 'evolution-42.0.tar.gz'), 'w')
-        fp.write('foo')
-        fp.close()
-
-        prf.handleRelease('evolution', 'trunk',
-                          self.release_url + '/evolution-42.0.tar.gz')
-        prf.handleRelease('evolution', 'trunk',
-                          self.release_url + '/evolution-42.0.tar.gz')
-
+        file_path, file_name = self.create_tarball('evolution-42.0.tar.gz')
+        file_names = prf.getReleaseFileNames('evolution')
+        prf.handleRelease('evolution', 'trunk', file_path, file_names)
+        prf.handleRelease('evolution', 'trunk', file_path, file_names)
         evo = getUtility(IProductSet).getByName('evolution')
         trunk = evo.getSeries('trunk')
         release = trunk.getRelease('42.0')
         self.assertEqual(release.files.count(), 1)
+
+    def test_handleReleaseTwice_multiple_series(self):
+        # Series can have overlaping release file globs, but versions
+        # are unique to a project. A file is uploaded to a release only
+        # once, regardless of which series wants the upload.
+        ztm = self.layer.txn
+        logging.basicConfig(level=logging.CRITICAL)
+        prf = ProductReleaseFinder(ztm, logging.getLogger())
+        file_path, file_name = self.create_tarball('evolution-1.2.3.tar.gz')
+        file_names = prf.getReleaseFileNames('evolution')
+        prf.handleRelease('evolution', 'trunk', file_path, file_names)
+        file_path, file_name = self.create_tarball('evolution-1.2.3.tar.gz')
+        prf.handleRelease('evolution', '1.0', file_path, file_names)
+        product = getUtility(IProductSet).getByName('evolution')
+        release = product.getMilestone('1.2.3').product_release
+        self.assertEqual(release.files.count(), 1)
+
+    def test_handleRelease_alternate_verstion(self):
+        """Verify that tar.gz and tar.bz2 versions are both uploaded."""
+        ztm = self.layer.txn
+        logging.basicConfig(level=logging.CRITICAL)
+        prf = ProductReleaseFinder(ztm, logging.getLogger())
+        file_path, file_name = self.create_tarball('evolution-45.0.tar.gz')
+        alt_file_path, alt_file_name = self.create_tarball(
+            'evolution-45.0.tar.bz2')
+        file_names = prf.getReleaseFileNames('evolution')
+        prf.handleRelease('evolution', 'trunk', file_path, file_names)
+        prf.handleRelease('evolution', 'trunk', alt_file_path, file_names)
+        evo = getUtility(IProductSet).getByName('evolution')
+        trunk = evo.getSeries('trunk')
+        release = trunk.getRelease('45.0')
+        release_filenames = [file_info.libraryfile.filename
+                             for file_info in release.files]
+        self.assertEqual(len(release_filenames), 2)
+        self.assertTrue(file_name in release_filenames)
+        self.assertTrue(alt_file_name in release_filenames)
 
     def test_handleReleaseUnableToParseVersion(self):
         # Test that handleRelease() handles the case where a version can't be
@@ -282,7 +366,8 @@ class HandleReleaseTestCase(unittest.TestCase):
         fp.close()
 
         url = self.release_url + '/evolution420.tar.gz'
-        prf.handleRelease('evolution', 'trunk', url)
+        file_names = prf.getReleaseFileNames('evolution')
+        prf.handleRelease('evolution', 'trunk', url, file_names)
         self.assertEqual(
             "Unable to parse version from %s\n" % url, output.getvalue())
 
@@ -304,6 +389,17 @@ class ExtractVersionTestCase(unittest.TestCase):
         self.assertEqual(version, '1.15-rc1')
         version = extract_version('bzr-1.15_beta1.tar.gz')
         self.assertEqual(version, '1.15-beta1')
+
+    def test_extract_version_ignores_uncommon_names(self):
+        """Unknown file extension is not included in version."""
+        # Bug #412015. If there is no filename extension that Launchpad
+        # understands after the version number, we have a dud match.
+        version = extract_version('bzr-1.15_beta1.tar.gz.asc')
+        self.assertEqual(version, None)
+        version = extract_version('bzr-1.15_beta1.tar.7z')
+        self.assertEqual(version, None)
+        version = extract_version('bzr-1.15_beta1.bckup')
+        self.assertEqual(version, None)
 
     def test_extract_version_debian_name(self):
         """Verify that the debian-style .orig suffix is handled."""
@@ -345,6 +441,10 @@ class ExtractVersionTestCase(unittest.TestCase):
         self.assertEqual(version, '1.16.3')
         version = extract_version('partitionmanager-21-2.noarch.rpm')
         self.assertEqual(version, '21-2')
+        version = extract_version('php-fpm-0.6~5.3.1.tar.gz')
+        self.assertEqual(version, '0.6')
+        version = extract_version('u1f-google-1.2.4.apk')
+        self.assertEqual(version, '1.2.4')
 
     def test_extract_version_name_with_uppercase(self):
         """Verify that the file's version is lowercases."""
@@ -357,7 +457,3 @@ class ExtractVersionTestCase(unittest.TestCase):
         self.assertEqual(version, '0.2-rm-zomb-pre1')
         version = extract_version('warzone2100-2.0.5_rc1.tar.bz2')
         self.assertEqual(version, '2.0.5-rc1')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

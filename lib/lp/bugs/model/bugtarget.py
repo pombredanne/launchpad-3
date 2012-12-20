@@ -1,7 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0611,W0212
 
 """Components related to IBugTarget."""
 
@@ -13,24 +11,28 @@ __all__ = [
     'OfficialBugTagTargetMixin',
     ]
 
-from storm.locals import Int, Reference, Storm, Unicode
+from storm.locals import (
+    Int,
+    Reference,
+    Storm,
+    Unicode,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import cursor, sqlvalues
-from lp.bugs.model.bugtask import (
-    BugTaskSet, get_bug_privacy_filter)
-from canonical.launchpad.searchbuilder import any, NULL, not_equals
-from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtarget import IOfficialBugTag
+from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
+from lp.bugs.interfaces.bugtaskfilter import simple_weight_calculator
+from lp.bugs.interfaces.bugtasksearch import (
+    BugTagsSearchCombinator,
+    BugTaskSearchParams,
+    )
+from lp.bugs.model.bugtask import BugTaskSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
-from lp.bugs.interfaces.bugtask import (
-    BugTagsSearchCombinator, BugTaskImportance, BugTaskSearchParams,
-    BugTaskStatus, RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from lp.services.database.lpstorm import IStore
+
 
 class HasBugsBase:
     """Standard functionality for IHasBugs.
@@ -38,26 +40,31 @@ class HasBugsBase:
     All `IHasBugs` implementations should inherit from this class
     or from `BugTargetBase`.
     """
+
     def searchTasks(self, search_params, user=None,
                     order_by=None, search_text=None,
                     status=None,
                     importance=None,
                     assignee=None, bug_reporter=None, bug_supervisor=None,
                     bug_commenter=None, bug_subscriber=None, owner=None,
-                    affected_user=None,
+                    structural_subscriber=None,
+                    affected_user=None, affects_me=False,
                     has_patch=None, has_cve=None, distribution=None,
                     tags=None, tags_combinator=BugTagsSearchCombinator.ALL,
                     omit_duplicates=True, omit_targeted=None,
-                    status_upstream=None, milestone_assignment=None,
-                    milestone=None, component=None, nominated_for=None,
-                    sourcepackagename=None, has_no_package=None,
-                    hardware_bus=None, hardware_vendor_id=None,
-                    hardware_product_id=None, hardware_driver_name=None,
+                    status_upstream=None, milestone=None, component=None,
+                    nominated_for=None, sourcepackagename=None,
+                    has_no_package=None, hardware_bus=None,
+                    hardware_vendor_id=None, hardware_product_id=None,
+                    hardware_driver_name=None,
                     hardware_driver_package_name=None,
                     hardware_owner_is_bug_reporter=None,
                     hardware_owner_is_affected_by_bug=False,
                     hardware_owner_is_subscribed_to_bug=False,
-                    hardware_is_linked_to_bug=False):
+                    hardware_is_linked_to_bug=False, linked_branches=None,
+                    linked_blueprints=None, modified_since=None,
+                    created_since=None, created_before=None,
+                    information_type=None):
         """See `IHasBugs`."""
         if status is None:
             # If no statuses are supplied, default to the
@@ -79,109 +86,19 @@ class HasBugsBase:
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for a specific target."""
-        raise NotImplementedError
+        raise NotImplementedError(self._customizeSearchParams)
 
-    def _getBugTaskContextWhereClause(self):
-        """Return an SQL snippet to filter bugtasks on this context."""
-        raise NotImplementedError
+    def getBugSummaryContextWhereClause(self):
+        """Return a storm clause to filter bugsummaries on this context.
 
-    def _getBugTaskContextClause(self):
-        """Return a SQL clause for selecting this target's bugtasks."""
-        raise NotImplementedError(self._getBugTaskContextClause)
+        :return: Either a storm clause to filter bugsummaries, or False if
+            there cannot be any matching bug summaries.
+        """
+        raise NotImplementedError(self.getBugSummaryContextWhereClause)
 
-    @property
-    def closed_bugtasks(self):
-        """See `IHasBugs`."""
-        closed_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user,
-            status=any(*RESOLVED_BUGTASK_STATUSES),
-            omit_dupes=True)
-
-        return self.searchTasks(closed_tasks_query)
-
-    @property
-    def open_bugtasks(self):
-        """See `IHasBugs`."""
-        open_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES),
-            omit_dupes=True)
-
-        return self.searchTasks(open_tasks_query)
-
-    @property
-    def new_bugtasks(self):
-        """See `IHasBugs`."""
-        open_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user, status=BugTaskStatus.NEW,
-            omit_dupes=True)
-
-        return self.searchTasks(open_tasks_query)
-
-    @property
-    def critical_bugtasks(self):
-        """See `IHasBugs`."""
-        critical_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user,
-            importance=BugTaskImportance.CRITICAL,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES),
-            omit_dupes=True)
-
-        return self.searchTasks(critical_tasks_query)
-
-    @property
-    def inprogress_bugtasks(self):
-        """See `IHasBugs`."""
-        inprogress_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user, status=BugTaskStatus.INPROGRESS,
-            omit_dupes=True)
-
-        return self.searchTasks(inprogress_tasks_query)
-
-    @property
-    def unassigned_bugtasks(self):
-        """See `IHasBugs`."""
-        unassigned_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user, assignee=NULL,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES), omit_dupes=True)
-
-        return self.searchTasks(unassigned_tasks_query)
-
-    @property
-    def all_bugtasks(self):
-        """See `IHasBugs`."""
-        all_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user,
-            status=not_equals(BugTaskStatus.UNKNOWN))
-
-        return self.searchTasks(all_tasks_query)
-
-    def getBugCounts(self, user, statuses=None):
-        """See `IHasBugs`."""
-        if statuses is None:
-            statuses = BugTaskStatus.items
-        statuses = list(statuses)
-
-        count_column = """
-            COUNT (CASE WHEN BugTask.status = %s
-                        THEN BugTask.id ELSE NULL END)"""
-        select_columns = [count_column % sqlvalues(status)
-                          for status in statuses]
-        conditions = [
-            '(%s)' % self._getBugTaskContextClause(),
-            'BugTask.bug = Bug.id',
-            'Bug.duplicateof is NULL']
-        privacy_filter = get_bug_privacy_filter(user)
-        if privacy_filter:
-            conditions.append(privacy_filter)
-
-        cur = cursor()
-        cur.execute(
-            "SELECT %s FROM BugTask, Bug WHERE %s" % (
-                ', '.join(select_columns), ' AND '.join(conditions)))
-        counts = cur.fetchone()
-        return dict(zip(statuses, counts))
-
+    def getBugTaskWeightFunction(self):
+        """Default weight function is the simple one."""
+        return simple_weight_calculator
 
 
 class BugTargetBase(HasBugsBase):
@@ -190,32 +107,54 @@ class BugTargetBase(HasBugsBase):
     All IBugTargets should inherit from this class.
     """
 
+    # The default implementation of the property, used for
+    # IDistribution, IDistroSeries, IProjectGroup.
+    enable_bugfiling_duplicate_search = True
+
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
+                                     include_tags=None):
+        """See IBugTarget."""
+        from lp.bugs.model.bug import get_bug_tags_open_count
+        return get_bug_tags_open_count(
+            self.getBugSummaryContextWhereClause(),
+            user, tag_limit=tag_limit, include_tags=include_tags)
+
+    def createBug(self, params):
+        """See IBugTarget."""
+        # createBug will raise IllegalTarget for ISeriesBugTargets and
+        # IProjectGroup.
+        params.target = self
+        return getUtility(IBugSet).createBug(params)
+
 
 class OfficialBugTagTargetMixin:
     """See `IOfficialBugTagTarget`.
 
-    This class is inteneded to be used as a mixin for the classes
-    Distribution, Product and Project, which can define official
+    This class is intended to be used as a mixin for the classes
+    Distribution, Product and ProjectGroup, which can define official
     bug tags.
 
-    Using this call in Project requires a fix of bug 341203, see
+    Using this call in ProjectGroup requires a fix of bug 341203, see
     below, class OfficialBugTag.
+
+    See also `Bug.official_bug_tags` which calculates this efficiently for
+    a single bug.
     """
 
-    def _getOfficialTags(self):
-        """Get the official bug tags as a sorted list of strings."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    def _getOfficialTagClause(self):
         if IDistribution.providedBy(self):
-            target_clause = (OfficialBugTag.distribution == self)
+            return (OfficialBugTag.distribution == self)
         elif IProduct.providedBy(self):
-            target_clause = (OfficialBugTag.product == self)
+            return (OfficialBugTag.product == self)
         else:
             raise AssertionError(
                 '%s is not a valid official bug target' % self)
-        tags = [
-            obt.tag for obt
-            in store.find(OfficialBugTag, target_clause).order_by('tag')]
-        return tags
+
+    def _getOfficialTags(self):
+        """Get the official bug tags as a sorted list of strings."""
+        target_clause = self._getOfficialTagClause()
+        return list(IStore(OfficialBugTag).find(
+            OfficialBugTag.tag, target_clause).order_by(OfficialBugTag.tag))
 
     def _setOfficialTags(self, tags):
         """Set the official bug tags from a list of strings."""
@@ -235,13 +174,9 @@ class OfficialBugTagTargetMixin:
 
         If the tag is not defined for this target, None is returned.
         """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        if IDistribution.providedBy(self):
-            target_clause = (OfficialBugTag.distribution == self)
-        else:
-            target_clause = (OfficialBugTag.product == self)
-        return store.find(
-            OfficialBugTag, OfficialBugTag.tag==tag, target_clause).one()
+        target_clause = self._getOfficialTagClause()
+        return IStore(OfficialBugTag).find(
+            OfficialBugTag, OfficialBugTag.tag == tag, target_clause).one()
 
     def addOfficialBugTag(self, tag):
         """See `IOfficialBugTagTarget`."""
@@ -250,15 +185,14 @@ class OfficialBugTagTargetMixin:
         if self._getTag(tag) is None:
             new_tag = OfficialBugTag()
             new_tag.tag = tag
-            new_tag.target = IMasterObject(self)
-            IMasterStore(OfficialBugTag).add(new_tag)
+            new_tag.target = self
+            IStore(OfficialBugTag).add(new_tag)
 
     def removeOfficialBugTag(self, tag):
         """See `IOfficialBugTagTarget`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         tag = self._getTag(tag)
         if tag is not None:
-            store.remove(tag)
+            IStore(OfficialBugTag).remove(tag)
 
 
 class OfficialBugTag(Storm):
@@ -302,4 +236,3 @@ class OfficialBugTag(Storm):
                 'IDistribution instance or an IProduct instance.')
 
     target = property(target, _settarget, doc=target.__doc__)
-

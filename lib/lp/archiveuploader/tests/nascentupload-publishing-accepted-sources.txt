@@ -1,4 +1,5 @@
-= Publishing ACCEPTED Sources =
+Publishing ACCEPTED Sources
+===========================
 
 As recently requested in bug #77853, successfully source-only uploads,
 i.e, those uploads that only include a source package and were
@@ -51,14 +52,13 @@ Check if the publication is available through the Soyuz package stack:
 Also check if the Soyuz archive file lookup can reach one of the
 just-published file:
 
-    >>> ubuntu.getFileByName('ed_0.2.orig.tar.gz', source=True, binary=False)
+    >>> ubuntu.main_archive.getFileByName('ed_0.2.orig.tar.gz')
     <LibraryFileAlias...>
 
 We have to commit in order to have new Librarian files available to
 server by Librarian Server:
 
-    >>> from canonical.database.sqlbase import commit
-    >>> commit()
+    >>> transaction.commit()
 
 Now let's submit a new source version of ed (0.2-21) which will be
 automatically accepted and published resulting in a PackageUpload
@@ -102,6 +102,6 @@ available via the package stack:
 
 Same happens for the archive file lookup:
 
-    >>> ubuntu.getFileByName('ed_0.2-21.dsc', source=True, binary=False)
+    >>> ubuntu.main_archive.getFileByName('ed_0.2-21.dsc')
     <LibraryFileAlias...>
 

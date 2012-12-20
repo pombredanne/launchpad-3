@@ -1,8 +1,9 @@
-= Translations Relicensing =
+Translations Relicensing
+========================
 
 When Karl visits +translate page for the first time, he is sent
 to a form to indicate whether he agrees to license his translations
-under the revised BSD license.
+under the revised BSD licence.
 
     >>> browser = setupBrowser(auth='Basic karl@canonical.com:test')
     >>> browser.open('http://translations.launchpad.dev/alsa-utils/trunk/'
@@ -14,10 +15,10 @@ Karl realises that he is not on the translate page, he can see that
 that this page has information about relicensing.
 
     >>> print browser.title
-    Translations licensing
+    Licensing : Translations...
     >>> print extract_text(find_main_content(browser.contents))
-    Overview / Translations licensing / ...
-    Sorry to interrupt...
+    Translations licensing by Karl Tilbury
+    ...
 
 Karl is asked whether he wants to license his translations.
 
@@ -33,11 +34,10 @@ Karl chooses "no".
     >>> radiobuttons.value = ['REMOVE']
     >>> browser.getControl("Confirm").click()
 
-Karl sees a notice that his translations will be removed in the near
-future.
+Karl sees a notice acknowledging his choice.
 
     >>> get_feedback_messages(browser.contents)
-    [u'We respect your choice. Your translations will be removed...']
+    [u'We respect your choice...']
 
 He's also forwarded back to the Spanish alsa-utils translations page.
 
@@ -47,23 +47,13 @@ He's also forwarded back to the Spanish alsa-utils translations page.
 However, this page is now read-only for Karl, and there are no textareas
 nor input boxes available.
 
-    >>> main_content = find_tag_by_id(browser.contents, 'messages_to_translate')
+    >>> main_content = find_tag_by_id(
+    ...     browser.contents, 'messages_to_translate')
     >>> for textarea in main_content.findAll('textarea'):
     ...     print 'Found textarea:\n%s' % textarea
 
     >>> for input in main_content.findAll('input'):
     ...     print 'Found input:\n%s' % input
-
-Karl is also denied submitting a POST request.
-
-    >>> print http(r"""
-    ... POST /alsa-utils/trunk/+pots/alsa-utils/es/+translate HTTP/1.1
-    ... Host: translations.launchpad.dev
-    ... """)
-    HTTP/1.1 500 Internal Server Error
-    ...
-    ...UnexpectedFormData: Anonymous users or users who are not accepting
-    our licensing terms cannot do POST submissions...
 
 Karl changes his mind. He returns to the licensing page.
 
@@ -72,7 +62,7 @@ Karl changes his mind. He returns to the licensing page.
     >>> browser.url
     'http://translations.launchpad.dev/~karl/+licensing'
     >>> print browser.title
-    Translations licensing
+    Licensing : Translations...
 
 Karl sees that the current value is 'no', which he set before.
 
@@ -94,11 +84,13 @@ Karl can now browse to a +translate page without being forwarded.
     ...              '+pots/alsa-utils/es/+translate')
     >>> browser.url
     'http://.../alsa-utils/trunk/+pots/alsa-utils/es/+translate'
-    >>> browser.title
-    'Translating alsa-utils in alsa-utils trunk into Spanish'
+    >>> print browser.title
+    Spanish (es) : Template ...alsa-utils... : Translations :
+    Series trunk : alsa-utils
 
 
-== Permissions ==
+Permissions
+-----------
 
 If another logged-in user comes across Karl's translations page, he sees
 no link to change Karl's licensing choice.

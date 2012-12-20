@@ -3,7 +3,7 @@
 
 # pylint: disable-msg=E0211,E0213
 
-"""Interface for objects which have a bug contact."""
+"""Interface for objects which have a bug Supervisor."""
 
 __metaclass__ = type
 
@@ -11,21 +11,18 @@ __all__ = [
     'IHasBugSupervisor',
     ]
 
-from zope.schema import Choice
+from lazr.restful.declarations import exported
+from zope.interface import Interface
 
-from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
-from canonical.launchpad.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
+from lp import _
+from lp.services.fields import PersonChoice
 
 
-class IHasBugSupervisor(IStructuralSubscriptionTarget):
+class IHasBugSupervisor(Interface):
 
-    bug_supervisor = PublicPersonChoice(
+    bug_supervisor = exported(PersonChoice(
         title=_("Bug Supervisor"),
         description=_(
-            "The person or team responsible for bug management."),
-        required=False, vocabulary='ValidPersonOrTeam')
-
-    def setBugSupervisor(self, bug_supervisor, user):
-        """Set the bug contact and create a bug subscription."""
+            "The Launchpad id of the person or team (preferred) responsible "
+            "for bug management."),
+        required=False, vocabulary='ValidPersonOrTeam', readonly=False))

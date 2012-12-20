@@ -7,24 +7,21 @@
   i18n:domain="launchpad"
   >
 <body>
-  <div metal:fill-slot="heading">
-    <h1 tal:content="CONTEXTS/fmt:pagetitle">
-      Private PPA access
-    </h1>
-  </div>
 
   <div metal:fill-slot="main">
     <div class="top-portlet">
       <tal:has_subscriptions condition="view/subscriptions_with_tokens">
         <div id="current_subscriptions">
-          <p>Here's a list of all the private archives to which you have
-             been granted access.
+          <p>All the private archives to which you have
+             been granted access are listed below.
           </p>
           <table summary="CONTEXTS/fmt:pagetitle" id="archive-subscriptions"
             class="listing">
             <thead>
               <tr class="archive-subscription-row">
                 <th>Archive</th>
+                <th>Owner</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -33,12 +30,19 @@
                 <tal:subscription_and_token
                     define="subscription subscription_with_token/subscription;
                             token subscription_with_token/token">
-                <td tal:content="subscription/archive/displayname"
-                    class="ppa_display_name">Private PPA for Celso
+                <td class="ppa_display_name">
+                  <tal:display_name content="subscription/archive/displayname">
+                    Private PPA for Celso
+                  </tal:display_name>
+                  (<tal:reference content="subscription/archive/fmt:reference">
+                    ppa:cprov/ppa</tal:reference>)
+                </td>
+                <td><tal:owner content="structure subscription/archive/owner/fmt:link">
+                        Celso Providelo</tal:owner>
                 </td>
                 <td>
                   <tal:active condition="token">
-                    <a tal:attributes="href subscription/fmt:url" class="info">
+                    <a tal:attributes="href subscription/fmt:url" class="sprite info">
                       View
                     </a>
                   </tal:active>

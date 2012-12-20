@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """OpenID adapters and helpers."""
@@ -10,14 +10,21 @@ __all__ = [
     'OpenIDPersistentIdentity',
     ]
 
-from zope.component import adapter, adapts
-from zope.interface import implementer, implements
-from zope.security.proxy import removeSecurityProxy
+from zope.component import (
+    adapter,
+    adapts,
+    )
+from zope.interface import (
+    implementer,
+    implements,
+    )
 
-from canonical.launchpad.interfaces.account import IAccount
-from canonical.launchpad.webapp.vhosts import allvhosts
-from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 from lp.registry.interfaces.person import IPerson
+from lp.services.database.lpstorm import IStore
+from lp.services.identity.interfaces.account import IAccount
+from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.services.webapp.vhosts import allvhosts
 
 
 class CurrentOpenIDEndPoint:
@@ -47,17 +54,25 @@ class OpenIDPersistentIdentity:
     @property
     def openid_identity_url(self):
         """See `IOpenIDPersistentIdentity`."""
+        openid_identifier = self.openid_identifier
+        if openid_identifier is None:
+            return None
         identity_root_url = allvhosts.configs['openid'].rooturl
-        return identity_root_url + self.openid_identifier.encode('ascii')
+        return identity_root_url + openid_identifier.encode('ascii')
 
     @property
     def openid_identifier(self):
         """See `IOpenIDPersistentIdentity`."""
-        # The account is very restricted.
-        token = removeSecurityProxy(self.account).openid_identifier
-        if token is None:
+        # We might have multiple OpenID identifiers linked to an
+        # account. We just use the first one which is good enough
+        # for our purposes.
+        identifier = IStore(OpenIdIdentifier).find(
+            OpenIdIdentifier, account=self.account).order_by(
+                OpenIdIdentifier.date_created).first()
+        if identifier is None:
             return None
-        return '+id/' + token
+        else:
+            return '+id/' + identifier.identifier
 
 
 @adapter(IPerson)

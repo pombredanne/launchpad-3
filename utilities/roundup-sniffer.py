@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.5
+#!/usr/bin/env python
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -35,17 +35,19 @@ for an example.
 
 __metaclass__ = type
 
+from base64 import urlsafe_b64encode
 import csv
 import optparse
-import sys
-import urllib2
-
-from base64 import urlsafe_b64encode
 from os import mkdir
-from os.path import join, exists
+from os.path import (
+    exists,
+    join,
+    )
 from pprint import pprint
+import sys
 from time import sleep
 from urllib import urlencode
+import urllib2
 
 from BeautifulSoup import BeautifulSoup
 

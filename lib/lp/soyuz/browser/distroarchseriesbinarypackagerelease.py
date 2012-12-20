@@ -4,13 +4,30 @@
 __metaclass__ = type
 
 __all__ = [
+    'DistroArchSeriesBinaryPackageReleaseBreadcrumb',
     'DistroArchSeriesBinaryPackageReleaseNavigation',
     'DistroArchSeriesBinaryPackageReleaseView',
     ]
 
+from lazr.restful.utils import smartquote
+
+from lp.services.webapp import (
+    ApplicationMenu,
+    LaunchpadView,
+    Navigation,
+    )
+from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.soyuz.interfaces.distroarchseriesbinarypackagerelease import (
-    IDistroArchSeriesBinaryPackageRelease)
-from canonical.launchpad.webapp import ApplicationMenu, Navigation
+    IDistroArchSeriesBinaryPackageRelease,
+    )
+
+
+class DistroArchSeriesBinaryPackageReleaseBreadcrumb(Breadcrumb):
+    """A breadcrumb for `DistroArchSeriesBinaryPackageRelease`."""
+
+    @property
+    def text(self):
+        return self.context.version
 
 
 class DistroArchSeriesBinaryPackageReleaseOverviewMenu(ApplicationMenu):
@@ -24,9 +41,12 @@ class DistroArchSeriesBinaryPackageReleaseNavigation(Navigation):
     usedfor = IDistroArchSeriesBinaryPackageRelease
 
 
-class DistroArchSeriesBinaryPackageReleaseView:
+class DistroArchSeriesBinaryPackageReleaseView(LaunchpadView):
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
 
+    @property
+    def page_title(self):
+        return smartquote(self.context.title)

@@ -1,10 +1,12 @@
-= Downloading Source Package Translations =
+Downloading Source Package Translations
+=======================================
 
-Launchpad lets you request a downloadable tarball of all current templates and
-translations for a source package.
+Launchpad lets you request a downloadable tarball of all current
+templates and translations for a source package.
 
 
-== Where to request ==
+Where to request
+----------------
 
 For qualified users (see below), the option is shown in the Translations
 action bar for a source package.  The link is called "Download
@@ -15,21 +17,22 @@ Mark is a qualified user.
     >>> browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla/')
-    >>> download = browser.getLink('Download')
+    >>> download = browser.getLink('download a full tarball')
     >>> download_url = download.url
     >>> download.click()
     >>> print browser.url
     http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla/+export
 
 
-== Authorization ==
+Authorization
+-------------
 
 The option to download a package's full translations is restricted to
 users who are involved in certain ways, in order to keep load to a
 reasonable level.
 
-    >>> from mechanize import LinkNotFoundError
     >>> from zope.security.interfaces import Unauthorized
+    >>> from mechanize import LinkNotFoundError
 
     >>> def can_download_translations(browser):
     ...     """Can browser download full package translations?
@@ -42,7 +45,7 @@ reasonable level.
     ...         'http://translations.launchpad.dev/'
     ...         'ubuntu/hoary/+source/mozilla/')
     ...     try:
-    ...         browser.getLink('Download').click()
+    ...         browser.getLink('download a full tarball').click()
     ...     except LinkNotFoundError:
     ...         see_link = False
     ...     else:
@@ -84,27 +87,28 @@ admin or expert, but he is one of the owners of a translation group.
 
     >>> from zope.component import getUtility
 
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILaunchpadCelebrities, IPersonSet)
+    >>> from lp.testing import login, logout
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
-    >>> # Log in so we can use utilities and the LaunchpadObjectFactory.
     >>> login('foo.bar@canonical.com')
     >>> personset = getUtility(IPersonSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
 
     >>> carlos = personset.getByName('carlos')
-    >>> oofy = factory.makePerson(email='oofy@drones.example.com',
-    ...     name='oofy', password='test', displayname='Oofy Prosser')
+    >>> oofy = factory.makePerson(
+    ...     email='oofy@drones.example.com', name='oofy',
+    ...     displayname='Oofy Prosser')
     >>> rosetta_admins = personset.getByName('rosetta-admins')
-    >>> rosetta_admins.addMember(oofy, carlos)
+    >>> ignored = rosetta_admins.addMember(oofy, carlos)
 
-    >>> gussie = factory.makePerson(email='gussie@drones.example.com',
-    ...     name='gussie', password='test', displayname='Gussie Fink-Nottle')
+    >>> gussie = factory.makePerson(
+    ...     email='gussie@drones.example.com', name='gussie',
+    ...     displayname='Gussie Fink-Nottle')
     >>> translators = factory.makeTeam(gussie)
     >>> group = factory.makeTranslationGroup(translators)
 
-    >>> # Log out so we can go back to using test browsers.
     >>> logout()
 
 Oofy can download translations; Gussie cannot.
@@ -127,39 +131,42 @@ Gussie's translation group takes charge of Ubuntu translations.
 This change gives Gussie the ability to download full package
 translations.
 
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(ubuntu)
     >>> can_download_translations(gussie_browser)
     True
 
-User "cprov" is neither a member of the translation group nor a Rosetta expert.
+User "cprov" is neither a member of the translation group nor a Rosetta
+expert.
 
-    >>> # Log in so we can use utilities and the LaunchpadObjectFactory.
     >>> login('foo.bar@canonical.com')
     >>> cprov = personset.getByName('cprov')
     >>> cprov.inTeam(group.owner)
     False
+
     >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
     >>> cprov.inTeam(rosetta_experts)
     False
+
     >>> logout()
 
 "cprov" is able to download translations as an Ubuntu uploader.
 
-    >>> ubuntu_member_browser = setupBrowser(auth='Basic cprov@ubuntu.com:cprov')
+    >>> ubuntu_member_browser = setupBrowser(
+    ...     auth='Basic cprov@ubuntu.com:test')
     >>> can_download_translations(ubuntu_member_browser)
     True
 
-== Making the request ==
 
-The "Download" link leads to a page that lets the user select an
-export format, and request the download.
+Making the request
+------------------
+
+The "Download" link leads to a page that lets the user select an export
+format, and request the download.
 
     >>> browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'ubuntu/hoary/+source/mozilla/+export')
-    >>> print browser.title
-    Download translations for mozilla in Ubuntu Hoary
+    >>> browser.title
+    'Download : \xe2\x80\x9cmozilla...
 
     >>> browser.getControl('Request Download').click()
 
@@ -171,16 +178,17 @@ export format, and request the download.
     Your request has been received. Expect to receive an email shortly.
 
 
-== Mixed formats ==
+Mixed formats
+-------------
 
 We only support exports in a single, chosen file format.  If the source
-package has templates in different formats, the request page shows a warning
-about this.
+package has templates in different formats, the request page shows a
+warning about this.
 
-Evolution's package in Hoary has two current templates, both with PO as their
-native file format.
+Evolution's package in Hoary has two current templates, both with PO as
+their native file format.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.translations.model.potemplate import POTemplateSubset
     >>> from lp.translations.interfaces.translationfileformat import (
     ...     TranslationFileFormat)
@@ -189,8 +197,9 @@ native file format.
     >>> an_evolution_template = hoary_subset.getPOTemplateByPath(
     ...     'po/evolution-2.2.pot')
 
-If the file format for one of these templates were different from the other's,
-a warning would appear on the export request form that wasn't there before.
+If the file format for one of these templates were different from the
+other's, a warning would appear on the export request form that wasn't
+there before.
 
     >>> browser.open(
     ...     'http://translations.launchpad.dev/'
@@ -209,4 +218,3 @@ a warning would appear on the export request form that wasn't there before.
     This package has templates with different native file formats.  If you
     proceed, all translations will be exported in the single format you
     specify.
-

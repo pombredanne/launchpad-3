@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 <body>
@@ -21,99 +18,121 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Translations settings</h1>
+  <div class="top-portlet">
+    <tal:official_use replace="
+        structure
+        context/product/@@+portlet-not-using-launchpad"/>
+  </div>
 
-  <p
-    class="not-translated-in-launchpad"
-    tal:condition="not: context/product/official_rosetta">
-    <strong>
-      This project is not configured to use Launchpad for translations.
-    </strong>
-    <tal:admin_or_owner condition="context/product/required:launchpad.Edit">
-      You can change this in the
-      <a tal:attributes="href view/product_edit_url">
-        project settings</a>.
-    </tal:admin_or_owner>
-  </p>
+  <div class="yui-g" tal:condition="not: context/product/private">
+    <div class="yui-u first portlet">
+      <div metal:use-macro="context/@@launchpad_form/form" class="portlet">
+        <div metal:fill-slot="extra_info">
 
-  <tal:rosetta condition="context/product/official_rosetta">
-  <h2>Import translations from branch</h2>
-  <p>
-    You can ask Launchpad to continuously import any translation
-    files (templates and translations) that it finds in 
-    <strong><tal:series replace="structure view/series_title">
-      Evolution Series:trunk</tal:series>'s</strong> official Bazaar branch.
-    After the initial import, Launchpad will continue to scan your Bazaar
-    branch for updates to template and translation files.
-  </p>
-  <p id="bzr-request-display">
-    <img src="/@@/info" class="inline-icon" />
-      If you only need a one-time import, please request it 
-    <a tal:attributes="href view/request_bzr_import_url">here</a>.
-  </p>
-  <p tal:condition="view/context/branch"
-     tal:define="branch view/context/branch"
-     id="branch-display">
-    The official Bazaar branch is:
-    <img src="/@@/branch" class="inline-icon" />
-    <a tal:attributes="href branch/fmt:url; title branch/bzr_identity"
-       tal:content="branch/displayname">
-          branchname
-    </a>
-    <a tal:attributes="href view/link_branch_url;
-                       title string:Change official branch"
-                       ><img src="/@@/edit" class="inline-icon" /></a>
-  </p>
-  <p tal:condition="not:view/context/branch"
-     id="no-branch-display">
-    This series does not have an official Bazaar branch. 
-    <a tal:attributes="href view/link_branch_url">Set it now!</a>
-  </p>
-  <div metal:use-macro="context/@@launchpad_form/form"></div>
+          <tal:rosetta>
+            <h2>Import translations from branch</h2>
+            <p>
+              Launchpad can continuously import translation files (templates and
+              translations) from <strong><tal:series replace="structure view/series_title">
+              Evolution Series:trunk</tal:series>'s</strong> official Bazaar branch.
+            </p>
 
-  <h2>Export translations to branch</h2>
-  <p>
-    Launchpad can commit daily snapshots of the translations for this
-    release series to a code branch.
-  </p>
-  <p>
-    Use this to make it easy to download the latest translations using
-    Bazaar, or to make sure the latest Launchpad translations are always
-    included with the files you distribute.
-  </p>
-  <p>
-    <strong>Warning:</strong> This may replace translation files that are
-    already in the branch you choose.  You should consider creating a
-    separate branch where Launchpad can commit translations.
-  </p>
+            <p>
+              Launchpad will make an initial import and then update its data
+              every time you push a new revision to the branch. There is a
+              short delay between a push and the files appearing in the import
+              queue.
+              (<a tal:attributes="href context/menu:navigation/imports/url">See
+              the import queue</a>)
+            </p>
 
-  <p id="translations-branch">
-    <tal:no-translations-branch condition="not: context/translations_branch">
-      Currently not exporting translations to a branch.
-      <a href="+link-translations-branch">
-        Choose a target branch.
-        <img src="/@@/edit" class="inline-icon" alt="edit" />
-      </a>
-    </tal:no-translations-branch>
-    <tal:translations-branch condition="context/translations_branch">
-      Exporting translations to branch:
-      <img src="/@@/branch" class="inline-icon" />
-      <a
-        id="translations-branch-link"
-        tal:attributes="href context/translations_branch/fmt:url;
-                        title string:Change translations export branch"
-        tal:content="context/translations_branch/displayname"
-        >branch name</a>
-      <a
-        id="translations-branch-edit-link"
-        tal:attributes="href string:+link-translations-branch;
-                        title string:Set translations export branch"
-        ><img src="/@@/edit" class="inline-icon" alt="edit" /></a>
-  
-    </tal:translations-branch>
-  </p>
+            <p>
+              When preparing the translation files in your Bazaar branch, you must
+              follow our <a href="https://help.launchpad.net/Translations/YourProject/ImportPolicy"
+              >translations import policy</a>. At a minimum, your branch must:
+            </p>
 
-  </tal:rosetta>
+            <ul class="bulleted">
+              <li>
+                contain at least one <code>.pot</code> file with English strings,
+                rather than message IDs or another language
+              </li>
+              <li>
+                give each template its own directory (<a
+                href="/+help-translations/directory-example.html" target="help">see
+                an example directory layout</a>).
+              </li>
+            </ul>
+
+            <p id="bzr-request-display">
+              <a class="info sprite"
+                tal:attributes="href view/request_bzr_import_url">You can
+                request a one-time import</a>.
+            </p>
+
+            <p tal:condition="view/context/branch"
+               tal:define="branch view/context/branch"
+               id="branch-display">
+              The official Bazaar branch is:
+              <a tal:replace="structure branch/fmt:link">branch</a>
+              <a tal:attributes="href view/set_branch_url;
+                                 title string:Change official branch"
+                 ><span class="edit sprite" /></a>
+            </p>
+            <p tal:condition="not:view/context/branch"
+               id="no-branch-display">
+              This series does not have an official Bazaar branch.
+              <a tal:attributes="href view/set_branch_url">Set it now!</a>
+            </p>
+          </tal:rosetta>
+        </div>
+      </div>
+    </div>
+    <div class="yui-u">
+      <div class="portlet">
+
+	<h2>Export translations to branch</h2>
+	<p>
+	  Launchpad can commit daily snapshots of the translations for this
+	  release series to a code branch.
+	</p>
+	<p>
+	  Use this to make it easy to download the latest translations using
+	  Bazaar, or to make sure the latest Launchpad translations are always
+	  included with the files you distribute.
+	</p>
+	<p>
+	  <strong>Warning:</strong> This may replace translation files that are
+	  already in the branch you choose.  You should consider creating a
+	  separate branch where Launchpad can commit translations.
+	</p>
+
+	<p id="translations-branch">
+	  <tal:no-translations-branch condition="not: context/translations_branch">
+	    Currently not exporting translations to a branch.
+	    <a href="+link-translations-branch">
+              Choose a target branch.
+              <span class="edit sprite" alt="edit" />
+	    </a>
+	  </tal:no-translations-branch>
+	  <tal:translations-branch condition="context/translations_branch">
+	    Exporting translations to branch:
+            <span id="translations-branch-link">
+	      <a tal:replace="structure context/translations_branch/fmt:link"
+                 >branch name</a>
+	      <a class="edit sprite"
+                 id="translations-branch-edit-link"
+                 tal:attributes="href string:+link-translations-branch;
+                                 title string:Set translations export branch"
+                 ></a>
+            </span>
+	  </tal:translations-branch>
+	</p>
+
+      </div>
+    </div>
+  </div>
+
 </div>
 
 </body>

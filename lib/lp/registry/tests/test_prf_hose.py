@@ -8,9 +8,11 @@ import shutil
 import tempfile
 import unittest
 
-from canonical.testing import reset_logging
 from lp.codehosting.codeimport.tests.helpers import (
-    instrument_method, InstrumentedMethodObserver)
+    instrument_method,
+    InstrumentedMethodObserver,
+    )
+from lp.testing import reset_logging
 
 
 class Hose_Logging(unittest.TestCase):
@@ -187,7 +189,3 @@ class Hose_LimitWalk(unittest.TestCase):
         self.assertEqual(sorted(unmatched),
                          ['/foo/1.0/foo-1.0.tar.gz',
                           '/foo/1.0/source/foo-2.0.tar.gz'])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -15,14 +15,15 @@ feature in 'DistroArchSeries Actions'.
     >>> anon_browser.getLink('4.10').click()
     >>> anon_browser.getLink('i386').click()
 
-    >>> anon_browser.title
-    'The Warty Warthog Release for i386 (x86) in Launchpad'
+    >>> print anon_browser.title
+    i386 : Warty (4.10) : Ubuntu
 
 We present only minimal information in this page, its main feature is
 to allow binary package searching.
 
     >>> print extract_text(find_main_content(anon_browser.contents))
     Ubuntu Warty for i386
+    ...
     Search binary packages
     This archive contains 5 software packages.
     Details for Ubuntu Warty i386
@@ -53,10 +54,12 @@ More details are available by clicking on the binary package name.
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'search-results'))
     1 &rarr; 3 of 3 results
-    First &#149; Previous &#149; Next &#149; Last
+    First &bull; Previous &bull; Next &bull; Last
     mozilla-firefox: Mozilla Firefox Web Browser
     mozilla-firefox-data: Mozilla Firefox Data
     mozilla-firefox: ff from iceweasel
+    1 &rarr; 3 of 3 results
+    First &bull; Previous &bull; Next &bull; Last
 
 A search may yield no result. In this case, we describe the search
 that was done, and explain that no matches were found.
@@ -155,17 +158,15 @@ current distroseries architecture list.
 
     >>> def check_arch_list(distroseries='warty'):
     ...     anon_browser.open("http://launchpad.dev/ubuntu/%s" % distroseries)
-    ...     for arch in find_tags_by_class(
-    ...         anon_browser.contents, 'architecture'):
-    ...         print extract_text(arch)
+    ...     print extract_text(find_tag_by_id(
+    ...         anon_browser.contents, 'portlet-architectures-list'))
 
 Since we disabled ppa-support for warty/i386, it's now presented as
 'official' only.
 
     >>> check_arch_list()
     i386
-    hppa
-    (unofficial)
+    hppa (unofficial)
 
 Re-enabling the PPA support on warty/i386 has immediate effects in the
 way this distroarchseries is presented.
@@ -175,8 +176,7 @@ way this distroarchseries is presented.
 
     >>> check_arch_list()
     i386
-    hppa
-    (unofficial)
+    hppa (unofficial)
 
 The same effect is observed when we make warty/i386 unofficial.
 
@@ -185,10 +185,8 @@ The same effect is observed when we make warty/i386 unofficial.
     >>> admin_browser.getControl("Change").click()
 
     >>> check_arch_list()
-    hppa
-    (unofficial)
-    i386
-    (unofficial)
+    hppa (unofficial)
+    i386 (unofficial)
 
 
 == Creating a new DistroArchSeries ==
@@ -198,8 +196,8 @@ architectures in this DistroSeries.
 
     >>> admin_browser.open("http://launchpad.dev/ubuntu/hoary")
     >>> admin_browser.getLink("Add architecture").click()
-    >>> admin_browser.title
-    'Add a port of The Hoary Hedgehog Release'
+    >>> print admin_browser.title
+    Add a port of The Hoary Hedgehog...
 
 Ubuntu hoary already has i386 & hppa distroarchseries and should not
 allow duplications.
@@ -250,8 +248,8 @@ An administrator can open new distinct architecture, for instance,
 When the new architecture has been created, it is displayed to the
 administrator.
 
-    >>> admin_browser.title
-    'The Hoary Hedgehog Release for amd64 (amd64) in Launchpad'
+    >>> print admin_browser.title
+    amd64 : Hoary (5.04) : Ubuntu
 
 And other users can see the just-created architecture listed in the
 distroseries page.

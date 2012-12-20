@@ -5,11 +5,12 @@
 
 __metaclass__ = type
 
-import unittest
+from zope.interface.verify import verifyObject
 
-from canonical.testing import DatabaseFunctionalLayer
 from lp.code.interfaces.hasbranches import IHasMergeProposals
+from lp.registry.model.personproduct import PersonProduct
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestIHasMergeProposals(TestCaseWithFactory):
@@ -28,11 +29,17 @@ class TestIHasMergeProposals(TestCaseWithFactory):
         self.assertProvides(person, IHasMergeProposals)
 
     def test_project_implements_hasmergeproposals(self):
-        # Projects should implement IHasMergeProposals.
+        # ProjectGroups should implement IHasMergeProposals.
         project = self.factory.makeProject()
         self.assertProvides(project, IHasMergeProposals)
 
+    def test_PersonProduct_implements_hasmergeproposals(self):
+        # PersonProducts should implement IHasMergeProposals.
+        product = self.factory.makeProduct()
+        person_product = PersonProduct(product.owner, product)
+        verifyObject(IHasMergeProposals, person_product)
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-
+    def test_DistributionSourcePackage_implements_hasmergeproposals(self):
+        # DistributionSourcePackages should implement IHasMergeProposals.
+        dsp = self.factory.makeDistributionSourcePackage()
+        verifyObject(IHasMergeProposals, dsp)

@@ -11,10 +11,18 @@ __all__ = [
     'ISprintAttendance',
     ]
 
-from zope.interface import Interface
-from zope.schema import Choice, Datetime
-from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    )
+
+from lp import _
+from lp.services.fields import PublicPersonChoice
 
 
 class ISprintAttendance(Interface):
@@ -22,6 +30,7 @@ class ISprintAttendance(Interface):
 
     attendee = PublicPersonChoice(
         title=_('Attendee'), required=True, vocabulary='ValidPersonOrTeam')
+    attendeeID = Attribute('db attendee value')
     sprint = Choice(title=_('The Sprint'), required=True,
         vocabulary='Sprint',
         description=_("Select the meeting from the list presented above."))
@@ -33,4 +42,9 @@ class ISprintAttendance(Interface):
         "Please ensure the time reflects accurately "
         "when you will no longer be available for sessions at this event, to "
         "assist those planning the schedule."))
-
+    is_physical = Bool(
+        title=_("How will you be attending?"),
+        description=_(
+            "True, you will be physically present, "
+            "or false, you will be remotely present."),
+        required=False, readonly=False, default=True)

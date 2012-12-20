@@ -30,9 +30,9 @@
     <div class="top-portlet">
       <h2>Search binary packages</h2>
 
-      <p class="discreet">
+      <p>
         This archive contains
-        <strong class="registry-stat" tal:content="context/package_count">bazillions of</strong> software packages.
+        <strong tal:content="context/package_count">bazillions of</strong> software packages.
       </p>
 
       <form name="search" method="GET">

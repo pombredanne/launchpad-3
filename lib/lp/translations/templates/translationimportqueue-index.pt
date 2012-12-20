@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
   <body>
     <metal:css fill-slot="head_epilogue">
@@ -22,14 +19,16 @@
     </metal:css>
 
     <div metal:fill-slot="main">
-      <h1 tal:condition="view/label"
-          tal:content="view/label">
-        Translation files waiting to be imported in Launchpad
-      </h1>
-
       <p id="description">
-        These translation related entries are imported, blocked, deleted or
-        waiting to be imported in Launchpad.
+        These are translation files that have been imported, blocked, deleted or
+        are waiting to be imported in Launchpad.
+      </p>
+      <p>
+        If your import is taking longer than you'd expect, <a href="
+        https://answers.launchpad.net/rosetta/+addquestion"
+        >contact us</a>.
+        (<a href="/+help-translations/successful-imports.html" target="help">Learn
+        more about getting a successful import</a>)
         <tal:login condition="not:request/lp:person">
           <a href="+login">Log in</a> to change items in this list.
         </tal:login>

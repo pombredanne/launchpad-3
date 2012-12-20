@@ -13,15 +13,9 @@
 
     <tal:block condition="context/poll/isNotYetOpened">
       <div metal:use-macro="context/@@launchpad_form/form">
-
-        <h1 metal:fill-slot="heading">
-          Edit option 
-          &#8220;<span tal:replace="context/name" />&#8221;
-        </h1>
-
       </div>
     </tal:block>
-    
+
     <tal:block condition="not: context/poll/isNotYetOpened">
       <p class="error message" tal:condition="context/poll/isClosed">
         You can&#8217;t edit any options because the poll is already closed.

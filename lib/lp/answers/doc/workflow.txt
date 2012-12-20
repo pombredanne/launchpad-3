@@ -1,11 +1,13 @@
-= Answer Tracker Workflow =
+=======================
+Answer tracker workflow
+=======================
 
-The state of a question is tracked through its status attribute.
-Six statuses are used to model a question lifecycle. These are defined
-in the QuestionStatus enumeration.
+The state of a question is tracked through its status, which model a
+question's lifecycle.  These are defined in the QuestionStatus enumeration.
 
-    >>> from canonical.launchpad.interfaces import QuestionStatus
-    >>> print "\n".join([status.name for status in QuestionStatus.items])
+    >>> from lp.answers.enums import QuestionStatus
+    >>> for status in QuestionStatus.items:
+    ...     print status.name
     OPEN
     NEEDSINFO
     ANSWERED
@@ -13,11 +15,12 @@ in the QuestionStatus enumeration.
     EXPIRED
     INVALID
 
-Status change occurs in consequence of a user action. The possible
+Status change occurs as a consequence of a user's action.  The possible
 actions are defined in the QuestionAction enumeration.
 
-    >>> from canonical.launchpad.interfaces import QuestionAction
-    >>> print "\n".join([status.name for status in QuestionAction.items])
+    >>> from lp.answers.enums import QuestionAction
+    >>> for status in QuestionAction.items:
+    ...     print status.name
     REQUESTINFO
     GIVEINFO
     COMMENT
@@ -28,19 +31,18 @@ actions are defined in the QuestionAction enumeration.
     REOPEN
     SETSTATUS
 
-There is a method available to execute each of these defined actions.
+Each defined action can be executed.
 
-Let's define the actors that we are going to use to demonstrate the
-Answer Tracker workflow. The 'No Privileges Person' will be the
-submitter of questions, 'Sample Person' will be an answer contact for
-the Ubuntu distribution, and 'Marilize Coetze' will be another user
-providing support. Stub is a launchpad administrator that isn't also in
-the Ubuntu Team that owns the distribution.
+No Privileges Person is the submitter of questions.  Sample Person is an
+answer contact for the Ubuntu distribution.  Marilize Coetze is another user
+providing support.  Stub is a Launchpad administrator that isn't also in the
+Ubuntu Team owning the distribution.
 
     >>> login('no-priv@canonical.com')
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, ILanguageSet, IPersonSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
 
     >>> personset = getUtility(IPersonSet)
     >>> sample_person = personset.getByEmail('test@canonical.com')
@@ -51,7 +53,7 @@ the Ubuntu Team that owns the distribution.
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> english = getUtility(ILanguageSet)['en']
     >>> sample_person.addLanguage(english)
-    >>> ubuntu.addAnswerContact(sample_person)
+    >>> ubuntu.addAnswerContact(sample_person, sample_person)
     True
 
     # Sanity check: the admin isn't in the team owning the distribution.
@@ -63,28 +65,31 @@ A question starts its lifecycle in the Open state.
     >>> from datetime import datetime, timedelta
     >>> from pytz import UTC
     >>> now = datetime.now(UTC)
-    >>> new_question_args = {
-    ...     'owner': no_priv,
-    ...     'title': 'Unable to boot installer',
-    ...     'description': "I've tried installing Ubuntu on a Mac. "
-    ...     "But the installer never boots.",
-    ...     'datecreated': now}
+    >>> new_question_args = dict(
+    ...     owner=no_priv,
+    ...     title='Unable to boot installer',
+    ...     description="I've tried installing Ubuntu on a Mac. "
+    ...                 "But the installer never boots.",
+    ...     datecreated=now,
+    ...     )
     >>> question = ubuntu.newQuestion(**new_question_args)
     >>> print question.status.title
     Open
 
-From there, we have four representative scenarios.
+The following scenarios are now possible.
 
-== 1) Another user helps the submitter with his question ==
 
-The most common scenario is where another user comes to help the
-submitter and answers his question. This may involve exchanging
-information with the submitter to clarify the question.
+1) Another user helps the submitter with his question
+=====================================================
 
-The requestInfo() method is used to ask the user for more information.
-This method takes two mandatory parameters: the user making the question
-and his question. It can also takes a 'datecreated' parameter specifying
-the creation date of the question (which defaults to now).
+The most common scenario is where another user comes to help the submitter and
+answers his question.  This may involve exchanging information with the
+submitter to clarify the question.
+
+The requestInfo() method is used to ask the user for more information.  This
+method takes two mandatory parameters: the user asking the question and his
+question.  It can also takes a 'datecreated' parameter specifying the creation
+date of the question (which defaults to 'now').
 
     >>> question = ubuntu.newQuestion(**new_question_args)
     >>> now_plus_one_hour = now + timedelta(hours=1)
@@ -92,11 +97,11 @@ the creation date of the question (which defaults to now).
     ...     sample_person, 'What is your Mac model?',
     ...     datecreated=now_plus_one_hour)
 
-It returns the IQuestionMessage that was added to the question messages
-history:
+We now have the IQuestionMessage that was added to the question messages
+history.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import IQuestionMessage
+    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.answers.interfaces.questionmessage import IQuestionMessage
     >>> verifyObject(IQuestionMessage, request_message)
     True
     >>> request_message == question.messages[-1]
@@ -106,9 +111,8 @@ history:
     >>> print request_message.owner.displayname
     Sample Person
 
-The question message contains the action that was executed in the action
-attribute and the status of the question after the action was executed in
-the new_status attribute:
+The question message contains the action that was executed and the status of
+the question after the action was executed.
 
     >>> print request_message.action.name
     REQUESTINFO
@@ -118,13 +122,13 @@ the new_status attribute:
     >>> print request_message.text_contents
     What is your Mac model?
 
-The subject of the message was generated automatically:
+The subject of the message was generated automatically.
 
     >>> print request_message.subject
     Re: Unable to boot installer
 
-The question is moved to the NEEDSINFO state and the datelastresponse
-attribute is updated to the message timestamp.
+The question is moved to the NEEDSINFO state and the last response date is
+updated to the message's timestamp.
 
     >>> print question.status.name
     NEEDSINFO
@@ -148,33 +152,35 @@ method which adds an IQuestionMessage with action GIVEINFO.
     >>> print reply_message.owner.displayname
     No Privileges Person
 
-The question is moved back to the OPEN state and the 'datelastquery'
-attribute is updated to the message's creation date:
+The question is moved back to the OPEN state and the last query date is
+updated to the message's creation date.
 
     >>> print question.status.name
     OPEN
     >>> question.datelastquery == now_plus_two_hours
     True
 
-The other user has now enough information to give an answer to the
-question. The giveAnswer() method is used for that purpose. Like the
-requestInfo() method, it takes two mandatory parameters: the user
-providing the answer and the answer itself.
+Now, the other user has enough information to give an answer to the question.
+The giveAnswer() method is used for that purpose.  Like the requestInfo()
+method, it takes two mandatory parameters: the user providing the answer and
+the answer itself.
 
     >>> login('test@canonical.com')
     >>> now_plus_three_hours = now + timedelta(hours=3)
     >>> answer_message = question.giveAnswer(
-    ...     sample_person, "You need some configuration on the Mac side "
+    ...     sample_person,
+    ...     "You need some configuration on the Mac side "
     ...     "to boot the installer on that model. Consult "
     ...     "https://help.ubuntu.com/community/Installation/OldWorldMacs "
-    ...     "for all the details.", datecreated=now_plus_three_hours)
+    ...     "for all the details.",
+    ...     datecreated=now_plus_three_hours)
     >>> print answer_message.action.name
     ANSWER
     >>> print answer_message.new_status.name
     ANSWERED
 
-After that action, the question's status is changed to ANSWERED and the
-datelastresponse is updated to contain the date of the message.
+The question's status is changed to ANSWERED and the last response date is
+updated to contain the date of the message.
 
     >>> print question.status.name
     ANSWERED
@@ -182,9 +188,8 @@ datelastresponse is updated to contain the date of the message.
     True
 
 At that point, the question is considered answered, but we don't have
-feedback from the user on whether it solved his problem or not. If it
-doesn't the user can reopen the question. The reopen() method is used
-for that purpose.
+feedback from the user on whether it solved his problem or not.  If it
+doesn't, the user can reopen the question.
 
     >>> login('no-priv@canonical.com')
     >>> tomorrow = now + timedelta(days=1)
@@ -200,38 +205,37 @@ for that purpose.
     >>> print reopen_message.owner.displayname
     No Privileges Person
 
-This moves back the question to the OPEN state and the datelastquery
-attribute is updated to the message creation date.
+This moves back the question to the OPEN state and the last query date is
+updated to the message's creation date.
 
     >>> print question.status.name
     OPEN
     >>> question.datelastquery == tomorrow
     True
 
-The giveAnswer() will again be used to give an answer.
+Once again, an answer is given.
 
     >>> login('test@canonical.com')
     >>> tomorrow_plus_one_hour = tomorrow + timedelta(hours=1)
     >>> answer2_message = question.giveAnswer(
-    ...     marilize, "You probably do not have enough RAM to use the "
+    ...     marilize,
+    ...     "You probably do not have enough RAM to use the "
     ...     "graphical installer. You can try the alternate CD with the "
     ...     "text installer.")
 
-This again moves the question to the ANSWERED state.
+The question is moved back to the ANSWERED state.
 
     >>> print question.status.name
     ANSWERED
 
-The question owner will hopefully come back to confirm that his
-problem is solved. He can specify which answer message helped him
-solved his problem. The confirmAnswer() method is used for that
-purpose.
+The question owner will hopefully come back to confirm that his problem is
+solved.  He can specify which answer message helped him solved his problem.
 
     >>> login('no-priv@canonical.com')
     >>> two_weeks_from_now = now + timedelta(days=14)
     >>> confirm_message = question.confirmAnswer(
-    ...     "I upgraded to 512M of RAM (found on eBay) and I've "
-    ...     "succesfully managed to install Ubuntu. Thanks for all the help.",
+    ...     "I upgraded to 512M of RAM (found on eBay) and I've successfully "
+    ...     "managed to install Ubuntu. Thanks for all the help.",
     ...     datecreated=two_weeks_from_now, answer=answer_message)
     >>> print confirm_message.action.name
     CONFIRM
@@ -240,9 +244,9 @@ purpose.
     >>> print confirm_message.owner.displayname
     No Privileges Person
 
-The question is moved to the SOLVED state, the message that solved
-the question is saved in the answer attribute, the date_solved
-and answerer attributes are also updated.
+The question is moved to the SOLVED state, and the message that solved the
+question is saved.  The date the question was solved and answerer are also
+updated.
 
     >>> print question.status.name
     SOLVED
@@ -254,45 +258,43 @@ and answerer attributes are also updated.
     True
 
 
-== 2) Self-answer ==
+2) Self-answering
+=================
 
-Another scenario is for the case when the user comes back to give the
-solution to the question himself. The giveAnswer() method is also used
-for that case. The question owner can choose a best answer message
-later on. The workflow permits the question owner to choose an answer
-before or after the question status is set to SOLVED.
+In this scenario the user comes back to give the solution to the question
+himself.  The question owner can choose a best answer message later on.  The
+workflow permits the question owner to choose an answer before or after the
+question status is set to SOLVED.
 
-The question owner creates a question.
+A new question is posed.
 
     >>> question = ubuntu.newQuestion(**new_question_args)
 
-The question answer provides an answer that eludes to a decision
-the question owner must make.
+The answer provides some useful information to the questioner.
 
     >>> login('test@canonical.com')
     >>> tomorrow_plus_one_hour = tomorrow + timedelta(hours=1)
     >>> alt_answer_message = question.giveAnswer(
-    ...     marilize, "Are you using a pre-G3 Mac? They are very difficult "
+    ...     marilize,
+    ...     "Are you using a pre-G3 Mac? They are very difficult "
     ...     "to install to. You must mess with the hardware to trick "
     ...     "the core chips to let it install. You may not want to do this.")
 
-The question owner logs in, and explains that he has researched the
-problem, and come to a solution.
+The question has researched the problem, and has comes to a solution himself.
 
     >>> login('no-priv@canonical.com')
     >>> self_answer_message = question.giveAnswer(
-    ...     no_priv, "I found some instructions on the Wiki on how to "
+    ...     no_priv,
+    ...     "I found some instructions on the Wiki on how to "
     ...     "install BootX to boot the installation CD on OldWorld Mac: "
     ...     "https://help.ubuntu.com/community/Installation/OldWorldMacs "
     ...     "This is complicated and since it's a very old machine, not "
     ...     "worth the trouble.",
     ...     datecreated=now_plus_one_hour)
 
-In that case, the question owner is considered to have given
-information that the problem is solved and the question is moved to
-the SOLVED state. The 'answerer' attribute will be the question owner,
-the 'date_solved' date of the message, but the 'answer' attribute
-will None.
+The question owner is considered to have given information that the problem is
+solved and the question is moved to the SOLVED state.  The 'answerer'
+will be the question owner.
 
     >>> print self_answer_message.action.name
     CONFIRM
@@ -305,20 +307,20 @@ will None.
     No Privileges Person
     >>> question.date_solved == now_plus_one_hour
     True
-    >>> question.answer is None
-    True
+    >>> print question.answer
+    None
 
-The question owner can still specify which message helped him solved
-his problem. The confirmAnswer() method is used when the question
-owner chooses another user's answer as a best answer. The status
-will remain SOLVED. The 'answerer' attribute will be the message
-owner, and the 'answer' will be the message. The question's
-'date_solved' attribute will be the date of the answer message.
+The question owner can still specify which message helped him solved his
+problem.  The confirmAnswer() method is used when the question owner chooses
+another user's answer as a best answer.  The status will remain SOLVED.  The
+'answerer' will be the message owner, and the 'answer' will be the message.
+The question's solution date will be the date of the answer message.
 
     >>> confirm_message = question.confirmAnswer(
     ...     "Thanks Marilize for your help. I don't think I'll put Ubuntu "
     ...     "Ubuntu on my Mac.",
-    ...     datecreated=now_plus_one_hour, answer=alt_answer_message)
+    ...     datecreated=now_plus_one_hour,
+    ...     answer=alt_answer_message)
     >>> print confirm_message.action.name
     CONFIRM
     >>> print confirm_message.new_status.name
@@ -336,17 +338,18 @@ owner, and the 'answer' will be the message. The question's
     True
 
 
-== 3) The question expires ==
+3) The question expires
+=======================
 
-Another case is when nobody comes to answer the message, either because
-the question is too complex or too vague. These questions can be expired
-by using the expireQuestion() method. (See answer-tracker-expiration.txt
-for the documentation of the cron script handling this task.)
+It is also possible that nobody will answer the question, either because the
+question is too complex or too vague.  These questions are expired by using
+the expireQuestion() method.
 
     >>> login('no-priv@canonical.com')
     >>> question = ubuntu.newQuestion(**new_question_args)
     >>> expire_message = question.expireQuestion(
-    ...     sample_person, "There was no activity on this question for two "
+    ...     sample_person,
+    ...     "There was no activity on this question for two "
     ...     "weeks and this question was expired. If you are still having "
     ...     "this problem you should reopen the question and provide more "
     ...     "information about your problem.",
@@ -356,8 +359,8 @@ for the documentation of the cron script handling this task.)
     >>> print expire_message.new_status.name
     EXPIRED
 
-The question is moved to the EXPIRED state and the 'datelastresponse'
-attribute is updated to the message creation date.
+The question is moved to the EXPIRED state and the last response date is
+updated to the message creation date.
 
     >>> print question.status.name
     EXPIRED
@@ -376,8 +379,8 @@ reopened.
     >>> print reopen_message.action.name
     REOPEN
 
-The question status is changed back to OPEN and the 'datelastquery'
-attribute is updated.
+The question status is changed back to OPEN and the last query date is
+updated.
 
     >>> print question.status.name
     OPEN
@@ -385,22 +388,22 @@ attribute is updated.
     True
 
 
-== 4) The question is invalid ==
+4) The question is invalid
+==========================
 
-Another scenario to handle is the case where the user posts a message
-that isn't really appropriate for the Answer Tracker like a SPAM
+In this scenario the user posts an inappropriate message, such as a spam
 message or a request for Ubuntu CDs.
 
     >>> spam_question = ubuntu.newQuestion(
     ...     no_priv, 'CDs', 'Please send 10 Ubuntu Dapper CDs.',
     ...     datecreated=now)
 
-The reject() method is used for such purpose. Only an answer contact,
-a product or distribution owner, or an administrator can reject a question.
+Such questions can be rejected by an answer contact, a product or distribution
+owner, or a Launchpad administrator.
 
-The canReject() method can be used to test if a user is allowed to
-reject the question. It takes as parameter the user who would reject the
-question:
+The canReject() method can be used to test if a user is allowed to reject the
+question.  While neither No Privileges Person nor Marilize are able to reject
+questions, Sample Person and the Ubuntu owner can.
 
     >>> spam_question.canReject(no_priv)
     False
@@ -413,31 +416,31 @@ question:
     >>> spam_question.canReject(ubuntu.owner)
     True
 
-    # Administrator
+As a Launchpad administrator, so can Stub.
+
     >>> spam_question.canReject(stub)
     True
 
     >>> login(marilize.preferredemail.email)
     >>> spam_question.reject(
-    ...     marilize, 'Use https://shipit.launchpad.net/ to order CD')
+    ...     marilize, "We don't send free CDs any more.")
     Traceback (most recent call last):
       ...
     Unauthorized: ...
 
-The reject() method takes a comment explaining the reason behind the
-rejection.
+When rejecting a question, a comment explaining the reason is given.
 
     >>> login('test@canonical.com')
     >>> reject_message = spam_question.reject(
-    ...     sample_person, 'Use https://shipit.launchpad.net/ to order CD',
+    ...     sample_person, "We don't send free CDs any more.",
     ...     datecreated=now_plus_one_hour)
     >>> print reject_message.action.name
     REJECT
     >>> print reject_message.new_status.name
     INVALID
 
-After rejection, the question is marked as invalid and the
-'datelastresponse' attribute is updated.
+After rejection, the question is marked as invalid and the last response date
+is updated.
 
     >>> print spam_question.status.name
     INVALID
@@ -445,7 +448,7 @@ After rejection, the question is marked as invalid and the
     True
 
 The rejection message is also considered as answering the message, so the
-date_solved, answerer and answer attributes are also updated.
+solution date, answerer, and answer are also updated.
 
     >>> spam_question.answer == reject_message
     True
@@ -454,23 +457,27 @@ date_solved, answerer and answer attributes are also updated.
     >>> spam_question.date_solved == now_plus_one_hour
     True
 
-== Other scenarios ==
 
-Many other scenarios are possible and some of those are probably more
-common than the ones we exposed. For example, it is likely that a user
-will answer directly a question (without asking for other
-information first). Or that the question user won't come back to confirm
-that an answer solved his problem. Another likely scenario is where
-the question will expire in the NEEDSINFO state when the question owner
-doesn't reply to the request for more information. All of these
-scenarios are covered by this API. It is not necessary to cover all
-these various possibilities here.
-(The ../interfaces/ftests/test_question_workflow.py functional test
-exercices all the various possible transitions.)
+Other scenarios
+===============
 
-== Changing the question status ==
+Many other scenarios are possible and some are likely more common than others.
+For example, it is likely that a user will directly answer a question without
+asking for other information first.  Sometimes, the original questioner won't
+come back to confirm that an answer solved his problem.
 
-It is not possible to change the status attribute directly:
+Another likely scenario is where the question will expire in the NEEDSINFO
+state because the question owner doesn't reply to the request for more
+information.  All of these scenarios are covered by this API, though it is not
+necessary to cover all these various possibilities here.  (The
+../tests/test_question_workflow.py functional test exercises all the various
+possible transitions.)
+
+
+Changing the question status
+============================
+
+It is not possible to change the status attribute directly.
 
     >>> login('foo.bar@canonical.com')
     >>> question = ubuntu.newQuestion(**new_question_args)
@@ -479,10 +486,9 @@ It is not possible to change the status attribute directly:
       ...
     ForbiddenAttribute...
 
-A user which has launchpad.Admin permission on the question, can set the
-question status to an arbitrary value by using the setStatus() method.
-That method takes as parameters the new status and a comment explaining
-the status change.
+A user having launchpad.Admin permission on the question can set the question
+status to an arbitrary value, by giving the new status and a comment
+explaining the status change.
 
     >>> old_datelastquery = question.datelastquery
     >>> login(stub.preferredemail.email)
@@ -490,7 +496,7 @@ the status change.
     ...      stub, QuestionStatus.INVALID, 'Changed status to INVALID',
     ...     datecreated=now_plus_one_hour)
 
-The method returns the IQuestionMessage recording the change:
+The method returns the IQuestionMessage recording the change.
 
     >>> print status_change_message.action.name
     SETSTATUS
@@ -499,7 +505,7 @@ The method returns the IQuestionMessage recording the change:
     >>> print question.status.name
     INVALID
 
-The status change updates the datelastresponse attribute:
+The status change updates the last response date.
 
     >>> question.datelastresponse == now_plus_one_hour
     True
@@ -507,7 +513,7 @@ The status change updates the datelastresponse attribute:
     True
 
 If an answer was present on the question, the status change also clears
-the answer and date_solved attributes.
+the answer and solution date.
 
     >>> msg = question.setStatus(stub, QuestionStatus.OPEN, 'Status change.')
     >>> answer_message = question.giveAnswer(sample_person, 'Install BootX.')
@@ -524,13 +530,13 @@ the answer and date_solved attributes.
     ...     stub, QuestionStatus.OPEN, 'Reopen the question',
     ...     datecreated=now_plus_one_hour)
 
-    >>> question.date_solved is None
-    True
-    >>> question.answer is None
-    True
+    >>> print question.date_solved
+    None
+    >>> print question.answer
+    None
 
-But when the status is changed by a user who doesn't have the
-launchpad.Admin permission, an Unauthorized error is thrown:
+When the status is changed by a user who doesn't have the launchpad.Admin
+permission, an Unauthorized exception is thrown.
 
     >>> login('test@canonical.com')
     >>> question.setStatus(sample_person, QuestionStatus.EXPIRED, 'Expire.')
@@ -538,10 +544,11 @@ launchpad.Admin permission, an Unauthorized error is thrown:
       ...
     Unauthorized...
 
-== Adding Comments Without Changing the Status ==
 
-There is an addComment() method that can be use to add a message to the
-question without changing its status.
+Adding Comments Without Changing the Status
+===========================================
+
+Comments can be added to questions without changing the question's status.
 
     >>> login('no-priv@canonical.com')
     >>> old_status = question.status
@@ -556,8 +563,7 @@ question without changing its status.
     >>> comment.new_status == old_status
     True
 
-This method does not update the datelastresponse and datelastquery
-attributes.
+This method does not update the last response date or last query date.
 
     >>> question.datelastresponse == old_datelastresponse
     True
@@ -565,37 +571,40 @@ attributes.
     True
 
 
-== Setting the question assignee ==
+Setting the question assignee
+=============================
 
 Users with launchpad.Moderator privileges, which are answer contacts,
 question target owners, and admins, can assign someone to answer a question.
 
-Sample Person is an answer contact for ubuntu. He can set the assignee.
+Sample Person is an answer contact for ubuntu, so he can set the assignee.
 
     >>> login('test@canonical.com')
     >>> question.assignee = stub
     >>> print question.assignee.displayname
     Stuart Bishop
 
-Users without launchpad.Moderator privileges cannot set the assignee
+Users without launchpad.Moderator privileges cannot set the assignee.
 
     >>> login('no-priv@canonical.com')
     >>> question.assignee = sample_person
     Traceback (most recent call last):
       ...
-    Unauthorized: (<Question ...>, 'assignee', 'launchpad.Moderate')
+    Unauthorized: (<Question ...>, 'assignee', 'launchpad.Append')
 
 
-== Events ==
+Events
+======
 
 Each of the workflow methods will trigger a ObjectCreatedEvent for
 the message they create and a ObjectModifiedEvent for the question.
 
-    # Register an event listener that will print event it receives.
+    # Register an event listener that will print events it receives.
     >>> from lazr.lifecycle.interfaces import (
     ...     IObjectCreatedEvent, IObjectModifiedEvent)
-    >>> from canonical.launchpad.interfaces import IQuestion
-    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from lp.testing.event import TestEventListener
+    >>> from lp.answers.interfaces.question import IQuestion
+
     >>> def print_event(object, event):
     ...     print "Received %s on %s" % (
     ...         event.__class__.__name__.split('.')[-1],
@@ -605,14 +614,15 @@ the message they create and a ObjectModifiedEvent for the question.
     >>> question_event_listener = TestEventListener(
     ...     IQuestion, IObjectModifiedEvent, print_event)
 
-Changing the status triggers the event:
+Changing the status triggers the event.
 
     >>> login(stub.preferredemail.email)
-    >>> msg = question.setStatus(stub, QuestionStatus.EXPIRED, 'Status change.')
+    >>> msg = question.setStatus(
+    ...     stub, QuestionStatus.EXPIRED, 'Status change.')
     Received ObjectCreatedEvent on QuestionMessage
     Received ObjectModifiedEvent on Question
 
-Example of a workflow method that triggers the events:
+Rejecting the question triggers the events.
 
     >>> msg = question.reject(stub, 'Close this question.')
     Received ObjectCreatedEvent on QuestionMessage
@@ -630,25 +640,28 @@ these events.
     >>> questionmessage_event_listener.unregister()
     >>> question_event_listener.unregister()
 
-== Reopenings ==
+
+Reopening the question
+======================
 
 Whenever a question considered answered (in the SOLVED or INVALID state)
 is reopened, a QuestionReopening is created.
 
-    # Let's register an event listener to notify us whenever a
-    # QuestionReopening is created.
-    >>> from canonical.launchpad.interfaces import IQuestionReopening
+    # Register an event listener to notify us whenever a QuestionReopening is
+    # created.
+    >>> from lp.answers.interfaces.questionreopening import IQuestionReopening
     >>> reopening_event_listener = TestEventListener(
     ...     IQuestionReopening, IObjectCreatedEvent, print_event)
 
 The most common use case is when a user confirms a solution, and then
-comes back to say that it doesn't work in fact.
+comes back to say that it doesn't, in fact, work.
 
     >>> login('no-priv@canonical.com')
     >>> question = ubuntu.newQuestion(**new_question_args)
     >>> answer_message = question.giveAnswer(
-    ...    sample_person, "You need some setup on the Mac side. "
-    ...    "Follow the instructions at "
+    ...     sample_person,
+    ...     "You need some setup on the Mac side. "
+    ...     "Follow the instructions at "
     ...     "https://help.ubuntu.com/community/Installation/OldWorldMacs",
     ...     datecreated=now_plus_one_hour)
     >>> confirm_message = question.confirmAnswer(
@@ -662,23 +675,23 @@ comes back to say that it doesn't work in fact.
 
 The reopening record is available through the reopenings attribute.
 
-    >>> list(question.reopenings)
-    [<QuestionReopening...>]
-    >>> reopening = question.reopenings[0]
+    >>> reopenings = list(question.reopenings)
+    >>> len(reopenings)
+    1
+    >>> reopening = reopenings[0]
     >>> verifyObject(IQuestionReopening, reopening)
     True
 
-The reopening contain the date of the reopening in the datecreated
-attribute and the person who made the reopening in the reopener
-attribute.
+The reopening contain the date of the reopening, and the person who cause the
+reopening to happen.
 
     >>> reopening.datecreated == now_plus_three_hours
     True
     >>> print reopening.reopener.displayname
     No Privileges Person
 
-It contains the question prior answerer, datecreated, as well as the
-prior status in the priorstate attribute:
+It also contains the question's prior answerer, the date created, and the
+prior status of the question.
 
     >>> print reopening.answerer.displayname
     Sample Person
@@ -687,8 +700,8 @@ prior status in the priorstate attribute:
     >>> print reopening.priorstate.name
     SOLVED
 
-Another example of a reopening, would be when the question status is set
-back to OPEN after having been rejected.
+A reopening also occurs when the question status is set back to OPEN after
+having been rejected.
 
     >>> login('test@canonical.com')
     >>> question = ubuntu.newQuestion(**new_question_args)
@@ -698,7 +711,8 @@ back to OPEN after having been rejected.
 
     >>> login(stub.preferredemail.email)
     >>> status_change_message = question.setStatus(
-    ...     stub, QuestionStatus.OPEN, 'Disregard previous rejection. '
+    ...     stub, QuestionStatus.OPEN,
+    ...     'Disregard previous rejection. '
     ...     'Sample Person was having a bad day.',
     ...     datecreated=now_plus_two_hours)
     Received ObjectCreatedEvent on QuestionReopening
@@ -718,18 +732,20 @@ back to OPEN after having been rejected.
     # Cleanup
     >>> reopening_event_listener.unregister()
 
-== Using an IMessage as Explanation ==
+
+Using an IMessage as an explanation
+===================================
 
 In all the workflow methods, it is possible to pass an IMessage instead of
 a string.
 
-    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> login('test@canonical.com')
     >>> messageset = getUtility(IMessageSet)
     >>> question = ubuntu.newQuestion(**new_question_args)
     >>> reject_message = messageset.fromText(
     ...     'Reject', 'Because I feel like it.', sample_person)
-    >>> question_message = question.reject(sample_person,reject_message)
+    >>> question_message = question.reject(sample_person, reject_message)
     >>> print question_message.subject
     Reject
     >>> print question_message.text_contents
@@ -737,11 +753,11 @@ a string.
     >>> question_message.rfc822msgid == reject_message.rfc822msgid
     True
 
-The IMessage owner must be the same than the person passed to the workflow
+The IMessage owner must be the same as the person passed to the workflow
 method.
 
     >>> login(stub.preferredemail.email)
     >>> question.setStatus(stub, QuestionStatus.OPEN, reject_message)
     Traceback (most recent call last):
       ...
-    AssertionError...
+    NotMessageOwnerError...

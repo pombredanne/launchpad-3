@@ -8,15 +8,8 @@
 >
 <body>
 
-  <div metal:fill-slot="heading">
-    <h1 tal:content="CONTEXTS/fmt:pagetitle">Rescore i386 build of
-    alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE</h1>
-  </div> <!-- heading -->
-
   <div metal:fill-slot="main">
-
     <div metal:use-macro="context/@@launchpad_form/form" />
-
   </div><!-- main -->
 
 </body>

@@ -9,8 +9,6 @@
 
     <h2>Depends</h2>
 
-    <div class="portletBody portletContent">
-
       <ul>
         <li class="spec" tal:repeat="spec dependencies">
           <a tal:attributes="href spec/fmt:url"
@@ -20,8 +18,6 @@
           <i>No spec dependencies.</i>
         </li>
       </ul>
-	
-    </div>
 
   </div>
 </tal:spec_deps>

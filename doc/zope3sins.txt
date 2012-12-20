@@ -1,7 +1,0 @@
-===========
-Zope 3 Sins
-===========
-
-This document is for collecting those areas of Zope 3 that depend on the
-ZODB, object graph<->URLs or make other assumptions that make it difficult to
-use in ways that diverge from those assumptions.

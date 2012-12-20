@@ -16,9 +16,6 @@
 
     <div id="ppa_search" class="top-portlet">
 
-      <h1 tal:content="CONTEXTS/fmt:pagetitle">Ubuntu Linux Personal
-        Package Archives</h1>
-
       <p>Personal Package Archives (PPA) allow you to upload
          Ubuntu source packages to be built and published as an
          apt repository by Launchpad. You can find out more about
@@ -30,7 +27,7 @@
             tal:condition="registered_ppas">
         <p>Search user-contributed software packages published in any
            <tal:distribution replace="context/title"
-            >Ubuntu</tal:distribution>PPA.</p>
+            >Ubuntu</tal:distribution> PPA.</p>
         <table>
           <tbody>
             <tr>
@@ -60,38 +57,40 @@
 
         <div id="ppa_statistics" class="portlet">
           <h2>Statistics</h2>
-          <tal:has_ppas condition="registered_ppas">
-            <ul>
-              <li><tal:ppa_registered
-                    replace="registered_ppas"
-                >10</tal:ppa_registered> registered PPAs</li>
-              <li><tal:ppa_active
-                    replace="view/number_of_active_ppas"
-                >4</tal:ppa_active> active PPAs</li>
-              <li><tal:ppa_sources
-                    replace="view/number_of_ppa_sources"
-                >20</tal:ppa_sources> published sources</li>
-              <li><tal:ppa_binaries
-                    replace="view/number_of_ppa_binaries"
-                >20</tal:ppa_binaries> published binaries</li>
-            </ul>
-          </tal:has_ppas>
-          <tal:has_no_ppas condition="not: registered_ppas">
-             <p><tal:distribution replace="context/displayname" />
-                does not have any registered PPA.</p>
-          </tal:has_no_ppas>
+          <div class="two-column-list" tal:condition="registered_ppas">
+            <dl>
+              <dt> Registered PPAs:</dt>
+                <dd tal:content="registered_ppas">10</dd>
+            </dl>
+            <dl>
+              <dt>Active PPAs:</dt>
+                <dd tal:content="view/number_of_active_ppas">4</dd>
+            </dl>
+            <dl>
+              <dt>Published sources:</dt>
+                <dd tal:content="view/number_of_ppa_sources">20</dd>
+            </dl>
+            <dl>
+              <dt>Published binaries:</dt>
+                <dd tal:content="view/number_of_ppa_binaries">20</dd>
+            </dl>
+          </div>
+          <p tal:condition="not: registered_ppas">
+            <span tal:replace="context/displayname">Ubuntu Linux</span>
+            does not have any registered PPA.
+          </p>
         </div> <!-- ppa_statistics -->
 
         <div id="ppa_latest_uploads" class="portlet"
              tal:condition="registered_ppas">
           <h2>Latest uploads</h2>
           <ul class="source package">
-            <li tal:repeat="pub view/latest_ppa_source_publications">
+            <li class="sprite package-source"
+                tal:repeat="pub view/latest_ppa_source_publications">
               <tal:source_title replace="pub/displayname">
                 mozilla-firefox - 1.0 in warty
               </tal:source_title> in
-              <a tal:attributes="href pub/archive/fmt:url"
-                 tal:content="pub/archive/displayname"
+              <a tal:replace="structure pub/archive/fmt:link"
                 >PPA for Celso Providelo </a>
               <tal:datepublished replace="pub/age/fmt:approximateduration">
                 3 minutes</tal:datepublished> ago
@@ -107,10 +106,8 @@
           <table>
             <tr tal:repeat="most_active view/most_active_ppas">
               <td>
-                <a tal:attributes="href most_active/archive/fmt:url"
-                   tal:content="most_active/archive/owner/fmt:displayname">
-                  Celso Providelo
-                </a>
+                <a tal:replace="structure most_active/archive/fmt:link"
+                  >PPA for Celso Providelo</a>
               </td>
               <td align="right">
                 <tal:sources replace="most_active/uploads" /> uploads

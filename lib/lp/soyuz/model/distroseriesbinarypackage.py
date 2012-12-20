@@ -8,22 +8,26 @@ __all__ = [
     'DistroSeriesBinaryPackage',
     ]
 
+from operator import attrgetter
+
 from storm.expr import Desc
 from storm.store import Store
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
-from canonical.database.sqlbase import sqlvalues
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageRelease)
-from lp.soyuz.model.distroseriespackagecache import (
-    DistroSeriesPackageCache)
-from lp.soyuz.model.distroseriessourcepackagerelease import (
-    DistroSeriesSourcePackageRelease)
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory)
+from lp.services.database.sqlbase import sqlvalues
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.soyuz.interfaces.distroseriesbinarypackage import (
-    IDistroSeriesBinaryPackage)
+    IDistroSeriesBinaryPackage,
+    )
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.distroseriessourcepackagerelease import (
+    DistroSeriesSourcePackageRelease,
+    )
+from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
 
 class DistroSeriesBinaryPackage:
     """A binary package, like "apache2.1", in a distro series like "hoary".
@@ -36,11 +40,13 @@ class DistroSeriesBinaryPackage:
 
     implements(IDistroSeriesBinaryPackage)
 
-    def __init__(self, distroseries, binarypackagename, cache=None):
+    default = object()
+
+    def __init__(self, distroseries, binarypackagename, cache=default):
         self.distroseries = distroseries
         self.binarypackagename = binarypackagename
-        if cache is not None:
-            self._cache = cache
+        if cache is not self.default:
+            get_property_cache(self).cache = cache
 
     @property
     def name(self):
@@ -58,17 +64,21 @@ class DistroSeriesBinaryPackage:
         """See IDistroSeriesBinaryPackage."""
         return self.distroseries.distribution
 
-    @cachedproperty('_cache')
+    @cachedproperty
     def cache(self):
         """See IDistroSeriesBinaryPackage."""
-        return DistroSeriesPackageCache.selectOne("""
-            distroseries = %s AND
-            archive IN %s AND
-            binarypackagename = %s
-            """ % sqlvalues(
-                self.distroseries,
-                self.distroseries.distribution.all_distro_archive_ids,
+        from lp.soyuz.model.distroseriespackagecache import (
+            DistroSeriesPackageCache)
+        store = Store.of(self.distroseries)
+        archive_ids = (
+            self.distroseries.distribution.all_distro_archive_ids)
+        result = store.find(
+            DistroSeriesPackageCache,
+            DistroSeriesPackageCache.distroseries == self.distroseries,
+            DistroSeriesPackageCache.archiveID.is_in(archive_ids),
+            (DistroSeriesPackageCache.binarypackagename ==
                 self.binarypackagename))
+        return result.any()
 
     @property
     def summary(self):
@@ -93,51 +103,35 @@ class DistroSeriesBinaryPackage:
         return cache.description
 
     @property
-    def current_publishings(self):
-        """See IDistroSeriesBinaryPackage."""
-        ret = BinaryPackagePublishingHistory.select("""
-            BinaryPackagePublishingHistory.distroarchseries =
-                DistroArchSeries.id AND
-            DistroArchSeries.distroseries = %s AND
-            BinaryPackagePublishingHistory.archive IN %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease =
-                BinaryPackageRelease.id AND
-            BinaryPackageRelease.binarypackagename = %s AND
-            BinaryPackagePublishingHistory.dateremoved is NULL
-            """ % sqlvalues(
-                    self.distroseries,
-                    self.distroseries.distribution.all_distro_archive_ids,
-                    self.binarypackagename),
-            orderBy=['-datecreated'],
-            clauseTables=['DistroArchSeries', 'BinaryPackageRelease'])
-        return sorted(ret, key=lambda a: (
-            a.distroarchseries.architecturetag,
-            a.datecreated))
-
-    @property
-    def last_published(self):
-        """See `IDistroSeriesBinaryPackage`."""
+    def _current_publishings(self):
         # Import here so as to avoid circular import.
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
-
-        store = Store.of(self.distroseries)
-
-        publishing_history = store.find(
+        return Store.of(self.distroseries).find(
             BinaryPackagePublishingHistory,
             BinaryPackagePublishingHistory.distroarchseries ==
                 DistroArchSeries.id,
             DistroArchSeries.distroseries == self.distroseries,
             BinaryPackagePublishingHistory.binarypackagerelease ==
                 BinaryPackageRelease.id,
-            BinaryPackageRelease.binarypackagename == self.binarypackagename,
+            BinaryPackagePublishingHistory.binarypackagename ==
+                self.binarypackagename,
             BinaryPackagePublishingHistory.archiveID.is_in(
                 self.distribution.all_distro_archive_ids),
             BinaryPackagePublishingHistory.dateremoved == None)
 
-        last_published_history = publishing_history.order_by(
-            Desc(BinaryPackagePublishingHistory.datepublished)).first()
+    @property
+    def current_publishings(self):
+        """See IDistroSeriesBinaryPackage."""
+        return sorted(
+            self._current_publishings,
+            key=attrgetter('distroarchseries.architecturetag', 'datecreated'))
 
+    @property
+    def last_published(self):
+        """See `IDistroSeriesBinaryPackage`."""
+        last_published_history = self._current_publishings.order_by(
+            Desc(BinaryPackagePublishingHistory.datepublished)).first()
         if last_published_history is None:
             return None
         else:
@@ -150,7 +144,7 @@ class DistroSeriesBinaryPackage:
         if last_published is None:
             return None
 
-        src_pkg_release = last_published.build.sourcepackagerelease
+        src_pkg_release = last_published.build.source_package_release
 
         return DistroSeriesSourcePackageRelease(
             self.distroseries, src_pkg_release)

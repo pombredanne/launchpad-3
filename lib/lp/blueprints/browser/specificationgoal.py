@@ -12,13 +12,14 @@ __all__ = [
 
 from zope.component import getUtility
 
-from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsView)
-
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.blueprints.interfaces.specification import SpecificationFilter
-from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.webapp import canonical_url, LaunchpadView
+from lp.blueprints.browser.specificationtarget import HasSpecificationsView
+from lp.blueprints.enums import SpecificationFilter
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 class GoalDecideView(HasSpecificationsView, LaunchpadView):
@@ -28,6 +29,9 @@ class GoalDecideView(HasSpecificationsView, LaunchpadView):
     checkboxes, then process the selected items, which is not the usual
     add/edit metaphor.
     """
+
+    label = "Set feature goals"
+    page_title = "Feature goals"
 
     @cachedproperty
     def spec_filter(self):

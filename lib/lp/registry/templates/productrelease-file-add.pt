@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
 
 <body>
@@ -17,7 +14,7 @@
     <div metal:fill-slot="extra_info">
       <tal:uploadsize
          define="
-             max_file_size modules/canonical.config/config/launchpad/max_productrelease_file_size;">
+             max_file_size modules/lp.services.config/config/launchpad/max_productrelease_file_size;">
         <p tal:condition="max_file_size">
           You may upload files up to
           <tal:maxsize replace="max_file_size/fmt:bytes" /> in size.

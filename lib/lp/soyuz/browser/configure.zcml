@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -8,6 +8,11 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
+    <browser:url
+      for="lp.soyuz.interfaces.binarypackagename.IBinaryPackageNameSet"
+      path_expression="string:binarypackagenames"
+      parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
+      />
     <facet
         facet="overview">
         <browser:pages
@@ -32,7 +37,20 @@
             path_expression="string:+binarypub"
             attribute_to_parent="archive"
             urldata="lp.soyuz.browser.publishing.BinaryPublicationURL"/>
-    </facet>
+        <browser:url for="lp.soyuz.interfaces.processor.IProcessorFamilySet"
+            path_expression="string:+processor-families"
+            parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
+        <browser:url
+	    for="lp.soyuz.interfaces.processor.IProcessorFamily"
+            path_expression="string:${name}"
+            parent_utility="lp.soyuz.interfaces.processor.IProcessorFamilySet" />
+        <browser:url for="lp.soyuz.interfaces.processor.IProcessorSet"
+            path_expression="string:+processors"
+            parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
+        <browser:url
+	    for="lp.soyuz.interfaces.processor.IProcessor"
+            path_expression="string:${name}"
+            parent_utility="lp.soyuz.interfaces.processor.IProcessorSet" />
     <browser:navigation
         module="lp.soyuz.browser.binarypackagerelease"
         classes="
@@ -40,7 +58,6 @@
     <browser:pages
         for="lp.soyuz.model.binarypackagerelease.BinaryPackageRelease"
         class="lp.soyuz.browser.binarypackagerelease.BinaryPackageView"
-        facet="overview"
         permission="zope.Public">
         <browser:page
             name="+portlet-details"
@@ -98,7 +115,7 @@
     </browser:pages>
     <browser:page
         for="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"
-        class="canonical.launchpad.browser.QuestionCollectionOpenCountView"
+        class="lp.answers.browser.questiontarget.QuestionCollectionOpenCountView"
         name="+open_questions_count"
         permission="zope.Public"/>
     <browser:pages
@@ -109,15 +126,12 @@
             name="+changelog"
             template="../templates/sourcepackagerelease-changelog.pt"/>
         <browser:page
-            name="+files"
-            facet="overview"
-            template="../templates/sourcepackagerelease-files.pt"/>
+            name="+copyright"
+            template="../templates/sourcepackagerelease-copyright.pt"/>
         <browser:page
-            name="+change_summary"
-            template="../templates/sourcepackagerelease-change-summary.pt"/>
+            name="+files"
+            template="../templates/sourcepackagerelease-files.pt"/>
     </browser:pages>
-    <facet
-        facet="overview">
         <browser:pages
             for="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistory"
             permission="zope.Public"
@@ -157,7 +171,9 @@
             path_expression="string:+sourcepub"
             attribute_to_parent="archive"
             urldata="lp.soyuz.browser.publishing.SourcePublicationURL"/>
-    </facet>
+        <browser:navigation
+            module="lp.soyuz.browser.publishing"
+            classes="SourcePackagePublishingHistoryNavigation" />
     <browser:defaultView
         for="lp.soyuz.interfaces.distroseriessourcepackagerelease.IDistroSeriesSourcePackageRelease"
         name="+index"/>
@@ -175,14 +191,12 @@
         permission="zope.Public">
         <browser:page
             name="+index"
-            facet="overview"
             template="../templates/distroseriessourcepackagerelease-index.pt"/>
 
         <!-- DistroSeriesSourcePackageRelease Portlets -->
 
         <browser:page
             name="+portlet-details"
-            facet="overview"
             template="../templates/distroseriessourcepackagerelease-portlet-details.pt"/>
     </browser:pages>
     <browser:defaultView
@@ -202,14 +216,12 @@
         permission="zope.Public">
         <browser:page
             name="+index"
-            facet="overview"
             template="../templates/distroarchseriesbinarypackagerelease-index.pt"/>
 
         <!-- DistroArchSeriesBinaryPackageRelease Portlets -->
 
         <browser:page
             name="+portlet-details"
-            facet="overview"
             template="../templates/distroarchseriesbinarypackagerelease-portlet-details.pt"/>
     </browser:pages>
     <browser:defaultView
@@ -217,8 +229,10 @@
         name="+index"/>
     <browser:navigation
         module="lp.soyuz.browser.archive"
-        classes="
-            ArchiveNavigation"/>
+        classes="ArchiveNavigation" />
+    <browser:navigation
+        module="lp.soyuz.browser.processor"
+        classes="ProcessorFamilySetNavigation ProcessorSetNavigation"/>
     <browser:url
         for="lp.soyuz.interfaces.archive.IPPA"
         path_expression="string:+archive"
@@ -233,26 +247,26 @@
         for="*"
         name="+macros"
         permission="zope.Public"
-        template="../templates/archive-macros.pt"/>
-    <browser:pages
+        template="../templates/archive-macros.pt"
+        class="lp.app.browser.launchpad.Macro"/>
+    <browser:page
         for="lp.soyuz.interfaces.archive.IArchive"
         permission="launchpad.View"
-        class="lp.soyuz.browser.archive.ArchiveView">
-        <browser:page
-            template="../templates/archive-index.pt"
-            facet="overview"
-            name="+index"/>
-    </browser:pages>
+        name="+index"
+        template="../templates/archive-index.pt"
+        class="lp.soyuz.browser.archive.ArchiveView"/>
+    <browser:page
+        for="lp.soyuz.interfaces.archive.IArchive"
+        permission="launchpad.View"
+        name="+packages"
+        template="../templates/archive-packages.pt"
+        class="lp.soyuz.browser.archive.ArchivePackagesView"/>
     <browser:pages
         for="lp.soyuz.interfaces.archive.IArchive"
         permission="launchpad.View">
         <browser:page
             template="../templates/archive-ppa-row.pt"
-            facet="overview"
             name="+ppa-row"/>
-        <browser:page
-            name="+portlet-privacy"
-            template="../templates/archive-portlet-privacy.pt"/>
         <browser:page
             template="../templates/archive-repository-size.pt"
             name="+repository-size"/>
@@ -263,33 +277,35 @@
         class="lp.soyuz.browser.archive.ArchiveBuildsView">
         <browser:page
             name="+builds"
-            facet="overview"
-            template="../templates/archive-builds.pt"/>
+            template="../templates/builds.pt"/>
         <browser:page
             name="+builds-list"
             template="../templates/builds-list.pt"/>
     </browser:pages>
     <browser:page
         name="+edit"
-        facet="overview"
         for="lp.soyuz.interfaces.archive.IArchive"
         class="lp.soyuz.browser.archive.ArchiveEditView"
         permission="launchpad.Edit"
-        template="../templates/archive-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        name="+delete"
+        for="lp.soyuz.interfaces.archive.IArchive"
+        class="lp.soyuz.browser.archive.ArchiveDeleteView"
+        permission="launchpad.Edit"
+        template="../templates/archive-delete.pt"/>
     <browser:page
         name="+admin"
-        facet="overview"
         for="lp.soyuz.interfaces.archive.IArchive"
         class="lp.soyuz.browser.archive.ArchiveAdminView"
         permission="launchpad.Commercial"
-        template="../templates/archive-admin.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:pages
         for="lp.soyuz.interfaces.archive.IArchive"
         permission="launchpad.Edit"
         class="lp.soyuz.browser.archive.ArchivePackageDeletionView">
         <browser:page
             template="../templates/archive-delete-packages.pt"
-            facet="overview"
             name="+delete-packages"/>
     </browser:pages>
     <browser:pages
@@ -298,7 +314,6 @@
         class="lp.soyuz.browser.archive.ArchivePackageCopyingView">
         <browser:page
             template="../templates/archive-copy-packages.pt"
-            facet="overview"
             name="+copy-packages"/>
     </browser:pages>
     <browser:pages
@@ -307,7 +322,6 @@
         class="lp.soyuz.browser.archive.ArchiveEditDependenciesView">
         <browser:page
             template="../templates/archive-edit-dependencies.pt"
-            facet="overview"
             name="+edit-dependencies"/>
     </browser:pages>
     <browser:pages
@@ -316,13 +330,13 @@
         class="lp.soyuz.browser.archivesubscription.ArchiveSubscribersView">
         <browser:page
             name="+subscriptions"
-            facet="overview"
             template="../templates/archive-subscribers.pt"/>
     </browser:pages>
     <browser:menus
         classes="
-            ArchiveContextMenu
-            ArchiveNavigationMenu"
+            ArchiveNavigationMenu
+            ArchiveIndexActionsMenu
+            ArchivePackagesActionMenu"
         module="lp.soyuz.browser.archive"/>
     <browser:url
         for="lp.soyuz.interfaces.archivepermission.IArchiveUploader"
@@ -335,115 +349,115 @@
         attribute_to_parent="archive"
         urldata="lp.soyuz.browser.archivepermission.ArchivePermissionURL"/>
     <browser:defaultView
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         name="+index"/>
     <browser:url
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         urldata="lp.soyuz.browser.build.BuildUrl"/>
     <browser:navigation
         module="lp.soyuz.browser.build"
         classes="
             BuildNavigation"/>
     <browser:pages
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         class="lp.soyuz.browser.build.BuildView"
         permission="launchpad.View">
         <browser:page
             name="+index"
-            facet="overview"
             template="../templates/build-index.pt"/>
     </browser:pages>
     <browser:pages
-        for="lp.soyuz.interfaces.build.IBuild"
-        class="lp.soyuz.browser.build.BuildView"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
+        class="lp.soyuz.browser.build.BuildRetryView"
         permission="launchpad.Edit">
         <browser:page
             name="+retry"
-            facet="overview"
             template="../templates/build-retry.pt"/>
     </browser:pages>
     <browser:pages
-        for="lp.soyuz.interfaces.build.IBuild"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         class="lp.soyuz.browser.build.BuildRescoringView"
         permission="launchpad.Admin">
         <browser:page
             name="+rescore"
-            facet="overview"
             template="../templates/build-rescore.pt"/>
+    </browser:pages>
+    <browser:pages
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
+        class="lp.soyuz.browser.build.BuildCancelView"
+        permission="launchpad.Edit">
+        <browser:page
+            name="+cancel"
+            template="../../app/templates/generic-edit.pt"/>
     </browser:pages>
     <browser:menus
         classes="
             BuildContextMenu"
         module="lp.soyuz.browser.build"/>
     <browser:url
-        for="lp.soyuz.interfaces.builder.IBuilderSet"
+        for="lp.buildmaster.interfaces.builder.IBuilderSet"
         path_expression="string:builders"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
     <browser:defaultView
-        for="lp.soyuz.interfaces.builder.IBuilderSet"
+        for="lp.buildmaster.interfaces.builder.IBuilderSet"
         name="+index"/>
     <browser:navigation
         module="lp.soyuz.browser.builder"
         classes="
             BuilderSetNavigation"/>
     <browser:pages
-        for="lp.soyuz.interfaces.builder.IBuilderSet"
+        for="lp.buildmaster.interfaces.builder.IBuilderSet"
         permission="zope.Public"
         class="lp.soyuz.browser.builder.BuilderSetView">
         <browser:page
             template="../templates/builders-index.pt"
-            name="+index"
-            facet="overview"/>
+            name="+index"/>
     </browser:pages>
     <browser:page
         name="+new"
-        for="lp.soyuz.interfaces.builder.IBuilderSet"
+        for="lp.buildmaster.interfaces.builder.IBuilderSet"
         class="lp.soyuz.browser.builder.BuilderSetAddView"
         permission="launchpad.Admin"
-        template="../templates/builder-new.pt"
-        facet="overview"/>
+        template="../templates/builder-new.pt"/>
     <browser:defaultView
-        for="lp.soyuz.interfaces.builder.IBuilder"
+        for="lp.buildmaster.interfaces.builder.IBuilder"
         name="+index"/>
     <browser:navigation
         module="lp.soyuz.browser.builder"
         classes="
             BuilderNavigation"/>
     <browser:url
-        for="lp.soyuz.interfaces.builder.IBuilder"
+        for="lp.buildmaster.interfaces.builder.IBuilder"
         path_expression="name"
-        parent_utility="lp.soyuz.interfaces.builder.IBuilderSet"/>
+        parent_utility="lp.buildmaster.interfaces.builder.IBuilderSet"/>
     <browser:pages
-        for="lp.soyuz.interfaces.builder.IBuilder"
+        for="lp.buildmaster.interfaces.builder.IBuilder"
         permission="zope.Public"
         class="lp.soyuz.browser.builder.BuilderView">
         <browser:page
             template="../templates/builder-index.pt"
-            facet="overview"
             name="+index"/>
         <browser:page
-            template="../templates/builds-list.pt"
-            name="+builds-list"
-            facet="overview"/>
-        <browser:page
             template="../templates/builder-portlet-details.pt"
-            name="+portlet-details"
-            facet="overview"/>
+            name="+portlet-details"/>
+    </browser:pages>
+    <browser:pages
+        for="lp.buildmaster.interfaces.builder.IBuilder"
+        permission="zope.Public"
+        class="lp.soyuz.browser.builder.BuilderHistoryView">
+        <browser:page
+            name="+history"
+            template="../templates/builds.pt"/>
+        <browser:page
+            template="../templates/builds-list.pt"
+            name="+builds-list"/>
     </browser:pages>
     <browser:page
-        name="+history"
-        for="lp.soyuz.interfaces.builder.IBuilder"
-        permission="zope.Public"
-        template="../templates/builder-history.pt"
-        facet="overview"
-        class="lp.soyuz.browser.builder.BuilderHistoryView" />
-    <browser:page
         name="+edit"
-        for="lp.soyuz.interfaces.builder.IBuilder"
+        for="lp.buildmaster.interfaces.builder.IBuilder"
         class="lp.soyuz.browser.builder.BuilderEditView"
         permission="launchpad.Edit"
-        template="../templates/builder-edit.pt"
-        facet="overview"/>
+        template="../templates/builder-edit.pt"/>
     <browser:menus
         classes="
             BuilderSetFacets
@@ -471,7 +485,6 @@
         permission="zope.Public">
         <browser:page
             name="+index"
-            facet="overview"
             template="../templates/distroarchseriesbinarypackage-index.pt"/>
 
         <!-- DistroArchSeriesBinaryPackage Portlets -->
@@ -493,21 +506,18 @@
         attribute_to_parent="subscriber"/>
    <browser:page
         name="+index"
-        facet="overview"
         for="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriber"
         class="lp.soyuz.browser.archivesubscription.ArchiveSubscriptionEditView"
         permission="launchpad.Edit"
         template="../templates/archive-subscriber-edit.pt" />
     <browser:page
         name="+edit"
-        facet="overview"
         for="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriber"
         class="lp.soyuz.browser.archivesubscription.ArchiveSubscriptionEditView"
         permission="launchpad.Edit"
         template="../templates/archive-subscriber-edit.pt"/>
     <browser:page
         name="+index"
-        facet="overview"
         for="lp.soyuz.interfaces.archivesubscriber.IPersonalArchiveSubscription"
         class="lp.soyuz.browser.archivesubscription.PersonArchiveSubscriptionView"
         permission="launchpad.View"
@@ -528,24 +538,21 @@
             DistributionSourcePackageReleaseNavigation"/>
     <browser:pages
         for="lp.soyuz.interfaces.distributionsourcepackagerelease.IDistributionSourcePackageRelease"
-        class="canonical.launchpad.webapp.LaunchpadView"
+        class="lp.soyuz.browser.distributionsourcepackagerelease.DistributionSourcePackageReleaseView"
         permission="zope.Public">
         <browser:page
             name="+index"
-            facet="overview"
             template="../templates/distributionsourcepackagerelease-index.pt"/>
-
-        <!-- DistributionSourcePackageRelease Portlets -->
-
-        <browser:page
-            name="+portlet-details"
-            facet="overview"
-            template="../templates/distributionsourcepackagerelease-portlet-details.pt"/>
         <browser:page
             name="+changes"
-            facet="overview"
             template="../templates/distributionsourcepackagerelease-changes.pt"/>
     </browser:pages>
+    <browser:page
+        for="lp.soyuz.interfaces.distributionsourcepackagerelease.IDistributionSourcePackageRelease"
+        class="lp.soyuz.browser.distributionsourcepackagerelease.DistributionSourcePackageReleasePublishingHistoryView"
+        permission="zope.Public"
+        name="+publishinghistory"
+        template="../templates/distributionsourcepackage-publishinghistory.pt" />
     <browser:defaultView
         for="lp.soyuz.interfaces.distroseriesbinarypackage.IDistroSeriesBinaryPackage"
         name="+index"/>
@@ -563,7 +570,6 @@
         permission="zope.Public">
         <browser:page
             name="+index"
-            facet="overview"
             template="../templates/distroseriesbinarypackage-index.pt"/>
 
         <!-- DistroSeriesBinaryPackage Portlets -->
@@ -580,8 +586,6 @@
             DistroSeriesBinaryPackageFacets"
         module="lp.soyuz.browser.distroseriesbinarypackage"/>
 
-    <facet
-        facet="overview">
         <browser:defaultView
             for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
             name="+index"/>
@@ -607,17 +611,18 @@
             <browser:page
                 name="+portlet-details"
                 template="../templates/distroarchseries-portlet-details.pt"/>
+        </browser:pages>
+        <browser:pages
+            for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
+            permission="zope.Public"
+            class="lp.soyuz.browser.build.BuildRecordsView">
             <browser:page
                 name="+builds"
-                facet="overview"
-                template="../templates/distroarchseries-builds.pt"/>
+                template="../templates/builds.pt"/>
+            <browser:page
+                name="+builds-list"
+                template="../templates/builds-list.pt"/>
         </browser:pages>
-        <browser:page
-            permission="zope.Public"
-            for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
-            class="lp.soyuz.browser.distroarchseries.DistroArchSeriesBuildsView"
-            name="+builds-list"
-            template="../templates/builds-list.pt"/>
         <browser:page
             for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
             name="+macros"
@@ -633,7 +638,6 @@
             name="+addport"
             for="lp.registry.interfaces.distroseries.IDistroSeries"
             class="lp.soyuz.browser.distroarchseries.DistroArchSeriesAddView"
-            facet="overview"
             permission="launchpad.Admin"
             template="../templates/distroseries-addport.pt"/>
         <browser:page
@@ -655,6 +659,12 @@
             name="+ppa-packages"
             template="../templates/person-ppa-packages.pt"/>
         <browser:page
+            for="lp.registry.interfaces.person.IPerson"
+            permission="zope.Public"
+            class="lp.registry.browser.person.PersonSynchronisedPackagesView"
+            name="+synchronised-packages"
+            template="../templates/person-synchronised-packages.pt"/>
+         <browser:page
             name="+archivesubscriptions"
             for="lp.registry.interfaces.person.IPerson"
             class="lp.soyuz.browser.archivesubscription.PersonArchiveSubscriptionsView"
@@ -662,22 +672,14 @@
             template="../templates/person-archive-subscriptions.pt"/>
         <browser:page
             for="lp.registry.interfaces.distroseries.IDistroSeries"
-            class="lp.registry.browser.distroseries.DistroSeriesView"
+            class="lp.soyuz.browser.distroseries.DistroSeriesQueueView"
             permission="zope.Public"
             name="+queue"
             template="../templates/distroseries-queue.pt"/>
         <browser:page
-            name="+addpackage"
-            for="lp.registry.interfaces.productseries.IProductSeries"
-            class="canonical.launchpad.browser.PackagingAddView"
-            facet="overview"
-            permission="launchpad.Edit"
-            template="../templates/productseries-packaging.pt"/>
-        <browser:page
             name="+activate-ppa"
             for="lp.registry.interfaces.person.IPerson"
-            facet="overview"
-            class="canonical.launchpad.browser.ArchiveActivateView"
+            class="lp.soyuz.browser.archive.ArchiveActivateView"
             permission="launchpad.Edit"
             template="../templates/archive-activate.pt"/>
         <browser:page
@@ -685,53 +687,61 @@
             class="lp.registry.browser.distribution.DistributionPPASearchView"
             name="+ppas"
             permission="zope.Public"
-            facet="overview"
             template="../templates/distribution-ppa-list.pt"/>
         <browser:page
             for="lp.registry.interfaces.distribution.IDistribution"
             class="lp.registry.browser.distribution.DistributionArchivesView"
             name="+archives"
             permission="launchpad.View"
-            facet="overview"
             template="../templates/distribution-archive-list.pt"/>
         <browser:page
             for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
             class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageView"
             permission="zope.Public"
             name="+portlet-publishing-details"
-            facet="overview"
             template="../templates/distributionsourcepackage-portlet-pub-details.pt"/>
         <browser:page
             for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
-            class="canonical.launchpad.webapp.publisher.LaunchpadView"
+            class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackagePublishingHistoryView"
             permission="zope.Public"
             name="+publishinghistory"
-            facet="overview"
             template="../templates/distributionsourcepackage-publishinghistory.pt"/>
         <browser:page
             for="lp.registry.interfaces.distribution.IDistribution"
             permission="zope.Public"
             name="+portlet-ppa-architectures"
             template="../templates/distribution-portlet-ppa-architectures.pt"/>
+        <browser:page
+            for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+            class=
+                "lp.soyuz.browser.sourcepackage.SourcePackageDifferenceView"
+            permission="zope.Public"
+            name="+difference"/>
+        <browser:page
+            for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+            class=
+                "lp.soyuz.browser.sourcepackage.SourcePackageChangelogView"
+            permission="zope.Public"
+            name="+changelog"
+            template="../templates/sourcepackage-changelog.pt"/>
+        <browser:page
+            for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+            class=
+                "lp.soyuz.browser.sourcepackage.SourcePackageCopyrightView"
+            permission="zope.Public"
+            name="+copyright"
+            template="../templates/sourcepackage-copyright.pt"/>
         <browser:pages
             for="lp.registry.interfaces.sourcepackage.ISourcePackage"
             permission="zope.Public"
-            class="lp.registry.browser.sourcepackage.SourcePackageView">
-            <browser:page
-                name="+packaging"
-                facet="overview"
-                template="../templates/sourcepackage-packaging.pt"/>
-            <browser:page
-                name="+builds"
-                facet="overview"
-                template="../templates/sourcepackage-builds.pt"/>
+            class=
+              "lp.soyuz.browser.sourcepackagebuilds.SourcePackageBuildsView">
             <browser:page
                 name="+builds-list"
                 template="../templates/builds-list.pt"/>
             <browser:page
-                name="+changelog"
-                facet="overview"
-                template="../templates/sourcepackage-changelog.pt"/>
+                name="+builds"
+                template="../templates/builds.pt"/>
         </browser:pages>
         <browser:pages
             for="lp.registry.interfaces.person.IPerson"
@@ -740,30 +750,25 @@
             <browser:page
                 name="+portlet-ppas"
                 template="../templates/person-portlet-ppas.pt"/>
-            <browser:page
-                name="+ppas-list"
-                template="../templates/person-ppas.pt"/>
         </browser:pages>
         <browser:pages
             for="lp.registry.interfaces.distribution.IDistribution"
-            class="lp.registry.browser.distribution.DistributionView"
+            class="lp.soyuz.browser.build.DistributionBuildRecordsView"
             permission="zope.Public">
             <browser:page
                 name="+builds"
-                facet="overview"
-                template="../templates/distribution-builds.pt"/>
+                template="../templates/builds.pt"/>
             <browser:page
                 name="+builds-list"
                 template="../templates/builds-list.pt"/>
         </browser:pages>
         <browser:pages
             for="lp.registry.interfaces.distroseries.IDistroSeries"
-            class="lp.registry.browser.distroseries.DistroSeriesView"
+            class="lp.soyuz.browser.distroseries.DistroSeriesBuildsView"
             permission="zope.Public">
             <browser:page
                 name="+builds"
-                facet="overview"
-                template="../templates/distroseries-builds.pt"/>
+                template="../templates/builds.pt"/>
             <browser:page
                 name="+builds-list"
                 template="../templates/builds-list.pt"/>
@@ -774,12 +779,11 @@
                 name="+portlet-latestuploads"
                 template="../templates/distroseries-portlet-latestuploads.pt"/>
         </browser:pages>
-    </facet>
 
     <browser:url
         for="lp.soyuz.interfaces.packageset.IPackagesetSet"
         path_expression="string:package-sets"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
         />
     <browser:navigation
         module="lp.soyuz.browser.packageset"
@@ -787,7 +791,7 @@
         />
     <browser:url
         for="lp.soyuz.interfaces.packageset.IPackageset"
-        path_expression="name"
+        path_expression="string:${distroseries/name}/${name}"
         parent_utility="lp.soyuz.interfaces.packageset.IPackagesetSet"
         />
     <browser:url
@@ -795,9 +799,47 @@
         path_expression="string:+upload/${id}"
         attribute_to_parent="distroseries"
         />
+    <browser:navigation
+        module="lp.soyuz.browser.queue"
+        classes="PackageUploadNavigation"
+        />
     <browser:url
         for="lp.soyuz.interfaces.archivedependency.IArchiveDependency"
         path_expression="string:+dependency/${dependency/id}"
         attribute_to_parent="archive"
         />
+    <browser:url
+        for="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseDownloadCount"
+        path_expression="string:+binaryhits/${binary_package_release/name}/${binary_package_release/version}/${binary_package_release/build/distro_arch_series/architecturetag}/${day}/${country/iso3166code2|string:unknown}"
+        attribute_to_parent="archive"
+        />
+
+    <!-- XXX JeroenVermeulen 2010-03-13 bug=539395: This is buildmaster, not soyuz -->
+    <browser:page
+        for="lp.buildmaster.interfaces.buildqueue.IBuildQueue"
+        name="+current"
+        class="lp.services.webapp.publisher.LaunchpadView"
+        permission="launchpad.View"
+        template="../templates/buildqueue-current.pt"/>
+    <browser:page
+        for="lp.buildmaster.interfaces.buildfarmbranchjob.IBuildFarmBranchJob"
+        name="+current"
+        class="lp.services.webapp.publisher.LaunchpadView"
+        permission="launchpad.View"
+        template="../templates/buildfarmbranchjob-current.pt"/>
+    <browser:page
+        for="lp.soyuz.interfaces.buildfarmbuildjob.IBuildFarmBuildJob"
+        name="+current"
+        class="lp.services.webapp.publisher.LaunchpadView"
+        permission="launchpad.View"
+        template="../templates/buildfarmbuildjob-current.pt"/>
+    <browser:pages
+        for="lp.soyuz.interfaces.packagerelationship.IPackageRelationshipSet"
+        permission="zope.Public">
+        <browser:page
+            name="+render-list"
+            template="../templates/packagerelationship-list.pt"
+         />
+    </browser:pages>
+    </facet>
 </configure>

@@ -6,17 +6,29 @@
 __metaclass__ = type
 __all__ = ['GPGKey', 'GPGKeySet']
 
-from zope.interface import implements
-from zope.component import getUtility
-
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound)
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from zope.component import getUtility
+from zope.interface import implements
 
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from lp.registry.interfaces.gpg import (
+    GPGKeyAlgorithm,
+    IGPGKey,
+    IGPGKeySet,
+    )
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.gpg.interfaces import IGPGHandler
 
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from lp.registry.interfaces.gpg import GPGKeyAlgorithm, IGPGKey, IGPGKeySet
+
 class GPGKey(SQLBase):
     implements(IGPGKey)
 
@@ -57,6 +69,24 @@ class GPGKeySet:
                       fingerprint=fingerprint, keysize=keysize,
                       algorithm=algorithm, active=active,
                       can_encrypt=can_encrypt)
+
+    def activate(self, requester, key, can_encrypt):
+        """See `IGPGKeySet`."""
+        fingerprint = key.fingerprint
+        lp_key = self.getByFingerprint(fingerprint)
+        if lp_key:
+            # Then the key already exists, so let's reactivate it.
+            lp_key.active = True
+            lp_key.can_encrypt = can_encrypt
+            return lp_key, False
+        ownerID = requester.id
+        keyid = key.keyid
+        keysize = key.keysize
+        algorithm = GPGKeyAlgorithm.items[key.algorithm]
+        lp_key = self.new(
+            ownerID, keyid, fingerprint, keysize, algorithm,
+            can_encrypt=can_encrypt)
+        return lp_key, True
 
     def get(self, key_id, default=None):
         """See `IGPGKeySet`"""

@@ -6,78 +6,63 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="malone"
 >
 
-<body>
   <metal:block fill-slot="head_epilogue">
-    <script type='text/javascript' tal:content="string:var yui_base='${yui}';" />
-    <script type="text/javascript"
-            tal:define="lp_js string:${icingroot}/build"
-            tal:attributes="src string:${lp_js}/bugs/bugtask-index.js">
+    <script type="text/javascript">
+        LPJS.use('base', 'node', 'oop', 'event',
+                'lp.bugs.bug_notification_level',
+            function(Y) {
+                Y.on('domready', function () {
+                    Y.lp.bugs.bug_notification_level.setup();
+                });
+            });
     </script>
+
+    <!-- It normally makes sense for form labels to be bold, but since this
+         form consists only of radio buttons, there's nothing but labels so we
+         just get wall-to-wall bold.  This rule turns the bold off. -->
+    <style type="text/css">
+      form table label {
+          font-weight: normal !important;
+      }
+    </style>
+
   </metal:block>
 
-<div metal:fill-slot="main">
+<body>
+  <div metal:fill-slot="main">
 
-  <div id="maincontent">
-    <div id="nonportlets" class="readable">
-      <p tal:content="structure context/fmt:link" />
-      <h1 tal:define="subscribed view/userIsSubscribed">
-        <tal:action condition="subscribed">Unsubscribe from</tal:action>
-        <tal:action condition="not:subscribed">Subscribe to</tal:action>
-        bug #<span tal:replace="context/bug/id" />
-      </h1>
+    <div id="maincontent">
+      <div id="nonportlets">
+        <h1 tal:define="subscribed view/user_is_subscribed">
+          <tal:action condition="subscribed">Unsubscribe from</tal:action>
+          <tal:action condition="not:subscribed">Subscribe to</tal:action>
+          bug #<span tal:replace="context/bug/id" />
+        </h1>
 
-  <p tal:condition="not: view/userIsSubscribed">
-    If you subscribe to a bug it shows up on your
-    personal pages, you receive copies of all comments by email,
-    and notification of any changes to the status of the bug upstream
-    and in different distributions.
-  </p>
+        <p tal:condition="not: view/user_is_subscribed">
+          If you subscribe to a bug it shows up on your
+          personal pages, you receive copies of all comments by email,
+          and notification of any changes to the status of the bug upstream
+          and in different distributions.
+        </p>
 
-  <p tal:condition="view/shouldShowUnsubscribeFromDupesWarning"
-     class="warning message">
-    Unsubscribing yourself or a team from a bug also unsubscribes from
-    duplicates.
-  </p>
+        <p tal:condition="view/shouldShowUnsubscribeFromDupesWarning"
+           class="warning message">
+          Unsubscribing yourself or a team from a bug also unsubscribes from
+          duplicates.
+        </p>
 
-  <form action="." method="POST">
-
-    <div class="field">
-
-      <div>
-        <div tal:content="structure view/subscription_widget">
-          <input type="radio" />
+        <div metal:use-macro="context/@@launchpad_form/form">
         </div>
+
       </div>
-
     </div>
 
-    <div class="actions">
-      <input tal:condition="not: view/userIsSubscribed"
-             type="submit"
-             name="subscribe"
-             value="Continue" />
-      <input tal:condition="view/userIsSubscribed"
-             type="submit"
-             name="unsubscribe"
-             value="Continue" />
-      or <a tal:attributes="href context/fmt:url">Cancel</a>
-    </div>
-  </form>
-
-    </div>
   </div>
-
-  <div id="portlets">
-    <div metal:use-macro="context/bug/@@+portlet-subscribers/custom">
-      <div metal:fill-slot="heading" />
-    </div>
-  </div>
-
-</div>
 
 </body>
 </html>

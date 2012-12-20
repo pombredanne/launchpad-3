@@ -2,73 +2,13 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  class="portlet"
+  class="portlet vertical"
   id="portlet-subscribers"
   metal:define-macro="custom"
 >
-  <div class="section" tal:define="context_menu context/menu:context"
-       metal:define-slot="heading">
-    <div
-      tal:attributes="class python: view.subscription_class(view.user)"
-      tal:content="structure context_menu/subscription/render" />
-    <div id="sub-unsub-spinner">Subscribing...</div>
+  <h2>Other bug subscribers</h2>
+  <div tal:define="context_menu context/menu:context">
     <div tal:content="structure context_menu/addsubscriber/render" />
   </div>
-  <a id="subscribers-content-link"
-     tal:define="bug context/bug|context"
-     tal:attributes="href bug/fmt:url/+bug-portlet-subscribers-content"></a>
-  <div id="subscribers-portlet-spinner"
-       style="text-align: center; display: none">
-    <img src="/@@/spinner" />
-  </div>
-  <script type="text/javascript">
-    YUI().use('io-base', 'node', 'bugs.bugtask_index', function(Y) {
-      // Must be done inline here to ensure the load event fires.
-      // This is a work around for a YUI3 issue with event handling.
-      var subscription_link = Y.get('.menu-link-subscription');
-      var subscription_link_handler;
-      if (subscription_link) {
-          subscription_link_handler = subscription_link.on('click', function(e) {
-              e.preventDefault();
-          });
-      }
-      Y.on('domready', function() {
-        if (Y.UA.ie) {
-            return null;
-        }
-
-        Y.get('#subscribers-portlet-spinner').setStyle('display', 'block');
-
-        function hide_spinner() {
-          Y.get('#subscribers-portlet-spinner').setStyle('display', 'none');
-          // Fire a custom event to notify that the initial click handler
-          // on subscription_link set above should be cleared.
-          if (Y.bugs) {
-              Y.bugs.portlet.fire(
-                'bugs:portletloadfailed', subscription_link_handler);
-          }
-        }
-
-        function on_success(transactionid, response, arguments) {
-          hide_spinner();
-          var portlet = Y.get('#portlet-subscribers');
-          portlet.set('innerHTML',
-                      portlet.get('innerHTML') + response.responseText);
-          // Fire a custom portlet loaded event to notify when
-          // it's safe to setup subscriber link callbacks.
-          // XXX deryck 2009-04-30 bug=369874 Now this object exists,
-          // the inline js here should be moved to bugtask-index.js.
-          // Moving will also prevent having the paranoia check for Y.bugs.
-          if (Y.bugs) {
-              Y.bugs.portlet.fire('bugs:portletloaded');
-          }
-        }
-
-        var config = {on: {success: on_success,
-                           failure: hide_spinner}};
-        var url = Y.get('#subscribers-content-link').getAttribute('href').replace('bugs.', '');
-        Y.io(url, config);
-      });
-    });
-  </script>
+  <div id="other-bug-subscribers"></div>
 </div>

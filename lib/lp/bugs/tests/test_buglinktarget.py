@@ -18,9 +18,13 @@ from zope.component import getUtility
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.interfaces.cve import ICveSet
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing import LaunchpadFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
+
 
 def questionSetUp(test):
     setUp(test)
@@ -47,9 +51,11 @@ def test_suite():
                ]
 
     for name, setUpMethod in targets:
-        test = LayeredDocFileSuite('buglinktarget.txt',
-                    setUp=setUpMethod, tearDown=tearDown,
-                    layer=LaunchpadFunctionalLayer)
+        test = LayeredDocFileSuite(
+            'buglinktarget.txt',
+            id_extensions=[name],
+            setUp=setUpMethod, tearDown=tearDown,
+            layer=LaunchpadFunctionalLayer)
         suite.addTest(test)
     return suite
 

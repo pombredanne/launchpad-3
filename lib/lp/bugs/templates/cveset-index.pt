@@ -6,20 +6,14 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="malone"
 >
   <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
-
 <div metal:fill-slot="main">
 
-      <h1>Launchpad CVE tracker</h1>
-
-  <form method="post">
+  <form method="post" style="margin-top: 1em; margin-bottom: 1em;">
     <div>Find CVEs by number or keywords:</div>
     <div>
           <input name="text" size="20" tal:attributes="value view/text" />
@@ -29,6 +23,10 @@
               value="Search" />
     </div>
   </form>
+
+  <div style="margin-top: 1em; margin-bottom: 1em;">
+    <a href="/bugs/cve/+all">Show all registered CVEs</a>
+  </div>
 
   <p class="error message" tal:repeat="notice view/notices"
      tal:content="notice">
@@ -73,6 +71,8 @@
     <div tal:repeat="cve context/latest_modified"
          tal:replace="structure cve/@@+listing-detailed" />
   </tal:not_searching>
+
+  <div tal:replace="structure context/@@+portlet-details" />
 
 </div>
 </body>

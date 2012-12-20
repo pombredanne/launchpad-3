@@ -1,8 +1,10 @@
-= Bug Activity =
+Bug Activity
+~~~~~~~~~~~~
 
-Bugs are problems that occur in software. In Malone, various things can be
-added to, edited and removed from a bug over the course of a bug's lifetime. We
-call this stuff bug activity. This document is about bug activity.
+Bugs are problems that occur in software. In Malone, various things can
+be added to, edited and removed from a bug over the course of a bug's
+lifetime. We call this stuff bug activity. This document is about bug
+activity.
 
 Each activity can happen more than once to a bug over the course of its
 lifetime. For auditing reasons, it's useful to track when these happen, why
@@ -20,17 +22,20 @@ Bug activity tracking is done using event subscribers. The handlers
 are simple little functions.
 
     >>> from zope.event import notify
-    >>> from lazr.lifecycle.event import (
-    ...     ObjectCreatedEvent, ObjectModifiedEvent)
-    >>> from canonical.launchpad.interfaces import (
-    ...     IUpstreamBugTask, IDistroBugTask, IProductSet, IBugTaskSet)
+    >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     IBugTask,
+    ...     IBugTaskSet,
+    ...     )
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> user = getUtility(ILaunchBag).user
 
 
-== User files a bug ==
+User files a bug
+================
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> params = CreateBugParams(
     ...     title="a test bug",
@@ -46,9 +51,10 @@ are simple little functions.
     u'added bug'
 
 
-== Bug title edited ==
+Bug title edited
+================
 
-    >>> from canonical.launchpad.interfaces import IBug
+    >>> from lp.bugs.interfaces.bug import IBug
     >>> old_state = Snapshot(bug, providing=IBug)
     >>> bug.title = "new bug title"
     >>> bug_edited = ObjectModifiedEvent(
@@ -63,22 +69,23 @@ are simple little functions.
     u'new bug title'
 
 
-== Source package assignment edited ==
+Source package assignment edited
+================================
 
     >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
-    >>> from canonical.launchpad.interfaces import (
-    ...     ISourcePackageNameSet, IDistributionSet)
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
     >>> mozilla_firefox = getUtility(ISourcePackageNameSet)['mozilla-firefox']
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> source_package_assignment = getUtility(IBugTaskSet).createTask(
-    ...     bug=bug, sourcepackagename=mozilla_firefox,
-    ...     distribution=ubuntu,owner=user)
+    ...     bug, user, ubuntu.getSourcePackage(mozilla_firefox))
     >>> edit_fields = [
     ...     "distribution", "sourcepackagename", "milestone", "status",
     ...     "importance", "assignee", "bugwatch"]
     >>> old_source_package_assignment = Snapshot(
-    ...   source_package_assignment, providing=IDistroBugTask)
+    ...   source_package_assignment, providing=IBugTask)
     >>> source_package_assignment.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> source_package_assignment_edited = ObjectModifiedEvent(
@@ -93,16 +100,40 @@ are simple little functions.
     >>> latest_activity.newvalue == BugTaskStatus.CONFIRMED.title
     True
 
+You will notice that the `whatchanged` attribute in this case specifies
+a project and an attribute.  This happens when the change is to a bugtask.
+The activity object object provides a couple of simple attributes to separate
+out these values: `target` and `attribute`.
 
-== Upstream product assignment edited ==
+    >>> latest_activity.target
+    u'mozilla-firefox (Ubuntu)'
+    >>> latest_activity.attribute
+    u'status'
+
+If the activity is not for a bug task, `target` is None, and `attribute` is
+typically the same as `whatchanged`.  However, in some cases (ideally,
+whenever necessary), it is normalized to show the actual attribute name.
+For instance, look at the attributes on the previous activity.
+
+    >>> print bug.activity[-2].target
+    None
+    >>> bug.activity[-2].whatchanged
+    u'summary'
+    >>> bug.activity[-2].attribute
+    'title'
+
+(This is covered more comprehensively in tests/test_bugchanges.py).
+
+Upstream product assignment edited
+==================================
 
     >>> product_assignment = getUtility(IBugTaskSet).createTask(
-    ...   bug=bug, product=getUtility(IProductSet)['thunderbird'], owner=user)
+    ...   bug, user, getUtility(IProductSet)['thunderbird'])
     >>> edit_fields = [
     ...     "product", "milestone", "status", "assignee", "bugwatch",
     ...     "importance"]
     >>> old_product_assignment = Snapshot(
-    ...     product_assignment, providing=IUpstreamBugTask)
+    ...     product_assignment, providing=IBugTask)
     >>> product_assignment.transitionToStatus(
     ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
     >>> product_assignment_edited = ObjectModifiedEvent(
@@ -111,19 +142,25 @@ are simple little functions.
     >>> latest_activity = bug.activity[-1]
     >>> latest_activity.whatchanged
     u'thunderbird: status'
+    >>> latest_activity.target
+    u'thunderbird'
+    >>> latest_activity.attribute
+    u'status'
     >>> latest_activity.oldvalue == BugTaskStatus.NEW.title
     True
     >>> latest_activity.newvalue == BugTaskStatus.INVALID.title
     True
 
 
-== Bug report is marked as a duplicate of another bug report ==
+Bug report is marked as a duplicate of another bug report
+=========================================================
 
     >>> edit_fields = [
     ...     "id", "title", "description", "name",
     ...     "private", "duplicateof", "security_related"]
     >>> old_bug = Snapshot(bug, providing=IBug)
-    >>> bug.duplicateof = 1
+    >>> latest_bug = factory.makeBug()
+    >>> bug.markAsDuplicate(latest_bug)
     >>> bug_edited = ObjectModifiedEvent(bug, old_bug, edit_fields)
     >>> notify(bug_edited)
     >>> latest_activity = bug.activity[-1]
@@ -131,47 +168,92 @@ are simple little functions.
     u'marked as duplicate'
     >>> latest_activity.oldvalue is None
     True
-    >>> latest_activity.newvalue == u'1'
+    >>> latest_activity.newvalue == unicode(latest_bug.id)
     True
 
 
-== Bug report has itss duplicate marker changed to another bug report ==
+Bug report has its duplicate marker changed to another bug report
+=================================================================
 
     >>> edit_fields = [
     ...     "id", "title", "description", "name", "private", "duplicateof",
     ...     "security_related"]
     >>> old_bug = Snapshot(bug, providing=IBug)
-    >>> bug.duplicateof = 2
+    >>> another_bug = factory.makeBug()
+    >>> bug.markAsDuplicate(another_bug)
     >>> bug_edited = ObjectModifiedEvent(bug, old_bug, edit_fields)
     >>> notify(bug_edited)
     >>> latest_activity = bug.activity[-1]
     >>> latest_activity.whatchanged
     u'changed duplicate marker'
-    >>> latest_activity.oldvalue == u'1'
+    >>> latest_activity.oldvalue == unicode(latest_bug.id)
     True
-    >>> latest_activity.newvalue == u'2'
+    >>> latest_activity.newvalue == unicode(another_bug.id)
     True
 
 
-== The bug report is un-duplicated ==
+The bug report is un-duplicated
+===============================
 
     >>> edit_fields = [
     ...     "id", "title", "description", "name", "private", "duplicateof",
     ...     "security_related"]
     >>> old_bug = Snapshot(bug, providing=IBug)
-    >>> bug.duplicateof = None
+    >>> bug.markAsDuplicate(None)
     >>> bug_edited = ObjectModifiedEvent(bug, old_bug, edit_fields)
     >>> notify(bug_edited)
     >>> latest_activity = bug.activity[-1]
     >>> latest_activity.whatchanged
     u'removed duplicate marker'
-    >>> latest_activity.oldvalue == u'2'
+    >>> latest_activity.oldvalue == unicode(another_bug.id)
     True
     >>> latest_activity.newvalue is None
     True
 
 
-== BugActivityItem ==
+A bug with multiple duplicates
+==============================
+
+When a bug has multiple duplicates and is itself marked a duplicate,
+the duplicates are automatically duped to the same master bug.  These changes
+are then reflected in the activity log for each bug itself.
+
+    >>> edit_fields = [
+    ...     "id", "title", "description", "name", "private", "duplicateof",
+    ...     "security_related"]
+    >>> initial_bug = factory.makeBug()
+    >>> dupe_one = factory.makeBug()
+    >>> dupe_two = factory.makeBug()
+    >>> dupe_one.markAsDuplicate(initial_bug)
+    >>> dupe_two.markAsDuplicate(initial_bug)
+
+After creating a few bugs to work with, we create a final bug and duplicate
+the initial bug against it.
+
+    >>> final_bug = factory.makeBug()
+    >>> initial_bug.markAsDuplicate(final_bug)
+
+Now, we confirm the activity log for the other bugs correctly list the
+final_bug as their master bug.
+
+    >>> latest_activity = dupe_one.activity[-1]
+    >>> print latest_activity.whatchanged
+    changed duplicate marker
+    >>> latest_activity.oldvalue == unicode(initial_bug.id)
+    True
+    >>> latest_activity.newvalue == unicode(final_bug.id)
+    True
+    >>> latest_activity = dupe_two.activity[-1]
+    >>> print latest_activity.whatchanged
+    changed duplicate marker
+    >>> latest_activity.oldvalue == unicode(initial_bug.id)
+    True
+    >>> latest_activity.newvalue == unicode(final_bug.id)
+    True
+
+
+BugActivityItem
+===============
 
 BugActivityItem implements the stuff that BugActivity doesn't need to
 know about.
@@ -253,8 +335,8 @@ _formatted_tags_change but with newlines replaced by HTML line-breaks.
     added: tag3<br />removed: tag2
 
 For changes to bug tasks, BugActivityItem returns the name of the attribute
-that was changed (see "Determining the target and attribute of a
-change", below).
+that was changed (using the `attribute` property on the bug activity
+discussed above).
 
     >>> activity = getUtility(IBugActivitySet).new(
     ...     bug=bug_one, whatchanged='malone: status', oldvalue='New',
@@ -298,40 +380,3 @@ since such changes may be too long to be useful as a diff.
     >>> print "%s: %s" % (
     ...     activity_item.change_summary, activity_item.change_details)
     description: updated
-
-
-=== Determining the target and attribute of a change ===
-
-Some changes - specifically changes to a BugTask - are listed in
-BugActivity as targeted changes, i.e. their `whatchanged` string will be
-of the form "<target>: <attribute>". BugActivityItem offers two
-properties by which to extract these.
-
-BugActivityItem.target will return the <target> part of the whatchanged
-string or None if the BugActivity is not targeted to a BugTask.
-
-    >>> activity = getUtility(IBugActivitySet).new(
-    ...     bug=bug_one, whatchanged='malone: assignee',
-    ...     oldvalue='nobody', newvalue='New Assignee',
-    ...     person=user, datechanged=nowish)
-    >>> targeted_activity_item = BugActivityItem(activity)
-    >>> print targeted_activity_item.target
-    malone
-
-    >>> activity = getUtility(IBugActivitySet).new(
-    ...     bug=bug_one, whatchanged='description',
-    ...     oldvalue='Old description', newvalue='New description',
-    ...     person=user, datechanged=nowish)
-    >>> untargeted_activity_item = BugActivityItem(activity)
-    >>> print untargeted_activity_item.target
-    None
-
-BugActivityItem.attribute will return the <attribute> part of the
-whatchanged string if the activity is targeted to a BugTask. Otherwise
-it will simply return the whole whatchanged string.
-
-    >>> print targeted_activity_item.attribute
-    assignee
-
-    >>> print untargeted_activity_item.attribute
-    description

@@ -3,7 +3,7 @@ Let's first setup some objects that we'll need.
     >>> no_priv_browser = setupBrowser(
     ...     auth='Basic no-priv@canonical.com:test')
     >>> team_admin_browser = setupBrowser(
-    ...    'Basic jeff.waugh@ubuntulinux.com:jdub')
+    ...    'Basic jeff.waugh@ubuntulinux.com:test')
 
 If you're not logged in and go to the +polls page of the "Ubuntu Team"
 you'll see a link to login as a team administrator.
@@ -34,7 +34,7 @@ create a new poll.
     'http://launchpad.dev/~ubuntu-team/+newpoll'
 
     >>> team_admin_browser.title
-    'New poll for team Ubuntu Team'
+    'New poll : ...'
 
 First we try to create a poll with a invalid name to
 test the name field validator.
@@ -90,14 +90,15 @@ Create a new poll that starts in 2025-06-04 and will last until 2035.
     >>> team_admin_browser.open(
     ...     'http://launchpad.dev/~ubuntu-team/+newpoll')
     >>> team_admin_browser.getControl(
-    ...     'The unique name of this poll').value = 'dpl-2080'
+    ...     "The unique name of this poll").value = 'dpl-2080'
+    >>> title_control = team_admin_browser.getControl(
+    ...     "The title of this poll")
+    >>> title_control.value = "Debian Project Leader Election 2080"
+    >>> proposition = "The next debian project leader"
     >>> team_admin_browser.getControl(
-    ...     'The title of this poll').value = 'Debian Project Leader Election 2080'
-    >>> proposition = 'The next debian project leader'
+    ...     "The proposition that is going to be voted").value = proposition
     >>> team_admin_browser.getControl(
-    ...     'The proposition that is going to be voted').value = proposition
-    >>> team_admin_browser.getControl(
-    ...     'Users can spoil their votes?').selected = True
+    ...     "Users can spoil their votes?").selected = True
     >>> team_admin_browser.getControl(
     ...     name='field.dateopens').value = '2025-06-04 02:00:00+00:00'
     >>> team_admin_browser.getControl(
@@ -109,9 +110,9 @@ We're redirected to the newly created poll
     >>> team_admin_browser.url
     'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080'
     >>> team_admin_browser.title
-    'Poll: \xe2\x80\x9cDebian Project Leader Election 2080\xe2\x80\x9d'
+    'Debian Project Leader Election 2080 : \xe2\x80\x9cUbuntu Team\xe2\x80\x9d team'
     >>> print_location(team_admin_browser.contents)
-    Hierarchy: Launchpad > ?Ubuntu Team? team
+    Hierarchy:  ?Ubuntu Team? team > Debian Project Leader Election 2080
     Tabs:
     * Overview (selected) - http://launchpad.dev/~ubuntu-team
     * Code - http://code.launchpad.dev/~ubuntu-team
@@ -131,14 +132,15 @@ Now lets try to insert a poll with the name of a existing one.
     >>> team_admin_browser.open(
     ...     'http://launchpad.dev/~ubuntu-team/+newpoll')
     >>> team_admin_browser.getControl(
-    ...     'The unique name of this poll').value = 'dpl-2080'
+    ...     "The unique name of this poll").value = 'dpl-2080'
+    >>> title_control = team_admin_browser.getControl(
+    ...     "The title of this poll")
+    >>> title_control.value = "Debian Project Leader Election 2080"
+    >>> proposition = "The next debian project leader"
     >>> team_admin_browser.getControl(
-    ...     'The title of this poll').value = 'Debian Project Leader Election 2080'
-    >>> proposition = 'The next debian project leader'
+    ...     "The proposition that is going to be voted").value = proposition
     >>> team_admin_browser.getControl(
-    ...     'The proposition that is going to be voted').value = proposition
-    >>> team_admin_browser.getControl(
-    ...     'Users can spoil their votes?').selected = True
+    ...     "Users can spoil their votes?").selected = True
     >>> team_admin_browser.getControl(
     ...     name='field.dateopens').value = '2025-06-04 02:00:00+00:00'
     >>> team_admin_browser.getControl(
@@ -148,11 +150,11 @@ Now lets try to insert a poll with the name of a existing one.
     >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
     There is 1 error.
     dpl-2080 is already in use by another poll in this team.
- 
+
 When creating a new poll, its start date must be at least 12 hours from
 now, so that the user creating it has a chance to add some options before
 the poll opens -- at that point new options cannot be added.
- 
+
     >>> team_admin_browser.getControl('The unique name').value = 'today'
     >>> from datetime import datetime
     >>> today = datetime.today().strftime('%Y-%m-%d')
@@ -160,4 +162,4 @@ the poll opens -- at that point new options cannot be added.
     >>> team_admin_browser.getControl('Continue').click()
     >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
     There is 1 error.
-    A poll cannot open less than 12 hours after it's created.
+    A poll cannot open less than 12 hours after it&#x27;s created.

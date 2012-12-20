@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -9,17 +9,24 @@
 
 import _pythonpath
 
-import pytz
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+import pytz
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.interfaces import (
-    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ILaunchpadCelebrities,
-    ITeamMembershipSet)
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.teammembership import (
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
+    ITeamMembershipSet,
+    )
+from lp.services.config import config
 from lp.services.scripts.base import (
-    LaunchpadCronScript, LaunchpadScriptFailure)
+    LaunchpadCronScript,
+    LaunchpadScriptFailure,
+    )
 
 
 class ExpireMemberships(LaunchpadCronScript):
@@ -41,8 +48,10 @@ class ExpireMemberships(LaunchpadCronScript):
             days=DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
         self.txn.begin()
         for membership in membershipset.getMembershipsToExpire(
-                min_date_for_warning):
+            min_date_for_warning):
             membership.sendExpirationWarningEmail()
+            self.logger.debug("Sent warning email to %s in %s team."
+                          % (membership.person.name, membership.team.name))
         self.txn.commit()
 
     def main(self):
@@ -59,4 +68,3 @@ if __name__ == '__main__':
     script = ExpireMemberships('flag-expired-memberships',
                                dbuser=config.expiredmembershipsflagger.dbuser)
     script.lock_and_run()
-

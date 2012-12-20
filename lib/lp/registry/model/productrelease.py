@@ -1,35 +1,57 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 __metaclass__ = type
-__all__ = ['ProductRelease', 'ProductReleaseSet', 'ProductReleaseFile']
+__all__ = [
+    'ProductRelease',
+    'ProductReleaseFile',
+    'ProductReleaseSet',
+    'productrelease_to_milestone',
+    ]
 
+import os
 from StringIO import StringIO
 
-from zope.interface import implements
-from zope.component import getUtility
-
-from sqlobject import ForeignKey, StringCol, SQLMultipleJoin, AND
-from storm.expr import And, Desc
+from sqlobject import (
+    ForeignKey,
+    SQLMultipleJoin,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Desc,
+    )
 from storm.store import EmptyResultSet
+from zope.component import getUtility
+from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
+from lp.registry.errors import InvalidFilename
+from lp.registry.interfaces.person import (
+    validate_person,
+    validate_public_person,
+    )
 from lp.registry.interfaces.productrelease import (
-    IProductRelease, IProductReleaseFile, IProductReleaseSet, UpstreamFileType)
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.registry.interfaces.person import validate_public_person
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
-
-
-SEEK_END = 2                    # Python2.4 has no definition for SEEK_END.
+    IProductRelease,
+    IProductReleaseFile,
+    IProductReleaseSet,
+    UpstreamFileType,
+    )
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.propertycache import cachedproperty
 
 
 class ProductRelease(SQLBase):
@@ -45,53 +67,32 @@ class ProductRelease(SQLBase):
         dbName='datecreated', notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName="owner", foreignKey="Person",
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_person,
+        notNull=True)
     milestone = ForeignKey(dbName='milestone', foreignKey='Milestone')
 
-    files = SQLMultipleJoin(
+    _files = SQLMultipleJoin(
         'ProductReleaseFile', joinColumn='productrelease',
         orderBy='-date_uploaded', prejoins=['productrelease'])
 
-    # properties
-    @property
-    def codename(self):
-        """Backwards compatible codename attribute.
-
-        This attribute was moved to the Milestone."""
-        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
-        return self.milestone.code_name
+    @cachedproperty
+    def files(self):
+        return self._files
 
     @property
     def version(self):
-        """Backwards compatible version attribute.
-
-        This attribute was replaced by the Milestone.name."""
-        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
+        """See `IProductRelease`."""
         return self.milestone.name
 
     @property
-    def summary(self):
-        """Backwards compatible summary attribute.
-
-        This attribute was replaced by the Milestone.summary."""
-        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
-        return self.milestone.summary
-
-    @property
     def productseries(self):
-        """Backwards compatible summary attribute.
-
-        This attribute was replaced by the Milestone.productseries."""
-        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
+        """See `IProductRelease`."""
         return self.milestone.productseries
 
     @property
     def product(self):
-        """Backwards compatible summary attribute.
-
-        This attribute was replaced by the Milestone.productseries.product."""
-        # XXX EdwinGrubbs 2009-02-02 bug=324394: Remove obsolete attributes.
-        return self.productseries.product
+        """See `IProductRelease`."""
+        return self.milestone.productseries.product
 
     @property
     def displayname(self):
@@ -110,7 +111,7 @@ class ProductRelease(SQLBase):
 
     def destroySelf(self):
         """See `IProductRelease`."""
-        assert self.files.count() == 0, (
+        assert self._files.count() == 0, (
             "You can't delete a product release which has files associated "
             "with it.")
         SQLBase.destroySelf(self)
@@ -129,7 +130,7 @@ class ProductRelease(SQLBase):
                 "file_or_data is not an expected type")
             file_obj = file_or_data
             start = file_obj.tell()
-            file_obj.seek(0, SEEK_END)
+            file_obj.seek(0, os.SEEK_END)
             file_size = file_obj.tell()
             file_obj.seek(start)
         return file_obj, file_size
@@ -140,6 +141,8 @@ class ProductRelease(SQLBase):
                        file_type=UpstreamFileType.CODETARBALL,
                        description=None):
         """See `IProductRelease`."""
+        if self.hasReleaseFile(filename):
+            raise InvalidFilename
         # Create the alias for the file.
         filename = self.normalizeFilename(filename)
         file_obj, file_size = self._getFileObjectAndSize(file_content)
@@ -184,6 +187,14 @@ class ProductRelease(SQLBase):
                 return file_
         raise NotFoundError(name)
 
+    def hasReleaseFile(self, name):
+        """See `IProductRelease`."""
+        try:
+            self.getProductReleaseFileByName(name)
+            return True
+        except NotFoundError:
+            return False
+
 
 class ProductReleaseFile(SQLBase):
     """A file of a product release."""
@@ -218,21 +229,30 @@ class ProductReleaseSet(object):
 
     def getBySeriesAndVersion(self, productseries, version, default=None):
         """See `IProductReleaseSet`."""
-        query = AND(ProductRelease.q.version==version,
-                    ProductRelease.q.productseriesID==productseries.id)
-        productrelease = ProductRelease.selectOne(query)
-        if productrelease is None:
-            return default
-        return productrelease
+        # Local import of Milestone to avoid circular imports.
+        from lp.registry.model.milestone import Milestone
+        store = IStore(productseries)
+        # The Milestone is cached too because most uses of a ProductRelease
+        # need it.
+        result = store.find(
+            (ProductRelease, Milestone),
+            Milestone.productseries == productseries,
+            ProductRelease.milestone == Milestone.id,
+            Milestone.name == version)
+        found = result.one()
+        if found is None:
+            return None
+        product_release, milestone = found
+        return product_release
 
-    def getReleasesForSerieses(self, serieses):
+    def getReleasesForSeries(self, series):
         """See `IProductReleaseSet`."""
         # Local import of Milestone to avoid import loop.
         from lp.registry.model.milestone import Milestone
-        if len(list(serieses)) == 0:
+        if len(list(series)) == 0:
             return EmptyResultSet()
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        series_ids = [series.id for series in serieses]
+        series_ids = [s.id for s in series]
         result = store.find(
             ProductRelease,
             And(ProductRelease.milestone == Milestone.id),
@@ -249,3 +269,8 @@ class ProductReleaseSet(object):
             sqlvalues([release.id for release in releases])),
             orderBy='-date_uploaded',
             prejoins=['libraryfile', 'libraryfile.content', 'productrelease'])
+
+
+def productrelease_to_milestone(productrelease):
+    """Adapt an `IProductRelease` to an `IMilestone`."""
+    return productrelease.milestone

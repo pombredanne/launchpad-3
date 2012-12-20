@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -12,9 +12,10 @@ __all__ = []
 
 from optparse import OptionParser
 import os
-import psycopg2
 import signal
 import sys
+
+import psycopg2
 
 
 def main():

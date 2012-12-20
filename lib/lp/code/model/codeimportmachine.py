@@ -12,21 +12,29 @@ __all__ = [
     'CodeImportMachineSet',
     ]
 
-from sqlobject import SQLMultipleJoin, StringCol
-
+from sqlobject import (
+    SQLMultipleJoin,
+    StringCol,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.database.constants import DEFAULT, UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
 from lp.code.enums import (
-    CodeImportMachineOfflineReason, CodeImportMachineState)
+    CodeImportMachineOfflineReason,
+    CodeImportMachineState,
+    )
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportmachine import (
-    ICodeImportMachine, ICodeImportMachineSet)
+    ICodeImportMachine,
+    ICodeImportMachineSet,
+    )
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import SQLBase
 
 
 class CodeImportMachine(SQLBase):
@@ -51,7 +59,7 @@ class CodeImportMachine(SQLBase):
         'CodeImportEvent', joinColumn='machine',
         orderBy=['-date_created', '-id'])
 
-    def shouldLookForJob(self):
+    def shouldLookForJob(self, worker_limit):
         """See `ICodeImportMachine`."""
         job_count = self.current_jobs.count()
 
@@ -64,8 +72,7 @@ class CodeImportMachine(SQLBase):
                     CodeImportMachineOfflineReason.QUIESCED)
             return False
         elif self.state == CodeImportMachineState.ONLINE:
-            max_jobs = config.codeimportdispatcher.max_jobs_per_machine
-            return job_count < max_jobs
+            return job_count < worker_limit
         else:
             raise AssertionError(
                 "Unknown machine state %r??" % self.state)

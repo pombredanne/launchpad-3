@@ -8,9 +8,16 @@ __all__ = [
     'DistroArchSeriesBinaryPackageView',
     ]
 
+from lazr.restful.utils import smartquote
+
+from lp.services.webapp import (
+    ApplicationMenu,
+    GetitemNavigation,
+    LaunchpadView,
+    )
 from lp.soyuz.interfaces.distroarchseriesbinarypackage import (
-    IDistroArchSeriesBinaryPackage)
-from canonical.launchpad.webapp import ApplicationMenu, GetitemNavigation
+    IDistroArchSeriesBinaryPackage,
+    )
 
 
 class DistroArchSeriesBinaryPackageOverviewMenu(ApplicationMenu):
@@ -25,9 +32,8 @@ class DistroArchSeriesBinaryPackageNavigation(GetitemNavigation):
     usedfor = IDistroArchSeriesBinaryPackage
 
 
-class DistroArchSeriesBinaryPackageView:
+class DistroArchSeriesBinaryPackageView(LaunchpadView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
+    @property
+    def page_title(self):
+        return smartquote(self.context.title)

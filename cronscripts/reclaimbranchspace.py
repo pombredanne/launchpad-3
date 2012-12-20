@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -10,14 +10,14 @@
 __metaclass__ = type
 
 import _pythonpath
+
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
-from lp.code.interfaces.branchjob import (
-    IReclaimBranchSpaceJobSource)
+from lp.code.interfaces.branchjob import IReclaimBranchSpaceJobSource
+from lp.services.config import config
 from lp.services.job.runner import JobRunner
 from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.webapp.errorlog import globalErrorUtility
 
 
 class RunReclaimBranchSpaceJobs(LaunchpadCronScript):
@@ -26,7 +26,7 @@ class RunReclaimBranchSpaceJobs(LaunchpadCronScript):
     def main(self):
         globalErrorUtility.configure('reclaimbranchspace')
         job_source = getUtility(IReclaimBranchSpaceJobSource)
-        runner = JobRunner.fromReady(job_source)
+        runner = JobRunner.fromReady(job_source, self.logger)
         runner.runAll()
         self.logger.info(
             'Reclaimed space for %s branches.', len(runner.completed_jobs))

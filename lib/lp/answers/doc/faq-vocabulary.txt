@@ -4,10 +4,10 @@ The FAQ vocabulary contains all the FAQs available in a particular
 collection. It provides the IHugeVocabulary interface.
 
     >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.product import IProductSet
-    >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
     >>> from zope.schema.vocabulary import getVocabularyRegistry
+    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.services.webapp.vocabulary import IHugeVocabulary
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> vocabulary_registry = getVocabularyRegistry()
     >>> firefox = getUtility(IProductSet).getByName('firefox')
@@ -73,15 +73,14 @@ Trying to retrieve an invalid or non-existent token raises LookupError:
 The searchForTerms() method returns a CountableIterator of terms that
 are similar to the query:
 
-    >>> from canonical.launchpad.webapp.vocabulary import CountableIterator
-    >>> terms = vocabulary.searchForTerms('Problem showing SVG')
-    >>> isinstance(terms, CountableIterator)
+    >>> from zope.security import proxy
+    >>> from lp.services.webapp.vocabulary import CountableIterator
+    >>> terms = vocabulary.searchForTerms('extensions')
+    >>> proxy.isinstance(terms, CountableIterator)
     True
     >>> terms.count()
     2
     >>> for term in terms:
     ...     print term.title
+    How do I install Extensions?
     How do I troubleshoot problems with extensions/themes?
-    How do I install Java?
-
-

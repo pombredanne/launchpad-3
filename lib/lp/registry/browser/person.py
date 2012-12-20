@@ -1,64 +1,51 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
+# pylint: disable-msg=E0211,E0213,C0322
 
 """Person-related view classes."""
 
 __metaclass__ = type
-
 __all__ = [
     'BeginTeamClaimView',
-    'BugSubscriberPackageBugsSearchListingView',
+    'CommonMenuLinks',
     'EmailToPersonView',
-    'PeopleSearchMenu'
     'PeopleSearchView',
     'PersonAccountAdministerView',
-    'PersonAddView',
     'PersonAdministerView',
     'PersonAnswerContactForView',
     'PersonAnswersMenu',
-    'PersonAssignedBugTaskSearchListingView',
     'PersonBrandingView',
-    'PersonBreadcrumb',
-    'PersonBugsMenu',
-    'PersonChangePasswordView',
-    'PersonClaimView',
     'PersonCodeOfConductEditView',
-    'PersonCommentedBugTaskSearchListingView',
     'PersonDeactivateAccountView',
     'PersonEditEmailsView',
-    'PersonEditHomePageView',
     'PersonEditIRCNicknamesView',
     'PersonEditJabberIDsView',
-    'PersonEditLocationView',
+    'PersonEditTimeZoneView',
     'PersonEditSSHKeysView',
     'PersonEditView',
-    'PersonEditWikiNamesView',
     'PersonFacets',
     'PersonGPGView',
+    'PersonIndexMenu',
     'PersonIndexView',
+    'PersonKarmaView',
     'PersonLanguagesView',
     'PersonLatestQuestionsView',
     'PersonNavigation',
     'PersonOAuthTokensView',
     'PersonOverviewMenu',
+    'PersonOwnedTeamsView',
     'PersonRdfContentsView',
     'PersonRdfView',
-    'PersonRelatedBugTaskSearchListingView',
     'PersonRelatedSoftwareView',
-    'PersonReportedBugTaskSearchListingView',
+    'PersonRenameFormMixin',
     'PersonSearchQuestionsView',
     'PersonSetActionNavigationMenu',
     'PersonSetContextMenu',
     'PersonSetNavigation',
-    'PersonSpecFeedbackView',
-    'PersonSpecWorkloadTableView',
-    'PersonSpecWorkloadView',
-    'PersonSpecsMenu',
-    'PersonSubscribedBugTaskSearchListingView',
     'PersonView',
     'PersonVouchersView',
+    'PPANavigationMenuMixIn',
     'RedirectToEditLanguagesView',
     'RestrictedMembershipsPersonView',
     'SearchAnsweredQuestionsView',
@@ -67,173 +54,220 @@ __all__ = [
     'SearchCreatedQuestionsView',
     'SearchNeedAttentionQuestionsView',
     'SearchSubscribedQuestionsView',
-    'TeamAddMyTeamsView',
-    'TeamBreadcrumb',
-    'TeamEditLocationView',
-    'TeamEditMenu',
-    'TeamJoinView',
-    'TeamLeaveView',
-    'TeamMembershipView',
-    'TeamMugshotView',
-    'TeamNavigation',
-    'TeamOverviewMenu',
-    'TeamReassignmentView',
-    'TeamSpecsMenu',
     'archive_to_person',
     ]
 
-import cgi
-import copy
+
+from datetime import datetime
 import itertools
-import pytz
-import subprocess
+from itertools import chain
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
+from textwrap import dedent
 import urllib
 
-from datetime import datetime, timedelta
-from itertools import chain
-from operator import attrgetter, itemgetter
-from textwrap import dedent
-
+from lazr.config import as_timedelta
+from lazr.delegates import delegates
+from lazr.restful.interface import copy_field
+from lazr.restful.interfaces import IWebServiceClientRequest
+from lazr.restful.utils import smartquote
+from lazr.uri import URI
+import pytz
+from storm.zope.interfaces import IResultSet
+from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form.browser import (
+    TextAreaWidget,
+    TextWidget,
+    )
+from zope.component import (
+    adapts,
+    getUtility,
+    queryMultiAdapter,
+    )
 from zope.error.interfaces import IErrorReportingUtility
-from zope.app.form.browser import TextAreaWidget, TextWidget
+from zope.formlib import form
 from zope.formlib.form import FormFields
-from zope.interface import classImplements, implements, Interface
+from zope.interface import (
+    classImplements,
+    implements,
+    Interface,
+    )
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
-from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
-from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.schema import Bool, Choice, List, Text, TextLine
+from zope.schema import (
+    Choice,
+    Text,
+    TextLine,
+    )
 from zope.schema.vocabulary import (
-    SimpleTerm, SimpleVocabulary, getVocabularyRegistry)
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from z3c.ptcompat import ViewPageTemplateFile
-
-from canonical.config import config
-from lazr.delegates import delegates
-from lazr.config import as_timedelta
-from lazr.restful.interface import copy_field, use_template
-from canonical.lazr.utils import safe_hasattr
-from canonical.database.sqlbase import flush_database_updates
-
-from canonical.widgets import (
-    LaunchpadDropdownWidget, LaunchpadRadioWidget,
-    LaunchpadRadioWidgetWithDescription, LocationWidget, PasswordChangeWidget)
-from canonical.widgets.image import ImageChangeWidget
-from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-
-from canonical.cachedproperty import cachedproperty
-
-from canonical.launchpad import helpers
-from lp.registry.browser.team import TeamEditView
-from lp.soyuz.browser.archive import traverse_named_ppa
-from lp.soyuz.browser.archivesubscription import (
-    traverse_archive_subscription_for_subscriber)
-from canonical.launchpad.browser.launchpad import get_launchpad_views
-from canonical.launchpad.interfaces.account import IAccount
-from canonical.launchpad.interfaces.account import AccountStatus
-from lp.soyuz.interfaces.archivesubscriber import (
-    IArchiveSubscriberSet)
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
-from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
-from lp.services.worlddata.interfaces.country import ICountry
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddressSet)
-from canonical.launchpad.interfaces.geoip import IRequestPreferredLanguages
-from canonical.launchpad.interfaces.gpghandler import (
-    GPGKeyNotFoundError, IGPGHandler)
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
-from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
-from lp.blueprints.interfaces.specification import SpecificationFilter
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, IOpenLaunchBag, NotFoundError, UnexpectedFormData)
-from lp.answers.interfaces.questionenums import QuestionParticipation
+from lp import _
+from lp.answers.browser.questiontarget import SearchQuestionsView
+from lp.answers.enums import QuestionParticipation
+from lp.answers.interfaces.questionsperson import IQuestionsPerson
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.app.browser.lazrjs import TextAreaEditorWidget
+from lp.app.browser.tales import (
+    DateTimeFormatterAPI,
+    PersonFormatterAPI,
+    )
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.validators.email import valid_email
+from lp.app.widgets.image import ImageChangeWidget
+from lp.app.widgets.itemswidgets import (
+    LaunchpadDropdownWidget,
+    LaunchpadRadioWidget,
+    LaunchpadRadioWidgetWithDescription,
+    )
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
+from lp.buildmaster.enums import BuildStatus
+from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
+from lp.code.errors import InvalidNamespace
+from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
+from lp.registry.browser import BaseRdfView
+from lp.registry.browser.branding import BrandingChangeView
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu,
+    RegistryCollectionActionMenuBase,
+    TopLevelMenuMixin,
+    )
+from lp.registry.browser.teamjoin import TeamJoinMixin
+from lp.registry.enums import PersonVisibility
+from lp.registry.errors import VoucherAlreadyRedeemed
 from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.irc import IIrcIDSet
-from lp.registry.interfaces.jabber import IJabberIDSet
+from lp.registry.interfaces.jabber import (
+    IJabberID,
+    IJabberIDSet,
+    )
 from lp.registry.interfaces.mailinglist import (
-    CannotUnsubscribe, IMailingListSet)
+    CannotUnsubscribe,
+    IMailingListSet,
+    )
 from lp.registry.interfaces.mailinglistsubscription import (
-    MailingListAutoSubscribePolicy)
+    MailingListAutoSubscribePolicy,
+    )
 from lp.registry.interfaces.person import (
-    IEmailAddress, INewPerson, IPerson, IPersonChangePassword, IPersonClaim,
-    IPersonSet, ITeam, ITeamReassignment, PersonCreationRationale,
-    PersonVisibility, TeamMembershipRenewalPolicy, TeamSubscriptionPolicy)
-from lp.registry.interfaces.poll import IPollSet, IPollSubset
-from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
-from lp.registry.interfaces.teammembership import (
-    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ITeamMembership,
-    ITeamMembershipSet, TeamMembershipStatus)
-from lp.registry.interfaces.wikiname import IWikiNameSet
-from lp.code.interfaces.branchnamespace import (
-    IBranchNamespaceSet, InvalidNamespace)
-from lp.bugs.interfaces.bugtask import IBugTaskSet
-from lp.soyuz.interfaces.build import (
-    BuildStatus, IBuildSet)
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, INotificationRecipientSet, UnknownRecipientError)
-from canonical.launchpad.interfaces.message import (
-    IDirectEmailAuthorization, QuotaReachedError)
+    IPerson,
+    IPersonClaim,
+    IPersonSet,
+    )
+from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.pillar import IPillarNameSet
-from canonical.launchpad.interfaces.personproduct import IPersonProductFactory
+from lp.registry.interfaces.poll import IPollSubset
 from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.ssh import (
+    ISSHKeySet,
+    SSHKeyAdditionError,
+    SSHKeyCompromisedError,
+    SSHKeyType,
+    )
+from lp.registry.interfaces.teammembership import (
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
+from lp.registry.interfaces.wikiname import IWikiNameSet
+from lp.registry.mail.notification import send_direct_contact_email
+from lp.registry.model.person import get_recipients
+from lp.services.config import config
+from lp.services.database.sqlbase import flush_database_updates
+from lp.services.feeds.browser import FeedsMixin
+from lp.services.geoip.interfaces import IRequestPreferredLanguages
+from lp.services.gpg.interfaces import (
+    GPGKeyNotFoundError,
+    IGPGHandler,
+    )
+from lp.services.identity.interfaces.account import (
+    AccountStatus,
+    IAccount,
+    )
+from lp.services.identity.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddress,
+    IEmailAddressSet,
+    )
+from lp.services.mail.interfaces import (
+    INotificationRecipientSet,
+    UnknownRecipientError,
+    )
+from lp.services.messages.interfaces.message import (
+    IDirectEmailAuthorization,
+    QuotaReachedError,
+    )
+from lp.services.oauth.interfaces import IOAuthConsumerSet
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
-from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
-from lp.services.openid.interfaces.openidrpsummary import IOpenIDRPSummarySet
-from lp.registry.interfaces.salesforce import (
-    ISalesforceVoucherProxy, SalesforceVoucherProxyException)
-from lp.soyuz.interfaces.sourcepackagerelease import (
-    ISourcePackageRelease)
-
-from lp.bugs.browser.bugtask import BugTaskSearchListingView
-from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.browser.objectreassignment import (
-    ObjectReassignmentView)
 from lp.services.openid.browser.openiddiscovery import (
-    XRDSContentNegotiationMixin)
-from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsView)
-from canonical.launchpad.browser.branding import BrandingChangeView
-from lp.registry.browser.mailinglists import (
-    enabled_with_active_mailing_list)
-from lp.registry.browser.menu import (
-    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase,
-    TopLevelMenuMixin)
-from lp.answers.browser.questiontarget import SearchQuestionsView
+    XRDSContentNegotiationMixin,
+    )
+from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
+from lp.services.salesforce.interfaces import (
+    ISalesforceVoucherProxy,
+    REDEEMABLE_VOUCHER_STATUSES,
+    SalesforceVoucherProxyException,
+    )
+from lp.services.verification.interfaces.authtoken import LoginTokenType
+from lp.services.verification.interfaces.logintoken import ILoginTokenSet
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    Link,
+    Navigation,
+    NavigationMenu,
+    StandardLaunchpadFacets,
+    stepthrough,
+    stepto,
+    structured,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.interfaces import (
+    ILaunchBag,
+    IOpenLaunchBag,
+    )
+from lp.services.webapp.login import (
+    logoutPerson,
+    require_fresh_login,
+    )
+from lp.services.webapp.menu import get_current_view
+from lp.services.webapp.publisher import LaunchpadView
+from lp.services.worlddata.interfaces.country import ICountry
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.browser.archivesubscription import (
+    traverse_archive_subscription_for_subscriber,
+    )
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
+from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
-from canonical.launchpad.fields import LocationField
 
-from canonical.launchpad.mailnotification import send_direct_contact_email
-from canonical.launchpad.validators.email import valid_email
-
-from canonical.launchpad.webapp import (
-    ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
-    Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
-    custom_widget, enabled_with_permission, stepthrough, stepto)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
-from canonical.launchpad.webapp.login import (
-    logoutPerson, allowUnauthenticatedSession)
-from canonical.launchpad.webapp.menu import (
-    get_current_view, structured, NavigationMenu)
-from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
-from lazr.uri import URI, InvalidURIError
-
-from canonical.launchpad import _
-
-from canonical.lazr.utils import smartquote
-
-from lp.answers.interfaces.questioncollection import IQuestionSet
-from lp.answers.interfaces.questionsperson import IQuestionsPerson
+COMMASPACE = ', '
 
 
 class RestrictedMembershipsPersonView(LaunchpadView):
@@ -360,6 +394,8 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
         # Return the found membership regardless of its status as we know
         # TeamMembershipSelfRenewalView will tell users why the memembership
         # can't be renewed when necessary.
+        # Circular imports
+        from lp.registry.browser.team import TeamMembershipSelfRenewalView
         membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
             self.context, getUtility(IPersonSet).getByName(name))
         if membership is None:
@@ -378,6 +414,7 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
             ppa_name = self.request.stepstogo.consume()
 
             try:
+                from lp.soyuz.browser.archive import traverse_named_ppa
                 return traverse_named_ppa(self.context.name, ppa_name)
             except NotFoundError:
                 self.request.setTraversalStack(traversal_stack)
@@ -424,192 +461,35 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
             return None
         return irc_nick
 
-    @stepthrough('+archivesubscriptions')
-    def traverse_archive_subscription(self, archive_id):
+    @stepto('+archivesubscriptions')
+    def traverse_archive_subscription(self):
         """Traverse to the archive subscription for this person."""
-        return traverse_archive_subscription_for_subscriber(
-            self.context, archive_id)
+        if self.context.is_team:
+            raise NotFoundError
 
-
-class TeamNavigation(PersonNavigation):
-
-    usedfor = ITeam
-
-    @stepthrough('+poll')
-    def traverse_poll(self, name):
-        return getUtility(IPollSet).getByTeamAndName(self.context, name)
-
-    @stepthrough('+invitation')
-    def traverse_invitation(self, name):
-        # Return the found membership regardless of its status as we know
-        # TeamInvitationView can handle memberships in statuses other than
-        # INVITED.
-        membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
-            self.context, getUtility(IPersonSet).getByName(name))
-        if membership is None:
-            return None
-        return TeamInvitationView(membership, self.request)
-
-    @stepthrough('+member')
-    def traverse_member(self, name):
-        person = getUtility(IPersonSet).getByName(name)
-        if person is None:
-            return None
-        return getUtility(ITeamMembershipSet).getByPersonAndTeam(
-            person, self.context)
-
-
-class TeamBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `ITeam`."""
-    @property
-    def text(self):
-        return smartquote('"%s" team') % self.context.displayname
-
-
-class TeamMembershipSelfRenewalView(LaunchpadFormView):
-
-    implements(IBrowserPublisher)
-
-    schema = ITeamMembership
-    field_names = []
-    label = 'Renew team membership'
-    template = ViewPageTemplateFile(
-        '../templates/teammembership-self-renewal.pt')
-
-    def __init__(self, context, request):
-        # Only the member himself or admins of the member (in case it's a
-        # team) can see the page in which they renew memberships that are
-        # about to expire.
-        if not check_permission('launchpad.Edit', context.person):
-            raise Unauthorized(
-                "Only the member himself can renew his memberships.")
-        LaunchpadFormView.__init__(self, context, request)
-
-    def browserDefault(self, request):
-        return self, ()
-
-    def getReasonForDeniedRenewal(self):
-        """Return text describing why the membership can't be renewed."""
-        context = self.context
-        ondemand = TeamMembershipRenewalPolicy.ONDEMAND
-        admin = TeamMembershipStatus.ADMIN
-        approved = TeamMembershipStatus.APPROVED
-        date_limit = datetime.now(pytz.timezone('UTC')) - timedelta(
-            days=DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
-        if context.status not in (admin, approved):
-            text = "it is not active."
-        elif context.team.renewal_policy != ondemand:
-            text = ('<a href="%s">%s</a> is not a team which accepts its '
-                    'members to renew their own memberships.'
-                    % (canonical_url(context.team),
-                       context.team.unique_displayname))
-        elif context.dateexpires is None or context.dateexpires > date_limit:
-            if context.person.isTeam():
-                link_text = "Somebody else has already renewed it."
-            else:
-                link_text = (
-                    "You or one of the team administrators has already "
-                    "renewed it.")
-            text = ('it is not set to expire in %d days or less. '
-                    '<a href="%s/+members">%s</a>'
-                    % (DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
-                       canonical_url(context.team), link_text))
+        if self.request.stepstogo:
+            # In which case we assume it is the archive_id (for the
+            # moment, archive name will be an option soon).
+            archive_id = self.request.stepstogo.consume()
+            if not archive_id.isdigit():
+                return None
+            return traverse_archive_subscription_for_subscriber(
+                self.context, archive_id)
         else:
-            raise AssertionError('This membership can be renewed!')
-        return text
+            # Otherwise we return the normal view for a person's
+            # archive subscriptions.
+            return queryMultiAdapter(
+                (self.context, self.request), name="+archivesubscriptions")
 
-    @property
-    def time_before_expiration(self):
-        return self.context.dateexpires - datetime.now(pytz.timezone('UTC'))
+    @stepthrough('+recipe')
+    def traverse_recipe(self, name):
+        """Traverse to this person's recipes."""
+        return self.context.getRecipe(name)
 
-    @property
-    def next_url(self):
-        return canonical_url(self.context.person)
-
-    @action(_("Renew"), name="renew")
-    def renew_action(self, action, data):
-        member = self.context.person
-        member.renewTeamMembership(self.context.team)
-        self.request.response.addInfoNotification(
-            _("Membership renewed until ${date}.", mapping=dict(
-                    date=self.context.dateexpires.strftime('%Y-%m-%d'))))
-
-    @action(_("Let it Expire"), name="nothing")
-    def do_nothing_action(self, action, data):
-        # Redirect back and wait for the membership to expire automatically.
-        pass
-
-
-class ITeamMembershipInvitationAcknowledgementForm(Interface):
-    """Schema for the form in which team admins acknowledge invitations.
-
-    We could use ITeamMembership for that, but the acknowledger_comment is
-    marked readonly there and that means LaunchpadFormView won't include the
-    value of that in the data given to our action handler.
-    """
-
-    acknowledger_comment = Text(
-        title=_("Comment"), required=False, readonly=False)
-
-
-class TeamInvitationView(LaunchpadFormView):
-    """Where team admins can accept/decline membership invitations."""
-
-    implements(IBrowserPublisher)
-
-    schema = ITeamMembershipInvitationAcknowledgementForm
-    label = 'Team membership invitation'
-    field_names = ['acknowledger_comment']
-    custom_widget('acknowledger_comment', TextAreaWidget, height=5, width=60)
-    template = ViewPageTemplateFile(
-        '../templates/teammembership-invitation.pt')
-
-    def __init__(self, context, request):
-        # Only admins of the invited team can see the page in which they
-        # approve/decline invitations.
-        if not check_permission('launchpad.Edit', context.person):
-            raise Unauthorized(
-                "Only team administrators can approve/decline invitations "
-                "sent to this team.")
-        LaunchpadFormView.__init__(self, context, request)
-
-    def browserDefault(self, request):
-        return self, ()
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context.person)
-
-    @action(_("Accept"), name="accept")
-    def accept_action(self, action, data):
-        if self.context.status != TeamMembershipStatus.INVITED:
-            self.request.response.addInfoNotification(
-                _("This invitation has already been processed."))
-            return
-        member = self.context.person
-        member.acceptInvitationToBeMemberOf(
-            self.context.team, data['acknowledger_comment'])
-        self.request.response.addInfoNotification(
-            _("This team is now a member of ${team}", mapping=dict(
-                  team=self.context.team.displayname)))
-
-    @action(_("Decline"), name="decline")
-    def decline_action(self, action, data):
-        if self.context.status != TeamMembershipStatus.INVITED:
-            self.request.response.addInfoNotification(
-                _("This invitation has already been processed."))
-            return
-        member = self.context.person
-        member.declineInvitationToBeMemberOf(
-            self.context.team, data['acknowledger_comment'])
-        self.request.response.addInfoNotification(
-            _("Declined the invitation to join ${team}", mapping=dict(
-                  team=self.context.team.displayname)))
-
-    @action(_("Cancel"), name="cancel")
-    def cancel_action(self, action, data):
-        # Simply redirect back.
-        pass
+    @stepthrough('+merge-queues')
+    def traverse_merge_queue(self, name):
+        """Traverse to this person's merge queues."""
+        return self.context.getMergeQueue(name)
 
 
 class PersonSetNavigation(Navigation):
@@ -657,13 +537,6 @@ class PersonSetContextMenu(ContextMenu, TopLevelMenuMixin):
         return Link('+adminteammerge', text, icon='edit')
 
 
-class PersonBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `IPerson`."""
-    @property
-    def text(self):
-        return self.context.displayname
-
-
 class PersonFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IPerson."""
 
@@ -690,13 +563,6 @@ class PersonFacets(StandardLaunchpadFacets):
             self.context.displayname)
         return Link('', text, summary)
 
-    def bounties(self):
-        text = 'Bounties'
-        browsername = self.context.displayname
-        summary = (
-            'Bounty offers that %s is involved with' % browsername)
-        return Link('+bounties', text, summary)
-
     def branches(self):
         text = 'Code'
         summary = ('Bazaar Branches and revisions registered and authored '
@@ -717,167 +583,78 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('', text, summary)
 
 
-class PersonBugsMenu(ApplicationMenu):
-
-    usedfor = IPerson
-    facet = 'bugs'
-    links = ['assignedbugs', 'commentedbugs', 'reportedbugs',
-             'subscribedbugs', 'relatedbugs', 'softwarebugs', 'mentoring']
-
-    def relatedbugs(self):
-        text = 'List all related bugs'
-        summary = ('Lists all bug reports which %s reported, is assigned to, '
-                   'or is subscribed to.' % self.context.displayname)
-        return Link('', text, summary=summary)
-
-    def assignedbugs(self):
-        text = 'List assigned bugs'
-        summary = 'Lists bugs assigned to %s.' % self.context.displayname
-        return Link('+assignedbugs', text, summary=summary)
-
-    def softwarebugs(self):
-        text = 'Show package report'
-        summary = (
-            'A summary report for packages where %s is a bug supervisor.'
-            % self.context.displayname)
-        return Link('+packagebugs', text, summary=summary)
-
-    def reportedbugs(self):
-        text = 'List reported bugs'
-        summary = 'Lists bugs reported by %s.' % self.context.displayname
-        return Link('+reportedbugs', text, summary=summary)
-
-    def subscribedbugs(self):
-        text = 'List subscribed bugs'
-        summary = ('Lists bug reports %s is subscribed to.'
-                   % self.context.displayname)
-        return Link('+subscribedbugs', text, summary=summary)
-
-    def mentoring(self):
-        text = 'Mentoring offered'
-        summary = ('Lists bugs for which %s has offered to mentor someone.'
-                   % self.context.displayname)
-        enabled = bool(self.context.mentoring_offers)
-        return Link('+mentoring', text, enabled=enabled, summary=summary)
-
-    def commentedbugs(self):
-        text = 'List commented bugs'
-        summary = ('Lists bug reports on which %s has commented.'
-                   % self.context.displayname)
-        return Link('+commentedbugs', text, summary=summary)
-
-
-class PersonSpecsMenu(ApplicationMenu):
-
-    usedfor = IPerson
-    facet = 'specifications'
-    links = ['assignee', 'drafter', 'approver',
-             'subscriber', 'registrant', 'feedback',
-             'workload', 'mentoring']
-
-    def registrant(self):
-        text = 'Registrant'
-        summary = 'List specs registered by %s' % self.context.displayname
-        return Link('+specs?role=registrant', text, summary, icon='spec')
-
-    def approver(self):
-        text = 'Approver'
-        summary = 'List specs with %s is supposed to approve' % (
-            self.context.displayname)
-        return Link('+specs?role=approver', text, summary, icon='spec')
-
-    def assignee(self):
-        text = 'Assignee'
-        summary = 'List specs for which %s is the assignee' % (
-            self.context.displayname)
-        return Link('+specs?role=assignee', text, summary, icon='spec')
-
-    def drafter(self):
-        text = 'Drafter'
-        summary = 'List specs drafted by %s' % self.context.displayname
-        return Link('+specs?role=drafter', text, summary, icon='spec')
-
-    def subscriber(self):
-        text = 'Subscriber'
-        return Link('+specs?role=subscriber', text, icon='spec')
-
-    def feedback(self):
-        text = 'Feedback requests'
-        summary = 'List specs where feedback has been requested from %s' % (
-            self.context.displayname)
-        return Link('+specfeedback', text, summary, icon='info')
-
-    def mentoring(self):
-        text = 'Mentoring offered'
-        enabled = bool(self.context.mentoring_offers)
-        return Link('+mentoring', text, enabled=enabled, icon='info')
-
-    def workload(self):
-        text = 'Workload'
-        summary = 'Show all specification work assigned'
-        return Link('+specworkload', text, summary, icon='info')
-
-
-class TeamSpecsMenu(PersonSpecsMenu):
-
-    usedfor = ITeam
-    facet = 'specifications'
-
-    def mentoring(self):
-        target = '+mentoring'
-        text = 'Mentoring offered'
-        summary = 'Offers of mentorship for prospective team members'
-        return Link(target, text, summary=summary, icon='info')
-
-
-class TeamBugsMenu(PersonBugsMenu):
-
-    usedfor = ITeam
-    facet = 'bugs'
-    links = ['assignedbugs', 'relatedbugs', 'softwarebugs', 'subscribedbugs',
-             'mentorships']
-
-    def mentorships(self):
-        target = '+mentoring'
-        text = 'Mentoring offered'
-        summary = 'Offers of mentorship for prospective team members'
-        return Link(target, text, summary=summary, icon='info')
-
-
 class CommonMenuLinks:
 
-    @enabled_with_permission('launchpad.Edit')
-    def common_edithomepage(self):
-        target = '+edithomepage'
-        text = 'Change home page'
-        return Link(target, text, icon='edit')
-
-    def related_projects(self):
-        target = '+related-software#projects'
-        text = 'List related projects'
-        summary = 'Projects %s is involved with' % self.context.displayname
-        return Link(target, text, summary, icon='product')
+    @property
+    def person(self):
+        """Allow subclasses that use the view as the context."""
+        return self.context
 
     @enabled_with_permission('launchpad.Edit')
     def activate_ppa(self):
         target = "+activate-ppa"
         text = 'Create a new PPA'
-        summary = ('Acknowledge terms of service for Launchpad Personal '
-                   'Package Archive and create a new PPA.')
-        return Link(target, text, summary, icon='add')
+        return Link(target, text, icon='add')
+
+    def related_software_summary(self):
+        target = '+related-packages'
+        text = 'Related packages'
+        return Link(target, text, icon='info')
+
+    def maintained(self):
+        target = '+maintained-packages'
+        text = 'Maintained packages'
+        enabled = self.person.hasMaintainedPackages()
+        return Link(target, text, enabled=enabled, icon='info')
+
+    def uploaded(self):
+        target = '+uploaded-packages'
+        text = 'Uploaded packages'
+        enabled = self.person.hasUploadedButNotMaintainedPackages()
+        return Link(target, text, enabled=enabled, icon='info')
+
+    def ppa(self):
+        target = '+ppa-packages'
+        text = 'Related PPA packages'
+        enabled = self.person.hasUploadedPPAPackages()
+        return Link(target, text, enabled=enabled, icon='info')
+
+    def synchronised(self):
+        target = '+synchronised-packages'
+        text = 'Synchronised packages'
+        enabled = self.person.hasSynchronisedPublishings()
+        return Link(target, text, enabled=enabled, icon='info')
+
+    def projects(self):
+        target = '+related-projects'
+        text = 'Related projects'
+        user = getUtility(ILaunchBag).user
+        enabled = bool(self.person.getAffiliatedPillars(user))
+        return Link(target, text, enabled=enabled, icon='info')
+
+    def owned_teams(self):
+        target = '+owned-teams'
+        text = 'Owned teams'
+        return Link(target, text, icon='info')
+
+    def subscriptions(self):
+        target = '+subscriptions'
+        text = 'Direct subscriptions'
+        return Link(target, text, icon='info')
+
+    def structural_subscriptions(self):
+        target = '+structural-subscriptions'
+        text = 'Structural subscriptions'
+        return Link(target, text, icon='info')
 
 
-class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
+class PersonMenuMixin(CommonMenuLinks):
 
-    usedfor = IPerson
-    facet = 'overview'
-    links = ['edit', 'branding', 'common_edithomepage',
-             'editemailaddresses', 'editlanguages', 'editwikinames',
-             'editircnicknames', 'editjabberids', 'editpassword',
-             'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
-             'mentoringoffers', 'codesofconduct', 'karma',
-             'administer', 'related_projects', 'activate_ppa',
-             'view_ppa_subscriptions']
+    @enabled_with_permission('launchpad.Edit')
+    def branding(self):
+        target = '+branding'
+        text = 'Change branding'
+        return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -885,11 +662,74 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Change details'
         return Link(target, text, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
-    def branding(self):
-        target = '+branding'
-        text = 'Change branding'
+    @enabled_with_permission('launchpad.Moderate')
+    def administer(self):
+        target = '+review'
+        text = 'Administer'
         return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Moderate')
+    def administer_account(self):
+        target = '+reviewaccount'
+        text = 'Administer Account'
+        return Link(target, text, icon='edit')
+
+
+class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
+                         HasRecipesMenuMixin):
+
+    usedfor = IPerson
+    facet = 'overview'
+    links = [
+        'edit',
+        'branding',
+        'editemailaddresses',
+        'editlanguages',
+        'editircnicknames',
+        'editjabberids',
+        'editsshkeys',
+        'editpgpkeys',
+        'editlocation',
+        'memberships',
+        'codesofconduct',
+        'karma',
+        'administer',
+        'administer_account',
+        'projects',
+        'activate_ppa',
+        'maintained',
+        'manage_vouchers',
+        'owned_teams',
+        'synchronised',
+        'view_ppa_subscriptions',
+        'ppa',
+        'oauth_tokens',
+        'related_software_summary',
+        'view_recipes',
+        'subscriptions',
+        'structural_subscriptions',
+        ]
+
+    def related_software_summary(self):
+        target = '+related-packages'
+        text = 'Related packages'
+        return Link(target, text, icon='info')
+
+    @enabled_with_permission('launchpad.Edit')
+    def oauth_tokens(self):
+        target = '+oauth-tokens'
+        text = 'Authorized applications'
+        access_tokens = self.context.oauth_access_tokens
+        request_tokens = self.context.oauth_request_tokens
+        enabled = bool(access_tokens or request_tokens)
+        return Link(target, text, enabled=enabled, icon='info')
+
+    @enabled_with_permission('launchpad.Edit')
+    def manage_vouchers(self):
+        target = '+vouchers'
+        text = 'Manage commercial subscriptions'
+        summary = 'Purchase and redeem commercial subscription vouchers'
+        return Link(target, text, summary, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def editlanguages(self):
@@ -901,12 +741,6 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def editemailaddresses(self):
         target = '+editemails'
         text = 'Change e-mail settings'
-        return Link(target, text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def editwikinames(self):
-        target = '+editwikinames'
-        text = 'Update wiki names'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -922,12 +756,6 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
-    def editpassword(self):
-        target = '+changepassword'
-        text = 'Change your password'
-        return Link(target, text, icon='edit')
-
-    @enabled_with_permission('launchpad.EditLocation')
     def editlocation(self):
         target = '+editlocation'
         text = 'Set location and time zone'
@@ -945,12 +773,6 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+participation'
         text = 'Show team participation'
         return Link(target, text, icon='info')
-
-    def mentoringoffers(self):
-        target = '+mentoring'
-        text = 'Mentoring offered'
-        enabled = bool(self.context.mentoring_offers)
-        return Link(target, text, enabled=enabled, icon='info')
 
     @enabled_with_permission('launchpad.Special')
     def editsshkeys(self):
@@ -979,12 +801,6 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
             'Agreements to abide by the rules of a distribution or project')
         return Link(target, text, summary, icon='edit')
 
-    @enabled_with_permission('launchpad.Admin')
-    def administer(self):
-        target = '+review'
-        text = 'Administer'
-        return Link(target, text, icon='edit')
-
     @enabled_with_permission('launchpad.Edit')
     def view_ppa_subscriptions(self):
         target = "+archivesubscriptions"
@@ -1005,7 +821,7 @@ class IPersonEditMenu(Interface):
 
 
 class IPersonRelatedSoftwareMenu(Interface):
-    """A marker interface for the 'Related Software' navigation menu."""
+    """A marker interface for the 'Related software' navigation menu."""
 
 
 class PPANavigationMenuMixIn:
@@ -1022,63 +838,17 @@ class PPANavigationMenuMixIn:
         return Link(target, text, enabled=enabled)
 
 
-class PersonOverviewNavigationMenu(NavigationMenu, PPANavigationMenuMixIn):
-    """The top-level menu of actions a Person may take."""
-
-    usedfor = IPerson
-    facet = 'overview'
-    links = ('profile', 'related_software', 'karma', 'ppas')
-
-    def __init__(self, context):
-        context = IPerson(context)
-        super(PersonOverviewNavigationMenu, self).__init__(context)
-
-    def profile(self):
-        target = ''
-        text = 'Profile'
-        return Link(target, text, menu=IPersonEditMenu)
-
-    def related_software(self):
-        target = '+related-software'
-        text = 'Related Software'
-        return Link(target, text, menu=IPersonRelatedSoftwareMenu)
-
-    def karma(self):
-        target = '+karma'
-        text = 'Karma'
-        return Link(target, text)
-
-
-class PersonRelatedSoftwareNavigationMenu(NavigationMenu):
+class PersonRelatedSoftwareNavigationMenu(NavigationMenu, CommonMenuLinks):
 
     usedfor = IPersonRelatedSoftwareMenu
     facet = 'overview'
-    links = ('summary', 'maintained', 'uploaded', 'ppa', 'projects')
+    links = ('related_software_summary', 'maintained', 'uploaded', 'ppa',
+             'synchronised', 'projects', 'owned_teams')
 
-    def summary(self):
-        target = '+related-software'
-        text = 'Summary'
-        return Link(target, text)
-
-    def maintained(self):
-        target = '+maintained-packages'
-        text = 'Maintained Packages'
-        return Link(target, text)
-
-    def uploaded(self):
-        target = '+uploaded-packages'
-        text = 'Uploaded Packages'
-        return Link(target, text)
-
-    def ppa(self):
-        target = '+ppa-packages'
-        text = 'PPA Packages'
-        return Link(target, text)
-
-    def projects(self):
-        target = '+related-projects'
-        text = 'Related Projects'
-        return Link(target, text)
+    @property
+    def person(self):
+        """Override CommonMenuLinks since the view is the context."""
+        return self.context.context
 
 
 class PersonEditNavigationMenu(NavigationMenu):
@@ -1086,8 +856,7 @@ class PersonEditNavigationMenu(NavigationMenu):
 
     usedfor = IPersonEditMenu
     facet = 'overview'
-    links = ('personal', 'email_settings',
-             'sshkeys', 'gpgkeys', 'passwords')
+    links = ('personal', 'email_settings', 'sshkeys', 'gpgkeys')
 
     def personal(self):
         target = '+edit'
@@ -1102,238 +871,13 @@ class PersonEditNavigationMenu(NavigationMenu):
     @enabled_with_permission('launchpad.Special')
     def sshkeys(self):
         target = '+editsshkeys'
-        text = 'SSH Keys'
+        text = 'SSH keys'
         return Link(target, text)
 
     def gpgkeys(self):
         target = '+editpgpkeys'
         text = 'OpenPGP Keys'
         return Link(target, text)
-
-    def passwords(self):
-        target = '+changepassword'
-        text = 'Passwords'
-        return Link(target, text)
-
-
-class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
-    def profile(self):
-        target = ''
-        text = 'Overview'
-        return Link(target, text)
-
-    @enabled_with_permission('launchpad.Edit')
-    def edit(self):
-        target = '+edit'
-        text = 'Change details'
-        return Link(target, text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def branding(self):
-        target = '+branding'
-        text = 'Change branding'
-        return Link(target, text, icon='edit')
-
-    @enabled_with_permission('launchpad.Owner')
-    def reassign(self):
-        target = '+reassign'
-        text = 'Change owner'
-        summary = 'Change the owner of the team'
-        # alt="(Change owner)"
-        return Link(target, text, summary, icon='edit')
-
-    @enabled_with_permission('launchpad.View')
-    def members(self):
-        target = '+members'
-        text = 'Show all members'
-        return Link(target, text, icon='team')
-
-    @enabled_with_permission('launchpad.Edit')
-    def received_invitations(self):
-        target = '+invitations'
-        text = 'Show received invitations'
-        return Link(target, text, icon='info')
-
-    @enabled_with_permission('launchpad.Edit')
-    def add_member(self):
-        target = '+addmember'
-        text = 'Add member'
-        return Link(target, text, icon='add')
-
-    @enabled_with_permission('launchpad.Edit')
-    def proposed_members(self):
-        target = '+editproposedmembers'
-        text = 'Approve/Decline applicants'
-        return Link(target, text, icon='add')
-
-    def map(self):
-        target = '+map'
-        text = 'View map and time zones'
-        return Link(target, text, icon='meeting')
-
-    def add_my_teams(self):
-        target = '+add-my-teams'
-        text = 'Add one of my teams'
-        enabled = True
-        team = self.context
-        if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
-            # This is a restricted team; users can't join.
-            enabled = False
-        return Link(target, text, icon='add', enabled=enabled)
-
-    def memberships(self):
-        target = '+participation'
-        text = 'Show team participation'
-        return Link(target, text, icon='info')
-
-    def mentorships(self):
-        target = '+mentoring'
-        text = 'Mentoring available'
-        summary = 'Offers of mentorship for prospective team members'
-        return Link(target, text, summary=summary, icon='info')
-
-    @enabled_with_permission('launchpad.View')
-    def mugshots(self):
-        target = '+mugshots'
-        text = 'Show member photos'
-        return Link(target, text, icon='team')
-
-    def polls(self):
-        target = '+polls'
-        text = 'Show polls'
-        return Link(target, text, icon='info')
-
-    @enabled_with_permission('launchpad.Edit')
-    def add_poll(self):
-        target = '+newpoll'
-        text = 'Create a poll'
-        return Link(target, text, icon='add')
-
-    @enabled_with_permission('launchpad.Edit')
-    def editemail(self):
-        target = '+contactaddress'
-        text = 'Change contact address'
-        summary = (
-            'The address Launchpad uses to contact %s' %
-            self.team.displayname)
-        return Link(target, text, summary, icon='edit')
-
-    @property
-    def team(self):
-        """Allow subclasses that use the view as the context."""
-        return self.context
-
-    @enabled_with_permission('launchpad.MailingListManager')
-    def configure_mailing_list(self):
-        target = '+mailinglist'
-        text = 'Configure mailing list'
-        summary = (
-            'The mailing list associated with %s' % self.context.displayname)
-        return Link(target, text, summary, icon='edit')
-
-    @enabled_with_active_mailing_list
-    @enabled_with_permission('launchpad.Edit')
-    def moderate_mailing_list(self):
-        target = '+mailinglist-moderate'
-        text = 'Moderate mailing list'
-        summary = (
-            'The mailing list associated with %s' % self.context.displayname)
-        return Link(target, text, summary, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def editlanguages(self):
-        target = '+editlanguages'
-        text = 'Set preferred languages'
-        return Link(target, text, icon='edit')
-
-    def joinleave(self):
-        team = self.context
-        enabled = True
-        if userIsActiveTeamMember(team):
-            if team.teamowner == self.user:
-                # The owner cannot leave his team
-                enabled = False
-            target = '+leave'
-            text = 'Leave the Team' # &#8230;
-            icon = 'remove'
-        else:
-            if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
-                # This is a restricted team; users can't join.
-                enabled = False
-            target = '+join'
-            text = 'Join the team' # &#8230;
-            icon = 'add'
-        return Link(target, text, icon=icon, enabled=enabled)
-
-
-class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin):
-
-    usedfor = ITeam
-    facet = 'overview'
-    links = ['edit', 'branding', 'common_edithomepage', 'members', 'mugshots',
-             'add_member', 'proposed_members',
-             'memberships', 'received_invitations',
-             'editemail', 'configure_mailing_list', 'moderate_mailing_list',
-             'editlanguages', 'map', 'polls',
-             'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
-             'reassign', 'related_projects',
-             'activate_ppa']
-
-
-class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
-    """A top-level menu for navigation within a Team."""
-
-    usedfor = ITeam
-    facet = 'overview'
-    links = ['profile', 'polls', 'members', 'ppas']
-
-
-class ActiveBatchNavigator(BatchNavigator):
-    """A paginator for active items.
-
-    Used when a view needs to display more than one BatchNavigator of items.
-    """
-    start_variable_name = 'active_start'
-    batch_variable_name = 'active_batch'
-
-
-class InactiveBatchNavigator(BatchNavigator):
-    """A paginator for inactive items.
-
-    Used when a view needs to display more than one BatchNavigator of items.
-    """
-    start_variable_name = 'inactive_start'
-    batch_variable_name = 'inactive_batch'
-
-
-class TeamMembershipView(LaunchpadView):
-    """The view behins ITeam/+members."""
-
-    @cachedproperty
-    def active_memberships(self):
-        """Current members of the team."""
-        return ActiveBatchNavigator(
-            self.context.member_memberships, self.request)
-
-    @cachedproperty
-    def inactive_memberships(self):
-        """Former members of the team."""
-        return InactiveBatchNavigator(
-            self.context.getInactiveMemberships(), self.request)
-
-    @cachedproperty
-    def invited_memberships(self):
-        """Other teams invited to become members of this team."""
-        return list(self.context.getInvitedMemberships())
-
-    @cachedproperty
-    def proposed_memberships(self):
-        """Users who have requested to join this team."""
-        return list(self.context.getProposedMemberships())
-
-    @property
-    def have_pending_members(self):
-        return self.proposed_memberships or self.invited_memberships
 
 
 class PersonSetActionNavigationMenu(RegistryCollectionActionMenuBase):
@@ -1362,47 +906,32 @@ class PeopleSearchView(LaunchpadView):
     def number_of_teams(self):
         return self.context.teamsCount()
 
+    @property
+    def is_teams_only(self):
+        """Is the search restricted to teams."""
+        searchfor = self.request.get("searchfor", None)
+        return searchfor == 'teamsonly'
+
+    @property
+    def is_people_only(self):
+        """Is the search restricted to people."""
+        searchfor = self.request.get("searchfor", None)
+        return searchfor == 'peopleonly'
+
     def searchPeopleBatchNavigator(self):
         name = self.request.get("name")
         if not name:
             return None
-        searchfor = self.request.get("searchfor")
-        if searchfor == "peopleonly":
+        if self.is_people_only:
             results = self.context.findPerson(name)
-        elif searchfor == "teamsonly":
+        elif self.is_teams_only:
             results = self.context.findTeam(name)
         else:
             results = self.context.find(name)
         return BatchNavigator(results, self.request)
 
 
-class PersonAddView(LaunchpadFormView):
-    """The page where users can create new Launchpad profiles."""
-
-    label = "Create a new Launchpad profile"
-    schema = INewPerson
-    custom_widget('creation_comment', TextAreaWidget, height=5, width=60)
-
-    @action(_("Create Profile"), name="create")
-    def create_action(self, action, data):
-        emailaddress = data['emailaddress']
-        displayname = data['displayname']
-        creation_comment = data['creation_comment']
-        person, ignored = getUtility(IPersonSet).createPersonAndEmail(
-            emailaddress, PersonCreationRationale.USER_CREATED,
-            displayname=displayname, comment=creation_comment,
-            registrant=self.user)
-        self.next_url = canonical_url(person)
-        logintokenset = getUtility(ILoginTokenSet)
-        token = logintokenset.new(
-            requester=self.user,
-            requesteremail=self.user.preferredemail.email,
-            email=emailaddress, tokentype=LoginTokenType.NEWPROFILE)
-        token.sendProfileCreatedEmail(person, creation_comment)
-
-
 class DeactivateAccountSchema(Interface):
-    use_template(IPerson, include=['password'])
     comment = copy_field(
         IPerson['account_status_comment'], readonly=False, __name__='comment')
 
@@ -1414,30 +943,29 @@ class PersonDeactivateAccountView(LaunchpadFormView):
     custom_widget('comment', TextAreaWidget, height=5, width=60)
 
     def validate(self, data):
-        loginsource = getUtility(IPlacelessLoginSource)
-        principal = loginsource.getPrincipalByLogin(
-            self.user.preferredemail.email)
-        assert principal is not None, "User must be logged in at this point."
-        # The widget will transform '' into a special marker value.
-        password = data.get('password')
-        if password is self.schema['password'].UNCHANGED_PASSWORD:
-            password = u''
-        if not principal.validate(password):
-            self.setFieldError('password', 'Incorrect password.')
-            return
+        """See `LaunchpadFormView`."""
+        can_deactivate, errors = self.context.canDeactivateAccountWithErrors()
+        if not can_deactivate:
+            [self.addError(message) for message in errors]
 
     @action(_("Deactivate My Account"), name="deactivate")
     def deactivate_action(self, action, data):
-        self.context.deactivateAccount(data['comment'])
+        # We override the can_deactivate since validation already processed
+        # this information.
+        self.context.deactivateAccount(data['comment'], can_deactivate=True)
         logoutPerson(self.request)
-        self.request.response.addNoticeNotification(
+        self.request.response.addInfoNotification(
             _(u'Your account has been deactivated.'))
         self.next_url = self.request.getApplicationURL()
 
 
-class PersonClaimView(LaunchpadFormView):
-    """The page where a user can claim an unvalidated profile."""
+class BeginTeamClaimView(LaunchpadFormView):
+    """Where you can claim an unvalidated profile turning it into a team.
 
+    This is actually just the first step, where you enter the email address
+    of the team and we email further instructions to that address.
+    """
+    label = 'Claim team'
     schema = IPersonClaim
 
     def initialize(self):
@@ -1468,28 +996,17 @@ class PersonClaimView(LaunchpadFormView):
                      "associated with."
                      % self.context.name)
         elif email.personID != self.context.id:
-            if email.person.is_valid_person:
-                error = structured(
-                         "This email address is associated with yet another "
-                         "Launchpad profile, which you seem to have used at "
-                         "some point. If that's the case, you can "
-                         '<a href="/people/+requestmerge'
-                         '?field.dupe_person=%s">combine '
-                         "this profile with the other one</a> (you'll "
-                         "have to log in with the other profile first, "
-                         "though). If that's not the case, please try with a "
-                         "different email address.",
-                         self.context.name)
-            else:
-                # There seems to be another unvalidated profile for you!
-                error = structured(
-                         "Although this email address is not associated with "
-                         "this profile, it's associated with yet another "
-                         'one. You can <a href="%s/+claim">claim that other '
-                         'profile</a> and then later '
-                         '<a href="/people/+requestmerge">combine</a> both '
-                         'of them into a single one.',
-                         canonical_url(email.person))
+            error = structured(
+                        "This email address is associated with yet another "
+                        "Launchpad profile, which you seem to have used at "
+                        "some point. If that's the case, you can "
+                        '<a href="/people/+requestmerge'
+                        '?field.dupe_person=%s">combine '
+                        "this profile with the other one</a> (you'll "
+                        "have to log in with the other profile first, "
+                        "though). If that's not the case, please try with a "
+                        "different email address.",
+                        self.context.name)
         else:
             # Yay! You got the right email this time.
             pass
@@ -1499,33 +1016,6 @@ class PersonClaimView(LaunchpadFormView):
     @property
     def next_url(self):
         return canonical_url(self.context)
-
-    @action(_("E-mail Me"), name="confirm")
-    def confirm_action(self, action, data):
-        email = data['emailaddress']
-        token = getUtility(ILoginTokenSet).new(
-            requester=None, requesteremail=None, email=email,
-            tokentype=LoginTokenType.PROFILECLAIM)
-        token.sendClaimProfileEmail()
-        # A dance to assert that we want to break the rules about no
-        # unauthenticated sessions. Only after this next line is it safe
-        # to use the ``addNoticeNotification`` method.
-        allowUnauthenticatedSession(self.request)
-        self.request.response.addInfoNotification(_(
-            "A confirmation  message has been sent to '${email}'. "
-            "Follow the instructions in that message to finish claiming this "
-            "profile. "
-            "(If the message doesn't arrive in a few minutes, your mail "
-            "provider might use 'greylisting', which could delay the message "
-            "for up to an hour or two.)", mapping=dict(email=email)))
-
-
-class BeginTeamClaimView(PersonClaimView):
-    """Where you can claim an unvalidated profile turning it into a team.
-
-    This is actually just the first step, where you enter the email address
-    of the team and we email further instructions to that address.
-    """
 
     @action(_("Continue"), name="confirm")
     def confirm_action(self, action, data):
@@ -1584,28 +1074,15 @@ class PersonWithKeysAndPreferredEmail:
         self.preferredemail = email
 
 
-class PersonRdfView:
+class PersonRdfView(BaseRdfView):
     """A view that embeds PersonRdfContentsView in a standalone page."""
 
     template = ViewPageTemplateFile(
         '../templates/person-rdf.pt')
 
-    def __call__(self):
-        """Render RDF output, and return it as a string encoded in UTF-8.
-
-        Render the page template to produce RDF output.
-        The return value is string data encoded in UTF-8.
-
-        As a side-effect, HTTP headers are set for the mime type
-        and filename for download."""
-        self.request.response.setHeader('content-type',
-                                        'application/rdf+xml')
-        self.request.response.setHeader('Content-Disposition',
-                                        'attachment; filename=%s.rdf' %
-                                            self.context.name)
-        unicodedata = self.template()
-        encodeddata = unicodedata.encode('utf-8')
-        return encodeddata
+    @property
+    def filename(self):
+        return '%s.rdf' % self.context.name
 
 
 class PersonRdfContentsView:
@@ -1622,30 +1099,6 @@ class PersonRdfContentsView:
         self.context = context
         self.request = request
 
-    def buildMemberData(self):
-        members = []
-        members_by_id = {}
-        raw_members = list(self.context.allmembers)
-        if not raw_members:
-            # Empty teams have nothing to offer.
-            return []
-        personset = getUtility(IPersonSet)
-        personset.cacheBrandingForPeople(raw_members)
-        for member in raw_members:
-            decorated_member = PersonWithKeysAndPreferredEmail(member)
-            members.append(decorated_member)
-            members_by_id[member.id] = decorated_member
-        sshkeyset = getUtility(ISSHKeySet)
-        gpgkeyset = getUtility(IGPGKeySet)
-        emailset = getUtility(IEmailAddressSet)
-        for key in sshkeyset.getByPeople(members):
-            members_by_id[key.personID].addSSHKey(key)
-        for key in gpgkeyset.getGPGKeysForPeople(members):
-            members_by_id[key.ownerID].addGPGKey(key)
-        for email in emailset.getPreferredEmailForPeople(members):
-            members_by_id[email.person.id].setPreferredEmail(email)
-        return members
-
     def __call__(self):
         """Render RDF output.
 
@@ -1659,15 +1112,45 @@ class PersonRdfContentsView:
         return encodeddata
 
 
-class PersonAdministerView(LaunchpadEditFormView):
+class PersonRenameFormMixin(LaunchpadEditFormView):
+
+    def setUpWidgets(self):
+        """See `LaunchpadViewForm`.
+
+        Renames are prohibited if a person/team has an active PPA or an
+        active mailing list.
+        """
+        reason = self.context.checkRename()
+        # Reason is a message about why a rename cannot happen.
+        # No message means renames are permitted.
+        if reason:
+            # This makes the field's widget display (i.e. read) only.
+            self.form_fields['name'].for_display = True
+        super(PersonRenameFormMixin, self).setUpWidgets()
+        if reason:
+            self.widgets['name'].hint = reason
+
+
+class PersonAdministerView(PersonRenameFormMixin):
     """Administer an `IPerson`."""
     schema = IPerson
     label = "Review person"
-    field_names = [
+    default_field_names = [
         'name', 'displayname',
         'personal_standing', 'personal_standing_reason']
     custom_widget(
         'personal_standing_reason', TextAreaWidget, height=5, width=60)
+
+    def setUpFields(self):
+        """Setup the normal fields from the schema, as appropriate.
+
+        If not an admin (e.g. registry expert), remove the displayname field.
+        """
+        self.field_names = self.default_field_names[:]
+        admin = check_permission('launchpad.Admin', self.context)
+        if not admin:
+            self.field_names.remove('displayname')
+        super(PersonAdministerView, self).setUpFields()
 
     @property
     def is_viewing_person(self):
@@ -1698,19 +1181,20 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
     """Administer an `IAccount` belonging to an `IPerson`."""
     schema = IAccount
     label = "Review person's account"
-    field_names = [
-        'displayname', 'password', 'status', 'status_comment']
     custom_widget(
         'status_comment', TextAreaWidget, height=5, width=60)
-    custom_widget('password', PasswordChangeWidget)
 
     def __init__(self, context, request):
         """See `LaunchpadEditFormView`."""
         super(PersonAccountAdministerView, self).__init__(context, request)
         # Only the IPerson can be traversed to, so it provides the IAccount.
+        # It also means that permissions are checked on IAccount, not IPerson.
         self.person = self.context
-        from canonical.launchpad.interfaces import IMasterObject
-        self.context = IMasterObject(self.context.account)
+        self.context = self.person.account
+        # Set fields to be displayed.
+        self.field_names = ['status', 'status_comment']
+        if self.viewed_by_admin:
+            self.field_names = ['displayname'] + self.field_names
 
     @property
     def is_viewing_person(self):
@@ -1720,6 +1204,11 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         template. It needs to know what the context is.
         """
         return False
+
+    @property
+    def viewed_by_admin(self):
+        """Is the user a Launchpad admin?"""
+        return check_permission('launchpad.Admin', self.context)
 
     @property
     def email_addresses(self):
@@ -1733,6 +1222,10 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
     @property
     def next_url(self):
         """See `LaunchpadEditFormView`."""
+        is_suspended = self.context.status == AccountStatus.SUSPENDED
+        if is_suspended and not self.viewed_by_admin:
+            # Non-admins cannot see suspended persons.
+            return canonical_url(getUtility(IPersonSet))
         return canonical_url(self.person)
 
     @property
@@ -1745,534 +1238,18 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         """Update the IAccount."""
         if (data['status'] == AccountStatus.SUSPENDED
             and self.context.status != AccountStatus.SUSPENDED):
-            # Setting the password to a clear value makes it impossible to
-            # login. The preferred email address is removed to ensure no
-            # email is sent to the user.
-            data['password'] = 'invalid'
+            # The preferred email address is removed to ensure no email
+            # is sent to the user.
             self.person.setPreferredEmail(None)
+            self.request.response.addInfoNotification(
+                u'The account "%s" has been suspended.' % (
+                    self.context.displayname))
         if (data['status'] == AccountStatus.ACTIVE
             and self.context.status != AccountStatus.ACTIVE):
-            self.request.response.addNoticeNotification(
+            self.request.response.addInfoNotification(
                 u'The user is reactivated. He must use the '
                 u'"forgot password" to log in.')
         self.updateContextFromData(data)
-
-
-def userIsActiveTeamMember(team):
-    """Return True if the user is an active member of this team."""
-    user = getUtility(ILaunchBag).user
-    if user is None:
-        return False
-    if not check_permission('launchpad.View', team):
-        return False
-    return user in team.activemembers
-
-
-class PersonSpecWorkloadView(LaunchpadView):
-    """View to render the specification workload for a person or team.
-
-    It shows the set of specifications with which this person has a role.  If
-    the person is a team, then all members of the team are presented using
-    batching with their individual specifications.
-    """
-
-    @cachedproperty
-    def members(self):
-        """Return a batch navigator for all members.
-
-        This batch does not test for whether the person has specifications or
-        not.
-        """
-        assert self.context.isTeam, (
-            "PersonSpecWorkloadView.members can only be called on a team.")
-        members = self.context.allmembers
-        batch_nav = BatchNavigator(members, self.request)
-        return batch_nav
-
-
-class PersonSpecWorkloadTableView(LaunchpadView):
-    """View to render the specification workload table for a person.
-
-    It shows the set of specifications with which this person has a role
-    in a single table.
-    """
-
-    class PersonSpec:
-        """One record from the workload list."""
-
-        def __init__(self, spec, person):
-            self.spec = spec
-            self.assignee = spec.assignee == person
-            self.drafter = spec.drafter == person
-            self.approver = spec.approver == person
-
-    @cachedproperty
-    def workload(self):
-        """This code is copied in large part from browser/sprint.py. It may
-        be worthwhile refactoring this to use a common code base.
-
-        Return a structure that lists the specs for which this person is the
-        approver, the assignee or the drafter.
-        """
-        return [PersonSpecWorkloadTableView.PersonSpec(spec, self.context)
-                for spec in self.context.specifications()]
-
-
-class PersonSpecFeedbackView(HasSpecificationsView):
-
-    @cachedproperty
-    def feedback_specs(self):
-        filter = [SpecificationFilter.FEEDBACK]
-        return self.context.specifications(filter=filter)
-
-
-class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
-    """Bugs reported on packages for a bug subscriber."""
-
-    columns_to_show = ["id", "summary", "importance", "status"]
-
-    @property
-    def current_package(self):
-        """Get the package whose bugs are currently being searched."""
-        if not (
-            self.widgets['distribution'].hasInput() and
-            self.widgets['distribution'].getInputValue()):
-            raise UnexpectedFormData("A distribution is required")
-        if not (
-            self.widgets['sourcepackagename'].hasInput() and
-            self.widgets['sourcepackagename'].getInputValue()):
-            raise UnexpectedFormData("A sourcepackagename is required")
-
-        distribution = self.widgets['distribution'].getInputValue()
-        return distribution.getSourcePackage(
-            self.widgets['sourcepackagename'].getInputValue())
-
-    def search(self, searchtext=None):
-        distrosourcepackage = self.current_package
-        return BugTaskSearchListingView.search(
-            self, searchtext=searchtext, context=distrosourcepackage)
-
-    def getMilestoneWidgetValues(self):
-        """See `BugTaskSearchListingView`.
-
-        We return only the active milestones on the current distribution
-        since any others are irrelevant.
-        """
-        current_distro = self.current_package.distribution
-        vocabulary_registry = getVocabularyRegistry()
-        vocabulary = vocabulary_registry.get(current_distro, 'Milestone')
-
-        return helpers.shortlist([
-            dict(title=milestone.title, value=milestone.token, checked=False)
-            for milestone in vocabulary],
-            longest_expected=10)
-
-    @cachedproperty
-    def total_bug_counts(self):
-        """Return the totals of each type of package bug count as a dict."""
-        totals = {
-            'open_bugs_count': 0,
-            'critical_bugs_count': 0,
-            'unassigned_bugs_count': 0,
-            'inprogress_bugs_count': 0,}
-
-        for package_counts in self.package_bug_counts:
-            for key in totals.keys():
-                totals[key] += int(package_counts[key])
-
-        return totals
-
-    @cachedproperty
-    def package_bug_counts(self):
-        """Return a list of dicts used for rendering package bug counts."""
-        L = []
-        package_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
-            self.user, self.context.getBugSubscriberPackages())
-        for package_counts in package_counts:
-            package = package_counts['package']
-            L.append({
-                'package_name': package.displayname,
-                'package_search_url':
-                    self.getBugSubscriberPackageSearchURL(package),
-                'open_bugs_count': package_counts['open'],
-                'open_bugs_url': self.getOpenBugsURL(package),
-                'critical_bugs_count': package_counts['open_critical'],
-                'critical_bugs_url': self.getCriticalBugsURL(package),
-                'unassigned_bugs_count': package_counts['open_unassigned'],
-                'unassigned_bugs_url': self.getUnassignedBugsURL(package),
-                'inprogress_bugs_count': package_counts['open_inprogress'],
-                'inprogress_bugs_url': self.getInProgressBugsURL(package)
-            })
-
-        return sorted(L, key=itemgetter('package_name'))
-
-    def getOtherBugSubscriberPackageLinks(self):
-        """Return a list of the other packages for a bug subscriber.
-
-        This excludes the current package.
-        """
-        current_package = self.current_package
-
-        other_packages = [
-            package for package in self.context.getBugSubscriberPackages()
-            if package != current_package]
-
-        package_links = []
-        for other_package in other_packages:
-            package_links.append({
-                'title': other_package.displayname,
-                'url': self.getBugSubscriberPackageSearchURL(other_package)})
-
-        return package_links
-
-    def getBugSubscriberPackageSearchURL(self, distributionsourcepackage=None,
-                                      advanced=False, extra_params=None):
-        """Construct a default search URL for a distributionsourcepackage.
-
-        Optional filter parameters can be specified as a dict with the
-        extra_params argument.
-        """
-        if distributionsourcepackage is None:
-            distributionsourcepackage = self.current_package
-
-        params = {
-            "field.distribution": distributionsourcepackage.distribution.name,
-            "field.sourcepackagename": distributionsourcepackage.name,
-            "search": "Search"}
-
-        if extra_params is not None:
-            # We must UTF-8 encode searchtext to play nicely with
-            # urllib.urlencode, because it may contain non-ASCII characters.
-            if extra_params.has_key("field.searchtext"):
-                extra_params["field.searchtext"] = (
-                    extra_params["field.searchtext"].encode("utf8"))
-
-            params.update(extra_params)
-
-        person_url = canonical_url(self.context)
-        query_string = urllib.urlencode(sorted(params.items()), doseq=True)
-
-        if advanced:
-            return (person_url + '/+packagebugs-search?advanced=1&%s'
-                    % query_string)
-        else:
-            return person_url + '/+packagebugs-search?%s' % query_string
-
-    def getBugSubscriberPackageAdvancedSearchURL(self,
-                                              distributionsourcepackage=None):
-        """Build the advanced search URL for a distributionsourcepackage."""
-        return self.getBugSubscriberPackageSearchURL(advanced=True)
-
-    def getOpenBugsURL(self, distributionsourcepackage):
-        """Return the URL for open bugs on distributionsourcepackage."""
-        status_params = {'field.status': []}
-
-        for status in UNRESOLVED_BUGTASK_STATUSES:
-            status_params['field.status'].append(status.title)
-
-        return self.getBugSubscriberPackageSearchURL(
-            distributionsourcepackage=distributionsourcepackage,
-            extra_params=status_params)
-
-    def getCriticalBugsURL(self, distributionsourcepackage):
-        """Return the URL for critical bugs on distributionsourcepackage."""
-        critical_bugs_params = {
-            'field.status': [], 'field.importance': "Critical"}
-
-        for status in UNRESOLVED_BUGTASK_STATUSES:
-            critical_bugs_params["field.status"].append(status.title)
-
-        return self.getBugSubscriberPackageSearchURL(
-            distributionsourcepackage=distributionsourcepackage,
-            extra_params=critical_bugs_params)
-
-    def getUnassignedBugsURL(self, distributionsourcepackage):
-        """Return the URL for unassigned bugs on distributionsourcepackage."""
-        unassigned_bugs_params = {
-            "field.status": [], "field.unassigned": "on"}
-
-        for status in UNRESOLVED_BUGTASK_STATUSES:
-            unassigned_bugs_params["field.status"].append(status.title)
-
-        return self.getBugSubscriberPackageSearchURL(
-            distributionsourcepackage=distributionsourcepackage,
-            extra_params=unassigned_bugs_params)
-
-    def getInProgressBugsURL(self, distributionsourcepackage):
-        """Return the URL for unassigned bugs on distributionsourcepackage."""
-        inprogress_bugs_params = {"field.status": "In Progress"}
-
-        return self.getBugSubscriberPackageSearchURL(
-            distributionsourcepackage=distributionsourcepackage,
-            extra_params=inprogress_bugs_params)
-
-    def shouldShowSearchWidgets(self):
-        # XXX: Guilherme Salgado 2005-11-05:
-        # It's not possible to search amongst the bugs on maintained
-        # software, so for now I'll be simply hiding the search widgets.
-        return False
-
-    # Methods that customize the advanced search form.
-    def getAdvancedSearchPageHeading(self):
-        return (
-            "Bugs in %s: Advanced Search" % self.current_package.displayname)
-
-    def getAdvancedSearchButtonLabel(self):
-        return "Search bugs in %s" % self.current_package.displayname
-
-    def getSimpleSearchURL(self):
-        return self.getBugSubscriberPackageSearchURL()
-
-
-class RelevantMilestonesMixin:
-    """Mixin to narrow the milestone list to only relevant milestones."""
-
-    def getMilestoneWidgetValues(self):
-        """Return data used to render the milestone checkboxes."""
-        milestones = getUtility(IBugTaskSet).getAssignedMilestonesFromSearch(
-            self.searchUnbatched())
-        return [
-            dict(title=milestone.title, value=milestone.id, checked=False)
-            for milestone in milestones]
-
-
-class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
-                                            BugTaskSearchListingView,
-                                            FeedsMixin):
-    """All bugs related to someone."""
-
-    columns_to_show = ["id", "summary", "bugtargetdisplayname",
-                       "importance", "status"]
-
-    def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None):
-        """Return the open bugs related to a person.
-
-        :param extra_params: A dict that provides search params added to
-            the search criteria taken from the request. Params in
-            `extra_params` take precedence over request params.
-        """
-        if context is None:
-            context = self.context
-
-        params = self.buildSearchParams(extra_params=extra_params)
-        subscriber_params = copy.copy(params)
-        subscriber_params.subscriber = context
-        assignee_params = copy.copy(params)
-        owner_params = copy.copy(params)
-        commenter_params = copy.copy(params)
-
-        # Only override the assignee, commenter and owner if they were not
-        # specified by the user.
-        if assignee_params.assignee is None:
-            assignee_params.assignee = context
-        if owner_params.owner is None:
-            # Specify both owner and bug_reporter to try to prevent the same
-            # bug (but different tasks) being displayed.
-            owner_params.owner = context
-            owner_params.bug_reporter = context
-        if commenter_params.bug_commenter is None:
-            commenter_params.bug_commenter = context
-
-        return context.searchTasks(
-            assignee_params, subscriber_params, owner_params,
-            commenter_params)
-
-    def getSearchPageHeading(self):
-        return "Bugs related to %s" % self.context.displayname
-
-    def getAdvancedSearchPageHeading(self):
-        return "Bugs Related to %s: Advanced Search" % (
-            self.context.displayname)
-
-    def getAdvancedSearchButtonLabel(self):
-        return "Search bugs related to %s" % self.context.displayname
-
-    def getSimpleSearchURL(self):
-        return canonical_url(self.context, view_name="+bugs")
-
-
-class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
-                                             BugTaskSearchListingView):
-    """All bugs assigned to someone."""
-
-    columns_to_show = ["id", "summary", "bugtargetdisplayname",
-                       "importance", "status"]
-
-    def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None):
-        """Return the open bugs assigned to a person."""
-        if context is None:
-            context = self.context
-
-        if extra_params is None:
-            extra_params = dict()
-        else:
-            extra_params = dict(extra_params)
-        extra_params['assignee'] = context
-
-        sup = super(PersonAssignedBugTaskSearchListingView, self)
-        return sup.searchUnbatched(searchtext, context, extra_params)
-
-    def shouldShowAssigneeWidget(self):
-        """Should the assignee widget be shown on the advanced search page?"""
-        return False
-
-    def shouldShowAssignedToTeamPortlet(self):
-        """Should the team assigned bugs portlet be shown?"""
-        return True
-
-    def shouldShowTagsCombinatorWidget(self):
-        """Should the tags combinator widget show on the search page?"""
-        return False
-
-    def getSearchPageHeading(self):
-        """The header for the search page."""
-        return "Bugs assigned to %s" % self.context.displayname
-
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs Assigned to %s: Advanced Search" % (
-            self.context.displayname)
-
-    def getAdvancedSearchButtonLabel(self):
-        """The Search button for the advanced search page."""
-        return "Search bugs assigned to %s" % self.context.displayname
-
-    def getSimpleSearchURL(self):
-        """Return a URL that can be usedas an href to the simple search."""
-        return canonical_url(self.context, view_name="+assignedbugs")
-
-
-class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
-                                              BugTaskSearchListingView):
-    """All bugs commented on by a Person."""
-
-    columns_to_show = ["id", "summary", "bugtargetdisplayname",
-                       "importance", "status"]
-
-    def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None):
-        """Return the open bugs commented on by a person."""
-        if context is None:
-            context = self.context
-
-        if extra_params is None:
-            extra_params = dict()
-        else:
-            extra_params = dict(extra_params)
-        extra_params['bug_commenter'] = context
-
-        sup = super(PersonCommentedBugTaskSearchListingView, self)
-        return sup.searchUnbatched(searchtext, context, extra_params)
-
-    def getSearchPageHeading(self):
-        """The header for the search page."""
-        return "Bugs commented on by %s" % self.context.displayname
-
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs commented on by %s: Advanced Search" % (
-            self.context.displayname)
-
-    def getAdvancedSearchButtonLabel(self):
-        """The Search button for the advanced search page."""
-        return "Search bugs commented on by %s" % self.context.displayname
-
-    def getSimpleSearchURL(self):
-        """Return a URL that can be used as an href to the simple search."""
-        return canonical_url(self.context, view_name="+commentedbugs")
-
-
-class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
-                                             BugTaskSearchListingView):
-    """All bugs reported by someone."""
-
-    columns_to_show = ["id", "summary", "bugtargetdisplayname",
-                       "importance", "status"]
-
-    def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None):
-        """Return the bugs reported by a person."""
-        if context is None:
-            context = self.context
-
-        if extra_params is None:
-            extra_params = dict()
-        else:
-            extra_params = dict(extra_params)
-        # Specify both owner and bug_reporter to try to prevent the same
-        # bug (but different tasks) being displayed.
-        extra_params['owner'] = context
-        extra_params['bug_reporter'] = context
-
-        sup = super(PersonReportedBugTaskSearchListingView, self)
-        return sup.searchUnbatched(searchtext, context, extra_params)
-
-    def getSearchPageHeading(self):
-        """The header for the search page."""
-        return "Bugs reported by %s" % self.context.displayname
-
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs Reported by %s: Advanced Search" % (
-            self.context.displayname)
-
-    def getAdvancedSearchButtonLabel(self):
-        """The Search button for the advanced search page."""
-        return "Search bugs reported by %s" % self.context.displayname
-
-    def getSimpleSearchURL(self):
-        """Return a URL that can be used as an href to the simple search."""
-        return canonical_url(self.context, view_name="+reportedbugs")
-
-    def shouldShowReporterWidget(self):
-        """Should the reporter widget be shown on the advanced search page?"""
-        return False
-
-    def shouldShowTagsCombinatorWidget(self):
-        """Should the tags combinator widget show on the search page?"""
-        return False
-
-
-class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
-                                               BugTaskSearchListingView):
-    """All bugs someone is subscribed to."""
-
-    columns_to_show = ["id", "summary", "bugtargetdisplayname",
-                       "importance", "status"]
-
-    def searchUnbatched(self, searchtext=None, context=None,
-                        extra_params=None):
-        """Return the bugs subscribed to by a person."""
-        if context is None:
-            context = self.context
-
-        if extra_params is None:
-            extra_params = dict()
-        else:
-            extra_params = dict(extra_params)
-        extra_params['subscriber'] = context
-
-        sup = super(PersonSubscribedBugTaskSearchListingView, self)
-        return sup.searchUnbatched(searchtext, context, extra_params)
-
-    def getSearchPageHeading(self):
-        """The header for the search page."""
-        return "Bugs %s is subscribed to" % self.context.displayname
-
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs %s is Cc'd to: Advanced Search" % (
-            self.context.displayname)
-
-    def getAdvancedSearchButtonLabel(self):
-        """The Search button for the advanced search page."""
-        return "Search bugs %s is Cc'd to" % self.context.displayname
-
-    def getSimpleSearchURL(self):
-        """Return a URL that can be used as an href to the simple search."""
-        return canonical_url(self.context, view_name="+subscribedbugs")
 
 
 class PersonVouchersView(LaunchpadFormView):
@@ -2280,16 +1257,21 @@ class PersonVouchersView(LaunchpadFormView):
 
     custom_widget('voucher', LaunchpadDropdownWidget)
 
+    @property
+    def page_title(self):
+        return 'Commercial subscription vouchers'
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
     def setUpFields(self):
         """Set up the fields for this view."""
 
         self.form_fields = []
-        # Make the less expensive test for commercial projects first
-        # to avoid the more costly fetching of unredeemed vouchers.
-        if (self.has_commercial_projects and
-            len(self.unredeemed_vouchers) > 0):
-            self.form_fields = (self.createProjectField() +
-                                self.createVoucherField())
+        self.form_fields = (self.createProjectField() +
+                            self.createVoucherField())
 
     def createProjectField(self):
         """Create the project field for selection commercial projects.
@@ -2308,10 +1290,10 @@ class PersonVouchersView(LaunchpadFormView):
     def createVoucherField(self):
         """Create voucher field.
 
-        Only unredeemed vouchers owned by the user are shown.
+        Only redeemable vouchers owned by the user are shown.
         """
         terms = []
-        for voucher in self.unredeemed_vouchers:
+        for voucher in self.redeemable_vouchers:
             text = "%s (%d months)" % (
                 voucher.voucher_id, voucher.term_months)
             terms.append(SimpleTerm(voucher, voucher.voucher_id, text))
@@ -2319,39 +1301,38 @@ class PersonVouchersView(LaunchpadFormView):
         field = FormFields(
             Choice(__name__='voucher',
                    title=_('Select a voucher'),
-                   description=_('Choose one of these unredeemed vouchers'),
+                   description=_('Choose one of these redeemable vouchers'),
                    vocabulary=voucher_vocabulary,
                    required=True),
             render_context=self.render_context)
         return field
 
     @cachedproperty
-    def unredeemed_vouchers(self):
-        """Get the unredeemed vouchers owned by the user."""
-        unredeemed, redeemed = (
-            self.context.getCommercialSubscriptionVouchers())
-        return unredeemed
+    def show_voucher_selection(self):
+        return self.redeemable_vouchers or self.errors
 
     @cachedproperty
-    def has_commercial_projects(self):
-        """Does the user manage one or more commercial project?
+    def redeemable_vouchers(self):
+        """Get the list redeemable vouchers owned by the user."""
+        vouchers = [
+            voucher for voucher in
+            self.context.getRedeemableCommercialSubscriptionVouchers()]
+        return vouchers
 
-        Users with launchpad.Commercial permission can manage vouchers for any
-        project so the property is True always.  Otherwise it is true if the
-        vocabulary is not empty.
+    def removeRedeemableVoucher(self, voucher):
+        """Remove the voucher from the cached list of redeemable vouchers.
+
+        Updated the voucher field and widget so that the form can be reused.
         """
-        if check_permission('launchpad.Commercial', self.context):
-            return True
-        vocabulary_registry = getVocabularyRegistry()
-        vocabulary = vocabulary_registry.get(self.context,
-                                             "CommercialProjects")
-        return len(vocabulary) > 0
-
-    @action(_("Cancel"), name="cancel",
-            validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Simply redirect to the user's page."""
-        self.next_url = canonical_url(self.context)
+        vouchers = get_property_cache(self).redeemable_vouchers
+        vouchers.remove(voucher)
+        # Setup the fields and widgets again, but withut the submitted data.
+        self.form_fields = (
+            self.createProjectField() + self.createVoucherField())
+        self.widgets = form.setUpWidgets(
+            self.form_fields.select('project', 'voucher'),
+            self.prefix, self.context, self.request,
+            data=self.initial_values, ignore_request=True)
 
     @action(_("Redeem"), name="redeem")
     def redeem_action(self, action, data):
@@ -2360,24 +1341,29 @@ class PersonVouchersView(LaunchpadFormView):
         voucher = data['voucher']
 
         try:
-            # The call to redeemVoucher returns True if it succeeds or it
-            # raises an exception.  Therefore the return value does not need
-            # to be checked.
-            result = salesforce_proxy.redeemVoucher(voucher.voucher_id,
-                                                    self.context,
-                                                    project)
-            project.redeemSubscriptionVoucher(
-                voucher=voucher.voucher_id,
-                registrant=self.context,
-                purchaser=self.context,
-                subscription_months=voucher.term_months)
+            # Perform a check that the submitted voucher id is valid.
+            check_voucher = salesforce_proxy.getVoucher(voucher.voucher_id)
+            if not check_voucher.status in REDEEMABLE_VOUCHER_STATUSES:
+                self.addError(
+                    _("Voucher %s has invalid status %s"
+                      % (check_voucher.voucher_id, check_voucher.status)))
+                return
+            # Redeem the voucher in Launchpad, marking the subscription as
+            # pending. Launchpad will honour the subscription but a job will
+            # still need to be run to notify Salesforce.
+            try:
+                project.redeemSubscriptionVoucher(
+                    voucher='pending-' + voucher.voucher_id,
+                    registrant=self.context,
+                    purchaser=self.context,
+                    subscription_months=voucher.term_months)
+            except VoucherAlreadyRedeemed as error:
+                self.setFieldError('voucher', _(error.message))
+                return
             self.request.response.addInfoNotification(
                 _("Voucher redeemed successfully"))
-            # Force the page to reload so the just consumed voucher is
-            # not displayed again (since the field has already been
-            # created).
-            self.next_url = self.request.URL
-        except SalesforceVoucherProxyException, error:
+            self.removeRedeemableVoucher(voucher)
+        except SalesforceVoucherProxyException as error:
             self.addError(
                 _("The voucher could not be redeemed at this time."))
             # Log an OOPS report without raising an error.
@@ -2398,7 +1384,7 @@ class PersonLanguagesView(LaunchpadFormView):
         else:
             return "%s's language preferences" % self.context.displayname
 
-    page_title = label
+    page_title = "Language preferences"
 
     def requestCountry(self):
         return ICountry(self.request, None)
@@ -2419,7 +1405,8 @@ class PersonLanguagesView(LaunchpadFormView):
     def getRedirectionURL(self):
         request = self.request
         referrer = request.getHeader('referer')
-        if referrer and referrer.startswith(request.getApplicationURL()):
+        if referrer and (referrer.startswith(request.getApplicationURL()) or
+                         referrer.find('+languages') != -1):
             return referrer
         else:
             return ''
@@ -2431,10 +1418,19 @@ class PersonLanguagesView(LaunchpadFormView):
 
     @property
     def next_url(self):
-        """Redirect to this url after successfully processing the form."""
+        """Redirect to the +languages page if request originated there."""
+        redirection_url = self.request.get('redirection_url')
+        if redirection_url:
+            return redirection_url
         return canonical_url(self.context)
 
-    cancel_url = next_url
+    @property
+    def cancel_url(self):
+        """Redirect to the +languages page if request originated there."""
+        redirection_url = self.getRedirectionURL()
+        if redirection_url:
+            return redirection_url
+        return canonical_url(self.context)
 
     @action(_("Save"), name="save")
     def submitLanguages(self, action, data):
@@ -2449,13 +1445,13 @@ class PersonLanguagesView(LaunchpadFormView):
         new_languages = []
 
         for key in all_languages.keys():
-            if self.request.has_key(key) and self.request.get(key) == u'on':
+            if self.request.get(key, None) == u'on':
                 new_languages.append(all_languages[key])
 
         if self.is_current_user:
             subject = "your"
         else:
-            subject = "%s's" % cgi.escape(self.context.displayname)
+            subject = "%s's" % self.context.displayname
 
         # Add languages to the user's preferences.
         messages = []
@@ -2463,30 +1459,159 @@ class PersonLanguagesView(LaunchpadFormView):
             self.context.addLanguage(language)
             messages.append(
                 "Added %(language)s to %(subject)s preferred languages." %
-                {'language' : language.englishname, 'subject' : subject})
+                {'language': language.englishname, 'subject': subject})
 
         # Remove languages from the user's preferences.
         for language in set(old_languages) - set(new_languages):
             self.context.removeLanguage(language)
             messages.append(
                 "Removed %(language)s from %(subject)s preferred languages." %
-                {'language' : language.englishname, 'subject' : subject})
+                {'language': language.englishname, 'subject': subject})
         if len(messages) > 0:
-            message = structured('<br />'.join(messages))
+            message = structured(
+                '<br />'.join(['%s'] * len(messages)), *messages)
             self.request.response.addInfoNotification(message)
-        redirection_url = self.request.get('redirection_url')
-        if redirection_url:
-            self.request.response.redirect(redirection_url)
 
     @property
     def answers_url(self):
         return canonical_url(
-            getUtility(ILaunchpadCelebrities).lp_translations,
+            getUtility(ILaunchpadCelebrities).launchpad,
             rootsite='answers')
 
 
-class PersonView(LaunchpadView, FeedsMixin):
+class PersonKarmaView(LaunchpadView):
+    """A view class used for ~person/+karma."""
+
+    page_title = 'Karma'
+
+    @property
+    def label(self):
+        if self.user == self.context:
+            return 'Your Launchpad Karma'
+        else:
+            return 'Launchpad Karma'
+
+    @cachedproperty
+    def has_karma(self):
+        """Does the person have karma?"""
+        return bool(self.context.karma_category_caches)
+
+    @cachedproperty
+    def has_expired_karma(self):
+        """Did the person have karma?"""
+        return self.context.latestKarma().count() > 0
+
+
+class ContactViaWebLinksMixin:
+
+    @cachedproperty
+    def group_to_contact(self):
+        """Contacting a team may contact different email addresses.
+
+        :return: the recipients of the message.
+        :rtype: `ContactViaWebNotificationRecipientSet` constant:
+                TO_USER
+                TO_ADMINS
+                TO_MEMBERS
+        """
+        return ContactViaWebNotificationRecipientSet(
+            self.user, self.context).primary_reason
+
+    @property
+    def contact_link_title(self):
+        """Return the appropriate +contactuser link title for the tooltip."""
+        ContactViaWeb = ContactViaWebNotificationRecipientSet
+        if self.group_to_contact == ContactViaWeb.TO_USER:
+            if self.viewing_own_page:
+                return 'Send an email to yourself through Launchpad'
+            else:
+                return 'Send an email to this user through Launchpad'
+        elif self.group_to_contact == ContactViaWeb.TO_MEMBERS:
+            return "Send an email to your team's members through Launchpad"
+        elif self.group_to_contact == ContactViaWeb.TO_ADMINS:
+            return "Send an email to this team's admins through Launchpad"
+        else:
+            raise AssertionError('Unknown group to contact.')
+
+    @property
+    def specific_contact_text(self):
+        """Return the appropriate link text."""
+        ContactViaWeb = ContactViaWebNotificationRecipientSet
+        if self.group_to_contact == ContactViaWeb.TO_USER:
+            # Note that we explicitly do not change the text to "Contact
+            # yourself" when viewing your own page.
+            return 'Contact this user'
+        elif self.group_to_contact == ContactViaWeb.TO_MEMBERS:
+            return "Contact this team's members"
+        elif self.group_to_contact == ContactViaWeb.TO_ADMINS:
+            return "Contact this team's admins"
+        else:
+            raise AssertionError('Unknown group to contact.')
+
+
+class PersonView(LaunchpadView, FeedsMixin, ContactViaWebLinksMixin):
     """A View class used in almost all Person's pages."""
+
+    @property
+    def should_show_ubuntu_coc_section(self):
+        """Should the 'Code of Conduct' section be shown?
+
+        It's shown when the person has signed the code of conduct or has
+        rights to sign it.
+        """
+        return self.context.is_ubuntu_coc_signer or (
+            check_permission('launchpad.Edit', self.context))
+
+    @property
+    def should_show_ircnicknames_section(self):
+        """Should the 'IRC nicknames' section be shown?
+
+        It's shown when the person has IRC nicknames registered or has rights
+        to register new ones.
+        """
+        return bool(self.context.ircnicknames) or (
+            check_permission('launchpad.Edit', self.context))
+
+    @property
+    def should_show_jabberids_section(self):
+        """Should the 'Jabber IDs' section be shown?
+
+        It's shown when the person has Jabber IDs registered or has rights
+        to register new ones.
+        """
+        return bool(self.context.jabberids) or (
+            check_permission('launchpad.Edit', self.context))
+
+    @property
+    def should_show_sshkeys_section(self):
+        """Should the 'SSH keys' section be shown?
+
+        It's shown when the person has SSH keys registered or has rights
+        to register new ones.
+        """
+        return bool(self.context.sshkeys) or (
+            check_permission('launchpad.Edit', self.context))
+
+    @property
+    def should_show_gpgkeys_section(self):
+        """Should the 'OpenPGP keys' section be shown?
+
+        It's shown when the person has OpenPGP keys registered or has rights
+        to register new ones.
+        """
+        return bool(self.context.gpg_keys) or (
+            check_permission('launchpad.Edit', self.context))
+
+    @cachedproperty
+    def is_probationary_or_invalid_user(self):
+        """True when the user is not active or does not have karma.
+
+        Some content should not be rendered when the context is not a an
+        established user. For example, probationary and invalid user pages
+        must not be indexed by search engines and their narrative linkified.
+        """
+        user = self.context
+        return user.is_probationary or not user.is_valid_person_or_team
 
     @cachedproperty
     def recently_approved_members(self):
@@ -2503,32 +1628,68 @@ class PersonView(LaunchpadView, FeedsMixin):
         return members[:5]
 
     @cachedproperty
-    def has_recent_approved_or_proposed_members(self):
-        """Does the team have recently approved or proposed members?"""
-        approved = self.recently_approved_members.count() > 0
-        proposed = self.recently_proposed_members.count() > 0
-        return approved or proposed
+    def recently_invited_members(self):
+        members = self.context.getMembersByStatus(
+            TeamMembershipStatus.INVITED,
+            orderBy='-TeamMembership.date_proposed')
+        return members[:5]
+
+    @property
+    def recently_approved_hidden(self):
+        """Optionally hide the div.
+
+        The AJAX on the page needs the elements to be present
+        but hidden in case it adds a member to the list.
+        """
+        if IResultSet(self.recently_approved_members).is_empty():
+            return 'hidden'
+        else:
+            return ''
+
+    @property
+    def recently_proposed_hidden(self):
+        """Optionally hide the div.
+
+        The AJAX on the page needs the elements to be present
+        but hidden in case it adds a member to the list.
+        """
+        if IResultSet(self.recently_proposed_members).is_empty():
+            return 'hidden'
+        else:
+            return ''
+
+    @property
+    def recently_invited_hidden(self):
+        """Optionally hide the div.
+
+        The AJAX on the page needs the elements to be present
+        but hidden in case it adds a member to the list.
+        """
+        if IResultSet(self.recently_invited_members).is_empty():
+            return 'hidden'
+        else:
+            return ''
 
     @cachedproperty
     def openpolls(self):
-        assert self.context.isTeam()
+        assert self.context.is_team
         return IPollSubset(self.context).getOpenPolls()
 
     @cachedproperty
     def closedpolls(self):
-        assert self.context.isTeam()
+        assert self.context.is_team
         return IPollSubset(self.context).getClosedPolls()
 
     @cachedproperty
     def notyetopenedpolls(self):
-        assert self.context.isTeam()
+        assert self.context.is_team
         return IPollSubset(self.context).getNotYetOpenedPolls()
 
     @cachedproperty
     def contributions(self):
         """Cache the results of getProjectsAndCategoriesContributedTo()."""
         return self.context.getProjectsAndCategoriesContributedTo(
-            limit=5)
+            self.user, limit=5)
 
     @cachedproperty
     def contributed_categories(self):
@@ -2536,7 +1697,9 @@ class PersonView(LaunchpadView, FeedsMixin):
         categories = set()
         for contrib in self.contributions:
             categories.update(category for category in contrib['categories'])
-        return sorted(categories, key=attrgetter('title'))
+        sort = {'code': 0, 'bugs': 1, 'blueprints': 2, 'translations': 3,
+                'answers': 4, 'specs': 5, 'soyuz': 6}
+        return sorted(categories, key=lambda category: sort[category.name])
 
     @cachedproperty
     def context_is_probably_a_team(self):
@@ -2553,7 +1716,7 @@ class PersonView(LaunchpadView, FeedsMixin):
             "This can only be used when the context has no account.")
         emails = getUtility(IEmailAddressSet).getByPerson(self.context)
         for email in emails:
-            if '@lists.' in email.email:
+            if '@lists.' in removeSecurityProxy(email).email:
                 return True
         return False
 
@@ -2575,64 +1738,6 @@ class PersonView(LaunchpadView, FeedsMixin):
             profile_url.host = config.launchpad.non_restricted_hostname
         return str(profile_url)
 
-    @property
-    def subscription_policy_description(self):
-        """Return the description of this team's subscription policy."""
-        team = self.context
-        assert team.isTeam(), (
-            'This method can only be called when the context is a team.')
-        if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
-            description = _(
-                "This is a restricted team; new members can only be added "
-                "by one of the team's administrators.")
-        elif team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
-            description = _(
-                "This is a moderated team; all subscriptions are subjected "
-                "to approval by one of the team's administrators.")
-        elif team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
-            description = _(
-                "This is an open team; any user can join and no approval "
-                "is required.")
-        else:
-            raise AssertionError('Unknown subscription policy.')
-        return description
-
-    @property
-    def user_can_subscribe_to_list(self):
-        """Can the user subscribe to this team's mailing list?
-
-        A user can subscribe to the list if the team has an active
-        mailing list, and if they do not already have a subscription.
-        """
-        if self.team_has_mailing_list:
-            # If we are already subscribed, then we can not subscribe again.
-            return not self.user_is_subscribed_to_list
-        else:
-            return False
-
-    @property
-    def user_is_subscribed_to_list(self):
-        """Is the user subscribed to the team's mailing list?
-
-        Subscriptions hang around even if the list is deactivated, etc.
-
-        It is an error to ask if the user is subscribed to a mailing list
-        that doesn't exist.
-        """
-        if self.user is None:
-            return False
-
-        mailing_list = self.context.mailing_list
-        assert mailing_list is not None, "This team has no mailing list."
-        has_subscription = bool(mailing_list.getSubscription(self.user))
-        return has_subscription
-
-    @property
-    def team_has_mailing_list(self):
-        """Is the team mailing list available for subscription?"""
-        mailing_list = self.context.mailing_list
-        return mailing_list is not None and mailing_list.is_usable
-
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this
         person that are In Progress.
@@ -2642,7 +1747,6 @@ class PersonView(LaunchpadView, FeedsMixin):
         url = "%s/+assignedbugs" % canonical_url(self.context)
         return ("%(url)s?search=Search&%(query_string)s"
                 % {'url': url, 'query_string': query_string})
-
 
     @cachedproperty
     def assigned_bugs_in_progress(self):
@@ -2655,7 +1759,8 @@ class PersonView(LaunchpadView, FeedsMixin):
     @cachedproperty
     def assigned_specs_in_progress(self):
         """Return up to 5 assigned specs that are being worked on."""
-        return list(self.context.assigned_specs_in_progress)
+        specs = self.context.findVisibleAssignedInProgressSpecs(self.user)
+        return list(specs)
 
     @property
     def has_assigned_bugs_or_specs_in_progress(self):
@@ -2680,38 +1785,19 @@ class PersonView(LaunchpadView, FeedsMixin):
             self.user is not None and self.context.is_valid_person_or_team)
 
     @property
-    def contact_link_title(self):
-        """Return the appropriate +contactuser link title for the tooltip."""
-        if self.context.is_team:
-            if self.user.inTeam(self.context):
-                return 'Send an email to your team through Launchpad'
-            else:
-                return "Send an email to this team's owner through Launchpad"
-        elif self.viewing_own_page:
-            return 'Send an email to yourself through Launchpad'
-        else:
-            return 'Send an email to this user through Launchpad'
+    def should_show_polls_portlet(self):
+        # Circular imports.
+        from lp.registry.browser.team import TeamOverviewMenu
+        menu = TeamOverviewMenu(self.context)
+        return (
+            self.has_current_polls or self.closedpolls
+            or menu.add_poll().enabled)
 
     @property
-    def specific_contact_text(self):
-        """Return the appropriate link text."""
-        if self.context.is_team:
-            return 'Contact this team'
-        else:
-            # Note that we explicitly do not change the text to "Contact
-            # yourself" when viewing your own page.
-            return 'Contact this user'
-
-    def hasCurrentPolls(self):
+    def has_current_polls(self):
         """Return True if this team has any non-closed polls."""
-        assert self.context.isTeam()
+        assert self.context.is_team
         return bool(self.openpolls) or bool(self.notyetopenedpolls)
-
-    def no_bounties(self):
-        return not (self.context.ownedBounties or
-            self.context.reviewerBounties or
-            self.context.subscribedBounties or
-            self.context.claimedBounties)
 
     def userIsOwner(self):
         """Return True if the user is the owner of this Team."""
@@ -2724,17 +1810,6 @@ class PersonView(LaunchpadView, FeedsMixin):
         assert self.user is not None
         return self.user.findPathToTeam(self.context)
 
-    def indirect_teams_via(self):
-        """Return a list of dictionaries, where each dictionary has a team
-        in which the person is an indirect member, and a path to membership
-        in that team.
-        """
-        return [{'team': team,
-                 'via': ', '.join(
-                    [viateam.displayname for viateam in
-                        self.context.findPathToTeam(team)[:-1]])}
-                for team in self.context.teams_indirectly_participated_in]
-
     def userIsParticipant(self):
         """Return true if the user is a participant of this team.
 
@@ -2745,23 +1820,6 @@ class PersonView(LaunchpadView, FeedsMixin):
         if self.user is None:
             return False
         return self.user.inTeam(self.context)
-
-    def userIsActiveMember(self):
-        """Return True if the user is an active member of this team."""
-        return userIsActiveTeamMember(self.context)
-
-    def userIsProposedMember(self):
-        """Return True if the user is a proposed member of this team."""
-        if self.user is None:
-            return False
-        return self.user in self.context.proposedmembers
-
-    def userCanRequestToLeave(self):
-        """Return true if the user can request to leave this team.
-
-        A given user can leave a team only if he's an active member.
-        """
-        return self.userIsActiveMember()
 
     @cachedproperty
     def email_address_visibility(self):
@@ -2789,7 +1847,7 @@ class PersonView(LaunchpadView, FeedsMixin):
             EmailAddressVisibleState.PUBLIC, EmailAddressVisibleState.ALLOWED)
         if self.email_address_visibility.state in visible_states:
             emails = [self.context.preferredemail.email]
-            if not self.context.isTeam():
+            if not self.context.is_team:
                 emails.extend(sorted(
                     email.email for email in self.context.validatedemails))
             return emails
@@ -2850,7 +1908,7 @@ class PersonView(LaunchpadView, FeedsMixin):
 
     @cachedproperty
     def languages(self):
-        """The user's preferred languages, or English is none are set."""
+        """The user's preferred languages, or English if none are set."""
         languages = list(self.context.languages)
         if len(languages) > 0:
             englishnames = [language.englishname for language in languages]
@@ -2859,40 +1917,117 @@ class PersonView(LaunchpadView, FeedsMixin):
             return getUtility(ILaunchpadCelebrities).english.englishname
 
     @cachedproperty
-    def has_karma(self):
-        """Does the have karma?"""
-        return bool(self.context.karma_category_caches)
-
-    @cachedproperty
-    def has_expired_karma(self):
-        """Did the user have karm?."""
-        return self.context.latestKarma().count() > 0
-
-    @property
-    def public_private_css(self):
-        """The CSS classes that represent the public or private state."""
-        if self.context.private:
-            return 'aside private'
-        else:
-            return 'aside public'
-
-    @cachedproperty
     def should_show_ppa_section(self):
         """Return True if "Personal package archives" is to be shown.
 
         We display it if:
-        person has any public PPA or current_user has lp.edit
+        current_user may view at least one PPA or current_user has lp.edit
         """
         # If the current user has edit permission, show the section.
         if check_permission('launchpad.Edit', self.context):
             return True
 
-        # If the current user has any public PPA, show the section.
-        for ppa in self.context.ppas:
-            if not ppa.private:
-                return True
+        # If the current user can view any PPA, show the section.
+        return self.visible_ppas.count() > 0
 
-        return False
+    @cachedproperty
+    def visible_ppas(self):
+        return self.context.getVisiblePPAs(self.user)
+
+    @property
+    def time_zone_offset(self):
+        """Return a string with offset from UTC"""
+        return datetime.now(
+            pytz.timezone(self.context.time_zone)).strftime("%z")
+
+
+class PersonParticipationView(LaunchpadView):
+    """View for the ~person/+participation page."""
+
+    @property
+    def label(self):
+        return 'Team participation for ' + self.context.displayname
+
+    def _asParticipation(self, membership=None, team=None, via=None):
+        """Return a dict of participation information for the membership.
+
+        Method requires membership or team, not both.
+        :param via: The team through which the membership in the indirect
+        team is established.
+        """
+        if ((membership is None and team is None) or
+            (membership is not None and team is not None)):
+            raise AssertionError(
+                "The membership or team argument must be provided, not both.")
+
+        if via is not None:
+            # When showing the path, it's unnecessary to show the team in
+            # question at the beginning of the path, or the user at the
+            # end of the path.
+            via = COMMASPACE.join(
+                [via_team.displayname for via_team in via[1:-1]])
+
+        if membership is None:
+            # Membership is via an indirect team so sane defaults exist.
+            # An indirect member cannot be an Owner or Admin of a team.
+            role = 'Member'
+            # The Person never joined, and can't have a join date.
+            datejoined = None
+        else:
+            # The member is a direct member; use the membership data.
+            team = membership.team
+            datejoined = membership.datejoined
+            if membership.person == team.teamowner:
+                role = 'Owner'
+            elif membership.status == TeamMembershipStatus.ADMIN:
+                role = 'Admin'
+            else:
+                role = 'Member'
+
+        if team.mailing_list is not None and team.mailing_list.is_usable:
+            subscription = team.mailing_list.getSubscription(self.context)
+            if subscription is None:
+                subscribed = 'Not subscribed'
+            else:
+                subscribed = 'Subscribed'
+        else:
+            subscribed = '&mdash;'
+
+        return dict(
+            displayname=team.displayname, team=team, datejoined=datejoined,
+            role=role, via=via, subscribed=subscribed)
+
+    @cachedproperty
+    def active_participations(self):
+        """Return the participation information for active memberships."""
+        paths, memberships = self.context.getPathsToTeams()
+        direct_teams = [membership.team for membership in memberships]
+        indirect_teams = [
+            team for team in paths.keys()
+            if team not in direct_teams]
+        participations = []
+
+        # First, create a participation for all direct memberships.
+        for membership in memberships:
+            # Add a participation record for the membership if allowed.
+            if check_permission('launchpad.View', membership.team):
+                participations.append(
+                    self._asParticipation(membership=membership))
+
+        # Second, create a participation for all indirect memberships,
+        # using the remaining paths.
+        for indirect_team in indirect_teams:
+            if not check_permission('launchpad.View', indirect_team):
+                continue
+            participations.append(
+                self._asParticipation(
+                    via=paths[indirect_team],
+                    team=indirect_team))
+        return sorted(participations, key=itemgetter('displayname'))
+
+    @cachedproperty
+    def has_participations(self):
+        return len(self.active_participations) > 0
 
 
 class EmailAddressVisibleState:
@@ -2933,7 +2068,7 @@ class EmailAddressVisibleState:
             self.state = EmailAddressVisibleState.NONE_AVAILABLE
         elif not view.context.hide_email_addresses:
             self.state = EmailAddressVisibleState.PUBLIC
-        elif check_permission('launchpad.View',  view.context.preferredemail):
+        elif check_permission('launchpad.View', view.context.preferredemail):
             self.state = EmailAddressVisibleState.ALLOWED
         else:
             self.state = EmailAddressVisibleState.HIDDEN
@@ -2964,7 +2099,8 @@ class EmailAddressVisibleState:
         return self.state is EmailAddressVisibleState.ALLOWED
 
 
-class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
+class PersonIndexView(XRDSContentNegotiationMixin, PersonView,
+                      TeamJoinMixin):
     """View class for person +index and +xrds pages."""
 
     xrds_template = ViewPageTemplateFile(
@@ -2972,15 +2108,40 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
 
     def initialize(self):
         super(PersonIndexView, self).initialize()
-        # This view requires the gmap2 Javascript in order to render the map
-        # with the person's usual location. The location is only availble if
-        # the location is set, visible, and the viewing user wants to see it.
-        launchpad_views = get_launchpad_views(self.request.cookies)
-        self._small_map = launchpad_views['small_maps']
-        if (self.has_visible_location and self._small_map):
-            self.request.needs_gmap2 = True
+        if self.context.isMergePending():
+            if self.context.is_team:
+                merge_action = 'merged or deleted'
+            else:
+                merge_action = 'merged'
+            self.request.response.addInfoNotification(
+                "%s is queued to be %s in a few minutes." % (
+                self.context.displayname, merge_action))
         if self.request.method == "POST":
             self.processForm()
+
+    @property
+    def page_title(self):
+        context = self.context
+        if context.is_valid_person_or_team:
+            return '%s in Launchpad' % context.displayname
+        else:
+            return "%s does not use Launchpad" % context.displayname
+
+    @property
+    def description_widget(self):
+        """The description as a widget."""
+        non_probationary = not self.context.is_probationary
+        return TextAreaEditorWidget(
+            self.context, IPerson['description'], title="",
+            edit_title='Edit description', hide_empty=False,
+            linkify_text=non_probationary)
+
+    @cachedproperty
+    def page_description(self):
+        if self.context.is_valid_person_or_team:
+            return self.context.description
+        else:
+            return None
 
     @cachedproperty
     def enable_xrds_discovery(self):
@@ -3005,7 +2166,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
         mailing_list = self.context.mailing_list
         if mailing_list is None:
             raise UnexpectedFormData(
-                _("This team does not have a mailing list."))
+                _("This team does not use Launchpad to host a mailing list."))
         if not self.user:
             raise Unauthorized(
                 _("You must be logged in to unsubscribe."))
@@ -3021,171 +2182,51 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
                   "mailing list."))
         self.request.response.redirect(canonical_url(self.context))
 
-    @property
-    def map_portlet_html(self):
-        """Generate the HTML which shows the map portlet."""
-        assert self.has_visible_location, (
-            "Can't generate the map for a person who hasn't set a "
-            "visible location.")
-        assert self.request.needs_gmap2 or not self._small_map, (
-            "To use this method a view must flag that it needs gmap2.")
-
-        replacements = {'center_lat': self.context.latitude,
-                        'center_lng': self.context.longitude}
-        return u"""
-            <script type="text/javascript">
-                YUI().use('node', 'lp.mapping', function(Y) {
-                    function renderMap() {
-                        Y.lp.mapping.renderPersonMapSmall(
-                            %(center_lat)s, %(center_lng)s);
-                     }
-                     Y.on("domready", renderMap);
-                });
-            </script>""" % replacements
-
-    @cachedproperty
-    def has_visible_location(self):
-        """Does the person have latitude and a visible location."""
-        if self.context.is_team:
-            return self.context.mapped_participants_count > 0
-        else:
-            return (check_permission('launchpad.View', self.context.location)
-                and self.context.latitude is not None)
-
-    @property
-    def should_show_map_portlet(self):
-        """Should the map portlet be displayed?
-
-        The map portlet is displayed only if the person has no location
-        specified, or if the user has permission to view the person's
-        location.
-        """
-        if self.context.location is None:
-            return True
-        else:
-            return check_permission('launchpad.View', self.context.location)
-
 
 class PersonCodeOfConductEditView(LaunchpadView):
+    """View for the ~person/+codesofconduct pages."""
 
-    def performCoCChanges(self):
-        """Make changes to code-of-conduct signature records for this
-        person.
-        """
+    @property
+    def label(self):
+        """See `LaunchpadView`."""
+        return 'Codes of Conduct for ' + self.context.displayname
+
+    def initialize(self):
+        """See `LaunchpadView`."""
+        # Make changes to code-of-conduct signature records for this person.
         sig_ids = self.request.form.get("DEACTIVATE_SIGNATURE")
 
         if sig_ids is not None:
             sCoC_util = getUtility(ISignedCodeOfConductSet)
-
-            # verify if we have multiple entries to deactive
+            # Verify that we have multiple entries to deactive.
             if not isinstance(sig_ids, list):
                 sig_ids = [sig_ids]
-
             for sig_id in sig_ids:
                 sig_id = int(sig_id)
-                # Deactivating signature
+                # Deactivating signature.
                 comment = 'Deactivated by Owner'
                 sCoC_util.modifySignature(sig_id, self.user, comment, False)
 
-            return True
 
+class PersonEditIRCNicknamesView(LaunchpadFormView):
 
-class PersonEditWikiNamesView(LaunchpadView):
-    def _validateWikiURL(self, url):
-        """Validate the URL.
+    schema = Interface
 
-        Make sure that the result is a valid URL with only the
-        appropriate schemes.
-        """
-        try:
-            uri = URI(url)
-            if uri.scheme not in ('http', 'https'):
-                self.error_message = structured(
-                    'The URL scheme "%(scheme)s" is not allowed.  '
-                    'Only http or https URLs may be used.', scheme=uri.scheme)
-                return False
-        except InvalidURIError, e:
-            self.error_message = structured(
-                '"%(url)s" is not a valid URL.', url=url)
-            return False
-        return True
+    @property
+    def page_title(self):
+        return smartquote("%s's IRC nicknames" % self.context.displayname)
 
-    def _sanitizeWikiURL(self, url):
-        """Strip whitespaces and make sure :url ends in a single '/'."""
-        if not url:
-            return url
-        return '%s/' % url.strip().rstrip('/')
+    label = page_title
 
-    def initialize(self):
-        """Process the WikiNames form."""
-        self.error_message = None
-        if self.request.method != "POST":
-            # Nothing to do
-            return
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
-        form = self.request.form
-        context = self.context
-        wikinameset = getUtility(IWikiNameSet)
-
-        for w in context.wiki_names:
-            # XXX: GuilhermeSalgado 2005-08-25:
-            # We're exposing WikiName IDs here because that's the only
-            # unique column we have. If we don't do this we'll have to
-            # generate the field names using the WikiName.wiki and
-            # WikiName.wikiname columns (because these two columns make
-            # another unique identifier for WikiNames), but that's tricky and
-            # not worth the extra work.
-            if form.get('remove_%d' % w.id):
-                w.destroySelf()
-            else:
-                wiki = self._sanitizeWikiURL(form.get('wiki_%d' % w.id))
-                wikiname = form.get('wikiname_%d' % w.id)
-                if not (wiki and wikiname):
-                    self.error_message = structured(
-                        "Neither Wiki nor WikiName can be empty.")
-                    return
-                if not self._validateWikiURL(wiki):
-                    return
-                w.wiki = wiki
-                w.wikiname = wikiname
-
-        wiki = self._sanitizeWikiURL(form.get('newwiki'))
-        wikiname = form.get('newwikiname')
-        if wiki or wikiname:
-            if wiki and wikiname:
-                existingwiki = wikinameset.getByWikiAndName(wiki, wikiname)
-                if existingwiki and existingwiki.person != context:
-                    self.error_message = structured(
-                        'The WikiName %s%s is already registered by '
-                        '<a href="%s">%s</a>.',
-                        wiki, wikiname, canonical_url(existingwiki.person),
-                        existingwiki.person.displayname)
-                    return
-                elif existingwiki:
-                    self.error_message = structured(
-                        'The WikiName %s%s already belongs to you.',
-                        wiki, wikiname)
-                    return
-                if not self._validateWikiURL(wiki):
-                    return
-                wikinameset.new(context, wiki, wikiname)
-            else:
-                self.newwiki = wiki
-                self.newwikiname = wikiname
-                self.error_message = structured(
-                    "Neither Wiki nor WikiName can be empty.")
-                return
-
-
-class PersonEditIRCNicknamesView(LaunchpadView):
-
-    def initialize(self):
+    @action(_("Save Changes"), name="save")
+    def save(self, action, data):
         """Process the IRC nicknames form."""
-        self.error_message = None
-        if self.request.method != "POST":
-            # Nothing to do
-            return
-
+        # XXX: EdwinGrubbs 2009-09-01 bug=422784
+        # This view should use schema and form validation.
         form = self.request.form
         for ircnick in self.context.ircnicknames:
             # XXX: GuilhermeSalgado 2005-08-25:
@@ -3199,7 +2240,7 @@ class PersonEditIRCNicknamesView(LaunchpadView):
                 nick = form.get('nick_%d' % ircnick.id)
                 network = form.get('network_%d' % ircnick.id)
                 if not (nick and network):
-                    self.error_message = structured(
+                    self.request.response.addErrorNotification(
                         "Neither Nickname nor Network can be empty.")
                     return
                 ircnick.nickname = nick
@@ -3213,49 +2254,69 @@ class PersonEditIRCNicknamesView(LaunchpadView):
             else:
                 self.newnick = nick
                 self.newnetwork = network
-                self.error_message = structured(
+                self.request.response.addErrorNotification(
                     "Neither Nickname nor Network can be empty.")
-                return
 
 
-class PersonEditJabberIDsView(LaunchpadView):
+class PersonEditJabberIDsView(LaunchpadFormView):
 
-    def initialize(self):
+    schema = IJabberID
+    field_names = ['jabberid']
+
+    def setUpFields(self):
+        super(PersonEditJabberIDsView, self).setUpFields()
+        if self.context.jabberids.count() > 0:
+            # Make the jabberid entry optional on the edit page if one or more
+            # ids already exist, which allows the removal of ids without
+            # filling out the new jabberid field.
+            jabber_field = self.form_fields['jabberid']
+            # Copy the field so as not to modify the interface.
+            jabber_field.field = copy_field(jabber_field.field)
+            jabber_field.field.required = False
+
+    @property
+    def page_title(self):
+        return smartquote("%s's Jabber IDs" % self.context.displayname)
+
+    label = page_title
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
+
+    def validate(self, data):
+        """Ensure the edited data does not already exist."""
+        jabberid = data.get('jabberid')
+        if jabberid is not None:
+            jabberset = getUtility(IJabberIDSet)
+            existingjabber = jabberset.getByJabberID(jabberid)
+            if existingjabber is not None:
+                if existingjabber.person != self.context:
+                    self.setFieldError(
+                        'jabberid',
+                        structured(
+                            'The Jabber ID %s is already registered by '
+                            '<a href="%s">%s</a>.',
+                            jabberid, canonical_url(existingjabber.person),
+                            existingjabber.person.displayname))
+                else:
+                    self.setFieldError(
+                        'jabberid',
+                        'The Jabber ID %s already belongs to you.' % jabberid)
+
+    @action(_("Save Changes"), name="save")
+    def save(self, action, data):
         """Process the Jabber ID form."""
-        self.error_message = None
-        if self.request.method != "POST":
-            # Nothing to do
-            return
-
         form = self.request.form
         for jabber in self.context.jabberids:
             if form.get('remove_%s' % jabber.jabberid):
                 jabber.destroySelf()
-            else:
-                jabberid = form.get('jabberid_%s' % jabber.jabberid)
-                if not jabberid:
-                    self.error_message = structured(
-                        "You cannot save an empty Jabber ID.")
-                    return
-                jabber.jabberid = jabberid
-
-        jabberid = form.get('newjabberid')
-        if jabberid:
+        jabberid = data.get('jabberid')
+        if jabberid is not None:
             jabberset = getUtility(IJabberIDSet)
-            existingjabber = jabberset.getByJabberID(jabberid)
-            if existingjabber is None:
-                jabberset.new(self.context, jabberid)
-            elif existingjabber.person != self.context:
-                self.error_message = structured(
-                    'The Jabber ID %s is already registered by '
-                    '<a href="%s">%s</a>.',
-                    jabberid, canonical_url(existingjabber.person),
-                    existingjabber.person.displayname)
-                return
-            else:
-                self.error_message = structured(
-                    'The Jabber ID %s already belongs to you.', jabberid)
-                return
+            jabberset.new(self.context, jabberid)
 
 
 class PersonEditSSHKeysView(LaunchpadView):
@@ -3266,6 +2327,8 @@ class PersonEditSSHKeysView(LaunchpadView):
     error_message = None
 
     def initialize(self):
+        require_fresh_login(self.request, self.context, '+editsshkeys')
+
         if self.request.method != "POST":
             # Nothing to do
             return
@@ -3279,23 +2342,23 @@ class PersonEditSSHKeysView(LaunchpadView):
         else:
             raise UnexpectedFormData("Unexpected action: %s" % action)
 
+    @property
+    def label(self):
+        return "Change your SSH keys"
+
+    page_title = label
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context, view_name="+edit")
+
     def add_ssh(self):
         sshkey = self.request.form.get('sshkey')
         try:
-            kind, keytext, comment = sshkey.split(' ', 2)
-        except ValueError:
+            getUtility(ISSHKeySet).new(self.user, sshkey)
+        except SSHKeyAdditionError:
             self.error_message = structured('Invalid public key')
-            return
-
-        if not (kind and keytext and comment):
-            self.error_message = structured('Invalid public key')
-            return
-
-        process = subprocess.Popen(
-            '/usr/bin/ssh-vulnkey -', shell=True, stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (out, err) = process.communicate(sshkey.encode('utf-8'))
-        if 'compromised' in out.lower():
+        except SSHKeyCompromisedError:
             self.error_message = structured(
                 'This key is known to be compromised due to a security flaw '
                 'in the software used to generate it, so it will not be '
@@ -3303,18 +2366,8 @@ class PersonEditSSHKeysView(LaunchpadView):
                 '<a href="http://www.ubuntu.com/usn/usn-612-2">Security '
                 'Notice</a> for further information and instructions on how '
                 'to generate another key.')
-            return
-
-        if kind == 'ssh-rsa':
-            keytype = SSHKeyType.RSA
-        elif kind == 'ssh-dss':
-            keytype = SSHKeyType.DSA
         else:
-            self.error_message = structured('Invalid public key')
-            return
-
-        getUtility(ISSHKeySet).new(self.user, keytype, keytext, comment)
-        self.info_message = structured('SSH public key added.')
+            self.info_message = structured('SSH public key added.')
 
     def remove_ssh(self):
         key_id = self.request.form.get('key')
@@ -3332,7 +2385,7 @@ class PersonEditSSHKeysView(LaunchpadView):
 
         comment = sshkey.comment
         sshkey.destroySelf()
-        self.info_message = structured('Key "%s" removed' % comment)
+        self.info_message = structured('Key "%s" removed', comment)
 
 
 class PersonGPGView(LaunchpadView):
@@ -3356,19 +2409,37 @@ class PersonGPGView(LaunchpadView):
     error_message = None
     info_message = None
 
+    def initialize(self):
+        require_fresh_login(self.request, self.context, '+editpgpkeys')
+        super(PersonGPGView, self).initialize()
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context, view_name="+edit")
+
+    @property
+    def label(self):
+        return "Change your OpenPGP keys"
+
+    page_title = label
+
     def keyserver_url(self):
         assert self.fingerprint
         return getUtility(
             IGPGHandler).getURLForKeyInServer(self.fingerprint, public=True)
 
     def form_action(self):
-        permitted_actions = ['claim_gpg', 'deactivate_gpg',
-                             'remove_gpgtoken', 'reactivate_gpg']
+        permitted_actions = [
+            'claim_gpg',
+            'deactivate_gpg',
+            'remove_gpgtoken',
+            'reactivate_gpg',
+            ]
         if self.request.method != "POST":
             return ''
         action = self.request.form.get('action')
-        if action and (action not in permitted_actions):
-            raise UnexpectedFormData("Action was not defined")
+        if action not in permitted_actions:
+            raise UnexpectedFormData("Action not permitted: %s" % action)
         getattr(self, action)()
 
     def claim_gpg(self):
@@ -3462,7 +2533,7 @@ class PersonGPGView(LaunchpadView):
 
         found = []
         notfound = []
-        # verify if we have multiple entries to deactive
+        # Verify if we have multiple entries to activate.
         if not isinstance(key_ids, list):
             key_ids = [key_ids]
 
@@ -3524,45 +2595,6 @@ class PersonGPGView(LaunchpadView):
         token.sendGPGValidationRequest(key)
 
 
-class PersonChangePasswordView(LaunchpadFormView):
-
-    implements(IPersonEditMenu)
-
-    label = "Change your password"
-    schema = IPersonChangePassword
-    field_names = ['currentpassword', 'password']
-    custom_widget('password', PasswordChangeWidget)
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
-
-    def validate(self, form_values):
-        current_password = form_values.get('currentpassword')
-        encryptor = getUtility(IPasswordEncryptor)
-        if not encryptor.validate(current_password, self.context.password):
-            self.setFieldError('currentpassword', _(
-                "The provided password doesn't match your current password."))
-        # This is not part of the widget, since the value may
-        # be optional in some forms.
-        new_password = self.request.form.get('field.password', '')
-        if new_password.strip() == '':
-            self.setFieldError('password', _(
-                "Setting an empty password is not allowed."))
-
-    @action(_("Change Password"), name="submit")
-    def submit_action(self, action, data):
-        password = data['password']
-        self.context.password = password
-        self.request.response.addInfoNotification(_(
-            "Password changed successfully"))
-
-    @property
-    def cancel_url(self):
-        """The URL that the 'Cancel' link should return to."""
-        return canonical_url(self.context)
-
-
 class BasePersonEditView(LaunchpadEditFormView):
 
     schema = IPerson
@@ -3579,58 +2611,29 @@ class BasePersonEditView(LaunchpadEditFormView):
     cancel_url = next_url
 
 
-class PersonEditHomePageView(BasePersonEditView):
-
-    field_names = ['homepage_content']
-    custom_widget(
-        'homepage_content', TextAreaWidget, height=30, width=30)
-
-    @property
-    def label(self):
-        """The form label."""
-        return 'Change home page for %s' % self.context.displayname
-
-    page_title = label
-
-
-class PersonEditView(BasePersonEditView):
+class PersonEditView(PersonRenameFormMixin, BasePersonEditView):
     """The Person 'Edit' page."""
 
-    field_names = ['displayname', 'name', 'mugshot', 'homepage_content',
-                   'hide_email_addresses', 'verbose_bugnotifications']
+    field_names = ['displayname', 'name', 'mugshot', 'description',
+                   'hide_email_addresses', 'verbose_bugnotifications',
+                   'selfgenerated_bugnotifications']
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     implements(IPersonEditMenu)
 
+    label = 'Change your personal details'
+    page_title = label
+
     # Will contain an hidden input when the user is renaming his
     # account with full knowledge of the consequences.
     i_know_this_is_an_openid_security_issue_input = None
-
-    def setUpWidgets(self):
-        """See `LaunchpadViewForm`.
-
-        When a user has a PPA renames are prohibited.
-        """
-        writable = self.context.archive is None
-        if not writable:
-            # This makes the field's widget display (i.e. read) only.
-            self.form_fields['name'].for_display = True
-        super(PersonEditView, self).setUpWidgets()
-        if not writable:
-            # We can't change the widget's .hint directly because that's a
-            # read-only property.  But that property just delegates to the
-            # context's underlying description, so change that instead.
-            self.widgets['name'].context.description = _(
-                'This user has a PPA and may not be renamed.')
 
     def validate(self, data):
         """If the name changed, warn the user about the implications."""
         new_name = data.get('name')
         bypass_check = self.request.form_ng.getOne(
             'i_know_this_is_an_openid_security_issue', 0)
-        if (new_name and new_name != self.context.name and
-            len(self.unknown_trust_roots_user_logged_in) > 0
-            and not bypass_check):
+        if (new_name and new_name != self.context.name and not bypass_check):
             # Warn the user that they might shoot themselves in the foot.
             self.setFieldError('name', structured(dedent('''
             <div class="inline-warning">
@@ -3643,257 +2646,36 @@ class PersonEditView(BasePersonEditView):
                     >https://help.launchpad.net/OpenID#rename-account</a>
                   for more information.
               </p>
-              <p> You may have used your identifier on the following
-                  sites:<br> %s.
-              </p>
               <p>If you click 'Save' again, we will rename your account
                  anyway.
               </p>
-            </div>'''),
-             ", ".join(self.unknown_trust_roots_user_logged_in)))
+            </div>'''),))
             self.i_know_this_is_an_openid_security_issue_input = dedent("""\
                 <input type="hidden"
                        id="i_know_this_is_an_openid_security_issue"
                        name="i_know_this_is_an_openid_security_issue"
                        value="1">""")
 
-    @cachedproperty
-    def unknown_trust_roots_user_logged_in(self):
-        """The unknown trust roots the user has logged in using OpenID.
-
-        We assume that they logged in using their delegated profile OpenID,
-        since that's the one we advertise.
-        """
-        identifier = IOpenIDPersistentIdentity(self.context)
-        unknown_trust_root_login_records = list(
-            getUtility(IOpenIDRPSummarySet).getByIdentifier(
-                identifier.openid_identity_url, True))
-        return sorted([
-            record.trust_root
-            for record in unknown_trust_root_login_records])
-
     @action(_("Save Changes"), name="save")
     def action_save(self, action, data):
+        # XXX: BradCrittenden 2010-09-10 bug=634878: Find a cleaner solution
+        # to the permissions problem for 'name'.  Users should be able to
+        # change their name, but the permission setting for the attribute is
+        # launchpad.Moderate, which only allows admins and registry.  A user
+        # must have launchpad.Edit to access this page.
+        if 'name' in data:
+            new_name = data['name']
+            removeSecurityProxy(self.context).name = new_name
+            del data['name']
         self.updateContextFromData(data)
+        self.request.response.addInfoNotification(
+            'The changes to your personal details have been saved.')
 
 
 class PersonBrandingView(BrandingChangeView):
 
     field_names = ['logo', 'mugshot']
     schema = IPerson
-
-
-class TeamJoinView(PersonView):
-
-    def initialize(self):
-        super(TeamJoinView, self).initialize()
-        if self.request.method == "POST":
-            self.processForm()
-
-    @property
-    def join_allowed(self):
-        """Is the logged in user allowed to join this team?
-
-        The answer is yes if this team's subscription policy is not RESTRICTED
-        and this team's visibility is either None or PUBLIC.
-        """
-        # Joining a moderated team will put you on the proposed_members
-        # list. If it is a private membership team, you are not allowed
-        # to view the proposed_members attribute until you are an
-        # active member; therefore, it would look like the join button
-        # is broken. Either private membership teams should always have a
-        # restricted subscription policy, or we need a more complicated
-        # permission model.
-        if not (self.context.visibility is None
-                or self.context.visibility == PersonVisibility.PUBLIC):
-            return False
-
-        restricted = TeamSubscriptionPolicy.RESTRICTED
-        return self.context.subscriptionpolicy != restricted
-
-    @property
-    def user_can_request_to_join(self):
-        """Can the logged in user request to join this team?
-
-        The user can request if he's allowed to join this team and if he's
-        not yet an active member of this team.
-        """
-        if not self.join_allowed:
-            return False
-        return not (self.userIsActiveMember() or self.userIsProposedMember())
-
-    @property
-    def user_wants_list_subscriptions(self):
-        """Is the user interested in subscribing to mailing lists?"""
-        return (self.user.mailing_list_auto_subscribe_policy !=
-                MailingListAutoSubscribePolicy.NEVER)
-
-    @property
-    def team_is_moderated(self):
-        """Is this team a moderated team?
-
-        Return True if the team's subscription policy is MODERATED.
-        """
-        policy = self.context.subscriptionpolicy
-        return policy == TeamSubscriptionPolicy.MODERATED
-
-    def processForm(self):
-        request = self.request
-        user = self.user
-        context = self.context
-        response = self.request.response
-
-        notification = None
-        if 'join' in request.form and self.user_can_request_to_join:
-            # Shut off mailing list auto-subscription - we want direct
-            # control over it.
-            user.join(context, may_subscribe_to_list=False)
-
-            if self.team_is_moderated:
-                response.addInfoNotification(
-                    _('Your request to join ${team} is awaiting '
-                      'approval.',
-                      mapping={'team': context.displayname}))
-            else:
-                response.addInfoNotification(
-                    _('You have successfully joined ${team}.',
-                      mapping={'team': context.displayname}))
-
-            if 'mailinglist_subscribe' in request.form:
-                self._subscribeToList()
-
-        elif 'join' in request.form:
-            response.addErrorNotification(
-                _('You cannot join ${team}.',
-                  mapping={'team': context.displayname}))
-        elif 'goback' in request.form:
-            # User clicked on the 'Go back' button, so we'll simply redirect.
-            pass
-        else:
-            raise UnexpectedFormData(
-                "Couldn't find any of the expected actions.")
-        self.request.response.redirect(canonical_url(context))
-
-    def _subscribeToList(self):
-        """Subscribe the user to the team's mailing list."""
-        response = self.request.response
-
-        if self.user_can_subscribe_to_list:
-            # 'user_can_subscribe_to_list' should have dealt with
-            # all of the error cases.
-            self.context.mailing_list.subscribe(self.user)
-
-            if self.team_is_moderated:
-                response.addInfoNotification(
-                    _('Your mailing list subscription is '
-                      'awaiting approval.'))
-            else:
-                response.addInfoNotification(
-                    structured(
-                        _("You have been subscribed to this "
-                          "team&#x2019;s mailing list.")))
-        else:
-            # A catch-all case, perhaps from stale or mangled
-            # form data.
-            response.addErrorNotification(
-                _('Mailing list subscription failed.'))
-
-
-class TeamAddMyTeamsView(LaunchpadFormView):
-    """Propose/add to this team any team that you're an administrator of."""
-
-    custom_widget('teams', LabeledMultiCheckBoxWidget)
-
-    def initialize(self):
-        context = self.context
-        if context.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
-            self.label = 'Propose these teams as members'
-        else:
-            self.label = 'Add these teams to %s' % context.displayname
-        self.next_url = canonical_url(context)
-        super(TeamAddMyTeamsView, self).initialize()
-
-    def setUpFields(self):
-        terms = []
-        for team in self.candidate_teams:
-            text = '<a href="%s">%s</a>' % (
-                canonical_url(team), team.displayname)
-            terms.append(SimpleTerm(team, team.name, text))
-        self.form_fields = FormFields(
-            List(__name__='teams',
-                 title=_(''),
-                 value_type=Choice(vocabulary=SimpleVocabulary(terms)),
-                 required=False),
-            render_context=self.render_context)
-
-    def setUpWidgets(self, context=None):
-        super(TeamAddMyTeamsView, self).setUpWidgets(context)
-        self.widgets['teams'].display_label = False
-
-    @cachedproperty
-    def candidate_teams(self):
-        """Return the set of teams that can be added/proposed for the context.
-
-        We return only teams that the user can administer, that aren't already
-        a member in the context or that the context isn't a member of. (Of
-        course, the context is also omitted.)
-        """
-        candidates = []
-        for team in self.user.getAdministratedTeams():
-            if team == self.context:
-                continue
-            elif team in self.context.activemembers:
-                continue
-            elif self.context.hasParticipationEntryFor(team):
-                continue
-            candidates.append(team)
-        return candidates
-
-    @action(_("Cancel"), name="cancel",
-            validator=LaunchpadFormView.validate_none)
-    def cancel_action(self, action, data):
-        """Simply redirect to the team's page."""
-        pass
-
-    def validate(self, data):
-        if len(data.get('teams', [])) == 0:
-            self.setFieldError('teams',
-                               'Please select the team(s) you want to be '
-                               'member(s) of this team.')
-
-    def hasCandidates(self, action):
-        """Return whether the user has teams to propose."""
-        return len(self.candidate_teams) > 0
-
-    @action(_("Continue"), name="continue", condition=hasCandidates)
-    def continue_action(self, action, data):
-        """Make the selected teams join this team."""
-        context = self.context
-        for team in data['teams']:
-            team.join(context, requester=self.user)
-        if context.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
-            msg = 'proposed to this team.'
-        else:
-            msg = 'added to this team.'
-        if len(data['teams']) > 1:
-            msg = "have been %s" % msg
-        else:
-            msg = "has been %s" % msg
-        team_names = ', '.join(team.displayname for team in data['teams'])
-        self.request.response.addInfoNotification("%s %s" % (team_names, msg))
-
-
-class TeamLeaveView(PersonView):
-
-    def processForm(self):
-        if self.request.method != "POST" or not self.userCanRequestToLeave():
-            # Nothing to do
-            return
-
-        if self.request.form.get('leave'):
-            self.user.leave(self.context)
-
-        self.request.response.redirect('./')
 
 
 class PersonEditEmailsView(LaunchpadFormView):
@@ -3915,7 +2697,10 @@ class PersonEditEmailsView(LaunchpadFormView):
     custom_widget('mailing_list_auto_subscribe_policy',
                   LaunchpadRadioWidgetWithDescription)
 
+    label = 'Change your e-mail settings'
+
     def initialize(self):
+        require_fresh_login(self.request, self.context, '+editemails')
         if self.context.is_team:
             # +editemails is not available on teams.
             name = self.request['PATH_INFO'].split('/')[-1]
@@ -3987,7 +2772,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                    title=_('These addresses are confirmed as being yours'),
                    source=SimpleVocabulary(terms),
                    ),
-            custom_widget = self.custom_widgets['VALIDATED_SELECTED'])
+            custom_widget=self.custom_widgets['VALIDATED_SELECTED'])
 
     def _unvalidated_emails_field(self):
         """Create a field with a vocabulary of unvalidated and guessed emails.
@@ -4009,7 +2794,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         return FormFields(
             Choice(__name__='UNVALIDATED_SELECTED', title=title,
                    source=SimpleVocabulary(terms)),
-            custom_widget = self.custom_widgets['UNVALIDATED_SELECTED'])
+            custom_widget=self.custom_widgets['UNVALIDATED_SELECTED'])
 
     def _mailing_list_subscription_type(self, mailing_list):
         """Return the context user's subscription type for the given list.
@@ -4020,13 +2805,12 @@ class PersonEditEmailsView(LaunchpadFormView):
         which the user is subscribed to this mailing list.
         """
         subscription = mailing_list.getSubscription(self.context)
-        if subscription is not None:
-            if subscription.email_address is None:
-                return "Preferred address"
-            else:
-                return subscription.email_address
-        else:
+        if subscription is None:
             return "Don't subscribe"
+        elif subscription.email_address is None:
+            return 'Preferred address'
+        else:
+            return subscription.email_address
 
     def _mailing_list_fields(self):
         """Creates a field for each mailing list the user can subscribe to.
@@ -4036,10 +2820,12 @@ class PersonEditEmailsView(LaunchpadFormView):
         """
         mailing_list_set = getUtility(IMailingListSet)
         fields = []
-        terms = [SimpleTerm("Preferred address"),
-                 SimpleTerm("Don't subscribe")]
-        terms += [SimpleTerm(email, email.email)
-                   for email in self.validated_addresses]
+        terms = [
+            SimpleTerm("Preferred address"),
+            SimpleTerm("Don't subscribe"),
+            ]
+        for email in self.validated_addresses:
+            terms.append(SimpleTerm(email, email.email))
         for team in self.context.teams_participated_in:
             mailing_list = mailing_list_set.get(team.name)
             if mailing_list is not None and mailing_list.is_usable:
@@ -4062,8 +2848,22 @@ class PersonEditEmailsView(LaunchpadFormView):
     @property
     def mailing_list_widgets(self):
         """Return all the mailing list subscription widgets."""
-        return [widget for widget in self.widgets
-                if 'field.subscription.' in widget.name]
+        mailing_list_set = getUtility(IMailingListSet)
+        widgets = []
+        for widget in self.widgets:
+            if widget.name.startswith('field.subscription.'):
+                team_name = widget.label
+                mailing_list = mailing_list_set.get(team_name)
+                assert mailing_list is not None, 'Missing mailing list'
+                widget_dict = dict(
+                    team=mailing_list.team,
+                    widget=widget,
+                    )
+                widgets.append(widget_dict)
+                # We'll put the label in the first column, so don't include it
+                # in the second column.
+                widget.display_label = False
+        return widgets
 
     def _validate_selected_address(self, data, field='VALIDATED_SELECTED'):
         """A generic validator for this view's actions.
@@ -4129,8 +2929,6 @@ class PersonEditEmailsView(LaunchpadFormView):
              if not guessed.email in emailset])
         return emailset
 
-    # Actions to do with validated email addresses.
-
     def validate_action_remove_validated(self, action, data):
         """Make sure the user selected an email address to remove."""
         emailaddress = self._validate_selected_address(data,
@@ -4179,8 +2977,6 @@ class PersonEditEmailsView(LaunchpadFormView):
                 "Your contact address has been changed to: %s" % (
                     emailaddress.email))
         self.next_url = self.action_url
-
-    # Actions to do with unvalidated email addresses.
 
     def validate_action_confirm(self, action, data):
         """Make sure the user selected an email address to confirm."""
@@ -4235,8 +3031,6 @@ class PersonEditEmailsView(LaunchpadFormView):
             "The email address '%s' has been removed." % email)
         self.next_url = self.action_url
 
-    # Actions to do with new email addresses
-
     def validate_action_add_email(self, action, data):
         """Make sure the user entered a valid email address.
 
@@ -4254,6 +3048,11 @@ class PersonEditEmailsView(LaunchpadFormView):
                 "'%s' doesn't seem to be a valid email address." % newemail)
             return self.errors
 
+        # XXX j.c.sackett 2010-09-15 bug=628247, 576757 There is a validation
+        # system set up for this that is almost identical in
+        # lp.app.validators.validation, called
+        # _check_email_available or similar. It would be really nice if we
+        # could merge that code somehow with this.
         email = getUtility(IEmailAddressSet).getByEmail(newemail)
         person = self.context
         if email is not None:
@@ -4271,14 +3070,15 @@ class PersonEditEmailsView(LaunchpadFormView):
                 merge_url = (
                     '%s/+requestmerge?field.dupe_person=%s'
                     % (canonical_url(getUtility(IPersonSet)), owner_name))
-                self.addError(
-                    structured(
-                        "The email address '%s' is already registered to "
-                        '<a href="%s">%s</a>. If you think that is a '
-                        'duplicated account, you can <a href="%s">merge it'
-                        "</a> into your account.",
-                        newemail, canonical_url(owner), owner.displayname,
-                        merge_url))
+                self.addError(structured(
+                    "The email address '%s' is already registered to "
+                    '<a href="%s">%s</a>. If you think that is a '
+                    'duplicated account, you can <a href="%s">merge it'
+                    "</a> into your account.",
+                    newemail,
+                    canonical_url(owner),
+                    owner.displayname,
+                    merge_url))
         return self.errors
 
     @action(_("Add"), name="add_email", validator=validate_action_add_email)
@@ -4300,15 +3100,14 @@ class PersonEditEmailsView(LaunchpadFormView):
                 "message for up to an hour or two.)" % newemail)
         self.next_url = self.action_url
 
-    # Actions to do with subscription management.
-
     def validate_action_update_subscriptions(self, action, data):
         """Make sure the user is subscribing using a valid address.
 
         Valid addresses are the ones presented as options for the mailing
         list widgets.
         """
-        names = [w.context.getName() for w in self.mailing_list_widgets]
+        names = [widget_dict['widget'].context.getName()
+                 for widget_dict in self.mailing_list_widgets]
         self.validate_widgets(data, names)
         return self.errors
 
@@ -4319,7 +3118,8 @@ class PersonEditEmailsView(LaunchpadFormView):
         mailing_list_set = getUtility(IMailingListSet)
         dirty = False
         prefix_length = len('subscription.')
-        for widget in self.mailing_list_widgets:
+        for widget_dict in self.mailing_list_widgets:
+            widget = widget_dict['widget']
             mailing_list_name = widget.context.getName()[prefix_length:]
             mailing_list = mailing_list_set.get(mailing_list_name)
             new_value = data[widget.context.getName()]
@@ -4368,54 +3168,8 @@ class PersonEditEmailsView(LaunchpadFormView):
         newpolicy = data['mailing_list_auto_subscribe_policy']
         self.context.mailing_list_auto_subscribe_policy = newpolicy
         self.request.response.addInfoNotification(
-            'Your auto-subscription policy has been updated.')
+            'Your auto-subscribe policy has been updated.')
         self.next_url = self.action_url
-
-
-class TeamMugshotView(LaunchpadView):
-    """A view for the team mugshot (team photo) page"""
-    def initialize(self):
-        """Cache images to avoid dying from a million cuts."""
-        getUtility(IPersonSet).cacheBrandingForPeople(self.allmembers)
-
-    @cachedproperty
-    def allmembers(self):
-        return list(self.context.allmembers)
-
-
-class TeamReassignmentView(ObjectReassignmentView):
-
-    ownerOrMaintainerAttr = 'teamowner'
-    schema = ITeamReassignment
-
-    def __init__(self, context, request):
-        ObjectReassignmentView.__init__(self, context, request)
-        self.callback = self._addOwnerAsMember
-
-    @property
-    def contextName(self):
-        return self.context.displayname
-
-    def _addOwnerAsMember(self, team, oldOwner, newOwner):
-        """Add the new and the old owners as administrators of the team.
-
-        When a user creates a new team, he is added as an administrator of
-        that team. To be consistent with this, we must make the new owner an
-        administrator of the team. This rule is ignored only if the new owner
-        is an inactive member of the team, as that means he's not interested
-        in being a member. The same applies to the old owner.
-        """
-        # Both new and old owners won't be added as administrators of the team
-        # only if they're inactive members. If they're either active or
-        # proposed members they'll be made administrators of the team.
-        if newOwner not in team.inactivemembers:
-            team.addMember(
-                newOwner, reviewer=oldOwner,
-                status=TeamMembershipStatus.ADMIN, force_team_add=True)
-        if oldOwner not in team.inactivemembers:
-            team.addMember(
-                oldOwner, reviewer=oldOwner,
-                status=TeamMembershipStatus.ADMIN, force_team_add=True)
 
 
 class PersonLatestQuestionsView(LaunchpadFormView):
@@ -4431,11 +3185,14 @@ class PersonLatestQuestionsView(LaunchpadFormView):
 
 
 class PersonSearchQuestionsView(SearchQuestionsView):
-    """View used to search and display questions in which an IPerson is
-    involved.
-    """
+    """View to search and display questions that involve an `IPerson`."""
 
     display_target_column = True
+
+    @property
+    def template(self):
+        # Persons always show the default template.
+        return self.default_template
 
     @property
     def pageheading(self):
@@ -4451,10 +3208,8 @@ class PersonSearchQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchAnsweredQuestionsView(SearchQuestionsView):
+class SearchAnsweredQuestionsView(PersonSearchQuestionsView):
     """View used to search and display questions answered by an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -4474,10 +3229,8 @@ class SearchAnsweredQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchAssignedQuestionsView(SearchQuestionsView):
+class SearchAssignedQuestionsView(PersonSearchQuestionsView):
     """View used to search and display questions assigned to an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -4497,10 +3250,8 @@ class SearchAssignedQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchCommentedQuestionsView(SearchQuestionsView):
+class SearchCommentedQuestionsView(PersonSearchQuestionsView):
     """View used to search and show questions commented on by an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -4520,10 +3271,8 @@ class SearchCommentedQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchCreatedQuestionsView(SearchQuestionsView):
+class SearchCreatedQuestionsView(PersonSearchQuestionsView):
     """View used to search and display questions created by an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -4543,10 +3292,8 @@ class SearchCreatedQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchNeedAttentionQuestionsView(SearchQuestionsView):
+class SearchNeedAttentionQuestionsView(PersonSearchQuestionsView):
     """View used to search and show questions needing an IPerson attention."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -4565,10 +3312,8 @@ class SearchNeedAttentionQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
-class SearchSubscribedQuestionsView(SearchQuestionsView):
+class SearchSubscribedQuestionsView(PersonSearchQuestionsView):
     """View used to search and show questions subscribed to by an IPerson."""
-
-    display_target_column = True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
@@ -4598,6 +3343,8 @@ class PersonAnswerContactForView(LaunchpadView):
         return 'Projects for which %s is an answer contact' % (
             self.context.displayname)
 
+    page_title = label
+
     @cachedproperty
     def direct_question_targets(self):
         """List of targets that the IPerson is a direct answer contact.
@@ -4623,7 +3370,7 @@ class PersonAnswerContactForView(LaunchpadView):
         return self.user == self.context
 
 
-class PersonAnswersMenu(ApplicationMenu):
+class PersonAnswersMenu(NavigationMenu):
 
     usedfor = IPerson
     facet = 'answers'
@@ -4633,7 +3380,8 @@ class PersonAnswersMenu(ApplicationMenu):
     def answer_contact_for(self):
         summary = "Projects for which %s is an answer contact" % (
             self.context.displayname)
-        return Link('+answer-contact-for', 'Answer contact for', summary)
+        return Link(
+            '+answer-contact-for', 'Answer contact for', summary, icon='edit')
 
     def answered(self):
         summary = 'Questions answered by %s' % self.context.displayname
@@ -4668,70 +3416,83 @@ class PersonAnswersMenu(ApplicationMenu):
         return Link('+subscribedquestions', text, summary, icon='question')
 
 
-class SourcePackageReleaseWithStats:
-    """An ISourcePackageRelease, with extra stats added."""
+class BaseWithStats:
+    """An ISourcePackageRelease or a ISourcePackagePublishingHistory,
+    with extra stats added.
 
-    implements(ISourcePackageRelease)
-    delegates(ISourcePackageRelease)
+    """
+
     failed_builds = None
     needs_building = None
 
-    def __init__(self, sourcepackage_release, open_bugs, open_questions,
-                 failed_builds, needs_building):
-        self.context = sourcepackage_release
-        self.open_bugs = open_bugs
-        self.open_questions = open_questions
+    def __init__(self, object, failed_builds, needs_building):
+        self.context = object
         self.failed_builds = failed_builds
         self.needs_building = needs_building
 
 
-class PersonRelatedSoftwareView(LaunchpadView):
-    """View for +related-software."""
-    implements(IPersonRelatedSoftwareMenu)
+class SourcePackageReleaseWithStats(BaseWithStats):
+    """An ISourcePackageRelease, with extra stats added."""
 
-    max_results_to_display = config.launchpad.default_batch_size
+    implements(ISourcePackageRelease)
+    delegates(ISourcePackageRelease)
+
+
+class SourcePackagePublishingHistoryWithStats(BaseWithStats):
+    """An ISourcePackagePublishingHistory, with extra stats added."""
+
+    implements(ISourcePackagePublishingHistory)
+    delegates(ISourcePackagePublishingHistory)
+
+
+class PersonRelatedSoftwareView(LaunchpadView):
+    """View for +related-packages."""
+    implements(IPersonRelatedSoftwareMenu)
+    _max_results_key = 'summary_list_size'
+
+    @property
+    def max_results_to_display(self):
+        return config.launchpad[self._max_results_key]
+
+    @property
+    def page_title(self):
+        return 'Related packages'
 
     @cachedproperty
     def related_projects(self):
         """Return a list of project dicts owned or driven by this person.
 
         The number of projects returned is limited by max_results_to_display.
-        A project dict has the following keys: title, url, bug_count,
-        spec_count, and question_count.
+        A project dict has the following keys: title, url, is_owner,
+        is_driver, is_bugsupervisor.
         """
         projects = []
-        user = getUtility(ILaunchBag).user
         max_projects = self.max_results_to_display
-        pillarnames = self._related_projects()[:max_projects]
-        products = [pillarname.pillar for pillarname in pillarnames
-                    if IProduct.providedBy(pillarname.pillar)]
-        bugtask_set = getUtility(IBugTaskSet)
-        product_bugtask_counts = bugtask_set.getOpenBugTasksPerProduct(
-            user, products)
+        pillarnames = self._related_projects[:max_projects]
         for pillarname in pillarnames:
             pillar = pillarname.pillar
             project = {}
             project['title'] = pillar.title
             project['url'] = canonical_url(pillar)
-            if IProduct.providedBy(pillar):
-                project['bug_count'] = product_bugtask_counts.get(pillar.id,
-                                                                  0)
-            else:
-                project['bug_count'] = pillar.open_bugtasks.count()
-            project['spec_count'] = pillar.specifications().count()
-            project['question_count'] = pillar.searchQuestions().count()
+            person = self.context
+            project['is_owner'] = person.inTeam(pillar.owner)
+            project['is_driver'] = person.inTeam(pillar.driver)
+            project['is_bug_supervisor'] = False
+            if IHasBugSupervisor.providedBy(pillar):
+                project['is_bug_supervisor'] = (
+                    person.inTeam(pillar.bug_supervisor))
             projects.append(project)
         return projects
 
     @cachedproperty
     def first_five_related_projects(self):
         """Return first five projects owned or driven by this person."""
-        return list(self._related_projects()[:5])
+        return self._related_projects[:5]
 
     @cachedproperty
     def related_projects_count(self):
         """The number of project owned or driven by this person."""
-        return self._related_projects().count()
+        return self._related_projects.count()
 
     @cachedproperty
     def has_more_related_projects(self):
@@ -4743,9 +3504,11 @@ class PersonRelatedSoftwareView(LaunchpadView):
         return self._tableHeaderMessage(
             self.related_projects_count, label='project')
 
+    @cachedproperty
     def _related_projects(self):
         """Return all projects owned or driven by this person."""
-        return self.context.getOwnedOrDrivenPillars()
+        user = getUtility(ILaunchBag).user
+        return self.context.getAffiliatedPillars(user)
 
     def _tableHeaderMessage(self, count, label='package'):
         """Format a header message for the tables on the summary page."""
@@ -4803,8 +3566,25 @@ class PersonRelatedSoftwareView(LaunchpadView):
         header_message = self._tableHeaderMessage(packages.count())
         return results, header_message
 
+    def _getDecoratedPublishingsSummary(self, publishings):
+        """Helper returning decorated publishings for the summary page.
+
+        :param publishings: A SelectResults that contains the query
+        :return: A tuple of (publishings, header_message).
+
+        The publishings returned are limited to self.max_results_to_display
+        and decorated with the stats required in the page template.
+        The header_message is the text to be displayed at the top of the
+        results table in the template.
+        """
+        # This code causes two SQL queries to be generated.
+        results = self._addStatsToPublishings(
+            publishings[:self.max_results_to_display])
+        header_message = self._tableHeaderMessage(publishings.count())
+        return results, header_message
+
     @property
-    def get_latest_uploaded_ppa_packages_with_stats(self):
+    def latest_uploaded_ppa_packages_with_stats(self):
         """Return the sourcepackagereleases uploaded to PPAs by this person.
 
         Results are filtered according to the permission of the requesting
@@ -4816,7 +3596,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
         return self.filterPPAPackageList(results)
 
     @property
-    def get_latest_maintained_packages_with_stats(self):
+    def latest_maintained_packages_with_stats(self):
         """Return the latest maintained packages, including stats."""
         packages = self.context.getLatestMaintainedPackages()
         results, header_message = self._getDecoratedPackagesSummary(packages)
@@ -4824,7 +3604,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
         return results
 
     @property
-    def get_latest_uploaded_but_not_maintained_packages_with_stats(self):
+    def latest_uploaded_but_not_maintained_packages_with_stats(self):
         """Return the latest uploaded packages, including stats.
 
         Don't include packages that are maintained by the user.
@@ -4832,6 +3612,17 @@ class PersonRelatedSoftwareView(LaunchpadView):
         packages = self.context.getLatestUploadedButNotMaintainedPackages()
         results, header_message = self._getDecoratedPackagesSummary(packages)
         self.uploaded_packages_header_message = header_message
+        return results
+
+    @property
+    def latest_synchronised_publishings_with_stats(self):
+        """Return the latest synchronised publishings, including stats.
+
+        """
+        publishings = self.context.getLatestSynchronisedPublishings()
+        results, header_message = self._getDecoratedPublishingsSummary(
+            publishings)
+        self.synchronised_packages_header_message = header_message
         return results
 
     def _calculateBuildStats(self, package_releases):
@@ -4844,7 +3635,7 @@ class PersonRelatedSoftwareView(LaunchpadView):
         the source package release.
         """
         # Calculate all the failed builds with one query.
-        build_set = getUtility(IBuildSet)
+        build_set = getUtility(IBinaryPackageBuildSet)
         package_release_ids = [
             package_release.id for package_release in package_releases]
         all_builds = build_set.getBuildsBySourcePackageRelease(
@@ -4854,46 +3645,46 @@ class PersonRelatedSoftwareView(LaunchpadView):
         builds_by_package = {}
         needs_build_by_package = {}
         for package in package_releases:
-            builds_by_package[package] = []
-            needs_build_by_package[package] = False
+            builds_by_package[package.id] = []
+            needs_build_by_package[package.id] = False
         for build in all_builds:
-            if build.buildstate == BuildStatus.FAILEDTOBUILD:
-                builds_by_package[build.sourcepackagerelease].append(build)
-            needs_build = build.buildstate in [
+            if build.status == BuildStatus.FAILEDTOBUILD:
+                builds_by_package[
+                    build.source_package_release.id].append(build)
+            needs_build = build.status in [
                 BuildStatus.NEEDSBUILD,
                 BuildStatus.MANUALDEPWAIT,
                 BuildStatus.CHROOTWAIT,
                 ]
-            needs_build_by_package[build.sourcepackagerelease] = needs_build
+            needs_build_by_package[
+                build.source_package_release.id] = needs_build
 
         return (builds_by_package, needs_build_by_package)
 
     def _addStatsToPackages(self, package_releases):
         """Add stats to the given package releases, and return them."""
-        distro_packages = [
-            package_release.distrosourcepackage
-            for package_release in package_releases]
-        package_bug_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
-            self.user, distro_packages)
-        open_bugs = {}
-        for bug_count in package_bug_counts:
-            distro_package = bug_count['package']
-            open_bugs[distro_package] = bug_count['open']
-
-        question_set = getUtility(IQuestionSet)
-        package_question_counts = question_set.getOpenQuestionCountByPackages(
-            distro_packages)
-
         builds_by_package, needs_build_by_package = self._calculateBuildStats(
             package_releases)
 
         return [
             SourcePackageReleaseWithStats(
-                package, open_bugs[package.distrosourcepackage],
-                package_question_counts[package.distrosourcepackage],
-                builds_by_package[package],
-                needs_build_by_package[package])
+                package, builds_by_package[package.id],
+                needs_build_by_package[package.id])
             for package in package_releases]
+
+    def _addStatsToPublishings(self, publishings):
+        """Add stats to the given publishings, and return them."""
+        filtered_spphs = [
+            spph for spph in publishings if
+            check_permission('launchpad.View', spph)]
+        builds_by_package, needs_build_by_package = self._calculateBuildStats(
+            [spph.sourcepackagerelease for spph in filtered_spphs])
+
+        return [
+            SourcePackagePublishingHistoryWithStats(
+                spph, builds_by_package[spph.sourcepackagerelease.id],
+                needs_build_by_package[spph.sourcepackagerelease.id])
+            for spph in filtered_spphs]
 
     def setUpBatch(self, packages):
         """Set up the batch navigation for the page being viewed.
@@ -4908,24 +3699,35 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
 class PersonMaintainedPackagesView(PersonRelatedSoftwareView):
     """View for +maintained-packages."""
+    _max_results_key = 'default_batch_size'
 
     def initialize(self):
         """Set up the batch navigation."""
         packages = self.context.getLatestMaintainedPackages()
         self.setUpBatch(packages)
 
+    @property
+    def page_title(self):
+        return "Maintained Packages"
+
 
 class PersonUploadedPackagesView(PersonRelatedSoftwareView):
     """View for +uploaded-packages."""
+    _max_results_key = 'default_batch_size'
 
     def initialize(self):
         """Set up the batch navigation."""
         packages = self.context.getLatestUploadedButNotMaintainedPackages()
         self.setUpBatch(packages)
 
+    @property
+    def page_title(self):
+        return "Uploaded packages"
+
 
 class PersonPPAPackagesView(PersonRelatedSoftwareView):
     """View for +ppa-packages."""
+    _max_results_key = 'default_batch_size'
 
     def initialize(self):
         """Set up the batch navigation."""
@@ -4939,9 +3741,38 @@ class PersonPPAPackagesView(PersonRelatedSoftwareView):
         packages_batch = self.filterPPAPackageList(packages_batch)
         self.batch = self._addStatsToPackages(packages_batch)
 
+    @property
+    def page_title(self):
+        return "PPA packages"
+
+
+class PersonSynchronisedPackagesView(PersonRelatedSoftwareView):
+    """View for +synchronised-packages."""
+    _max_results_key = 'default_batch_size'
+
+    def initialize(self):
+        """Set up the batch navigation."""
+        publishings = self.context.getLatestSynchronisedPublishings()
+        self.setUpBatch(publishings)
+
+    def setUpBatch(self, publishings):
+        """Set up the batch navigation for the page being viewed.
+
+        This method creates the BatchNavigator and converts its
+        results batch into a list of decorated sourcepackagepublishinghistory.
+        """
+        self.batchnav = BatchNavigator(publishings, self.request)
+        publishings_batch = list(self.batchnav.currentBatch())
+        self.batch = self._addStatsToPublishings(publishings_batch)
+
+    @property
+    def page_title(self):
+        return "Synchronised packages"
+
 
 class PersonRelatedProjectsView(PersonRelatedSoftwareView):
     """View for +related-projects."""
+    _max_results_key = 'default_batch_size'
 
     def initialize(self):
         """Set up the batch navigation."""
@@ -4949,9 +3780,27 @@ class PersonRelatedProjectsView(PersonRelatedSoftwareView):
             self.related_projects, self.request)
         self.batch = list(self.batchnav.currentBatch())
 
+    @property
+    def page_title(self):
+        return "Related projects"
+
+
+class PersonOwnedTeamsView(PersonRelatedSoftwareView):
+    """View for +owned-teams."""
+    page_title = "Owned teams"
+
+    def initialize(self):
+        """Set up the batch navigation."""
+        self.batchnav = BatchNavigator(
+            self.context.getOwnedTeams(self.user), self.request)
+        self.batchnav.setHeadings('team', 'teams')
+        self.batch = list(self.batchnav.currentBatch())
+
 
 class PersonOAuthTokensView(LaunchpadView):
     """Where users can see/revoke their non-expired access tokens."""
+
+    label = 'Authorized applications'
 
     def initialize(self):
         if self.request.method == 'POST':
@@ -4996,81 +3845,44 @@ class PersonOAuthTokensView(LaunchpadView):
             canonical_url(self.context, view_name='+oauth-tokens'))
 
 
-class PersonLocationForm(Interface):
+class PersonTimeZoneForm(Interface):
 
-    location = LocationField(
-        title=_('Use the map to indicate default location'),
-        required=True)
-    hide = Bool(
-        title=_("Hide my location details from others."),
-        required=True, default=False)
+    time_zone = Choice(
+        vocabulary='TimezoneName', title=_('Time zone'), required=True,
+        description=_(
+            'Once the time zone is correctly set, events '
+            'in Launchpad will be displayed in local time.'))
 
 
-class PersonEditLocationView(LaunchpadFormView):
-    """Edit a person's location."""
+class PersonEditTimeZoneView(LaunchpadFormView):
+    """Edit a person's time zone."""
 
-    schema = PersonLocationForm
-    custom_widget('location', LocationWidget)
-
-    @property
-    def field_names(self):
-        """See `LaunchpadFormView`.
-
-        If the user has launchpad.Edit on this context, then allow him to set
-        whether or not the location should be visible.  The field for setting
-        the person's location is always shown.
-        """
-        if check_permission('launchpad.Edit', self.context):
-            return ['location', 'hide']
-        else:
-            return ['location']
+    schema = PersonTimeZoneForm
+    page_title = label = 'Set timezone'
 
     @property
     def initial_values(self):
-        """See `LaunchpadFormView`.
-
-        Set the initial value for the 'hide' field.  The initial value for the
-        'location' field is set by its widget.
-        """
-        if self.context.location is None:
+        if self.context.time_zone is None:
             return {}
         else:
-            return {'hide': not self.context.location.visible}
+            return dict(time_zone=self.context.time_zone)
 
-    def initialize(self):
-        self.next_url = canonical_url(self.context)
-        self.for_team_name = self.request.form.get('for_team')
-        if self.for_team_name is not None:
-            for_team = getUtility(IPersonSet).getByName(self.for_team_name)
-            if for_team is not None:
-                self.next_url = canonical_url(for_team) + '/+map'
-        super(PersonEditLocationView, self).initialize()
-        self.cancel_url = self.next_url
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
     @action(_("Update"), name="update")
     def action_update(self, action, data):
-        """Set the coordinates and time zone for the person."""
-        new_location = data.get('location')
-        if new_location is None:
+        """Set the time zone for the person."""
+        timezone = data.get('time_zone')
+        if timezone is None:
             raise UnexpectedFormData('No location received.')
-        latitude = new_location.latitude
-        longitude = new_location.longitude
-        time_zone = new_location.time_zone
-        self.context.setLocation(latitude, longitude, time_zone, self.user)
-        if 'hide' in self.field_names:
-            visible = not data['hide']
-            self.context.setLocationVisibility(visible)
-
-
-class TeamEditLocationView(LaunchpadView):
-    """Redirect to the team's +map page.
-
-    We do that because it doesn't make sense to specify the location of a
-    team."""
-
-    def initialize(self):
-        self.request.response.redirect(
-            canonical_url(self.context, view_name="+map"))
+        # XXX salgado, 2012-02-16, bug=933699: Use setLocation() because it's
+        # the cheaper way to set the timezone of a person. Once the bug is
+        # fixed we'll be able to get rid of this hack.
+        self.context.setLocation(None, None, timezone, self.user)
 
 
 def archive_to_person(archive):
@@ -5103,9 +3915,8 @@ class ContactViaWebNotificationRecipientSet:
 
     # Primary reason enumerations.
     TO_USER = object()
-    TO_TEAM = object()
     TO_MEMBERS = object()
-    TO_OWNER = object()
+    TO_ADMINS = object()
 
     def __init__(self, user, person_or_team):
         """Initialize the state based on the context and the user.
@@ -5121,7 +3932,7 @@ class ContactViaWebNotificationRecipientSet:
         """
         self.user = user
         self.description = None
-        self._primary_reason = None
+        self.primary_reason = None
         self._primary_recipient = None
         self._reason = None
         self._header = None
@@ -5131,10 +3942,7 @@ class ContactViaWebNotificationRecipientSet:
     def _reset_state(self):
         """Reset the cache because the recipients changed."""
         self._count_recipients = None
-        if safe_hasattr(self, '_all_recipients_cached'):
-            # The clear the cache of _all_recipients. The caching will fail
-            # if this method creates the attribute before _all_recipients.
-            del self._all_recipients_cached
+        del get_property_cache(self)._all_recipients
 
     def _getPrimaryReason(self, person_or_team):
         """Return the primary reason enumeration.
@@ -5143,36 +3951,16 @@ class ContactViaWebNotificationRecipientSet:
         :type person_or_team: `IPerson`.
         """
         if person_or_team.is_team:
-            if self.user.inTeam(person_or_team):
-                if removeSecurityProxy(person_or_team).preferredemail is None:
-                    # Send to each team member.
-                    return self.TO_MEMBERS
-                else:
-                    # Send to the team's contact address.
-                    return self.TO_TEAM
+            if person_or_team in self.user.getAdministratedTeams():
+                # Team admins can broadcast messages to all members.
+                return self.TO_MEMBERS
             else:
-                # A non-member can only send emails to a single person to
-                # hinder spam and to prevent leaking membership
-                # information for private teams when the members reply.
-                return self.TO_OWNER
+                # A non-team-admins can make inquiries to the people who
+                # lead the team.
+                return self.TO_ADMINS
         else:
             # Send to the user
             return self.TO_USER
-
-    def _getPrimaryRecipient(self, person_or_team):
-        """Return the primary recipient.
-
-        The primary recipient is the ``person_or_team`` in all cases
-        except for then the email is restricted to a team owner.
-
-        :param person_or_team: The party that is the context of the email.
-        :type person_or_team: `IPerson`.
-        """
-        if self._primary_reason is self.TO_OWNER:
-            person_or_team = person_or_team.teamowner
-            while person_or_team.is_team:
-                person_or_team = person_or_team.teamowner
-        return person_or_team
 
     def _getReasonAndHeader(self, person_or_team):
         """Return the reason and header why the email was received.
@@ -5180,25 +3968,26 @@ class ContactViaWebNotificationRecipientSet:
         :param person_or_team: The party that is the context of the email.
         :type person_or_team: `IPerson`.
         """
-        if self._primary_reason is self.TO_USER:
-            reason = 'the "Contact this user" link on your profile page'
+        if self.primary_reason is self.TO_USER:
+            reason = (
+                'using the "Contact this user" link on your profile page\n'
+                '(%s)' % canonical_url(person_or_team))
             header = 'ContactViaWeb user'
-        elif self._primary_reason is self.TO_OWNER:
+        elif self.primary_reason is self.TO_ADMINS:
             reason = (
-                'the "Contact this team" owner link on the '
-                '%s team page' %  person_or_team.displayname)
+                'using the "Contact this team\'s admins" link on the '
+                '%s team page\n(%s)' % (
+                    person_or_team.displayname,
+                    canonical_url(person_or_team)))
             header = 'ContactViaWeb owner (%s team)' % person_or_team.name
-        elif self._primary_reason is self.TO_TEAM:
-            reason = (
-                'the "Contact this team" link on the '
-                '%s team page' %  person_or_team.displayname)
-            header = 'ContactViaWeb member (%s team)' % person_or_team.name
         else:
-            # self._primary_reason is self.TO_MEMBERS.
+            # self.primary_reason is self.TO_MEMBERS.
             reason = (
-                'the "Contact this team" link on the %s\n'
-                'team page to each member directly' %
-                person_or_team.displayname)
+                'to each member of the %s team using the '
+                '"Contact this team" link on the %s team page\n(%s)' % (
+                    person_or_team.displayname,
+                    person_or_team.displayname,
+                    canonical_url(person_or_team)))
             header = 'ContactViaWeb member (%s team)' % person_or_team.name
         return (reason, header)
 
@@ -5208,19 +3997,13 @@ class ContactViaWebNotificationRecipientSet:
         :param person_or_team: The party that is the context of the email.
         :type person_or_team: `IPerson`.
         """
-        if self._primary_reason is self.TO_USER:
+        if self.primary_reason is self.TO_USER:
             return (
                 'You are contacting %s (%s).' %
                 (person_or_team.displayname, person_or_team.name))
-        elif self._primary_reason is self.TO_OWNER:
+        elif self.primary_reason is self.TO_ADMINS:
             return (
-                'You are contacting the %s (%s) team owner, %s (%s).' %
-                (person_or_team.displayname, person_or_team.name,
-                 self._primary_recipient.displayname,
-                 self._primary_recipient.name))
-        elif self._primary_reason is self.TO_TEAM:
-            return (
-                'You are contacting the %s (%s) team.' %
+                'You are contacting the %s (%s) team admins.' %
                 (person_or_team.displayname, person_or_team.name))
         else:
             # This is a team without a contact address (self.TO_MEMBERS).
@@ -5234,15 +4017,25 @@ class ContactViaWebNotificationRecipientSet:
                 'You are contacting %s of the %s (%s) team directly.'
                 % (text, person_or_team.displayname, person_or_team.name))
 
-    @cachedproperty('_all_recipients_cached')
+    @cachedproperty
     def _all_recipients(self):
         """Set the cache of all recipients."""
         all_recipients = {}
-        if self._primary_reason is self.TO_MEMBERS:
+        if self.primary_reason is self.TO_MEMBERS:
             team = self._primary_recipient
             for recipient in team.getMembersWithPreferredEmails():
                 email = removeSecurityProxy(recipient).preferredemail.email
                 all_recipients[email] = recipient
+        elif self.primary_reason is self.TO_ADMINS:
+            team = self._primary_recipient
+            for admin in team.adminmembers:
+                # This method is similar to getTeamAdminsEmailAddresses, but
+                # this case needs to know the user. Since both methods
+                # ultimately iterate over get_recipients, this case is not
+                # in a different performance class.
+                for recipient in get_recipients(admin):
+                    email = removeSecurityProxy(recipient).preferredemail.email
+                    all_recipients[email] = recipient
         elif self._primary_recipient.is_valid_person_or_team:
             email = removeSecurityProxy(
                 self._primary_recipient).preferredemail.email
@@ -5283,13 +4076,16 @@ class ContactViaWebNotificationRecipientSet:
         """The number of recipients in the set."""
         if self._count_recipients is None:
             recipient = self._primary_recipient
-            if self._primary_reason is self.TO_MEMBERS:
+            if self.primary_reason is self.TO_MEMBERS:
+                # Get the count without loading all the members.
                 self._count_recipients = (
                     recipient.getMembersWithPreferredEmailsCount())
+            elif self.primary_reason is self.TO_ADMINS:
+                self._count_recipients = len(self._all_recipients)
             elif recipient.is_valid_person_or_team:
                 self._count_recipients = 1
             else:
-                # The user or team owner is deactivated.
+                # The user is deactivated.
                 self._count_recipients = 0
         return self._count_recipients
 
@@ -5314,8 +4110,8 @@ class ContactViaWebNotificationRecipientSet:
         recipients.
         """
         self._reset_state()
-        self._primary_reason = self._getPrimaryReason(person)
-        self._primary_recipient = self._getPrimaryRecipient(person)
+        self.primary_reason = self._getPrimaryReason(person)
+        self._primary_recipient = person
         if reason is None:
             reason, header = self._getReasonAndHeader(person)
         self._reason = reason
@@ -5363,12 +4159,9 @@ class EmailToPersonView(LaunchpadFormView):
                        default=terms[0].value)
         # Get the order right; the From field should be first, followed by the
         # Subject and then Message fields.
-        self.form_fields = FormFields(*chain((field,), self.form_fields))
+        self.form_fields = FormFields(*chain((field, ), self.form_fields))
 
-    @property
-    def label(self):
-        """The form label."""
-        return 'Contact ' + self.context.displayname
+    label = 'Contact user'
 
     @cachedproperty
     def recipients(self):
@@ -5395,7 +4188,7 @@ class EmailToPersonView(LaunchpadFormView):
         try:
             send_direct_contact_email(
                 sender_email, self.recipients, subject, message)
-        except QuotaReachedError, error:
+        except QuotaReachedError as error:
             fmt_date = DateTimeFormatterAPI(self.next_try)
             self.request.response.addErrorNotification(
                 _('Your message was not sent because you have exceeded your '
@@ -5439,7 +4232,19 @@ class EmailToPersonView(LaunchpadFormView):
         return throttle_date + interval
 
     @property
-    def specific_contact_title_text(self):
+    def contact_not_possible_reason(self):
+        """The reason the person cannot be contacted."""
+        if self.has_valid_email_address:
+            return None
+        elif self.recipients.primary_reason is self.recipients.TO_USER:
+            return "The user is not active."
+        elif self.recipients.primary_reason is self.recipients.TO_ADMINS:
+            return "The team has no admins. Contact the team owner instead."
+        else:
+            return "The team has no members."
+
+    @property
+    def page_title(self):
         """Return the appropriate pagetitle."""
         if self.context.is_team:
             if self.user.inTeam(self.context):
@@ -5452,23 +4257,28 @@ class EmailToPersonView(LaunchpadFormView):
             return 'Contact this user'
 
 
-class ITeamEditMenu(Interface):
-    """A marker interface for the edit navigation menu."""
+class IPersonIndexMenu(Interface):
+    """A marker interface for the +index navigation menu."""
 
 
-class TeamEditMenu(NavigationMenu, TeamMenuMixin):
-    """A menu for different aspects of editing a team."""
-
-    usedfor = ITeamEditMenu
+class PersonIndexMenu(NavigationMenu, PersonMenuMixin):
+    usedfor = IPersonIndexMenu
     facet = 'overview'
-    title = 'Change team'
-    links = ('branding', 'common_edithomepage', 'editlanguages', 'reassign',
-             'editemail')
-
-    @property
-    def team(self):
-        """Override TeamOverviewMenu since the view is the context."""
-        return self.context.context
+    title = 'Change person'
+    links = ('edit', 'administer', 'administer_account', 'branding')
 
 
-classImplements(TeamEditView, ITeamEditMenu)
+classImplements(PersonIndexView, IPersonIndexMenu)
+
+
+class PersonXHTMLRepresentation:
+    adapts(IPerson, IWebServiceClientRequest)
+    implements(Interface)
+
+    def __init__(self, person, request):
+        self.person = person
+        self.request = request
+
+    def __call__(self):
+        """Render `Person` as XHTML using the webservice."""
+        return PersonFormatterAPI(self.person).link(None)

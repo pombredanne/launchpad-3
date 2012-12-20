@@ -3,17 +3,26 @@
 
 """Unit tests for methods of PillarName and PillarNameSet."""
 
-import unittest
-
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import login
-from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadFunctionalLayer
+from lp.registry.interfaces.pillar import (
+    IPillarNameSet,
+    IPillarPerson,
+    )
+from lp.registry.model.pillar import PillarPerson
+from lp.testing import (
+    login,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.testing.matchers import Provides
 
 
 class TestPillarNameSet(TestCaseWithFactory):
+
     layer = LaunchpadFunctionalLayer
 
     def test_search_correctly_ranks_by_aliases(self):
@@ -21,8 +30,8 @@ class TestPillarNameSet(TestCaseWithFactory):
         first one on the list.
         """
         login('mark@example.com')
-        lz_foo = self.factory.makeProduct(name='lz-foo')
-        lz_bar = self.factory.makeProduct(name='lz-bar')
+        self.factory.makeProduct(name='lz-foo')
+        self.factory.makeProduct(name='lz-bar')
         launchzap = self.factory.makeProduct(name='launchzap')
         launchzap.setAliases(['lz'])
         pillar_set = getUtility(IPillarNameSet)
@@ -31,5 +40,12 @@ class TestPillarNameSet(TestCaseWithFactory):
         self.assertEquals(result_names, [u'launchzap', u'lz-bar', u'lz-foo'])
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestPillarPerson(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_implements(self):
+        pillar = self.factory.makeProduct()
+        person = self.factory.makePerson()
+        pillar_person = PillarPerson(pillar, person)
+        self.assertThat(pillar_person, Provides(IPillarPerson))

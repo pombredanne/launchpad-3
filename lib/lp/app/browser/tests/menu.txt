@@ -7,11 +7,11 @@ are usually bound to a view.
 
     >>> from zope.component import provideAdapter
     >>> from zope.interface import implements, Interface
-    >>> from canonical.launchpad.webapp.interfaces import INavigationMenu
-    >>> from canonical.launchpad.webapp.menu import (
+    >>> from lp.services.webapp.interfaces import INavigationMenu
+    >>> from lp.services.webapp.menu import (
     ...     enabled_with_permission, Link, NavigationMenu)
-    >>> from canonical.launchpad.webapp.publisher import LaunchpadView
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.publisher import LaunchpadView
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
     >>> class IEditMenuMarker(Interface):
     ...     """A marker for a menu and a view."""
@@ -45,7 +45,7 @@ are usually bound to a view.
 
 
 Related pages
--------------
+=============
 
 The related pages portlet is rendered using a TALES call passing the view
 to the named adapter: <tal:menu replace="structure view/@@+related-pages" />
@@ -69,27 +69,34 @@ and disabled links are included.
     False  http://launchpad.dev/~beaker/+admin
 
 The view renders the heading using the menu title and a list of the links. A
-link is rendered only if its 'enabled' and 'linked' properties are true. The
-template uses the inline-link rules, if the link has an icon, the classes are
-set, otherwise a style attribute is used.
+link is rendered only if its 'enabled' property is true. The template uses the
+inline-link rules, if the link has an icon, the classes are set, otherwise a
+style attribute is used.
 
     >>> print menu_view.render()
     <div id="related-pages" class="portlet">
       <h2>Related pages</h2>
+    <BLANKLINE>
       <ul>
+    <BLANKLINE>
         <li>
-          <a href="..."
-            class="menu-link-edit_thing sprite modify edit">Edit thing</a>
+          <a href="http://launchpad.dev/~beaker/+edit"
+             class="menu-link-edit_thing
+                    sprite modify edit">Edit thing</a>
         </li>
+    <BLANKLINE>
+    <BLANKLINE>
         <li>
-          <a style="..." href="..."
-            class="menu-link-edit_people">Edit people related to thing</a>
+            <a href="http://launchpad.dev/~beaker/+edit-people"
+               class="menu-link-edit_people">Edit people related to thing</a>
         </li>
-      </ul>
+        ...
     </div>
+    <BLANKLINE>
 
-The link is not displayed if the link matches the requested URL (linked is
-False). The page will not render a link to itself.
+If the link matches the requested URL, then the 'linked' attribute will be
+unset, and then only the link icon and text will be displayed, but it will not
+be clickable.
 
     >>> request = LaunchpadTestRequest(
     ...     SERVER_URL='http://launchpad.dev/~beaker/+edit')
@@ -108,19 +115,18 @@ False). The page will not render a link to itself.
     >>> print menu_view.render()
     <div id="related-pages" class="portlet">
       <h2>Related pages</h2>
-      <ul>
-        <li>
-          <a style="..." href="..."
-            class="menu-link-edit_people">Edit people related to thing</a>
-        </li>
-      </ul>
-    </div>
+    ...
+          <li>
+            <span class="menu-link-edit_thing nolink
+                  sprite modify edit">Edit thing</span>
+          </li>
+    ...
 
 
 Action menus
-------------
+============
 
-A navigation menu can be presented as an action menu is the side portlets.
+A navigation menu can be presented as an action menu in the side portlets.
 The action menu uses the view's enabled_links property to get the list of
 links.
 
@@ -134,18 +140,19 @@ links.
 The generated markup is for a portlet with the global-actions id.
 
     >>> print menu_view.render()
-    <div id="global-actions" class="portlet">
+    <div id="global-actions" class="portlet vertical">
       <ul>
         <li>
-          <a href="..."
-            class="menu-link-edit_thing sprite modify edit">Edit thing</a>
+          <span class="menu-link-edit_thing nolink
+              sprite modify edit">Edit thing</span>
         </li>
         <li>
-          <a style="..." href="..."
-            class="menu-link-edit_people">Edit people related to thing</a>
+          <a href="http://launchpad.dev/~beaker/+edit-people"
+             class="menu-link-edit_people">Edit people related to thing</a>
         </li>
       </ul>
     </div>
+    <BLANKLINE>
 
 If there are no enabled links, no markup is rendered. For example, a menu
 may contain links that require special privileges to access.

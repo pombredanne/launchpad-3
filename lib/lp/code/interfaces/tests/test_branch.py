@@ -1,19 +1,20 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests of the branch interface."""
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
-from bzrlib.branch import BranchFormat as BzrBranchFormat
-from bzrlib.bzrdir import BzrDirFormat
+from bzrlib.branch import format_registry as branch_format_registry
+from bzrlib.bzrdir import BzrProber
 from bzrlib.repository import format_registry as repo_format_registry
 
 from lp.code.bzr import (
-    BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, ControlFormat, RepositoryFormat,
-    REPOSITORY_FORMAT_UPGRADE_PATH)
+    BranchFormat,
+    ControlFormat,
+    RepositoryFormat,
+    )
+import lp.codehosting  # For plugins.
 from lp.testing import TestCase
 
 
@@ -26,10 +27,10 @@ class TestFormatSupport(TestCase):
     """
 
     def test_control_format_complement(self):
-        self.bzrlib_is_subset(BzrDirFormat._formats.keys(), ControlFormat)
+        self.bzrlib_is_subset(BzrProber.formats.keys(), ControlFormat)
 
     def test_branch_format_complement(self):
-        self.bzrlib_is_subset(BzrBranchFormat._formats.keys(), BranchFormat)
+        self.bzrlib_is_subset(branch_format_registry.keys(), BranchFormat)
 
     def test_repository_format_complement(self):
         self.bzrlib_is_subset(repo_format_registry.keys(), RepositoryFormat)
@@ -58,49 +59,3 @@ class TestFormatSupport(TestCase):
                 description = description[:-1]
             self.assertTrue(len(description.split('\n')) == 1,
                             item.description)
-
-
-class TestBranchFormatUpgradePath(TestCase):
-    """Tests for BRANCH_FORMAT_UPGRADE_PATH."""
-
-    def test_branch_format_enum_as_keys(self):
-        # Each element of the BranchFormat enum should have a corresponding
-        # key in the BRANCH_FORMAT_UPGRADE_PATH dict.
-        for format in BranchFormat.items:
-            self.assertIn(format, BRANCH_FORMAT_UPGRADE_PATH)
-
-
-class TestRepositoryFormatUpgradePath(TestCase):
-    """Tests for BRANCH_FORMAT_UPGRADE_PATH."""
-
-    def test_repository_format_enum_as_keys(self):
-        # Each element of the BranchFormat enum should have a corresponding key
-        # in the BRANCH_FORMAT_UPGRADE_PATH dict.
-        for format in RepositoryFormat.items:
-            self.assertTrue(
-                REPOSITORY_FORMAT_UPGRADE_PATH.has_key(format),
-                "%r does not have a defined upgrade path." % format)
-
-    def test_repository_format_upgrades_dont_cross_streams(self):
-        # Repository formats should not try to upgrade a format that doesn't
-        # support rich roots or subtrees to a format that does, and vice versa.
-        for format in REPOSITORY_FORMAT_UPGRADE_PATH.keys():
-            upgrade_format = REPOSITORY_FORMAT_UPGRADE_PATH[format]
-            if upgrade_format is None:
-                continue
-            try:
-                format_start = repo_format_registry.get(format.title)
-            except KeyError: # We used a fake format string.
-                continue
-            format_end = repo_format_registry.get(
-                upgrade_format().get_format_string())
-            self.assertEqual(
-                getattr(format_start, 'rich_root_data', False),
-                getattr(format_end, 'rich_root_data', False))
-            self.assertEqual(
-                getattr(format_start, 'supports_tree_reference', False),
-                getattr(format_end, 'supports_tree_reference', False))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

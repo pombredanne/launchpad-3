@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -13,17 +13,28 @@ __all__ = [
     'IPocketChroot',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, TextLine
-
-from lp.registry.interfaces.role import IHasOwner
-from canonical.launchpad import _
-from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Int,
+    TextLine,
+    )
 
+from lp import _
+from lp.app.validators.name import name_validator
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.role import IHasOwner
+
 
 class IDistroArchSeries(IHasOwner):
     """DistroArchSeries Table Interface"""
@@ -46,7 +57,8 @@ class IDistroArchSeries(IHasOwner):
                 "identifies this architecture. All binary packages in the "
                 "archive will use this tag in their filename. Please get it "
                 "correct. It should really never be changed!"),
-            required=True),
+            required=True,
+            constraint=name_validator),
         exported_as="architecture_tag")
     official = exported(
         Bool(
@@ -73,6 +85,12 @@ class IDistroArchSeries(IHasOwner):
             description=_("Indicate whether or not this port has support "
                           "for building PPA packages."),
             required=False))
+    enabled = Bool(
+        title=_("Enabled"),
+        description=_(
+            "Whether or not this DistroArchSeries is enabled for build "
+            "creation and publication."),
+        required=False, readonly=False)
 
     # Joins.
     packages = Attribute('List of binary packages in this port.')
@@ -105,9 +123,16 @@ class IDistroArchSeries(IHasOwner):
         )
     main_archive = exported(
         Reference(
-            Interface, # Really IArchive, circular import fixed below.
+            Interface,  # Really IArchive, circular import fixed below.
             title=_('Main Archive'),
             description=_("The main archive of the distroarchseries.")))
+    chroot_url = exported(
+        TextLine(
+            title=_("Build chroot URL"),
+            description=_(
+                "The URL to the current build chroot for this "
+                "distroarchseries."),
+            readonly=True))
 
     def updatePackageCount():
         """Update the cached binary package count for this distro arch
@@ -131,21 +156,21 @@ class IDistroArchSeries(IHasOwner):
         matching the given text."""
 
     def getReleasedPackages(binary_name, pocket=None, include_pending=False,
-                            exclude_pocket=None, archive=None):
+                            archive=None):
         """Get the publishing records for the given binary package name.
 
         :param: binary_name: should either be a `BinaryPackageName` instance
             or else a string which will be looked up as a `BinaryPackageName`;
-        :param: pocket: optional `PackagePublishingPocket` filter, if it is not
-            specified, we look in all pockets.
-        :param: exclude_pocket: optional negative `PackagePublishingPocket`
-            filter, if it is specified exclude results matching that pocket.
-        :param: include_pending: optionally return also the pending publication
-            records, those packages that will get published in the next publisher
-            run (it's only useful when we need to know if a given package is
-            known during a publisher run, mostly in pre-upload checks)
-        :param: archive: optional IArchive filter, if is not specified, consider
-            publication in the main_archives, otherwise respect the given value.
+        :param: pocket: optional `PackagePublishingPocket` filter, if it is
+            not specified, we look in all pockets.
+        :param: include_pending: optionally return also the pending
+            publication records, those packages that will get published in the
+            next publisher run (it's only useful when we need to know if a
+            given package is known during a publisher run, mostly in
+            pre-upload checks)
+        :param: archive: optional IArchive filter, if is not specified,
+            consider publication in the main_archives, otherwise respect the
+            given value.
 
         If the BinaryPackageName cannot be found, NotFoundError will be
         raised.

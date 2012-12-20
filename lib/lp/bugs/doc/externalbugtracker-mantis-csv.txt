@@ -46,14 +46,15 @@ If the status can't be converted an UnknownRemoteStatusError is raised.
 Let's set up a BugTracker and some watches for the Example.com Bug
 Tracker:
 
-    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestMantis)
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
 
-    >>> from canonical.launchpad.interfaces import BugTrackerType
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.MANTIS)
@@ -77,11 +78,15 @@ Collect the Example.com watches:
 
 And have our special Mantis instance process them:
 
-    >>> from lp.bugs.scripts.checkwatches import BugWatchUpdater
-    >>> bug_watch_updater = BugWatchUpdater(transaction)
+    >>> transaction.commit()
+
+    >>> from lp.services.log.logger import FakeLogger
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
+    >>> bug_watch_updater = CheckwatchesMaster(
+    ...     transaction, logger=FakeLogger())
     >>> bug_watch_updater.updateBugWatches(
     ...     example_ext_bug_tracker, example_bug_tracker.watches)
-    INFO:...:Updating 1 watches for 1 bugs on http://bugs.some.where
+    INFO Updating 1 watches for 1 bugs on http://bugs.some.where
 
     >>> for bug_watch in example_bug_tracker.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
@@ -89,7 +94,7 @@ And have our special Mantis instance process them:
 
 Let's add a few more watches:
 
-    >>> from canonical.launchpad.interfaces import IBugWatchSet
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
 
     >>> bug_watch_set = getUtility(IBugWatchSet)
     >>> expected_remote_statuses = dict(
@@ -119,11 +124,13 @@ Let's add a few more watches:
 Instead of issuing one request per bug watch, like was done before,
 updateBugWatches() issues only one request to update all watches:
 
+    >>> from lp.services.propertycache import get_property_cache
+    >>> del get_property_cache(example_ext_bug_tracker).csv_data
+
     >>> example_ext_bug_tracker.trace_calls = True
-    >>> example_ext_bug_tracker.cleanCache()
     >>> bug_watch_updater.updateBugWatches(
     ...     example_ext_bug_tracker, example_bug_tracker.watches)
-    INFO:...:Updating 6 watches for 6 bugs on http://bugs.some.where
+    INFO Updating 6 watches for 6 bugs on http://bugs.some.where
     CALLED _postPage('view_all_set.php?f=3', ...)
     CALLED _getPage('csv_export.php')
 
@@ -131,8 +138,8 @@ updateBugWatches() issues only one request to update all watches:
     ...     (int(bug_watch.remotebug), bug_watch.remotestatus)
     ...     for bug_watch in example_bug_tracker.watches)
 
-    >>> for remote_bug_id in set(remote_statuses).union(
-    ...     expected_remote_statuses):
+    >>> remote_bug_ids = set(remote_statuses).union(expected_remote_statuses)
+    >>> for remote_bug_id in sorted(remote_bug_ids):
     ...     remote_status = remote_statuses[remote_bug_id]
     ...     expected_remote_status = expected_remote_statuses[remote_bug_id]
     ...     print 'Remote bug %d' % (remote_bug_id,)
@@ -141,30 +148,30 @@ updateBugWatches() issues only one request to update all watches:
     Remote bug 3224
      * Expected << assigned: open >>
      *      Got << assigned: open >>
+    Remote bug 6685
+     * Expected << new: open >>
+     *      Got << new: open >>
+    Remote bug 6919
+     * Expected << assigned: open >>
+     *      Got << assigned: open >>
     Remote bug 7346
      * Expected << assigned: open >>
      *      Got << assigned: open >>
     Remote bug 8006
      * Expected << resolved: no change required >>
      *      Got << resolved: no change required >>
-    Remote bug 6919
-     * Expected << assigned: open >>
-     *      Got << assigned: open >>
     Remote bug 8104
      * Expected << assigned: open >>
      *      Got << assigned: open >>
-    Remote bug 6685
-     * Expected << new: open >>
-     *      Got << new: open >>
 
     >>> example_ext_bug_tracker.trace_calls = False
 
 updateBugWatches() updates the lastchecked attribute on the watches, so
 now no bug watches are in need of updating:
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
-    >>> example_bug_tracker.getBugWatchesNeedingUpdate(23).count()
+    >>> example_bug_tracker.watches_needing_update.count()
     0
 
 If the status isn't different, the lastchanged attribute doesn't get
@@ -178,7 +185,7 @@ updated:
     >>> old_last_changed = bug_watch.lastchanged
     >>> bug_watch_updater.updateBugWatches(
     ...     example_ext_bug_tracker, [bug_watch])
-    INFO:...:Updating 1 watches for 1 bugs on http://bugs.some.where
+    INFO Updating 1 watches for 1 bugs on http://bugs.some.where
 
     >>> bug_watch.lastchanged == old_last_changed
     True

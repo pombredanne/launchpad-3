@@ -8,16 +8,16 @@ __all__ = [
     'BugTrackerPerson',
     ]
 
-from sqlobject import ForeignKey, StringCol
-
-from zope.component import getUtility
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase
-from lp.bugs.interfaces.bugtrackerperson import (
-    IBugTrackerPerson, BugTrackerPersonAlreadyExists)
+from lp.bugs.interfaces.bugtrackerperson import IBugTrackerPerson
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.sqlbase import SQLBase
 
 
 class BugTrackerPerson(SQLBase):

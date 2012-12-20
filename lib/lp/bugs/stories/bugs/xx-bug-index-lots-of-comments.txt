@@ -1,4 +1,5 @@
-== Bugs with lots of comments ==
+Bugs with lots of comments
+==========================
 
 When a bug has a very large number of comments, only some of them are
 displayed. A notice is added at the end of the comment list to tell
@@ -7,24 +8,25 @@ the user about this.
 Bug 11 has quite a few comments.
 
     >>> user_browser.open('http://launchpad.dev/bugs/11')
-    >>> comments = find_tags_by_class(user_browser.contents, 'bug-comment')
+    >>> comments = find_tags_by_class(user_browser.contents, 'comment-text')
     >>> len(comments)
     6
 
 Let's briefly override the configuration to push bug 11 over the
 threshold.
 
-    >>> from canonical.config import config
+    >>> from lp.services.config import config
     >>> config.push('malone', '''
     ... [malone]
     ... comments_list_max_length: 5
-    ... comments_list_truncate_to: 3
+    ... comments_list_truncate_oldest_to: 1
+    ... comments_list_truncate_newest_to: 2
     ... ''')
 
-Now only 3 comments will be displayed.
+Now only 3 comments will be displayed; the oldest and the 2 newest.
 
     >>> user_browser.open('http://launchpad.dev/bugs/11')
-    >>> comments = find_tags_by_class(user_browser.contents, 'bug-comment')
+    >>> comments = find_tags_by_class(user_browser.contents, 'comment-text')
     >>> len(comments)
     3
 
@@ -32,13 +34,20 @@ With a warning telling the user where the comments have gone:
 
     >>> print extract_text(first_tag_by_class(
     ...     user_browser.contents, 'informational message'))
-    Displaying first 3 comments. View all 6 comments or add a comment.
+    Displaying first 1
+    and last 2
+    comments.
+    View all 6
+    comments or add a comment.
 
-The add comment box is not present so people don't accidentally reply
-to the wrong message.
+The add comment box is present but hidden so people don't accidentally
+reply to the wrong message.
 
-    >>> print find_tag_by_id(user_browser.contents, 'add-comment-form')
-    None
+    >>> print find_tag_by_id(
+    ...     user_browser.contents, 'add-comment-form-container')
+    <div id="add-comment-form-container" class="hidden">...
+    <div id="add-comment-form">...</div>...
+    </div>
 
 In amongst that message are two links that will let us see all the
 comments and the add comment box.
@@ -50,7 +59,7 @@ comments and the add comment box.
     'http://.../jokosher/+bug/11?comments=all'
 
     >>> user_browser.getLink('View all 6 comments').click()
-    >>> comments = find_tags_by_class(user_browser.contents, 'bug-comment')
+    >>> comments = find_tags_by_class(user_browser.contents, 'comment-text')
     >>> len(comments)
     6
 

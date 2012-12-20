@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """HTTP and FTP walker.
@@ -12,19 +12,28 @@ __all__ = [
     'combine_url',
     ]
 
-import os
 import ftplib
+import os
 import socket
-import urllib2
 from urllib import unquote_plus
-from urlparse import urlsplit, urljoin
+import urllib2
+from urlparse import (
+    urljoin,
+    urlsplit,
+    )
 
 from BeautifulSoup import BeautifulSoup
+from cscvs.dircompare.path import (
+    as_dir,
+    subdir,
+    )
+from lazr.uri import (
+    InvalidURIError,
+    URI,
+    )
 
-from cscvs.dircompare.path import as_dir, subdir
-from lazr.uri import URI, InvalidURIError
-from canonical.launchpad.webapp.url import urlappend
 from lp.registry.scripts.productreleasefinder import log
+from lp.services.webapp.url import urlappend
 
 
 class WalkerError(Exception):
@@ -83,7 +92,7 @@ class WalkerBase:
         (scheme, netloc, path, query, fragment) \
                  = urlsplit(base, self.URL_SCHEMES[0], self.FRAGMENTS)
         if scheme not in self.URL_SCHEMES:
-            raise WalkerError, "Can't handle %s scheme" % scheme
+            raise WalkerError("Can't handle %s scheme" % scheme)
         self.scheme = scheme
         self.full_netloc = netloc
 
@@ -114,7 +123,12 @@ class WalkerBase:
         Yields (dirpath, dirnames, filenames) for each path under the base;
         dirnames can be modified as with os.walk.
         """
-        self.open()
+        try:
+            self.open()
+        except (IOError, socket.error) as e:
+            self.log.info("Could not connect to %s" % self.base)
+            self.log.info("Failure: %s" % e)
+            return
 
         subdirs = [self.path]
         while len(subdirs):
@@ -122,7 +136,7 @@ class WalkerBase:
 
             try:
                 (dirnames, filenames) = self.list(sub_dir)
-            except WalkerError, exc:
+            except WalkerError:
                 self.log.info('could not retrieve directory '
                                    'listing for %s', sub_dir)
                 continue
@@ -325,12 +339,12 @@ class HTTPWalker(WalkerBase):
 
         self.log.debug("Checking if %s is a directory" % path)
         try:
-            response = self.request("HEAD", path)
+            self.request("HEAD", path)
             return False
-        except urllib2.HTTPError, exc:
+        except urllib2.HTTPError as exc:
             if exc.code != 301:
                 return False
-        except (IOError, socket.error), exc:
+        except (IOError, socket.error) as exc:
             # Raise HTTPWalkerError for other IO or socket errors.
             raise HTTPWalkerError(str(exc))
 
@@ -362,7 +376,7 @@ class HTTPWalker(WalkerBase):
                 soup = BeautifulSoup(response.read())
             finally:
                 response.close()
-        except (IOError, socket.error), exc:
+        except (IOError, socket.error) as exc:
             raise HTTPWalkerError(str(exc))
 
         base = URI(self.base).resolve(dirname)
@@ -414,7 +428,8 @@ def walk(url, log_parent=None):
     elif scheme in ["file"]:
         return os.walk(path)
     else:
-        raise WalkerError, "Unknown scheme: %s" % scheme
+        raise WalkerError("Unknown scheme: %s" % scheme)
+
 
 def combine_url(base, subdir, filename):
     """Combine a URL from the three parts returned by walk()."""

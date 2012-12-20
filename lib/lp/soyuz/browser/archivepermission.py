@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archivepermission."""
@@ -6,14 +6,14 @@
 __metaclass__ = type
 
 __all__ = [
-    'ArchivePermissionUrl',
+    'ArchivePermissionURL',
     ]
 
 from zope.interface import implements
 
-from lp.soyuz.interfaces.archivepermission import (
-    ArchivePermissionType)
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from lp.services.webapp.interfaces import ICanonicalUrlData
+from lp.soyuz.enums import ArchivePermissionType
+
 
 class ArchivePermissionURL:
     """Dynamic URL declaration for `IArchivePermission`."""
@@ -34,7 +34,7 @@ class ArchivePermissionURL:
         elif self.context.permission == ArchivePermissionType.QUEUE_ADMIN:
             perm_type = "+queue-admin"
         else:
-            raise AssertionError, (
+            raise AssertionError(
                 "Unknown permission type %s" % self.context.permission)
 
         username = self.context.person.name
@@ -45,9 +45,16 @@ class ArchivePermissionURL:
             item = (
                 "type=packagename&item=%s" % self.context.source_package_name)
         elif self.context.package_set_name is not None:
-            item = "type=packageset&item=%s" % self.context.package_set_name
+            item = ("type=packageset&item=%s&series=%s" %
+                    (self.context.package_set_name,
+                     self.context.distro_series_name))
+        elif self.context.pocket is not None:
+            item = "type=pocket&item=%s" % self.context.pocket.name
+            # Queue admin permissions for pockets may be granted by series.
+            if self.context.distroseries is not None:
+                item += "&series=%s" % self.context.distroseries.name
         else:
-            raise AssertionError, (
+            raise AssertionError(
                 "One of component, sourcepackagename or package set should "
                 "be set")
 

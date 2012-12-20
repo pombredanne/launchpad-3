@@ -1,19 +1,23 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=F0401
 
 """Browser views for sources list entries."""
 
-from zope.schema import Choice
-from zope.app.form.utility import setUpWidget
-from zope.app.form.interfaces import IInputWidget
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-
 from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form.interfaces import IInputWidget
+from zope.app.form.utility import setUpWidget
+from zope.component import getUtility
+from zope.schema import Choice
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import LaunchpadView
+from lp import _
+from lp.services.browser_helpers import get_user_agent_distroseries
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp import LaunchpadView
+from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 
 
 class SourcesListEntries:
@@ -21,6 +25,7 @@ class SourcesListEntries:
 
     Represents a set of distroseries in a distribution archive.
     """
+
     def __init__(self, distribution, archive_url, valid_series):
         self.distribution = distribution
         self.archive_url = archive_url
@@ -30,7 +35,6 @@ class SourcesListEntries:
 class SourcesListEntriesView(LaunchpadView):
     """Renders sources.list entries with a Javascript menu."""
 
-    __used_for__ = SourcesListEntries
     template = ViewPageTemplateFile('../templates/sources-list-entries.pt')
 
     def __init__(self, context, request, initially_without_selection=False,
@@ -99,19 +103,10 @@ class SourcesListEntriesView(LaunchpadView):
         # Otherwise, if the request's user-agent includes the Ubuntu version
         # number, we check for a corresponding valid distroseries and, if one
         # is found, return it's name.
-        user_agent = self.request.getHeader('HTTP_USER_AGENT')
+        version_number = get_user_agent_distroseries(
+            self.request.getHeader('HTTP_USER_AGENT'))
 
-        ubuntu_index = 0
-        if user_agent is not None:
-            ubuntu_index = user_agent.find('Ubuntu/')
-
-        if ubuntu_index > 0:
-            # Great, the browser is telling us the platform is Ubuntu.
-            # Now grab the Ubuntu series/version number:
-            version_index_start = ubuntu_index + 7
-            version_index_end = user_agent.find(' ', version_index_start)
-            version_number = user_agent[
-                version_index_start:version_index_end]
+        if version_number is not None:
 
             # Finally, check if this version is one of the available
             # distroseries for this archive:
@@ -139,3 +134,49 @@ class SourcesListEntriesView(LaunchpadView):
             # user that they should select a distroseries.
             return self.initial_value_without_selection
 
+
+class SourcesListEntriesWidget:
+    """Setup the sources list entries widget."""
+
+    @cachedproperty
+    def sources_list_entries(self):
+        """Setup and return the sources list entries widget."""
+        if self.active_token is None:
+            entries = SourcesListEntries(
+                self.archive.distribution, self.archive_url,
+                self.archive.series_with_sources)
+            return SourcesListEntriesView(entries, self.request)
+        else:
+            comment = "Personal access of %s (%s) to %s" % (
+                self.sources_list_user.displayname,
+                self.sources_list_user.name, self.archive.displayname)
+            entries = SourcesListEntries(
+                self.archive.distribution, self.active_token.archive_url,
+                self.archive.series_with_sources)
+            return SourcesListEntriesView(
+                entries, self.request, comment=comment)
+
+    @cachedproperty
+    def active_token(self):
+        """Return the corresponding current token for this subscription."""
+        token_set = getUtility(IArchiveAuthTokenSet)
+        return token_set.getActiveTokenForArchiveAndPerson(
+            self.archive, self.sources_list_user)
+
+    @property
+    def archive_url(self):
+        """Return an archive_url where available, or None."""
+        if self.has_sources and not self.archive.is_copy:
+            return self.archive.archive_url
+        else:
+            return None
+
+    @cachedproperty
+    def has_sources(self):
+        """Whether or not this PPA has any sources for the view.
+
+        This can be overridden by subclasses as necessary. It allows
+        the view to determine whether to display "This PPA does not yet
+        have any published sources" or "No sources matching 'blah'."
+        """
+        return not self.archive.getPublishedSources().is_empty()

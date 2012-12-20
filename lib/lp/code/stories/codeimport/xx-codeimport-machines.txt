@@ -24,39 +24,34 @@ Initially only the machine in sample data is shown.
 If we create some jobs that are running, then we can see the currently
 running jobs in the table.
 
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> login('david.allouche@canonical.com')
+    >>> from lp.testing import login, logout
+    >>> login('admin@canonical.com')
 
     >>> apollo, odin, saturn = (
     ...     factory.makeCodeImportMachine(set_online=True, hostname='apollo'),
     ...     factory.makeCodeImportMachine(set_online=True, hostname='odin'),
     ...     factory.makeCodeImportMachine(hostname='saturn'))
 
-    >>> from canonical.launchpad.testing.codeimporthelpers import (
+    >>> from lp.code.tests.codeimporthelpers import (
     ...     make_running_import)
     >>> ignored = make_running_import(
     ...    factory=factory, machine=apollo,
     ...    logtail="Creating changeset 1\nCreating changeset 2")
     >>> ignored = make_running_import(factory=factory, machine=apollo)
     >>> ignored = make_running_import(factory=factory, machine=odin)
-
-    >>> # XXX thumper 2008-04-08, bug 3989
-    >>> # flush_database_updates needed for test browser to see changes.
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
     >>> logout()
 
     >>> browser.open('http://code.launchpad.dev/+code-imports/+machines')
     >>> print_table(browser)
     Machine                            Status
     apollo (2 jobs running)            Online
-        lp://dev/~vcs-imports/.../...
+        lp://dev/~.../.../...
             Started: ... ago      Last heartbeat: ... ago
-        lp://dev/~vcs-imports/.../...
+        lp://dev/~.../.../...
             Started: ... ago      Last heartbeat: ... ago
     bazaar-importer (0 jobs running)   Online
     odin (1 job running)               Online
-        lp://dev/~vcs-imports/.../...
+        lp://dev/~.../.../...
             Started: ... ago      Last heartbeat: ... ago
     saturn                             Offline
 
@@ -79,10 +74,10 @@ The page also shows the current running jobs for that machine.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'current-jobs'))
     Current jobs
-    lp://dev/~vcs-imports/.../... Started: ... ago Last heartbeat: ... ago
+    lp://dev/~.../.../... Started: ... ago Last heartbeat: ... ago
          Creating changeset 1
          Creating changeset 2
-    lp://dev/~vcs-imports/.../... Started: ... ago Last heartbeat: ... ago
+    lp://dev/~.../.../... Started: ... ago Last heartbeat: ... ago
 
 And also shows the most recent ten events for the machine, with the most
 recent event first.
@@ -92,8 +87,8 @@ recent event first.
     ...     print extract_text(recent_events)
     >>> print_events(browser)
     Related events
-    ...: Job Started lp://dev/~vcs-imports/.../...
-    ...: Job Started lp://dev/~vcs-imports/.../...
+    ...: Job Started lp://dev/~.../.../...
+    ...: Job Started lp://dev/~.../.../...
     ...: Machine Online
 
 
@@ -105,22 +100,20 @@ the status of the machine.
     >>> print find_tag_by_id(browser.contents, 'update-status')
     None
 
-    >>> import_browser = setupBrowser(
-    ...     auth="Basic david.allouche@canonical.com:test")
-    >>> import_browser.open(browser.url)
+    >>> admin_browser.open(browser.url)
 
-    >>> print find_tag_by_id(import_browser.contents,
+    >>> print find_tag_by_id(admin_browser.contents,
     ...     'update-status').h2.renderContents()
     Update machine status
 
-    >>> import_browser.getControl('Reason').value = (
+    >>> admin_browser.getControl('Reason').value = (
     ...     "Testing quiescing.")
-    >>> import_browser.getControl('Set Quiescing').click()
-    >>> print_heading(import_browser)
+    >>> admin_browser.getControl('Set Quiescing').click()
+    >>> print_heading(admin_browser)
     apollo: Quiescing
 
-    >>> print_events(import_browser)
+    >>> print_events(admin_browser)
     Related events
-    ...: David Allouche set Quiescing Requested
+    ...: ... set Quiescing Requested
       Message: Testing quiescing.
     ...

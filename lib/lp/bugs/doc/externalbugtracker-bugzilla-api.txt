@@ -23,6 +23,17 @@ transport for the purposes of testing.
     True
 
 
+Getting the tracker to use
+--------------------------
+
+Instances of BugzillaAPI always assume that they are the appropriate
+bug tracker to use. They do not sniff the remote system to check for
+support; they assume that has been done elsewhere.
+
+    >>> bugzilla.getExternalBugTrackerToUse() is bugzilla
+    True
+
+
 Authentication
 --------------
 
@@ -128,8 +139,8 @@ The bug data is stored as a list of dicts:
     >>> def print_bugs(bugs):
     ...     for bug in sorted(bugs):
     ...         print "Bug %s:" % bug
-    ...         for key in sorted(bugzilla._bugs[bug]):
-    ...             print "    %s: %s" % (key, bugzilla._bugs[bug][key])
+    ...         for key in sorted(bugs[bug]):
+    ...             print "    %s: %s" % (key, bugs[bug][key])
     ...         print "\n"
 
     >>> print_bugs(bugzilla._bugs)
@@ -137,14 +148,15 @@ The bug data is stored as a list of dicts:
         alias:
         assigned_to: test@canonical.com
         component: GPPSystems
-        creation_time: 20080610T16:19:53
+        creation_time: 2008-06-10 16:19:53
         id: 1
         internals:...
         is_open: True
-        last_change_time: 20080610T16:19:53
+        last_change_time: 2008-06-10 16:19:53
         priority: P1
         product: Marvin
         resolution: FIXED
+        see_also: []
         severity: normal
         status: RESOLVED
         summary: That bloody robot still exists.
@@ -153,14 +165,15 @@ The bug data is stored as a list of dicts:
         alias: bug-two
         assigned_to: marvin@heartofgold.ship
         component: Crew
-        creation_time: 20080611T09:23:12
+        creation_time: 2008-06-11 09:23:12
         id: 2
         internals:...
         is_open: True
-        last_change_time: 20080611T09:24:29
+        last_change_time: 2008-06-11 09:24:29
         priority: P1
         product: HeartOfGold
         resolution:
+        see_also: []
         severity: high
         status: NEW
         summary: Collect unknown persons in docking bay 2.
@@ -181,23 +194,20 @@ dicts to demonstrate this.
     >>> bugzilla.initializeRemoteBugDB([2, 'bug-two'])
     CALLED Bug.get({'ids': [2, 'bug-two'], 'permissive': True})
 
-    >>> for bug in sorted(bugzilla._bugs):
-    ...     print "Bug %r:" % bug
-    ...     for key in sorted(bugzilla._bugs[bug]):
-    ...         print "    %s: %s" % (key, bugzilla._bugs[bug][key])
-    ...     print "\n"
+    >>> print_bugs(bugzilla._bugs)
     Bug 2:
         alias: bug-two
         assigned_to: marvin@heartofgold.ship
         component: Crew
-        creation_time: 20080611T09:23:12
+        creation_time: 2008-06-11 09:23:12
         id: 2
         internals:...
         is_open: True
-        last_change_time: 20080611T09:24:29
+        last_change_time: 2008-06-11 09:24:29
         priority: P1
         product: HeartOfGold
         resolution:
+        see_also: []
         severity: high
         status: NEW
         summary: Collect unknown persons in docking bay 2.
@@ -220,6 +230,23 @@ ID or alias.
     >>> bugzilla._getActualBugId(2)
     2
 
+Sometimes a Bugzilla will return bug data without an alias field.
+_storeBugs() handles that, too.
+
+    >>> from lp.bugs.tests.externalbugtracker import (
+    ...     NoAliasTestBugzillaAPIXMLRPCTransport)
+    >>> no_alias_transport = NoAliasTestBugzillaAPIXMLRPCTransport(
+    ...     'http://bugzilla-3.4.example.com/')
+    >>> no_alias_bugzilla = BugzillaAPI(
+    ...     'http://bugzilla-3.4.example.com/',
+    ...     xmlrpc_transport=no_alias_transport)
+    >>> no_alias_transport.print_method_calls = True
+    >>> no_alias_bugzilla.initializeRemoteBugDB([1])
+    CALLED Bug.get({'ids': [1], 'permissive': True})
+
+    >>> print len(no_alias_bugzilla._bug_aliases)
+    0
+
 
 Getting remote statuses
 -----------------------
@@ -236,6 +263,15 @@ bug as a string. If the bug has a resolution, that will be returned too.
     >>> print bugzilla.getRemoteStatus(2)
     NEW
 
+Similarly, BugzillaAPI.getRemoteStatus() returns the remote priority and
+severity as a string.
+
+    >>> print bugzilla.getRemoteImportance(1)
+    P1 normal
+
+    >>> print bugzilla.getRemoteImportance(2)
+    P1 high
+
 If a bug can't be found a BugNotFound error will be raised.
 
     >>> bugzilla.getRemoteStatus('no-such-bug')
@@ -244,14 +280,14 @@ If a bug can't be found a BugNotFound error will be raised.
     BugNotFound: no-such-bug
 
 If the data we've imported from Bugzilla is incomplete and doesn't
-contain either the bug's status or its resolution an UnparseableBugData
+contain either the bug's status or its resolution an UnparsableBugData
 error will be raised. We can add a sample bug to demonstrate this.
 
     >>> bugzilla._bugs[999] = {}
     >>> bugzilla.getRemoteStatus(999)
     Traceback (most recent call last):
       ...
-    UnparseableBugData
+    UnparsableBugData: No status or resolution defined for bug 999
 
     >>> del bugzilla._bugs[999]
 
@@ -262,7 +298,8 @@ Getting a list of changed bugs
 IExternalBugTracker defines a method, getModifiedRemoteBugs(), which
 accepts a list of bug IDs and a datetime as a parameter and returns the
 list of all the bug IDs in the passed set that have been changed since
-that datetime.
+that datetime. Bug IDs are returned as strings so as to maintain
+compatibility with BugWatch.remotebug.
 
 This is acheived by calling the Bug.search() method on the
 remote server and passing it a 'changed_since' parameter.
@@ -278,7 +315,7 @@ remote server and passing it a 'changed_since' parameter.
         'last_change_time': <DateTime ...'20080611T09:00:00' at...>})
 
     >>> print bug_ids
-    [2]
+    ['2']
 
 If we alter the changed_since date to move it back by a day, we'll get
 both bugs 1 and 2 back from getModifiedRemoteBugs()
@@ -289,7 +326,7 @@ both bugs 1 and 2 back from getModifiedRemoteBugs()
         'last_change_time': <DateTime ...'20080610T09:00:00' at...>})
 
     >>> print bug_ids
-    [1, 2]
+    ['1', '2']
 
 Bugzilla's Bug.search() method returns all the data for each bug it
 returns. getModifiedRemoteBugs() saves this information into the
@@ -301,7 +338,7 @@ BugzillaAPI instance's bugs dict.
     ...         print "    %s: %s" % (key, bugzilla._bugs[bug][key])
     ...     print "\n"
     Bug 1:
-        alias: 
+        alias:
         assigned_to: test@canonical.com...
     Bug 2:
         alias: bug-two
@@ -345,21 +382,20 @@ is raised.
 Importing remote comments
 -------------------------
 
-BugzillaAPI implments the ISupportsCommentImport interface, which
+BugzillaAPI implements the ISupportsCommentImport interface, which
 means that we can use it to import comments from the remote Bugzilla
 instance.
 
-    >>> from canonical.launchpad.interfaces import ISupportsCommentImport
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.bugs.interfaces.externalbugtracker import (
+    ...     ISupportsCommentImport)
     >>> verifyObject(ISupportsCommentImport, bugzilla)
     True
 
 To test the comment importing methods we need to add an example bug,
 bugtracker and a couple of bugwatches.
 
-    >>> from canonical.config import config
-    >>> from canonical.database.sqlbase import commit
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from lp.testing.dbuser import lp_dbuser
 
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
@@ -370,22 +406,17 @@ bugtracker and a couple of bugwatches.
 
     >>> bug_tracker = new_bugtracker(BugTrackerType.BUGZILLA)
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-
-    >>> sample_person = getUtility(IPersonSet).getByEmail(
-    ...     'test@canonical.com')
-    >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> bug = firefox.createBug(
-    ...     CreateBugParams(sample_person, "Yet another test bug",
-    ...         "Yet another test description.",
-    ...         subscribe_owner=False))
-
-    >>> bug_watch = bug.addWatch(bug_tracker, '1', sample_person)
-    >>> bug_watch_two = bug.addWatch(bug_tracker, '2', sample_person)
-    >>> bug_watch_broken = bug.addWatch(bug_tracker, '42', sample_person)
-    >>> commit()
-
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> with lp_dbuser():
+    ...     sample_person = getUtility(IPersonSet).getByEmail(
+    ...         'test@canonical.com')
+    ...     firefox = getUtility(IProductSet).getByName('firefox')
+    ...     bug = firefox.createBug(
+    ...         CreateBugParams(sample_person, "Yet another test bug",
+    ...             "Yet another test description.",
+    ...             subscribe_owner=False))
+    ...     bug_watch = bug.addWatch(bug_tracker, '1', sample_person)
+    ...     bug_watch_two = bug.addWatch(bug_tracker, '2', sample_person)
+    ...     bug_watch_broken = bug.addWatch(bug_tracker, '42', sample_person)
 
 
 getCommentIds()
@@ -395,7 +426,7 @@ BugzillaAPI.getCommentIds() returns all the IDs for all the comments on
 a given remote bug.
 
     >>> bugzilla.xmlrpc_transport.print_method_calls = True
-    >>> bug_comment_ids = bugzilla.getCommentIds(bug_watch)
+    >>> bug_comment_ids = bugzilla.getCommentIds(bug_watch.remotebug)
     CALLED Bug.comments({'ids': [1], 'include_fields': ['id']})
 
     >>> print sorted(bug_comment_ids)
@@ -404,7 +435,7 @@ a given remote bug.
 getCommentIds() can only be called if initializeRemoteBugDB() has been
 called and the bug exists locally.
 
-    >>> bugzilla.getCommentIds(bug_watch_broken)
+    >>> bugzilla.getCommentIds(bug_watch_broken.remotebug)
     Traceback (most recent call last):
       ...
     BugNotFound: 42
@@ -414,11 +445,14 @@ fetchComments()
 ---------------
 
 ISupportsCommentImport.fetchComments() is the method used to fetch a
-given set of comments from the remote bugtracker. It takes a bug watch
-and a list of the comment IDs to retrieve for that bug watch.
+given set of comments from the remote bugtracker. It takes a remote
+bug ID and a list of the comment IDs to retrieve for that bug watch.
+
+    >>> remote_bug = bug_watch.remotebug
+    >>> transaction.commit()
 
     >>> bugzilla.xmlrpc_transport.print_method_calls = False
-    >>> bugzilla.fetchComments(bug_watch, ['1', '3'])
+    >>> bugzilla.fetchComments(remote_bug, ['1', '3'])
 
 The comments will be stored in the bugs dict as a dict of comment id =>
 comment dict mappings under the key 'comments'.
@@ -435,20 +469,23 @@ comment dict mappings under the key 'comments'.
         id: 1
         is_private: False
         text: I'd really appreciate it if Marvin would enjoy life a bit.
-        time: 20080616T12:44:29
+        time: 2008-06-16 12:44:29
     Comment 3:
         author: marvin
         bug_id: 1
         id: 3
         is_private: False
         text: Life? Don't talk to me about life.
-        time: 20080616T13:22:29
+        time: 2008-06-16 13:22:29
 
 If we try to fetch comments that don't belong to the current bug
 fetchComments() will silently ignore them.
 
+    >>> remote_bug = bug_watch.remotebug
+    >>> transaction.commit()
+
     >>> bugzilla.xmlrpc_transport.print_method_calls = False
-    >>> bugzilla.fetchComments(bug_watch, ['1', '4'])
+    >>> bugzilla.fetchComments(remote_bug, ['1', '4'])
 
     >>> comments = bugzilla._bugs[1]['comments']
     >>> for comment_id in sorted(comments):
@@ -462,7 +499,7 @@ fetchComments() will silently ignore them.
         id: 1
         is_private: False
         text: I'd really appreciate it if Marvin would enjoy life a bit.
-        time: 20080616T12:44:29
+        time: 2008-06-16 12:44:29
 
 
 getPosterForComment()
@@ -471,8 +508,12 @@ getPosterForComment()
 ISupportsCommentImport.getPosterForComment() returns a tuple of
 (displayname, email) for the author of a remote comment.
 
-    >>> bugzilla.fetchComments(bug_watch_two, ['2', '4'])
-    >>> displayname, email = bugzilla.getPosterForComment(bug_watch_two, '4')
+    >>> remote_bug = bug_watch_two.remotebug
+    >>> transaction.commit()
+
+    >>> bugzilla.fetchComments(remote_bug, ['2', '4'])
+    >>> displayname, email = bugzilla.getPosterForComment(
+    ...     bug_watch_two.remotebug, '4')
     >>> print displayname, email
     Ford Prefect ford.prefect@h2g2.com
 
@@ -480,7 +521,8 @@ If the author's name as stored in the comment isn't a valid email
 address then the method will return displayname = None and will return
 the whole of the author's name in the email field.
 
-    >>> displayname, email = bugzilla.getPosterForComment(bug_watch_two, '2')
+    >>> displayname, email = bugzilla.getPosterForComment(
+    ...     bug_watch_two.remotebug, '2')
     >>> print displayname, email
     None trillian
 
@@ -489,13 +531,13 @@ getMessageForComment()
 ----------------------
 
 ISupportsCommentImport.getMessageForComment() returns a Launchpad
-IMessage instance for a given comment. It takes a bug watch, a comment
-ID and a Person object generated from the return value of
+IMessage instance for a given comment. It takes a remote bug ID, a
+comment ID and a Person object generated from the return value of
 getPosterForComment(), above. For the sake of this test we'll use
 Sample Person as our poster.
 
     >>> message = bugzilla.getMessageForComment(
-    ...     bug_watch_two, '2', sample_person)
+    ...     bug_watch_two.remotebug, '2', sample_person)
     >>> print message.text_contents
     Bring the passengers to the bridge please Marvin.
 
@@ -506,7 +548,94 @@ The datecreated attribute of the Message will be the same as the 'time'
 field on the imported comment.
 
     >>> print bugzilla._bugs[2]['comments'][2]['time']
-    20080616T13:08:08
+    2008-06-16 13:08:08
 
     >>> print message.datecreated
     2008-06-16 13:08:08+00:00
+
+
+Adding a comment to a remote bug
+--------------------------------
+
+BugzillaAPI implements the ISupportsCommentPushing interface, which
+defines the necessary methods for pushing comments to remote servers.
+
+    >>> from lp.bugs.interfaces.externalbugtracker import (
+    ...     ISupportsCommentPushing)
+    >>> verifyObject(ISupportsCommentPushing, bugzilla)
+    True
+
+ISupportsCommentPushing.addRemoteComment() is the method used to push a
+comment to the remote server. It takes three parameters: the remote bug
+ID, the body of the comment to push and the rfc822msgid of the comment
+being pushed. For the BugzillaAPI bugtracker we can pass None as the
+rfc822msgid, since Bugzilla won't use it. addRemoteComment() returns the
+ID of the new comment on the remote server.
+
+addRemoteComment() calls Bug.add_comment() on the remote server,
+which requires authentication.
+
+    >>> bugzilla.xmlrpc_transport.print_method_calls = True
+    >>> bugzilla.xmlrpc_transport.expireCookie(
+    ...     bugzilla.xmlrpc_transport.auth_cookie)
+
+    >>> transaction.commit()
+    >>> comment_id  = bugzilla.addRemoteComment(
+    ...     1, "This is a new remote comment.", None)
+    CALLED User.login({'...'})
+    CALLED Bug.add_comment({'comment': 'This is a new remote comment.',
+        'id': 1})
+
+    >>> comment_id
+    '5'
+
+The comment will be stored on the remote server with the other comments.
+
+    >>> bugzilla.xmlrpc_transport.print_method_calls = False
+    >>> print sorted(bugzilla.getCommentIds(bug_watch.remotebug))
+    ['1', '3', '5']
+
+    >>> remote_bug = bug_watch.remotebug
+    >>> transaction.commit()
+
+    >>> bugzilla.fetchComments(remote_bug, ['5'])
+    >>> message = bugzilla.getMessageForComment(
+    ...     bug_watch.remotebug, '5', sample_person)
+    >>> print message.text_contents
+    This is a new remote comment.
+    <BLANKLINE>
+
+
+Linking a Launchpad bug to a remote bug
+---------------------------------------
+
+BugzillaAPI implements the ISupportsBackLinking interface, which means
+that it can be used to tell the remote bug tracker that a given remote
+bug is linked to a Launchpad bug.
+
+    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsBackLinking
+    >>> verifyObject(ISupportsBackLinking, bugzilla)
+    True
+
+BugzillaAPI.setLaunchpadBugId() can be used to set the Launchpad bug ID
+for a given bug.
+
+setLaunchpadBugId() requires the user to be logged in.
+
+    >>> bugzilla.xmlrpc_transport.expireCookie(
+    ...     bugzilla.xmlrpc_transport.auth_cookie)
+
+    >>> bug_id = bug_watch.bug.id
+    >>> bug_url = 'http://bugs.launchpad.dev/bugs/xxx'
+    >>> remote_bug = bug_watch.remotebug
+    >>> transaction.commit()
+
+    >>> bugzilla.xmlrpc_transport.print_method_calls = True
+    >>> bugzilla.setLaunchpadBugId(remote_bug, bug_id, bug_url)
+    CALLED Bug.update_see_also({'add':
+        ['http://bugs.launchpad.dev/bugs...'], 'ids': [1]})
+
+BugzillaAPI.getLaunchpadBugId() will currently always return None due to
+bug 490267.
+
+    >>> bugzilla.getLaunchpadBugId(bug_watch.remotebug)

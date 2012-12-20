@@ -1,4 +1,6 @@
-= The product menu classes =
+========================
+The product menu classes
+========================
 
 Each link specified by menu classes for products should be accessible.
 In most cases, the context for links will be the product itself, which
@@ -7,37 +9,12 @@ makes it possible to test most of the links simply with getMultiAdapter().
 The check_menu_links() function is defined here to make it simple to
 test all the product menu classes below.
 
-    >>> import traceback
-    >>> import sys
-    >>> import os
-    >>> from zope.component import getMultiAdapter
-    >>> from canonical.lazr.utils import safe_hasattr
-    >>> from canonical.lazr.testing.menus import make_fake_request
-    >>> from canonical.launchpad.webapp.publisher import canonical_url
-    >>> from lp.registry.interfaces.product import IProductSet
-
-    >>> def check_menu_links(menu):
-    ...     context = menu.context
-    ...     is_sane_menu = True
-    ...     for link in menu.iterlinks():
-    ...         if '?' in link.target:
-    ...             view_name, _args = link.target.split('?')
-    ...         else:
-    ...             view_name = link.target
-    ...         url = canonical_url(context, view_name=view_name)
-    ...         request = make_fake_request(url)
-    ...         try:
-    ...             view = getMultiAdapter((context, request), name=view_name)
-    ...         except:
-    ...             is_sane_menu = False
-    ...             print 'Bad link %s: %s' % (link.name, url)
-    ...     print is_sane_menu
-
+    >>> from lp.testing.menu import check_menu_links
     >>> from lp.registry.browser.product import (
-    ...     ProductBugsMenu,
-    ...     ProductEditNavigationMenu, ProductNavigationMenu,
+    ...     ProductBugsMenu, ProductNavigationMenu,
     ...     ProductOverviewMenu, ProductSpecificationsMenu)
-    >>> product = getUtility(IProductSet)['firefox']
+
+    >>> product = factory.makeProduct()
 
     >>> check_menu_links(ProductOverviewMenu(product))
     True
@@ -51,11 +28,9 @@ test all the product menu classes below.
     >>> check_menu_links(ProductNavigationMenu(product))
     True
 
-    >>> check_menu_links(ProductEditNavigationMenu(product))
-    True
 
-
-== ProductBranchesMenu and ProductTranslationsMenu ==
+ProductBranchesMenu and ProductTranslationsMenu
+===============================================
 
 We are not testing ProductBranchesMenu.code_import because it
 points to a view (/+code-imports/+new), which is not easily tested.

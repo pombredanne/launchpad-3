@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTarget-related browser views."""
@@ -6,248 +6,216 @@
 __metaclass__ = type
 
 __all__ = [
+    "BugsVHostBreadcrumb",
+    "BugsPatchesView",
     "BugTargetBugListingView",
-    "BugTargetBugsView",
     "BugTargetBugTagsView",
-    "FileBugViewBase",
     "FileBugAdvancedView",
     "FileBugGuidedView",
-    "FrontPageFileBugAdvancedView",
-    "FrontPageFileBugGuidedView",
+    "FileBugViewBase",
+    "IProductBugConfiguration",
     "OfficialBugTagsManageView",
-    "ProjectFileBugGuidedView",
-    "ProjectFileBugAdvancedView",
+    "ProductConfigureBugTrackerView",
+    "ProjectGroupFileBugGuidedView",
+    "product_to_productbugconfiguration",
     ]
 
-import cgi
 from cStringIO import StringIO
-from email import message_from_string
+from datetime import datetime
+from functools import partial
+import httplib
 from operator import itemgetter
-from simplejson import dumps
-import tempfile
 import urllib
+from urlparse import urljoin
 
+from lazr.restful.interface import copy_field
+from lazr.restful.interfaces import IJSONRequestCache
+from pytz import timezone
+from simplejson import dumps
+from sqlobject import SQLObjectNotFound
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors
 from zope.component import getUtility
-from zope import formlib
-from zope.interface import implements
+from zope.formlib.form import Fields
+from zope.interface import (
+    alsoProvides,
+    implements,
+    Interface,
+    )
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Choice
+from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import SimpleVocabulary
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import cachedproperty
-from lp.bugs.browser.bugtask import BugTaskSearchListingView
-from canonical.launchpad.browser.feeds import (
-    BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
-    PersonLatestBugsFeedLink)
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    safe_action,
+    )
+from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
+from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.enums import (
+    InformationType,
+    PRIVATE_INFORMATION_TYPES,
+    PUBLIC_INFORMATION_TYPES,
+    SECURITY_INFORMATION_TYPES,
+    ServiceUsage,
+    )
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
+from lp.app.interfaces.launchpad import (
+    ILaunchpadCelebrities,
+    ILaunchpadUsage,
+    )
+from lp.app.utilities import json_dump_information_types
+from lp.app.validators.name import valid_name_pattern
+from lp.app.vocabularies import InformationTypeVocabulary
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.app.widgets.product import (
+    GhostCheckBoxWidget,
+    GhostWidget,
+    ProductBugTrackerWidget,
+    )
+from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
+    )
+from lp.bugs.browser.widgets.bug import (
+    BugTagsWidget,
+    LargeBugTagsWidget,
+    )
+from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
+from lp.bugs.interfaces.bug import (
+    CreateBugParams,
+    IBug,
+    IBugAddForm,
+    IBugSet,
+    IProjectGroupBugAddForm,
+    )
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import (
-    IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
-from lp.bugs.interfaces.bug import IBugSet
+    IBugTarget,
+    IOfficialBugTagTargetPublic,
+    IOfficialBugTagTargetRestricted,
+    )
 from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
-from canonical.launchpad.interfaces.launchpad import (
-    IHasExternalBugTracker, ILaunchpadUsage)
-from canonical.launchpad.interfaces._schema_circular_imports import (
-    IBug, IDistribution)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.temporaryblobstorage import (
-    ITemporaryStorageManager)
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
-from lp.bugs.interfaces.bug import (
-    CreateBugParams, IBugAddForm, IFrontPageBugAddForm, IProjectBugAddForm)
-from lp.bugs.interfaces.malone import IMaloneApplication
+    BugTaskImportance,
+    BugTaskStatus,
+    IBugTaskSet,
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
+from lp.bugs.interfaces.bugtracker import IBugTracker
+from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.structuralsubscription import (
+    get_structural_subscriptions_for_target,
+    )
+from lp.bugs.publisher import BugsLayer
+from lp.bugs.utilities.filebugdataparser import FileBugData
+from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
+from lp.registry.browser.product import ProductConfigureBase
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.product import IProduct, IProject
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
-from canonical.launchpad.webapp import (
-    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
-    canonical_url, custom_widget, safe_action)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.tales import BugTrackerFormatterAPI
-from canonical.launchpad.validators.name import valid_name_pattern
-from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
-from canonical.widgets.bug import BugTagsWidget, LargeBugTagsWidget
-from canonical.widgets.bugtask import NewLineToSpacesWidget
-from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
-
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
-
-
-class FileBugDataParser:
-    """Parser for a message containing extra bug information.
-
-    Applications like Apport upload such messages, before filing the
-    bug.
-    """
-
-    def __init__(self, blob_file):
-        self.blob_file = blob_file
-        self.headers = {}
-        self._buffer = ''
-        self.extra_description = None
-        self.comments = []
-        self.attachments = []
-        self.BUFFER_SIZE = 8192
-
-    def _consumeBytes(self, end_string):
-        """Read bytes from the message up to the end_string.
-
-        The end_string is included in the output.
-
-        If end-of-file is reached, '' is returned.
-        """
-        while end_string not in self._buffer:
-            data = self.blob_file.read(self.BUFFER_SIZE)
-            self._buffer += data
-            if len(data) < self.BUFFER_SIZE:
-                # End of file.
-                if end_string not in self._buffer:
-                    # If the end string isn't present, we return
-                    # everything.
-                    buffer = self._buffer
-                    self._buffer = ''
-                    return buffer
-                break
-        end_index = self._buffer.index(end_string)
-        bytes = self._buffer[:end_index+len(end_string)]
-        self._buffer = self._buffer[end_index+len(end_string):]
-        return bytes
-
-    def readHeaders(self):
-        """Read the next set of headers of the message."""
-        header_text = self._consumeBytes('\n\n')
-        # Use the email package to return a dict-like object of the
-        # headers, so we don't have to parse the text ourselves.
-        return message_from_string(header_text)
-
-    def readLine(self):
-        """Read a line of the message."""
-        data = self._consumeBytes('\n')
-        if data == '':
-            raise AssertionError('End of file reached.')
-        return data
-
-    def _setDataFromHeaders(self, data, headers):
-        """Set the data attributes from the message headers."""
-        if 'Subject' in headers:
-            data.initial_summary = unicode(headers['Subject'])
-        if 'Tags' in headers:
-            tags_string = unicode(headers['Tags'])
-            data.initial_tags = tags_string.lower().split()
-        if 'Private' in headers:
-            private = headers['Private']
-            if private.lower() == 'yes':
-                data.private = True
-            elif private.lower() == 'no':
-                data.private = False
-            else:
-                # If the value is anything other than yes or no we just
-                # ignore it as we cannot currently give the user an error
-                pass
-        if 'Subscribers' in headers:
-            subscribers_string = unicode(headers['Subscribers'])
-            data.subscribers = subscribers_string.lower().split()
-
-    def parse(self):
-        """Parse the message and  return a FileBugData instance.
-
-            * The Subject header is the initial bug summary.
-            * The Tags header specifies the initial bug tags.
-            * The Private header sets the visibility of the bug.
-            * The Subscribers header specifies additional initial subscribers
-            * The first inline part will be added to the description.
-            * All other inline parts will be added as separate comments.
-            * All attachment parts will be added as attachment.
-
-        When parsing each part of the message is stored in a temporary
-        file on the file system. After using the returned data,
-        removeTemporaryFiles() must be called.
-        """
-        headers = self.readHeaders()
-        data = FileBugData()
-        self._setDataFromHeaders(data, headers)
-
-        # The headers is a Message instance.
-        boundary = "--" + headers.get_param("boundary")
-        line = self.readLine()
-        while not line.startswith(boundary + '--'):
-            part_file = tempfile.TemporaryFile()
-            part_headers = self.readHeaders()
-            content_encoding = part_headers.get('Content-Transfer-Encoding')
-            if content_encoding is not None and content_encoding != 'base64':
-                raise AssertionError(
-                    "Unknown encoding: %r." % content_encoding)
-            line = self.readLine()
-            while not line.startswith(boundary):
-                # Decode the file.
-                if content_encoding is not None:
-                    line = line.decode(content_encoding)
-                part_file.write(line)
-                line = self.readLine()
-            # Prepare the file for reading.
-            part_file.seek(0)
-            disposition = part_headers['Content-Disposition']
-            disposition = disposition.split(';')[0]
-            disposition = disposition.strip()
-            if disposition == 'inline':
-                assert part_headers.get_content_type() == 'text/plain', (
-                    "Inline parts have to be plain text.")
-                charset = part_headers.get_content_charset()
-                assert charset, (
-                    "A charset has to be specified for text parts.")
-                inline_content = part_file.read().rstrip()
-                part_file.close()
-                inline_content = inline_content.decode(charset)
-
-                if data.extra_description is None:
-                    # The first inline part is extra description.
-                    data.extra_description = inline_content
-                else:
-                    data.comments.append(inline_content)
-            elif disposition == 'attachment':
-                attachment = dict(
-                    filename=unicode(part_headers.get_filename().strip("'")),
-                    content_type=unicode(part_headers['Content-type']),
-                    content=part_file)
-                if 'Content-Description' in part_headers:
-                    attachment['description'] = unicode(
-                        part_headers['Content-Description'])
-                else:
-                    attachment['description'] = attachment['filename']
-                data.attachments.append(attachment)
-            else:
-                # If the message include other disposition types,
-                # simply ignore them. We don't want to break just
-                # because some extra information is included.
-                continue
-        return data
-
-
-class FileBugData:
-    """Extra data to be added to the bug."""
-
-    def __init__(self):
-        self.initial_summary = None
-        self.initial_summary = None
-        self.initial_tags = []
-        self.private = None
-        self.subscribers = []
-        self.extra_description = None
-        self.comments = []
-        self.attachments = []
-
+from lp.services.config import config
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    urlappend,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.escaping import structured
 
 # A simple vocabulary for the subscribe_to_existing_bug form field.
 SUBSCRIBE_TO_BUG_VOCABULARY = SimpleVocabulary.fromItems(
     [('yes', True), ('no', False)])
+
+
+class IProductBugConfiguration(Interface):
+    """A composite schema for editing bug app configuration."""
+
+    bug_supervisor = copy_field(
+        IHasBugSupervisor['bug_supervisor'], readonly=False)
+    official_malone = copy_field(ILaunchpadUsage['official_malone'])
+    enable_bug_expiration = copy_field(
+        ILaunchpadUsage['enable_bug_expiration'])
+    bugtracker = copy_field(IProduct['bugtracker'])
+    remote_product = copy_field(IProduct['remote_product'])
+    bug_reporting_guidelines = copy_field(
+        IBugTarget['bug_reporting_guidelines'])
+    bug_reported_acknowledgement = copy_field(
+        IBugTarget['bug_reported_acknowledgement'])
+    enable_bugfiling_duplicate_search = copy_field(
+        IBugTarget['enable_bugfiling_duplicate_search'])
+
+
+def product_to_productbugconfiguration(product):
+    """Adapts an `IProduct` into an `IProductBugConfiguration`."""
+    alsoProvides(
+        removeSecurityProxy(product), IProductBugConfiguration)
+    return product
+
+
+class ProductConfigureBugTrackerView(ProductConfigureBase):
+    """View class to configure the bug tracker for a project."""
+
+    label = "Configure bug tracker"
+    schema = IProductBugConfiguration
+    # This ProductBugTrackerWidget renders enable_bug_expiration and
+    # remote_product as subordinate fields, so this view suppresses them.
+    custom_widget('bugtracker', ProductBugTrackerWidget)
+    custom_widget('enable_bug_expiration', GhostCheckBoxWidget)
+    custom_widget('remote_product', GhostWidget)
+
+    @property
+    def field_names(self):
+        """Return the list of field names to display."""
+        field_names = [
+            "bugtracker",
+            "enable_bug_expiration",
+            "remote_product",
+            "bug_reporting_guidelines",
+            "bug_reported_acknowledgement",
+            "enable_bugfiling_duplicate_search",
+            ]
+        if check_permission("launchpad.Edit", self.context):
+            field_names.append("bug_supervisor")
+
+        return field_names
+
+    def validate(self, data):
+        """Constrain bug expiration to Launchpad Bugs tracker."""
+        super(ProductConfigureBugTrackerView, self).validate(data)
+        # enable_bug_expiration is disabled by JavaScript when bugtracker
+        # is not 'In Launchpad'. The constraint is enforced here in case the
+        # JavaScript fails to activate or run. Note that the bugtracker
+        # name : values are {'In Launchpad' : object, 'Somewhere else' : None
+        # 'In a registered bug tracker' : IBugTracker}.
+        bugtracker = data.get('bugtracker', None)
+        if bugtracker is None or IBugTracker.providedBy(bugtracker):
+            data['enable_bug_expiration'] = False
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
 
 
 class FileBugViewBase(LaunchpadFormView):
@@ -255,18 +223,61 @@ class FileBugViewBase(LaunchpadFormView):
 
     implements(IBrowserPublisher)
 
+    schema = IBug
+
+    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+
     extra_data_token = None
-    advanced_form = False
-    frontpage_form = False
-    data_parser = None
 
     def __init__(self, context, request):
-        LaunchpadFormView.__init__(self, context, request)
+        super(FileBugViewBase, self).__init__(context, request)
         self.extra_data = FileBugData()
 
     def initialize(self):
-        LaunchpadFormView.initialize(self)
-        if self.extra_data_token is not None:
+        # redirect_ubuntu_filebug is a cached_property.
+        # Access it first just to compute its value. Because it
+        # makes a DB access to get the bug supervisor, it causes
+        # trouble in tests when form validation errors occur. Because the
+        # transaction is doomed, the storm cache is invalidated and accessing
+        # the property will result in a a LostObjectError, because
+        # the created objects disappeared. Not likely a problem in production
+        # since the objects will still be in the DB, but doesn't hurt there
+        # either. It makes for better diagnosis of failing tests.
+        if self.redirect_ubuntu_filebug:
+            pass
+
+        # The JSON cache must be populated before the super call, since
+        # the form is rendered during LaunchpadFormView's initialize()
+        # when an action is invokved.
+        cache = IJSONRequestCache(self.request)
+        cache.objects['bug_private_by_default'] = (
+            self.context.pillar.getDefaultBugInformationType() in
+            PRIVATE_INFORMATION_TYPES)
+        json_dump_information_types(
+            cache, self.context.pillar.getAllowedBugInformationTypes())
+
+        bugtask_status_data = vocabulary_to_choice_edit_items(
+            BugTaskStatus, include_description=True, css_class_prefix='status',
+            excluded_items=[
+                BugTaskStatus.UNKNOWN,
+                BugTaskStatus.EXPIRED,
+                BugTaskStatus.INVALID,
+                BugTaskStatus.OPINION,
+                BugTaskStatus.WONTFIX,
+                BugTaskStatus.INCOMPLETE])
+        cache.objects['bugtask_status_data'] = bugtask_status_data
+        bugtask_importance_data = vocabulary_to_choice_edit_items(
+            BugTaskImportance, include_description=True,
+            css_class_prefix='importance',
+            excluded_items=[BugTaskImportance.UNKNOWN])
+        cache.objects['bugtask_importance_data'] = bugtask_importance_data
+        cache.objects['enable_bugfiling_duplicate_search'] = (
+            self.context.enable_bugfiling_duplicate_search)
+
+        super(FileBugViewBase, self).initialize()
+
+        if (self.extra_data_token is not None and
+            not self.extra_data_to_process):
             # self.extra_data has been initialized in publishTraverse().
             if self.extra_data.initial_summary:
                 self.widgets['title'].setRenderedValue(
@@ -281,47 +292,79 @@ class FileBugViewBase(LaunchpadFormView):
                 'Extra debug information will be added to the bug report'
                 ' automatically.')
 
+    @cachedproperty
+    def redirect_ubuntu_filebug(self):
+        if IDistribution.providedBy(self.context):
+            bug_supervisor = self.context.bug_supervisor
+        elif (IDistributionSourcePackage.providedBy(self.context) or
+              ISourcePackage.providedBy(self.context)):
+            bug_supervisor = self.context.distribution.bug_supervisor
+        else:
+            bug_supervisor = None
+
+        # Work out whether the redirect should be overidden.
+        do_not_redirect = (
+            self.request.form.get('no-redirect') is not None or
+            [key for key in self.request.form.keys()
+            if 'field.actions' in key] != [] or
+            self.user.inTeam(bug_supervisor))
+
+        return (
+            config.malone.ubuntu_disable_filebug and
+            self.targetIsUbuntu() and
+            self.extra_data_token is None and
+            not do_not_redirect)
+
     @property
     def field_names(self):
         """Return the list of field names to display."""
         context = self.context
-        field_names = ['title', 'comment', 'tags', 'security_related',
-                       'bug_already_reported_as', 'filecontent', 'patch',
-                       'attachment_description', 'subscribe_to_existing_bug']
+        field_names = ['title', 'comment', 'tags']
+        if self.is_bug_supervisor:
+            field_names.append('information_type')
+        else:
+            field_names.append('security_related')
+        field_names.extend([
+            'bug_already_reported_as', 'filecontent', 'patch',
+            'attachment_description', 'subscribe_to_existing_bug'])
         if (IDistribution.providedBy(context) or
             IDistributionSourcePackage.providedBy(context)):
             field_names.append('packagename')
-        elif IMaloneApplication.providedBy(context):
-            field_names.append('bugtarget')
-        elif IProject.providedBy(context):
-            field_names.append('product')
-        elif not IProduct.providedBy(context):
-            raise AssertionError('Unknown context: %r' % context)
 
-        if IHasBugSupervisor.providedBy(context):
-            if self.user.inTeam(context.bug_supervisor):
-                field_names.extend(
-                    ['assignee', 'importance', 'milestone', 'status'])
+        if self.is_bug_supervisor:
+            field_names.extend(
+                ['assignee', 'importance', 'milestone', 'status'])
 
         return field_names
 
     @property
+    def default_information_type(self):
+        value = self.context.pillar.getDefaultBugInformationType()
+        if (self.extra_data
+            and self.extra_data.private
+            and value in PUBLIC_INFORMATION_TYPES):
+            value = InformationType.USERDATA
+        return value
+
+    @property
     def initial_values(self):
         """Give packagename a default value, if applicable."""
-        if not IDistributionSourcePackage.providedBy(self.context):
-            return {}
+        values = {'information_type': self.default_information_type}
 
-        return {'packagename': self.context.name}
+        if IDistributionSourcePackage.providedBy(self.context):
+            values['packagename'] = self.context.name
 
-    def isPrivate(self):
-        """Whether bug reports on this target are private by default."""
-        return IProduct.providedBy(self.context) and self.context.private_bugs
+        return values
 
     def contextIsProduct(self):
         return IProduct.providedBy(self.context)
 
     def contextIsProject(self):
-        return IProject.providedBy(self.context)
+        return False
+
+    def targetIsUbuntu(self):
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        return self.context == ubuntu
 
     def getPackageNameFieldCSSClass(self):
         """Return the CSS class for the packagename field."""
@@ -332,17 +375,27 @@ class FileBugViewBase(LaunchpadFormView):
 
     def validate(self, data):
         """Make sure the package name, if provided, exists in the distro."""
-
         # The comment field is only required if filing a new bug.
         if self.submit_bug_action.submitted():
             comment = data.get('comment')
-            if comment:
-                if len(comment) > IBug['description'].max_length:
-                    self.setFieldError('comment',
-                        'The description is too long. If you have lots '
-                        'text to add, attach a file to the bug instead.')
-            else:
-                self.setFieldError('comment', "Required input is missing.")
+            # The widget only exposes the error message. The private
+            # attr contains the real error.
+            widget_error = self.widgets.get('comment')._error
+            if widget_error and isinstance(widget_error.errors, TooLong):
+                self.setFieldError('comment',
+                    'The description is too long. If you have lots of '
+                    'text to add, attach a file to the bug instead.')
+            elif not comment or widget_error is not None:
+                self.setFieldError(
+                    'comment', "Provide details about the issue.")
+            # Check if there is an extra description, and if it is too long.
+            if self.extra_data.extra_description:
+                if len("%s\n\n%s" % (
+                    comment, self.extra_data.extra_description)) > 50000:
+                    self.setFieldError(
+                        'comment', 'The description and the additional '
+                        'information is too long. If you have lots of text '
+                        'to add, attach a file to the bug instead.')
         # Check a bug has been selected when the user wants to
         # subscribe to an existing bug.
         elif self.this_is_my_bug_action.submitted():
@@ -362,20 +415,18 @@ class FileBugViewBase(LaunchpadFormView):
             if packagename:
                 if IDistribution.providedBy(self.context):
                     distribution = self.context
-                elif 'distribution' in data:
-                    distribution = data['distribution']
                 else:
                     assert IDistributionSourcePackage.providedBy(self.context)
                     distribution = self.context.distribution
 
                 try:
-                    distribution.guessPackageNames(packagename)
+                    distribution.guessPublishedSourcePackageName(packagename)
                 except NotFoundError:
-                    if distribution.serieses:
-                        # If a distribution doesn't have any serieses,
+                    if distribution.series:
+                        # If a distribution doesn't have any series,
                         # it won't have any source packages published at
                         # all, so we set the error only if there are
-                        # serieses.
+                        # series.
                         packagename_error = (
                             '"%s" does not exist in %s. Please choose a '
                             "different package. If you're unsure, please "
@@ -383,23 +434,12 @@ class FileBugViewBase(LaunchpadFormView):
                                 packagename, distribution.displayname))
                         self.setFieldError("packagename", packagename_error)
             else:
-                self.setFieldError("packagename", 
+                self.setFieldError("packagename",
                                    "Please enter a package name")
-
-        # If we've been called from the frontpage filebug forms we must check
-        # that whatever product or distro is having a bug filed against it
-        # actually uses Malone for its bug tracking.
-        product_or_distro = self.getProductOrDistroFromContext()
-        if (product_or_distro is not None and
-            not product_or_distro.official_malone):
-            self.setFieldError(
-                'bugtarget',
-                "%s does not use Launchpad as its bug tracker " %
-                product_or_distro.displayname)
 
     def setUpWidgets(self):
         """Customize the onKeyPress event of the package name chooser."""
-        LaunchpadFormView.setUpWidgets(self)
+        super(FileBugViewBase, self).setUpWidgets()
 
         if "packagename" in self.field_names:
             self.widgets["packagename"].onKeyPress = (
@@ -408,6 +448,20 @@ class FileBugViewBase(LaunchpadFormView):
     def setUpFields(self):
         """Set up the form fields. See `LaunchpadFormView`."""
         super(FileBugViewBase, self).setUpFields()
+
+        if self.is_bug_supervisor:
+            info_type_vocab = InformationTypeVocabulary(
+                types=self.context.pillar.getAllowedBugInformationTypes())
+            information_type_field = copy_field(
+                IBug['information_type'], readonly=False,
+                vocabulary=info_type_vocab)
+            self.form_fields = self.form_fields.omit('information_type')
+            self.form_fields += Fields(information_type_field)
+        else:
+            security_related_field = copy_field(
+                IBug['security_related'], readonly=False)
+            self.form_fields = self.form_fields.omit('security_related')
+            self.form_fields += Fields(security_related_field)
 
         # Override the vocabulary for the subscribe_to_existing_bug
         # field.
@@ -418,32 +472,16 @@ class FileBugViewBase(LaunchpadFormView):
             required=True, default=False)
 
         self.form_fields = self.form_fields.omit('subscribe_to_existing_bug')
-        self.form_fields += formlib.form.Fields(subscribe_field)
+        self.form_fields += Fields(subscribe_field)
 
     def contextUsesMalone(self):
         """Does the context use Malone as its official bugtracker?"""
-        if IProject.providedBy(self.context):
-            products_using_malone = [
-                product for product in self.context.products
-                if product.official_malone]
-            return len(products_using_malone) > 0
-        else:
-            return self.getMainContext().official_malone
+        bug_tracking_usage = self.getMainContext().bug_tracking_usage
+        return bug_tracking_usage == ServiceUsage.LAUNCHPAD
 
-    def getMainContext(self):
-        if IDistributionSourcePackage.providedBy(self.context):
-            return self.context.distribution
-        else:
-            return self.context
-
-    def getSecurityContext(self):
-        """Return the context used for security bugs."""
-        return self.getMainContext()
-
-    @property
-    def can_decide_security_contact(self):
-        """Will we be able to discern a security contact for this?"""
-        return (self.getSecurityContext() is not None)
+    def contextAllowsNewBugs(self):
+        return (self.contextUsesMalone() and
+                self.getMainContext().getAllowedBugInformationTypes())
 
     def shouldSelectPackageName(self):
         """Should the radio button to select a package be selected?"""
@@ -461,49 +499,40 @@ class FileBugViewBase(LaunchpadFormView):
         title = data["title"]
         comment = data["comment"].rstrip()
         packagename = data.get("packagename")
-        security_related = data.get("security_related", False)
-        distribution = data.get(
-            "distribution", getUtility(ILaunchBag).distribution)
+
+        information_type = data.get("information_type")
+        if information_type is None:
+            # If the old UI is enabled, security bugs are always embargoed
+            # when filed, but can be disclosed after they've been reported.
+            # Otherwise we use the default.
+            if data.get("security_related"):
+                information_type = InformationType.PRIVATESECURITY
+            else:
+                information_type = self.default_information_type
 
         context = self.context
-        if distribution is not None:
-            # We're being called from the generic bug filing form, so
-            # manually set the chosen distribution as the context.
-            context = distribution
-        elif IProject.providedBy(context):
-            context = data['product']
-        elif IMaloneApplication.providedBy(context):
-            context = data['bugtarget']
 
         # Ensure that no package information is used, if the user
         # enters a package name but then selects "I don't know".
         if self.request.form.get("packagename_option") == "none":
             packagename = None
 
-        # Security bugs are always private when filed, but can be disclosed
-        # after they've been reported.
-        if security_related:
-            private = True
-        else:
-            private = False
-
-        notifications = ["Thank you for your bug report."]
+        linkified_ack = structured(FormattersAPI(
+            self.getAcknowledgementMessage(self.context)).text_to_html(
+                last_paragraph_class="last"))
+        notifications = [linkified_ack]
         params = CreateBugParams(
             title=title, comment=comment, owner=self.user,
-            security_related=security_related, private=private,
+            information_type=information_type,
             tags=data.get('tags'))
         if IDistribution.providedBy(context) and packagename:
             # We don't know if the package name we got was a source or binary
             # package name, so let the Soyuz API figure it out for us.
             packagename = str(packagename.name)
             try:
-                sourcepackagename, binarypackagename = (
-                    context.guessPackageNames(packagename))
+                sourcepackagename = context.guessPublishedSourcePackageName(
+                    packagename)
             except NotFoundError:
-                # guessPackageNames may raise NotFoundError. It would be
-                # nicer to allow people to indicate a package even if
-                # never published, but the quick fix for now is to note
-                # the issue and move on.
                 notifications.append(
                     "The package %s is not published in %s; the "
                     "bug was targeted only to the distribution."
@@ -515,7 +544,6 @@ class FileBugViewBase(LaunchpadFormView):
                         packagename, context.displayname))
             else:
                 context = context.getSourcePackage(sourcepackagename.name)
-                params.binarypackagename = binarypackagename
 
         extra_data = self.extra_data
         if extra_data.extra_description:
@@ -524,21 +552,18 @@ class FileBugViewBase(LaunchpadFormView):
             notifications.append(
                 'Additional information was added to the bug description.')
 
-        if extra_data.private:
-            params.private = extra_data.private
+        # Apply any extra options given by privileged users.
+        if self.is_bug_supervisor:
+            if 'assignee' in data:
+                params.assignee = data['assignee']
+            if 'status' in data:
+                params.status = data['status']
+            if 'importance' in data:
+                params.importance = data['importance']
+            if 'milestone' in data:
+                params.milestone = data['milestone']
 
         self.added_bug = bug = context.createBug(params)
-
-        # Apply any extra options given by a bug supervisor.
-        bugtask = self.added_bug.default_bugtask
-        if 'assignee' in data:
-            bugtask.transitionToAssignee(data['assignee'])
-        if 'status' in data:
-            bugtask.transitionToStatus(data['status'], self.user)
-        if 'importance' in data:
-            bugtask.transitionToImportance(data['importance'], self.user)
-        if 'milestone' in data:
-            bugtask.milestone = data['milestone']
 
         for comment in extra_data.comments:
             bug.newMessage(self.user, bug.followup_subject(), comment)
@@ -553,7 +578,8 @@ class FileBugViewBase(LaunchpadFormView):
         if attachment or extra_data.attachments:
             # Attach all the comments to a single empty comment.
             attachment_comment = bug.newMessage(
-                owner=self.user, subject=bug.followup_subject(), content=None)
+                owner=self.user, subject=bug.followup_subject(), content=None,
+                send_notifications=False)
 
             # Deal with attachments added in the filebug form.
             if attachment:
@@ -575,19 +601,18 @@ class FileBugViewBase(LaunchpadFormView):
                     comment=attachment_comment, is_patch=data['patch'])
 
                 notifications.append(
-                    'The file "%s" was attached to the bug report.' %
-                        cgi.escape(filename))
+                    'The file "%s" was attached to the bug report.'
+                    % filename)
 
             for attachment in extra_data.attachments:
-                bug.addAttachment(
-                    owner=self.user, data=attachment['content'],
+                bug.linkAttachment(
+                    owner=self.user, file_alias=attachment['file_alias'],
                     description=attachment['description'],
                     comment=attachment_comment,
-                    filename=attachment['filename'],
-                    content_type=attachment['content_type'])
+                    send_notifications=False)
                 notifications.append(
-                    'The file "%s" was attached to the bug report.' %
-                        cgi.escape(attachment['filename']))
+                    'The file "%s" was attached to the bug report.'
+                    % attachment['file_alias'].filename)
 
         if extra_data.subscribers:
             # Subscribe additional subscribers to this bug
@@ -606,17 +631,24 @@ class FileBugViewBase(LaunchpadFormView):
                         '%s has been subscribed to this bug.' %
                         person.displayname)
 
+        submission_set = getUtility(IHWSubmissionSet)
+        for submission_key in extra_data.hwdb_submission_keys:
+            submission = submission_set.getBySubmissionKey(
+                submission_key, self.user)
+            if submission is not None:
+                bug.linkHWSubmission(submission)
+
         # Give the user some feedback on the bug just opened.
         for notification in notifications:
             self.request.response.addNotification(notification)
-        if bug.security_related:
+        if bug.information_type in SECURITY_INFORMATION_TYPES:
             self.request.response.addNotification(
                 structured(
                 'Security-related bugs are by default private '
                 '(visible only to their direct subscribers). '
                 'You may choose to <a href="+secrecy">publicly '
                 'disclose</a> this bug.'))
-        if bug.private and not bug.security_related:
+        elif bug.information_type in PRIVATE_INFORMATION_TYPES:
             self.request.response.addNotification(
                 structured(
                 'This bug report has been marked private '
@@ -649,13 +681,42 @@ class FileBugViewBase(LaunchpadFormView):
             else:
                 bug.subscribe(self.user, self.user)
                 self.request.response.addNotification(
-                    "You have been subscribed to this bug.")
+                    "You have subscribed to this bug report.")
 
         self.next_url = canonical_url(bug.bugtasks[0])
 
     def showFileBugForm(self):
         """Override this method in base classes to show the filebug form."""
         raise NotImplementedError
+
+    @property
+    def inline_filebug_base_url(self):
+        """Return the base URL for the current request.
+
+        This allows us to build URLs in Javascript without guessing at
+        domains.
+        """
+        return self.request.getRootURL(None)
+
+    @property
+    def inline_filebug_form_url(self):
+        """Return the URL to the inline filebug form.
+
+        If a token was passed to this view, it will be passed through
+        to the inline bug filing form via the returned URL.
+        """
+        url = canonical_url(self.context, view_name='+filebug-inline-form')
+        if self.extra_data_token is not None:
+            url = urlappend(url, self.extra_data_token)
+        return url
+
+    @property
+    def duplicate_search_url(self):
+        """Return the URL to the inline duplicate search view."""
+        url = canonical_url(self.context, view_name='+filebug-show-similar')
+        if self.extra_data_token is not None:
+            url = urlappend(url, self.extra_data_token)
+        return url
 
     def publishTraverse(self, request, name):
         """See IBrowserPublisher."""
@@ -665,14 +726,8 @@ class FileBugViewBase(LaunchpadFormView):
             # expected.
             raise NotFound(self, name, request=request)
 
-        extra_bug_data = getUtility(ITemporaryStorageManager).fetch(name)
-        if extra_bug_data is not None:
-            self.extra_data_token = name
-            extra_bug_data.file_alias.open()
-            self.data_parser = FileBugDataParser(extra_bug_data.file_alias)
-            self.extra_data = self.data_parser.parse()
-            extra_bug_data.file_alias.close()
-        else:
+        self.extra_data_token = name
+        if self.extra_data_processing_job is None:
             # The URL might be mistyped, or the blob has expired.
             # XXX: Bjorn Tillenius 2006-01-15:
             #      We should handle this case better, since a user might
@@ -680,6 +735,9 @@ class FileBugViewBase(LaunchpadFormView):
             #      registration. In that case we should inform the user
             #      that the blob has expired.
             raise NotFound(self, name, request=request)
+        else:
+            self.extra_data = self.extra_data_processing_job.getFileBugData()
+
         return self
 
     def browserDefault(self, request):
@@ -687,22 +745,8 @@ class FileBugViewBase(LaunchpadFormView):
         return self, ()
 
     def getProductOrDistroFromContext(self):
-        """Return the product or distribution relative to the context.
-
-        For instance, if the context is an IDistroSeries, return the
-        distribution related to it. Will return None if the context is
-        not related to a product or a distro.
-        """
-        context = self.context
-        if IProduct.providedBy(context) or IDistribution.providedBy(context):
-            return context
-        elif IProductSeries.providedBy(context):
-            return context.product
-        elif (IDistroSeries.providedBy(context) or
-              IDistributionSourcePackage.providedBy(context)):
-            return context.distribution
-        else:
-            return None
+        """Return the product or distribution relative to the context."""
+        return self.context.pillar
 
     def showOptionalMarker(self, field_name):
         """See `LaunchpadFormView`."""
@@ -727,25 +771,76 @@ class FileBugViewBase(LaunchpadFormView):
         total accuracy, and will return the first 'relevant' bugtask
         it finds even if there are other candidates. Be warned!
         """
-        context = self.context
-
-        if IProject.providedBy(context):
-            contexts = set(context.products)
-        else:
-            contexts = [context]
-
         for bugtask in bug.bugtasks:
-            if bugtask.target in contexts or bugtask.pillar in contexts:
+            if self.context in (bugtask.target, bugtask.pillar):
                 return bugtask
         return None
 
-    @property
-    def bugtarget(self):
-        """The bugtarget we're currently assuming.
+    default_bug_reported_acknowledgement = "Thank you for your bug report."
 
-        The same as the context.
-        """
-        return self.context
+    def getAcknowledgementMessage(self, context):
+        """An acknowlegement message displayed to the user."""
+        # If a given context doesnot have a custom message, we go up in the
+        # "object hierachy" until we find one. If no cusotmized messages
+        # exist for any conext, a default message is returned.
+        #
+        # bug_reported_acknowledgement is defined as a "real" property
+        # for IDistribution, IDistributionSourcePackage, IProduct and
+        # IProjectGroup. Other IBugTarget implementations inherit this
+        # property from their parents. For these classes, we can directly
+        # try to find a custom message farther up in the hierarchy.
+        message = context.bug_reported_acknowledgement
+        if message is not None and len(message.strip()) > 0:
+            return message
+        next_context = None
+        if IProductSeries.providedBy(context):
+            # we don't need to look at
+            # context.product.bug_reported_acknowledgement because a
+            # product series inherits this property from the product.
+            next_context = context.product.project
+        elif IProduct.providedBy(context):
+            next_context = context.project
+        elif IDistributionSourcePackage.providedBy(context):
+            next_context = context.distribution
+        # IDistroseries and ISourcePackage inherit
+        # bug_reported_acknowledgement from their IDistribution, so we
+        # don't need to look up this property in IDistribution.
+        # IDistribution and IProjectGroup don't have any parents.
+        elif (IDistribution.providedBy(context) or
+              IProjectGroup.providedBy(context) or
+              IDistroSeries.providedBy(context) or
+              ISourcePackage.providedBy(context)):
+            pass
+        else:
+            raise TypeError("Unexpected bug target: %r" % context)
+        if next_context is not None:
+            return self.getAcknowledgementMessage(next_context)
+        return self.default_bug_reported_acknowledgement
+
+    @cachedproperty
+    def extra_data_processing_job(self):
+        """Return the ProcessApportBlobJob for a given BLOB token."""
+        if self.extra_data_token is None:
+            # If there's no extra data token, don't bother looking for a
+            # ProcessApportBlobJob.
+            return None
+
+        try:
+            return getUtility(IProcessApportBlobJobSource).getByBlobUUID(
+                self.extra_data_token)
+        except SQLObjectNotFound:
+            return None
+
+    @property
+    def extra_data_to_process(self):
+        """Return True if there is extra data to process."""
+        apport_processing_job = self.extra_data_processing_job
+        if apport_processing_job is None:
+            return False
+        elif apport_processing_job.job.status == JobStatus.COMPLETED:
+            return False
+        else:
+            return True
 
     @property
     def bug_reporting_guidelines(self):
@@ -754,50 +849,51 @@ class FileBugViewBase(LaunchpadFormView):
         Returns a list of dicts, with each dict containing values for
         "preamble" and "content".
         """
-        def target_name(target):
-            # IProject can be considered the target of a bug during
-            # the bug filing process, but does not extend IBugTarget
-            # and ultimately cannot actually be the target of a
-            # bug. Hence this function to determine a suitable
-            # name/title to display. Hurrumph.
-            if IBugTarget.providedBy(target):
-                return target.bugtargetdisplayname
-            else:
-                return target.title
-
         guidelines = []
-        context = self.bugtarget
-        if context is not None:
-            content = context.bug_reporting_guidelines
+        content = self.context.bug_reporting_guidelines
+        if content is not None and len(content) > 0:
+            guidelines.append({
+                "source": self.context.bugtargetdisplayname,
+                "content": content,
+                })
+        # Distribution source packages are shown with both their
+        # own reporting guidelines and those of their
+        # distribution.
+        if IDistributionSourcePackage.providedBy(self.context):
+            distribution = self.context.distribution
+            content = distribution.bug_reporting_guidelines
             if content is not None and len(content) > 0:
                 guidelines.append({
-                        "source": target_name(context),
-                        "content": content,
-                        })
-            # Distribution source packages are shown with both their
-            # own reporting guidelines and those of their
-            # distribution.
-            if IDistributionSourcePackage.providedBy(context):
-                distribution = context.distribution
-                content = distribution.bug_reporting_guidelines
-                if content is not None and len(content) > 0:
-                    guidelines.append({
-                            "source": target_name(distribution),
-                            "content": content,
-                            })
+                    "source": distribution.bugtargetdisplayname,
+                    "content": content,
+                    })
         return guidelines
 
+    def getMainContext(self):
+        if IDistributionSourcePackage.providedBy(self.context):
+            return self.context.distribution
+        else:
+            return self.context
 
-class FileBugAdvancedView(FileBugViewBase):
+    @cachedproperty
+    def is_bug_supervisor(self):
+        """ Return True if the logged in user is a bug supervisor."""
+        context = self.getMainContext()
+        return BugTask.userHasBugSupervisorPrivilegesContext(
+            context, self.user)
+
+
+class FileBugAdvancedView(LaunchpadView):
     """Browser view for filing a bug.
 
     This view exists only to redirect from +filebug-advanced to +filebug.
     """
+
     def initialize(self):
         filebug_url = canonical_url(
             self.context, rootsite='bugs', view_name='+filebug')
-        self.request.response.redirect(filebug_url,
-        status=HTTP_MOVED_PERMANENTLY)
+        self.request.response.redirect(
+            filebug_url, status=httplib.MOVED_PERMANENTLY)
 
 
 class FilebugShowSimilarBugsView(FileBugViewBase):
@@ -808,12 +904,26 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
     """
     schema = IBugAddForm
 
+    # XXX: Brad Bollenbach 2006-10-04: This assignment to actions is a
+    # hack to make the action decorator Just Work across inheritance.
+    actions = FileBugViewBase.actions
+    custom_widget('title', TextWidget, displayWidth=40)
+    custom_widget('tags', BugTagsWidget)
+
     _MATCHING_BUGS_LIMIT = 10
+    show_summary_in_results = False
 
     @property
-    def search_context(self):
-        """Return the context used to search for similar bugs."""
-        return self.context
+    def action_url(self):
+        """Return the +filebug page as the action URL.
+
+        This enables better validation error handling,
+        since the form is always used inline on the +filebug page.
+        """
+        url = '%s/+filebug' % canonical_url(self.context)
+        if self.extra_data_token is not None:
+            url = urlappend(url, self.extra_data_token)
+        return url
 
     @property
     def search_text(self):
@@ -826,84 +936,22 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
         title = self.search_text
         if not title:
             return []
-        search_context = self.search_context
-        if search_context is None:
-            return []
-        elif IProduct.providedBy(search_context):
-            context_params = {'product': search_context}
-        elif IDistribution.providedBy(search_context):
-            context_params = {'distribution': search_context}
+        elif IProduct.providedBy(self.context):
+            context_params = {'product': self.context}
+        elif IDistribution.providedBy(self.context):
+            context_params = {'distribution': self.context}
         else:
-            assert IDistributionSourcePackage.providedBy(search_context), (
-                    'Unknown search context: %r' % search_context)
+            assert IDistributionSourcePackage.providedBy(self.context), (
+                    'Unknown search context: %r' % self.context)
             context_params = {
-                'distribution': search_context.distribution,
-                'sourcepackagename': search_context.sourcepackagename}
+                'distribution': self.context.distribution,
+                'sourcepackagename': self.context.sourcepackagename}
 
         matching_bugtasks = getUtility(IBugTaskSet).findSimilar(
             self.user, title, **context_params)
-        # Remove all the prejoins, since we won't use them and they slow
-        # down the query significantly.
-        matching_bugtasks = matching_bugtasks.prejoin([])
-
         matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
             matching_bugtasks, self.user, self._MATCHING_BUGS_LIMIT)
-
         return matching_bugs
-
-
-class FileBugGuidedView(FilebugShowSimilarBugsView):
-    # XXX: Brad Bollenbach 2006-10-04: This assignment to actions is a
-    # hack to make the action decorator Just Work across inheritance.
-    actions = FileBugViewBase.actions
-    custom_widget('title', TextWidget, displayWidth=40)
-    custom_widget('tags', BugTagsWidget)
-
-    _SEARCH_FOR_DUPES = ViewPageTemplateFile(
-        "../templates/bugtarget-filebug-search.pt")
-    _FILEBUG_FORM = ViewPageTemplateFile(
-        "../templates/bugtarget-filebug-submit-bug.pt")
-
-    template = _SEARCH_FOR_DUPES
-
-    focused_element_id = 'field.title'
-
-    @safe_action
-    @action("Continue", name="search", validator="validate_search")
-    def search_action(self, action, data):
-        """Search for similar bug reports."""
-        # Don't give focus to any widget, to ensure that the browser
-        # won't scroll past the "possible duplicates" list.
-        self.initial_focus_widget = None
-        return self.showFileBugForm()
-
-    @property
-    def search_context(self):
-        """Return the context used to search for similar bugs."""
-        if IDistributionSourcePackage.providedBy(self.context):
-            return self.context
-
-        search_context = self.getMainContext()
-        if IProject.providedBy(search_context):
-            assert self.widgets['product'].hasValidInput(), (
-                "This method should be called only when we know which"
-                " product the user selected.")
-            search_context = self.widgets['product'].getInputValue()
-        elif IMaloneApplication.providedBy(search_context):
-            if self.widgets['bugtarget'].hasValidInput():
-                search_context = self.widgets['bugtarget'].getInputValue()
-            else:
-                search_context = None
-
-        return search_context
-
-    @property
-    def search_text(self):
-        """Return the search string entered by the user."""
-        try:
-            return self.widgets['title'].getInputValue()
-        except InputErrors:
-            return None
 
     @property
     def show_duplicate_list(self):
@@ -915,21 +963,59 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
           - There are no widget errors.
         """
         return (
-            self.contextUsesMalone and
+            self.contextUsesMalone() and
             len(self.similar_bugs) > 0 and
             len(self.widget_errors) == 0)
 
-    def validate_search(self, action, data):
-        """Make sure some keywords are provided."""
-        try:
-            data['title'] = self.widgets['title'].getInputValue()
-        except InputErrors, error:
-            self.setFieldError("title", "A summary is required.")
-            return [error]
 
-        # Return an empty list of errors to satisfy the validation API,
-        # and say "we've handled the validation and found no errors."
-        return []
+class FileBugGuidedView(FilebugShowSimilarBugsView):
+
+    _SEARCH_FOR_DUPES = ViewPageTemplateFile(
+        "../templates/bugtarget-filebug-search.pt")
+    _PROJECTGROUP_SEARCH_FOR_DUPES = ViewPageTemplateFile(
+        "../templates/projectgroup-filebug-search.pt")
+    _FILEBUG_FORM = ViewPageTemplateFile(
+        "../templates/bugtarget-filebug-submit-bug.pt")
+
+    # XXX 2009-07-17 Graham Binns
+    #     As above, this assignment to actions is to make sure that the
+    #     actions from the ancestor views are preserved, otherwise they
+    #     get nuked.
+    actions = FilebugShowSimilarBugsView.actions
+    template = _SEARCH_FOR_DUPES
+
+    focused_element_id = 'field.title'
+    show_summary_in_results = True
+
+    def initialize(self):
+        super(FileBugGuidedView, self).initialize()
+        if self.redirect_ubuntu_filebug:
+            # The user is trying to file a new Ubuntu bug via the web
+            # interface and without using apport. Redirect to a page
+            # explaining the preferred bug-filing procedure.
+            self.request.response.redirect(
+                config.malone.ubuntu_bug_filing_url)
+
+    @property
+    def page_title(self):
+        return 'Report a bug about %s' % self.context.title
+
+    @safe_action
+    @action("Continue", name="search")
+    def search_action(self, action, data):
+        """Search for similar bug reports."""
+        # Don't give focus to any widget, to ensure that the browser
+        # won't scroll past the "possible duplicates" list.
+        self.initial_focus_widget = None
+        return self.showFileBugForm()
+
+    @property
+    def search_text(self):
+        """Return the search string entered by the user."""
+        try:
+            return self.widgets['title'].getInputValue()
+        except InputErrors:
+            return None
 
     def validate_no_dupe_found(self, action, data):
         return ()
@@ -944,148 +1030,98 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
         return self._FILEBUG_FORM()
 
 
-class ProjectFileBugGuidedView(FileBugGuidedView):
-    """Guided filebug pages for IProject."""
+class ProjectGroupFileBugGuidedView(LaunchpadFormView):
+    """Guided filebug pages for IProjectGroup."""
 
-    # Make inheriting the base class' actions work.
-    actions = FileBugGuidedView.actions
-    schema = IProjectBugAddForm
+    schema = IProjectGroupBugAddForm
 
-    def _getSelectedProduct(self):
-        """Return the product that's selected."""
-        assert self.widgets['product'].hasValidInput(), (
-            "This method should be called only when we know which"
-            " product the user selected.")
-        return self.widgets['product'].getInputValue()
+    custom_widget('title', TextWidget, displayWidth=40)
+    custom_widget('tags', BugTagsWidget)
 
-    def getSecurityContext(self):
-        """See FileBugViewBase."""
-        return self._getSelectedProduct()
+    extra_data_to_process = False
 
+    @property
+    def field_names(self):
+        return ['product', 'title', 'tags']
 
-class FrontPageFileBugMixin:
-    """Provides common methods for front-page bug-filing forms."""
+    @property
+    def page_title(self):
+        return 'Report a bug about %s' % self.context.title
 
-    frontpage_form = True
+    @cachedproperty
+    def products_using_malone(self):
+        return [
+            product for product in self.context.products
+            if product.bug_tracking_usage == ServiceUsage.LAUNCHPAD]
+
+    @property
+    def default_product(self):
+        if len(self.products_using_malone) > 0:
+            return self.products_using_malone[0]
+        else:
+            return None
 
     def contextUsesMalone(self):
-        """Checks whether the current context uses Malone for bug tracking.
+        return self.default_product is not None
 
-        If a bug is being filed against a product or distro then that product
-        or distro's official_malone property is used to determine the return
-        value of contextUsesMalone(). Otherwise, contextUsesMalone() will
-        always return True, since doing otherwise will cause the front page
-        file bug forms to be hidden.
-        """
-        product_or_distro = self.getProductOrDistroFromContext()
-
-        if product_or_distro is None:
-            return True
-        else:
-            return product_or_distro.official_malone
+    def contextAllowsNewBugs(self):
+        return True
 
     def contextIsProduct(self):
-        """Is the context a product?"""
-        product_or_distro = self.getProductOrDistroFromContext()
-        return IProduct.providedBy(product_or_distro)
+        return False
 
-    @property
-    def bugtarget(self):
-        """The bugtarget we're currently assuming.
-
-        This needs to be obtained from form data because we're on the
-        front page, and not already within a product/distro/etc
-        context.
-        """
-        if self.widgets['bugtarget'].hasValidInput():
-            return self.widgets['bugtarget'].getInputValue()
-        else:
-            return None
+    def contextIsProject(self):
+        return True
 
     def getProductOrDistroFromContext(self):
-        """Return the product or distribution relative to the context.
+        return None
 
-        For instance, if the context is an IDistroSeries, return the
-        distribution related to it. This method will return None if the
-        context is not related to a product or a distro.
-        """
-        # We need to find a product or distribution from what we've had
-        # submitted to us.
-        context = self.bugtarget
-        if context is None:
-            return None
-
-        if IProduct.providedBy(context) or IDistribution.providedBy(context):
-            return context
-        elif IProductSeries.providedBy(context):
-            return context.product
-        elif (IDistroSeries.providedBy(context) or
-              IDistributionSourcePackage.providedBy(context)):
-            return context.distribution
-        else:
-            return None
+    @safe_action
+    @action("Continue", name="projectgroupsearch")
+    def projectgroup_search_action(self, action, data):
+        """Redirect to the chosen product's form."""
+        base = canonical_url(
+            data['product'], view_name='+filebug', rootsite='bugs')
+        title = data['title'].encode('utf8')
+        query = urllib.urlencode([
+            ('field.title', title),
+            ('field.tags', ' '.join(data['tags'])),
+            ])
+        url = '%s?%s' % (base, query)
+        self.request.response.redirect(url)
 
 
-class FrontPageFileBugGuidedView(FrontPageFileBugMixin, FileBugGuidedView):
-    """Browser view class for the top-level +filebug page."""
-    schema = IFrontPageBugAddForm
-    custom_widget('bugtarget', LaunchpadTargetWidget)
-
-    # Make inheriting the base class' actions work.
-    actions = FileBugGuidedView.actions
+class BugTargetBugListingView(LaunchpadView):
+    """Helper methods for rendering bug listings."""
 
     @property
-    def initial_values(self):
-        return {"bugtarget": getUtility(ILaunchpadCelebrities).ubuntu}
-
-    def validate_search(self, action, data):
-        """Validates the parameters for the similar-bug search."""
-        errors = FileBugGuidedView.validate_search(self, action, data)
-        try:
-            data['bugtarget'] = self.widgets['bugtarget'].getInputValue()
-
-            # Check that Malone is actually used by this bugtarget.
-            if (IProduct.providedBy(data['bugtarget']) or
-                IDistribution.providedBy(data['bugtarget'])):
-                product_or_distro = data['bugtarget']
-            elif IProductSeries.providedBy(data['bugtarget']):
-                product_or_distro = data['bugtarget'].product
-            elif (IDistroSeries.providedBy(data['bugtarget']) or
-                  IDistributionSourcePackage.providedBy(data['bugtarget'])):
-                product_or_distro = data['bugtarget'].distribution
-            else:
-                product_or_distro = None
-
-            if (product_or_distro is not None and
-                not product_or_distro.official_malone):
-                self.setFieldError('bugtarget',
-                                    "%s does not use Launchpad as its bug "
-                                    "tracker" %
-                                    product_or_distro.displayname)
-
-        except InputErrors, error:
-            self.setFieldError("bugtarget", error.doc())
-            errors.append(error)
-        return errors
-
-    def getSecurityContext(self):
-        """See FileBugViewBase."""
-        try:
-            bugtarget = self.widgets['bugtarget'].getInputValue()
-        except InputErrors:
-            return None
-        if IDistributionSourcePackage.providedBy(bugtarget):
-            return bugtarget.distribution
+    def series_list(self):
+        if IDistroSeries(self.context, None):
+            series = self.context.distribution.series
+        elif IDistribution(self.context, None):
+            series = self.context.series
+        elif IProductSeries(self.context, None):
+            series = self.context.product.series
+        elif IProduct(self.context, None):
+            series = self.context.series
         else:
-            assert (
-                IProduct.providedBy(bugtarget) or
-                IDistribution.providedBy(bugtarget)), (
-                "Unknown bug target: %r" % bugtarget)
-            return bugtarget
+            raise AssertionError("series_list called with illegal context")
+        return list(series)
 
-
-class BugTargetBugListingView:
-    """Helper methods for rendering bug listings."""
+    @property
+    def milestones_list(self):
+        if IDistroSeries(self.context, None):
+            milestone_resultset = self.context.distribution.milestones
+        elif IDistribution(self.context, None):
+            milestone_resultset = self.context.milestones
+        elif IProductSeries(self.context, None):
+            milestone_resultset = self.context.product.milestones
+        elif IProduct(self.context, None):
+            milestone_resultset = self.context.milestones
+        else:
+            raise AssertionError(
+                "milestones_list called with illegal context")
+        return list(milestone_resultset)
 
     @property
     def series_buglistings(self):
@@ -1096,150 +1132,66 @@ class BugTargetBugListingView:
         The count only considers bugs that the user would actually be
         able to see in a listing.
         """
-        if IDistribution(self.context, None):
-            serieses = self.context.serieses
-        elif IProduct(self.context, None):
-            serieses = self.context.serieses
-        elif IDistroSeries(self.context, None):
-            serieses = self.context.distribution.serieses
-        elif IProductSeries(self.context, None):
-            serieses = self.context.product.serieses
-        else:
-            raise AssertionError, ("series_bug_counts called with "
-                                   "illegal context")
-
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
         series_buglistings = []
-        for series in serieses:
-            series_bug_count = series.open_bugtasks.count()
+        bug_task_set = getUtility(IBugTaskSet)
+        series_list = self.series_list
+        if not series_list:
+            return series_buglistings
+        # This would be better as delegation not a case statement.
+        if IDistroSeries(self.context, None):
+            backlink = BugSummary.distroseries_id
+        elif IDistribution(self.context, None):
+            backlink = BugSummary.distroseries_id
+        elif IProductSeries(self.context, None):
+            backlink = BugSummary.productseries_id
+        elif IProduct(self.context, None):
+            backlink = BugSummary.productseries_id
+        else:
+            raise AssertionError("illegal context %r" % self.context)
+        counts = bug_task_set.countBugs(self.user, series_list, (backlink,))
+        for series in series_list:
+            series_bug_count = counts.get((series.id,), 0)
             if series_bug_count > 0:
                 series_buglistings.append(
                     dict(
                         title=series.name,
                         url=canonical_url(series) + "/+bugs",
-                        count=series_bug_count))
-
+                        count=series_bug_count,
+                        ))
         return series_buglistings
 
-
-class BugCountDataItem:
-    """Data about bug count for a status."""
-
-    def __init__(self, label, count, color):
-        self.label = label
-        self.count = count
-        if color.startswith('#'):
-            self.color = 'MochiKit.Color.Color.fromHexString("%s")' % color
-        else:
-            self.color = 'MochiKit.Color.Color["%sColor"]()' % color
-
-
-class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
-    """View for the Bugs front page."""
-
-    # We have a custom searchtext widget here so that we can set the
-    # width of the search box properly.
-    custom_widget('searchtext', NewLineToSpacesWidget, displayWidth=36)
-
-    # Only include <link> tags for bug feeds when using this view.
-    feed_types = (
-        BugFeedLink,
-        BugTargetLatestBugsFeedLink,
-        PersonLatestBugsFeedLink,
-        )
-
-    # XXX: Bjorn Tillenius 2007-02-13:
-    #      These colors should be changed. It's the same colors that are used
-    #      to color statuses in buglistings using CSS, but there should be one
-    #      unique color for each status in the pie chart
-    status_color = {
-        BugTaskStatus.NEW: '#993300',
-        BugTaskStatus.INCOMPLETE: 'red',
-        BugTaskStatus.CONFIRMED: 'orange',
-        BugTaskStatus.TRIAGED: 'black',
-        BugTaskStatus.INPROGRESS: 'blue',
-        BugTaskStatus.FIXCOMMITTED: 'green',
-        BugTaskStatus.FIXRELEASED: 'magenta',
-        BugTaskStatus.INVALID: 'yellow',
-        BugTaskStatus.UNKNOWN: 'purple',
-    }
-
-    def initialize(self):
-        BugTaskSearchListingView.initialize(self)
-        bug_statuses_to_show = list(UNRESOLVED_BUGTASK_STATUSES)
-        if IDistroSeries.providedBy(self.context):
-            bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
-        bug_counts = sorted(self.context.getBugCounts(
-            self.user, bug_statuses_to_show).items())
-        self.bug_count_items = [
-            BugCountDataItem(status.title, count, self.status_color[status])
-            for status, count in bug_counts]
-
-    def getChartJavascript(self):
-        """Return a snippet of Javascript that draws a pie chart."""
-        # XXX: Bjorn Tillenius 2007-02-13:
-        #      This snippet doesn't work in IE, since (I think) there
-        #      has to be a delay between creating the canvas element and
-        #      using it to draw the chart.
-        js_template = """
-            function drawGraph() {
-                var options = {
-                  "drawBackground": false,
-                  "colorScheme": [%(color_list)s],
-                  "xTicks": [%(label_list)s]};
-                var data = [%(data_list)s];
-                var plotter = PlotKit.EasyPlot(
-                    "pie", options, $("bugs-chart"), [data]);
-            }
-            registerLaunchpadFunction(drawGraph);
-            """
-        # The color list should inlude only colors for slices that will
-        # be drawn in the pie chart, so colors that don't have any bugs
-        # associated with them.
-        color_list = ', '.join(
-            data_item.color for data_item in self.bug_count_items
-            if data_item.count > 0)
-        label_list = ', '.join([
-            '{v:%i, label:"%s"}' % (index, data_item.label)
-            for index, data_item in enumerate(self.bug_count_items)])
-        data_list = ', '.join([
-            '[%i, %i]' % (index, data_item.count)
-            for index, data_item in enumerate(self.bug_count_items)])
-        return js_template % dict(
-            color_list=color_list, label_list=label_list, data_list=data_list)
-
     @property
-    def uses_launchpad_bugtracker(self):
-        """Whether this distro or product tracks bugs in launchpad.
-
-        :returns: boolean
-        """
-        launchpad_usage = ILaunchpadUsage(self.context)
-        return launchpad_usage.official_malone
-
-    @property
-    def external_bugtracker(self):
-        """External bug tracking system designated for the context.
-
-        :returns: `IBugTracker` or None
-        """
-        has_external_bugtracker = IHasExternalBugTracker(self.context, None)
-        if has_external_bugtracker is None:
-            return None
-        else:
-            return has_external_bugtracker.getExternalBugTracker()
-
-    @property
-    def bugtracker(self):
-        """Description of the context's bugtracker.
-
-        :returns: str which may contain HTML.
-        """
-        if self.uses_launchpad_bugtracker:
-            return 'Launchpad'
-        elif self.external_bugtracker:
-            return BugTrackerFormatterAPI(self.external_bugtracker).link(None)
-        else:
-            return 'None specified'
+    def milestone_buglistings(self):
+        """Return a buglisting for each milestone."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import (
+            BugSummary,
+            CombineBugSummaryConstraint,
+            )
+        milestone_buglistings = []
+        bug_task_set = getUtility(IBugTaskSet)
+        milestones = self.milestones_list
+        if not milestones:
+            return milestone_buglistings
+        # Note: this isn't totally optimal as a query, but its the simplest to
+        # code; we can iterate if needed to provide one complex context to
+        # countBugs.
+        query_milestones = map(partial(
+            CombineBugSummaryConstraint, self.context), milestones)
+        counts = bug_task_set.countBugs(
+            self.user, query_milestones, (BugSummary.milestone_id,))
+        for milestone in milestones:
+            milestone_bug_count = counts.get((milestone.id,), 0)
+            if milestone_bug_count > 0:
+                milestone_buglistings.append(
+                    dict(
+                        title=milestone.name,
+                        url=canonical_url(milestone),
+                        count=milestone_bug_count,
+                        ))
+        return milestone_buglistings
 
 
 class BugTargetBugTagsView(LaunchpadView):
@@ -1250,40 +1202,27 @@ class BugTargetBugTagsView(LaunchpadView):
         # Use path_only here to reduce the size of the rendered page.
         return "+bugs?field.tag=%s" % urllib.quote(tag)
 
-    def getUsedBugTagsWithURLs(self):
-        """Return the bug tags and their search URLs."""
-        bug_tag_counts = self.context.getUsedBugTagsWithOpenCounts(self.user)
-        return [
-            {'tag': tag, 'count': count, 'url': self._getSearchURL(tag)}
-            for tag, count in bug_tag_counts]
-
     @property
-    def official_tags(self):
-        """Get the official tags to diplay."""
-        official_tags = set(self.context.official_bug_tags)
-        tags = [tag for tag in self.getUsedBugTagsWithURLs()
-                if tag['tag'] in official_tags]
-        used_tags = set(tag['tag'] for tag in tags)
-        tags.sort(key=itemgetter('count'), reverse=True)
-        for tag in sorted(official_tags - used_tags):
-            tags.append(
-                {'tag': tag, 'count': 0, 'url': self._getSearchURL(tag)})
-        return tags
+    def tags_cloud_data(self):
+        """The data for rendering a tags cloud"""
+        official_tags = self.context.official_bug_tags
+        tags = self.context.getUsedBugTagsWithOpenCounts(
+            self.user, 10, official_tags)
 
-    @property
-    def other_tags(self):
-        """Get the unofficial tags to diplay."""
-        official_tags = set(self.context.official_bug_tags)
-        tags = [tag for tag in self.getUsedBugTagsWithURLs()
-                if tag['tag'] not in official_tags]
-        tags.sort(key=itemgetter('count'), reverse=True)
-        return tags[:10]
+        return sorted(
+            [dict(
+                tag=tag,
+                count=count,
+                url=self._getSearchURL(tag),
+                )
+            for (tag, count) in tags.iteritems()],
+            key=itemgetter('count'), reverse=True)
 
     @property
     def show_manage_tags_link(self):
         """Should a link to a "manage official tags" page be shown?"""
         return (IOfficialBugTagTargetRestricted.providedBy(self.context) and
-                check_permission('launchpad.Edit', self.context))
+                check_permission('launchpad.BugSupervisor', self.context))
 
 
 class OfficialBugTagsManageView(LaunchpadEditFormView):
@@ -1291,6 +1230,16 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
 
     schema = IOfficialBugTagTargetPublic
     custom_widget('official_bug_tags', LargeBugTagsWidget)
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Manage official bug tags for %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
 
     @action('Save', name='save')
     def save_action(self, action, data):
@@ -1301,8 +1250,11 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
     @property
     def tags_js_data(self):
         """Return the JSON representation of the bug tags."""
-        used_tags = dict(self.context.getUsedBugTagsWithOpenCounts(self.user))
-        official_tags = list(self.context.official_bug_tags)
+        # The model returns dict and list respectively but dumps blows up on
+        # security proxied objects.
+        used_tags = removeSecurityProxy(
+            self.context.getUsedBugTagsWithOpenCounts(self.user))
+        official_tags = removeSecurityProxy(self.context.official_bug_tags)
         return """<script type="text/javascript">
                       var used_bug_tags = %s;
                       var official_bug_tags = %s;
@@ -1319,9 +1271,115 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
 
-class BugTargetOnBugsVHostBreadcrumb(Breadcrumb):
+class BugsVHostBreadcrumb(Breadcrumb):
     rootsite = 'bugs'
+    text = 'Bugs'
+
+
+class BugsPatchesView(LaunchpadView):
+    """View list of patch attachments associated with bugs."""
 
     @property
-    def text(self):
-        return 'Bugs on %s' % self.context.name
+    def label(self):
+        """The display label for the view."""
+        if IPerson.providedBy(self.context):
+            return 'Patch attachments for %s' % self.context.displayname
+        else:
+            return 'Patch attachments in %s' % self.context.displayname
+
+    @property
+    def patch_task_orderings(self):
+        """The list of possible sort orderings for the patches view.
+
+        The orderings are a list of tuples of the form:
+          [(DisplayName, InternalOrderingName), ...]
+        For example:
+          [("Patch age", "-latest_patch_uploaded"),
+           ("Importance", "-importance"),
+           ...]
+        """
+        orderings = [("patch age", "-latest_patch_uploaded"),
+                     ("importance", "-importance"),
+                     ("status", "status"),
+                     ("oldest first", "datecreated"),
+                     ("newest first", "-datecreated")]
+        targetname = self.targetName()
+        if targetname is not None:
+            # Lower case for consistency with the other orderings.
+            orderings.append((targetname.lower(), "targetname"))
+        return orderings
+
+    def batchedPatchTasks(self):
+        """Return a BatchNavigator for bug tasks with patch attachments."""
+        orderby = self.request.get("orderby", "-latest_patch_uploaded")
+        if orderby not in [x[1] for x in self.patch_task_orderings]:
+            raise UnexpectedFormData(
+                "Unexpected value for field 'orderby': '%s'" % orderby)
+        return BatchNavigator(
+            self.context.searchTasks(
+                None, user=self.user, order_by=orderby,
+                status=UNRESOLVED_BUGTASK_STATUSES,
+                omit_duplicates=True, has_patch=True),
+            self.request)
+
+    def targetName(self):
+        """Return the name of the current context's target type, or None.
+
+        The name is something like "Package" or "Project" (meaning
+        Product); it is intended to be appropriate to use as a column
+        name in a web page, for example.  If no target type is
+        appropriate for the current context, then return None.
+        """
+        if (IDistribution.providedBy(self.context) or
+            IDistroSeries.providedBy(self.context)):
+            return "Package"
+        elif (IProjectGroup.providedBy(self.context) or
+              IPerson.providedBy(self.context)):
+            # In the case of an IPerson, the target column can vary
+            # row-by-row, showing both packages and products.  We
+            # decided to go with the table header "Project" for both,
+            # as its meaning is broad and could conceivably cover
+            # packages too.  We also considered "Target", but rejected
+            # it because it's used as a verb elsewhere in Launchpad's
+            # UI, with a totally different meaning.  If anyone can
+            # think of a better term than "Project", please JFDI here.
+            return "Project"  # "Project" meaning Product, of course
+        else:
+            return None
+
+    def patchAge(self, patch):
+        """Return a timedelta object for the age of a patch attachment."""
+        now = datetime.now(timezone('UTC'))
+        return now - patch.message.datecreated
+
+    def proxiedUrlForLibraryFile(self, patch):
+        """Return the proxied download URL for a Librarian file."""
+        return ProxiedLibraryFileAlias(patch.libraryfile, patch).http_url
+
+
+class TargetSubscriptionView(LaunchpadView):
+    """A view to show all a person's structural subscriptions to a target."""
+
+    def initialize(self):
+        super(TargetSubscriptionView, self).initialize()
+        # Some resources such as help files are only provided on the bugs
+        # rootsite.  So if we got here via another, possibly hand-crafted, URL
+        # redirect to the equivalent URL on the bugs rootsite.
+        if not BugsLayer.providedBy(self.request):
+            new_url = urljoin(
+                self.request.getRootURL('bugs'), self.request['PATH_INFO'])
+            self.request.response.redirect(new_url)
+            return
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user, self.subscriptions)
+
+    @property
+    def subscriptions(self):
+        return get_structural_subscriptions_for_target(
+            self.context, self.user)
+
+    @property
+    def label(self):
+        return "Your subscriptions to %s" % (self.context.displayname,)
+
+    page_title = label

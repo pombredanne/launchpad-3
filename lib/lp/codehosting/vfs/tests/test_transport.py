@@ -5,21 +5,19 @@
 
 __metaclass__ = type
 
-import unittest
-
-try:
-    from bzrlib.tests import per_transport
-except ImportError:
-    from bzrlib.tests import test_transport_implementations as per_transport
-
-from bzrlib.transport import chroot, get_transport, Transport
+from bzrlib.tests import per_transport
+from bzrlib.transport import (
+    chroot,
+    get_transport,
+    Transport,
+    )
 from bzrlib.transport.local import LocalTransport
 from bzrlib.urlutils import local_path_to_url
 
-from lp.codehosting.vfs.branchfs import LaunchpadInternalServer
-from lp.codehosting.vfs.branchfsclient import BlockingProxy
 from lp.codehosting.inmemory import InMemoryFrontend
 from lp.codehosting.tests.helpers import TestResultWrapper
+from lp.codehosting.vfs.branchfs import LaunchpadInternalServer
+from lp.services.twistedsupport.xmlrpc import DeferredBlockingProxy
 
 
 class TestingServer(LaunchpadInternalServer):
@@ -36,7 +34,7 @@ class TestingServer(LaunchpadInternalServer):
         an in-memory XML-RPC client and backed onto a LocalTransport.
         """
         frontend = InMemoryFrontend()
-        branchfs = frontend.getFilesystemEndpoint()
+        branchfs = frontend.getCodehostingEndpoint()
         branch = frontend.getLaunchpadObjectFactory().makeAnyBranch()
         self._branch_path = branch.unique_name
         # XXX: JonathanLange bug=276972 2008-10-07: This should back on to a
@@ -44,8 +42,12 @@ class TestingServer(LaunchpadInternalServer):
         # unreliable for tests that involve particular errors.
         LaunchpadInternalServer.__init__(
             self, 'lp-testing-%s:///' % id(self),
-            BlockingProxy(branchfs), LocalTransport(local_path_to_url('.')))
+            DeferredBlockingProxy(branchfs),
+            LocalTransport(local_path_to_url('.')))
         self._chroot_servers = []
+
+    def get_bogus_url(self):
+        return self._scheme + 'bogus'
 
     def _transportFactory(self, url):
         """See `LaunchpadInternalServer._transportFactory`.
@@ -64,7 +66,7 @@ class TestingServer(LaunchpadInternalServer):
             self._branch_path).clone('.bzr')
         bzrdir_transport.ensure_base()
         chroot_server = chroot.ChrootServer(bzrdir_transport)
-        chroot_server.setUp()
+        chroot_server.start_server()
         self._chroot_servers.append(chroot_server)
         return get_transport(chroot_server.get_url()).clone(relpath)
 
@@ -75,7 +77,7 @@ class TestingServer(LaunchpadInternalServer):
         ChrootServer instances we've set up.
         """
         for chroot_server in self._chroot_servers:
-            chroot_server.tearDown()
+            chroot_server.stop_server()
         LaunchpadInternalServer.tearDown(self)
 
 
@@ -106,7 +108,3 @@ class TestLaunchpadTransportImplementation(per_transport.TransportTests):
             result = self.defaultTestResult()
         super(TestLaunchpadTransportImplementation, self).run(
             TestResultWrapper(result))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

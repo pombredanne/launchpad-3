@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """`IFAQTarget` browser views."""
@@ -10,12 +10,19 @@ __all__ = [
     'FAQCreateView',
     ]
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces import IFAQ
-from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView, stepthrough)
-from canonical.launchpad.webapp.interfaces import NotFoundError
-from canonical.widgets import TokensTextWidget
+from lp import _
+from lp.answers.interfaces.faq import IFAQ
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
+from lp.app.errors import NotFoundError
+from lp.app.widgets.textwidgets import TokensTextWidget
+from lp.services.webapp import (
+    canonical_url,
+    stepthrough,
+    )
 
 
 class FAQTargetNavigationMixin:
@@ -27,7 +34,7 @@ class FAQTargetNavigationMixin:
         try:
             id_ = int(name)
         except ValueError:
-            return NotFoundError
+            raise NotFoundError(name)
         return self.context.getFAQ(id_)
 
 
@@ -51,4 +58,3 @@ class FAQCreateView(LaunchpadFormView):
             self.user, data['title'], data['content'],
             keywords=data['keywords'])
         self.next_url = canonical_url(faq)
-

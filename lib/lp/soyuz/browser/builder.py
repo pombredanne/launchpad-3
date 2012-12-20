@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for builders."""
@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'BuilderBreadcrumb',
     'BuilderFacets',
     'BuilderOverviewMenu',
     'BuilderNavigation',
@@ -19,47 +18,59 @@ __all__ = [
     'BuilderView',
     ]
 
-import datetime
 import operator
-import pytz
 
+from lazr.restful.utils import smartquote
+from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.event import notify
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.app.form.browser import TextAreaWidget, TextWidget
 
-from canonical.cachedproperty import cachedproperty
-from canonical.lazr.utils import smartquote
-from canonical.launchpad import _
-from lp.soyuz.browser.build import BuildRecordsView
-from lp.soyuz.interfaces.build import IBuildSet
-from lp.soyuz.interfaces.builder import IBuilderSet, IBuilder
-from canonical.launchpad.interfaces.launchpad import NotFoundError
-from canonical.launchpad.webapp import (
-    ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView, Link, Navigation, StandardLaunchpadFacets,
-    action, canonical_url, custom_widget, enabled_with_permission,
-    stepthrough)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
-from lazr.delegates import delegates
-from canonical.widgets import HiddenUserWidget
+from lp import _
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.app.widgets.owner import HiddenUserWidget
+from lp.buildmaster.interfaces.builder import (
+    IBuilder,
+    IBuilderSet,
+    )
+from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.services.database.lpstorm import IStore
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    Navigation,
+    StandardLaunchpadFacets,
+    stepthrough,
+    )
+from lp.services.webapp.batching import StormRangeFactory
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.soyuz.browser.build import (
+    BuildNavigationMixin,
+    BuildRecordsView,
+    )
 
 
-class BuilderSetNavigation(GetitemNavigation):
+class BuilderSetNavigation(GetitemNavigation, BuildNavigationMixin):
     """Navigation methods for IBuilderSet."""
     usedfor = IBuilderSet
 
     @stepthrough('+build')
     def traverse_build(self, name):
-        try:
-            build_id = int(name)
-        except ValueError:
-            return None
-        try:
-            build = getUtility(IBuildSet).getByBuildID(build_id)
-        except NotFoundError:
+        build = super(BuilderSetNavigation, self).traverse_build(name)
+        if build is None:
             return None
         else:
             return self.redirectSubTree(canonical_url(build))
@@ -73,13 +84,6 @@ class BuilderSetBreadcrumb(Breadcrumb):
 class BuilderNavigation(Navigation):
     """Navigation methods for IBuilder."""
     usedfor = IBuilder
-
-
-class BuilderBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `IBuilder`."""
-    @property
-    def text(self):
-        return self.context.title
 
 
 class BuilderSetFacets(StandardLaunchpadFacets):
@@ -129,61 +133,73 @@ class BuilderOverviewMenu(ApplicationMenu):
         return Link('+mode', text, icon='edit')
 
 
-class CommonBuilderView:
-    """Common builder methods used in this file."""
+class BuilderSetView(LaunchpadView):
+    """Default BuilderSet view class."""
 
-    def now(self):
-        """Offers the timestamp for page rendering."""
-        return DateTimeFormatterAPI(
-            datetime.datetime.now(pytz.UTC)).datetime()
+    @property
+    def label(self):
+        return self.context.title
 
-    def overrideHiddenBuilder(self, builder):
-        """Override the builder to HiddenBuilder as necessary.
-
-        HiddenBuilder is used if the user does not have permission to
-        see the build on the builder.
-        """
-        current_job = builder.currentjob
-        if (current_job and
-            not check_permission('launchpad.View', current_job.build)):
-            # Cloak the builder.
-            return HiddenBuilder(builder)
-        else:
-            # The build is public, don't cloak it.
-            return builder
-
-
-class BuilderSetView(CommonBuilderView):
-    """Default BuilderSet view class
-
-    Simply provides CommonBuilderView for the BuilderSet pagetemplate.
-    """
-    __used_for__ = IBuilderSet
+    @property
+    def page_title(self):
+        return self.label
 
     @cachedproperty
     def builders(self):
-        """Return all active builders, with private builds cloaked.
+        """All active builders"""
+        builders = list(self.context.getBuilders())
 
-        Any builders building a private build will be cloaked and returned
-        as a HiddenBuilder.
-        """
-        builders = self.context.getBuilders()
-        return [self.overrideHiddenBuilder(builder) for builder in builders]
+        # Populate builders' currentjob cachedproperty.
+        queues = IStore(BuildQueue).find(
+            BuildQueue,
+            BuildQueue.builderID.is_in(
+                builder.id for builder in builders))
+        queue_builders = dict(
+            (queue.builderID, queue) for queue in queues)
+        for builder in builders:
+            cache = get_property_cache(builder)
+            cache.currentjob = queue_builders.get(builder.id, None)
+        # Prefetch the jobs' data.
+        BuildQueue.preloadSpecificJobData(queues)
+
+        return builders
+
+    @property
+    def number_of_registered_builders(self):
+        return len(self.builders)
+
+    @property
+    def number_of_available_builders(self):
+        return len([b for b in self.builders if b.builderok])
+
+    @property
+    def number_of_disabled_builders(self):
+        return len([b for b in self.builders if not b.builderok])
+
+    @property
+    def number_of_building_builders(self):
+        return len([b for b in self.builders if b.currentjob is not None])
+
+    @cachedproperty
+    def build_queue_sizes(self):
+        """Return the build queue sizes for all processors."""
+        builderset = getUtility(IBuilderSet)
+        return builderset.getBuildQueueSizes()
 
     @property
     def ppa_builders(self):
         """Return a BuilderCategory object for PPA builders."""
         builder_category = BuilderCategory(
-            'PPA build machines', virtualized=True)
-        builder_category.groupBuilders(self.builders)
+            'PPA build status', virtualized=True)
+        builder_category.groupBuilders(self.builders, self.build_queue_sizes)
         return builder_category
 
     @property
     def other_builders(self):
         """Return a BuilderCategory object for PPA builders."""
         builder_category = BuilderCategory(
-            'Official distribution build machines', virtualized=False)
-        builder_category.groupBuilders(self.builders)
+            'Official distributions build status', virtualized=False)
+        builder_category.groupBuilders(self.builders, self.build_queue_sizes)
         return builder_category
 
 
@@ -193,10 +209,15 @@ class BuilderGroup:
     Also stores the corresponding 'queue_size', the number of pending jobs
     in this context.
     """
-    def __init__(self, processor_name, queue_size, builders):
+    def __init__(self, processor_name, queue_size, duration, builders):
         self.processor_name = processor_name
         self.queue_size = queue_size
-        self.builders = builders
+        self.number_of_available_builders = len(
+            [b for b in builders if b.builderok])
+        if duration and self.number_of_available_builders:
+            self.duration = duration / self.number_of_available_builders
+        else:
+            self.duration = duration
 
 
 class BuilderCategory:
@@ -215,7 +236,7 @@ class BuilderCategory:
         return sorted(self._builder_groups,
                       key=operator.attrgetter('processor_name'))
 
-    def groupBuilders(self, all_builders):
+    def groupBuilders(self, all_builders, build_queue_sizes):
         """Group the given builders as a collection of Buildergroups.
 
         A BuilderGroup will be initialized for each processor.
@@ -230,72 +251,28 @@ class BuilderCategory:
             else:
                 grouped_builders[builder.processor] = [builder]
 
-        builderset = getUtility(IBuilderSet)
         for processor, builders in grouped_builders.iteritems():
-            queue_size = builderset.getBuildQueueSizeForProcessor(
-                processor, virtualized=self.virtualized)
+            virt_str = 'virt' if self.virtualized else 'nonvirt'
+            queue_size, duration = build_queue_sizes[virt_str].get(
+                processor.name, (0, None))
             builder_group = BuilderGroup(
-                processor.name, queue_size,
+                processor.name, queue_size, duration,
                 sorted(builders, key=operator.attrgetter('title')))
             self._builder_groups.append(builder_group)
 
 
-class HiddenBuilder:
-    """Overrides a IBuilder building a private job.
-
-    This class modifies IBuilder attributes that should not be exposed
-    while building a job for private job (private PPA or Security).
-    """
-    delegates(IBuilder)
-
-    failnotes = None
-    currentjob = None
-    builderok = False
-    status = 'Building private build'
-
-    def __init__(self, context):
-        self.context = context
-
-    # This method is required because the builder history page will have this
-    # cloaked context if the builder is currently processing a private build.
-    def getBuildRecords(self, build_state=None, name=None, arch_tag=None,
-        user=None):
-        """See `IHasBuildRecords`."""
-        return self.context.getBuildRecords(
-            build_state, name, arch_tag, user)
-
-
-class BuilderView(CommonBuilderView, BuildRecordsView):
+class BuilderView(LaunchpadView):
     """Default Builder view class
 
     Implements useful actions for the page template.
     """
-    __used_for__ = IBuilder
-
-    def __init__(self, context, request):
-        context = self.overrideHiddenBuilder(context)
-        super(BuilderView, self).__init__(context, request)
-
-    @property
-    def default_build_state(self):
-        """Present all jobs by default."""
-        return None
-
-    @property
-    def show_builder_info(self):
-        """Hide Builder info, see BuildRecordsView for further details"""
-        return False
 
     @property
     def current_build_duration(self):
-        """Return the delta representing the duration of the current job."""
-        if (self.context.currentjob is None or 
-            self.context.currentjob.buildstart is None):
+        if self.context.currentjob is None:
             return None
         else:
-            UTC = pytz.timezone('UTC')
-            buildstart = self.context.currentjob.buildstart
-            return datetime.datetime.now(UTC) - buildstart
+            return self.context.currentjob.current_build_duration
 
     @property
     def page_title(self):
@@ -312,14 +289,27 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
             return "Switch to manual-mode"
 
 
-class BuilderHistoryView(BuilderView):
+class BuilderHistoryView(BuildRecordsView):
     """This class exists only to override the page_title."""
 
+    page_title = 'Build history'
+    binary_only = False
+    range_factory = StormRangeFactory
+
     @property
-    def page_title(self):
-        """Return a relevant page title for this view."""
+    def label(self):
         return smartquote(
             'Build history for "%s"' % self.context.title)
+
+    @property
+    def default_build_state(self):
+        """Present all jobs by default."""
+        return None
+
+    @property
+    def show_builder_info(self):
+        """Hide Builder info, see BuildRecordsView for further details"""
+        return False
 
 
 class BuilderSetAddView(LaunchpadFormView):
@@ -330,12 +320,11 @@ class BuilderSetAddView(LaunchpadFormView):
     label = "Register a new build machine"
 
     field_names = [
-        'name', 'title', 'description', 'processor', 'url',
-        'active', 'virtualized', 'vm_host', 'owner'
+        'name', 'title', 'processor', 'url', 'active', 'virtualized',
+        'vm_host', 'owner'
         ]
 
     custom_widget('owner', HiddenUserWidget)
-    custom_widget('description', TextAreaWidget, height=3)
     custom_widget('url', TextWidget, displayWidth=30)
     custom_widget('vm_host', TextWidget, displayWidth=30)
 
@@ -347,7 +336,6 @@ class BuilderSetAddView(LaunchpadFormView):
             url=data.get('url'),
             name=data.get('name'),
             title=data.get('title'),
-            description=data.get('description'),
             owner=data.get('owner'),
             active=data.get('active'),
             virtualized=data.get('virtualized'),
@@ -373,15 +361,24 @@ class BuilderEditView(LaunchpadEditFormView):
     schema = IBuilder
 
     field_names = [
-        'name', 'title', 'description', 'processor', 'url', 'manual',
-        'owner', 'virtualized', 'builderok', 'failnotes', 'vm_host',
-        'active',
+        'name', 'title', 'processor', 'url', 'manual', 'owner',
+        'virtualized', 'builderok', 'failnotes', 'vm_host', 'active',
         ]
 
     @action(_('Change'), name='update')
     def change_details(self, action, data):
         """Update the builder with the data from the form."""
-        builder_was_modified = self.updateContextFromData(data)
+        # notify_modified is set False here because it uses
+        # lazr.lifecycle.snapshot to store the state of the object
+        # before and after modification.  This is dangerous for the
+        # builder model class because it causes some properties to be
+        # queried that try and communicate with the slave, which cannot
+        # be done from the webapp (it's generally firewalled).  We could
+        # prevent snapshots for individual properties by defining the
+        # interface properties with doNotSnapshot() but this doesn't
+        # guard against future properties being created.
+        builder_was_modified = self.updateContextFromData(
+            data, notify_modified=False)
 
         if builder_was_modified:
             notification = 'The builder "%s" was updated successfully.' % (

@@ -2,9 +2,9 @@ Dir
 {
    // Content archive stores the results and caches, since they are
    // incompatible with the normal ones.
-   ArchiveDir "/srv/launchpad.net/ubuntu-contents/ubuntu";
-   CacheDir "/srv/launchpad.net/ubuntu-contents/ubuntu-cache";
-   OverrideDir "/srv/launchpad.net/ubuntu-contents/ubuntu-overrides";
+   ArchiveDir "%(content_archive)s/%(distribution)s";
+   CacheDir "%(content_archive)s/%(distribution)s-cache";
+   OverrideDir "%(content_archive)s/%(distribution)s-overrides";
 
 };
 
@@ -16,6 +16,6 @@ Default
 TreeDefault
 {
    // Header for Contents file.
-   Contents::Header "/srv/launchpad.net/ubuntu-contents/ubuntu-misc/Contents.top";
+   Contents::Header "%(content_archive)s/%(distribution)s-misc/Contents.top";
 };
 

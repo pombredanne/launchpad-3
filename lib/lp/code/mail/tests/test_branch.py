@@ -3,16 +3,23 @@
 
 """Tests for Branch-related mailings"""
 
-from unittest import TestLoader
-
-from canonical.testing import DatabaseFunctionalLayer
+from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import (
-    BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
-    CodeReviewNotificationLevel)
-from lp.code.mail.branch import BranchMailer, RecipientReason
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
+from lp.code.mail.branch import (
+    BranchMailer,
+    RecipientReason,
+    )
 from lp.code.model.branch import Branch
-from lp.testing import login_person, TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestRecipientReason(TestCaseWithFactory):
@@ -35,7 +42,7 @@ class TestRecipientReason(TestCaseWithFactory):
             source_branch.owner, target_branch)
         subscription = merge_proposal.source_branch.subscribe(
             subscriber, BranchSubscriptionNotificationLevel.NOEMAIL, None,
-            CodeReviewNotificationLevel.FULL)
+            CodeReviewNotificationLevel.FULL, subscriber)
         return merge_proposal, subscription
 
     def test_forBranchSubscriber(self):
@@ -59,18 +66,46 @@ class TestRecipientReason(TestCaseWithFactory):
 
     def test_forReviewer(self):
         """Test values when created from a branch subscription."""
-        ignored, vote_reference, subscriber = self.makeReviewerAndSubscriber()
-        reason = RecipientReason.forReviewer(vote_reference, subscriber)
+        merge_proposal, vote_reference, subscriber = (
+            self.makeReviewerAndSubscriber())
+        pending_review = vote_reference.comment is None
+        reason = RecipientReason.forReviewer(
+            merge_proposal, pending_review, subscriber)
         self.assertEqual(subscriber, reason.subscriber)
         self.assertEqual(subscriber, reason.recipient)
         self.assertEqual(
             vote_reference.branch_merge_proposal.source_branch, reason.branch)
 
-    def test_getReasonReviewer(self):
-        bmp, vote_reference, subscriber = self.makeReviewerAndSubscriber()
-        reason = RecipientReason.forReviewer(vote_reference, subscriber)
+    def test_forReview_individual_pending(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        reviewer = self.factory.makePerson(name='eric')
+        reason = RecipientReason.forReviewer(bmp, True, reviewer)
+        self.assertEqual('Reviewer', reason.mail_header)
         self.assertEqual(
             'You are requested to review the proposed merge of %s into %s.'
+            % (bmp.source_branch.bzr_identity,
+               bmp.target_branch.bzr_identity),
+            reason.getReason())
+
+    def test_forReview_individual_in_progress(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        reviewer = self.factory.makePerson(name='eric')
+        reason = RecipientReason.forReviewer(bmp, False, reviewer)
+        self.assertEqual('Reviewer', reason.mail_header)
+        self.assertEqual(
+            'You are reviewing the proposed merge of %s into %s.'
+            % (bmp.source_branch.bzr_identity,
+               bmp.target_branch.bzr_identity),
+            reason.getReason())
+
+    def test_forReview_team_pending(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        reviewer = self.factory.makeTeam(name='vikings')
+        reason = RecipientReason.forReviewer(bmp, True, reviewer)
+        self.assertEqual('Reviewer @vikings', reason.mail_header)
+        self.assertEqual(
+            'Your team Vikings is requested to review the proposed merge'
+            ' of %s into %s.'
             % (bmp.source_branch.bzr_identity,
                bmp.target_branch.bzr_identity),
             reason.getReason())
@@ -101,10 +136,12 @@ class TestRecipientReason(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         subscription = branch.getSubscription(branch.owner)
         branch_cache = {branch: 'lp://fake'}
+
         def blowup(self):
             raise AssertionError('boom')
         patched = Branch.bzr_identity
         Branch.bzr_identity = property(blowup)
+
         def cleanup():
             Branch.bzr_identity = patched
         self.addCleanup(cleanup)
@@ -184,11 +221,11 @@ class TestBranchMailerDiff(TestCaseWithFactory):
 
     def test_generateEmail_with_diff(self):
         """When there is a diff, it should be an attachment, not inline."""
-        ctrl = self.makeBobMailController(diff='hello')
+        ctrl = self.makeBobMailController(diff=u'hello \u03A3')
         self.assertEqual(1, len(ctrl.attachments))
         diff = ctrl.attachments[0]
-        self.assertEqual('hello', diff.get_payload(decode=True))
-        self.assertEqual('text/x-diff', diff['Content-type'])
+        self.assertEqual('hello \xce\xa3', diff.get_payload(decode=True))
+        self.assertEqual('text/x-diff; charset="utf-8"', diff['Content-type'])
         self.assertEqual('inline; filename="revision-diff.txt"',
                          diff['Content-disposition'])
         self.assertNotIn('hello', ctrl.body)
@@ -210,5 +247,21 @@ class TestBranchMailerDiff(TestCaseWithFactory):
         self.assertNotIn('larger than your specified limit', ctrl.body)
 
 
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+class TestBranchMailerSubject(TestCaseWithFactory):
+    """The subject for a BranchMailer is returned verbatim."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_subject(self):
+        # No string interpolation should occur on the subject.
+        branch = self.factory.makeAnyBranch()
+        # Subscribe the owner to get revision email.
+        branch.getSubscription(branch.owner).notification_level = (
+            BranchSubscriptionNotificationLevel.FULL)
+        mailer = BranchMailer.forRevision(
+            branch, 1, 'test@example.com', 'content', 'diff',
+            'Testing %j foo')
+        branch_owner_email = removeSecurityProxy(
+            branch.owner).preferredemail.email
+        self.assertEqual('Testing %j foo', mailer._getSubject(
+                branch_owner_email, branch.owner))

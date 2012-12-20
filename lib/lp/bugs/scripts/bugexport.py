@@ -8,11 +8,18 @@ __all__ = [
     ]
 
 import base64
-import cElementTree as ET
+
+
+try:
+    import xml.etree.cElementTree as ET
+except ImportError:
+    import cElementTree as ET
 
 from zope.component import getUtility
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
+from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
 
 BUGS_XMLNS = 'https://launchpad.net/xmlns/2006/bugs'
@@ -77,7 +84,8 @@ def serialise_bugtask(bugtask):
         for attachment in comment.bugattachments:
             attachment_node = ET.SubElement(
                 comment_node, 'attachment',
-                href=attachment.libraryfile.http_url)
+                href=ProxiedLibraryFileAlias(
+                    attachment.libraryfile, attachment).http_url)
             attachment_node.text = attachment_node.tail = '\n'
             addnode(attachment_node, 'type', attachment.type.name)
             addnode(attachment_node, 'filename',

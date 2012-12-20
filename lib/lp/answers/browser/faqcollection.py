@@ -12,22 +12,33 @@ __all__ = [
 
 from urllib import urlencode
 
-from canonical.cachedproperty import cachedproperty
-from canonical.launchpad import _
+from lp import _
+from lp.answers.enums import (
+    QUESTION_STATUS_DEFAULT_SEARCH,
+    QuestionSort,
+    )
 from lp.answers.interfaces.faqcollection import (
-    IFAQCollection, ISearchFAQsForm, FAQSort)
-from lp.answers.interfaces.questionenums import QuestionSort
-from lp.answers.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, LaunchpadFormView, Link,
-    safe_action)
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.menu import enabled_with_permission
-from lp.registry.interfaces.project import IProject
+    FAQSort,
+    IFAQCollection,
+    ISearchFAQsForm,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    safe_action,
+    )
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    Link,
+    NavigationMenu,
+    )
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.menu import enabled_with_permission
 
 
-class FAQCollectionMenu(ApplicationMenu):
+class FAQCollectionMenu(NavigationMenu):
     """Base menu definition for `IFAQCollection`."""
 
     usedfor = IFAQCollection
@@ -41,13 +52,13 @@ class FAQCollectionMenu(ApplicationMenu):
         # which an adapter exists that gives the proper context.
         collection = IFAQCollection(self.context)
         url = canonical_url(collection, rootsite='answers') + '/+faqs'
-        return Link(url, 'List all FAQs', icon='info')
+        return Link(url, 'All FAQs', icon='info')
 
-    @enabled_with_permission('launchpad.Moderate')
+    @enabled_with_permission('launchpad.Append')
     def create_faq(self):
         """Return a Link to create a new FAQ."""
         collection = IFAQCollection(self.context)
-        if IProject.providedBy(self.context):
+        if IProjectGroup.providedBy(self.context):
             url = ''
             enabled = False
         else:
@@ -70,8 +81,8 @@ class SearchFAQsView(LaunchpadFormView):
     matching_questions_count = 0
 
     @property
-    def heading(self):
-        """Return the heading that should be used for the listing."""
+    def page_title(self):
+        """Return the page_title that should be used for the listing."""
         replacements = dict(
             displayname=self.context.displayname,
             search_text=self.search_text)
@@ -80,6 +91,8 @@ class SearchFAQsView(LaunchpadFormView):
                      u'$displayname', mapping=replacements)
         else:
             return _('FAQs for $displayname', mapping=replacements)
+
+    label = page_title
 
     @property
     def empty_listing_message(self):
@@ -114,7 +127,7 @@ class SearchFAQsView(LaunchpadFormView):
         quantity = 5
         faqs = self.context.searchFAQs(
             search_text=self.search_text, sort=FAQSort.NEWEST_FIRST)
-        return faqs[:quantity]
+        return list(faqs[:quantity])
 
     @safe_action
     @action(_('Search'), name='search')
@@ -134,5 +147,5 @@ class SearchFAQsView(LaunchpadFormView):
                 status.title for status in QUESTION_STATUS_DEFAULT_SEARCH],
              'field.search_text': self.search_text,
              'field.actions.search': 'Search',
-             'field.sort' : QuestionSort.RELEVANCY.title,
+             'field.sort': QuestionSort.RELEVANCY.title,
              'field.language-empty-marker': 1}, doseq=True)

@@ -3,31 +3,20 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
->
-<body>
-
-  <div metal:fill-slot="main">
-
-   <h1>Register a new team</h1>
-
-   <div metal:use-macro="context/@@launchpad_form/form">
-
-        <p metal:fill-slot="extra_info">
+  >
+  <body>
+    <div metal:fill-slot="main">
+      <div metal:use-macro="context/@@launchpad_form/form">
+        <p metal:fill-slot="extra_info" class="application-summary">
           Use a team to group people involved in a common task.
           For example, a team can be the maintainer of a project,
-          the assignee of a bug,
-          or the editor of a package for a particular language.
+          the assignee of a bug, or the editor of a package for a particular
+          language.
         </p>
-
+      </div>
+    <metal:js use-macro="context/@@+person-macros/team-js" />
     </div>
-
-    <metal:js use-macro="context/@@+person-macros/private-team-js" />
-
-  </div>
-</body>
+  </body>
 </html>

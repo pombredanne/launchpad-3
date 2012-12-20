@@ -8,8 +8,8 @@ containing inline help documentation.
 These are lazr.folder.ExportedFolder that automatically export
 their subdirectories.
 
+    >>> from lp.app.browser.folder import ExportedFolder
     >>> from lp.services.inlinehelp.browser import HelpFolder
-    >>> from canonical.lazr.folder import ExportedFolder
 
     >>> issubclass(HelpFolder, ExportedFolder)
     True
@@ -30,48 +30,34 @@ it should be registered.
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:lp="http://namespaces.canonical.com/lp">
     ...   <include package="lp.services.inlinehelp" file="meta.zcml" />
-    ...   <lp:help-folder folder="%s"/>
+    ...   <lp:help-folder folder="%s" name="+help"/>
     ... </configure>
     ... """ % help_folder)
 
 The help folder is registered on the ILaunchpadRoot interface.
 
-    >>> from zope.publisher.interfaces.browser import IBrowserRequest
     >>> from zope.interface import directlyProvides
+    >>> from zope.publisher.interfaces.browser import IBrowserRequest
     >>> class FakeRequest:
     ...     pass
     >>> request = FakeRequest()
     >>> directlyProvides(request, IBrowserRequest)
 
-    >>> from canonical.launchpad.webapp.publisher import rootObject
     >>> from zope.component import queryMultiAdapter
-    >>> help = queryMultiAdapter((rootObject, request), name="+help")
+    >>> from lp.services.webapp.publisher import rootObject
+    >>> help_view = queryMultiAdapter((rootObject, request), name="+help")
 
-    >>> help.folder == help_folder
+    >>> help_view.folder == help_folder
     True
 
-    >>> isinstance(help, HelpFolder)
+    >>> isinstance(help_view, HelpFolder)
     True
 
-The help folder can also be registered for a specific request type using the
-"type" attribute.
+    >>> print help_view.__name__
+    +help
 
-    >>> from zope.publisher.interfaces.http import IHTTPRequest
-    >>> directlyProvides(request, IHTTPRequest)
-
-    >>> print queryMultiAdapter((rootObject, request), name="+help")
-    None
-    >>> zcmlcontext = xmlconfig.string("""
-    ... <configure
-    ...     xmlns:lp="http://namespaces.canonical.com/lp">
-    ...   <include package="lp.services.inlinehelp" file="meta.zcml" />
-    ...   <lp:help-folder folder="%s"
-    ...                   type="zope.publisher.interfaces.http.IHTTPRequest"/>
-    ... </configure>
-    ... """ % help_folder)
-
-    >>> queryMultiAdapter((rootObject, request), name="+help")
-    <lp.services...>
+    >>> print help_view.__class__.__name__
+    +help for /tmp/help...
 
 
 Cleanup

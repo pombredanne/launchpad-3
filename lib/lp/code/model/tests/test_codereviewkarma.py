@@ -5,14 +5,14 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
-from canonical.launchpad.event.interfaces import IKarmaAssignedEvent
-from canonical.launchpad.ftests import login_person
-from canonical.launchpad.ftests.event import TestEventListener
+from lp.registry.interfaces.karma import IKarmaAssignedEvent
 from lp.registry.interfaces.person import IPerson
-from lp.testing import TestCaseWithFactory
-from canonical.testing import DatabaseFunctionalLayer
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.testing.event import TestEventListener
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestCodeReviewKarma(TestCaseWithFactory):
@@ -29,7 +29,7 @@ class TestCodeReviewKarma(TestCaseWithFactory):
     def setUp(self):
         # Use an admin to get launchpad.Edit on all the branches to easily
         # approve and reject the proposals.
-        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+        super(TestCodeReviewKarma, self).setUp('admin@canonical.com')
         # The way the zope infrastructure works is that we can register
         # subscribers easily, but there is no way to unregister them (bug
         # 2338).  TestEventListener does this with by setting a property to
@@ -46,6 +46,7 @@ class TestCodeReviewKarma(TestCaseWithFactory):
 
     def tearDown(self):
         self.karma_listener.unregister()
+        super(TestCodeReviewKarma, self).tearDown()
 
     def _on_karma_assigned(self, object, event):
         # Store the karma event for checking in the test method.
@@ -145,7 +146,3 @@ class TestCodeReviewKarma(TestCaseWithFactory):
         self.karma_events = []
         proposal.rejectBranch(reviewer, "A rev id.")
         self.assertOneKarmaEvent(reviewer, 'branchmergerejectedown')
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

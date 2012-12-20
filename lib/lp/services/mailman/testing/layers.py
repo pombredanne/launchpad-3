@@ -9,12 +9,18 @@ __all__ = [
     ]
 
 
-import os
 import atexit
+import os
 
-from canonical.testing.layers import AppServerLayer, LayerProcessController
-from canonical.launchpad.mailman.runmailman import start_mailman, stop_mailman
+from lp.services.mailman.runmailman import (
+    start_mailman,
+    stop_mailman,
+    )
 from lp.services.mailman.testing import logwatcher
+from lp.testing.layers import (
+    AppServerLayer,
+    LayerProcessController,
+    )
 
 
 class MailmanLayer(AppServerLayer):

@@ -6,25 +6,50 @@
 __metaclass__ = type
 
 import email
-import unittest
+import os
 
-# This non-standard import is necessary to hook up the event system.
-import zope.component.event
+from bzrlib.uncommit import uncommit
 from zope.component import getUtility
+from zope.event import notify
 
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
-from lp.codehosting.scanner.email import (
-    send_removed_revision_emails, queue_tip_changed_email_jobs)
-from lp.codehosting.scanner.fixture import make_zope_event_fixture
-from lp.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.interfaces.branchjob import (
-    IRevisionMailJobSource, IRevisionsAddedJobSource)
+    IRevisionMailJobSource,
+    IRevisionsAddedJobSource,
+    )
+from lp.code.model.branchjob import RevisionMailJob
+from lp.codehosting.scanner import events
+from lp.codehosting.scanner.bzrsync import BzrSync
+from lp.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.runner import JobRunner
+from lp.services.job.tests import (
+    block_on_job,
+    pop_remote_notifications,
+    )
 from lp.services.mail import stub
-from canonical.testing import LaunchpadZopelessLayer
+from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import (
+    CeleryJobLayer,
+    LaunchpadZopelessLayer,
+    )
+
+
+def add_subscriber(branch):
+    test_user = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    branch.subscribe(
+        test_user,
+        BranchSubscriptionNotificationLevel.FULL,
+        BranchSubscriptionDiffSize.FIVEKLINES,
+        CodeReviewNotificationLevel.NOEMAIL,
+        test_user)
 
 
 class TestBzrSyncEmail(BzrSyncTestCase):
@@ -32,21 +57,12 @@ class TestBzrSyncEmail(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
-        fixture = make_zope_event_fixture(
-            queue_tip_changed_email_jobs, send_removed_revision_emails)
-        fixture.setUp()
-        self.addCleanup(fixture.tearDown)
         stub.test_emails = []
 
     def makeDatabaseBranch(self):
         branch = BzrSyncTestCase.makeDatabaseBranch(self)
         LaunchpadZopelessLayer.txn.begin()
-        test_user = getUtility(IPersonSet).getByEmail('test@canonical.com')
-        branch.subscribe(
-            test_user,
-            BranchSubscriptionNotificationLevel.FULL,
-            BranchSubscriptionDiffSize.FIVEKLINES,
-            CodeReviewNotificationLevel.NOEMAIL)
+        add_subscriber(branch)
         LaunchpadZopelessLayer.txn.commit()
         return branch
 
@@ -63,8 +79,12 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         self.assertEqual(len(stub.test_emails), 1)
         [initial_email] = stub.test_emails
         expected = 'First scan of the branch detected 0 revisions'
-        email_body = email.message_from_string(initial_email[2]).get_payload()
+        message = email.message_from_string(initial_email[2])
+        email_body = message.get_payload()
         self.assertTextIn(expected, email_body)
+        self.assertEmailHeadersEqual(
+            '[Branch %s] 0 revisions' % self.db_branch.unique_name,
+            message['Subject'])
 
     def test_import_revision(self):
         self.commitRevision()
@@ -74,8 +94,12 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         [initial_email] = stub.test_emails
         expected = ('First scan of the branch detected 1 revision'
                     ' in the revision history of the=\n branch.')
-        email_body = email.message_from_string(initial_email[2]).get_payload()
+        message = email.message_from_string(initial_email[2])
+        email_body = message.get_payload()
         self.assertTextIn(expected, email_body)
+        self.assertEmailHeadersEqual(
+            '[Branch %s] 1 revision' % self.db_branch.unique_name,
+            message['Subject'])
 
     def test_import_uncommit(self):
         self.commitRevision()
@@ -88,9 +112,12 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         self.assertEqual(len(stub.test_emails), 1)
         [uncommit_email] = stub.test_emails
         expected = '1 revision was removed from the branch.'
-        email_body = email.message_from_string(
-            uncommit_email[2]).get_payload()
+        message = email.message_from_string(uncommit_email[2])
+        email_body = message.get_payload()
         self.assertTextIn(expected, email_body)
+        self.assertEmailHeadersEqual(
+            '[Branch %s] 1 revision removed' % self.db_branch.unique_name,
+            message['Subject'])
 
     def test_import_recommit(self):
         # When scanning the uncommit and new commit there should be an email
@@ -116,18 +143,109 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         subject = (
             'Subject: [Branch %s] Test branch' % self.db_branch.unique_name)
         self.assertTextIn(expected, uncommit_email_body)
-        recommit_email_body = recommit_email[2]
+
+        recommit_email_msg = email.message_from_string(recommit_email[2])
+        recommit_email_body = recommit_email_msg.get_payload()[0].get_payload(
+            decode=True)
+        subject = '[Branch %s] Rev 1: second' % self.db_branch.unique_name
+        self.assertEmailHeadersEqual(subject, recommit_email_msg['Subject'])
         body_bits = [
-            'Subject: [Branch %s] Rev 1: second'
-            % self.db_branch.unique_name,
             'revno: 1',
             'committer: %s' % author,
-            'branch nick: %s'  % self.bzr_branch.nick,
+            'branch nick: %s' % self.bzr_branch.nick,
             'message:\n  second',
             'added:\n  hello.txt',
             ]
         for bit in body_bits:
             self.assertTextIn(bit, recommit_email_body)
+
+
+class TestViaCelery(TestCaseWithFactory):
+
+    layer = CeleryJobLayer
+
+    def prepare(self, job_name):
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': job_name}))
+        self.useBzrBranches(direct_database=True)
+        db_branch, tree = self.create_branch_and_tree()
+        add_subscriber(db_branch)
+        switch_dbuser(config.branchscanner.dbuser)
+        # Needed for feature flag teardown
+        self.addCleanup(switch_dbuser, config.launchpad.dbuser)
+        # Set 'bzr whoami' for proper test isolation.  (See bug 981114).
+        # This setting is done in an isolated bzr environment so it does not
+        # affect the environment of the person running the tests.
+        os.system("bzr whoami 'Nobody Knows <nobody@example.com>'")
+        return db_branch, tree
+
+    def test_empty_branch(self):
+        """RevisionMailJob for empty branches runs via Celery."""
+        db_branch, tree = self.prepare('RevisionMailJob')
+        with block_on_job():
+            BzrSync(db_branch).syncBranchAndClose(tree.branch)
+        self.assertEqual(1, len(pop_remote_notifications()))
+
+    def test_uncommit_branch(self):
+        """RevisionMailJob for removed revisions runs via Celery."""
+        db_branch, tree = self.prepare('RevisionMailJob')
+        tree.commit('message')
+        bzr_sync = BzrSync(db_branch)
+        with block_on_job():
+            bzr_sync.syncBranchAndClose(tree.branch)
+        pop_remote_notifications()
+        uncommit(tree.branch)
+        with block_on_job():
+            bzr_sync.syncBranchAndClose(tree.branch)
+        self.assertEqual(1, len(pop_remote_notifications()))
+
+    def test_revisions_added(self):
+        """RevisionsAddedJob for added revisions runs via Celery."""
+        # Enable RevisionMailJob to let celery activate a new connection
+        # before trying to flush sent emails calling pop_remote_notifications.
+        db_branch, tree = self.prepare('RevisionMailJob RevisionsAddedJob')
+        tree.commit('message')
+        bzr_sync = BzrSync(db_branch)
+        with block_on_job():
+            bzr_sync.syncBranchAndClose(tree.branch)
+        pop_remote_notifications()
+        tree.commit('message2')
+        with block_on_job():
+            bzr_sync.syncBranchAndClose(tree.branch)
+        self.assertEqual(1, len(pop_remote_notifications()))
+
+
+class TestScanBranches(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_queue_tip_changed_email_jobs_subscribed(self):
+        """A queue_tip_changed_email_jobs is run when TipChanged emitted."""
+        self.useBzrBranches(direct_database=True)
+        db_branch, tree = self.create_branch_and_tree()
+        db_branch.subscribe(
+            db_branch.registrant,
+            BranchSubscriptionNotificationLevel.FULL,
+            BranchSubscriptionDiffSize.WHOLEDIFF,
+            CodeReviewNotificationLevel.FULL,
+            db_branch.registrant)
+        self.assertEqual(0, len(list(RevisionMailJob.iterReady())))
+        notify(events.TipChanged(db_branch, tree.branch, True))
+        self.assertEqual(1, len(list(RevisionMailJob.iterReady())))
+
+    def test_send_removed_revision_emails_subscribed(self):
+        """send_removed_revision_emails run when RevisionsRemoved emitted."""
+        self.useBzrBranches(direct_database=True)
+        db_branch, tree = self.create_branch_and_tree()
+        db_branch.subscribe(
+            db_branch.registrant,
+            BranchSubscriptionNotificationLevel.FULL,
+            BranchSubscriptionDiffSize.WHOLEDIFF,
+            CodeReviewNotificationLevel.FULL,
+            db_branch.registrant)
+        self.assertEqual(0, len(list(RevisionMailJob.iterReady())))
+        notify(events.RevisionsRemoved(db_branch, tree.branch, ['x']))
+        self.assertEqual(1, len(list(RevisionMailJob.iterReady())))
 
 
 class TestBzrSyncNoEmail(BzrSyncTestCase):
@@ -137,10 +255,6 @@ class TestBzrSyncNoEmail(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
-        fixture = make_zope_event_fixture(
-            queue_tip_changed_email_jobs, send_removed_revision_emails)
-        fixture.setUp()
-        self.addCleanup(fixture.tearDown)
         stub.test_emails = []
 
     def assertNoPendingEmails(self):
@@ -186,7 +300,3 @@ class TestBzrSyncNoEmail(BzrSyncTestCase):
         bzrsync = self.makeBzrSync(self.db_branch)
         bzrsync.syncBranchAndClose()
         self.assertNoPendingEmails()
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

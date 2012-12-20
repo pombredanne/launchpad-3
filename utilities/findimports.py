@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -36,15 +36,13 @@ this program; if not, write to the Free Software Foundation, Inc., 675 Mass
 Ave, Cambridge, MA 02139, USA.
 """
 
-import os
-import sys
-import sets
-import getopt
 import compiler
-import linecache
-from sets import Set
 from compiler import ast
 from compiler.visitor import ASTVisitor
+import getopt
+import linecache
+import os
+import sys
 
 
 class ImportFinder(ASTVisitor):
@@ -165,7 +163,7 @@ class ModuleGraph(object):
         self.modules = {}
         self.path = sys.path
         self._module_cache = {}
-        self._warned_about = sets.Set()
+        self._warned_about = set()
 
     def parsePathname(self, pathname):
         if os.path.isdir(pathname):
@@ -188,7 +186,7 @@ class ModuleGraph(object):
             module.imported_names = find_imports(filename)
             module.unused_names = None
         dir = os.path.dirname(filename)
-        module.imports = Set([self.findModuleOfName(name, filename, dir)
+        module.imports = set([self.findModuleOfName(name, filename, dir)
                               for name in module.imported_names])
 
     def filenameToModname(self, filename):
@@ -296,7 +294,7 @@ class ModuleGraph(object):
     def printDot(self):
         print "digraph ModuleDependencies {"
         print "  node[shape=box];"
-        allNames = Set()
+        allNames = set()
         nameDict = {}
         for n, module in enumerate(self.listModules()):
             module._dot_name = "mod%d" % n
@@ -327,7 +325,7 @@ def main(argv=sys.argv):
         opts, args = getopt.getopt(argv[1:], 'duniah',
                                    ['dot', 'unused', 'all', 'names', 'imports',
                                     'help'])
-    except getopt.error, e:
+    except getopt.error as e:
         print >> sys.stderr, "%s: %s" % (progname, e)
         print >> sys.stderr, "Try %s --help." % progname
         return 1

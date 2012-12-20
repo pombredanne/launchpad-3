@@ -1,22 +1,26 @@
-#! /usr/bin/python2.4
+#! /usr/bin/python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import os
-import grp
-import pwd
-import sys
 import errno
+import grp
+import os
+import pwd
 import socket
-import tempfile
 import subprocess
+import sys
+import tempfile
 
-from canonical.config import config
-from canonical.launchpad.mailman.config import (
-    configure_prefix, configure_siteowner)
-from canonical.launchpad.mailman.monkeypatches import monkey_patch
 from lazr.config import as_username_groupname
+
+from lp.services.config import config
+from lp.services.mailman.config import (
+    configure_prefix,
+    configure_siteowner,
+    )
+from lp.services.mailman.monkeypatches import monkey_patch
+
 
 basepath = [part for part in sys.path if part]
 
@@ -30,16 +34,33 @@ def build_mailman():
     mailman_bin = os.path.join(mailman_path, 'bin')
     var_dir = os.path.abspath(config.mailman.build_var_dir)
 
-    # If we can import the package, we assume Mailman is properly built and
-    # installed.  This does not catch re-installs that might be necessary
+    # If we can import the package, we assume Mailman is properly built at
+    # the least.  This does not catch re-installs that might be necessary
     # should our copy in sourcecode be updated.  Do that manually.
     sys.path.append(mailman_path)
     try:
         import Mailman
     except ImportError:
-        pass
+        # sys.path_importer_cache is a mapping of elements of sys.path to
+        # importer objects used to handle them. In Python2.5+ when an element
+        # of sys.path is found to not exist on disk, a NullImporter is created
+        # and cached - this causes Python to never bother re-inspecting the
+        # disk for that path element. We must clear that cache element so that
+        # our second attempt to import MailMan after building it will actually
+        # check the disk.
+        del sys.path_importer_cache[mailman_path]
+        need_build = need_install = True
     else:
-        return 0
+        need_build = need_install = False
+        # Also check for Launchpad-specific bits stuck into the source tree by
+        # monkey_patch(), in case this is half-installed.  See
+        # <https://bugs.launchpad.net/launchpad-registry/+bug/683486>.
+        try:
+            from Mailman.Queue import XMLRPCRunner
+            from Mailman.Handlers import LPModerate
+        except ImportError:
+            # Monkey patches not present, redo install and patch steps.
+            need_install = True
 
     # Make sure the target directories exist and have the correct
     # permissions, otherwise configure will complain.
@@ -62,11 +83,18 @@ def build_mailman():
     # I think Linux does not ignore it -- better safe than sorry).
     try:
         os.makedirs(var_dir)
-    except OSError, e:
+    except OSError as e:
         if e.errno != errno.EEXIST:
             raise
+    else:
+        # Just created the var directory, will need to install mailmain bits.
+        need_install = True
     os.chown(var_dir, uid, gid)
     os.chmod(var_dir, 02775)
+
+    # Skip mailman setup if nothing so far has shown a reinstall needed.
+    if not need_install:
+        return 0
 
     mailman_source = os.path.join('sourcecode', 'mailman')
     if config.mailman.build_host_name:
@@ -76,25 +104,29 @@ def build_mailman():
 
     # Build and install the Mailman software.  Note that we don't care about
     # --with-cgi-gid because we're not going to use that Mailman subsystem.
+    executable = os.path.abspath('bin/py')
     configure_args = (
         './configure',
         '--prefix', mailman_path,
         '--with-var-prefix=' + var_dir,
-        '--with-python=' + sys.executable,
+        '--with-python=' + executable,
         '--with-username=' + user,
         '--with-groupname=' + group,
         '--with-mail-gid=' + group,
         '--with-mailhost=' + build_host_name,
         '--with-urlhost=' + build_host_name,
         )
-    retcode = subprocess.call(configure_args, cwd=mailman_source)
-    if retcode:
-        print >> sys.stderr, 'Could not configure Mailman:'
-        sys.exit(retcode)
-    retcode = subprocess.call(('make',), cwd=mailman_source)
-    if retcode:
-        print >> sys.stderr, 'Could not make Mailman.'
-        sys.exit(retcode)
+    if need_build:
+        # Configure.
+        retcode = subprocess.call(configure_args, cwd=mailman_source)
+        if retcode:
+            print >> sys.stderr, 'Could not configure Mailman:'
+            sys.exit(retcode)
+        # Make.
+        retcode = subprocess.call(('make', ), cwd=mailman_source)
+        if retcode:
+            print >> sys.stderr, 'Could not make Mailman.'
+            sys.exit(retcode)
     retcode = subprocess.call(('make', 'install'), cwd=mailman_source)
     if retcode:
         print >> sys.stderr, 'Could not install Mailman.'
@@ -146,7 +178,7 @@ def build_mailman():
     # deactivated lists.
     try:
         os.mkdir(os.path.join(Mailman.mm_cfg.VAR_PREFIX, 'backups'))
-    except OSError, e:
+    except OSError as e:
         if e.errno != errno.EEXIST:
             raise
 
@@ -156,7 +188,8 @@ def build_mailman():
 def configure_site_list(mailman_bin, site_list_name):
     """Configure the site list.
 
-    Currently, the only thing we want to set is to not advertise the site list.
+    Currently, the only thing we want to set is to not advertise the
+    site list.
     """
     fd, config_file_name = tempfile.mkstemp()
     try:
@@ -182,7 +215,6 @@ def main():
     srcdir = os.path.join(here, src)
     sys.path = [srcdir, here] + basepath
     return build_mailman()
-
 
 
 if __name__ == '__main__':

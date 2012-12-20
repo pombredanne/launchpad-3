@@ -6,10 +6,12 @@
 __metaclass__ = type
 
 import unittest
+
 import psycopg2
 
-from canonical.database.sqlbase import cursor
-from canonical.testing import LaunchpadZopelessLayer
+from lp.services.database.sqlbase import cursor
+from lp.testing.dbuser import switch_dbuser
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class RoUserTestCase(unittest.TestCase):
@@ -17,7 +19,7 @@ class RoUserTestCase(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self.layer.switchDbUser('ro')
+        switch_dbuser('ro')
 
     def test(self):
         """Test that read-only users cannot make changes to the database."""
@@ -49,9 +51,3 @@ class RoUserTestCase(unittest.TestCase):
                 psycopg2.Error, cur.execute, "DELETE FROM WikiName"
                 )
         cur.execute("ROLLBACK TO SAVEPOINT attempt")
-
-
-def test_suite():
-    """Create the test suite."""
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

@@ -6,17 +6,30 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/pillarindex"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad">
+
 <body>
-  <h1 metal:fill-slot="heading">Projects in Launchpad</h1>
-  <div metal:fill-slot="main" tal:define="batch view/all_batched">
-    <h1>All projects registered</h1>
+  <h1 metal:fill-slot="heading">All projects</h1>
+
+  <tal:side metal:fill-slot="side">
+    <tal:menu replace="structure view/@@+global-actions" />
+    <tal:menu replace="structure context/@@+related-pages" />
+  </tal:side>
+
+  <div metal:fill-slot="main"
+       class="main-portlet"
+       tal:define="batch view/all_batched">
+    <p>There are
+    <strong tal:content="batch/batch/total">7</strong>
+    projects registered in Launchpad.
+    </p>
+
     <tal:navigation replace="structure batch/@@+navigation-links-upper" />
-      <div id="product-listing">
-        <tal:product repeat="product batch/currentBatch"
-                     replace="structure product/@@+listing-detailed" />
-      </div>
+    <table class="listing" id="product-listing">
+      <tr tal:repeat="product batch/currentBatch"
+          tal:replace="structure product/@@+listing-detailed" />
+    </table>
     <tal:navigation replace="structure batch/@@+navigation-links-lower" />
   </div>
 </body>

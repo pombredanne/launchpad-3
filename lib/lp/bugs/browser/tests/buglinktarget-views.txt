@@ -3,16 +3,17 @@
 The +linkbug and +unlinkbug views operates on IBugLinkTarget.
 
     >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugLinkTarget, IBugSet, ICveSet)
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.buglink import IBugLinkTarget
+    >>> from lp.bugs.interfaces.cve import ICveSet
 
     >>> bugset = getUtility(IBugSet)
     >>> cve = getUtility(ICveSet)['2005-2730']
 
     (Setup an event listener.)
-    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from lp.testing.event import TestEventListener
     >>> collected_events = []
     >>> modified_listener = TestEventListener(
     ...     IBugLinkTarget, ObjectModifiedEvent,
@@ -24,8 +25,16 @@ The +linkbug and +unlinkbug views operates on IBugLinkTarget.
 
 == Link Bug View ==
 
-The +linkbug view is used to link bugs to IBugLinkTarget. It has a
-simple widget to enter the bug number or nickname of the bug to link
+The +linkbug view is used to link bugs to IBugLinkTarget.
+
+    >>> view = create_view(cve, name='+linkbug')
+    >>> print view.label
+    Link a bug report
+
+    >>> print view.cancel_url
+    http://bugs.launchpad.dev/bugs/cve/2005-2730
+
+It has a simple widget to enter the bug number or nickname of the bug to link
 to. After it links the bug, it sends a ObjectModifiedEvent.
 
     >>> request = LaunchpadTestRequest(
@@ -70,8 +79,16 @@ A ObjectModifiedEvent was sent:
 
 
 The +unlinkbug view is used to unlink a selection of bugs from an
-IBugLinkTarget. After removing the bugs, it sends a SQLObjectModified
-event.
+IBugLinkTarget. 
+
+    >>> view = create_view(cve, name='+unlinkbug')
+    >>> print view.label
+    Remove links to bug reports
+
+    >>> print view.cancel_url
+    http://bugs.launchpad.dev/bugs/cve/2005-2730
+
+After removing the bugs, it sends a SQLObjectModified event.
 
     >>> request = LaunchpadTestRequest(
     ...     method="POST",
@@ -128,7 +145,7 @@ The notification contains the escaped bug title.
     >>> for notification in request.response.notifications:
     ...     print notification.message.encode('utf8')
     Added link to bug #2:
-    ...&lt;script&gt;window.alert("Hello!")&lt;/script&gt;....
+    ...&lt;script&gt;window.alert(&quot;Hello!&quot;)&lt;/script&gt;....
 
 
 == Cleanup ==

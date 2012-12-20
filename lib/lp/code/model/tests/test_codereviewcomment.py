@@ -3,14 +3,20 @@
 
 """Unit tests for CodeReviewComment"""
 
-import unittest
+from textwrap import dedent
 
-from canonical.launchpad.database.message import MessageSet
 from lp.code.enums import CodeReviewVote
 from lp.code.event.branchmergeproposal import NewCodeReviewCommentEvent
-from lp.testing import TestCaseWithFactory
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+from lp.code.model.codereviewcomment import quote_text_as_email
+from lp.services.messages.model.message import MessageSet
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 
 
 class TestCodeReviewComment(TestCaseWithFactory):
@@ -23,8 +29,8 @@ class TestCodeReviewComment(TestCaseWithFactory):
         target = self.factory.makeProductBranch(
             product=source.product, title='target-branch')
         self.bmp = source.addLandingTarget(source.owner, target)
-        self.submitter = self.factory.makePerson(password='password')
-        self.reviewer = self.factory.makePerson(password='password')
+        self.submitter = self.factory.makePerson()
+        self.reviewer = self.factory.makePerson()
         self.bmp2 = self.factory.makeBranchMergeProposal()
 
     def test_createRootComment(self):
@@ -33,7 +39,6 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual(None, comment.vote)
         self.assertEqual(None, comment.vote_tag)
         self.assertEqual(self.submitter, comment.message.owner)
-        self.assertEqual(comment, self.bmp.root_comment)
         self.assertEqual('Message subject', comment.message.subject)
         self.assertEqual('Message content', comment.message.chunks[0].content)
 
@@ -43,7 +48,6 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual(None, comment.vote)
         self.assertEqual(None, comment.vote_tag)
         self.assertEqual(self.submitter, comment.message.owner)
-        self.assertEqual(comment, self.bmp.root_comment)
         self.assertEqual(
             'Re: [Merge] %s into %s' % (
                 self.bmp.source_branch.bzr_identity,
@@ -56,7 +60,6 @@ class TestCodeReviewComment(TestCaseWithFactory):
         reply = self.bmp.createComment(
             self.reviewer, 'Reply subject', 'Reply content',
             CodeReviewVote.ABSTAIN, 'My tag', comment)
-        self.assertEqual(comment, self.bmp.root_comment)
         self.assertEqual(comment.message.id, reply.message.parent.id)
         self.assertEqual(comment.message, reply.message.parent)
         self.assertEqual('Reply subject', reply.message.subject)
@@ -79,7 +82,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual('Re: Message subject', reply.message.subject)
 
     def test_createNoParentComment(self):
-        comment = self.bmp.createComment(
+        self.bmp.createComment(
             self.submitter, 'Message subject', 'Message content')
         new_comment = self.bmp.createComment(
             self.reviewer, 'New subject', 'New content',
@@ -183,6 +186,58 @@ class TestCodeReviewCommentGetAttachments(TestCaseWithFactory):
         self.assertEqual(([attachment.blob], []), comment.getAttachments())
 
 
+class TestQuoteTextAsEmail(TestCase):
+    """Test the quote_text_as_email helper method."""
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    def test_empty_string(self):
+        # Nothing just gives us an empty string.
+        self.assertEqual('', quote_text_as_email(''))
+
+    def test_none_string(self):
+        # If None is passed the quoted text is an empty string.
+        self.assertEqual('', quote_text_as_email(None))
+
+    def test_whitespace_string(self):
+        # Just whitespace gives us an empty string.
+        self.assertEqual('', quote_text_as_email('  \t '))
+
+    def test_long_string(self):
+        # Long lines are wrapped.
+        long_line = ('This is a very long line that needs to be wrapped '
+                     'onto more than one line given a short length.')
+        self.assertEqual(
+            dedent("""\
+                > This is a very long line that needs to
+                > be wrapped onto more than one line
+                > given a short length."""),
+            quote_text_as_email(long_line, 40))
+
+    def test_code_sample(self):
+        # Initial whitespace is not trimmed.
+        code = """\
+    def test_whitespace_string(self):
+        # Nothing just gives us the prefix.
+        self.assertEqual('', wrap_text('  \t '))"""
+        self.assertEqual(
+            dedent("""\
+                >     def test_whitespace_string(self):
+                >         # Nothing just gives us the prefix.
+                >         self.assertEqual('', wrap_text('         '))"""),
+            quote_text_as_email(code, 60))
+
+    def test_empty_line_mid_string(self):
+        # Lines in the middle of the string are quoted too.
+        value = dedent("""\
+            This is the first line.
+
+            This is the second line.
+            """)
+        expected = dedent("""\
+            > This is the first line.
+            > 
+            > This is the second line.""")
+        self.assertEqual(expected, quote_text_as_email(value))
+
+    def test_trailing_whitespace(self):
+        # Trailing whitespace is removed.
+        self.assertEqual('>   foo', quote_text_as_email('  foo  \n '))

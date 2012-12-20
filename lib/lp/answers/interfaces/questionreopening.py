@@ -12,13 +12,17 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Choice, Datetime, Object
+from zope.schema import (
+    Choice,
+    Datetime,
+    Object,
+    )
 
-from canonical.launchpad import _
+from lp import _
+from lp.answers.enums import QuestionStatus
+from lp.answers.interfaces.question import IQuestion
 from lp.registry.interfaces.person import IPerson
 
-from lp.answers.interfaces.question import IQuestion
-from lp.answers.interfaces.questionenums import QuestionStatus
 
 class IQuestionReopening(Interface):
     """A record of the re-opening of a question.

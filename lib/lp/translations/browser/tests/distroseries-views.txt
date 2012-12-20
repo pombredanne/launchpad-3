@@ -1,11 +1,11 @@
-= DistroSeries translations view classes =
-
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+DistroSeries translations view classes
+======================================
 
 Let's use ubuntu/hoary for these tests.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
-    >>> from lp.registry.interfaces.distroseries import DistroSeriesStatus
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.series import SeriesStatus
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
 
@@ -13,20 +13,22 @@ We set the Hoary status to current, so we get appropriate explanation
 message.
 
     >>> login('foo.bar@canonical.com')
-    >>> hoary.status = DistroSeriesStatus.CURRENT
+    >>> hoary.status = SeriesStatus.CURRENT
 
-== Hiding translations ==
+
+Hiding translations
+-------------------
 
 Each distroseries has a switch that allows administrators to either
 reveal its translations to the public or hide them from the public.
 
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.app.errors import TranslationUnavailable
     >>> from lp.translations.browser.distroseries import (
     ...     DistroSeriesView)
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, ITeamMembershipSet, TeamMembershipStatus)
-    >>> from canonical.launchpad.webapp.interfaces import (
-    ...     TranslationUnavailable)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.registry.interfaces.teammembership import (
+    ...     ITeamMembershipSet, TeamMembershipStatus)
 
     >>> def check_translations_access(distroseries):
     ...     """Return any objections to current user accessing
@@ -38,7 +40,7 @@ reveal its translations to the public or hide them from the public.
     ...
     ...     try:
     ...         view.checkTranslationsViewable()
-    ...     except TranslationUnavailable, message:
+    ...     except TranslationUnavailable as message:
     ...         return unicode(message)
     ...     return None
 
@@ -81,7 +83,7 @@ translations even when they're hidden.
     >>> membership = getUtility(ITeamMembershipSet).new(
     ...     expert, expert_team, TeamMembershipStatus.APPROVED,
     ...     expert_team)
-    >>> login_person(expert)
+    >>> ignored = login_person(expert)
     >>> check_effect_of_hiding(hoary)
     User can access revealed translations.
     User can access hidden translations.
@@ -95,9 +97,65 @@ A regular user can no longer see the translations once they're hidden.
     release series are not currently available.  Please come back soon.
 
 The same goes for anonymous users.
+Exactly what message is displayed depends on the series' status.
 
+    >>> login('foo.bar@canonical.com')
+    >>> hoary.status = SeriesStatus.EXPERIMENTAL
     >>> login(ANONYMOUS)
     >>> check_effect_of_hiding(hoary)
     User can access revealed translations.
-    User can not access hidden translations: Translations for this
-    release series are not currently available.  Please come back soon.
+    User can not access hidden translations:
+    Translations for this release series are not available yet.
+
+    >>> login('foo.bar@canonical.com')
+    >>> hoary.status = SeriesStatus.DEVELOPMENT
+    >>> login(ANONYMOUS)
+    >>> check_effect_of_hiding(hoary)
+    User can access revealed translations.
+    User can not access hidden translations:
+    Translations for this release series are not available yet.
+
+    >>> login('foo.bar@canonical.com')
+    >>> hoary.status = SeriesStatus.FROZEN
+    >>> login(ANONYMOUS)
+    >>> check_effect_of_hiding(hoary)
+    User can access revealed translations.
+    User can not access hidden translations:
+    Translations for this release series are not currently available.
+    Please come back soon.
+
+    >>> login('foo.bar@canonical.com')
+    >>> hoary.status = SeriesStatus.CURRENT
+    >>> login(ANONYMOUS)
+    >>> check_effect_of_hiding(hoary)
+    User can access revealed translations.
+    User can not access hidden translations:
+    Translations for this release series are not currently available.
+    Please come back soon.
+
+    >>> login('foo.bar@canonical.com')
+    >>> hoary.status = SeriesStatus.SUPPORTED
+    >>> login(ANONYMOUS)
+    >>> check_effect_of_hiding(hoary)
+    User can access revealed translations.
+    User can not access hidden translations:
+    Translations for this release series are not currently available.
+    Please come back soon.
+
+    >>> login('foo.bar@canonical.com')
+    >>> hoary.status = SeriesStatus.OBSOLETE
+    >>> login(ANONYMOUS)
+    >>> check_effect_of_hiding(hoary)
+    User can access revealed translations.
+    User can not access hidden translations:
+    This release series is obsolete.  Its translations are no longer
+    available.
+
+    >>> login('foo.bar@canonical.com')
+    >>> hoary.status = SeriesStatus.FUTURE
+    >>> login(ANONYMOUS)
+    >>> check_effect_of_hiding(hoary)
+    User can access revealed translations.
+    User can not access hidden translations:
+    Translations for this release series are not available yet.
+

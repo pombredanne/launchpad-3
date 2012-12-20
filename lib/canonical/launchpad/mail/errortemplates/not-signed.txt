@@ -1,2 +1,0 @@
-The message you sent included commands to modify the %(context)s,
-but you didn't sign the message with your OpenPGP key.

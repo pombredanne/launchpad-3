@@ -1,14 +1,18 @@
-=  PO import script =
+PO import script
+================
 
     >>> from lp.translations.model.potemplate import POTemplate
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.translations.enums import RosettaImportStatus
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue,
-    ...     RosettaImportStatus)
-    >>> from canonical.config import config
+    ...     )
+    >>> from lp.services.config import config
     >>> import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
+    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
 
 Login as an admin to be able to do changes to the import queue.
 
@@ -52,8 +56,7 @@ without special privileges, like "cprov": structured privileges are
 enough (but we could go with "open" as well, which would allow not
 only suggestions but full translations as well).
 
-    >>> from lp.translations.interfaces.translationgroup import (
-    ...     TranslationPermission)
+    >>> from lp.translations.enums import TranslationPermission
     >>> product = pofile.potemplate.productseries.product
     >>> product.translationpermission = TranslationPermission.STRUCTURED
 
@@ -66,7 +69,7 @@ We add a PO file to the import queue, approving it along the way.
     ...     distroseries=pofile.potemplate.distroseries,
     ...     productseries=pofile.potemplate.productseries)
     >>> entry.pofile = pofile
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> transaction.commit()
     >>> translation_import_queue.countEntries()
     1
@@ -86,15 +89,16 @@ has enough privileges for the script to run to completion.
     >>> process.returncode
     0
     >>> print stderr
-    INFO    creating lockfile
-    INFO    Importing: Serbian (sr) translation of evolution-2.2 in Evolution trunk
+    INFO    Creating lockfile: /var/lock/launchpad-rosetta-poimport.lock
+    INFO    Importing: Serbian (sr) ... of evolution-2.2 in Evolution trunk
     INFO    Import requests completed.
     <BLANKLINE>
     >>> transaction.commit()
 
 A new Account for 'danilo@canonical.com' is created.
 
-    >>> danilo = getUtility(IPersonSet).getByEmail('danilo@canonical.com')
+    >>> danilo = getUtility(IPersonSet).getByEmail('danilo@canonical.com',
+    ...     filter_status=False)
     >>> danilo.displayname
     u'Danilo \u0160egan'
 

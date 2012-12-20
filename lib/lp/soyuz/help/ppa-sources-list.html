@@ -2,51 +2,83 @@
   <head>
     <title>How do I use software from a PPA?</title>
     <link rel="stylesheet" type="text/css"
-          href="/+icing/yui/current/build/cssreset/reset.css" />
+          href="/+icing/yui/cssreset/reset.css" />
     <link rel="stylesheet" type="text/css"
-          href="/+icing/yui/current/build/cssfonts/fonts.css" />
+          href="/+icing/yui/cssfonts/fonts.css" />
     <link rel="stylesheet" type="text/css"
-          href="/+icing/yui/current/build/cssbase/base.css" />
+          href="/+icing/yui/cssbase/base.css" />
   </head>
   <body>
     <h1>How do I use software from a PPA?</h1>
 
-    <p>To start installing and using software from a Personal Package Archive, you first need to tell Ubuntu where to find the PPA and how to verify the authenticity of its software.</p>
-
-    <h2>Adding the PPA to Ubuntu</h2>
-
-    <p><strong>Step 1:</strong> Copy the first line from the <em>apt sources.list entries</em> section of the PPA overview page. For example:</p>
-    <p><code>deb http://ppa.launchpad.net/awn-testing/ubuntu jaunty main</code></p>
-    <p><strong>Step 2:</strong> On your Ubuntu computer, open <em>System > Administration > Software Sources</em>.</p>
-    <p><strong>Step 3:</strong> Click the <em>Third Party Software</em> tab.</p>
-    <img src="images/software-sources-3rdparty-tab.png" alt="Screen shot of the top tabs in the Software Sources app" style="margin-bottom: 15px;" />
-    <p><strong>Step 4:</strong> Click the <em>Add</em> button.</p>
-    <p><strong>Step 5:</strong> Paste the line you copied in step 1 and click the <em>Add Source</em> button.
-    <p><strong>Step 6:</strong> Now copy the second line from the <em>apt sources.list entries</em> section of the PPA overview page and paste it in just as you did in steps 4 and 5.</p>
-
-   <p>When prompted, reload the software sources information. Don't worry if you see a warning about unverified software sources; we're going to fix that next.</p>
-
-   <h2>Telling Ubuntu how to authenticate the PPA</h2>
-
-   <p>Now Ubuntu knows about the PPA. It also needs to know how to check the software hasn't been tampered with since Launchpad built  it.</p>
-
-   <p><strong>Note:</strong> This is not an endorsement of any of the software in PPAs. You must make sure you trust the PPA owner before installing their software.</p>
-
-   <p><strong>Step 1:</strong> On the PPA's overview page you'll see the PPA's OpenPGP key id. It'll look something like this: <em>1024/12345678</em>. Copy it, or make a note of, the portion after the slash, e.g: <em>12345678</em>.</p>
-   <p><strong>Step 2:</strong> Open your terminal and enter:</p>
-   <p><code>sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 12345678</code></p>
-   <p>Replace <em>12345678</em> with the key id you copied in step 1.</p>
-   <p><strong>Step 3:</strong> Finally, tell Ubuntu to re-load the details of each software archive it knows about:</p>
-   <p><code>sudo apt-get update</code></p>
-
-   <p>You're now ready to install software from the PPA!</p>
-
-
-
-
-
-    <p><a href="https://help.launchpad.net/Packaging/PPA"
-      target="_top">Read more about Personal Package Archives</a> in our help wiki.
+    <p>
+      To start installing and using software from a Personal Package Archive,
+       you first need to tell Ubuntu where to find the PPA.
     </p>
+
+    <p>
+      <strong>Important:</strong> The contents of Personal Package Archives
+      are not checked or monitored. You install software from them at your own
+      risk.
+    </p>
+
+    <p>
+      If you're using the most recent version of Ubuntu (or any version from
+      Ubuntu 9.10 onwards), you can add a PPA to your system with a single
+      line in your terminal.
+    </p>
+
+    <p>
+      <strong>Step 1:</strong> On the PPA's overview page, look for the
+      heading that reads <em>Adding this PPA to your system</em>. Make a note
+      of the PPA's location, which looks like:
+    </p>
+
+    <p>
+      <code>ppa:gwibber-daily/ppa</code>
+    </p>
+
+    <p>
+      <strong>Step 2:</strong> Open a terminal and enter:
+    </p>
+
+    <p>
+      <code>sudo add-apt-repository ppa:user/ppa-name</code>
+    </p>
+
+    <p>
+      Replace <code>ppa:user/ppa-name</code> with the PPA's location that you
+      noted above.
+    </p>
+
+    <img src="images/add-apt-repo1.png" alt="Screen shot of a terminal with the sudo add-apt-repoistory line" style="margin-bottom: 15px;" />
+
+    <p>
+      Your system will now fetch the PPA's key. This enables your Ubuntu
+      system to verify that the packages in the PPA have not been interfered
+      with since they were built.
+    </p>
+
+    <img src="images/add-apt-repo2.png" alt="Screen shot of a system retrieving the PPA details" style="margin-bottom: 15px;" />
+
+    <p>
+      <strong>Step 3:</strong> Now, as a one-off, you should tell your system
+      to pull down the latest list of software from each archive it knows
+      about, including the PPA you just added:
+    </p>
+
+    <p>
+      <code>sudo apt-get update</code>
+    </p>
+
+    <p>
+      Now you're ready to start installing software from the PPA!
+    </p>
+
+   <p>
+     <a href="https://help.launchpad.net/Packaging/PPA" target="_blank">Read
+     more about Personal Package Archives</a> in our help wiki.
+   </p>
+
   </body>
 </html>

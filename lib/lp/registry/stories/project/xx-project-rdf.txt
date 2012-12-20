@@ -1,33 +1,29 @@
 We export DOAP RDF metadata for projects from a link in the
 /projectname/+index document:
 
-  >>> anon_browser.open("http://launchpad.dev/mozilla")
-  >>> anon_browser.getLink("Download RDF metadata").click()
-  >>> print anon_browser.contents
-  <?xml version="1.0" encoding="utf-8"...
-  <rdf:RDF ...xmlns:lp="https://launchpad.net/rdf/launchpad#"...
+    >>> anon_browser.open("http://launchpad.dev/mozilla")
+    >>> anon_browser.getLink("Download RDF metadata").click()
+    >>> print anon_browser.contents
+    <?xml version="1.0" encoding="utf-8"...
+    <rdf:RDF ...xmlns:lp="https://launchpad.net/rdf/launchpad#"...
     <lp:Project>
       <lp:specifiedAt rdf:resource="/mozilla/+rdf"...
       <lp:name>mozilla</lp:name>
-      <lp:displayName>the Mozilla Project</lp:displayName>
+      <lp:displayName>The Mozilla Project</lp:displayName>
       <lp:title>The Mozilla Project</lp:title>
-  ...
+    ...
       <lp:owner>
-        <foaf:Person>
-          <foaf:name>Sample Person</foaf:name>
-          <foaf:nick>name12</foaf:nick>
-          <foaf:mbox_sha1sum>AF55D387F22F761CB32EC2A9C81F66220452C081</foaf:mbox_sha1sum>
-          <lp:sshPubKey>AAAAB3NzaC1kc3MAAA...SG1gBOiI=</lp:sshPubKey>
-        </foaf:Person>
+        <foaf:Agent>
+          <foaf:Account rdf:resource="/~name12/+rdf"/>
+        </foaf:Agent>
       </lp:owner>
-  ...
+    ...
      </lp:Project>
-   </rdf:RDF>
+    </rdf:RDF>
 
 It's valid XML and RDF:
 
-  >>> from xml.dom.minidom import parseString
-  >>> document = parseString(str(anon_browser.contents))
-  >>> print document.documentElement.nodeName
-  rdf:RDF
-
+    >>> from xml.dom.minidom import parseString
+    >>> document = parseString(str(anon_browser.contents))
+    >>> print document.documentElement.nodeName
+    rdf:RDF

@@ -1,12 +1,23 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
 from zope.interface import Interface
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text
-from lazr.enum import EnumeratedType, Item
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    Object,
+    Text,
+    )
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.person import IPerson
+
 
 __metaclass__ = type
 __all__ = [
@@ -28,7 +39,7 @@ class ITranslationRelicensingAgreement(Interface):
         readonly=False, required=True, schema=IPerson)
 
     allow_relicensing = Bool(
-        title=_("Whether the person agreed to the BSD license"),
+        title=_("Whether the person agreed to the BSD licence"),
         readonly=False, default=True, required=True)
 
     date_decided = Datetime(
@@ -37,10 +48,9 @@ class ITranslationRelicensingAgreement(Interface):
 
 
 class TranslationRelicensingAgreementOptions(EnumeratedType):
-    BSD = Item("I agree to licence all my translations in Launchpad "
-               "using the BSD licence.")
-    REMOVE = Item("I do not want to use the BSD licence and understand this "
-                  "means I can't make translations in Launchpad.")
+    BSD = Item("License all my translations in Launchpad "
+               "under the BSD licence")
+    REMOVE = Item("Not make translations in Launchpad")
 
 
 class ITranslationRelicensingAgreementEdit(ITranslationRelicensingAgreement):

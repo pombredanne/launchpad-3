@@ -1,37 +1,46 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 __all__ = [
+    'TeamMembershipBreadcrumb',
+    'TeamInvitationsView',
     'TeamMembershipEditView',
     ]
 
-import pytz
+
 from datetime import datetime
 
+import pytz
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import InputErrors
-from zope.component import getUtility
 from zope.formlib import form
 from zope.schema import Date
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import canonical_url
-
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, UnexpectedFormData)
+from lp import _
+from lp.app.errors import UnexpectedFormData
+from lp.app.widgets.date import DateWidget
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
-from canonical.widgets import DateWidget
+from lp.services.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.services.webapp.breadcrumb import Breadcrumb
 
 
-class TeamMembershipEditView:
+class TeamMembershipBreadcrumb(Breadcrumb):
+    """Builds a breadcrumb for an `ITeamMembership`."""
+
+    @property
+    def text(self):
+        return "%s's membership" % self.context.person.displayname
+
+
+class TeamMembershipEditView(LaunchpadView):
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
+        super(TeamMembershipEditView, self).__init__(context, request)
         self.errormessage = ""
         self.prefix = 'membership'
         self.max_year = 2050
@@ -67,14 +76,24 @@ class TeamMembershipEditView:
         if not expires:
             self.expiration_widget.disabled = True
 
+    @property
+    def label(self):
+        # This reproduces the logic of the old H1's in the pre-3.0 UI view.
+        if self.isActive():
+            prefix = 'Active'
+        elif self.isInactive():
+            prefix = 'Inactive'
+        elif self.isProposed():
+            prefix = 'Proposed'
+        elif self.isDeclined():
+            prefix = 'Declined'
+        elif self.isInvited() or self.isInvitationDeclined():
+            prefix = 'Invited'
+        else:
+            raise AssertionError('status unknown')
+        return '%s member %s' % (prefix, self.context.person.displayname)
+
     # Boolean helpers
-    def userIsTeamOwnerOrLPAdmin(self):
-        return (self.user.inTeam(self.context.team.teamowner) or
-                self.user.inTeam(getUtility(ILaunchpadCelebrities).admin))
-
-    def allowChangeAdmin(self):
-        return self.userIsTeamOwnerOrLPAdmin() or self.isAdmin()
-
     def isActive(self):
         return self.context.status in [TeamMembershipStatus.APPROVED,
                                        TeamMembershipStatus.ADMIN]
@@ -97,6 +116,12 @@ class TeamMembershipEditView:
 
     def isDeactivated(self):
         return self.context.status == TeamMembershipStatus.DEACTIVATED
+
+    def isInvited(self):
+        return self.context.status == TeamMembershipStatus.INVITED
+
+    def isInvitationDeclined(self):
+        return self.context.status == TeamMembershipStatus.INVITATION_DECLINED
 
     def adminIsSelected(self):
         """Whether the admin radiobutton should be selected."""
@@ -191,12 +216,7 @@ class TeamMembershipEditView:
                 context.status == TeamMembershipStatus.ADMIN):
                 new_status = TeamMembershipStatus.APPROVED
             elif (form.get('admin') == "yes" and
-                  context.status == TeamMembershipStatus.APPROVED
-                  # XXX: salgado 2005-03-15: The clause below is a hack
-                  # to make sure only the teamowner can promote a given
-                  # member to admin, while we don't have a specific
-                  # permission setup for this.
-                  and self.userIsTeamOwnerOrLPAdmin()):
+                  context.status == TeamMembershipStatus.APPROVED):
                 new_status = TeamMembershipStatus.ADMIN
             else:
                 # No status change will happen
@@ -219,7 +239,6 @@ class TeamMembershipEditView:
 
         assert self.context.status == TeamMembershipStatus.PROPOSED
 
-        action = self.request.form.get('editproposed')
         if self.request.form.get('decline'):
             status = TeamMembershipStatus.DECLINED
         elif self.request.form.get('approve'):
@@ -259,16 +278,19 @@ class TeamMembershipEditView:
             else:
                 try:
                     expires = self._getExpirationDate()
-                except ValueError, err:
+                except ValueError as err:
                     self.errormessage = (
                         'Invalid expiration: %s' % err)
                     return False
         else:
             expires = self.context.dateexpires
 
+        silent = self.request.form.get('silent', False)
+
         self.context.setExpirationDate(expires, self.user)
         self.context.setStatus(
-            status, self.user, self.request.form_ng.getOne('comment'))
+            status, self.user, self.request.form_ng.getOne('comment'),
+            silent)
         return True
 
     def _getExpirationDate(self):
@@ -282,7 +304,7 @@ class TeamMembershipEditView:
         expires = None
         try:
             expires = self.expiration_widget.getInputValue()
-        except InputErrors, value:
+        except InputErrors as value:
             # Handle conversion errors. We have to do this explicitly here
             # because we are not using the full form machinery which would
             # put the relevant error message into the field error. We are
@@ -299,3 +321,10 @@ class TeamMembershipEditView:
                            tzinfo=UTC)
         return expires
 
+
+class TeamInvitationsView(LaunchpadView):
+    """View for ~team/+invitations."""
+
+    @property
+    def label(self):
+        return 'Invitations for ' + self.context.displayname

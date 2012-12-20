@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -11,30 +11,52 @@ __all__ = [
     'IPOFileAlternativeLanguage',
     ]
 
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
 from zope.component import getUtility
-from zope.interface import Attribute, implements, Interface
+from zope.interface import (
+    Attribute,
+    implements,
+    Interface,
+    )
 from zope.schema import (
-    Bool, Choice, Datetime, Field, Int, List, Object, Text, TextLine)
+    Bool,
+    Choice,
+    Datetime,
+    Field,
+    Int,
+    List,
+    Object,
+    Text,
+    TextLine,
+    )
 from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import (
-    getVocabularyRegistry, SimpleTerm, SimpleVocabulary)
+    getVocabularyRegistry,
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp import _
 from lp.registry.interfaces.person import IPerson
+from lp.services.webapp.interfaces import ILaunchBag
+from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.rosettastats import IRosettaStats
-from lp.translations.interfaces.translationgroup import (
-    TranslationPermission)
-from lp.translations.interfaces.translationsperson import (
-    ITranslationsPerson)
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
 
 
 class IPOFile(IRosettaStats):
     """A translation file."""
 
-    id = Int(
-        title=_('The translation file id.'), required=True, readonly=True)
+    export_as_webservice_entry(
+        singular_name="translation_file",
+        plural_name="translation_files")
+
+    id = exported(Int(
+        title=_('The translation file id.'), required=True, readonly=True))
 
     potemplate = Object(
         title=_('The translation file template.'),
@@ -43,9 +65,6 @@ class IPOFile(IRosettaStats):
     language = Choice(
         title=_('Language of this PO file.'),
         vocabulary='Language', required=True)
-
-    variant = TextLine(
-        title=_('The language variant for this translation file.'))
 
     title = TextLine(
         title=_('The translation file title.'), required=True, readonly=True)
@@ -121,8 +140,8 @@ class IPOFile(IRosettaStats):
         required=False)
 
     translation_messages = Attribute(_(
-        'All `ITranslationMessage` objects related to this translation file.'
-        ))
+        "All `ITranslationMessage` objects related to this "
+        "translation file."))
 
     plural_forms = Int(
         title=_('Number of plural forms for the language of this PO file.'),
@@ -134,15 +153,18 @@ class IPOFile(IRosettaStats):
             '''),
         required=True, readonly=True)
 
+    def getOtherSidePOFile():
+        """Get the POFile for the same language on the other side.
+
+        Follow the packaging link to find in the sharing template on the
+        other side and get the POFile from there.
+        Returns None if no link exists.
+        """
+
     def translatedCount():
         """
         Returns the number of message sets which this PO file has current
         translations for.
-        """
-
-    def translated():
-        """
-        Return an iterator over translated message sets in this PO file.
         """
 
     def untranslatedCount():
@@ -151,10 +173,8 @@ class IPOFile(IRosettaStats):
         for.
         """
 
-    def untranslated():
-        """
-        Return an iterator over untranslated message sets in this PO file.
-        """
+    def hasPluralFormInformation():
+        """Do we know the plural-forms information for this `POFile`?"""
 
     def getHeader():
         """Return an `ITranslationHeaderData` representing its header."""
@@ -172,21 +192,22 @@ class IPOFile(IRosettaStats):
         """Get pot message sets with suggestions submitted after last review.
         """
 
-    def getPOTMsgSetChangedInLaunchpad():
-        """Get pot message sets changed through Launchpad in this PO file.
-
-        'Changed in Launchpad' are only those which were translated when
-        initially imported, but then got overridden in Launchpad.
+    def getPOTMsgSetDifferentTranslations():
+        """Get pot message sets with different translations on both sides.
         """
-
-    def getPOTMsgSetWithErrors():
-        """Get message sets that have translations imported with errors."""
 
     def getTranslationsFilteredBy(person):
         """Get TranslationMessages in this `IPOFile` contributed by `person`.
 
         Returned messages are ordered by the `POTMsgSet`, and then by
         `date_created` with newest first.
+        """
+
+    def getTranslationMessages(condition=None):
+        """Get TranslationMessages in this `IPOFile`.
+
+        If condition is None, return all messages, else narrow the result
+        set down using the condition.
         """
 
     def export(ignore_obsolete=False, export_utf8=False):
@@ -257,21 +278,29 @@ class IPOFile(IRosettaStats):
         """
 
     def getFullLanguageCode():
-        """Return full language code, including variant if applicable."""
+        """Return the language code."""
 
     def getFullLanguageName():
-        """Return full language name, including variant if applicable."""
+        """Return the language name."""
 
     def getTranslationRows():
         """Return exportable rows of translation data.
-        
+
         :return: a list of `VPOExport` objects.
         """
 
     def getChangedRows():
-        """Return exportable rows that differ from published translations.
+        """Return exportable rows that differ from upstream translations.
 
         :return: a list of `VPOExport` objects.
+        """
+
+    def markChanged(translator=None, timestamp=None):
+        """Note a change to this `POFile` or its contents.
+
+        :param translator: The person making this change.  If given,
+            `lasttranslator` will be updated to refer to this person.
+        :param timestamp: Time of the change.  Defaults to "now."
         """
 
 
@@ -334,15 +363,15 @@ class IPOFileSet(Interface):
     def getDummy(potemplate, language):
         """Return a dummy pofile for the given po template and language."""
 
-    def getPOFileByPathAndOrigin(path, productseries=None,
+    def getPOFilesByPathAndOrigin(path, productseries=None,
         distroseries=None, sourcepackagename=None):
-        """Return an `IPOFile` that is stored at 'path' in source code.
+        """Find `IPOFile`s with 'path' in productseries or source package.
 
         We filter the `IPOFile` objects to check only the ones related to the
         given arguments 'productseries', 'distroseries' and
         'sourcepackagename'.
 
-        Return None if there is not such IPOFile.
+        :return: A Storm result set of matching `POFile`s.
         """
 
     def getBatch(starting_id, batch_size):
@@ -353,6 +382,16 @@ class IPOFileSet(Interface):
 
         The number of items in the sequence will only be less than batch_size
         if the end of the table has been reached.
+        """
+
+    def getPOFilesWithTranslationCredits(untranslated=False):
+        """Get POFiles with potential translation credits messages.
+
+        Returns a ResultSet of (POFile, POTMsgSet) tuples, ordered by
+        POFile.id.
+
+        :param untranslated: Look only for `POFile`s with a credits
+            message that is not translated.
         """
 
     def getPOFilesTouchedSince(date):

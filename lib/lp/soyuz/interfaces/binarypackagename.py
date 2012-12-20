@@ -13,11 +13,14 @@ __all__ = [
     'IBinaryPackageNameSet',
     ]
 
-from zope.schema import Int, TextLine
-from zope.interface import Interface, Attribute
+from zope.interface import Interface
+from zope.schema import (
+    Int,
+    TextLine,
+    )
 
-from canonical.launchpad import _
-from canonical.launchpad.validators.name import name_validator
+from lp import _
+from lp.app.validators.name import name_validator
 
 
 class IBinaryPackageName(Interface):
@@ -25,11 +28,6 @@ class IBinaryPackageName(Interface):
 
     name = TextLine(title=_('Valid Binary package name'),
                     required=True, constraint=name_validator)
-
-    binarypackages = Attribute('binarypackages')
-
-    def nameSelector(sourcepackage=None, selected=None):
-        """Return browser-ready HTML to select a Binary Package Name"""
 
     def __unicode__():
         """Return the name"""
@@ -42,9 +40,6 @@ class IBinaryPackageNameSet(Interface):
 
     def getAll():
         """return an iselectresults representing all package names"""
-
-    def findByName(name):
-        """Find binarypackagenames by its name or part of it"""
 
     def queryByName(name):
         """Return a binary package name.
@@ -84,6 +79,7 @@ class IBinaryAndSourcePackageName(Interface):
     to report a bug in.
     """
 
+    id = Int(title=_('ID'), required=True, readonly=True)
+
     name = TextLine(title=_('Binary or Source package name'),
                     required=True, constraint=name_validator)
-

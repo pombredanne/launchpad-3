@@ -8,9 +8,6 @@
 <body>
   <div metal:fill-slot="main">
     <div class="top-portlet">
-      <h1>Translations for review by
-        <tal:person replace="context/displayname">R. Viewer</tal:person>
-      </h1>
       <tal:work-to-do condition="view/num_projects_and_packages_to_review">
         <p>
           These translations are available to be reviewed by
@@ -42,7 +39,10 @@
                   1 string
                 </tal:stringcount>
                 reviewed
-              </a>
+              </a> in
+              <tal:languages replace="target_info/languages">
+                Spanish
+              </tal:languages>
             </td>
           </tr>
         </table>

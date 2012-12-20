@@ -7,24 +7,22 @@ __metaclass__ = type
 
 __all__ = [
     'BranchLinkToSpecificationView',
-    'SpecificationBranchBranchInlineEditView',
     'SpecificationBranchStatusView',
     'SpecificationBranchURL',
     ]
 
+from lazr.restful.utils import smartquote
 from zope.interface import implements
 
-from canonical.lazr.utils import smartquote
-
-from canonical.launchpad import _
-from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
-from canonical.launchpad.webapp import (
+from lp import _
+from lp.app.browser.launchpadform import (
     action,
-    canonical_url,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import ICanonicalUrlData
 
 
 class SpecificationBranchURL:
@@ -52,7 +50,7 @@ class SpecificationBranchStatusView(LaunchpadEditFormView):
 
     schema = ISpecificationBranch
     field_names = []
-    label = _('Edit specification branch summary')
+    label = _('Delete link between specification and branch')
 
     def initialize(self):
         self.specification = self.context.specification
@@ -62,39 +60,9 @@ class SpecificationBranchStatusView(LaunchpadEditFormView):
     def next_url(self):
         return canonical_url(self.specification)
 
-    @action(_('Update'), name='change')
-    def change_action(self, action, data):
-        self.updateContextFromData(data)
-
     @action(_('Delete'), name='delete')
     def delete_action(self, action, data):
         self.context.destroySelf()
-
-
-class SpecificationBranchBranchInlineEditView(SpecificationBranchStatusView):
-    """Inline edit view for specification branch details.
-
-    This view is used to control the in page editing from the branch page.
-    """
-
-    initial_focus_widget = None
-    label = None
-
-    def initialize(self):
-        self.branch = self.context.branch
-        super(SpecificationBranchBranchInlineEditView, self).initialize()
-
-    @property
-    def prefix(self):
-        return "field%s" % self.context.id
-
-    @property
-    def action_url(self):
-        return "%s/+branch-edit" % canonical_url(self.context)
-
-    @property
-    def next_url(self):
-        return canonical_url(self.branch)
 
 
 class BranchLinkToSpecificationView(LaunchpadFormView):
@@ -126,5 +94,4 @@ class BranchLinkToSpecificationView(LaunchpadFormView):
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
         spec = data['specification']
-        spec_branch = spec.linkBranch(
-            branch=self.context, registrant=self.user)
+        spec.linkBranch(branch=self.context, registrant=self.user)

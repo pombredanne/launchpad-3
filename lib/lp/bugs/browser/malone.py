@@ -6,32 +6,35 @@
 __metaclass__ = type
 __all__ = [
     'MaloneApplicationNavigation',
-    'MaloneContextMenu',
+    'MaloneRelatedPages',
     ]
 
 
 from zope.component import getUtility
-from zope.security.interfaces import Unauthorized
 
-import canonical.launchpad.layers
-
-from canonical.launchpad.webapp import (
-    ContextMenu, Link, Navigation, canonical_url, stepto)
-from canonical.launchpad.webapp.authorization import check_permission
-
+from lp.bugs.browser.bug import MaloneView
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.bugs.publisher import BugsLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.webapp import (
+    canonical_url,
+    Link,
+    Navigation,
+    stepto,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.menu import NavigationMenu
 
 
 class MaloneApplicationNavigation(Navigation):
 
     usedfor = IMaloneApplication
 
-    newlayer = canonical.launchpad.layers.BugsLayer
+    newlayer = BugsLayer
 
     @stepto('bugs')
     def bugs(self):
@@ -63,14 +66,21 @@ class MaloneApplicationNavigation(Navigation):
         # /malone/$bug.id Just Work
         bug = getUtility(IBugSet).getByNameOrID(name)
         if not check_permission("launchpad.View", bug):
-            raise Unauthorized("Bug %s is private" % name)
+            return None
         return bug
 
 
-class MaloneContextMenu(ContextMenu):
-    # XXX mpt 2006-03-27: No longer visible on Bugs front page.
-    usedfor = IMaloneApplication
-    links = ['cvetracker']
+class MaloneRelatedPages(NavigationMenu):
+
+    facet = 'bugs'
+    title = 'Related pages'
+    usedfor = MaloneView
+    links = ['bugtrackers', 'cvetracker']
+
+    def bugtrackers(self):
+        url = canonical_url(getUtility(IBugTrackerSet))
+        text = "Bug trackers"
+        return Link(url, text, icon='bug')
 
     def cvetracker(self):
         text = 'CVE tracker'
