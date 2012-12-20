@@ -11,10 +11,7 @@ __all__ = [
     'TimeLimitedToken',
     ]
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
+from datetime import datetime
 from hashlib import md5
 import random
 from urlparse import urlparse
