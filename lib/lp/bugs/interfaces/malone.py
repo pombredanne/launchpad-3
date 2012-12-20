@@ -76,24 +76,32 @@ class IMaloneApplication(ILaunchpadApplication):
             title=u"The project, distribution or source package that has "
                    "this bug."))
     @export_factory_operation(
-        IBug, ['title', 'description', 'tags', 'security_related', 'private'])
-    def createBug(owner, title, description, target, security_related=None,
-                  private=None, tags=None):
+        IBug, ['title', 'description', 'tags', 'information_type',
+               'security_related', 'private'])
+    def createBug(owner, title, description, target, information_type=None,
+                  tags=None, security_related=None, private=None):
         """Create a bug (with an appropriate bugtask) and return it.
 
-        :param target: The Product, Distribution or DistributionSourcePackage
+        :param target: The Project, Distribution or DistributionSourcePackage
             affected by this bug.
+        :param title: The title shown in bug listings.
+        :param description: The description of the issue.
+        :param information_type: Set the bug's information type to one
+            different from the project's default. The type must conform
+            to the project's bug sharing policy. (optional)
+        :param tags: A list of bug tags. (optional)
+        :param security_related: Is this bug's information type
+            Private Security? (deprecated)
+        :param tags: Is this bug's information type Private
+            user data. (deprecated)
 
         Things to note when using this factory:
 
-          * the owner will be subscribed to the bug
+          * The reporter will be subscribed to the bug.
 
-          * distribution, product and package contacts (whichever ones are
-            applicable based on the bug report target) will be subscribed to
-            all *public bugs only*
-
-          * for public upstreams bugs where there is no upstream bug contact,
-            the product owner will be subscribed instead
+          * Only people that the project shares with will see the bug
+            when the bug's information type is Proprietary, Private, or
+            Private Security.
         """
 
 

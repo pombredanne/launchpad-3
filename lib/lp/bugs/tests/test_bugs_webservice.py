@@ -416,6 +416,22 @@ class BugSetTestCase(TestCaseWithFactory):
             target=target_url, title='title', description='desc')
         self.assertEqual('Proprietary', bug.information_type)
 
+    def test_override_default_sharing_policy_proprietary(self):
+        # A Proprietary bug can be created if the porject's bug sharing policy
+        # permits it.
+        project = self.factory.makeProduct(
+            licenses=[License.OTHER_PROPRIETARY])
+        target_url = api_url(project)
+        with person_logged_in(project.owner):
+            project.setBugSharingPolicy(
+                BugSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        webservice = launchpadlib_for('test', 'salgado')
+        bugs_collection = webservice.load('/bugs')
+        bug = bugs_collection.createBug(
+            target=target_url, title='title', description='desc',
+            information_type='Proprietary')
+        self.assertEqual('Proprietary', bug.information_type)
+
 
 class TestBugDateLastUpdated(TestCaseWithFactory):
 
