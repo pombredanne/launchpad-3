@@ -122,10 +122,6 @@ class TestLibrarianGarbageCollection(TestCase):
         self.failIfEqual(f1_id, f2_id)
         self.failIfEqual(f1.contentID, f2.contentID)
 
-        # Set the last accessed time into the past so they will be garbage
-        # collected
-        f1.last_accessed = self.ancient_past
-        f2.last_accessed = self.ancient_past
         f1.date_created = self.ancient_past
         f2.date_created = self.ancient_past
         f1.content.datecreated = self.ancient_past
@@ -191,8 +187,8 @@ class TestLibrarianGarbageCollection(TestCase):
         f2 = LibraryFileAlias.get(self.f2_id)
         self.assertEqual(f1.content, f2.content)
 
-        # Flag one of our LibraryFileAliases as being recently accessed
-        f1.last_accessed = self.recent_past
+        # Flag one of our LibraryFileAliases as being recently created
+        f1.date_created = self.recent_past
 
         del f1
         del f2
