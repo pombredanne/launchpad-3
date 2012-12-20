@@ -208,8 +208,8 @@ class IDistributionPublic(
             required=True))
     domainname = exported(
         TextLine(
-            title=_("Domain name"),
-            description=_("The distro's domain name."), required=True),
+            title=_("Web site URL"),
+            description=_("The distro's web site URL."), required=True),
         exported_as='domain_name')
     owner = exported(
         PublicPersonChoice(
