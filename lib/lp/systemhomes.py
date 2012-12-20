@@ -147,12 +147,12 @@ class MaloneApplication:
         return data
 
     def createBug(self, owner, title, description, target,
-                  security_related=None, private=None, tags=None):
+                  information_type=None, tags=None,
+                  security_related=None, private=None):
         """See `IMaloneApplication`."""
-        if security_related is None and private is None:
-            # Nothing to adapt, let BugSet.createBug() choose the default.
-            information_type = None
-        else:
+        if (information_type is None
+            and (security_related is not None or private is not None)):
+            # Adapt the deprecated args to information_type.
             information_type = convert_to_information_type(
                 private, security_related)
         params = CreateBugParams(
