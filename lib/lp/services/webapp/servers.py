@@ -574,6 +574,15 @@ class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
     def __init__(self, body_instream, environ, response=None):
         self.traversed_objects = []
         self._wsgi_keys = set()
+        if 'PATH_INFO' in environ:
+            # Zope's sane_environment assumes that PATH_INFO is UTF-8 encoded.
+            # This next step replaces problems with U+FFFD to ensure
+            # a UnicodeDecodeError is not raised before OOPS error handling
+            # is available. This change will convert a 400 error to a 404
+            # because tranversal will raise NotFound when it encounters a
+            # non-ascii path part.
+            environ['PATH_INFO'] = environ['PATH_INFO'].decode(
+                'utf-8', 'replace').encode('utf-8')
         super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
 
