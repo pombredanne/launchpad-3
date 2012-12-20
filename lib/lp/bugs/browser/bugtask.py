@@ -2283,8 +2283,6 @@ class BugListingBatchNavigator(TableBatchNavigator):
 
     def __init__(self, tasks, request, columns_to_show, size,
                  target_context=None):
-        # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem
-        # rules to a mixin so that MilestoneView and others can use it.
         self.request = request
         self.target_context = target_context
         self.user = getUtility(ILaunchBag).user
