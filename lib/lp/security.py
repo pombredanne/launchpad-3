@@ -796,11 +796,7 @@ class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
         """Authorize the product or distribution owner."""
         if user.in_admin:
             return True
-        if (self.obj.series_target is not None
-            and user.isDriver(self.obj.series_target)):
-            # The user is a release manager.
-            # XXX sinzui 2009-07-18 bug=40978: The series_target should never
-            # be None, but Milestones in the production DB are like this.
+        if user.isDriver(self.obj.series_target):
             return True
         return user.isOwner(self.obj.target)
 
@@ -866,11 +862,6 @@ class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     def checkAuthenticated(self, user):
         return can_edit_team(self.obj.team, user)
 
-
-# XXX: 2008-08-01, salgado: At some point we should protect ITeamMembership
-# with launchpad.View so that this adapter is used.  For now, though, it's
-# going to be used only on the webservice (which explicitly checks for
-# launchpad.View) so that we don't leak memberships of private teams.
 
 class ViewTeamMembership(AuthorizationBase):
     permission = 'launchpad.View'

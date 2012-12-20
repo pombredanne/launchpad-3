@@ -259,9 +259,6 @@ A BugNomination can be adapted to its IPrimaryContext for use with
 menus. The IPrimaryContext for a BugNomination is the IBugTarget
 traversed in the URL.
 
-    # XXX sinzui 2008-08-12 bug=257341:
-    # We need a test helper to "publish" the request's traversed objects
-    # and update the launchbag.
     >>> from lp.services.webapp.interfaces import IPrimaryContext
     >>> from lp.bugs.interfaces.bugnomination import (
     ...     IBugNominationSet)

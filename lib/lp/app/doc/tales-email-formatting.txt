@@ -107,7 +107,6 @@ of text that start with '>>> ' are exempted from the 'foldable-quoted'
 rules. Note that when '>>> ' occurs inside an existing quoted passage
 it will be folded because they are a continuation of a quote (see
 the preceding nested quoting test).
-# XXX sinzui 2007-08-13 bug=132263:
 # Passages may be wrongly be interpreted as Python because they start
 # with '>>> '. The formatter does not check that next and previous
 # lines of text consistently uses '>>> ' as Python would.

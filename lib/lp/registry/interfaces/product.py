@@ -153,47 +153,7 @@ re_valid_rfc1035_label = re.compile(
 
 
 def valid_sourceforge_project_name(project_name):
-    """Is this is a valid SourceForge project name?
-
-    Project names must be valid domain name components.
-
-        >>> valid_sourceforge_project_name('mailman')
-        True
-
-        >>> valid_sourceforge_project_name('hop-2-hop')
-        True
-
-        >>> valid_sourceforge_project_name('quake3')
-        True
-
-    They cannot start with a number.
-
-        >>> valid_sourceforge_project_name('1mailman')
-        False
-
-    Nor can they start or end with a hyphen.
-
-        >>> valid_sourceforge_project_name('-mailman')
-        False
-
-        >>> valid_sourceforge_project_name('mailman-')
-        False
-
-    They must be between 1 and 63 characters in length.
-
-        >>> valid_sourceforge_project_name('x' * 0)
-        False
-
-        >>> valid_sourceforge_project_name('x' * 1)
-        True
-
-        >>> valid_sourceforge_project_name('x' * 63)
-        True
-
-        >>> valid_sourceforge_project_name('x' * 64)
-        False
-
-    """
+    """Is this is a valid SourceForge project name?"""
     return re_valid_rfc1035_label.match(project_name) is not None
 
 
