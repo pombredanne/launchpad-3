@@ -577,8 +577,8 @@ class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
             # Zope's sane_environment assumes that PATH_INFO is UTF-8 encoded.
             # This next step replaces problems with U+FFFD to ensure
             # a UnicodeDecodeError is not raised before OOPS error handling
-            # is available. This change will convert a 40o error to a 404
-            # because tranversal will raise a NotFound with it encounters a
+            # is available. This change will convert a 400 error to a 404
+            # because tranversal will raise NotFound when it encounters a
             # non-ascii path part.
             environ['PATH_INFO'] = environ['PATH_INFO'].decode(
                 'utf-8', 'replace').encode('utf-8')

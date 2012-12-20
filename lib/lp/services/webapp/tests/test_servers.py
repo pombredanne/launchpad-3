@@ -381,8 +381,9 @@ class TestBasicLaunchpadRequest(TestCase):
                 'Strict-Transport-Security'), 'max-age=2592000')
 
     def test_baserequest_recovers_from_bad_path_info_encoding(self):
-        # The request object handles recodes PATH_INFO to ensure
-        # sane_environment does not raise a UnicodeDecodeError.
+        # The request object recodes PATH_INFO to ensure sane_environment
+        # does not raise a UnicodeDecodeError when LaunchpadBrowserRequest
+        # is instantiated.
         bad_path = 'fnord/trunk\xE4'
         env = {'PATH_INFO': bad_path}
         request = LaunchpadBrowserRequest(StringIO.StringIO(''), env)
