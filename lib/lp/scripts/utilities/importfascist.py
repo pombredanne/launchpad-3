@@ -174,7 +174,6 @@ def import_fascist(name, globals={}, locals={}, fromlist=[], level=-1):
     try:
         module = original_import(name, globals, locals, fromlist, level)
     except ImportError:
-        # XXX sinzui 2008-04-17 bug=277274:
         # import_fascist screws zope configuration module which introspects
         # the stack to determine if an ImportError means a module
         # initialization error or a genuine error. The browser:page always

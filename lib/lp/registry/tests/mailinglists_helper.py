@@ -83,8 +83,6 @@ def new_list_for_team(team):
 
     Used in doctests.
     """
-    # Any member of the mailing-list-experts team can review a list
-    # registration.  It doesn't matter which one.
     list_set = getUtility(IMailingListSet)
     team_list = list_set.new(team)
     team_list.startConstructing()
