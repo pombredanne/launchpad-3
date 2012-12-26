@@ -157,7 +157,7 @@ we are testing xhtml encoding here in case we need it in the future.
     >>> xhtml = FeedTypedData("<b> and &nbsp; and &amp;</b><hr/>",
     ...               content_type="xhtml")
     >>> xhtml.content
-    u'<b> and \xa0 and &</b><hr />'
+    u'<b> and \xa0 and &amp;</b><hr />'
 
 
 == validate_feed() helper function ==
