@@ -29,8 +29,8 @@ from storm.locals import (
     Int,
     Join,
     List,
-    SQL,
     Reference,
+    SQL,
     Unicode,
     )
 from storm.store import (
@@ -61,13 +61,13 @@ from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
-from lp.services.database.stormexpr import (
-    Array,
-    ArrayContains,
-    )
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
+    )
+from lp.services.database.stormexpr import (
+    Array,
+    ArrayContains,
     )
 from lp.services.features import getFeatureFlag
 from lp.services.librarian.browser import ProxiedLibraryFileAlias

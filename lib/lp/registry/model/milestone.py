@@ -37,8 +37,8 @@ from storm.zope import IResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.app.errors import NotFoundError
 from lp.app.enums import InformationType
+from lp.app.errors import NotFoundError
 from lp.blueprints.model.specification import (
     Specification,
     visible_specification_query,

@@ -89,8 +89,8 @@ from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.registry.enums import SpecificationSharingPolicy
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.interfaces.accesspolicy import (
-    IAccessArtifactSource,
     IAccessArtifactGrantSource,
+    IAccessArtifactSource,
     )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
