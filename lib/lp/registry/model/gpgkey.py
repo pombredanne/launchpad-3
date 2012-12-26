@@ -17,7 +17,6 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp.registry.interfaces.gpg import (
-    GPGKeyAlgorithm,
     IGPGKey,
     IGPGKeySet,
     )
@@ -26,7 +25,10 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.gpg.interfaces import IGPGHandler
+from lp.services.gpg.interfaces import (
+    GPGKeyAlgorithm,
+    IGPGHandler,
+    )
 
 
 class GPGKey(SQLBase):
