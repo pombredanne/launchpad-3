@@ -24,8 +24,10 @@ from lp.services.database.interfaces import (
     MAIN_STORE,
     )
 from lp.services.job.model.job import Job
-from lp.services.webapp.testing import verifyObject
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCaseWithFactory,
+    verifyObject,
+    )
 from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,

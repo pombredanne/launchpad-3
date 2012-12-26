@@ -27,12 +27,14 @@ from lp.registry.model.sourcepackagename import (
     SourcePackageNameSet,
     )
 from lp.services.database.lpstorm import IMasterStore
-from lp.services.webapp.testing import verifyObject
 from lp.services.worlddata.model.language import (
     Language,
     LanguageSet,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCaseWithFactory,
+    verifyObject,
+    )
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.translations.enums import RosettaImportStatus

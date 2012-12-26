@@ -63,7 +63,6 @@ from lp.services.job.interfaces.job import (
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.publisher import canonical_url
-from lp.services.webapp.testing import verifyObject
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
     ArchiveDisabled,
@@ -79,6 +78,7 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     ws_object,
+    verifyObject,
     )
 from lp.testing.layers import (
     AppServerLayer,

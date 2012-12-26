@@ -10,7 +10,7 @@ not Launchpad users.
     >>> from zope.component import getUtility
     >>> from lp.services.identity.interfaces.emailaddress import (
     ...     IEmailAddressSet)
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.registry.interfaces.person import (
     ...     IHasStanding,
     ...     IPerson,
@@ -68,7 +68,7 @@ The IPersonSet utility
 Access to people (Persons or Teams) is done through the IPersonSet
 utility:
 
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
 
     >>> verifyObject(IPersonSet, personset)
     True

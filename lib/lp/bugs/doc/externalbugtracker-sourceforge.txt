@@ -12,7 +12,7 @@ externalbugtracker.SourceForge, which implements IExternalBugTracker.
 
     >>> from lp.bugs.externalbugtracker import (
     ...     SourceForge)
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> from lp.bugs.interfaces.externalbugtracker import IExternalBugTracker
     >>> verifyObject(IExternalBugTracker,

@@ -8,7 +8,7 @@ codeimportscheduler attribute of our private XMLRPC instance.
     >>> from lp.code.interfaces.codeimportscheduler import (
     ...     ICodeImportSchedulerApplication)
     >>> from lp.xmlrpc.interfaces import IPrivateApplication
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
 
     >>> private_root = getUtility(IPrivateApplication)
     >>> verifyObject(

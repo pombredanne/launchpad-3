@@ -128,7 +128,7 @@ methods.
     >>> from lp.services.webapp.servers import (
     ...     LaunchpadBrowserRequest, VirtualHostRequestPublicationFactory)
     >>> from zope.app.publication.interfaces import IRequestPublicationFactory
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
 
 Those factories provide the IRequestPublicationFactory interface.
 
