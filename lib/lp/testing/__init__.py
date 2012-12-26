@@ -20,7 +20,6 @@ __all__ = [
     'FakeAdapterMixin',
     'FakeLaunchpadRequest',
     'FakeTime',
-    'get_lsb_information',
     'launchpadlib_credentials_for',
     'launchpadlib_for',
     'login',
@@ -34,7 +33,6 @@ __all__ = [
     'nonblocking_readline',
     'oauth_access_token_for',
     'person_logged_in',
-    'quote_jquery_expression',
     'record_statements',
     'reset_logging',
     'run_process',
@@ -949,12 +947,6 @@ class WebServiceTestCase(TestCaseWithFactory):
         return ws_object(service, obj)
 
 
-def quote_jquery_expression(expression):
-    """jquery requires meta chars used in literals escaped with \\"""
-    return re.sub(
-        "([#!$%&()+,./:;?@~|^{}\\[\\]`*\\\'\\\"])", r"\\\\\1", expression)
-
-
 class AbstractYUITestCase(TestCase):
 
     layer = None
@@ -1200,32 +1192,6 @@ def feature_flags():
         yield
     finally:
         features.install_feature_controller(old_features)
-
-
-def get_lsb_information():
-    """Returns a dictionary with the LSB host information.
-
-    Code stolen form /usr/bin/lsb-release
-    """
-    # XXX: This doesn't seem like a generically-useful testing function.
-    # Perhaps it should go in a sub-module or something? -- jml
-    distinfo = {}
-    if os.path.exists('/etc/lsb-release'):
-        for line in open('/etc/lsb-release'):
-            line = line.strip()
-            if not line:
-                continue
-            # Skip invalid lines
-            if not '=' in line:
-                continue
-            var, arg = line.split('=', 1)
-            if var.startswith('DISTRIB_'):
-                var = var[8:]
-                if arg.startswith('"') and arg.endswith('"'):
-                    arg = arg[1:-1]
-                distinfo[var] = arg
-
-    return distinfo
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
