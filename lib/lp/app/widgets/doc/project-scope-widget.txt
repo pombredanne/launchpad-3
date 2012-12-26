@@ -9,7 +9,7 @@ selected.
 
     >>> from zope.schema import Choice
     >>> from lp.services.webapp.servers import LaunchpadTestRequest
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.app.widgets.project import ProjectScopeWidget
 
     >>> empty_request = LaunchpadTestRequest()

@@ -17,7 +17,7 @@ use it as is or derive from it (see bugnotificationrecipients.txt for an
 example of a derivation).
 
     >>> from lp.services.mail.interfaces import INotificationRecipientSet
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.services.mail.notificationrecipientset import (
     ...     NotificationRecipientSet)
 

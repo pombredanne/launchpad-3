@@ -24,11 +24,11 @@ from lp.services.job.model.job import (
     Job,
     UniversalJobSource,
     )
-from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
+    verifyObject,
     )
 from lp.testing.layers import ZopelessDatabaseLayer
 from lp.testing.matchers import HasQueryCount

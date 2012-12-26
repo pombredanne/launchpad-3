@@ -27,7 +27,7 @@ to make sure verifyObject will work.
 
 Verify if the object follows its interface contracts:
 
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.registry.interfaces.distroseries import IDistroSeries
     >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
     >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import (

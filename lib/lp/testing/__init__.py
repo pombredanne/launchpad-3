@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0401,C0301,F0401
-
 from __future__ import absolute_import
 
 
@@ -50,6 +48,7 @@ __all__ = [
     'time_counter',
     'unlink_source_packages',
     'validate_mock_class',
+    'verifyObject',
     'with_anonymous_login',
     'with_celebrity_logged_in',
     'with_person_logged_in',
@@ -116,7 +115,10 @@ from zope.component import (
     )
 import zope.event
 from zope.interface import Interface
-from zope.interface.verify import verifyClass
+from zope.interface.verify import (
+    verifyClass,
+    verifyObject as zope_verifyObject,
+    )
 from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.security.management import queryInteraction
 from zope.security.proxy import (
@@ -1593,3 +1595,11 @@ def clean_up_reactor():
     from twisted.internet import reactor
     for delayed_call in reactor.getDelayedCalls():
         delayed_call.cancel()
+
+
+def verifyObject(iface, candidate, tentative=0):
+    """A specialized verifyObject which removes the security proxy of the
+    object before verifying it.
+    """
+    naked_candidate = removeSecurityProxy(candidate)
+    return zope_verifyObject(iface, naked_candidate, tentative=0)

@@ -5,8 +5,10 @@
 
 __metaclass__ = type
 
-from lp.services.webapp.testing import verifyObject
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCaseWithFactory,
+    verifyObject,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 

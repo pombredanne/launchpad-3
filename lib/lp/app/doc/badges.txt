@@ -86,7 +86,7 @@ for Interface, which just provides the privacy badge.
 
     >>> from zope.interface import Interface, Attribute, implements
     >>> from lp.app.browser.badge import IHasBadges, HasBadgeBase
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> class PrivateClass:
     ...     implements(Interface)
     ...     private = True

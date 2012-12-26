@@ -102,7 +102,7 @@ SpecificationSet implements the ISpecificationSet interface
     >>> ubuspec in specset._all_specifications
     True
 
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> verifyObject(ISpecificationSet, specset)
     True
 

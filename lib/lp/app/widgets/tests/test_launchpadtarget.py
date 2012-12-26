@@ -25,11 +25,13 @@ from lp.registry.vocabularies import (
     )
 from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.services.webapp.testing import verifyObject
 from lp.soyuz.model.binaryandsourcepackagename import (
     BinaryAndSourcePackageNameVocabulary,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCaseWithFactory,
+    verifyObject,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 
 

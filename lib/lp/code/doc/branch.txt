@@ -27,7 +27,7 @@ revisions, at least in Branch5 and older branches.
 Interfaces
 ----------
 
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.code.enums import BranchType
     >>> from lp.code.interfaces.branch import IBranchSet
     >>> from lp.code.interfaces.branchsubscription import IBranchSubscription

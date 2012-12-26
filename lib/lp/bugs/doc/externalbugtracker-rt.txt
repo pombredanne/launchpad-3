@@ -15,7 +15,7 @@ implementation of ExternalBugTracker, RequestTracker.
     >>> from lp.bugs.interfaces.externalbugtracker import IExternalBugTracker
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> verifyObject(
     ...     IExternalBugTracker,
     ...     RequestTracker('http://example.com/'))

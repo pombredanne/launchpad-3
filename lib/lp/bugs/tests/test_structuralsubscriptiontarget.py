@@ -33,7 +33,6 @@ from lp.registry.errors import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.webapp.interfaces import ILaunchBag
-from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -41,6 +40,7 @@ from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
+    verifyObject,
     )
 from lp.testing.factory import is_security_proxied_or_harmless
 from lp.testing.layers import (
