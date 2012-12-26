@@ -132,8 +132,8 @@ show a formoverlay that updates the milestone_for_release field.
             Y.on('domready', function () {
                 var select_menu = get_by_id('field.milestone_for_release');
                 var create_milestone_link = Y.Node.create(
-                    '<a href="+addmilestone" id="create-milestone-link" ' +
-                    'class="add js-action sprite">Create milestone</a>'); ...
+                    '&lt;a href="+addmilestone" id="create-milestone-link" ' +
+                    'class="add js-action sprite"&gt;Create milestone&lt;/a&gt;'); ...
 
 
 Editing a a product release

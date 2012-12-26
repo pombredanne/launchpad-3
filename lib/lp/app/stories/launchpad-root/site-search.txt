@@ -243,7 +243,7 @@ search.
     >>> print extract_text(
     ...     find_main_content(anon_browser.contents), skip_tags=[])
     Pages matching "fnord" in Launchpad
-    <!-- setFocusByName('field.text'); // -->
+    &lt;!-- setFocusByName('field.text'); // --&gt;
     Your search for &ldquo;fnord&rdquo; did not return any results.
 
 
