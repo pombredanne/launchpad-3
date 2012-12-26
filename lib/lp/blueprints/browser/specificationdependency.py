@@ -16,11 +16,11 @@ from zope.component import getUtility
 from zope.interface import Interface
 
 from lp import _
-from lp.app.enums import InformationType
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
+from lp.app.enums import InformationType
 from lp.app.interfaces.services import IService
 from lp.blueprints.interfaces.specificationdependency import (
     ISpecificationDependency,
