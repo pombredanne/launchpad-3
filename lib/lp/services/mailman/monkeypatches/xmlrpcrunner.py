@@ -36,7 +36,6 @@ from Mailman.MailList import MailList
 from Mailman.Queue.Runner import Runner
 from Mailman.Queue.sbcache import get_switchboard
 
-
 from lp.services.webapp.errorlog import ErrorReportingUtility
 from lp.services.xmlrpc import Transport
 
