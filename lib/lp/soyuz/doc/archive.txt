@@ -5,7 +5,7 @@ An Archive models a Debian Archive, providing operations like
 publication lookups and the complete publishing-pipeline from database
 records to disk, including configuration and indexes.
 
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> from lp.registry.interfaces.person import (

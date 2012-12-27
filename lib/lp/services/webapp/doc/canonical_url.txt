@@ -125,7 +125,7 @@ Configure a browser:url for ITown.  Our first attempt fails because we mistyped
 Now, there is an ICanonicalUrlData registered for ITown.
 
     >>> town_urldata = ICanonicalUrlData(town_instance)
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> verifyObject(ICanonicalUrlData, town_urldata)
     True
     >>> town_urldata.path
@@ -166,7 +166,7 @@ at it from zcml.  I'll put it in lp.testing.
 Now, there is an ICanonicalUrlData registered for ICountry.
 
     >>> country_urldata = ICanonicalUrlData(country_instance)
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> verifyObject(ICanonicalUrlData, country_urldata)
     True
     >>> country_urldata.path
@@ -218,7 +218,7 @@ in lp.testing.
 Now, there is an ICanonicalUrlData registered for ICountrySet.
 
     >>> countryset_urldata = ICanonicalUrlData(countryset_instance)
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> verifyObject(ICanonicalUrlData, countryset_urldata)
     True
     >>> countryset_urldata.path

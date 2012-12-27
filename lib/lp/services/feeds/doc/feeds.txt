@@ -39,7 +39,7 @@ Get the view from a `thing` on 'thing-feed' for a request.
 
     >>> from zope.component import getMultiAdapter
     >>> from lp.services.webapp.servers import LaunchpadTestRequest
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
 
     >>> request = LaunchpadTestRequest()
 
