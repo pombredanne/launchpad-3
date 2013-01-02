@@ -8,7 +8,7 @@ that we have an easy way of finding whether or not any given object is
 within the scope of a token's context and grant or deny access to it.
 
     >>> from lp.services.webapp.interfaces import ILaunchpadContainer
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)

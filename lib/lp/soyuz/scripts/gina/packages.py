@@ -34,9 +34,9 @@ from lp.archiveuploader.utils import (
     DpkgSourceError,
     extract_dpkg_source,
     )
-from lp.registry.interfaces.gpg import GPGKeyAlgorithm
 from lp.services import encoding
 from lp.services.database.constants import UTC_NOW
+from lp.services.gpg.interfaces import GPGKeyAlgorithm
 from lp.services.scripts import log
 from lp.soyuz.enums import PackagePublishingPriority
 from lp.soyuz.scripts.gina import (

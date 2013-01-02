@@ -39,7 +39,7 @@ Get the view from a `thing` on 'thing-feed' for a request.
 
     >>> from zope.component import getMultiAdapter
     >>> from lp.services.webapp.servers import LaunchpadTestRequest
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
 
     >>> request = LaunchpadTestRequest()
 
@@ -157,7 +157,7 @@ we are testing xhtml encoding here in case we need it in the future.
     >>> xhtml = FeedTypedData("<b> and &nbsp; and &amp;</b><hr/>",
     ...               content_type="xhtml")
     >>> xhtml.content
-    u'<b> and \xa0 and &</b><hr />'
+    u'<b> and \xa0 and &amp;</b><hr />'
 
 
 == validate_feed() helper function ==

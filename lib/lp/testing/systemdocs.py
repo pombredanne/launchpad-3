@@ -29,7 +29,6 @@ from zope.testing.loggingsupport import Handler
 from lp.services.config import config
 from lp.services.database.sqlbase import flush_database_updates
 from lp.services.webapp.interfaces import ILaunchBag
-from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     ANONYMOUS,
     launchpadlib_credentials_for,
@@ -39,6 +38,7 @@ from lp.testing import (
     logout,
     oauth_access_token_for,
     reset_logging,
+    verifyObject,
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.views import (

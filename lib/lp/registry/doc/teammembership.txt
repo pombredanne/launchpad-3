@@ -193,7 +193,7 @@ returns a tuple with False and the current status of the membership.
 
 As expected, the membership object implements ITeamMembership.
 
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.registry.interfaces.teammembership import ITeamMembership
     >>> verifyObject(ITeamMembership, membership)
     True

@@ -17,7 +17,7 @@ with the Jabber ID and the Jabber ID itself.
 
 The returned JabberID object provides both IJabberID and IHasOwner.
 
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> verifyObject(IJabberID, jabber_id)
     True
     >>> verifyObject(IHasOwner, jabber_id)

@@ -64,10 +64,10 @@ from lp.services.job.tests import (
     pop_remote_notifications,
     )
 from lp.services.osutils import override_environ
-from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     EventRecorder,
     TestCaseWithFactory,
+    verifyObject,
     )
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import (

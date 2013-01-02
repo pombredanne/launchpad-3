@@ -32,7 +32,6 @@ from lp.registry.model.distroseriesdifference import (
     )
 from lp.services.propertycache import get_property_cache
 from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.testing import verifyObject
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.packagesetsources import PackagesetSources
@@ -40,6 +39,7 @@ from lp.testing import (
     celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
+    verifyObject,
     )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,

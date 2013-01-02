@@ -11,7 +11,7 @@ are associated to distributions or products. The IFAQTarget interface is
 provided by objects that can host FAQs.
 
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
 
     >>> from lp.answers.interfaces.faqtarget import IFAQTarget
     >>> from lp.registry.interfaces.distribution import IDistributionSet

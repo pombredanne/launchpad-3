@@ -15,7 +15,7 @@ software. It can be part of a ProjectGroup or it can be standalone.
     >>> from lp.translations.interfaces.hastranslationimports import (
     ...     IHasTranslationImports)
     >>> from lp.testing import login
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
 
 Let's log in as Foo Bar to ensure we have the privileges to do what we're
 going to demonstrate.

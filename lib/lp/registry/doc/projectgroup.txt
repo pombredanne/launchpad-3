@@ -6,7 +6,7 @@ example see all bugs in the ProjectGroup's Product, or make them share a
 common external bug tracker.
 
     # Some basic imports
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.registry.interfaces.projectgroup import (
     ...     IProjectGroup,
     ...     IProjectGroupSet,
