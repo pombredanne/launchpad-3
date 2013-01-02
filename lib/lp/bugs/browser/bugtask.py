@@ -596,8 +596,9 @@ class BugTaskNavigation(Navigation):
         # Ask the DB to slice out just the comment that we need.
         comments = get_comments_for_bugtask(
             self.context, slice_info=[slice(index, index + 1)])
-        if (comments and comments[0].visible
-            or check_permission('launchpad.Admin', self.context)):
+        if (comments and
+            (comments[0].visible
+             or check_permission('launchpad.Admin', self.context))):
             return comments[0]
         return None
 
