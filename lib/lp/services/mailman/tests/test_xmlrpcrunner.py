@@ -11,6 +11,7 @@ import socket
 
 from Mailman import (
     Errors,
+    MailList,
     mm_cfg,
     )
 from Mailman.Logging.Syslog import syslog
@@ -232,3 +233,14 @@ class OneLoopTestCase(MailmanTestCase):
             self.assertEqual(1, self.mm_list.isMember(lp_user_email))
         with locked_list(other_mm_list):
             self.assertEqual(1, other_mm_list.isMember(lp_user_email))
+
+    def test_oneloop_create_or_reactivate_create(self):
+        # New lists are created using Lp's data.
+        team, mailing_list = self.factory.makeTeamAndMailingList(
+            'team-2', 'team-2-owner')
+        self.runner._oneloop()
+        mm_list = MailList.MailList('team-2')
+        self.assertEqual(
+            'team-2@lists.launchpad.dev', mm_list.getListAddress())
+        self.assertEqual(
+            'team-2-owner@lists.launchpad.dev', mm_list.GetOwnerEmail())
