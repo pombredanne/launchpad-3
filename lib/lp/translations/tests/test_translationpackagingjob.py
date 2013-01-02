@@ -19,12 +19,12 @@ from lp.services.job.interfaces.job import (
     JobStatus,
     )
 from lp.services.job.tests import block_on_job
-from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     celebrity_logged_in,
     EventRecorder,
     person_logged_in,
     TestCaseWithFactory,
+    verifyObject,
     )
 from lp.testing.layers import (
     CeleryJobLayer,

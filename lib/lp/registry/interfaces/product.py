@@ -153,47 +153,7 @@ re_valid_rfc1035_label = re.compile(
 
 
 def valid_sourceforge_project_name(project_name):
-    """Is this is a valid SourceForge project name?
-
-    Project names must be valid domain name components.
-
-        >>> valid_sourceforge_project_name('mailman')
-        True
-
-        >>> valid_sourceforge_project_name('hop-2-hop')
-        True
-
-        >>> valid_sourceforge_project_name('quake3')
-        True
-
-    They cannot start with a number.
-
-        >>> valid_sourceforge_project_name('1mailman')
-        False
-
-    Nor can they start or end with a hyphen.
-
-        >>> valid_sourceforge_project_name('-mailman')
-        False
-
-        >>> valid_sourceforge_project_name('mailman-')
-        False
-
-    They must be between 1 and 63 characters in length.
-
-        >>> valid_sourceforge_project_name('x' * 0)
-        False
-
-        >>> valid_sourceforge_project_name('x' * 1)
-        True
-
-        >>> valid_sourceforge_project_name('x' * 63)
-        True
-
-        >>> valid_sourceforge_project_name('x' * 64)
-        False
-
-    """
+    """Is this is a valid SourceForge project name?"""
     return re_valid_rfc1035_label.match(project_name) is not None
 
 
@@ -246,7 +206,7 @@ class License(DBEnumeratedType):
         'ACADEMIC', 'APACHE', 'ARTISTIC', 'ARTISTIC_2_0',
         'BSD', 'COMMON_PUBLIC',
         'CC_BY', 'CC_BY_SA', 'CC_0', 'ECLIPSE',
-        'EDUCATIONAL_COMMUNITY', 'AFFERO', 'GNU_GFDL_NO_OPTIONS',
+        'EDUCATIONAL_COMMUNITY', 'AFFERO', 'GNU_FDL_NO_OPTIONS',
         'GNU_GPL_V2', 'GNU_GPL_V3', 'GNU_LGPL_V2_1', 'GNU_LGPL_V3', 'MIT',
         'MPL', 'OFL', 'OPEN_SOFTWARE', 'PERL', 'PHP', 'PUBLIC_DOMAIN',
         'PYTHON', 'ZPL',
@@ -327,8 +287,8 @@ class License(DBEnumeratedType):
     CC_0 = DBItem(
         320, 'Creative Commons - No Rights Reserved',
         url='http://creativecommons.org/about/cc0')
-    GNU_GFDL_NO_OPTIONS = DBItem(
-        330, "GNU GFDL no options",
+    GNU_FDL_NO_OPTIONS = DBItem(
+        330, "GNU FDL no options",
         url='http://www.gnu.org/copyleft/fdl.html')
     OFL = DBItem(
         340, "Open Font Licence v1.1",

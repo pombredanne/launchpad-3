@@ -10,7 +10,7 @@ is, currently capable of performing imports).
     ...     ICodeImportMachine, ICodeImportMachineSet)
 
     >>> machine_set = getUtility(ICodeImportMachineSet)
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> verifyObject(ICodeImportMachineSet, machine_set)
     True
 

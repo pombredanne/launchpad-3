@@ -1398,7 +1398,6 @@ class Bug(SQLBase, InformationTypeMixin):
         Only one bugtask must meet both conditions to be return. When
         zero or many bugtasks match, None is returned.
         """
-        # XXX sinzui 2007-10-19:
         # We may want to removed the bugtask.conjoined_master check
         # below. It is used to simplify the task of converting
         # conjoined bugtasks to question--since slaves cannot be

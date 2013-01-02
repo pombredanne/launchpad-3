@@ -124,7 +124,7 @@ Confirm we can now find ed published in hoary.
 
 Check IPackageUploadSet behaviour:
 
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.soyuz.interfaces.queue import IPackageUploadSet
 
 Grab an utility:
@@ -624,7 +624,7 @@ Both uploads are waiting to be published.
 
     >>> queue_items = breezy_autotest.getPackageUploads(
     ...     PackageUploadStatus.ACCEPTED, name=u'pmount',
-    ...     version='0.1-1', exact_match=True)
+    ...     version=u'0.1-1', exact_match=True)
     >>> print_queue_items(queue_items)
     pmount  0.1-1  source
     pmount  0.1-1  i386

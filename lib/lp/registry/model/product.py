@@ -213,7 +213,8 @@ from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
     )
 from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
+    TranslationsBranchImportMode,
+    )
 from lp.translations.model.customlanguagecode import (
     CustomLanguageCode,
     HasCustomLanguageCodesMixin,

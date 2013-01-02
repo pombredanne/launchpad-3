@@ -11,13 +11,13 @@ from lp.code.errors import InvalidMergeQueueConfig
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.model.branchmergequeue import BranchMergeQueue
 from lp.services.database.lpstorm import IStore
-from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     ANONYMOUS,
     launchpadlib_for,
     person_logged_in,
     TestCaseWithFactory,
     ws_object,
+    verifyObject,
     )
 from lp.testing.layers import (
     AppServerLayer,

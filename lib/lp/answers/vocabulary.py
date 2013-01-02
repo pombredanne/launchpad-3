@@ -15,9 +15,9 @@ from storm.expr import And
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
-from lp.app.enums import ServiceUsage
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
+from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.model.product import Product
 from lp.registry.vocabularies import (

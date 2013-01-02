@@ -16,8 +16,10 @@ from lp.services.job.interfaces.job import (
     IRunnableJob,
     )
 from lp.services.job.tests import block_on_job
-from lp.services.webapp.testing import verifyObject
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCaseWithFactory,
+    verifyObject,
+    )
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import (
     CeleryJobLayer,

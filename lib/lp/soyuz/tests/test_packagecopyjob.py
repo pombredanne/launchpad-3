@@ -33,7 +33,6 @@ from lp.services.job.tests import (
     pop_remote_notifications,
     )
 from lp.services.mail.sendmail import format_address_for_person
-from lp.services.webapp.testing import verifyObject
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -67,6 +66,7 @@ from lp.testing import (
     person_logged_in,
     run_script,
     TestCaseWithFactory,
+    verifyObject,
     )
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.fakemethod import FakeMethod

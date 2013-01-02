@@ -589,25 +589,18 @@ class BugTaskNavigation(Navigation):
 
     @stepthrough('comments')
     def traverse_comments(self, name):
-        """Traverse to a comment by id."""
+        """Traverse to a comment by index."""
         if not name.isdigit():
             return None
         index = int(name)
-        comments = get_comments_for_bugtask(self.context)
-        # I couldn't find a way of using index to restrict the queries
-        # in get_comments_for_bugtask in a way that wasn't horrible, and
-        # it wouldn't really save us a lot in terms of database time, so
-        # I have chosed to use this simple solution for now.
-        #   -- kiko, 2006-07-11
-        try:
-            comment = comments[index]
-            if (comment.visible
-                or check_permission('launchpad.Admin', self.context)):
-                return comment
-            else:
-                return None
-        except IndexError:
-            return None
+        # Ask the DB to slice out just the comment that we need.
+        comments = get_comments_for_bugtask(
+            self.context, slice_info=[slice(index, index + 1)])
+        if (comments and
+            (comments[0].visible
+             or check_permission('launchpad.Admin', self.context))):
+            return comments[0]
+        return None
 
     @stepthrough('nominations')
     def traverse_nominations(self, nomination_id):
@@ -2283,8 +2276,6 @@ class BugListingBatchNavigator(TableBatchNavigator):
 
     def __init__(self, tasks, request, columns_to_show, size,
                  target_context=None):
-        # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem
-        # rules to a mixin so that MilestoneView and others can use it.
         self.request = request
         self.target_context = target_context
         self.user = getUtility(ILaunchBag).user

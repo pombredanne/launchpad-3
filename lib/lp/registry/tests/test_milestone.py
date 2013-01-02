@@ -24,12 +24,12 @@ from lp.registry.enums import (
     SharingPermission,
     SpecificationSharingPolicy,
     )
+from lp.registry.errors import ProprietaryProduct
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.milestone import (
     IHasMilestones,
     IMilestoneSet,
     )
-from lp.registry.errors import ProprietaryProduct
 from lp.registry.interfaces.product import IProductSet
 from lp.testing import (
     ANONYMOUS,

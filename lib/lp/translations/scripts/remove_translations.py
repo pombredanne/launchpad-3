@@ -18,6 +18,7 @@ from optparse import (
 
 from zope.component import getUtility
 
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.database.postgresql import drop_tables
 from lp.services.database.sqlbase import (
     cursor,
@@ -84,9 +85,6 @@ def get_id(identifier, lookup_function=None):
 
 def get_person_id(name):
     """`get_id` helper.  Look up person by name."""
-    # XXX sinzui 2010-10-04 bug=654537: Account and EmailAddress cause cyclic
-    # imports because they are not in the lp tree.
-    from lp.registry.interfaces.person import IPersonSet
     person = getUtility(IPersonSet).getByName(name)
     if person is None:
         return None

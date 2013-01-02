@@ -359,8 +359,6 @@ class MilestoneView(
     LaunchpadView, MilestoneViewMixin, ProductDownloadFileMixin,
     InformationTypePortletMixin):
     """A View for listing milestones and releases."""
-    # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem rules
-    # to a mixin so that MilestoneView and others can use it.
     implements(IMilestoneInline)
     show_series_context = False
 

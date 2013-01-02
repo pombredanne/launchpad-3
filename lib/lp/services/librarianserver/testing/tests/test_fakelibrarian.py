@@ -20,8 +20,10 @@ from lp.services.librarian.model import (
     LibraryFileAliasSet,
     )
 from lp.services.librarianserver.testing.fake import FakeLibrarian
-from lp.services.webapp.testing import verifyObject
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCaseWithFactory,
+    verifyObject,
+    )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,

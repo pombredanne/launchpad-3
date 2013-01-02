@@ -15,8 +15,10 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceComment,
     IDistroSeriesDifferenceCommentSource,
     )
-from lp.services.webapp.testing import verifyObject
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCaseWithFactory,
+    verifyObject,
+    )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     ZopelessDatabaseLayer,

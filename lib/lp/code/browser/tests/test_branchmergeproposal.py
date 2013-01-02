@@ -65,7 +65,6 @@ from lp.services.webapp.interfaces import (
     IPrimaryContext,
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     BrowserTestCase,
     feature_flags,
@@ -75,6 +74,7 @@ from lp.testing import (
     set_feature_flag,
     TestCaseWithFactory,
     time_counter,
+    verifyObject,
     )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,

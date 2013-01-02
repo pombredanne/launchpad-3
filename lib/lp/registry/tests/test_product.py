@@ -81,6 +81,7 @@ from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
     License,
+    valid_sourceforge_project_name,
     )
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.series import SeriesStatus
@@ -123,7 +124,26 @@ from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
     )
 from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
+    TranslationsBranchImportMode,
+    )
+
+
+class ValidationTestCase(TestCase):
+    """Test IProduct validators."""
+
+    def test_valid_sourceforge_project_name(self):
+        self.assertTrue(valid_sourceforge_project_name('mailman'))
+        self.assertTrue(valid_sourceforge_project_name('hop-2-hop'))
+        self.assertTrue(valid_sourceforge_project_name('mailman3'))
+        self.assertFalse(valid_sourceforge_project_name('1mailman'))
+        self.assertFalse(valid_sourceforge_project_name('-mailman'))
+        self.assertFalse(valid_sourceforge_project_name('mailman-'))
+
+    def test_valid_sourceforge_project_name_length(self):
+        self.assertFalse(valid_sourceforge_project_name('x' * 0))
+        self.assertTrue(valid_sourceforge_project_name('x' * 1))
+        self.assertTrue(valid_sourceforge_project_name('x' * 63))
+        self.assertFalse(valid_sourceforge_project_name('x' * 64))
 
 
 class TestProduct(TestCaseWithFactory):

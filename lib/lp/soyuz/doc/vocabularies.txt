@@ -168,7 +168,7 @@ PPA
 The PPA vocabulary contains all the PPAs available in a particular
 collection. It provides the IHugeVocabulary interface.
 
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.services.webapp.vocabulary import IHugeVocabulary
 
     >>> vocabulary = get_naked_vocab(None, 'PPA')

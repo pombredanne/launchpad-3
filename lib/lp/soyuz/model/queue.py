@@ -24,15 +24,14 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from storm.expr import LeftJoin
 from storm.locals import (
     And,
     Desc,
     Int,
     Join,
     List,
-    Or,
     Reference,
+    SQL,
     Unicode,
     )
 from storm.store import (
@@ -69,6 +68,10 @@ from lp.services.database.lpstorm import (
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
+    )
+from lp.services.database.stormexpr import (
+    Array,
+    ArrayContains,
     )
 from lp.services.features import getFeatureFlag
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
@@ -113,8 +116,6 @@ from lp.soyuz.interfaces.queue import (
     QueueStateWriteProtectedError,
     )
 from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 
@@ -147,63 +148,6 @@ def validate_status(self, attr, value):
         raise QueueStateWriteProtectedError(
             'Directly write on queue status is forbidden use the '
             'provided methods to set it.')
-
-
-def match_exact_string(haystack, needle):
-    """Try an exact string match: is `haystack` equal to `needle`?
-
-    Helper for `PackageUploadSet.getAll`.
-
-    :param haystack: A database column being matched.
-        Storm database column.
-    :param needle: The string you're looking for.
-    :return: A Storm expression that returns True for a match or False for a
-        non-match.
-    """
-    return haystack == needle
-
-
-def match_substring(haystack, needle):
-    """Try a substring match: does `haystack` contain `needle`?
-
-    Helper for `PackageUploadSet.getAll`.
-
-    :param haystack: A database column being matched.
-    :param needle: The string you're looking for.
-    :return: A Storm expression that returns True for a match or False for a
-        non-match.
-    """
-    return haystack.contains_string(needle)
-
-
-def get_string_matcher(exact_match=False):
-    """Return a string-matching function of the right sort.
-
-    :param exact_match: If True, return a string matcher that compares a
-        database column to a string.  If False, return one that looks for a
-        substring match.
-    :return: A matching function: (database column, search string) -> bool.
-    """
-    if exact_match:
-        return match_exact_string
-    else:
-        return match_substring
-
-
-def strip_duplicates(sequence):
-    """Remove duplicates from `sequence`, preserving order.
-
-    Optimized for very short sequences.  Do not use with large data.
-
-    :param sequence: An iterable of comparable items.
-    :return: A list of the unique items in `sequence`, in the order in which
-        they first occur there.
-    """
-    result = []
-    for item in sequence:
-        if item not in result:
-            result.append(item)
-    return result
 
 
 class PackageUploadQueue:
@@ -1674,10 +1618,6 @@ class PackageUploadSet:
                archive=None, pocket=None, custom_type=None, name=None,
                version=None, exact_match=False):
         """See `IPackageUploadSet`."""
-        # Avoid circular imports.
-        from lp.soyuz.model.packagecopyjob import PackageCopyJob
-        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-
         store = Store.of(distroseries)
 
         def dbitem_tuple(item_or_list):
@@ -1686,11 +1626,7 @@ class PackageUploadSet:
             else:
                 return tuple(item_or_list)
 
-        # Collect the joins here, table first.  Don't worry about
-        # duplicates; we filter out repetitions at the end.
         joins = [PackageUpload]
-
-        # Collection "WHERE" conditions here.
         conditions = []
 
         if created_since_date is not None:
@@ -1713,81 +1649,24 @@ class PackageUploadSet:
                 PackageUpload.id == PackageUploadCustom.packageuploadID,
                 PackageUploadCustom.customformat.is_in(custom_type))))
 
-        match_column = get_string_matcher(exact_match)
+        if name:
+            # Escape special characters, namely backslashes and single quotes.
+            name = name.replace('\\', '\\\\')
+            name = name.replace("'", "\\'")
+            name = "'%s'" % name
+            if not exact_match:
+                name += ':*'
+            conditions.append(
+                SQL("searchable_names::tsvector @@ ?", params=(name,)))
 
-        package_copy_job_join = LeftJoin(
-            PackageCopyJob,
-            PackageCopyJob.id == PackageUpload.package_copy_job_id)
-        source_join = LeftJoin(
-            PackageUploadSource,
-            PackageUploadSource.packageuploadID == PackageUpload.id)
-        spr_join = LeftJoin(
-            SourcePackageRelease,
-            SourcePackageRelease.id ==
-                PackageUploadSource.sourcepackagereleaseID)
-        bpr_join = LeftJoin(
-            BinaryPackageRelease,
-            BinaryPackageRelease.buildID == PackageUploadBuild.buildID)
-        build_join = LeftJoin(
-            PackageUploadBuild,
-            PackageUploadBuild.packageuploadID == PackageUpload.id)
+        if version:
+            conditions.append(
+                ArrayContains(PackageUpload.searchable_versions,
+                    Array(version)))
 
-        if name is not None and name != '':
-            spn_join = LeftJoin(
-                SourcePackageName,
-                SourcePackageName.id ==
-                    SourcePackageRelease.sourcepackagenameID)
-            bpn_join = LeftJoin(
-                BinaryPackageName,
-                BinaryPackageName.id ==
-                    BinaryPackageRelease.binarypackagenameID)
-            custom_join = LeftJoin(
-                PackageUploadCustom,
-                PackageUploadCustom.packageuploadID == PackageUpload.id)
-            file_join = LeftJoin(
-                LibraryFileAlias, And(
-                    LibraryFileAlias.id ==
-                        PackageUploadCustom.libraryfilealiasID))
-
-            joins += [
-                package_copy_job_join,
-                source_join,
-                spr_join,
-                spn_join,
-                build_join,
-                bpr_join,
-                bpn_join,
-                custom_join,
-                file_join,
-                ]
-
-            # One of these attached items must have a matching name.
-            conditions.append(Or(
-                match_column(PackageCopyJob.package_name, name),
-                match_column(SourcePackageName.name, name),
-                match_column(BinaryPackageName.name, name),
-                match_column(LibraryFileAlias.filename, name)))
-
-        if version is not None and version != '':
-            joins += [
-                source_join,
-                spr_join,
-                build_join,
-                bpr_join,
-                ]
-
-            # One of these attached items must have a matching version.
-            conditions.append(Or(
-                match_column(SourcePackageRelease.version, version),
-                match_column(BinaryPackageRelease.version, version),
-                ))
-
-        query = store.using(*strip_duplicates(joins)).find(
-            PackageUpload,
-            PackageUpload.distroseries == distroseries,
-            *conditions)
-        query = query.order_by(Desc(PackageUpload.id))
-        query = query.config(distinct=True)
+        query = store.using(*joins).find(
+            PackageUpload, PackageUpload.distroseries == distroseries,
+            *conditions).order_by(Desc(PackageUpload.id)).config(distinct=True)
 
         def preload_hook(rows):
             puses = load_referencing(
