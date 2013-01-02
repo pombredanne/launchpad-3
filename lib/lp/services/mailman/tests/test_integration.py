@@ -34,7 +34,7 @@ def can_import_callable(mlist):
 
 
 class CommandsTestCase(MailmanTestCase):
-    """Test mailman binary commands."""
+    """Test mailman binary commands use the Lp compiled Mailman."""
 
     layer = DatabaseFunctionalLayer
 
@@ -61,7 +61,7 @@ class CommandsTestCase(MailmanTestCase):
         return subprocess.call(command.split(), cwd=mailman_bin)
 
     def test_withlist_sitelist(self):
-        # Mailman's site list must exist.
+        # Mailman's site list must be the Lp configured one.
         self.assertEqual(99, self.withlist('site_list_callable'))
 
     def test_withlist_import_lp_mailman(self):
