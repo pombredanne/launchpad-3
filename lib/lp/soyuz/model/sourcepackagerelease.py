@@ -294,15 +294,11 @@ class SourcePackageRelease(SQLBase):
         return [DistroSeriesSourcePackageRelease(pub.distroseries, self)
                 for pub in self.publishings]
 
-    def _published_archives(self):
-        """See `ISourcePackageRelease`."""
+    @cachedproperty
+    def published_archives(self):
         archives = set(
             pub.archive for pub in self.publishings.prejoin(['archive']))
         return sorted(archives, key=operator.attrgetter('id'))
-
-    @cachedproperty
-    def published_archives(self):
-        return list(self._published_archives())
 
     def addFile(self, file):
         """See ISourcePackageRelease."""

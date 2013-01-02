@@ -57,13 +57,9 @@ from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.packagecopyjob import PackageCopyJob
-from lp.soyuz.model.queue import (
-    PackageUploadBuild,
-    PackageUploadCustom,
-    PackageUploadSource,
-    prefill_packageupload_caches,
-    )
+from lp.soyuz.model.queue import PackageUploadSource
 from lp.soyuz.model.section import Section
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 QUEUE_SIZE = 30
@@ -237,16 +233,12 @@ class QueueItemsView(LaunchpadView):
             PackageUploadSource, uploads, ['packageuploadID'])
         source_file_set = getUtility(ISourcePackageReleaseFileSet)
         source_files = list(source_file_set.getByPackageUploadIDs(upload_ids))
+        source_sprs = load_related(
+            SourcePackageRelease, packageuploadsources,
+            ['sourcepackagereleaseID'])
 
-        pubs = load_referencing(
-            PackageUploadBuild, uploads, ['packageuploadID'])
-        pucs = load_referencing(
-            PackageUploadCustom, uploads, ['packageuploadID'])
-        sprs = prefill_packageupload_caches(
-            uploads, packageuploadsources, pubs, pucs) 
-
-        load_related(Section, sprs, ['sectionID'])
-        load_related(Component, sprs, ['componentID'])
+        load_related(Section, source_sprs, ['sectionID'])
+        load_related(Component, source_sprs, ['componentID'])
 
         # Get a dictionary of lists of binary files keyed by upload ID.
         package_upload_builds_dict = self.builds_dict(upload_ids, binary_files)
@@ -266,7 +258,7 @@ class QueueItemsView(LaunchpadView):
         self.old_binary_packages = self.calculateOldBinaries(
             binary_package_names)
 
-        package_sets = self.getPackagesetsFor(sprs)
+        package_sets = self.getPackagesetsFor(source_sprs)
 
         self.loadPackageCopyJobs(uploads)
 

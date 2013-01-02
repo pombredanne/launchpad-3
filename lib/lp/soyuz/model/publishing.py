@@ -1564,6 +1564,8 @@ class PublishingSet:
                 dsd_job_source.createForPackagePublication(
                     distroseries, sourcepackagerelease.sourcepackagename,
                     pocket)
+        Store.of(sourcepackagerelease).flush()
+        del get_property_cache(sourcepackagerelease).published_archives
         return pub
 
     def getBuildsForSourceIds(self, source_publication_ids, archive=None,

@@ -9,7 +9,6 @@ __all__ = [
     'PackageUploadSource',
     'PackageUploadCustom',
     'PackageUploadSet',
-    'prefill_packageupload_caches',
     ]
 
 from itertools import chain
@@ -1676,11 +1675,6 @@ class PackageUploadSet:
             pucs = load_referencing(
                 PackageUploadCustom, rows, ["packageuploadID"])
 
-            for pu in rows:
-                cache = get_property_cache(pu)
-                cache.sources = []
-                cache.builds = []
-                cache.customfiles = []
             prefill_packageupload_caches(rows, puses, pubs, pucs)
 
         return DecoratedResultSet(query, pre_iter_hook=preload_hook)
@@ -1710,18 +1704,27 @@ class PackageUploadSet:
             PackageUpload,
             PackageUpload.package_copy_job_id.is_in(pcj_ids))
 
+
 def prefill_packageupload_caches(uploads, puses, pubs, pucs):
     # Circular imports.
     from lp.soyuz.model.archive import Archive
     from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
     from lp.soyuz.model.publishing import SourcePackagePublishingHistory
     from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+
+    for pu in uploads:
+        cache = get_property_cache(pu)
+        cache.sources = []
+        cache.builds = []
+        cache.customfiles = []
+
     for pus in puses:
         get_property_cache(pus.packageupload).sources.append(pus)
     for pub in pubs:
         get_property_cache(pub.packageupload).builds.append(pub)
     for puc in pucs:
         get_property_cache(puc.packageupload).customfiles.append(puc)
+
     source_sprs = load_related(
         SourcePackageRelease, puses, ['sourcepackagereleaseID'])
     bpbs = load_related(BinaryPackageBuild, pubs, ['buildID'])
@@ -1729,14 +1732,14 @@ def prefill_packageupload_caches(uploads, puses, pubs, pucs):
     binary_sprs = load_related(
         SourcePackageRelease, bpbs, ['source_package_release_id'])
     sprs = source_sprs + binary_sprs
+
     load_related(SourcePackageName, sprs, ['sourcepackagenameID'])
     load_related(LibraryFileAlias, uploads, ['changes_file_id'])
     publications = load_referencing(
         SourcePackagePublishingHistory, sprs, ['sourcepackagereleaseID'])
     load_related(Archive, publications, ['archiveID'])
-    for spr in sprs:
-        get_property_cache(spr).published_archives = []
+    for spr_cache in sprs:
+        get_property_cache(spr_cache).published_archives = []
     for publication in publications:
-        spr = get_property_cache(publication.sourcepackagerelease)
-        spr.published_archives.append(publication.archive)
-    return sprs
+        spr_cache = get_property_cache(publication.sourcepackagerelease)
+        spr_cache.published_archives.append(publication.archive)
