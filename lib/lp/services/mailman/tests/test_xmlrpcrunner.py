@@ -272,6 +272,15 @@ class OneLoopTestCase(MailmanTestCase):
         content = ['team-1', 'team-1/config.pck']
         self.assertContentEqual(content, tarball.getnames())
 
+    def test_oneloop_modify(self):
+        # Lists are modified in mailman after they are modified in Lp.
+        team, mailing_list = self.makeTeamList('team-1', 'owner-1')
+        with person_logged_in(team.teamowner):
+            mailing_list.welcome_message = 'hello'
+        self.runner._oneloop()
+        self.mm_list.Load()
+        self.assertEqual('hello', self.mm_list.welcome_msg)
+
     def test_oneloop_reactivate(self):
         # Lists are deactivted in mailman after they are deactivate in Lp.
         team, mailing_list = self.makeTeamList('team-1', 'owner-1')
