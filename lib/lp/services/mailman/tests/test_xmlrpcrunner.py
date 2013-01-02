@@ -259,3 +259,17 @@ class OneLoopTestCase(MailmanTestCase):
         tarball = tarfile.open(backup_file, 'r:gz')
         content = ['team-1', 'team-1/config.pck']
         self.assertContentEqual(content, tarball.getnames())
+
+    def test_oneloop_reactivate(self):
+        # Lists are deactivted in mailman after they are deactivate in Lp.
+        self.mailing_list.deactivate()
+        self.runner._oneloop()
+        backup_file = os.path.join(mm_cfg.VAR_PREFIX, 'backups', 'team-1.tgz')
+        self.assertTrue(os.path.exists(backup_file))
+        self.mailing_list.reactivate()
+        self.runner._oneloop()
+        self.assertFalse(os.path.exists(backup_file))
+        self.assertEqual(
+            'team-1@lists.launchpad.dev', self.mm_list.getListAddress())
+        self.assertEqual(
+            'team-1-owner@lists.launchpad.dev', self.mm_list.GetOwnerEmail())
