@@ -10,7 +10,7 @@ __all__ = [
     'QueueItemsView',
     ]
 
-import operator
+from operator import attrgetter
 
 from lazr.delegates import delegates
 from zope.component import getUtility
@@ -20,7 +20,7 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
-from lp.registry.model.person import Person
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.database.bulk import (
     load_referencing,
     load_related,
@@ -55,9 +55,15 @@ from lp.soyuz.interfaces.queue import (
     )
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.component import Component
 from lp.soyuz.model.packagecopyjob import PackageCopyJob
-from lp.soyuz.model.queue import PackageUploadSource
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.soyuz.model.queue import (
+    PackageUploadBuild,
+    PackageUploadCustom,
+    PackageUploadSource,
+    prefill_packageupload_caches,
+    )
+from lp.soyuz.model.section import Section
 
 
 QUEUE_SIZE = 30
@@ -124,8 +130,7 @@ class QueueItemsView(LaunchpadView):
         build_ids = [binary_file.binarypackagerelease.build.id
                      for binary_file in binary_files]
         upload_set = getUtility(IPackageUploadSet)
-        package_upload_builds = upload_set.getBuildByBuildIDs(
-            build_ids)
+        package_upload_builds = upload_set.getBuildByBuildIDs(build_ids)
         package_upload_builds_dict = {}
         for package_upload_build in package_upload_builds:
             package_upload_builds_dict[
@@ -135,8 +140,8 @@ class QueueItemsView(LaunchpadView):
     def binary_files_dict(self, package_upload_builds_dict, binary_files):
         """Build a dictionary of lists of binary files keyed by upload ID.
 
-        To do this efficiently we need to get all the PacakgeUploadBuild
-        records at once, otherwise the Ibuild.package_upload property
+        To do this efficiently we need to get all the PackageUploadBuild
+        records at once, otherwise the IBuild.package_upload property
         causes one query per iteration of the loop.
         """
         build_upload_files = {}
@@ -208,7 +213,9 @@ class QueueItemsView(LaunchpadView):
             PackageCopyJob, uploads, ['package_copy_job_id'])
         load_related(Archive, package_copy_jobs, ['source_archive_id'])
         jobs = load_related(Job, package_copy_jobs, ['job_id'])
-        load_related(Person, jobs, ['requester_id'])
+        person_ids = map(attrgetter('requester_id'), jobs)
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            person_ids, need_validity=True))
 
     def decoratedQueueBatch(self):
         """Return the current batch, converted to decorated objects.
@@ -224,20 +231,25 @@ class QueueItemsView(LaunchpadView):
 
         upload_ids = [upload.id for upload in uploads]
         binary_file_set = getUtility(IBinaryPackageFileSet)
-        binary_files = binary_file_set.getByPackageUploadIDs(upload_ids)
+        binary_files = list(binary_file_set.getByPackageUploadIDs(upload_ids))
         binary_file_set.loadLibraryFiles(binary_files)
         packageuploadsources = load_referencing(
             PackageUploadSource, uploads, ['packageuploadID'])
         source_file_set = getUtility(ISourcePackageReleaseFileSet)
-        source_files = source_file_set.getByPackageUploadIDs(upload_ids)
+        source_files = list(source_file_set.getByPackageUploadIDs(upload_ids))
 
-        source_sprs = load_related(
-            SourcePackageRelease, packageuploadsources,
-            ['sourcepackagereleaseID'])
+        pubs = load_referencing(
+            PackageUploadBuild, uploads, ['packageuploadID'])
+        pucs = load_referencing(
+            PackageUploadCustom, uploads, ['packageuploadID'])
+        sprs = prefill_packageupload_caches(
+            uploads, packageuploadsources, pubs, pucs) 
+
+        load_related(Section, sprs, ['sectionID'])
+        load_related(Component, sprs, ['componentID'])
 
         # Get a dictionary of lists of binary files keyed by upload ID.
-        package_upload_builds_dict = self.builds_dict(
-            upload_ids, binary_files)
+        package_upload_builds_dict = self.builds_dict(upload_ids, binary_files)
 
         build_upload_files, binary_package_names = self.binary_files_dict(
             package_upload_builds_dict, binary_files)
@@ -254,7 +266,7 @@ class QueueItemsView(LaunchpadView):
         self.old_binary_packages = self.calculateOldBinaries(
             binary_package_names)
 
-        package_sets = self.getPackagesetsFor(source_sprs)
+        package_sets = self.getPackagesetsFor(sprs)
 
         self.loadPackageCopyJobs(uploads)
 
@@ -461,7 +473,7 @@ class QueueItemsView(LaunchpadView):
         sorted by their name.
         """
         return sorted(
-            self.context.sections, key=operator.attrgetter('name'))
+            self.context.sections, key=attrgetter('name'))
 
     def priorities(self):
         """An iterable of priorities from PackagePublishingPriority."""
@@ -516,8 +528,6 @@ class CompletePackageUpload:
 
         if self.contains_source:
             self.sourcepackagerelease = self.sources[0].sourcepackagerelease
-
-        if self.contains_source:
             self.package_sets = package_sets.get(
                 self.sourcepackagerelease.sourcepackagenameID, [])
         else:
@@ -561,8 +571,7 @@ class CompletePackageUpload:
         if title is None:
             title = alt
         return structured(
-            '<img alt="[%s]" src="/@@/%s" title="%s" />',
-            alt, icon, title)
+            '<img alt="[%s]" src="/@@/%s" title="%s" />', alt, icon, title)
 
     def composeIconList(self):
         """List icons that should be shown for this upload."""
@@ -599,9 +608,5 @@ class CompletePackageUpload:
         icon_string = structured('\n'.join(['%s'] * len(icons)), *icons)
         link = self.composeNameAndChangesLink()
         return structured(
-            """<div id="%s">
-              %s
-              %s
-              (%s)
-            </div>""",
+            """<div id="%s"> %s %s (%s)</div>""",
             iconlist_id, icon_string, link, self.displayarchs).escapedtext

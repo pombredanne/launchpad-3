@@ -1,9 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# We use global in this module.
-# pylint: disable-msg=W0602
-
 __metaclass__ = type
 
 from functools import partial
@@ -442,7 +439,6 @@ def break_main_thread_db_access(*ignored):
     for using connections from the main thread.
     """
     # Record the ID of the main thread.
-    # pylint: disable-msg=W0603
     global _main_thread_id
     _main_thread_id = thread.get_ident()
 

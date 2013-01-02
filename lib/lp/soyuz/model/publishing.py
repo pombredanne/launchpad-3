@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 __metaclass__ = type
 
 __all__ = [
@@ -1864,7 +1862,7 @@ class PublishingSet:
             (SourcePackagePublishingHistory, PackageUpload,
              SourcePackageRelease, LibraryFileAlias, LibraryFileContent),
             LibraryFileContent.id == LibraryFileAlias.contentID,
-            LibraryFileAlias.id == PackageUpload.changesfileID,
+            LibraryFileAlias.id == PackageUpload.changes_file_id,
             PackageUpload.id == PackageUploadSource.packageuploadID,
             PackageUpload.status == PackageUploadStatus.DONE,
             PackageUpload.distroseriesID ==
@@ -1889,7 +1887,7 @@ class PublishingSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.find(
             LibraryFileAlias,
-            LibraryFileAlias.id == PackageUpload.changesfileID,
+            LibraryFileAlias.id == PackageUpload.changes_file_id,
             PackageUpload.status == PackageUploadStatus.DONE,
             PackageUpload.distroseriesID == spr.upload_distroseries.id,
             PackageUpload.archiveID == spr.upload_archive.id,

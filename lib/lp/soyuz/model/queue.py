@@ -9,6 +9,7 @@ __all__ = [
     'PackageUploadSource',
     'PackageUploadCustom',
     'PackageUploadSet',
+    'prefill_packageupload_caches',
     ]
 
 from itertools import chain
@@ -53,7 +54,10 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.auditor.client import AuditorClient
 from lp.services.config import config
-from lp.services.database.bulk import load_referencing
+from lp.services.database.bulk import (
+    load_referencing,
+    load_related,
+    )
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -111,6 +115,7 @@ from lp.soyuz.interfaces.queue import (
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 
 # There are imports below in PackageUploadCustom for various bits
@@ -230,8 +235,8 @@ class PackageUpload(SQLBase):
         dbName='pocket', unique=False, notNull=True,
         schema=PackagePublishingPocket)
 
-    changesfile = ForeignKey(
-        dbName='changesfile', foreignKey="LibraryFileAlias", notNull=False)
+    changes_file_id = Int(name='changesfile')
+    changesfile = Reference(changes_file_id, 'LibraryFileAlias.id')
 
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
@@ -870,15 +875,16 @@ class PackageUpload(SQLBase):
 
     def addSource(self, spr):
         """See `IPackageUpload`."""
-        del get_property_cache(self).sources
         self.addSearchableNames([spr.name])
         self.addSearchableVersions([spr.version])
-        return PackageUploadSource(
+        pus = PackageUploadSource(
             packageupload=self, sourcepackagerelease=spr.id)
+        Store.of(self).flush()
+        del get_property_cache(self).sources
+        return pus
 
     def addBuild(self, build):
         """See `IPackageUpload`."""
-        del get_property_cache(self).builds
         names = [build.source_package_release.name]
         versions = []
         for bpr in build.binarypackages:
@@ -886,15 +892,20 @@ class PackageUpload(SQLBase):
             versions.append(bpr.version)
         self.addSearchableNames(names)
         self.addSearchableVersions(versions)
-        return PackageUploadBuild(packageupload=self, build=build.id)
+        pub = PackageUploadBuild(packageupload=self, build=build.id)
+        Store.of(self).flush()
+        del get_property_cache(self).builds
+        return pub
 
     def addCustom(self, library_file, custom_type):
         """See `IPackageUpload`."""
-        del get_property_cache(self).customfiles
         self.addSearchableNames([library_file.filename])
-        return PackageUploadCustom(
+        puc = PackageUploadCustom(
             packageupload=self, libraryfilealias=library_file.id,
             customformat=custom_type)
+        Store.of(self).flush()
+        del get_property_cache(self).customfiles
+        return puc
 
     def isPPA(self):
         """See `IPackageUpload`."""
@@ -1791,13 +1802,7 @@ class PackageUploadSet:
                 cache.sources = []
                 cache.builds = []
                 cache.customfiles = []
-
-            for pus in puses:
-                get_property_cache(pus.packageupload).sources.append(pus)
-            for pub in pubs:
-                get_property_cache(pub.packageupload).builds.append(pub)
-            for puc in pucs:
-                get_property_cache(puc.packageupload).customfiles.append(puc)
+            prefill_packageupload_caches(rows, puses, pubs, pucs)
 
         return DecoratedResultSet(query, pre_iter_hook=preload_hook)
 
@@ -1825,3 +1830,34 @@ class PackageUploadSet:
         return IStore(PackageUpload).find(
             PackageUpload,
             PackageUpload.package_copy_job_id.is_in(pcj_ids))
+
+def prefill_packageupload_caches(uploads, puses, pubs, pucs):
+    # Circular imports.
+    from lp.soyuz.model.archive import Archive
+    from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+    from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+    from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+    for pus in puses:
+        get_property_cache(pus.packageupload).sources.append(pus)
+    for pub in pubs:
+        get_property_cache(pub.packageupload).builds.append(pub)
+    for puc in pucs:
+        get_property_cache(puc.packageupload).customfiles.append(puc)
+    source_sprs = load_related(
+        SourcePackageRelease, puses, ['sourcepackagereleaseID'])
+    bpbs = load_related(BinaryPackageBuild, pubs, ['buildID'])
+    load_related(DistroArchSeries, bpbs, ['distro_arch_series_id'])
+    binary_sprs = load_related(
+        SourcePackageRelease, bpbs, ['source_package_release_id'])
+    sprs = source_sprs + binary_sprs
+    load_related(SourcePackageName, sprs, ['sourcepackagenameID'])
+    load_related(LibraryFileAlias, uploads, ['changes_file_id'])
+    publications = load_referencing(
+        SourcePackagePublishingHistory, sprs, ['sourcepackagereleaseID'])
+    load_related(Archive, publications, ['archiveID'])
+    for spr in sprs:
+        get_property_cache(spr).published_archives = []
+    for publication in publications:
+        spr = get_property_cache(publication.sourcepackagerelease)
+        spr.published_archives.append(publication.archive)
+    return sprs

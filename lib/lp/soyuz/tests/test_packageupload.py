@@ -1331,3 +1331,16 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
             "customformat": "raw-translations",
             }
         self.assertEqual(expected_custom, ws_binaries[-1])
+
+    def test_getPackageUploads_query_count(self):
+        person = self.makeQueueAdmin([self.universe])
+        uploads = []
+        for i in range(5):
+            upload, _ = self.makeBinaryPackageUpload(
+                person, component=self.universe)
+            uploads.append(upload)
+        ws_distroseries = self.load(self.distroseries, person)
+        IStore(uploads[0].__class__).invalidate()
+        with StormStatementRecorder() as recorder:
+            ws_distroseries.getPackageUploads()
+        self.assertThat(recorder, HasQueryCount(Equals(27)))
