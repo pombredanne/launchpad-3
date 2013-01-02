@@ -1,36 +1,3 @@
-=================
-Basic integration
-=================
-
-The basic integration between Launchpad and Mailman allows us to run Mailman's
-'withlist' script to check for the existence of the unused (but mandatory)
-site list.  The withlist script called here simply returns a known exit code
-if the site list is set up correctly, otherwise it returns 1.
-
-    >>> import subprocess, os
-    >>> from lp.services.config import config
-    >>> from lp.services.mailman.config import configure_prefix
-    >>> def withlist(callable, *options):
-    ...     callable_path = 'lp.services.mailman.testing.' + callable
-    ...     args = ' '.join(options)
-    ...     site_list = 'unused_mailman_site_list'
-    ...     prefix_path = configure_prefix(config.mailman.build_prefix)
-    ...     mailman_bin = os.path.join(prefix_path, 'bin')
-    ...     command = './withlist %s -r %s %s' % (
-    ...         args, callable_path, site_list)
-    ...     return subprocess.call(command.split(), cwd=mailman_bin)
-
-Mailman's site list must exist.
-
-    >>> withlist('withlist_1.test_site_list', '-q')
-    99
-
-Mailman must also be able to import the shared package.
-
-    >>> withlist('withlist_2.can_import', '-q')
-    99
-
-
 Binaries
 ========
 
@@ -39,6 +6,7 @@ and Mailman.  Mailman's 'post' command accepts standard input from the MTA and
 drops the resulting message in Mailman's incoming queue.
 
     # See `subscriptions.txt`_ for more details.
+    >>> import subprocess, os
     >>> from lp.services.mailman.testing import helpers
     >>> alpha = helpers.create_list('alpha')
     >>> helpers.subscribe('Anne', 'alpha')
