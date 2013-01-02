@@ -169,6 +169,16 @@ class TestHandleProxyError(MailmanTestCase):
         self.assertIsEnqueued(msg)
 
 
+@contextmanager
+def locked_list(mm_list):
+    """Ensure a lock is not held."""
+    mm_list.Lock()
+    try:
+        yield
+    finally:
+        mm_list.Unlock()
+
+
 class OneLoopTestCase(MailmanTestCase):
     """Test XMLRPCRunner._oneloop method."""
 
@@ -179,6 +189,7 @@ class OneLoopTestCase(MailmanTestCase):
         self.team, self.mailing_list = self.factory.makeTeamAndMailingList(
             'team-1', 'team-1-owner')
         self.mm_list = self.makeMailmanList(self.mailing_list)
+        self.mm_list.Unlock()
         syslog.write_ex('xmlrpc', 'Ensure the log is open.')
         self.reset_log()
         self.runner = XMLRPCRunner()
@@ -193,11 +204,9 @@ class OneLoopTestCase(MailmanTestCase):
         with person_logged_in(lp_user):
             # The factory person has auto join mailing list enabled.
             lp_user.join(self.team)
-        self.mm_list.Unlock()
         self.runner._oneloop()
-        self.mm_list.Lock()
-        self.assertEqual(1, self.mm_list.isMember(lp_user_email))
-        self.mm_list.Unlock()
+        with locked_list(self.mm_list):
+            self.assertEqual(1, self.mm_list.isMember(lp_user_email))
 
     def test_oneloop_get_subscriptions_batching(self):
         # get_subscriptions iterates over batches of lists.
@@ -219,8 +228,7 @@ class OneLoopTestCase(MailmanTestCase):
             lp_user.join(self.team)
             lp_user.join(other_team)
         self.runner._oneloop()
-        self.mm_list.Lock()
-        self.assertEqual(1, self.mm_list.isMember(lp_user_email))
-        self.mm_list.Unlock()
-        other_mm_list.Lock()
-        self.assertEqual(1, other_mm_list.isMember(lp_user_email))
+        with locked_list(self.mm_list):
+            self.assertEqual(1, self.mm_list.isMember(lp_user_email))
+        with locked_list(other_mm_list):
+            self.assertEqual(1, other_mm_list.isMember(lp_user_email))
