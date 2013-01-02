@@ -197,3 +197,30 @@ class OneLoopTestCase(MailmanTestCase):
         self.runner._oneloop()
         self.mm_list.Lock()
         self.assertEqual(1, self.mm_list.isMember(lp_user_email))
+        self.mm_list.Unlock()
+
+    def test_oneloop_get_subscriptions_batching(self):
+        # get_subscriptions iterates over batches of lists.
+        config.push('batching test',
+            """
+            [mailman]
+            subscription_batch_size: 1
+            """)
+        self.addCleanup(config.pop, 'batching test')
+        self.mm_list.Unlock()
+        other_team, other_mailing_list = self.factory.makeTeamAndMailingList(
+            'team-2', 'team-2-owner')
+        other_mm_list = self.makeMailmanList(other_mailing_list)
+        other_mm_list.Unlock()
+        lp_user_email = 'albatros@eg.dom'
+        lp_user = self.factory.makePerson(name='albatros', email=lp_user_email)
+        with person_logged_in(lp_user):
+            # The factory person has auto join mailing list enabled.
+            lp_user.join(self.team)
+            lp_user.join(other_team)
+        self.runner._oneloop()
+        self.mm_list.Lock()
+        self.assertEqual(1, self.mm_list.isMember(lp_user_email))
+        self.mm_list.Unlock()
+        other_mm_list.Lock()
+        self.assertEqual(1, other_mm_list.isMember(lp_user_email))
