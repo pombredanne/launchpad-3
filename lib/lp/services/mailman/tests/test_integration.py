@@ -67,3 +67,15 @@ class CommandsTestCase(MailmanTestCase):
     def test_withlist_import_lp_mailman(self):
         # Lp's mailman can be imported.
         self.assertEqual(99, self.withlist('can_import_callable'))
+
+    def test_lib_mailman(self):
+        # lib/mailman uses the Lp configured data directories.
+        binary = os.path.join(config.root, 'lib/mailman/mail/mailman')
+        mailman = subprocess.Popen(
+            (binary, 'request', 'team-1'),
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        stdout, stderr = mailman.communicate('')
+        self.assertEqual(0, mailman.returncode)
+        self.assertEqual('', stdout)
+        self.assertEqual('', stderr)
