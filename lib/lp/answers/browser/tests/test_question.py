@@ -16,7 +16,6 @@ from lp.app.enums import ServiceUsage
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     login_person,
-    logout,
     person_logged_in,
     TestCaseWithFactory,
     )

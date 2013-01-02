@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.bugs.interfaces.bugtask import BugTaskStatus
