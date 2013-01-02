@@ -7,7 +7,9 @@ __all__ = []
 
 from contextlib import contextmanager
 from datetime import datetime
+import os
 import socket
+import tarfile
 
 from Mailman import (
     Errors,
@@ -19,6 +21,7 @@ from Mailman.Queue.XMLRPCRunner import (
     handle_proxy_error,
     XMLRPCRunner,
     )
+from Mailman.Utils import list_names
 
 from lp.services.config import config
 from lp.services.mailman.monkeypatches.xmlrpcrunner import (
@@ -199,7 +202,7 @@ class OneLoopTestCase(MailmanTestCase):
         self.runner._proxy = get_mailing_list_api_test_proxy()
 
     def test_oneloop_get_subscriptions_add(self):
-        # List new lp mailing list subscriptions are added to mm list members.
+        # List menbers are added in mailman after they are subscribed in Lp.
         lp_user_email = 'albatros@eg.dom'
         lp_user = self.factory.makePerson(name='albatros', email=lp_user_email)
         with person_logged_in(lp_user):
@@ -234,8 +237,8 @@ class OneLoopTestCase(MailmanTestCase):
         with locked_list(other_mm_list):
             self.assertEqual(1, other_mm_list.isMember(lp_user_email))
 
-    def test_oneloop_create_or_reactivate_create(self):
-        # New lists are created using Lp's data.
+    def test_oneloop_create(self):
+        # Lists are created in mailman after they are created in Lp.
         team, mailing_list = self.factory.makeTeamAndMailingList(
             'team-2', 'team-2-owner')
         self.runner._oneloop()
@@ -244,3 +247,15 @@ class OneLoopTestCase(MailmanTestCase):
             'team-2@lists.launchpad.dev', mm_list.getListAddress())
         self.assertEqual(
             'team-2-owner@lists.launchpad.dev', mm_list.GetOwnerEmail())
+        self.addCleanup(self.cleanMailmanList, mm_list)
+
+    def test_oneloop_deactivate(self):
+        # Lists are deactivted in mailman after they are deactivate in Lp.
+        self.mailing_list.deactivate()
+        self.runner._oneloop()
+        self.assertContentEqual([mm_cfg.MAILMAN_SITE_LIST], list_names())
+        backup_file = os.path.join(mm_cfg.VAR_PREFIX, 'backups', 'team-1.tgz')
+        self.assertTrue(os.path.exists(backup_file))
+        tarball = tarfile.open(backup_file, 'r:gz')
+        content = ['team-1', 'team-1/config.pck']
+        self.assertContentEqual(content, tarball.getnames())
