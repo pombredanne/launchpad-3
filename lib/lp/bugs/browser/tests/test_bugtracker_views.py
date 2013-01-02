@@ -16,7 +16,6 @@ from lp.testing import (
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import IsConfiguredBatchNavigator
-from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 
 
@@ -62,8 +61,8 @@ class TestBugTrackerSetView(TestCaseWithFactory):
         self.assertThat(view.inactive_trackers, matcher)
 
     def test_page_is_batched(self):
-        active_tracker1 = self.factory.makeBugTracker()
-        active_tracker2 = self.factory.makeBugTracker()
+        self.factory.makeBugTracker()
+        self.factory.makeBugTracker()
         inactive_tracker1 = self.factory.makeBugTracker()
         inactive_tracker2 = self.factory.makeBugTracker()
         admin = getUtility(ILaunchpadCelebrities).admin.teamowner

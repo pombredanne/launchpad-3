@@ -18,11 +18,9 @@ from lp.services.webapp.interfaces import (
     AccessLevel,
     ILaunchpadContainer,
     )
-from lp.testing.layers import ZopelessLayer
 
 
-class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(
-    CleanUp, TestCase):
+class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(CleanUp, TestCase):
 
     def setUp(self):
         self.principal = LaunchpadPrincipal(
