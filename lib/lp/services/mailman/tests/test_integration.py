@@ -14,6 +14,7 @@ from Mailman.mm_cfg import MAILMAN_SITE_LIST
 from lp.services.config import config
 from lp.services.mailman.config import configure_prefix
 from lp.services.mailman.testing import MailmanTestCase
+from lp.testing import person_logged_in
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
@@ -43,9 +44,6 @@ class CommandsTestCase(MailmanTestCase):
         self.team, self.mailing_list = self.factory.makeTeamAndMailingList(
             'team-1', 'team-1-owner')
         self.mm_list = self.makeMailmanList(self.mailing_list)
-        self.lp_user_email = 'albatros@eg.dom'
-        self.lp_user = self.factory.makePerson(
-            name='albatros', email=self.lp_user_email)
 
     def tearDown(self):
         super(CommandsTestCase, self).tearDown()
@@ -70,12 +68,18 @@ class CommandsTestCase(MailmanTestCase):
 
     def test_lib_mailman(self):
         # lib/mailman uses the Lp configured data directories.
+        lp_user_email = 'albatros@eg.dom'
+        lp_user = self.factory.makePerson(name='albatros', email=lp_user_email)
+        with person_logged_in(lp_user):
+            lp_user.join(self.team)
+        message = self.makeMailmanMessage(
+            self.mm_list, lp_user_email, 'subject', 'any content.')
         binary = os.path.join(config.root, 'lib/mailman/mail/mailman')
         mailman = subprocess.Popen(
-            (binary, 'request', 'team-1'),
+            (binary, 'post', 'team-1'),
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
-        stdout, stderr = mailman.communicate('')
+        stdout, stderr = mailman.communicate(message.as_string())
         self.assertEqual(0, mailman.returncode)
         self.assertEqual('', stdout)
         self.assertEqual('', stderr)
