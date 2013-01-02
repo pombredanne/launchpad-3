@@ -28,7 +28,10 @@ from lp.services.mailman.testing import (
     MailmanTestCase,
     )
 from lp.services.xmlrpc import Transport
-from lp.testing import TestCase
+from lp.testing import (
+    person_logged_in,
+    TestCase,
+    )
 from lp.testing.layers import (
     BaseLayer,
     DatabaseFunctionalLayer,
@@ -164,3 +167,33 @@ class TestHandleProxyError(MailmanTestCase):
         self.assertRaises(
             Errors.DiscardMessage, handle_proxy_error, error, msg, msg_data)
         self.assertIsEnqueued(msg)
+
+
+class OneLoopTestCase(MailmanTestCase):
+    """Test XMLRPCRunner._oneloop method."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(OneLoopTestCase, self).setUp()
+        self.team, self.mailing_list = self.factory.makeTeamAndMailingList(
+            'team-1', 'team-1-owner')
+        self.mm_list = self.makeMailmanList(self.mailing_list)
+        syslog.write_ex('xmlrpc', 'Ensure the log is open.')
+        self.reset_log()
+        self.runner = XMLRPCRunner()
+        # MailmanTestCase's setup of the test proxy is ignored because
+        # the runner had a reference to the true proxy in its __init__.
+        self.runner._proxy = get_mailing_list_api_test_proxy()
+
+    def test_oneloop_get_subscriptions_add(self):
+        # List new lp mailing list subscriptions are added to mm list members.
+        lp_user_email = 'albatros@eg.dom'
+        lp_user = self.factory.makePerson(name='albatros', email=lp_user_email)
+        with person_logged_in(lp_user):
+            # The factory person has auto join mailing list enabled.
+            lp_user.join(self.team)
+        self.mm_list.Unlock()
+        self.runner._oneloop()
+        self.mm_list.Lock()
+        self.assertEqual(1, self.mm_list.isMember(lp_user_email))
