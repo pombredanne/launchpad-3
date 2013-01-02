@@ -498,7 +498,7 @@ being too new:
     >>> old_only_policy = getPolicy(
     ...     name='insecure', distro='ubuntu', distroseries='hoary')
     >>> old_only_policy.accepted_type = ArchiveUploadType.BINARY_ONLY
-    >>> old_only_policy.future_time_grace = -5 * 365 * 24 * 60 * 60
+    >>> old_only_policy.future_time_grace = -20 * 365 * 24 * 60 * 60
 
     >>> ed_binary_deb = DebBinaryUploadFile(
     ...     ed_deb_path, 'e31eeb0b6b3b87e1ea79378df864ffff', 15,
