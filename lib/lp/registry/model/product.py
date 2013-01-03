@@ -730,9 +730,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             if InformationType.PUBLIC in allowed_types[var]:
                 raise ProprietaryProduct(
                     "The project is %s." % self.information_type.title)
-        required_policies = set(allowed_types[var]).intersection(
-            set(PRIVATE_INFORMATION_TYPES))
-        self._ensurePolicies(required_policies)
+        self._ensurePolicies(allowed_types[var])
 
     def setBranchSharingPolicy(self, branch_sharing_policy):
         """See `IProductEditRestricted`."""
@@ -768,17 +766,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getAllowedSpecificationInformationTypes(self):
         """See `ISpecificationTarget`."""
-        if self.specification_sharing_policy is not None:
-            return SPECIFICATION_POLICY_ALLOWED_TYPES[
-                self.specification_sharing_policy]
-        return [InformationType.PUBLIC]
+        return SPECIFICATION_POLICY_ALLOWED_TYPES[
+            self.specification_sharing_policy]
 
     def getDefaultSpecificationInformationType(self):
         """See `ISpecificationTarget`."""
-        if self.specification_sharing_policy is not None:
-            return SPECIFICATION_POLICY_DEFAULT_TYPES[
-                self.specification_sharing_policy]
-        return InformationType.PUBLIC
+        return SPECIFICATION_POLICY_DEFAULT_TYPES[
+            self.specification_sharing_policy]
 
     def _ensurePolicies(self, information_types):
         # Ensure that the product has access policies for the specified
@@ -788,7 +782,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         existing_types = set([
             access_policy.type for access_policy in existing_policies])
         # Create the missing policies.
-        required_types = set(information_types).difference(existing_types)
+        required_types = set(information_types).difference(
+            existing_types).intersection(PRIVATE_INFORMATION_TYPES)
         policies = itertools.product((self,), required_types)
         policies = getUtility(IAccessPolicySource).create(policies)
 
@@ -805,12 +800,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         allowed_branch_types = set(
             BRANCH_POLICY_ALLOWED_TYPES.get(
                 self.branch_sharing_policy, FREE_INFORMATION_TYPES))
-        allowed_specification_types = set(
+        allowed_spec_types = set(
             SPECIFICATION_POLICY_ALLOWED_TYPES.get(
-                self.specification_sharing_policy, [InformationType.PUBLIC])
-        )
-        allowed_types = allowed_bug_types.union(allowed_branch_types)
-        allowed_types = allowed_types.union(allowed_specification_types)
+                self.specification_sharing_policy, [InformationType.PUBLIC]))
+        allowed_types = (
+            allowed_bug_types | allowed_branch_types | allowed_spec_types)
         allowed_types.add(self.information_type)
         # Fetch all APs, and after filtering out ones that are forbidden
         # by the bug, branch, and specification policies, the APs that have no
@@ -859,10 +853,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             # of that month, e.g. 20080131 + 1 month = 20080229.
             weekday, days_in_month = calendar.monthrange(new_year, new_month)
             new_day = min(days_in_month, start.day)
-            new_date = start.replace(year=new_year,
-                                     month=new_month,
-                                     day=new_day)
-            return new_date
+            return start.replace(
+                year=new_year, month=new_month, day=new_day)
 
         # The voucher may already have been redeemed or marked as redeemed
         # pending notification being sent to Salesforce.
@@ -1227,8 +1219,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @cachedproperty
     def distrosourcepackages(self):
         from lp.registry.model.distributionsourcepackage import (
-            DistributionSourcePackage,
-            )
+            DistributionSourcePackage)
         dsp_info = get_distro_sourcepackages([self])
         return [
             DistributionSourcePackage(
@@ -1267,11 +1258,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getMilestone(self, name):
         """See `IProduct`."""
-        results = Milestone.selectOne("""
-            product = %s AND
-            name = %s
-            """ % sqlvalues(self.id, name))
-        return results
+        return Milestone.selectOne("""
+            product = %s AND name = %s""" % sqlvalues(self.id, name))
 
     def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
@@ -1518,13 +1506,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getRelease(self, version):
         """See `IProduct`."""
-        store = Store.of(self)
         origin = [
             ProductRelease,
             Join(Milestone, ProductRelease.milestone == Milestone.id),
             ]
-        result = store.using(*origin)
-        return result.find(
+        return Store.of(self).using(*origin).find(
             ProductRelease,
             And(Milestone.product == self,
                 Milestone.name == version)).one()
@@ -1563,13 +1549,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         celebs = getUtility(ILaunchpadCelebrities)
         return (
             user.inTeam(celebs.registry_experts) or
-            user.inTeam(celebs.admin) or
-            user.inTeam(self.owner))
+            user.inTeam(celebs.admin) or user.inTeam(self.owner))
 
     def getLinkedBugWatches(self):
         """See `IProduct`."""
-        store = Store.of(self)
-        return store.find(
+        return Store.of(self).find(
             BugWatch,
             And(BugTask.product == self.id,
                 BugTask.bugwatch == BugWatch.id,
@@ -1590,8 +1574,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def recipes(self):
         """See `IHasRecipes`."""
-        store = Store.of(self)
-        return store.find(
+        return Store.of(self).find(
             SourcePackageRecipe,
             SourcePackageRecipe.id ==
                 SourcePackageRecipeData.sourcepackage_recipe_id,
