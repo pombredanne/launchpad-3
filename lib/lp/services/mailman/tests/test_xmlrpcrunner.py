@@ -24,8 +24,12 @@ from Mailman.Queue.XMLRPCRunner import (
 from Mailman.Utils import list_names
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.interfaces.mailinglist import IMailingListSet
+from lp.registry.interfaces.mailinglist import (
+    IMailingListSet,
+    MailingListStatus,
+    )
 from lp.services.config import config
 from lp.services.mailman.monkeypatches.xmlrpcrunner import (
     get_mailing_list_api_proxy,
@@ -217,14 +221,15 @@ class OneLoopTestCase(MailmanTestCase):
         team = self.factory.makeTeam(name='team-1')
         # The factory cannot be used because it forces the list into a
         # usable state.
-        getUtility(IMailingListSet).new(team, team.teamowner)
+        mailing_list = getUtility(IMailingListSet).new(team, team.teamowner)
         self.runner._oneloop()
         self.assertContentEqual(
             [mm_cfg.MAILMAN_SITE_LIST, 'team-1'], list_names())
         mm_list = MailList.MailList('team-1')
+        self.addCleanup(self.cleanMailmanList, mm_list)
         self.assertEqual(
             'team-1@lists.launchpad.dev', mm_list.getListAddress())
-        self.addCleanup(self.cleanMailmanList, mm_list)
+        self.assertEqual(MailingListStatus.ACTIVE, mailing_list.status)
 
     def test_deactivate(self):
         # Lists are deactivted in mailman after they are deactivate in Lp.
@@ -341,3 +346,15 @@ class OneLoopTestCase(MailmanTestCase):
             self.assertEqual(1, mm_list_1.isMember(lp_user_email))
         with locked_list(mm_list_2):
             self.assertEqual(1, mm_list_2.isMember(lp_user_email))
+
+    def test_construction_to_active_recovery(self):
+        # Lp is informed of the active list if it wrongly believes it is
+        # being constructed.
+        team = self.factory.makeTeam(name='team-1')
+        mailing_list = getUtility(IMailingListSet).new(team, team.teamowner)
+        self.addCleanup(self.cleanMailmanList, None, 'team-1')
+        self.runner._oneloop()
+        removeSecurityProxy(mailing_list).status = (
+            MailingListStatus.CONSTRUCTING)
+        self.runner._oneloop()
+        self.assertEqual(MailingListStatus.ACTIVE, mailing_list.status)
