@@ -7,10 +7,13 @@ __all__ = []
 
 from contextlib import contextmanager
 from datetime import datetime
+import os
 import socket
+import tarfile
 
 from Mailman import (
     Errors,
+    MailList,
     mm_cfg,
     )
 from Mailman.Logging.Syslog import syslog
@@ -18,17 +21,29 @@ from Mailman.Queue.XMLRPCRunner import (
     handle_proxy_error,
     XMLRPCRunner,
     )
+from Mailman.Utils import list_names
 
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
+from lp.registry.interfaces.mailinglist import (
+    IMailingListSet,
+    MailingListStatus,
+    )
 from lp.services.config import config
 from lp.services.mailman.monkeypatches.xmlrpcrunner import (
     get_mailing_list_api_proxy,
     )
-from lp.services.mailman.testing import (
+from lp.services.mailman.tests import (
     get_mailing_list_api_test_proxy,
     MailmanTestCase,
     )
 from lp.services.xmlrpc import Transport
-from lp.testing import TestCase
+from lp.testing import (
+    person_logged_in,
+    TestCase,
+    )
+from lp.testing.fixture import CaptureOops
 from lp.testing.layers import (
     BaseLayer,
     DatabaseFunctionalLayer,
@@ -164,3 +179,243 @@ class TestHandleProxyError(MailmanTestCase):
         self.assertRaises(
             Errors.DiscardMessage, handle_proxy_error, error, msg, msg_data)
         self.assertIsEnqueued(msg)
+
+
+class OopsReportingTestCase(MailmanTestCase):
+    """Test XMLRPCRunner reports oopses."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(OopsReportingTestCase, self).setUp()
+        self.mm_list = None
+        syslog.write_ex('xmlrpc', 'Ensure the log is open.')
+        self.reset_log()
+        self.runner = XMLRPCRunner()
+        # MailmanTestCase's setup of the test proxy is ignored because
+        # the runner had a reference to the true proxy in its __init__.
+        self.runner._proxy = get_mailing_list_api_test_proxy()
+
+    def test_oops_reporting(self):
+        capture = CaptureOops()
+        capture.setUp()
+        with one_loop_exception(self.runner):
+            self.runner._oneloop()
+        oops = capture.oopses[0]
+        capture.cleanUp()
+        self.assertEqual('T-mailman', oops['reporter'])
+        self.assertTrue(oops['id'].startswith('OOPS-'))
+        self.assertEqual('Exception', oops['type'])
+        self.assertEqual('Test exception handling.', oops['value'])
+        self.assertTrue(
+            oops['tb_text'].startswith('Traceback (most recent call last):'))
+
+
+@contextmanager
+def locked_list(mm_list):
+    """Ensure a lock is not held."""
+    mm_list.Lock()
+    try:
+        yield
+    finally:
+        mm_list.Unlock()
+
+
+class OneLoopTestCase(MailmanTestCase):
+    """Test XMLRPCRunner._oneloop method.
+
+    The _oneloop() method calls all the methods used to sync Lp to Mailman.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(OneLoopTestCase, self).setUp()
+        self.mm_list = None
+        self.runner = XMLRPCRunner()
+        # MailmanTestCase's setup of the test proxy is ignored because
+        # the runner had a reference to the true proxy in its __init__.
+        self.runner._proxy = get_mailing_list_api_test_proxy()
+
+    def makeTeamList(self, team_name, owner_name, need_mm_list=True):
+        team, mailing_list = self.factory.makeTeamAndMailingList(
+            team_name, owner_name)
+        if need_mm_list:
+            self.mm_list = self.makeMailmanList(mailing_list)
+            self.mm_list.Unlock()
+        return team, mailing_list
+
+    def test_create(self):
+        # Lists are created in mailman after they are created in Lp.
+        team = self.factory.makeTeam(name='team-1')
+        # The factory cannot be used because it forces the list into a
+        # usable state.
+        mailing_list = getUtility(IMailingListSet).new(team, team.teamowner)
+        self.runner._oneloop()
+        self.assertContentEqual(
+            [mm_cfg.MAILMAN_SITE_LIST, 'team-1'], list_names())
+        mm_list = MailList.MailList('team-1')
+        self.addCleanup(self.cleanMailmanList, mm_list)
+        self.assertEqual(
+            'team-1@lists.launchpad.dev', mm_list.getListAddress())
+        self.assertEqual(MailingListStatus.ACTIVE, mailing_list.status)
+
+    def test_deactivate(self):
+        # Lists are deactivted in mailman after they are deactivate in Lp.
+        team, mailing_list = self.makeTeamList('team-1', 'owner-1')
+        mailing_list.deactivate()
+        self.runner._oneloop()
+        self.assertContentEqual([mm_cfg.MAILMAN_SITE_LIST], list_names())
+        backup_file = os.path.join(mm_cfg.VAR_PREFIX, 'backups', 'team-1.tgz')
+        self.assertTrue(os.path.exists(backup_file))
+        tarball = tarfile.open(backup_file, 'r:gz')
+        content = ['team-1', 'team-1/config.pck']
+        self.assertContentEqual(content, tarball.getnames())
+        self.assertEqual(MailingListStatus.INACTIVE, mailing_list.status)
+
+    def test_modify(self):
+        # Lists are modified in mailman after they are modified in Lp.
+        team, mailing_list = self.makeTeamList('team-1', 'owner-1')
+        with person_logged_in(team.teamowner):
+            mailing_list.welcome_message = 'hello'
+        self.assertEqual(MailingListStatus.MODIFIED, mailing_list.status)
+        self.runner._oneloop()
+        self.mm_list.Load()
+        self.assertEqual('hello', self.mm_list.welcome_msg)
+        self.assertEqual(MailingListStatus.ACTIVE, mailing_list.status)
+
+    def test_reactivate(self):
+        # Lists are deactivted in mailman after they are deactivate in Lp.
+        team, mailing_list = self.makeTeamList('team-1', 'owner-1')
+        mailing_list.deactivate()
+        self.runner._oneloop()
+        backup_file = os.path.join(mm_cfg.VAR_PREFIX, 'backups', 'team-1.tgz')
+        self.assertTrue(os.path.exists(backup_file))
+        mailing_list.reactivate()
+        self.runner._oneloop()
+        self.assertFalse(os.path.exists(backup_file))
+        self.assertEqual(
+            'team-1@lists.launchpad.dev', self.mm_list.getListAddress())
+        self.assertEqual(MailingListStatus.ACTIVE, mailing_list.status)
+
+    def test_get_subscriptions_add(self):
+        # List members are added in mailman after they are subscribed in Lp.
+        team, mailing_list = self.makeTeamList('team-1', 'owner-1')
+        lp_user_email = 'albatros@eg.dom'
+        lp_user = self.factory.makePerson(name='albatros', email=lp_user_email)
+        with person_logged_in(lp_user):
+            # The factory person has auto join mailing list enabled.
+            lp_user.join(team)
+        self.runner._oneloop()
+        with locked_list(self.mm_list):
+            self.assertEqual(1, self.mm_list.isMember(lp_user_email))
+
+    def test_get_subscriptions_add_alternate(self):
+        # List members can have alternate addresses provided by Lp..
+        team, mailing_list = self.makeTeamList('team-1', 'owner-1')
+        lp_user_email = 'albatros@eg.dom'
+        lp_user = self.factory.makePerson(name='albatros', email=lp_user_email)
+        alt_email = self.factory.makeEmail('bat@eg.dom', person=lp_user)
+        with person_logged_in(lp_user):
+            lp_user.join(team)
+            mailing_list.unsubscribe(lp_user)
+            mailing_list.subscribe(lp_user, alt_email)
+        self.runner._oneloop()
+        with locked_list(self.mm_list):
+            self.assertEqual(1, self.mm_list.isMember('bat@eg.dom'))
+
+    def test_get_subscriptions_leave_team(self):
+        # List members are removed when the leave the team.
+        team, mailing_list = self.makeTeamList('team-1', 'owner-1')
+        lp_user_email = 'albatros@eg.dom'
+        lp_user = self.factory.makePerson(name='albatros', email=lp_user_email)
+        with person_logged_in(lp_user):
+            lp_user.join(team)
+        self.runner._oneloop()
+        with person_logged_in(lp_user):
+            lp_user.leave(team)
+        self.runner._oneloop()
+        with locked_list(self.mm_list):
+            self.assertEqual(0, self.mm_list.isMember('albatros@eg.dom'))
+
+    def test_get_subscriptions_rejoin_team(self):
+        # Former list members are restored when they rejoin the team.
+        team, mailing_list = self.makeTeamList('team-1', 'owner-1')
+        lp_user_email = 'albatros@eg.dom'
+        lp_user = self.factory.makePerson(name='albatros', email=lp_user_email)
+        with person_logged_in(lp_user):
+            lp_user.join(team)
+        self.runner._oneloop()
+        with person_logged_in(lp_user):
+            lp_user.leave(team)
+        self.runner._oneloop()
+        with person_logged_in(lp_user):
+            lp_user.join(team)
+        self.runner._oneloop()
+        with locked_list(self.mm_list):
+            self.assertEqual(1, self.mm_list.isMember('albatros@eg.dom'))
+
+    def test_get_subscriptions_batching(self):
+        # get_subscriptions iterates over batches of lists.
+        config.push('batching test',
+            """
+            [mailman]
+            subscription_batch_size: 1
+            """)
+        self.addCleanup(config.pop, 'batching test')
+        team_1, mailing_list_1 = self.makeTeamList('team-1', 'owner-1')
+        mm_list_1 = self.mm_list
+        team_2, mailing_list_2 = self.makeTeamList('team-2', 'owner-2')
+        mm_list_2 = self.mm_list
+        self.addCleanup(self.cleanMailmanList, mm_list_1)
+        lp_user_email = 'albatros@eg.dom'
+        lp_user = self.factory.makePerson(name='albatros', email=lp_user_email)
+        with person_logged_in(lp_user):
+            # The factory person has auto join mailing list enabled.
+            lp_user.join(team_1)
+            lp_user.join(team_2)
+        self.runner._oneloop()
+        with locked_list(mm_list_1):
+            self.assertEqual(1, mm_list_1.isMember(lp_user_email))
+        with locked_list(mm_list_2):
+            self.assertEqual(1, mm_list_2.isMember(lp_user_email))
+
+    def test_constructing_to_active_recovery(self):
+        # Lp is informed of the active list if it wrongly believes it is
+        # being constructed.
+        team = self.factory.makeTeam(name='team-1')
+        mailing_list = getUtility(IMailingListSet).new(team, team.teamowner)
+        self.addCleanup(self.cleanMailmanList, None, 'team-1')
+        self.runner._oneloop()
+        removeSecurityProxy(mailing_list).status = (
+            MailingListStatus.CONSTRUCTING)
+        self.runner._oneloop()
+        self.assertEqual(MailingListStatus.ACTIVE, mailing_list.status)
+
+    def test_nonexistent_to_active_recovery(self):
+        # Mailman will build the list if Lp thinks it is exists in the
+        # CONSTRUCTING state
+        team = self.factory.makeTeam(name='team-1')
+        mailing_list = getUtility(IMailingListSet).new(team, team.teamowner)
+        removeSecurityProxy(mailing_list).status = (
+            MailingListStatus.CONSTRUCTING)
+        self.runner._oneloop()
+        self.assertContentEqual(
+            [mm_cfg.MAILMAN_SITE_LIST, 'team-1'], list_names())
+        mm_list = MailList.MailList('team-1')
+        self.addCleanup(self.cleanMailmanList, mm_list)
+        self.assertEqual(
+            'team-1@lists.launchpad.dev', mm_list.getListAddress())
+        self.assertEqual(MailingListStatus.ACTIVE, mailing_list.status)
+
+    def test_updating_to_active_recovery(self):
+        # Lp is informed of the active list if it wrongly believes it is
+        # being updated.
+        team = self.factory.makeTeam(name='team-1')
+        mailing_list = getUtility(IMailingListSet).new(team, team.teamowner)
+        self.addCleanup(self.cleanMailmanList, None, 'team-1')
+        self.runner._oneloop()
+        removeSecurityProxy(mailing_list).status = (
+            MailingListStatus.UPDATING)
+        self.runner._oneloop()
+        self.assertEqual(MailingListStatus.ACTIVE, mailing_list.status)
