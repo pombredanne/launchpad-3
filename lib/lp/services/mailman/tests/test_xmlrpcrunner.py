@@ -242,6 +242,7 @@ class OneLoopTestCase(MailmanTestCase):
         tarball = tarfile.open(backup_file, 'r:gz')
         content = ['team-1', 'team-1/config.pck']
         self.assertContentEqual(content, tarball.getnames())
+        self.assertEqual(MailingListStatus.INACTIVE, mailing_list.status)
 
     def test_modify(self):
         # Lists are modified in mailman after they are modified in Lp.
@@ -264,6 +265,7 @@ class OneLoopTestCase(MailmanTestCase):
         self.assertFalse(os.path.exists(backup_file))
         self.assertEqual(
             'team-1@lists.launchpad.dev', self.mm_list.getListAddress())
+        self.assertEqual(MailingListStatus.ACTIVE, mailing_list.status)
 
     def test_get_subscriptions_add(self):
         # List members are added in mailman after they are subscribed in Lp.
