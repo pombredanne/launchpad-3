@@ -1558,12 +1558,10 @@ class PublishingSet:
             packageupload=packageupload)
         DistributionSourcePackage.ensure(pub)
 
-        if create_dsd_job:
-            if archive == distroseries.main_archive:
-                dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
-                dsd_job_source.createForPackagePublication(
-                    distroseries, sourcepackagerelease.sourcepackagename,
-                    pocket)
+        if create_dsd_job and archive == distroseries.main_archive:
+            dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
+            dsd_job_source.createForPackagePublication(
+                distroseries, sourcepackagerelease.sourcepackagename, pocket)
         Store.of(sourcepackagerelease).flush()
         del get_property_cache(sourcepackagerelease).published_archives
         return pub
@@ -1802,8 +1800,7 @@ class PublishingSet:
 
         return result_set
 
-    def getBinaryPublicationsForSources(self,
-                                        one_or_more_source_publications):
+    def getBinaryPublicationsForSources(self, one_or_more_source_publications):
         """See `IPublishingSet`."""
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
@@ -1850,11 +1847,8 @@ class PublishingSet:
 
     def getChangesFilesForSources(self, one_or_more_source_publications):
         """See `IPublishingSet`."""
-        # Import PackageUpload and PackageUploadSource locally
-        # to avoid circular imports, since PackageUpload uses
-        # SourcePackagePublishingHistory.
-        from lp.soyuz.model.queue import (
-            PackageUpload, PackageUploadSource)
+        # Avoid circular imports.
+        from lp.soyuz.model.queue import PackageUpload, PackageUploadSource
 
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
@@ -1882,8 +1876,7 @@ class PublishingSet:
 
     def getChangesFileLFA(self, spr):
         """See `IPublishingSet`."""
-        # Import PackageUpload and PackageUploadSource locally to avoid
-        # circular imports.
+        # Avoid circular imports.
         from lp.soyuz.model.queue import PackageUpload, PackageUploadSource
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
