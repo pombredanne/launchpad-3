@@ -249,9 +249,11 @@ class OneLoopTestCase(MailmanTestCase):
         team, mailing_list = self.makeTeamList('team-1', 'owner-1')
         with person_logged_in(team.teamowner):
             mailing_list.welcome_message = 'hello'
+        self.assertEqual(MailingListStatus.MODIFIED, mailing_list.status)
         self.runner._oneloop()
         self.mm_list.Load()
         self.assertEqual('hello', self.mm_list.welcome_msg)
+        self.assertEqual(MailingListStatus.ACTIVE, mailing_list.status)
 
     def test_reactivate(self):
         # Lists are deactivted in mailman after they are deactivate in Lp.
@@ -375,4 +377,16 @@ class OneLoopTestCase(MailmanTestCase):
         self.addCleanup(self.cleanMailmanList, mm_list)
         self.assertEqual(
             'team-1@lists.launchpad.dev', mm_list.getListAddress())
+        self.assertEqual(MailingListStatus.ACTIVE, mailing_list.status)
+
+    def test_updating_to_active_recovery(self):
+        # Lp is informed of the active list if it wrongly believes it is
+        # being updated.
+        team = self.factory.makeTeam(name='team-1')
+        mailing_list = getUtility(IMailingListSet).new(team, team.teamowner)
+        self.addCleanup(self.cleanMailmanList, None, 'team-1')
+        self.runner._oneloop()
+        removeSecurityProxy(mailing_list).status = (
+            MailingListStatus.UPDATING)
+        self.runner._oneloop()
         self.assertEqual(MailingListStatus.ACTIVE, mailing_list.status)
