@@ -3,8 +3,12 @@
 
 """Test BuildQueue features."""
 
-from datetime import timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+import pytz
 from simplejson import dumps
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy

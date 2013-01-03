@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from lp.app.enums import ServiceUsage
+from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     BrowserTestCase,
     celebrity_logged_in,

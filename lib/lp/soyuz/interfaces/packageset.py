@@ -1,6 +1,8 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+# pylint: disable-msg=E0211,E0213
+
 """Packageset interfaces."""
 
 __metaclass__ = type
@@ -21,6 +23,7 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_destructor_operation,
     export_factory_operation,
+    export_operation_as,
     export_read_operation,
     export_write_operation,
     exported,

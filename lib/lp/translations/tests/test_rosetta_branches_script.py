@@ -10,7 +10,10 @@ provisions to handle Bazaar branches.
 __metaclass__ = type
 
 from bzrlib.revision import NULL_REVISION
-from testtools.matchers import Equals
+from testtools.matchers import (
+    Equals,
+    MatchesAny,
+    )
 import transaction
 from zope.component import getUtility
 
