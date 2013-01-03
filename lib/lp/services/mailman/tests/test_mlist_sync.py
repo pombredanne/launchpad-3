@@ -22,7 +22,7 @@ from transaction import commit
 from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.identity.model.emailaddress import EmailAddressSet
-from lp.services.mailman.testing import MailmanTestCase
+from lp.services.mailman.tests import MailmanTestCase
 from lp.testing import person_logged_in
 from lp.testing.layers import DatabaseFunctionalLayer
 

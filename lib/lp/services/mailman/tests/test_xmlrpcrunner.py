@@ -34,7 +34,7 @@ from lp.services.config import config
 from lp.services.mailman.monkeypatches.xmlrpcrunner import (
     get_mailing_list_api_proxy,
     )
-from lp.services.mailman.testing import (
+from lp.services.mailman.tests import (
     get_mailing_list_api_test_proxy,
     MailmanTestCase,
     )

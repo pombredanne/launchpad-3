@@ -13,7 +13,7 @@ from Mailman.mm_cfg import MAILMAN_SITE_LIST
 
 from lp.services.config import config
 from lp.services.mailman.config import configure_prefix
-from lp.services.mailman.testing import MailmanTestCase
+from lp.services.mailman.tests import MailmanTestCase
 from lp.testing import person_logged_in
 from lp.testing.layers import DatabaseFunctionalLayer
 
