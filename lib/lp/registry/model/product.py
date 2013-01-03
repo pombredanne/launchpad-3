@@ -788,7 +788,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         existing_types = set([
             access_policy.type for access_policy in existing_policies])
         # Create the missing policies.
-        required_types = set(information_types).difference(existing_types)
+        required_types = set(information_types).difference(
+            existing_types).intersection(PRIVATE_INFORMATION_TYPES)
         policies = itertools.product((self,), required_types)
         policies = getUtility(IAccessPolicySource).create(policies)
 
@@ -805,12 +806,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         allowed_branch_types = set(
             BRANCH_POLICY_ALLOWED_TYPES.get(
                 self.branch_sharing_policy, FREE_INFORMATION_TYPES))
-        allowed_specification_types = set(
+        allowed_spec_types = set(
             SPECIFICATION_POLICY_ALLOWED_TYPES.get(
-                self.specification_sharing_policy, [InformationType.PUBLIC])
-        )
-        allowed_types = allowed_bug_types.union(allowed_branch_types)
-        allowed_types = allowed_types.union(allowed_specification_types)
+                self.specification_sharing_policy, [InformationType.PUBLIC]))
+        allowed_types = (
+            allowed_bug_types | allowed_branch_types | allowed_spec_types)
         allowed_types.add(self.information_type)
         # Fetch all APs, and after filtering out ones that are forbidden
         # by the bug, branch, and specification policies, the APs that have no
