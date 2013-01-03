@@ -279,13 +279,26 @@ class OneLoopTestCase(MailmanTestCase):
         lp_user = self.factory.makePerson(name='albatros', email=lp_user_email)
         alt_email = self.factory.makeEmail('bat@eg.dom', person=lp_user)
         with person_logged_in(lp_user):
-            # The factory person has auto join mailing list enabled.
             lp_user.join(team)
             mailing_list.unsubscribe(lp_user)
             mailing_list.subscribe(lp_user, alt_email)
         self.runner._oneloop()
         with locked_list(self.mm_list):
             self.assertEqual(1, self.mm_list.isMember('bat@eg.dom'))
+
+    def test_get_subscriptions_leave_team(self):
+        # List members are removed when the leave the team.
+        team, mailing_list = self.makeTeamList('team-1', 'owner-1')
+        lp_user_email = 'albatros@eg.dom'
+        lp_user = self.factory.makePerson(name='albatros', email=lp_user_email)
+        with person_logged_in(lp_user):
+            lp_user.join(team)
+        self.runner._oneloop()
+        with person_logged_in(lp_user):
+            lp_user.leave(team)
+        self.runner._oneloop()
+        with locked_list(self.mm_list):
+            self.assertEqual(0, self.mm_list.isMember('bat@eg.dom'))
 
     def test_get_subscriptions_batching(self):
         # get_subscriptions iterates over batches of lists.
