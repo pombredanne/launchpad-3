@@ -180,7 +180,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             Join(PackageUpload,
                  PackageUploadBuild.packageuploadID == PackageUpload.id),
             Join(LibraryFileAlias,
-                 LibraryFileAlias.id == PackageUpload.changesfileID),
+                 LibraryFileAlias.id == PackageUpload.changes_file_id),
             Join(LibraryFileContent,
                  LibraryFileContent.id == LibraryFileAlias.contentID),
             ]

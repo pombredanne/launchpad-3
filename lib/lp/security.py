@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=F0401
-
 """Security policies for using content objects."""
 
 __metaclass__ = type
@@ -1836,10 +1834,10 @@ class ViewPackageUpload(AuthorizationBase):
         # We cannot use self.obj.sourcepackagerelease, as that causes
         # interference with the property cache if we are called in the
         # process of adding a source or a build.
-        if not self.obj._sources.is_empty():
-            spr = self.obj._sources[0].sourcepackagerelease
-        elif not self.obj._builds.is_empty():
-            spr = self.obj._builds[0].build.source_package_release
+        if self.obj.sources:
+            spr = self.obj.sources[0].sourcepackagerelease
+        elif self.obj.builds:
+            spr = self.obj.builds[0].build.source_package_release
         else:
             spr = None
         if spr is not None:

@@ -1554,7 +1554,7 @@ class Archive(SQLBase):
                     PackageUploadSource.sourcepackagereleaseID,
                 PackageUploadSource.packageuploadID == PackageUpload.id,
                 PackageUpload.status == PackageUploadStatus.DONE,
-                PackageUpload.changesfileID == LibraryFileAlias.id,
+                PackageUpload.changes_file_id == LibraryFileAlias.id,
                 )
         else:
             raise NotFoundError(filename)
