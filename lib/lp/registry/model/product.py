@@ -1553,8 +1553,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getLinkedBugWatches(self):
         """See `IProduct`."""
-        store = Store.of(self)
-        return store.find(
+        return Store.of(self).find(
             BugWatch,
             And(BugTask.product == self.id,
                 BugTask.bugwatch == BugWatch.id,
@@ -1575,8 +1574,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def recipes(self):
         """See `IHasRecipes`."""
-        store = Store.of(self)
-        return store.find(
+        return Store.of(self).find(
             SourcePackageRecipe,
             SourcePackageRecipe.id ==
                 SourcePackageRecipeData.sourcepackage_recipe_id,
