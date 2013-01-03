@@ -347,7 +347,7 @@ class OneLoopTestCase(MailmanTestCase):
         with locked_list(mm_list_2):
             self.assertEqual(1, mm_list_2.isMember(lp_user_email))
 
-    def test_construction_to_active_recovery(self):
+    def test_constructing_to_active_recovery(self):
         # Lp is informed of the active list if it wrongly believes it is
         # being constructed.
         team = self.factory.makeTeam(name='team-1')
@@ -357,4 +357,20 @@ class OneLoopTestCase(MailmanTestCase):
         removeSecurityProxy(mailing_list).status = (
             MailingListStatus.CONSTRUCTING)
         self.runner._oneloop()
+        self.assertEqual(MailingListStatus.ACTIVE, mailing_list.status)
+
+    def test_nonexistent_to_active_recovery(self):
+        # Mailman will build the list if Lp thinks it is exists in the
+        # CONSTRUCTING state
+        team = self.factory.makeTeam(name='team-1')
+        mailing_list = getUtility(IMailingListSet).new(team, team.teamowner)
+        removeSecurityProxy(mailing_list).status = (
+            MailingListStatus.CONSTRUCTING)
+        self.runner._oneloop()
+        self.assertContentEqual(
+            [mm_cfg.MAILMAN_SITE_LIST, 'team-1'], list_names())
+        mm_list = MailList.MailList('team-1')
+        self.addCleanup(self.cleanMailmanList, mm_list)
+        self.assertEqual(
+            'team-1@lists.launchpad.dev', mm_list.getListAddress())
         self.assertEqual(MailingListStatus.ACTIVE, mailing_list.status)
