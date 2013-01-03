@@ -75,7 +75,10 @@ from lp.answers.interfaces.questiontarget import (
     IAnswersFrontPageSearchForm,
     IQuestionTarget,
     )
-from lp.answers.vocabulary import UsesAnswersDistributionVocabulary
+from lp.answers.vocabulary import (
+    UsesAnswersDistributionVocabulary,
+    UsesAnswersProductVocabulary,
+    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

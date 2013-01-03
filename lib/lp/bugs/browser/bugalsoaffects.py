@@ -9,6 +9,7 @@ __all__ = [
     'BugAlsoAffectsProductWithProductCreationView'
     ]
 
+import cgi
 from textwrap import dedent
 
 from lazr.enum import (
