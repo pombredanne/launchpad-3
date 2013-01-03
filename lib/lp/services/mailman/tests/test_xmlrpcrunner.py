@@ -43,6 +43,7 @@ from lp.testing import (
     person_logged_in,
     TestCase,
     )
+from lp.testing.fixture import CaptureOops
 from lp.testing.layers import (
     BaseLayer,
     DatabaseFunctionalLayer,
@@ -180,6 +181,36 @@ class TestHandleProxyError(MailmanTestCase):
         self.assertIsEnqueued(msg)
 
 
+class OopsReportingTestCase(MailmanTestCase):
+    """Test XMLRPCRunner reports oopses."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(OopsReportingTestCase, self).setUp()
+        self.mm_list = None
+        syslog.write_ex('xmlrpc', 'Ensure the log is open.')
+        self.reset_log()
+        self.runner = XMLRPCRunner()
+        # MailmanTestCase's setup of the test proxy is ignored because
+        # the runner had a reference to the true proxy in its __init__.
+        self.runner._proxy = get_mailing_list_api_test_proxy()
+
+    def test_oops_reporting(self):
+        capture = CaptureOops()
+        capture.setUp()
+        with one_loop_exception(self.runner):
+            self.runner._oneloop()
+        oops = capture.oopses[0]
+        capture.cleanUp()
+        self.assertEqual('T-mailman', oops['reporter'])
+        self.assertTrue(oops['id'].startswith('OOPS-'))
+        self.assertEqual('Exception', oops['type'])
+        self.assertEqual('Test exception handling.', oops['value'])
+        self.assertTrue(
+            oops['tb_text'].startswith('Traceback (most recent call last):'))
+
+
 @contextmanager
 def locked_list(mm_list):
     """Ensure a lock is not held."""
@@ -201,8 +232,6 @@ class OneLoopTestCase(MailmanTestCase):
     def setUp(self):
         super(OneLoopTestCase, self).setUp()
         self.mm_list = None
-        syslog.write_ex('xmlrpc', 'Ensure the log is open.')
-        self.reset_log()
         self.runner = XMLRPCRunner()
         # MailmanTestCase's setup of the test proxy is ignored because
         # the runner had a reference to the true proxy in its __init__.
