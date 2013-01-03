@@ -298,7 +298,24 @@ class OneLoopTestCase(MailmanTestCase):
             lp_user.leave(team)
         self.runner._oneloop()
         with locked_list(self.mm_list):
-            self.assertEqual(0, self.mm_list.isMember('bat@eg.dom'))
+            self.assertEqual(0, self.mm_list.isMember('albatros@eg.dom'))
+
+    def test_get_subscriptions_rejoin_team(self):
+        # Former list members are restored when they rejoin the team.
+        team, mailing_list = self.makeTeamList('team-1', 'owner-1')
+        lp_user_email = 'albatros@eg.dom'
+        lp_user = self.factory.makePerson(name='albatros', email=lp_user_email)
+        with person_logged_in(lp_user):
+            lp_user.join(team)
+        self.runner._oneloop()
+        with person_logged_in(lp_user):
+            lp_user.leave(team)
+        self.runner._oneloop()
+        with person_logged_in(lp_user):
+            lp_user.join(team)
+        self.runner._oneloop()
+        with locked_list(self.mm_list):
+            self.assertEqual(1, self.mm_list.isMember('albatros@eg.dom'))
 
     def test_get_subscriptions_batching(self):
         # get_subscriptions iterates over batches of lists.
