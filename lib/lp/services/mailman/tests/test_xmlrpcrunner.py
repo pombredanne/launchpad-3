@@ -187,7 +187,10 @@ def locked_list(mm_list):
 
 
 class OneLoopTestCase(MailmanTestCase):
-    """Test XMLRPCRunner._oneloop method."""
+    """Test XMLRPCRunner._oneloop method.
+
+    The _oneloop() method calls all the methods used to sync Lp to Mailman.
+    """
 
     layer = DatabaseFunctionalLayer
 
@@ -209,8 +212,56 @@ class OneLoopTestCase(MailmanTestCase):
             self.mm_list.Unlock()
         return team, mailing_list
 
-    def test_oneloop_get_subscriptions_add(self):
-        # List menbers are added in mailman after they are subscribed in Lp.
+    def test_create(self):
+        # Lists are created in mailman after they are created in Lp.
+        team = self.factory.makeTeam(name='team-1')
+        # The factory cannot be used because it forces the list into a
+        # usable state.
+        getUtility(IMailingListSet).new(team, team.teamowner)
+        self.runner._oneloop()
+        self.assertContentEqual(
+            [mm_cfg.MAILMAN_SITE_LIST, 'team-1'], list_names())
+        mm_list = MailList.MailList('team-1')
+        self.assertEqual(
+            'team-1@lists.launchpad.dev', mm_list.getListAddress())
+        self.addCleanup(self.cleanMailmanList, mm_list)
+
+    def test_deactivate(self):
+        # Lists are deactivted in mailman after they are deactivate in Lp.
+        team, mailing_list = self.makeTeamList('team-1', 'owner-1')
+        mailing_list.deactivate()
+        self.runner._oneloop()
+        self.assertContentEqual([mm_cfg.MAILMAN_SITE_LIST], list_names())
+        backup_file = os.path.join(mm_cfg.VAR_PREFIX, 'backups', 'team-1.tgz')
+        self.assertTrue(os.path.exists(backup_file))
+        tarball = tarfile.open(backup_file, 'r:gz')
+        content = ['team-1', 'team-1/config.pck']
+        self.assertContentEqual(content, tarball.getnames())
+
+    def test_modify(self):
+        # Lists are modified in mailman after they are modified in Lp.
+        team, mailing_list = self.makeTeamList('team-1', 'owner-1')
+        with person_logged_in(team.teamowner):
+            mailing_list.welcome_message = 'hello'
+        self.runner._oneloop()
+        self.mm_list.Load()
+        self.assertEqual('hello', self.mm_list.welcome_msg)
+
+    def test_reactivate(self):
+        # Lists are deactivted in mailman after they are deactivate in Lp.
+        team, mailing_list = self.makeTeamList('team-1', 'owner-1')
+        mailing_list.deactivate()
+        self.runner._oneloop()
+        backup_file = os.path.join(mm_cfg.VAR_PREFIX, 'backups', 'team-1.tgz')
+        self.assertTrue(os.path.exists(backup_file))
+        mailing_list.reactivate()
+        self.runner._oneloop()
+        self.assertFalse(os.path.exists(backup_file))
+        self.assertEqual(
+            'team-1@lists.launchpad.dev', self.mm_list.getListAddress())
+
+    def test_get_subscriptions_add(self):
+        # List members are added in mailman after they are subscribed in Lp.
         team, mailing_list = self.makeTeamList('team-1', 'owner-1')
         lp_user_email = 'albatros@eg.dom'
         lp_user = self.factory.makePerson(name='albatros', email=lp_user_email)
@@ -221,7 +272,22 @@ class OneLoopTestCase(MailmanTestCase):
         with locked_list(self.mm_list):
             self.assertEqual(1, self.mm_list.isMember(lp_user_email))
 
-    def test_oneloop_get_subscriptions_batching(self):
+    def test_get_subscriptions_add_alternate(self):
+        # List members can have alternate addresses provided by Lp..
+        team, mailing_list = self.makeTeamList('team-1', 'owner-1')
+        lp_user_email = 'albatros@eg.dom'
+        lp_user = self.factory.makePerson(name='albatros', email=lp_user_email)
+        alt_email = self.factory.makeEmail('bat@eg.dom', person=lp_user)
+        with person_logged_in(lp_user):
+            # The factory person has auto join mailing list enabled.
+            lp_user.join(team)
+            mailing_list.unsubscribe(lp_user)
+            mailing_list.subscribe(lp_user, alt_email)
+        self.runner._oneloop()
+        with locked_list(self.mm_list):
+            self.assertEqual(1, self.mm_list.isMember('bat@eg.dom'))
+
+    def test_get_subscriptions_batching(self):
         # get_subscriptions iterates over batches of lists.
         config.push('batching test',
             """
@@ -245,51 +311,3 @@ class OneLoopTestCase(MailmanTestCase):
             self.assertEqual(1, mm_list_1.isMember(lp_user_email))
         with locked_list(mm_list_2):
             self.assertEqual(1, mm_list_2.isMember(lp_user_email))
-
-    def test_oneloop_create(self):
-        # Lists are created in mailman after they are created in Lp.
-        team = self.factory.makeTeam(name='team-1')
-        # The factory cannot be used because it forces the list into a
-        # usable state.
-        getUtility(IMailingListSet).new(team, team.teamowner)
-        self.runner._oneloop()
-        self.assertContentEqual(
-            [mm_cfg.MAILMAN_SITE_LIST, 'team-1'], list_names())
-        mm_list = MailList.MailList('team-1')
-        self.assertEqual(
-            'team-1@lists.launchpad.dev', mm_list.getListAddress())
-        self.addCleanup(self.cleanMailmanList, mm_list)
-
-    def test_oneloop_deactivate(self):
-        # Lists are deactivted in mailman after they are deactivate in Lp.
-        team, mailing_list = self.makeTeamList('team-1', 'owner-1')
-        mailing_list.deactivate()
-        self.runner._oneloop()
-        self.assertContentEqual([mm_cfg.MAILMAN_SITE_LIST], list_names())
-        backup_file = os.path.join(mm_cfg.VAR_PREFIX, 'backups', 'team-1.tgz')
-        self.assertTrue(os.path.exists(backup_file))
-        tarball = tarfile.open(backup_file, 'r:gz')
-        content = ['team-1', 'team-1/config.pck']
-        self.assertContentEqual(content, tarball.getnames())
-
-    def test_oneloop_modify(self):
-        # Lists are modified in mailman after they are modified in Lp.
-        team, mailing_list = self.makeTeamList('team-1', 'owner-1')
-        with person_logged_in(team.teamowner):
-            mailing_list.welcome_message = 'hello'
-        self.runner._oneloop()
-        self.mm_list.Load()
-        self.assertEqual('hello', self.mm_list.welcome_msg)
-
-    def test_oneloop_reactivate(self):
-        # Lists are deactivted in mailman after they are deactivate in Lp.
-        team, mailing_list = self.makeTeamList('team-1', 'owner-1')
-        mailing_list.deactivate()
-        self.runner._oneloop()
-        backup_file = os.path.join(mm_cfg.VAR_PREFIX, 'backups', 'team-1.tgz')
-        self.assertTrue(os.path.exists(backup_file))
-        mailing_list.reactivate()
-        self.runner._oneloop()
-        self.assertFalse(os.path.exists(backup_file))
-        self.assertEqual(
-            'team-1@lists.launchpad.dev', self.mm_list.getListAddress())
