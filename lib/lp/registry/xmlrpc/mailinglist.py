@@ -240,10 +240,10 @@ class MailingListAPIView(LaunchpadXMLRPCView):
     def holdMessage(self, team_name, bytes):
         """See `IMailingListAPIView`."""
         # For testing purposes, accept both strings and Binary instances.  In
-        # production, and as tested by 'bin/test--layer=MailmanLayer' bytes
-        # will always be a Binary so that unencoded non-ascii characters in
-        # the message can be safely passed across XMLRPC.  For most tests
-        # though it's much more convenient to just pass 8-bit strings.
+        # production, bytes will always be a Binary so that unencoded
+        # non-ascii characters in the message can be safely passed across
+        # XMLRPC. For most tests though it's much more convenient to just
+        # pass 8-bit strings.
         if isinstance(bytes, xmlrpclib.Binary):
             bytes = bytes.data
         # Although it is illegal for an email header to have unencoded

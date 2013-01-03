@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'collect_archive_message_ids',
-    'create_list',
     'ensure_addresses_are_disabled',
     'ensure_addresses_are_enabled',
     'ensure_membership',
@@ -40,7 +39,6 @@ from Mailman.MemberAdaptor import (
     BYUSER,
     ENABLED,
     )
-from Mailman.Utils import list_names
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -48,12 +46,10 @@ from zope.security.proxy import removeSecurityProxy
 from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.tests import mailinglists_helper
-from lp.services.mailman.testing.layers import MailmanLayer
 from lp.testing import (
     celebrity_logged_in,
     person_logged_in,
     )
-from lp.testing.browser import Browser
 from lp.testing.factory import LaunchpadObjectFactory
 
 
@@ -76,33 +72,6 @@ def get_size(path):
             return -1
         # Some other error occurred.
         raise
-
-
-def create_list(team_name):
-    """Do everything you need to do to make the team's list live."""
-    displayname = SPACE.join(
-        word.capitalize() for word in team_name.split('-'))
-    browser = Browser('no-priv@canonical.com:test')
-    # Create the team.
-    browser.open('%s/people/+newteam' % MailmanLayer.appserver_root_url())
-    browser.getControl(name='field.name').value = team_name
-    browser.getControl('Display Name').value = displayname
-    browser.getControl(name='field.membership_policy').displayValue = [
-        'Open Team']
-    browser.getControl('Create').click()
-    # Create the mailing list.
-    browser.getLink('Create a mailing list').click()
-    browser.getControl('Create new Mailing List').click()
-    list_set = getUtility(IMailingListSet)
-    mailing_list = list_set.get(team_name)
-    # pylint: disable-msg=F0401
-    assert team_name in list_names(), (
-        'Mailing list was not created: %s (found: %s)' %
-        (team_name, list_names()))
-    result = ensure_membership(team_name, 'archive@mail-archive.dev')
-    if result is not None:
-        return result
-    return mailing_list
 
 
 def run_mailman(*args):
