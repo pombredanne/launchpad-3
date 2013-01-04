@@ -138,10 +138,15 @@ class XMLRPCRunner(Runner):
         This method always returns 0 to indicate to the base class's main loop
         that it should sleep for a while after calling this method.
         """
+        methods = (
+            self._check_list_actions, self._get_subscriptions,
+            self._check_held_messages)
         try:
-            self._check_list_actions()
-            self._get_subscriptions()
-            self._check_held_messages()
+            for method in methods:
+                if self._shortcircuit():
+                    # The runner was  shutdown during the long network call.
+                    break
+                method()
         except:
             # Log the exception and report an OOPS.
             log_exception('Unexpected XMLRPCRunner exception')

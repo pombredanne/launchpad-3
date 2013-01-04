@@ -40,6 +40,7 @@ from lp.services.mailman.tests import (
 from lp.services.xmlrpc import Transport
 from lp.testing import (
     person_logged_in,
+    monkey_patch,
     TestCase,
     )
 from lp.testing.fixture import CaptureOops
@@ -418,3 +419,25 @@ class OneLoopTestCase(MailmanTestCase):
             MailingListStatus.UPDATING)
         self.runner._oneloop()
         self.assertEqual(MailingListStatus.ACTIVE, mailing_list.status)
+
+    def test_shortcircuit(self):
+        # Oneloop will exit early if the runner is stopping.
+        class State:
+
+            def __init__(self):
+                self.checked = None
+
+        shortcircut = State()
+
+        def fake_called():
+            shortcircut.checked = False
+
+        def fake_stop():
+            shortcircut.checked = True
+            self.runner.stop()
+
+        with monkey_patch(self.runner,
+                _check_list_actions=fake_stop, _get_subscriptions=fake_called):
+            self.runner._oneloop()
+            self.assertTrue(self.runner._shortcircuit())
+            self.assertTrue(shortcircut.checked)
