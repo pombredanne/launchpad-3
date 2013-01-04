@@ -335,7 +335,8 @@ class DistributionSourcePackage(BugTargetBase,
                 PackagePublishingStatus.PUBLISHED),
             (SourcePackagePublishingHistory.sourcepackagerelease ==
                 SourcePackageRelease.id),
-            SourcePackageRelease.sourcepackagename == self.sourcepackagename,
+            (SourcePackagePublishingHistory.sourcepackagename ==
+                self.sourcepackagename),
             # Ensure that the package was not copied.
             SourcePackageRelease.upload_archive == Archive.id,
             # Next, the joins for the ordering by soyuz karma of the
