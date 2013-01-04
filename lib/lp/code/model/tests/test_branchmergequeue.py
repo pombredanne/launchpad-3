@@ -16,8 +16,8 @@ from lp.testing import (
     launchpadlib_for,
     person_logged_in,
     TestCaseWithFactory,
-    ws_object,
     verifyObject,
+    ws_object,
     )
 from lp.testing.layers import (
     AppServerLayer,
