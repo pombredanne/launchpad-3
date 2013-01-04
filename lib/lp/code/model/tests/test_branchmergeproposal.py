@@ -72,9 +72,9 @@ from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
+    verifyObject,
     WebServiceTestCase,
     ws_object,
-    verifyObject,
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
