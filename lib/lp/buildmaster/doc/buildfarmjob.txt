@@ -4,8 +4,7 @@ BuildFarmJob
     >>> from lp.buildmaster.interfaces.buildfarmjob import (
     ...     IBuildFarmJob)
     >>> from lp.buildmaster.enums import BuildFarmJobType
-    >>> from lp.buildmaster.model.buildfarmjob import (
-    ...     BuildFarmJob, BuildFarmJobDerived)
+    >>> from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 
 BuildFarmJob provides a basic implementation of IBuildFarmJob.  The
 specific build farm job classes will automatically delegate to
