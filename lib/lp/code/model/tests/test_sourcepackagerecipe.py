@@ -77,8 +77,8 @@ from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
-    ws_object,
     verifyObject,
+    ws_object,
     )
 from lp.testing.layers import (
     AppServerLayer,

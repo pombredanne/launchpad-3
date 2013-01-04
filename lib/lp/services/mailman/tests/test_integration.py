@@ -1,5 +1,6 @@
-# Copyright 20012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Test the compliation and configuration of the Lp mailman instance."""
 
 __metaclass__ = type

@@ -22,7 +22,6 @@ from Mailman.Queue.XMLRPCRunner import (
     XMLRPCRunner,
     )
 from Mailman.Utils import list_names
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
