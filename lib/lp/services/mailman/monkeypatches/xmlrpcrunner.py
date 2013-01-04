@@ -350,6 +350,9 @@ class XMLRPCRunner(Runner):
         # different.
         shuffle(lists)
         while lists:
+            if self._shortcircuit():
+                # Stop was called during a long network call.
+                return
             batch = lists[:mm_cfg.XMLRPC_SUBSCRIPTION_BATCH_SIZE]
             lists = lists[mm_cfg.XMLRPC_SUBSCRIPTION_BATCH_SIZE:]
             ## syslog('xmlrpc', 'batch: %s', batch)

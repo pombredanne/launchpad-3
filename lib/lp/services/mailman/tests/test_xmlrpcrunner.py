@@ -380,6 +380,20 @@ class OneLoopTestCase(MailmanTestCase):
         with locked_list(mm_list_2):
             self.assertEqual(1, mm_list_2.isMember(lp_user_email))
 
+    def test_get_subscriptions_shortcircut(self):
+        # The method exist earlty without completing the update when
+        # the runner is stopping.
+        team, mailing_list = self.makeTeamList('team-1', 'owner-1')
+        lp_user_email = 'albatros@eg.dom'
+        lp_user = self.factory.makePerson(name='albatros', email=lp_user_email)
+        with person_logged_in(lp_user):
+            # The factory person has auto join mailing list enabled.
+            lp_user.join(team)
+        self.runner.stop()
+        self.runner._get_subscriptions()
+        with locked_list(self.mm_list):
+            self.assertEqual(0, self.mm_list.isMember(lp_user_email))
+
     def test_constructing_to_active_recovery(self):
         # Lp is informed of the active list if it wrongly believes it is
         # being constructed.
