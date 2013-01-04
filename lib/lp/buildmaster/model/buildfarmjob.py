@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -51,7 +51,6 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     ISpecificBuildFarmJobSource,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.services.database.constants import UTC_NOW
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
@@ -67,8 +66,6 @@ from lp.services.database.lpstorm import (
 class BuildFarmJobOld:
     """See `IBuildFarmJobOld`."""
     implements(IBuildFarmJobOld)
-    processor = None
-    virtualized = None
 
     def score(self):
         """See `IBuildFarmJobOld`."""
@@ -83,10 +80,6 @@ class BuildFarmJobOld:
         raise NotImplementedError
 
     def getTitle(self):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-    def makeJob(self):
         """See `IBuildFarmJobOld`."""
         raise NotImplementedError
 
@@ -219,7 +212,7 @@ class BuildFarmJobOldDerived:
         return True
 
 
-class BuildFarmJob(BuildFarmJobOld, Storm):
+class BuildFarmJob(Storm):
     """A base implementation for `IBuildFarmJob` classes."""
     __storm_table__ = 'BuildFarmJob'
 
@@ -299,37 +292,6 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
         """See `IBuildFarmJobOld`."""
         raise NotImplementedError
 
-    def jobStarted(self):
-        """See `IBuildFarmJob`."""
-        self.status = BuildStatus.BUILDING
-        # The build started, set the start time if not set already.
-        self.date_started = UTC_NOW
-        if self.date_first_dispatched is None:
-            self.date_first_dispatched = UTC_NOW
-
-    def jobReset(self):
-        """See `IBuildFarmJob`."""
-        self.status = BuildStatus.NEEDSBUILD
-        self.date_started = None
-
-    # The implementation of aborting a job is the same as resetting
-    # a job.
-    jobAborted = jobReset
-
-    def jobCancel(self):
-        """See `IBuildFarmJob`."""
-        self.status = BuildStatus.CANCELLED
-
-    @staticmethod
-    def addCandidateSelectionCriteria(processor, virtualized):
-        """See `IBuildFarmJob`."""
-        return ('')
-
-    @staticmethod
-    def postprocessCandidate(job, logger):
-        """See `IBuildFarmJob`."""
-        return True
-
     @property
     def buildqueue_record(self):
         """See `IBuildFarmJob`."""
@@ -352,15 +314,6 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
         implementations need to override for their specific context.
         """
         return None
-
-    def cleanUp(self):
-        """See `IBuildFarmJobOld`.
-
-        XXX 2010-05-04 michael.nelson bug=570939
-        This can be removed once IBuildFarmJobOld is no longer used
-        and services jobs are linked directly to IBuildFarmJob.
-        """
-        pass
 
     @property
     def was_built(self):

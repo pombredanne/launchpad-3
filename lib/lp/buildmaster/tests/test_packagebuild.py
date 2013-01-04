@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `IPackageBuild`."""
@@ -92,8 +92,8 @@ class TestPackageBuild(TestPackageBuildBase):
         self.assertEqual(self.package_build, retrieved_build)
 
     def test_unimplemented_methods(self):
-        # Classes deriving from PackageBuild must provide getTitle.
-        self.assertRaises(NotImplementedError, self.package_build.getTitle)
+        # Classes deriving from PackageBuild must provide various
+        # methods.
         self.assertRaises(
             NotImplementedError, self.package_build.estimateDuration)
         self.assertRaises(

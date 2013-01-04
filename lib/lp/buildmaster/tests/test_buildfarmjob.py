@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `IBuildFarmJob`."""
@@ -111,44 +111,7 @@ class TestBuildFarmJob(TestBuildFarmJobMixin, TestCaseWithFactory):
     def test_unimplemented_methods(self):
         # A build farm job leaves the implementation of various
         # methods for derived classes.
-        self.assertRaises(NotImplementedError, self.build_farm_job.score)
-        self.assertRaises(NotImplementedError, self.build_farm_job.getName)
-        self.assertRaises(NotImplementedError, self.build_farm_job.getTitle)
         self.assertRaises(NotImplementedError, self.build_farm_job.makeJob)
-
-    def test_jobStarted(self):
-        # Starting a job sets the date_started and status, as well as
-        # the date first dispatched, if it is the first dispatch of
-        # this job.
-        self.build_farm_job.jobStarted()
-        self.assertTrue(self.build_farm_job.date_first_dispatched is not None)
-        self.assertTrue(self.build_farm_job.date_started is not None)
-        self.assertEqual(
-            BuildStatus.BUILDING, self.build_farm_job.status)
-
-    def test_jobReset(self):
-        # Resetting a job sets its status back to NEEDSBUILD and unsets
-        # the date_started.
-        self.build_farm_job.jobStarted()
-        self.build_farm_job.jobReset()
-        self.failUnlessEqual(
-            BuildStatus.NEEDSBUILD, self.build_farm_job.status)
-        self.failUnless(self.build_farm_job.date_started is None)
-
-    def test_jobAborted(self):
-        # Aborting a job sets its status back to NEEDSBUILD and unsets
-        # the date_started.
-        self.build_farm_job.jobStarted()
-        self.build_farm_job.jobAborted()
-        self.failUnlessEqual(
-            BuildStatus.NEEDSBUILD, self.build_farm_job.status)
-        self.failUnless(self.build_farm_job.date_started is None)
-
-    def test_jobCancel(self):
-        # Cancelling a job sets its status to CANCELLED.
-        self.build_farm_job.jobStarted()
-        self.build_farm_job.jobCancel()
-        self.assertEqual(BuildStatus.CANCELLED, self.build_farm_job.status)
 
     def test_title(self):
         # The default title simply uses the job type's title.
@@ -159,10 +122,11 @@ class TestBuildFarmJob(TestBuildFarmJobMixin, TestCaseWithFactory):
     def test_duration_none(self):
         # If either start or finished is none, the duration will be
         # none.
-        self.build_farm_job.jobStarted()
+        removeSecurityProxy(self.build_farm_job).date_started = (
+            datetime.now(pytz.UTC))
         self.failUnlessEqual(None, self.build_farm_job.duration)
 
-        self.build_farm_job.jobAborted()
+        removeSecurityProxy(self.build_farm_job).date_started = None
         removeSecurityProxy(self.build_farm_job).date_finished = (
             datetime.now(pytz.UTC))
         self.failUnlessEqual(None, self.build_farm_job.duration)
