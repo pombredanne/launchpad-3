@@ -92,8 +92,8 @@ class TestPackageBuild(TestPackageBuildBase):
         self.assertEqual(self.package_build, retrieved_build)
 
     def test_unimplemented_methods(self):
-        # Classes deriving from PackageBuild must provide getTitle.
-        self.assertRaises(NotImplementedError, self.package_build.getTitle)
+        # Classes deriving from PackageBuild must provide various
+        # methods.
         self.assertRaises(
             NotImplementedError, self.package_build.estimateDuration)
         self.assertRaises(
