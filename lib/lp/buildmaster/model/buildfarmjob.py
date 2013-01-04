@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = [
     'BuildFarmJob',
     'BuildFarmJobDerived',
+    'BuildFarmJobMixin',
     'BuildFarmJobOld',
     'BuildFarmJobOldDerived',
     ]
@@ -276,6 +277,34 @@ class BuildFarmJob(Storm):
         store.add(build_farm_job)
         return build_farm_job
 
+    def getSpecificJob(self):
+        """See `IBuild`"""
+        # Adapt ourselves based on our job type.
+        try:
+            source = getUtility(
+                ISpecificBuildFarmJobSource, self.job_type.name)
+        except ComponentLookupError:
+            raise InconsistentBuildFarmJobError(
+                "No source was found for the build farm job type %s." % (
+                    self.job_type.name))
+
+        build = source.getByBuildFarmJob(self)
+
+        if build is None:
+            raise InconsistentBuildFarmJobError(
+                "There is no related specific job for the build farm "
+                "job with id %d." % self.id)
+
+        # Just to be on the safe side, make sure the build is still
+        # proxied before returning it.
+        assert isProxy(build), (
+            "Unproxied result returned from ISpecificBuildFarmJobSource.")
+
+        return build
+
+
+class BuildFarmJobMixin:
+
     @property
     def title(self):
         """See `IBuildFarmJob`."""
@@ -324,31 +353,6 @@ class BuildFarmJob(Storm):
                                    BuildStatus.CANCELLING,
                                    BuildStatus.UPLOADING,
                                    BuildStatus.SUPERSEDED]
-
-    def getSpecificJob(self):
-        """See `IBuild`"""
-        # Adapt ourselves based on our job type.
-        try:
-            source = getUtility(
-                ISpecificBuildFarmJobSource, self.job_type.name)
-        except ComponentLookupError:
-            raise InconsistentBuildFarmJobError(
-                "No source was found for the build farm job type %s." % (
-                    self.job_type.name))
-
-        build = source.getByBuildFarmJob(self)
-
-        if build is None:
-            raise InconsistentBuildFarmJobError(
-                "There is no related specific job for the build farm "
-                "job with id %d." % self.id)
-
-        # Just to be on the safe side, make sure the build is still
-        # proxied before returning it.
-        assert isProxy(build), (
-            "Unproxied result returned from ISpecificBuildFarmJobSource.")
-
-        return build
 
     def gotFailure(self):
         """See `IBuildFarmJob`."""
