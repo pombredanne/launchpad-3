@@ -59,7 +59,6 @@ from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
     )
-from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob,
     IBuildFarmJobOld,
@@ -202,7 +201,6 @@ from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageReleaseDownloadCount,
     )
-from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJob
 from lp.soyuz.interfaces.packageset import (
@@ -236,6 +234,9 @@ from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueueEntry,
     )
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
+from lp.translations.interfaces.translationtemplatesbuild import (
+    ITranslationTemplatesBuild,
+    )
 from lp.translations.interfaces.translator import (
     IEditTranslator,
     ITranslator,
@@ -1982,38 +1983,29 @@ class ViewBinaryPackageBuild(EditBinaryPackageBuild):
         return auth_spr.checkUnauthenticated()
 
 
+class ViewTranslationTemplatesBuild(DelegatedAuthorization):
+    """Permission to view an `ITranslationTemplatesBuild`.
+
+    Delegated to the build's branch.
+    """
+    permission = 'launchpad.View'
+    usedfor = ITranslationTemplatesBuild
+
+    def __init__(self, obj):
+        super(ViewTranslationTemplatesBuild, self).__init__(obj, obj.branch)
+
+
 class ViewBuildFarmJobOld(DelegatedAuthorization):
     """Permission to view an `IBuildFarmJobOld`.
 
     This permission is based entirely on permission to view the
-    associated `IBinaryPackageBuild` and/or `IBranch`.
+    associated `IBuildFarmJob`.
     """
     permission = 'launchpad.View'
     usedfor = IBuildFarmJobOld
 
-    def _getBranch(self):
-        """Get `IBranch` associated with this job, if any."""
-        if IBuildFarmBranchJob.providedBy(self.obj):
-            return self.obj.branch
-        else:
-            return None
-
-    def _getBuild(self):
-        """Get `IPackageBuild` associated with this job, if any."""
-        if IBuildFarmBuildJob.providedBy(self.obj):
-            return self.obj.build
-        else:
-            return None
-
-    def iter_objects(self):
-        branch = self._getBranch()
-        build = self._getBuild()
-        objects = []
-        if branch:
-            objects.append(branch)
-        if build:
-            objects.append(build)
-        return objects
+    def __init__(self, obj):
+        super(ViewBuildFarmJobOld, self).__init__(obj, obj.build)
 
 
 class AdminQuestion(AdminByAdminsTeam):
