@@ -44,7 +44,6 @@ from lp.app.errors import (
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJobSet,
     InconsistentBuildFarmJobError,
     ISpecificBuildFarmJobSource,
     )
@@ -143,19 +142,6 @@ class BuildNavigationMixin:
         try:
             return getUtility(ISourcePackageRecipeBuildSource).getByID(
                 build_id)
-        except NotFoundError:
-            return None
-
-    @stepthrough('+buildjob')
-    def traverse_buildjob(self, name):
-        try:
-            job_id = int(name)
-        except ValueError:
-            return None
-        try:
-            build_job = getUtility(IBuildFarmJobSet).getByID(job_id)
-            return self.redirectSubTree(
-                canonical_url(build_job.getSpecificJob()))
         except NotFoundError:
             return None
 

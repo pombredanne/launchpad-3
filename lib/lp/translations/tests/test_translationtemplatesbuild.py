@@ -78,14 +78,6 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         self.assertEqual(1, len(builds))
         self.assertIsInstance(builds[0], TranslationTemplatesBuild)
 
-    def test_getSpecificJob(self):
-        source = getUtility(ITranslationTemplatesBuildSource)
-        build_farm_job = self._makeBuildFarmJob()
-        branch = self.factory.makeBranch()
-        build = source.create(build_farm_job, branch)
-
-        self.assertEqual(build, build_farm_job.getSpecificJob())
-
     def test_findByBranch(self):
         source = getUtility(ITranslationTemplatesBuildSource)
         build_farm_job = self._makeBuildFarmJob()
