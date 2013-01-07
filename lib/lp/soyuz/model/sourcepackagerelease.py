@@ -572,8 +572,6 @@ class SourcePackageRelease(SQLBase):
 
     def getDiffTo(self, to_sourcepackagerelease):
         """See ISourcePackageRelease."""
-        Store.of(to_sourcepackagerelease).flush()
-        del get_property_cache(to_sourcepackagerelease).package_diffs
         return PackageDiff.selectOneBy(
             from_source=self, to_source=to_sourcepackagerelease)
 
@@ -594,6 +592,8 @@ class SourcePackageRelease(SQLBase):
         else:
             status = PackageDiffStatus.PENDING
 
+        Store.of(to_sourcepackagerelease).flush()
+        del get_property_cache(to_sourcepackagerelease).package_diffs
         return PackageDiff(
             from_source=self, to_source=to_sourcepackagerelease,
             requester=requester, status=status)
