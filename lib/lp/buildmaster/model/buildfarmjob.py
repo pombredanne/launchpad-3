@@ -67,6 +67,8 @@ from lp.services.database.lpstorm import (
 class BuildFarmJobOld:
     """See `IBuildFarmJobOld`."""
     implements(IBuildFarmJobOld)
+    processor = None
+    virtualized = None
 
     def score(self):
         """See `IBuildFarmJobOld`."""
