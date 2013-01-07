@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = [
     'PackageBuild',
     'PackageBuildDerived',
+    'PackageBuildMixin',
     'PackageBuildSet',
     ]
 
@@ -43,6 +44,7 @@ from lp.buildmaster.interfaces.packagebuild import (
     )
 from lp.buildmaster.model.buildfarmjob import (
     BuildFarmJob,
+    BuildFarmJobMixin,
     BuildFarmJobDerived,
     )
 from lp.buildmaster.model.buildqueue import BuildQueue
@@ -127,6 +129,15 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         store = Store.of(self)
         store.remove(self)
         store.remove(build_farm_job)
+
+
+class PackageBuildMixin(BuildFarmJobMixin):
+
+    # The list of build status values for which email notifications are
+    # allowed to be sent. It is up to each callback as to whether it will
+    # consider sending a notification but it won't do so if the status is not
+    # in this list.
+    ALLOWED_STATUS_NOTIFICATIONS = ['OK', 'PACKAGEFAIL', 'CHROOTFAIL']
 
     @property
     def current_component(self):
@@ -234,36 +245,9 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         """See `IPackageBuild`."""
         raise NotImplementedError
 
-    def handleStatus(self, status, librarian, slave_status):
-        """See `IPackageBuild`."""
-        raise NotImplementedError
-
-    def queueBuild(self, suspended=False):
-        """See `IPackageBuild`."""
-        raise NotImplementedError
-
-    def getBuildCookie(self):
-        """See `IPackageBuild`."""
-        raise NotImplementedError
-
     def getUploader(self, changes):
         """See `IPackageBuild`."""
         raise NotImplementedError
-
-
-class PackageBuildDerived:
-    """Setup the delegation for package build.
-
-    This class also provides some common implementation for handling
-    build status.
-    """
-    delegates(IPackageBuild, context="package_build")
-
-    # The list of build status values for which email notifications are
-    # allowed to be sent. It is up to each callback as to whether it will
-    # consider sending a notification but it won't do so if the status is not
-    # in this list.
-    ALLOWED_STATUS_NOTIFICATIONS = ['OK', 'PACKAGEFAIL', 'CHROOTFAIL']
 
     def getBuildCookie(self):
         """See `IPackageBuild`."""
@@ -518,6 +502,15 @@ class PackageBuildDerived:
 
         d = self.storeBuildInfo(self, librarian, slave_status)
         return d.addCallback(build_info_stored)
+
+
+class PackageBuildDerived:
+    """Setup the delegation for package build.
+
+    This class also provides some common implementation for handling
+    build status.
+    """
+    delegates(IPackageBuild, context="package_build")
 
 
 class PackageBuildSet:

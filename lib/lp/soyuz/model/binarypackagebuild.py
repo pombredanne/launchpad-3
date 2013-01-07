@@ -45,6 +45,7 @@ from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
     PackageBuild,
     PackageBuildDerived,
+    PackageBuildMixin,
     )
 from lp.services.config import config
 from lp.services.database.bulk import load_related
@@ -92,7 +93,7 @@ from lp.soyuz.model.queue import (
     )
 
 
-class BinaryPackageBuild(PackageBuildDerived, SQLBase):
+class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
     implements(IBinaryPackageBuild)
     _table = 'BinaryPackageBuild'
     _defaultOrder = 'id'

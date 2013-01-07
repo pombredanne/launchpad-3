@@ -41,6 +41,7 @@ from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
     PackageBuild,
     PackageBuildDerived,
+    PackageBuildMixin,
     )
 from lp.code.errors import (
     BuildAlreadyPending,
@@ -74,7 +75,7 @@ from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
-class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
+class SourcePackageRecipeBuild(PackageBuildMixin, PackageBuildDerived, Storm):
 
     __storm_table__ = 'SourcePackageRecipeBuild'
 
