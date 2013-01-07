@@ -283,6 +283,13 @@ class IBuildFarmJob(Interface):
         default=0,
         description=_("Number of consecutive failures for this job."))
 
+    def getSpecificJob():
+        """Return the specific build job associated with this record.
+
+        :raises InconsistentBuildFarmJobError: if a specific job could not be
+            returned.
+        """
+
     def makeJob():
         """Create the specific job relating this with an lp.services.job.
 
