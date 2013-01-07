@@ -55,10 +55,8 @@ from lp.soyuz.interfaces.queue import (
     )
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.archive import Archive
-from lp.soyuz.model.component import Component
 from lp.soyuz.model.packagecopyjob import PackageCopyJob
 from lp.soyuz.model.queue import PackageUploadSource
-from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
@@ -236,9 +234,6 @@ class QueueItemsView(LaunchpadView):
         source_sprs = load_related(
             SourcePackageRelease, packageuploadsources,
             ['sourcepackagereleaseID'])
-
-        load_related(Section, source_sprs, ['sectionID'])
-        load_related(Component, source_sprs, ['componentID'])
 
         # Get a dictionary of lists of binary files keyed by upload ID.
         package_upload_builds_dict = self.builds_dict(upload_ids, binary_files)

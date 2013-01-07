@@ -368,20 +368,37 @@ class TestQueueItemsView(TestCaseWithFactory):
     def test_query_count(self):
         login(ADMIN_EMAIL)
         uploads = []
+        sprs = []
         distroseries = self.factory.makeDistroSeries()
+        dsc = self.factory.makeLibraryFileAlias(filename='foo_0.1.dsc')
+        deb = self.factory.makeLibraryFileAlias(filename='foo.deb')
+        transaction.commit()
         for i in range(5):
             uploads.append(self.factory.makeSourcePackageUpload(distroseries))
+            sprs.append(uploads[-1].sources[0].sourcepackagerelease)
+            sprs[-1].addFile(dsc)
             uploads.append(self.factory.makeCustomPackageUpload(distroseries))
             uploads.append(self.factory.makeCopyJobPackageUpload(distroseries))
+        self.factory.makePackageset(
+            packages=(sprs[0].sourcepackagename, sprs[2].sourcepackagename,
+                sprs[4].sourcepackagename),
+            distroseries=distroseries)
+        self.factory.makePackageset(
+            packages=(sprs[1].sourcepackagename,), distroseries=distroseries)
+        self.factory.makePackageset(
+            packages=(sprs[3].sourcepackagename,), distroseries=distroseries)
+        for i in (0, 2, 3):
+            self.factory.makePackageDiff(to_source=sprs[i])
         for i in range(15):
             uploads.append(self.factory.makeBuildPackageUpload(distroseries))
+            uploads[-1].builds[0].build.binarypackages[0].addFile(deb)
         queue_admin = self.factory.makeArchiveAdmin(distroseries.main_archive)
         Store.of(uploads[0]).invalidate()
         with person_logged_in(queue_admin):
             with StormStatementRecorder() as recorder:
                 view = self.makeView(distroseries, queue_admin)
                 view()   
-        self.assertThat(recorder, HasQueryCount(Equals(52)))
+        self.assertThat(recorder, HasQueryCount(Equals(51)))
 
 
 class TestCompletePackageUpload(TestCaseWithFactory):
