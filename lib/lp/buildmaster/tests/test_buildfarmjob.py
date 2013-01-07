@@ -84,23 +84,24 @@ class TestBuildFarmJob(TestBuildFarmJobBase, TestCaseWithFactory):
         # We flush the database updates to ensure sql defaults
         # are set for various attributes.
         flush_database_updates()
+        bfj = removeSecurityProxy(self.build_farm_job)
         self.assertEqual(
-            BuildStatus.NEEDSBUILD, self.build_farm_job.status)
+            BuildStatus.NEEDSBUILD, bfj.status)
         # The date_created is set automatically.
-        self.assertTrue(self.build_farm_job.date_created is not None)
+        self.assertTrue(bfj.date_created is not None)
         # The job type is required to create a build farm job.
         self.assertEqual(
-            BuildFarmJobType.PACKAGEBUILD, self.build_farm_job.job_type)
+            BuildFarmJobType.PACKAGEBUILD, bfj.job_type)
         # Failure count defaults to zero.
-        self.assertEqual(0, self.build_farm_job.failure_count)
+        self.assertEqual(0, bfj.failure_count)
         # Other attributes are unset by default.
-        self.assertEqual(None, self.build_farm_job.processor)
-        self.assertEqual(None, self.build_farm_job.virtualized)
-        self.assertEqual(None, self.build_farm_job.date_started)
-        self.assertEqual(None, self.build_farm_job.date_finished)
-        self.assertEqual(None, self.build_farm_job.date_first_dispatched)
-        self.assertEqual(None, self.build_farm_job.builder)
-        self.assertEqual(None, self.build_farm_job.log)
+        self.assertEqual(None, bfj.processor)
+        self.assertEqual(None, bfj.virtualized)
+        self.assertEqual(None, bfj.date_started)
+        self.assertEqual(None, bfj.date_finished)
+        self.assertEqual(None, bfj.date_first_dispatched)
+        self.assertEqual(None, bfj.builder)
+        self.assertEqual(None, bfj.log)
 
     def test_getSpecificJob_none(self):
         # An exception is raised if there is no related specific job.
@@ -124,7 +125,8 @@ class TestBuildFarmJob(TestBuildFarmJobBase, TestCaseWithFactory):
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             job_type=BuildFarmJobType.PACKAGEBUILD,
             date_created=ten_years_ago)
-        self.failUnlessEqual(ten_years_ago, build_farm_job.date_created)
+        self.failUnlessEqual(
+            ten_years_ago, removeSecurityProxy(build_farm_job).date_created)
 
 
 class TestBuildFarmJobMixin(TestCaseWithFactory):
@@ -163,9 +165,6 @@ class TestBuildFarmJobMixin(TestCaseWithFactory):
         naked_bfj.date_started = now
         naked_bfj.date_finished = now + duration
         self.failUnlessEqual(duration, self.build_farm_job.duration)
-
-
-class TestBuildFarmJobSecurity(TestBuildFarmJobBase, TestCaseWithFactory):
 
     def test_view_build_farm_job(self):
         # Anonymous access can read public builds, but not edit.
