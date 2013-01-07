@@ -40,13 +40,13 @@ from lp.testing.layers import (
     )
 
 
-class TestBuildFarmJobMixin:
+class TestBuildFarmJobBase:
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         """Create a build farm job with which to test."""
-        super(TestBuildFarmJobMixin, self).setUp()
+        super(TestBuildFarmJobBase, self).setUp()
         self.build_farm_job = self.makeBuildFarmJob()
 
     def makeBuildFarmJob(self, builder=None,
@@ -68,12 +68,8 @@ class TestBuildFarmJobMixin:
         return build_farm_job
 
 
-class TestBuildFarmJob(TestBuildFarmJobMixin, TestCaseWithFactory):
+class TestBuildFarmJob(TestBuildFarmJobBase, TestCaseWithFactory):
     """Tests for the build farm job object."""
-
-    def test_providesInterface(self):
-        # BuildFarmJob provides IBuildFarmJob
-        self.assertProvides(self.build_farm_job, IBuildFarmJob)
 
     def test_saves_record(self):
         # A build farm job can be stored in the database.
@@ -105,19 +101,46 @@ class TestBuildFarmJob(TestBuildFarmJobMixin, TestCaseWithFactory):
         self.assertEqual(None, self.build_farm_job.date_first_dispatched)
         self.assertEqual(None, self.build_farm_job.builder)
         self.assertEqual(None, self.build_farm_job.log)
-        self.assertEqual(None, self.build_farm_job.log_url)
-        self.assertEqual(None, self.build_farm_job.buildqueue_record)
 
-    def test_unimplemented_methods(self):
-        # A build farm job leaves the implementation of various
-        # methods for derived classes.
-        self.assertRaises(NotImplementedError, self.build_farm_job.makeJob)
+    def test_getSpecificJob_none(self):
+        # An exception is raised if there is no related specific job.
+        self.assertRaises(
+            InconsistentBuildFarmJobError, self.build_farm_job.getSpecificJob)
 
-    def test_title(self):
-        # The default title simply uses the job type's title.
-        self.assertEqual(
-            self.build_farm_job.job_type.title,
-            self.build_farm_job.title)
+    def test_getSpecificJob_unimplemented_type(self):
+        # An `IBuildFarmJob` with an unimplemented type results in an
+        # exception.
+        removeSecurityProxy(self.build_farm_job).job_type = (
+            BuildFarmJobType.RECIPEBRANCHBUILD)
+
+        self.assertRaises(
+            InconsistentBuildFarmJobError, self.build_farm_job.getSpecificJob)
+
+    def test_date_created(self):
+        # date_created can be passed optionally when creating a
+        # bulid farm job to ensure we don't get identical timestamps
+        # when transactions are committed.
+        ten_years_ago = datetime.now(pytz.UTC) - timedelta(365 * 10)
+        build_farm_job = getUtility(IBuildFarmJobSource).new(
+            job_type=BuildFarmJobType.PACKAGEBUILD,
+            date_created=ten_years_ago)
+        self.failUnlessEqual(ten_years_ago, build_farm_job.date_created)
+
+
+class TestBuildFarmJobMixin(TestCaseWithFactory):
+    """Test methods provided by BuildFarmJobMixin."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBuildFarmJobMixin, self).setUp()
+        # BuildFarmJobMixin only operates as part of a concrete
+        # IBuildFarmJob implementation. Here we use BinaryPackageBuild.
+        self.build_farm_job = self.factory.makeBinaryPackageBuild()
+
+    def test_providesInterface(self):
+        # BuildFarmJobMixin derivatives provide IBuildFarmJob
+        self.assertProvides(self.build_farm_job, IBuildFarmJob)
 
     def test_duration_none(self):
         # If either start or finished is none, the duration will be
@@ -141,32 +164,8 @@ class TestBuildFarmJob(TestBuildFarmJobMixin, TestCaseWithFactory):
         naked_bfj.date_finished = now + duration
         self.failUnlessEqual(duration, self.build_farm_job.duration)
 
-    def test_date_created(self):
-        # date_created can be passed optionally when creating a
-        # bulid farm job to ensure we don't get identical timestamps
-        # when transactions are committed.
-        ten_years_ago = datetime.now(pytz.UTC) - timedelta(365 * 10)
-        build_farm_job = getUtility(IBuildFarmJobSource).new(
-            job_type=BuildFarmJobType.PACKAGEBUILD,
-            date_created=ten_years_ago)
-        self.failUnlessEqual(ten_years_ago, build_farm_job.date_created)
 
-    def test_getSpecificJob_none(self):
-        # An exception is raised if there is no related specific job.
-        self.assertRaises(
-            InconsistentBuildFarmJobError, self.build_farm_job.getSpecificJob)
-
-    def test_getSpecificJob_unimplemented_type(self):
-        # An `IBuildFarmJob` with an unimplemented type results in an
-        # exception.
-        removeSecurityProxy(self.build_farm_job).job_type = (
-            BuildFarmJobType.RECIPEBRANCHBUILD)
-
-        self.assertRaises(
-            InconsistentBuildFarmJobError, self.build_farm_job.getSpecificJob)
-
-
-class TestBuildFarmJobSecurity(TestBuildFarmJobMixin, TestCaseWithFactory):
+class TestBuildFarmJobSecurity(TestBuildFarmJobBase, TestCaseWithFactory):
 
     def test_view_build_farm_job(self):
         # Anonymous access can read public builds, but not edit.
@@ -184,7 +183,7 @@ class TestBuildFarmJobSecurity(TestBuildFarmJobMixin, TestCaseWithFactory):
             BuildStatus.FULLYBUILT, self.build_farm_job.status)
 
 
-class TestBuildFarmJobSet(TestBuildFarmJobMixin, TestCaseWithFactory):
+class TestBuildFarmJobSet(TestBuildFarmJobBase, TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
