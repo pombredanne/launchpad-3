@@ -520,13 +520,6 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             BuildStatus.SUPERSEDED,
             build.status)
 
-    def test_getSpecificJob(self):
-        # getSpecificJob returns the SourcePackageRecipeBuild
-        sprb = self.makeSourcePackageRecipeBuild()
-        Store.of(sprb).flush()
-        job = sprb.build_farm_job.getSpecificJob()
-        self.assertEqual(sprb, job)
-
     def test_getUploader(self):
         # For ACL purposes the uploader is the build requester.
         build = self.makeSourcePackageRecipeBuild()

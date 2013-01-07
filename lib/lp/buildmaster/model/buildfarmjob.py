@@ -27,15 +27,11 @@ from storm.locals import (
     Storm,
     )
 from storm.store import Store
-from zope.component import (
-    ComponentLookupError,
-    getUtility,
-    )
+from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
     )
-from zope.proxy import isProxy
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import (
@@ -47,8 +43,6 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJobOld,
     IBuildFarmJobSet,
     IBuildFarmJobSource,
-    InconsistentBuildFarmJobError,
-    ISpecificBuildFarmJobSource,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.services.database.enumcol import DBEnum
@@ -277,31 +271,6 @@ class BuildFarmJob(Storm):
         store = IMasterStore(BuildFarmJob)
         store.add(build_farm_job)
         return build_farm_job
-
-    def getSpecificJob(self):
-        """See `IBuild`"""
-        # Adapt ourselves based on our job type.
-        try:
-            source = getUtility(
-                ISpecificBuildFarmJobSource, self.job_type.name)
-        except ComponentLookupError:
-            raise InconsistentBuildFarmJobError(
-                "No source was found for the build farm job type %s." % (
-                    self.job_type.name))
-
-        build = source.getByBuildFarmJob(self)
-
-        if build is None:
-            raise InconsistentBuildFarmJobError(
-                "There is no related specific job for the build farm "
-                "job with id %d." % self.id)
-
-        # Just to be on the safe side, make sure the build is still
-        # proxied before returning it.
-        assert isProxy(build), (
-            "Unproxied result returned from ISpecificBuildFarmJobSource.")
-
-        return build
 
 
 class BuildFarmJobMixin:
