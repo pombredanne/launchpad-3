@@ -125,8 +125,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.addFakeBuildLog()
         self.assertEqual(
             'http://launchpad.dev/ubuntutest/+source/'
-            'gedit/666/+build/%d/+files/mybuildlog.txt' % (
-                self.build.package_build.build_farm_job.id),
+            'gedit/666/+build/%d/+files/mybuildlog.txt' % self.build.id,
             self.build.log_url)
 
     def test_log_url_ppa(self):

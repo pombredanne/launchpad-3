@@ -40,6 +40,10 @@ class IPackageBuildDB(Interface):
 
     id = Attribute('The package build ID.')
 
+    build_farm_job = Reference(
+        title=_('Build farm job'), schema=IBuildFarmJob, required=True,
+        readonly=True, description=_('The base build farm job.'))
+
 
 class IPackageBuild(IBuildFarmJob):
     """Attributes and operations specific to package build jobs."""
