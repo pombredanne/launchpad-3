@@ -133,6 +133,12 @@ class PackageBuild(BuildFarmJobDerived, Storm):
 
 class PackageBuildMixin(BuildFarmJobMixin):
 
+    # The list of build status values for which email notifications are
+    # allowed to be sent. It is up to each callback as to whether it will
+    # consider sending a notification but it won't do so if the status is not
+    # in this list.
+    ALLOWED_STATUS_NOTIFICATIONS = ['OK', 'PACKAGEFAIL', 'CHROOTFAIL']
+
     @property
     def current_component(self):
         """See `IPackageBuild`."""
@@ -239,27 +245,9 @@ class PackageBuildMixin(BuildFarmJobMixin):
         """See `IPackageBuild`."""
         raise NotImplementedError
 
-    def handleStatus(self, status, librarian, slave_status):
-        """See `IPackageBuild`."""
-        raise NotImplementedError
-
-    def queueBuild(self, suspended=False):
-        """See `IPackageBuild`."""
-        raise NotImplementedError
-
-    def getBuildCookie(self):
-        """See `IPackageBuild`."""
-        raise NotImplementedError
-
     def getUploader(self, changes):
         """See `IPackageBuild`."""
         raise NotImplementedError
-
-    # The list of build status values for which email notifications are
-    # allowed to be sent. It is up to each callback as to whether it will
-    # consider sending a notification but it won't do so if the status is not
-    # in this list.
-    ALLOWED_STATUS_NOTIFICATIONS = ['OK', 'PACKAGEFAIL', 'CHROOTFAIL']
 
     def getBuildCookie(self):
         """See `IPackageBuild`."""
