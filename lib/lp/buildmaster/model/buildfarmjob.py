@@ -38,7 +38,6 @@ from zope.interface import (
 from zope.proxy import isProxy
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -397,11 +396,3 @@ class BuildFarmJobSet:
         return IStore(BuildFarmJob).using(*origin).find(
             BuildFarmJob, *clauses).order_by(
                 Desc(BuildFarmJob.date_finished), BuildFarmJob.id)
-
-    def getByID(self, job_id):
-        """See `IBuildfarmJobSet`."""
-        job = IStore(BuildFarmJob).find(BuildFarmJob,
-                BuildFarmJob.id == job_id).one()
-        if job is None:
-            raise NotFoundError(job_id)
-        return job

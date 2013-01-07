@@ -372,7 +372,3 @@ class IBuildFarmJobSet(Interface):
             that should be included.
         :return: a `ResultSet` representing the requested builds.
         """
-
-    def getByID(job_id):
-        """Look up a `IBuildFarmJob` record by id.
-        """
