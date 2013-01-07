@@ -173,13 +173,6 @@ class IBuildFarmJobDB(Interface):
         vocabulary=BuildFarmJobType,
         description=_("The specific type of job."))
 
-    def getSpecificJob():
-        """Return the specific build job associated with this record.
-
-        :raises InconsistentBuildFarmJobError: if a specific job could not be
-            returned.
-        """
-
 
 class IBuildFarmJob(Interface):
     """Operations that jobs for the build farm must implement."""
@@ -283,13 +276,6 @@ class IBuildFarmJob(Interface):
         default=0,
         description=_("Number of consecutive failures for this job."))
 
-    def getSpecificJob():
-        """Return the specific build job associated with this record.
-
-        :raises InconsistentBuildFarmJobError: if a specific job could not be
-            returned.
-        """
-
     def makeJob():
         """Create the specific job relating this with an lp.services.job.
 
@@ -371,8 +357,4 @@ class IBuildFarmJobSet(Interface):
         :param user: If given, this will be used to determine private builds
             that should be included.
         :return: a `ResultSet` representing the requested builds.
-        """
-
-    def getByID(job_id):
-        """Look up a `IBuildFarmJob` record by id.
         """

@@ -801,12 +801,6 @@ class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
             LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
             LibraryFileAlias.filename == filename).one()
 
-    def getSpecificJob(self):
-        """See `IBuildFarmJob`."""
-        # If we are asked to adapt an object that is already a binary
-        # package build, then don't hit the db.
-        return self
-
     def getUploader(self, changes):
         """See `IBinaryPackageBuild`."""
         return changes.signer

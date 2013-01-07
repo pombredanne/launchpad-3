@@ -16,7 +16,6 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import (
     BuildFarmJobType,
@@ -26,7 +25,6 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob,
     IBuildFarmJobSet,
     IBuildFarmJobSource,
-    InconsistentBuildFarmJobError,
     )
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.services.database.sqlbase import flush_database_updates
@@ -102,20 +100,6 @@ class TestBuildFarmJob(TestBuildFarmJobBase, TestCaseWithFactory):
         self.assertEqual(None, bfj.date_first_dispatched)
         self.assertEqual(None, bfj.builder)
         self.assertEqual(None, bfj.log)
-
-    def test_getSpecificJob_none(self):
-        # An exception is raised if there is no related specific job.
-        self.assertRaises(
-            InconsistentBuildFarmJobError, self.build_farm_job.getSpecificJob)
-
-    def test_getSpecificJob_unimplemented_type(self):
-        # An `IBuildFarmJob` with an unimplemented type results in an
-        # exception.
-        removeSecurityProxy(self.build_farm_job).job_type = (
-            BuildFarmJobType.RECIPEBRANCHBUILD)
-
-        self.assertRaises(
-            InconsistentBuildFarmJobError, self.build_farm_job.getSpecificJob)
 
     def test_date_created(self):
         # date_created can be passed optionally when creating a
@@ -286,17 +270,3 @@ class TestBuildFarmJobSet(TestBuildFarmJobBase, TestCaseWithFactory):
         result = self.build_farm_job_set.getBuildsForBuilder(self.builder)
 
         self.assertEqual([build_1, build_2], list(result))
-
-    def test_getByID(self):
-        # getByID returns a job by id.
-        build_1 = self.makeBuildFarmJob(
-            builder=self.builder,
-            date_finished=datetime(2008, 10, 10, tzinfo=pytz.UTC))
-        flush_database_updates()
-        self.assertEquals(
-            build_1, self.build_farm_job_set.getByID(build_1.id))
-
-    def test_getByID_nonexistant(self):
-        # getByID raises NotFoundError for unknown job ids.
-        self.assertRaises(NotFoundError,
-            self.build_farm_job_set.getByID, 423432432432)
