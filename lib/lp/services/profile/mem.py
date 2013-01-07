@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # We like globals!
-# pylint: disable-msg=W0602
 """
 This code is from:
     http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/286222

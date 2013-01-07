@@ -1,7 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0404
 # (Disable warning about importing two different datetime modules)
 
 """View classes for ITranslationMessage interface."""

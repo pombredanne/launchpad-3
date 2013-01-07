@@ -2,8 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # We know we are not using root and handlers.
-# pylint: disable-msg=W0612
-
 """Test lp.services.config."""
 
 

@@ -4,8 +4,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # Stop lint warning about relative import:
-# pylint: disable-msg=W0403
-
 """Tool for adding, removing and replacing buildd chroots."""
 
 import _pythonpath

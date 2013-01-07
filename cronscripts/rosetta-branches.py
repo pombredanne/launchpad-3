@@ -3,8 +3,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0403
-
 """Process branches with translation to import.
 
 This script processes code branches that have new translations imports

@@ -4,7 +4,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # Stop lint warning about relative import:
-# pylint: disable-msg=W0403
 """Death row processor script.
 
 This script removes obsolete files from the selected archive(s) pool.

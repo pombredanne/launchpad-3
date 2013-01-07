@@ -24,7 +24,6 @@ import tarfile
 import traceback
 import xmlrpclib
 
-# pylint: disable-msg=F0401
 from Mailman import (
     Errors,
     mm_cfg,

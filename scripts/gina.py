@@ -4,8 +4,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # This module uses relative imports.
-# pylint: disable-msg=W0403
-
 """
 Gina launcher script. Handles commandline options and makes the proper
 calls to the other classes and instances.

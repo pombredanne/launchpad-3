@@ -33,7 +33,6 @@ import site
 #   Not doing this means that some of the links in staging's MHonArc archive
 #   will point to production archives.
 
-# pylint: disable-msg=W0403
 import _pythonpath
 
 import logging

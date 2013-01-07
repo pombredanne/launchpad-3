@@ -4,8 +4,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # Stop lint warning about relative import:
-# pylint: disable-msg=W0403
-
 """Obsolete all packages in an obsolete distroseries.
 
 This script will obsolete (schedule for removal) all published packages

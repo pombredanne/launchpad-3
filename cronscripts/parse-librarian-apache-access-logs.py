@@ -16,7 +16,6 @@ updating the counts of every LFA, in order to get through the backlog.
 
 __metaclass__ = type
 
-# pylint: disable-msg=W0403
 import _pythonpath
 
 from storm.sqlobject import SQLObjectNotFound

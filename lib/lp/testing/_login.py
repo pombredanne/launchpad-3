@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # We like global statements!
-# pylint: disable-msg=W0602,W0603
 __metaclass__ = type
 
 __all__ = [
