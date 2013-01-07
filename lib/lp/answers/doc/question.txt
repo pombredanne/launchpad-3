@@ -10,7 +10,7 @@ DistributionSourcePackages.
 
     >>> login('test@canonical.com')
 
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.answers.interfaces.questiontarget import IQuestionTarget
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet

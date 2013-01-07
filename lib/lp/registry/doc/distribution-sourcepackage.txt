@@ -15,7 +15,7 @@ A common way to fetch a distribution source package is to start with the
 distribution object:
 
     >>> from zope.component import getUtility
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.distributionsourcepackage import IDistributionSourcePackage
     >>> debian = getUtility(IDistributionSet).getByName("debian")

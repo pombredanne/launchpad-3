@@ -33,7 +33,7 @@ Requesting a diff from pmount_0.1-1 to pmount_0.1-2.
 
 Let's inspect the PackageDiff record created.
 
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.soyuz.interfaces.packagediff import IPackageDiff
 
     >>> verifyObject(IPackageDiff, package_diff)

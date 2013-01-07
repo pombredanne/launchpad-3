@@ -27,7 +27,7 @@ View parameters need to be set properly before start:
 After setup we have a 'batched' list:
 
   >>> from lp.services.webapp.interfaces import IBatchNavigator
-  >>> from lp.services.webapp.testing import verifyObject
+  >>> from lp.testing import verifyObject
   >>> verifyObject(IBatchNavigator, queue_view.batchnav)
   True
 

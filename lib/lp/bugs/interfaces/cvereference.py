@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Cve Reference interfaces. A CVE Reference is not an old-style cveref,
 it's part of the CVE database structure we get from cve.mitre.org, and
 describes a link between the CVE and another vulnerability tracking system.

@@ -31,12 +31,12 @@ from lp.services.identity.interfaces.emailaddress import (
     IEmailAddressSet,
     )
 from lp.services.messages.interfaces.message import IMessageSet
-from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     login_celebrity,
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
+    verifyObject,
     )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,

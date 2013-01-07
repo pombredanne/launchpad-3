@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0231,E0702,W0108
-
 """Helper classes for testing ExternalSystem."""
 
 __metaclass__ = type

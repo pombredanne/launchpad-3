@@ -173,10 +173,7 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
     )
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
-from lp.registry.interfaces.gpg import (
-    GPGKeyAlgorithm,
-    IGPGKeySet,
-    )
+from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     MailingListStatus,
@@ -234,7 +231,10 @@ from lp.services.database.lpstorm import (
     )
 from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.database.sqlbase import flush_database_updates
-from lp.services.gpg.interfaces import IGPGHandler
+from lp.services.gpg.interfaces import (
+    GPGKeyAlgorithm,
+    IGPGHandler,
+    )
 from lp.services.identity.interfaces.account import (
     AccountCreationRationale,
     AccountStatus,

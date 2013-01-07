@@ -1,8 +1,6 @@
 # Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=F0401
-
 """Unit tests for TestP3APackages."""
 
 __metaclass__ = type

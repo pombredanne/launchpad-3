@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0401,C0301,F0401
-
 from __future__ import absolute_import
 
 
@@ -22,7 +20,6 @@ __all__ = [
     'FakeAdapterMixin',
     'FakeLaunchpadRequest',
     'FakeTime',
-    'get_lsb_information',
     'launchpadlib_credentials_for',
     'launchpadlib_for',
     'login',
@@ -36,7 +33,6 @@ __all__ = [
     'nonblocking_readline',
     'oauth_access_token_for',
     'person_logged_in',
-    'quote_jquery_expression',
     'record_statements',
     'reset_logging',
     'run_process',
@@ -50,6 +46,7 @@ __all__ = [
     'time_counter',
     'unlink_source_packages',
     'validate_mock_class',
+    'verifyObject',
     'with_anonymous_login',
     'with_celebrity_logged_in',
     'with_person_logged_in',
@@ -116,7 +113,10 @@ from zope.component import (
     )
 import zope.event
 from zope.interface import Interface
-from zope.interface.verify import verifyClass
+from zope.interface.verify import (
+    verifyClass,
+    verifyObject as zope_verifyObject,
+    )
 from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.security.management import queryInteraction
 from zope.security.proxy import (
@@ -947,12 +947,6 @@ class WebServiceTestCase(TestCaseWithFactory):
         return ws_object(service, obj)
 
 
-def quote_jquery_expression(expression):
-    """jquery requires meta chars used in literals escaped with \\"""
-    return re.sub(
-        "([#!$%&()+,./:;?@~|^{}\\[\\]`*\\\'\\\"])", r"\\\\\1", expression)
-
-
 class AbstractYUITestCase(TestCase):
 
     layer = None
@@ -1198,32 +1192,6 @@ def feature_flags():
         yield
     finally:
         features.install_feature_controller(old_features)
-
-
-def get_lsb_information():
-    """Returns a dictionary with the LSB host information.
-
-    Code stolen form /usr/bin/lsb-release
-    """
-    # XXX: This doesn't seem like a generically-useful testing function.
-    # Perhaps it should go in a sub-module or something? -- jml
-    distinfo = {}
-    if os.path.exists('/etc/lsb-release'):
-        for line in open('/etc/lsb-release'):
-            line = line.strip()
-            if not line:
-                continue
-            # Skip invalid lines
-            if not '=' in line:
-                continue
-            var, arg = line.split('=', 1)
-            if var.startswith('DISTRIB_'):
-                var = var[8:]
-                if arg.startswith('"') and arg.endswith('"'):
-                    arg = arg[1:-1]
-                distinfo[var] = arg
-
-    return distinfo
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
@@ -1593,3 +1561,11 @@ def clean_up_reactor():
     from twisted.internet import reactor
     for delayed_call in reactor.getDelayedCalls():
         delayed_call.cancel()
+
+
+def verifyObject(iface, candidate, tentative=0):
+    """A specialized verifyObject which removes the security proxy of the
+    object before verifying it.
+    """
+    naked_candidate = removeSecurityProxy(candidate)
+    return zope_verifyObject(iface, naked_candidate, tentative=0)

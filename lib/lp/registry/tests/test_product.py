@@ -81,6 +81,7 @@ from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
     License,
+    valid_sourceforge_project_name,
     )
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.series import SeriesStatus
@@ -123,7 +124,26 @@ from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
     )
 from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
+    TranslationsBranchImportMode,
+    )
+
+
+class ValidationTestCase(TestCase):
+    """Test IProduct validators."""
+
+    def test_valid_sourceforge_project_name(self):
+        self.assertTrue(valid_sourceforge_project_name('mailman'))
+        self.assertTrue(valid_sourceforge_project_name('hop-2-hop'))
+        self.assertTrue(valid_sourceforge_project_name('mailman3'))
+        self.assertFalse(valid_sourceforge_project_name('1mailman'))
+        self.assertFalse(valid_sourceforge_project_name('-mailman'))
+        self.assertFalse(valid_sourceforge_project_name('mailman-'))
+
+    def test_valid_sourceforge_project_name_length(self):
+        self.assertFalse(valid_sourceforge_project_name('x' * 0))
+        self.assertTrue(valid_sourceforge_project_name('x' * 1))
+        self.assertTrue(valid_sourceforge_project_name('x' * 63))
+        self.assertFalse(valid_sourceforge_project_name('x' * 64))
 
 
 class TestProduct(TestCaseWithFactory):
@@ -408,11 +428,10 @@ class TestProduct(TestCaseWithFactory):
         spec = self.factory.makeSpecification(product=product)
         for info_type in PROPRIETARY_INFORMATION_TYPES:
             with ExpectedException(
-                CannotChangeInformationType,
-                'Some blueprints are public.'):
+                CannotChangeInformationType, 'Some blueprints are public.'):
                 product.information_type = info_type
-        spec.transitionToInformationType(InformationType.PROPRIETARY,
-                                         product.owner)
+        spec.transitionToInformationType(
+            InformationType.PROPRIETARY, product.owner)
         bug = self.factory.makeBug(target=product)
         for bug_info_type in FREE_INFORMATION_TYPES:
             bug.transitionToInformationType(bug_info_type, product.owner)
@@ -635,6 +654,22 @@ class TestProduct(TestCaseWithFactory):
         product = store.get(Product, product.id)
         self.assertEqual(InformationType.PROPRIETARY, product.information_type)
         self.assertTrue(product.private)
+
+    def test_switching_product_to_public_does_not_create_policy(self):
+        # Creating a Embargoed product and switching it to Public does not
+        # create a PUBLIC AccessPolicy.
+        product = self.createProduct(
+            information_type=InformationType.EMBARGOED,
+            license=License.OTHER_PROPRIETARY)
+        aps = getUtility(IAccessPolicySource).findByPillar([product])
+        self.assertContentEqual(
+            [InformationType.PROPRIETARY, InformationType.EMBARGOED],
+            [ap.type for ap in aps])
+        removeSecurityProxy(product).information_type = InformationType.PUBLIC
+        aps = getUtility(IAccessPolicySource).findByPillar([product])
+        self.assertContentEqual(
+            [InformationType.PROPRIETARY, InformationType.EMBARGOED],
+            [ap.type for ap in aps])
 
     def test_product_information_type_default(self):
         # Default information_type is PUBLIC

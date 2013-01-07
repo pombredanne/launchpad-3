@@ -11,10 +11,7 @@ __all__ = [
     'TimeLimitedToken',
     ]
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
+from datetime import datetime
 from hashlib import md5
 import random
 from urlparse import urlparse
@@ -88,6 +85,7 @@ class LibraryFileContent(SQLBase):
 
 class LibraryFileAlias(SQLBase):
     """A filename and mimetype that we can serve some given content with."""
+
     implements(ILibraryFileAlias)
 
     _table = 'LibraryFileAlias'

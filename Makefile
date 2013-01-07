@@ -121,7 +121,7 @@ check_mailman: build
 	# Run all tests, including the Mailman integration
 	# tests. test_on_merge.py takes care of setting up the database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS) \
-		--layer=MailmanLayer
+		lp.services.mailman.tests
 
 lint: ${PY}
 	@bash ./bin/lint.sh

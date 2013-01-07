@@ -1,7 +1,5 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-# pylint: disable-msg=F0401,E1002
-
 """Tests for the source package recipe view classes and templates."""
 
 __metaclass__ = type

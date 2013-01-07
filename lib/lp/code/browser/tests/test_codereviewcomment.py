@@ -17,11 +17,11 @@ from lp.code.browser.codereviewcomment import (
     )
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import IPrimaryContext
-from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
     TestCaseWithFactory,
+    verifyObject,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 

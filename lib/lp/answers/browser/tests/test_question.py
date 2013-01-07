@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = []
 
 from zope.security.proxy import removeSecurityProxy
+
 from lp.answers.browser.question import QuestionTargetWidget
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.publisher import AnswersLayer

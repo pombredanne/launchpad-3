@@ -35,7 +35,7 @@ DebBugs, of course, implements IExternalBugTracker.
 
     >>> from lp.bugs.interfaces.externalbugtracker import (
     ...     IExternalBugTracker)
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
 
     >>> verifyObject(IExternalBugTracker, external_debbugs)
     True
@@ -288,7 +288,7 @@ Importing bugs
 
 The Debbugs ExternalBugTracker can import a Debian bug into Launchpad.
 
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.bugs.interfaces.externalbugtracker import ISupportsBugImport
     >>> verifyObject(ISupportsBugImport, external_debbugs)
     True

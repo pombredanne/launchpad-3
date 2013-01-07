@@ -2177,7 +2177,7 @@ class TestUploadHandler(TestUploadProcessorBase):
             "bar_1.0-1", queue_entry=leaf_name, relative_path=relative_path)
         self.options.context = 'buildd'
         self.options.builds = True
-        build.jobStarted()
+        removeSecurityProxy(build).date_started = UTC_NOW
         # Commit so date_started is recorded and doesn't cause constraint
         # violations later.
         build.status = BuildStatus.UPLOADING
@@ -2222,7 +2222,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         os.mkdir(os.path.join(self.incoming_folder, leaf_name))
         self.options.context = 'buildd'
         self.options.builds = True
-        build.jobStarted()
+        removeSecurityProxy(build).date_started = UTC_NOW
         self.switchToUploader()
         # Commit so date_started is recorded and doesn't cause constraint
         # violations later.
@@ -2270,7 +2270,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         os.mkdir(os.path.join(self.incoming_folder, leaf_name))
         self.options.context = 'buildd'
         self.options.builds = True
-        build.jobStarted()
+        removeSecurityProxy(build).date_started = UTC_NOW
         self.switchToAdmin()
         build.recipe.destroySelf()
         self.switchToUploader()

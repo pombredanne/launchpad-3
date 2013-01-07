@@ -65,7 +65,6 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.database.constants import UTC_NOW
 from lp.services.webapp import canonical_url
-from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     ExpectedException,
     launchpadlib_for,
@@ -73,6 +72,7 @@ from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
+    verifyObject,
     WebServiceTestCase,
     ws_object,
     )

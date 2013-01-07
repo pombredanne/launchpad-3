@@ -600,7 +600,7 @@ an IPermission.
     ... </configure>
     ... """)
     >>> from lp.services.webapp.metazcml import ILaunchpadPermission
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> permission = getUtility(ILaunchpadPermission, 'foo.bar')
     >>> verifyObject(ILaunchpadPermission, permission)
     True

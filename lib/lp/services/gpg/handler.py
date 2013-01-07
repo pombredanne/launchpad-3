@@ -27,12 +27,9 @@ from lazr.restful.utils import get_current_browser_request
 from zope.interface import implements
 
 from lp.app.validators.email import valid_email
-from lp.registry.interfaces.gpg import (
-    GPGKeyAlgorithm,
-    valid_fingerprint,
-    )
 from lp.services.config import config
 from lp.services.gpg.interfaces import (
+    GPGKeyAlgorithm,
     GPGKeyDoesNotExistOnServer,
     GPGKeyExpired,
     GPGKeyNotFoundError,
@@ -46,6 +43,7 @@ from lp.services.gpg.interfaces import (
     IPymeUserId,
     MoreThanOneGPGKeyFound,
     SecretGPGKeyImportDetected,
+    valid_fingerprint,
     )
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.timeout import (

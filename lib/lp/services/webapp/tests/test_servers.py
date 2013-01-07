@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E1002
-
 __metaclass__ = type
 
 from doctest import (
@@ -379,6 +377,15 @@ class TestBasicLaunchpadRequest(TestCase):
         self.assertEquals(
             response.getHeader(
                 'Strict-Transport-Security'), 'max-age=2592000')
+
+    def test_baserequest_recovers_from_bad_path_info_encoding(self):
+        # The request object recodes PATH_INFO to ensure sane_environment
+        # does not raise a UnicodeDecodeError when LaunchpadBrowserRequest
+        # is instantiated.
+        bad_path = 'fnord/trunk\xE4'
+        env = {'PATH_INFO': bad_path}
+        request = LaunchpadBrowserRequest(StringIO.StringIO(''), env)
+        self.assertEquals(u'fnord/trunk\ufffd', request.getHeader('PATH_INFO'))
 
 
 class TestFeedsBrowserRequest(TestCase):

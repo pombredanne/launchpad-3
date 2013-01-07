@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=F0401
-
 
 """Unit tests for BranchMergeProposals."""
 
@@ -65,7 +63,6 @@ from lp.services.webapp.interfaces import (
     IPrimaryContext,
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     BrowserTestCase,
     feature_flags,
@@ -75,6 +72,7 @@ from lp.testing import (
     set_feature_flag,
     TestCaseWithFactory,
     time_counter,
+    verifyObject,
     )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
