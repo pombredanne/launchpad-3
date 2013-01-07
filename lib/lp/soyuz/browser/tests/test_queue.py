@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for QueueItemsView."""
@@ -398,7 +398,7 @@ class TestQueueItemsView(TestCaseWithFactory):
             with StormStatementRecorder() as recorder:
                 view = self.makeView(distroseries, queue_admin)
                 view()   
-        self.assertThat(recorder, HasQueryCount(Equals(51)))
+        self.assertThat(recorder, HasQueryCount(Equals(57)))
 
 
 class TestCompletePackageUpload(TestCaseWithFactory):

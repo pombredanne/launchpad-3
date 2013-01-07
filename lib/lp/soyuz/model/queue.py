@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -120,15 +120,12 @@ from lp.soyuz.interfaces.queue import (
     QueueStateWriteProtectedError,
     )
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
-from lp.soyuz.model.files import (
-    BinaryPackageFile,
-    SourcePackageReleaseFile,
-    )
-from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 from lp.soyuz.model.section import Section
+from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 
 # There are imports below in PackageUploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they
@@ -1744,10 +1741,12 @@ def prefill_packageupload_caches(uploads, puses, pubs, pucs):
     load_related(DistroArchSeries, bpbs, ['distro_arch_series_id'])
     binary_sprs = load_related(
         SourcePackageRelease, bpbs, ['source_package_release_id'])
+    bprs = load_referencing(BinaryPackageRelease, bpbs, ['buildID'])
+    load_related(BinaryPackageName, bprs, ['binarypackagenameID'])
     sprs = source_sprs + binary_sprs
 
     load_related(SourcePackageName, sprs, ['sourcepackagenameID'])
-    load_related(Section, sprs, ['sectionID'])
+    load_related(Section, sprs + bprs, ['sectionID'])
     load_related(Component, sprs, ['componentID'])
     load_related(LibraryFileAlias, uploads, ['changes_file_id'])
     publications = load_referencing(
