@@ -389,7 +389,6 @@ class AsyncVirtualServer(Server):
         """
         # bzrlib's Server class does not have a constructor, so we cannot
         # safely upcall it.
-        # pylint: disable-msg=W0231
         self._scheme = scheme
         self._is_started = False
 

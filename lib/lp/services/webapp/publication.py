@@ -203,8 +203,6 @@ class LaunchpadBrowserPublication(
     """
     # This class does not __init__ its parent or specify exception types
     # so that it can replace its parent class.
-    # pylint: disable-msg=W0231,W0702
-
     root_object_interface = ILaunchpadRoot
 
     def __init__(self, db):
@@ -242,7 +240,6 @@ class LaunchpadBrowserPublication(
     # If this becomes untrue at some point, the code will need to be
     # revisited.
 
-    # pylint: disable-msg=E0301
     def beforeTraversal(self, request):
         notify(StartRequestEvent(request))
         request._traversalticks_start = tickcount.tickcount()
@@ -276,7 +273,6 @@ class LaunchpadBrowserPublication(
 
         # Set the default layer.
         adapters = zapi.getGlobalSiteManager().adapters
-        # pylint: disable-msg=E0231
         layer = adapters.lookup((providedBy(request),), IDefaultSkin, '')
         if layer is not None:
             layers.setAdditionalLayer(request, layer)
@@ -672,7 +668,6 @@ class LaunchpadBrowserPublication(
         We must restart the request timer.  Otherwise we can get OOPS errors
         from our exception views inappropriately.
         """
-        # pylint: disable-msg=E1002
         super(LaunchpadBrowserPublication,
               self).beginErrorHandlingTransaction(request, ob, note)
         # XXX: gary 2008-11-04 bug=293614: As the bug describes, we want to

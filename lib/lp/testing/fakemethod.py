@@ -44,8 +44,6 @@ class FakeMethod:
         if self.failure is None:
             return self.result
         else:
-            # pylint thinks this raises None, which is clearly not
-            # possible.  That's why this test disables pylint message
             # E0702.
             raise self.failure
 
