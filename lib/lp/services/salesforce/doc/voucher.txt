@@ -135,7 +135,7 @@ the Salesforce proxy.
 
     >>> from lp.services.salesforce.interfaces import (
     ...     ISalesforceVoucher, ISalesforceVoucherProxy)
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> voucher_proxy = getUtility(ISalesforceVoucherProxy)
     >>> verifyObject(ISalesforceVoucherProxy, voucher_proxy)
     True

@@ -252,8 +252,6 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
     """
 
     def __init__(self, request):
-        # The super constructor is a no-op.
-        # pylint: disable-msg=W0231
         self.request = request
         # Detect if this is a read only request or not.
         self.read_only = self.request.method in ['GET', 'HEAD']

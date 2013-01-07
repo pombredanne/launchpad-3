@@ -175,7 +175,7 @@ POTemplate
 POTemplate is an object with all strings that must be translated for a
 concrete context.
 
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.translations.interfaces.potemplate import IPOTemplate
     >>> from lp.translations.model.potemplate import POTemplate
     >>> potemplate = POTemplate.get(1)

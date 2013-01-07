@@ -1,8 +1,6 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# We like global statements!
-# pylint: disable-msg=W0602,W0603
 __metaclass__ = type
 
 __all__ = [

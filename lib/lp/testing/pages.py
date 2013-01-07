@@ -199,8 +199,10 @@ def find_tag_by_id(content, id):
     if isinstance(content, PageElement):
         elements_with_id = content.findAll(True, {'id': id})
     else:
-        elements_with_id = [tag for tag in BeautifulSoup(
-                            content, parseOnlyThese=SoupStrainer(id=id))]
+        elements_with_id = [
+            tag for tag in BeautifulSoup(
+                content, parseOnlyThese=SoupStrainer(id=id),
+                fromEncoding='utf-8')]
     if len(elements_with_id) == 0:
         return None
     elif len(elements_with_id) == 1:
@@ -218,7 +220,8 @@ def first_tag_by_class(content, class_):
 def extract_all_script_and_style_links(content):
     """Find and return all thetags with the given name."""
     strainer = SoupStrainer(['script', 'link'])
-    soup = BeautifulSoup(content, parseOnlyThese=strainer)
+    soup = BeautifulSoup(
+        content, parseOnlyThese=strainer, fromEncoding='utf-8')
     links = []
     link_attr = {u'link': 'href', u'script': 'src'}
     for script_or_style in BeautifulSoup.findAll(soup):
@@ -241,7 +244,8 @@ def find_tags_by_class(content, class_, only_first=False):
         classes = set(value.split())
         return match_classes.issubset(classes)
     soup = BeautifulSoup(
-        content, parseOnlyThese=SoupStrainer(attrs={'class': class_matcher}))
+        content, parseOnlyThese=SoupStrainer(attrs={'class': class_matcher}),
+        fromEncoding='utf-8')
     if only_first:
         find = BeautifulSoup.find
     else:
@@ -275,7 +279,7 @@ def find_main_content(content):
     if main_content is None:
         # Simple pages have neither of these, so as a last resort, we get
         # the page <body>.
-        main_content = BeautifulSoup(content).body
+        main_content = BeautifulSoup(content, fromEncoding='utf-8').body
     return main_content
 
 
@@ -285,7 +289,8 @@ def get_feedback_messages(content):
                        'warning message']
     soup = BeautifulSoup(
         content,
-        parseOnlyThese=SoupStrainer(['div', 'p'], {'class': message_classes}))
+        parseOnlyThese=SoupStrainer(['div', 'p'], {'class': message_classes}),
+        fromEncoding='utf-8')
     return [extract_text(tag) for tag in soup]
 
 
@@ -344,7 +349,7 @@ def print_radio_button_field(content, name):
     (*) A checked option
     ( ) An unchecked option
     """
-    main = BeautifulSoup(content)
+    main = BeautifulSoup(content, fromEncoding='utf-8')
     for field in get_radio_button_text_for_field(main, name):
         print field
 
@@ -396,7 +401,7 @@ def extract_text(content, extract_image_text=False, skip_tags=None):
     if skip_tags is None:
         skip_tags = ['script']
     if not isinstance(content, PageElement):
-        soup = BeautifulSoup(content)
+        soup = BeautifulSoup(content, fromEncoding='utf-8')
     else:
         soup = content
 
@@ -467,7 +472,7 @@ def parse_relationship_section(content):
 
     See package-relationship-pages.txt and related.
     """
-    soup = BeautifulSoup(content)
+    soup = BeautifulSoup(content, fromEncoding='utf-8')
     section = soup.find('ul')
     whitespace_re = re.compile('\s+')
     if section is None:

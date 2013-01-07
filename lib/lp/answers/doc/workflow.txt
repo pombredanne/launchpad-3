@@ -100,7 +100,7 @@ date of the question (which defaults to 'now').
 We now have the IQuestionMessage that was added to the question messages
 history.
 
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.answers.interfaces.questionmessage import IQuestionMessage
     >>> verifyObject(IQuestionMessage, request_message)
     True

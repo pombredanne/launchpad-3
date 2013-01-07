@@ -31,10 +31,10 @@ from lp.services.webapp.batching import (
     )
 from lp.services.webapp.interfaces import StormRangeFactoryError
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
+    verifyObject,
     )
 from lp.testing.layers import LaunchpadFunctionalLayer
 

@@ -1,7 +1,5 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=F0401
 
 """Security policies for using content objects."""
 
@@ -61,7 +59,6 @@ from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
     )
-from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob,
     IBuildFarmJobOld,
@@ -204,7 +201,6 @@ from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageReleaseDownloadCount,
     )
-from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJob
 from lp.soyuz.interfaces.packageset import (
@@ -238,6 +234,9 @@ from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueueEntry,
     )
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
+from lp.translations.interfaces.translationtemplatesbuild import (
+    ITranslationTemplatesBuild,
+    )
 from lp.translations.interfaces.translator import (
     IEditTranslator,
     ITranslator,
@@ -796,11 +795,7 @@ class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
         """Authorize the product or distribution owner."""
         if user.in_admin:
             return True
-        if (self.obj.series_target is not None
-            and user.isDriver(self.obj.series_target)):
-            # The user is a release manager.
-            # XXX sinzui 2009-07-18 bug=40978: The series_target should never
-            # be None, but Milestones in the production DB are like this.
+        if user.isDriver(self.obj.series_target):
             return True
         return user.isOwner(self.obj.target)
 
@@ -866,11 +861,6 @@ class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     def checkAuthenticated(self, user):
         return can_edit_team(self.obj.team, user)
 
-
-# XXX: 2008-08-01, salgado: At some point we should protect ITeamMembership
-# with launchpad.View so that this adapter is used.  For now, though, it's
-# going to be used only on the webservice (which explicitly checks for
-# launchpad.View) so that we don't leak memberships of private teams.
 
 class ViewTeamMembership(AuthorizationBase):
     permission = 'launchpad.View'
@@ -1845,10 +1835,10 @@ class ViewPackageUpload(AuthorizationBase):
         # We cannot use self.obj.sourcepackagerelease, as that causes
         # interference with the property cache if we are called in the
         # process of adding a source or a build.
-        if not self.obj._sources.is_empty():
-            spr = self.obj._sources[0].sourcepackagerelease
-        elif not self.obj._builds.is_empty():
-            spr = self.obj._builds[0].build.source_package_release
+        if self.obj.sources:
+            spr = self.obj.sources[0].sourcepackagerelease
+        elif self.obj.builds:
+            spr = self.obj.builds[0].build.source_package_release
         else:
             spr = None
         if spr is not None:
@@ -1993,38 +1983,29 @@ class ViewBinaryPackageBuild(EditBinaryPackageBuild):
         return auth_spr.checkUnauthenticated()
 
 
+class ViewTranslationTemplatesBuild(DelegatedAuthorization):
+    """Permission to view an `ITranslationTemplatesBuild`.
+
+    Delegated to the build's branch.
+    """
+    permission = 'launchpad.View'
+    usedfor = ITranslationTemplatesBuild
+
+    def __init__(self, obj):
+        super(ViewTranslationTemplatesBuild, self).__init__(obj, obj.branch)
+
+
 class ViewBuildFarmJobOld(DelegatedAuthorization):
     """Permission to view an `IBuildFarmJobOld`.
 
     This permission is based entirely on permission to view the
-    associated `IBinaryPackageBuild` and/or `IBranch`.
+    associated `IBuildFarmJob`.
     """
     permission = 'launchpad.View'
     usedfor = IBuildFarmJobOld
 
-    def _getBranch(self):
-        """Get `IBranch` associated with this job, if any."""
-        if IBuildFarmBranchJob.providedBy(self.obj):
-            return self.obj.branch
-        else:
-            return None
-
-    def _getBuild(self):
-        """Get `IPackageBuild` associated with this job, if any."""
-        if IBuildFarmBuildJob.providedBy(self.obj):
-            return self.obj.build
-        else:
-            return None
-
-    def iter_objects(self):
-        branch = self._getBranch()
-        build = self._getBuild()
-        objects = []
-        if branch:
-            objects.append(branch)
-        if build:
-            objects.append(build)
-        return objects
+    def __init__(self, obj):
+        super(ViewBuildFarmJobOld, self).__init__(obj, obj.build)
 
 
 class AdminQuestion(AdminByAdminsTeam):

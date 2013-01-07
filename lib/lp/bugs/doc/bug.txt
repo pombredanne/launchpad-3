@@ -134,7 +134,7 @@ Interface check
 
 It is guaranteed to implement the correct interface, too:
 
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> verifyObject(IBug, firefox_crashes)
     True
 

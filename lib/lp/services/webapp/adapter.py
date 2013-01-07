@@ -1,9 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# We use global in this module.
-# pylint: disable-msg=W0602
-
 __metaclass__ = type
 
 from functools import partial
@@ -442,7 +439,6 @@ def break_main_thread_db_access(*ignored):
     for using connections from the main thread.
     """
     # Record the ID of the main thread.
-    # pylint: disable-msg=W0603
     global _main_thread_id
     _main_thread_id = thread.get_ident()
 
@@ -477,7 +473,6 @@ class LaunchpadDatabase(Postgres):
         # or main_slave.
         # We don't invoke the superclass constructor as it has a very limited
         # opinion on what uri is.
-        # pylint: disable-msg=W0231
         self._uri = uri
         # A unique name for this database connection.
         self.name = uri.database
@@ -588,7 +583,6 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
     """Storm tracer class to keep statement execution time bounded."""
 
     def __init__(self):
-        # pylint: disable-msg=W0231
         # The parent class __init__ just sets the granularity
         # attribute, which we are handling with a property.
         pass

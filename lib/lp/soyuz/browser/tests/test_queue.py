@@ -6,6 +6,8 @@
 __metaclass__ = type
 
 from lxml import html
+from storm.store import Store
+from testtools.matchers import Equals
 import transaction
 from zope.component import (
     getUtility,
@@ -26,12 +28,14 @@ from lp.testing import (
     login_person,
     logout,
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 
@@ -361,14 +365,31 @@ class TestQueueItemsView(TestCaseWithFactory):
         self.assertIn(
             upload.package_copy_job.job.requester.displayname, html_text)
 
+    def test_query_count(self):
+        login(ADMIN_EMAIL)
+        uploads = []
+        distroseries = self.factory.makeDistroSeries()
+        for i in range(5):
+            uploads.append(self.factory.makeSourcePackageUpload(distroseries))
+            uploads.append(self.factory.makeCustomPackageUpload(distroseries))
+            uploads.append(self.factory.makeCopyJobPackageUpload(distroseries))
+        for i in range(15):
+            uploads.append(self.factory.makeBuildPackageUpload(distroseries))
+        queue_admin = self.factory.makeArchiveAdmin(distroseries.main_archive)
+        Store.of(uploads[0]).invalidate()
+        with person_logged_in(queue_admin):
+            with StormStatementRecorder() as recorder:
+                view = self.makeView(distroseries, queue_admin)
+                view()   
+        self.assertThat(recorder, HasQueryCount(Equals(52)))
+
 
 class TestCompletePackageUpload(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
     def makeCompletePackageUpload(self, upload=None, build_upload_files=None,
-                                  source_upload_files=None,
-                                  package_sets=None):
+                                  source_upload_files=None, package_sets=None):
         if upload is None:
             upload = self.factory.makeSourcePackageUpload()
         if build_upload_files is None:

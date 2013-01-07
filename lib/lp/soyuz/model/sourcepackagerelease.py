@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 __metaclass__ = type
 __all__ = [
     'SourcePackageRelease',
@@ -291,14 +289,13 @@ class SourcePackageRelease(SQLBase):
     @property
     def current_publishings(self):
         """See ISourcePackageRelease."""
-        from lp.soyuz.model.distroseriessourcepackagerelease \
-            import DistroSeriesSourcePackageRelease
+        from lp.soyuz.model.distroseriessourcepackagerelease import (
+            DistroSeriesSourcePackageRelease)
         return [DistroSeriesSourcePackageRelease(pub.distroseries, self)
                 for pub in self.publishings]
 
-    @property
+    @cachedproperty
     def published_archives(self):
-        """See `ISourcePackageRelease`."""
         archives = set(
             pub.archive for pub in self.publishings.prejoin(['archive']))
         return sorted(archives, key=operator.attrgetter('id'))
@@ -503,7 +500,7 @@ class SourcePackageRelease(SQLBase):
             Join(PackageUpload,
                  PackageUploadSource.packageuploadID == PackageUpload.id),
             Join(LibraryFileAlias,
-                 LibraryFileAlias.id == PackageUpload.changesfileID),
+                 LibraryFileAlias.id == PackageUpload.changes_file_id),
             Join(LibraryFileContent,
                  LibraryFileContent.id == LibraryFileAlias.contentID),
             ]

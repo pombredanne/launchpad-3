@@ -14,7 +14,6 @@ __all__ = [
     'remove_if_exists',
     'remove_tree',
     'two_stage_kill',
-    'until_no_eintr',
     'write_file',
     ]
 
@@ -26,7 +25,6 @@ from signal import (
     SIGKILL,
     SIGTERM,
     )
-import socket
 import time
 
 
@@ -64,35 +62,6 @@ def override_environ(**kwargs):
         yield
     finally:
         set_environ(old_values)
-
-
-def until_no_eintr(retries, function, *args, **kwargs):
-    """Run 'function' until it doesn't raise EINTR errors.
-
-    :param retries: The maximum number of times to try running 'function'.
-    :param function: The function to run.
-    :param *args: Arguments passed to the function.
-    :param **kwargs: Keyword arguments passed to the function.
-    :return: The return value of 'function'.
-    """
-    if not retries:
-        return
-    for i in range(retries):
-        try:
-            return function(*args, **kwargs)
-        except (IOError, OSError) as e:
-            if e.errno == errno.EINTR:
-                continue
-            raise
-        except socket.error as e:
-            # In Python 2.6 we can use IOError instead.  It also has
-            # reason.errno but we might be using 2.5 here so use the
-            # index hack.
-            if e[0] == errno.EINTR:
-                continue
-            raise
-    else:
-        raise
 
 
 def ensure_directory_exists(directory, mode=0777):

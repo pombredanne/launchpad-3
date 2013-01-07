@@ -2,7 +2,7 @@
 Distro Arch Series
 ==================
 
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
 
     >>> from lp.soyuz.interfaces.distroarchseriesbinarypackage import (
     ...     IDistroArchSeriesBinaryPackage,

@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0631
-
 """Package information classes.
 
 This classes are responsable for fetch and hold the information inside
@@ -34,9 +32,9 @@ from lp.archiveuploader.utils import (
     DpkgSourceError,
     extract_dpkg_source,
     )
-from lp.registry.interfaces.gpg import GPGKeyAlgorithm
 from lp.services import encoding
 from lp.services.database.constants import UTC_NOW
+from lp.services.gpg.interfaces import GPGKeyAlgorithm
 from lp.services.scripts import log
 from lp.soyuz.enums import PackagePublishingPriority
 from lp.soyuz.scripts.gina import (

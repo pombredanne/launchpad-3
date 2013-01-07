@@ -1,7 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
 """Milestone model classes."""
 
 __metaclass__ = type
@@ -37,8 +36,8 @@ from storm.zope import IResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.app.errors import NotFoundError
 from lp.app.enums import InformationType
+from lp.app.errors import NotFoundError
 from lp.blueprints.model.specification import (
     Specification,
     visible_specification_query,

@@ -192,7 +192,8 @@
                 section_name
                 components
                 searchable_names
-                searchable_versions"/>
+                searchable_versions
+                changes_file_id"/>
         <require
             permission="launchpad.Edit"
             attributes="

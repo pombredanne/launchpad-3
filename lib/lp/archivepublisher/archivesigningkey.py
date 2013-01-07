@@ -21,12 +21,12 @@ from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey,
     )
-from lp.registry.interfaces.gpg import (
-    GPGKeyAlgorithm,
-    IGPGKeySet,
-    )
+from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.services.config import config
-from lp.services.gpg.interfaces import IGPGHandler
+from lp.services.gpg.interfaces import (
+    GPGKeyAlgorithm,
+    IGPGHandler,
+    )
 
 
 class ArchiveSigningKey:

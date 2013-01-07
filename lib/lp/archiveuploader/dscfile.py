@@ -59,12 +59,12 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.services.identity.interfaces.emailaddress import InvalidEmailAddress
 from lp.services.encoding import guess as guess_encoding
 from lp.services.gpg.interfaces import (
     GPGVerificationError,
     IGPGHandler,
     )
+from lp.services.identity.interfaces.emailaddress import InvalidEmailAddress
 from lp.services.librarian.utils import copy_and_close
 from lp.soyuz.enums import (
     ArchivePurpose,

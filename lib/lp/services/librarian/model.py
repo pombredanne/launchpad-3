@@ -85,6 +85,7 @@ class LibraryFileContent(SQLBase):
 
 class LibraryFileAlias(SQLBase):
     """A filename and mimetype that we can serve some given content with."""
+
     implements(ILibraryFileAlias)
 
     _table = 'LibraryFileAlias'

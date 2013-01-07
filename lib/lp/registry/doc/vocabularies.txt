@@ -29,7 +29,7 @@ The active mailing lists vocabulary matches and returns only those
 mailing lists which are active.
 
     >>> list_vocabulary = get_naked_vocab(None, 'ActiveMailingList')
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.services.webapp.vocabulary import IHugeVocabulary
     >>> verifyObject(IHugeVocabulary, list_vocabulary)
     True

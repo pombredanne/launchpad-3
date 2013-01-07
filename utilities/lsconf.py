@@ -8,7 +8,6 @@
 __metatype__ = type
 
 # Scripts may have relative imports.
-# pylint: disable-msg=W0403
 import _pythonpath
 
 from operator import attrgetter

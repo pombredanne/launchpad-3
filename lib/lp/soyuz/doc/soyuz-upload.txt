@@ -172,14 +172,12 @@ do uploads:
 
     >>> from lp.services.identity.interfaces.emailaddress import (
     ...     IEmailAddressSet)
-    >>> from lp.registry.interfaces.gpg import (
-    ...     GPGKeyAlgorithm,
-    ...     IGPGKeySet,
-    ...     )
+    >>> from lp.registry.interfaces.gpg import IGPGKeySet
     >>> from lp.registry.interfaces.person import (
     ...     IPersonSet,
     ...     PersonCreationRationale,
     ...     )
+    >>> from lp.services.gpg.interfaces import GPGKeyAlgorithm
     >>> name, address = "Katie", "katie@rockhopper.ubuntu.com"
     >>> user = getUtility(IPersonSet).ensurePerson(
     ...     address, name, PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
