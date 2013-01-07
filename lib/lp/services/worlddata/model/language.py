@@ -2,8 +2,6 @@
 # the GNU Affero General Public License version 3 (see the file
 # LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 __metaclass__ = type
 __all__ = [
     'Language',

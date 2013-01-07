@@ -40,8 +40,6 @@ class StubbedPullerWorkerProtocol(PullerWorkerProtocol):
     """A `PullerWorkerProtocol` that logs events without acting on them."""
 
     def __init__(self):
-        # We are deliberately not calling PullerWorkerProtocol.__init__:
-        # pylint: disable-msg=W0231
         self.calls = []
 
     def sendEvent(self, command, *args):

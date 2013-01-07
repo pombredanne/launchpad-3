@@ -3,8 +3,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=C0103,W0403
-
 """Script to probe distribution mirrors and check how up-to-date they are."""
 
 import _pythonpath

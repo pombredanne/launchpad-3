@@ -15,7 +15,6 @@ communicates progress and results to the database.
 __metaclass__ = type
 
 
-# pylint: disable-msg=W0403
 import _pythonpath
 
 from optparse import OptionParser

@@ -3,8 +3,6 @@
 
 """Test RecipeBuildBehavior."""
 
-# pylint: disable-msg=F0401
-
 __metaclass__ = type
 
 from textwrap import dedent

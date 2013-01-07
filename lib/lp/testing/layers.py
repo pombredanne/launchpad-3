@@ -1,9 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# We like global!
-# pylint: disable-msg=W0603,W0702
-
 """Layers used by Launchpad tests.
 
 Layers are the mechanism used by the Zope3 test runner to efficiently
