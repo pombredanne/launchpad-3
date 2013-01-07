@@ -473,7 +473,6 @@ class LaunchpadDatabase(Postgres):
         # or main_slave.
         # We don't invoke the superclass constructor as it has a very limited
         # opinion on what uri is.
-        # pylint: disable-msg=W0231
         self._uri = uri
         # A unique name for this database connection.
         self.name = uri.database
@@ -584,7 +583,6 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
     """Storm tracer class to keep statement execution time bounded."""
 
     def __init__(self):
-        # pylint: disable-msg=W0231
         # The parent class __init__ just sets the granularity
         # attribute, which we are handling with a property.
         pass

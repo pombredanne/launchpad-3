@@ -88,8 +88,6 @@ class LibraryFileContent(SQLBase):
 
 class LibraryFileAlias(SQLBase):
     """A filename and mimetype that we can serve some given content with."""
-    # The updateLastAccessed method has unreachable code.
-    # pylint: disable-msg=W0101
 
     implements(ILibraryFileAlias)
 

@@ -9,7 +9,6 @@ This script sets the remote_product string value on Launchpad Products
 by looking it up from one of the product's bug watches.
 """
 
-# pylint: disable-msg=W0403
 import _pythonpath
 
 import time

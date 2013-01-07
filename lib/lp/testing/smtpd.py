@@ -44,7 +44,6 @@ class SMTPServer(QueueServer):
         # If the message came from Mailman, place it onto the queue.  If the
         # local part indicates that the message is destined for a Mailman
         # mailing list, deliver it to Mailman's incoming queue.
-        # pylint: disable-msg=F0401
         if local in listnames and 'x-beenthere' not in message:
             # It's destined for a mailing list.
             log.debug('delivered to Mailman: %s', message_id)

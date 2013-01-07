@@ -9,7 +9,6 @@ be done without downtime.
 """
 __metaclass__ = type
 
-# pylint: disable-msg=W0403
 import _pythonpath
 
 import psycopg

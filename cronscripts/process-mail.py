@@ -3,7 +3,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=C0103,W0403
 """Fetches mail from the mail box and feeds them to the handlers."""
 
 import _pythonpath
