@@ -48,13 +48,7 @@
     <class
         class="lp.buildmaster.model.buildfarmjob.BuildFarmJob">
         <allow
-            interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob" />
-        <require
-            permission="launchpad.Edit"
-            set_attributes="status"/>
-        <require
-            permission="launchpad.Admin"
-            set_attributes="failure_count"/>
+            interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobDB" />
     </class>
     <securedutility
         component="lp.buildmaster.model.buildfarmjob.BuildFarmJob"
@@ -74,12 +68,8 @@
     <class
         class="lp.buildmaster.model.packagebuild.PackageBuild">
         <allow
-            interface="lp.buildmaster.interfaces.packagebuild.IPackageBuild" />
-        <require
-            permission="launchpad.Edit"
-            set_attributes="dependencies"/>
+            interface="lp.buildmaster.interfaces.packagebuild.IPackageBuildDB" />
     </class>
-
     <securedutility
         component="lp.buildmaster.model.packagebuild.PackageBuild"
         provides="lp.buildmaster.interfaces.packagebuild.IPackageBuildSource">

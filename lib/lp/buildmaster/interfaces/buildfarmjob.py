@@ -160,6 +160,27 @@ class IBuildFarmJobOld(Interface):
         """Job's finished.  Delete its supporting data."""
 
 
+class IBuildFarmJobDB(Interface):
+    """Operations on a `BuildFarmJob` DB row.
+
+    This is deprecated while it's flattened into the concrete implementations.
+    """
+
+    id = Attribute('The build farm job ID.')
+
+    job_type = Choice(
+        title=_("Job type"), required=True, readonly=True,
+        vocabulary=BuildFarmJobType,
+        description=_("The specific type of job."))
+
+    def getSpecificJob():
+        """Return the specific build job associated with this record.
+
+        :raises InconsistentBuildFarmJobError: if a specific job could not be
+            returned.
+        """
+
+
 class IBuildFarmJob(Interface):
     """Operations that jobs for the build farm must implement."""
 
@@ -261,13 +282,6 @@ class IBuildFarmJob(Interface):
         title=_("Failure Count"), required=False, readonly=True,
         default=0,
         description=_("Number of consecutive failures for this job."))
-
-    def getSpecificJob():
-        """Return the specific build job associated with this record.
-
-        :raises InconsistentBuildFarmJobError: if a specific job could not be
-            returned.
-        """
 
     def makeJob():
         """Create the specific job relating this with an lp.services.job.

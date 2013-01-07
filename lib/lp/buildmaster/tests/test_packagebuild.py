@@ -13,7 +13,7 @@ import tempfile
 
 from storm.store import Store
 from zope.component import getUtility
-from zope.security.interfaces import Unauthorized
+from zope.security.management import checkPermission
 from zope.security.proxy import removeSecurityProxy
 
 from lp.archiveuploader.uploadprocessor import parse_build_upload_leaf_name
@@ -89,8 +89,9 @@ class TestPackageBuild(TestPackageBuildBase):
 
     def test_default_values(self):
         # PackageBuild has a number of default values.
-        self.failUnlessEqual(None, self.package_build.distribution)
-        self.failUnlessEqual(None, self.package_build.distro_series)
+        pb = removeSecurityProxy(self.package_build)
+        self.failUnlessEqual(None, pb.distribution)
+        self.failUnlessEqual(None, pb.distro_series)
 
     def test_destroySelf_removes_BuildFarmJob(self):
         # Destroying a packagebuild also destroys the BuildFarmJob it
@@ -104,36 +105,6 @@ class TestPackageBuild(TestPackageBuildBase):
         result = store.find(
             BuildFarmJob, BuildFarmJob.id == build_farm_job_id)
         self.assertIs(None, result.one())
-
-    def test_view_package_build(self):
-        # Anonymous access can read public builds, but not edit.
-        self.failUnlessEqual(
-            None, self.package_build.dependencies)
-        self.assertRaises(
-            Unauthorized, setattr, self.package_build,
-            'dependencies', u'my deps')
-
-    def test_edit_package_build(self):
-        # An authenticated user who belongs to the owning archive team
-        # can edit the build.
-        login_person(self.package_build.archive.owner)
-        self.package_build.dependencies = u'My deps'
-        self.failUnlessEqual(
-            u'My deps', self.package_build.dependencies)
-
-        # But other users cannot.
-        other_person = self.factory.makePerson()
-        login_person(other_person)
-        self.assertRaises(
-            Unauthorized, setattr, self.package_build,
-            'dependencies', u'my deps')
-
-    def test_admin_package_build(self):
-        # Users with edit access can update attributes.
-        login('admin@canonical.com')
-        self.package_build.dependencies = u'My deps'
-        self.failUnlessEqual(
-            u'My deps', self.package_build.dependencies)
 
 
 class TestPackageBuildMixin(TestCaseWithFactory):
@@ -215,6 +186,30 @@ class TestPackageBuildMixin(TestCaseWithFactory):
         self.assertEqual(
             '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_cookie),
             upload_leaf)
+
+    def test_view_package_build(self):
+        # Anonymous access can read public builds, but not edit.
+        self.assertTrue(checkPermission('launchpad.View', self.package_build))
+        self.assertFalse(checkPermission('launchpad.Edit', self.package_build))
+
+    def test_edit_package_build(self):
+        # An authenticated user who belongs to the owning archive team
+        # can edit the build.
+        login_person(self.package_build.archive.owner)
+        self.assertTrue(checkPermission('launchpad.View', self.package_build))
+        self.assertTrue(checkPermission('launchpad.Edit', self.package_build))
+
+        # But other users cannot.
+        other_person = self.factory.makePerson()
+        login_person(other_person)
+        self.assertTrue(checkPermission('launchpad.View', self.package_build))
+        self.assertFalse(checkPermission('launchpad.Edit', self.package_build))
+
+    def test_admin_package_build(self):
+        # Users with edit access can update attributes.
+        login('admin@canonical.com')
+        self.assertTrue(checkPermission('launchpad.View', self.package_build))
+        self.assertTrue(checkPermission('launchpad.Edit', self.package_build))
 
 
 class TestPackageBuildSet(TestPackageBuildBase):
