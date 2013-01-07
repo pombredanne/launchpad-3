@@ -44,7 +44,6 @@ class FakeMethod:
         if self.failure is None:
             return self.result
         else:
-            # E0702.
             raise self.failure
 
     @property

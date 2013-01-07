@@ -97,7 +97,6 @@ class IHasBadges(Interface):
     Badges should honour the visibility of the linked objects.
     """
 
-    # A zope interface doesn't have self as a parameter for its methods.
     def getVisibleBadges():
         """Return a list of `Badge` objects that the logged in user can see.
         """

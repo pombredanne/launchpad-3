@@ -573,7 +573,6 @@ class WindowedListBatch(batch._Batch):
 
     def endNumber(self):
         """Return the end index of the batch, not including None objects."""
-        # This class should know about the private _window attribute.
         return self.start + len(self.list._window)
 
 

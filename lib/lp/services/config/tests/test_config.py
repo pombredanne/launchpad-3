@@ -91,7 +91,6 @@ class TestLaunchpadConfig(unittest.TestCase):
 
 def test_suite():
     """Return a suite of canonical.conf and all conf files."""
-    # We know we are not using dirnames.
     suite = unittest.TestSuite()
     suite.addTest(DocTestSuite(
         'lp.services.config',
