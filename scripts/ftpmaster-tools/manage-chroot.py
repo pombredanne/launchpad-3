@@ -3,7 +3,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Stop lint warning about relative import:
 """Tool for adding, removing and replacing buildd chroots."""
 
 import _pythonpath

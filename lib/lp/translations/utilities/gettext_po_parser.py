@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# (Suppress warning about two datetimes being imported)
-#
 # Originally based on code from msgfmt.py (available from python source
 # code), written by Martin v. Loewis and changed by Christian 'Tiran'
 # Heimes.  The code is no longer recognizably similar though, so don't

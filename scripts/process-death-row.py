@@ -3,7 +3,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Stop lint warning about relative import:
 """Death row processor script.
 
 This script removes obsolete files from the selected archive(s) pool.
