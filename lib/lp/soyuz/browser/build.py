@@ -44,7 +44,6 @@ from lp.app.errors import (
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJobSet,
     InconsistentBuildFarmJobError,
     ISpecificBuildFarmJobSource,
     )
@@ -143,19 +142,6 @@ class BuildNavigationMixin:
         try:
             return getUtility(ISourcePackageRecipeBuildSource).getByID(
                 build_id)
-        except NotFoundError:
-            return None
-
-    @stepthrough('+buildjob')
-    def traverse_buildjob(self, name):
-        try:
-            job_id = int(name)
-        except ValueError:
-            return None
-        try:
-            build_job = getUtility(IBuildFarmJobSet).getByID(job_id)
-            return self.redirectSubTree(
-                canonical_url(build_job.getSpecificJob()))
         except NotFoundError:
             return None
 
@@ -521,22 +507,17 @@ def getSpecificJobs(jobs):
         builds = [build for build
             in source.getByBuildFarmJobs(list(grouped_jobs))
             if build is not None]
-        is_binary_package_build = IBinaryPackageBuildSet.providedBy(
-            source)
         for build in builds:
-            if is_binary_package_build:
-                job_builds[build.package_build.build_farm_job.id] = build
-            else:
-                try:
-                    job_builds[build.build_farm_job.id] = build
-                except Unauthorized:
-                    # If the build farm job is private, we will get an
-                    # Unauthorized exception; we only use
-                    # removeSecurityProxy to get the id of build_farm_job
-                    # but the corresponding build returned in the list
-                    # will be 'None'.
-                    naked_build = removeSecurityProxy(build)
-                    job_builds[naked_build.build_farm_job.id] = None
+            try:
+                job_builds[build.build_farm_job.id] = build
+            except Unauthorized:
+                # If the build farm job is private, we will get an
+                # Unauthorized exception; we only use
+                # removeSecurityProxy to get the id of build_farm_job
+                # but the corresponding build returned in the list
+                # will be 'None'.
+                naked_build = removeSecurityProxy(build)
+                job_builds[naked_build.build_farm_job.id] = None
     # Return the corresponding builds.
     try:
         return [job_builds[job.id] for job in jobs]

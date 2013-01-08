@@ -90,7 +90,6 @@ class AnnouncementDateWidget(SimpleInputWidget):
             SimpleTerm(name, name, label) for name, label in action_names]
         return SimpleVocabulary(terms)
 
-    # pylint: disable-msg=W0706
     def getInputValue(self):
         self._error = None
         action = self.action_widget.getInputValue()

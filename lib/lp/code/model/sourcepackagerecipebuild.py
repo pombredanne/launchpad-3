@@ -1,8 +1,6 @@
 # Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=F0401,E1002
-
 """Implementation code for source package builds."""
 
 __metaclass__ = type
@@ -43,6 +41,7 @@ from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
     PackageBuild,
     PackageBuildDerived,
+    PackageBuildMixin,
     )
 from lp.code.errors import (
     BuildAlreadyPending,
@@ -76,7 +75,7 @@ from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
-class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
+class SourcePackageRecipeBuild(PackageBuildMixin, PackageBuildDerived, Storm):
 
     __storm_table__ = 'SourcePackageRecipeBuild'
 

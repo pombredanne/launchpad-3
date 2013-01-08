@@ -24,7 +24,6 @@ import tarfile
 import traceback
 import xmlrpclib
 
-# pylint: disable-msg=F0401
 from Mailman import (
     Errors,
     mm_cfg,
@@ -496,7 +495,6 @@ class XMLRPCRunner(Runner):
                 os.makedirs(path)
             # We have to use a bare except here because of the legacy string
             # exceptions that Mailman can raise.
-            # pylint: disable-msg=W0702
             except:
                 log_exception('List creation error for team: %s', team_name)
                 return False
@@ -537,7 +535,6 @@ class XMLRPCRunner(Runner):
                     mlist.Unlock()
             # We have to use a bare except here because of the legacy string
             # exceptions that Mailman can raise.
-            # pylint: disable-msg=W0702
             except:
                 log_exception(
                     'List modification error for team: %s', team_name)
@@ -588,7 +585,6 @@ class XMLRPCRunner(Runner):
                     os.chdir(old_cwd)
             # We have to use a bare except here because of the legacy string
             # exceptions that Mailman can raise.
-            # pylint: disable-msg=W0702
             except:
                 log_exception('List deletion error for team: %s', team_name)
                 statuses[team_name] = ('deactivate', 'failure')
@@ -683,7 +679,6 @@ class XMLRPCRunner(Runner):
             # succeeded or not, however, it's unlikely that an action would
             # fail leaving the mailing list in a usable state.  Therefore, if
             # the list is loadable and lockable, we'll say it succeeded.
-            # pylint: disable-msg=W0702
             try:
                 mlist = MailList(name)
             except Errors.MMUnknownListError:

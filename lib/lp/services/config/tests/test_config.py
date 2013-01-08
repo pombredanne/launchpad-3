@@ -2,8 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # We know we are not using root and handlers.
-# pylint: disable-msg=W0612
-
 """Test lp.services.config."""
 
 
@@ -93,8 +91,6 @@ class TestLaunchpadConfig(unittest.TestCase):
 
 def test_suite():
     """Return a suite of canonical.conf and all conf files."""
-    # We know we are not using dirnames.
-    # pylint: disable-msg=W0612
     suite = unittest.TestSuite()
     suite.addTest(DocTestSuite(
         'lp.services.config',

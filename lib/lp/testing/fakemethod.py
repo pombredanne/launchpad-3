@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0702
-
 __metaclass__ = type
 __all__ = [
     'FakeMethod',
@@ -46,9 +44,6 @@ class FakeMethod:
         if self.failure is None:
             return self.result
         else:
-            # pylint thinks this raises None, which is clearly not
-            # possible.  That's why this test disables pylint message
-            # E0702.
             raise self.failure
 
     @property

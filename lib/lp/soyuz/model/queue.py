@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -48,6 +48,7 @@ from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUploadError
 from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.tagfiles import parse_tagfile_content
+from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.auditor.client import AuditorClient
@@ -75,7 +76,10 @@ from lp.services.database.stormexpr import (
 from lp.services.features import getFeatureFlag
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.librarian.interfaces.client import DownloadFailed
-from lp.services.librarian.model import LibraryFileAlias
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from lp.services.librarian.utils import copy_and_close
 from lp.services.mail.signedmessage import strip_pgp_signature
 from lp.services.propertycache import (
@@ -96,6 +100,7 @@ from lp.soyuz.interfaces.archive import (
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJobSource
+from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     name_priority_map,
@@ -115,7 +120,11 @@ from lp.soyuz.interfaces.queue import (
     QueueStateWriteProtectedError,
     )
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
+from lp.soyuz.model.section import Section
 from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 
 # There are imports below in PackageUploadCustom for various bits
@@ -1683,17 +1692,8 @@ class PackageUploadSet:
         """See `IPackageUploadSet`."""
         if build_ids is None or len(build_ids) == 0:
             return []
-        return PackageUploadBuild.select("""
-            PackageUploadBuild.build IN %s
-            """ % sqlvalues(build_ids))
-
-    def getSourceBySourcePackageReleaseIDs(self, spr_ids):
-        """See `IPackageUploadSet`."""
-        if spr_ids is None or len(spr_ids) == 0:
-            return []
-        return PackageUploadSource.select("""
-            PackageUploadSource.sourcepackagerelease IN %s
-            """ % sqlvalues(spr_ids))
+        return PackageUploadBuild.select(
+            "PackageUploadBuild.build IN %s" % sqlvalues(build_ids))
 
     def getByPackageCopyJobIDs(self, pcj_ids):
         """See `IPackageUploadSet`."""
@@ -1728,18 +1728,32 @@ def prefill_packageupload_caches(uploads, puses, pubs, pucs):
     source_sprs = load_related(
         SourcePackageRelease, puses, ['sourcepackagereleaseID'])
     bpbs = load_related(BinaryPackageBuild, pubs, ['buildID'])
+    load_related(PackageBuild, bpbs, ['package_build_id'])
     load_related(DistroArchSeries, bpbs, ['distro_arch_series_id'])
     binary_sprs = load_related(
         SourcePackageRelease, bpbs, ['source_package_release_id'])
+    bprs = load_referencing(BinaryPackageRelease, bpbs, ['buildID'])
+    load_related(BinaryPackageName, bprs, ['binarypackagenameID'])
     sprs = source_sprs + binary_sprs
 
     load_related(SourcePackageName, sprs, ['sourcepackagenameID'])
+    load_related(Section, sprs + bprs, ['sectionID'])
+    load_related(Component, sprs, ['componentID'])
     load_related(LibraryFileAlias, uploads, ['changes_file_id'])
     publications = load_referencing(
         SourcePackagePublishingHistory, sprs, ['sourcepackagereleaseID'])
     load_related(Archive, publications, ['archiveID'])
+    diffs = getUtility(IPackageDiffSet).getDiffsToReleases(
+        sprs, preload_for_display=True)
+
+    puc_lfas = load_related(LibraryFileAlias, pucs, ['libraryfilealiasID'])
+    load_related(LibraryFileContent, puc_lfas, ['contentID'])
+
     for spr_cache in sprs:
         get_property_cache(spr_cache).published_archives = []
+        get_property_cache(spr_cache).package_diffs = []
     for publication in publications:
         spr_cache = get_property_cache(publication.sourcepackagerelease)
         spr_cache.published_archives.append(publication.archive)
+    for diff in diffs:
+        get_property_cache(diff.to_source).package_diffs.append(diff)

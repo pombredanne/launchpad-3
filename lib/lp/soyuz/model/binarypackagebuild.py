@@ -45,6 +45,7 @@ from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
     PackageBuild,
     PackageBuildDerived,
+    PackageBuildMixin,
     )
 from lp.services.config import config
 from lp.services.database.bulk import load_related
@@ -92,7 +93,7 @@ from lp.soyuz.model.queue import (
     )
 
 
-class BinaryPackageBuild(PackageBuildDerived, SQLBase):
+class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
     implements(IBinaryPackageBuild)
     _table = 'BinaryPackageBuild'
     _defaultOrder = 'id'
@@ -799,12 +800,6 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             BinaryPackageFile.binarypackagerelease == BinaryPackageRelease.id,
             LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
             LibraryFileAlias.filename == filename).one()
-
-    def getSpecificJob(self):
-        """See `IBuildFarmJob`."""
-        # If we are asked to adapt an object that is already a binary
-        # package build, then don't hit the db.
-        return self
 
     def getUploader(self, changes):
         """See `IBinaryPackageBuild`."""

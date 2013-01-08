@@ -3,8 +3,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=C0103,W0403
-
 # This script expires PPA binaries that are superseded or deleted, and
 # are older than 30 days.  It's done with pure SQL rather than Python
 # for speed reasons.

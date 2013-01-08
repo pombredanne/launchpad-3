@@ -16,7 +16,6 @@ __all__ = [
     ]
 
 
-# pylint: disable-msg=W0403
 import _pythonpath
 
 import logging

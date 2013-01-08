@@ -125,8 +125,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.addFakeBuildLog()
         self.assertEqual(
             'http://launchpad.dev/ubuntutest/+source/'
-            'gedit/666/+build/%d/+files/mybuildlog.txt' % (
-                self.build.package_build.build_farm_job.id),
+            'gedit/666/+build/%d/+files/mybuildlog.txt' % self.build.id,
             self.build.log_url)
 
     def test_log_url_ppa(self):
@@ -141,38 +140,6 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
             '+archive/myppa/+build/%d/+files/mybuildlog.txt' % (
                 self.build.build_farm_job.id),
             self.build.log_url)
-
-    def test_adapt_from_build_farm_job(self):
-        # An `IBuildFarmJob` can be adapted to an IBinaryPackageBuild
-        # if it has the correct job type.
-        build_farm_job = self.build.build_farm_job
-        store = Store.of(build_farm_job)
-        store.flush()
-
-        self.assertEqual(self.build, build_farm_job.getSpecificJob())
-
-    def test_adapt_from_build_farm_job_prefetching(self):
-        # The package_build is prefetched for efficiency.
-        build_farm_job = self.build.build_farm_job
-
-        # We clear the cache to avoid getting cached objects where
-        # they would normally be queries.
-        store = Store.of(build_farm_job)
-        store.flush()
-        store.invalidate()
-
-        binary_package_build = build_farm_job.getSpecificJob()
-
-        self.assertStatementCount(
-            0, getattr, binary_package_build, "package_build")
-        self.assertStatementCount(
-            0, getattr, binary_package_build, "build_farm_job")
-
-    def test_getSpecificJob_noop(self):
-        # If getSpecificJob is called on the binary build it is a noop.
-        store = Store.of(self.build)
-        store.flush()
-        self.assertStatementCount(0, self.build.getSpecificJob)
 
     def test_getUploader(self):
         # For ACL purposes the uploader is the changes file signer.

@@ -1,7 +1,5 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-# pylint: disable-msg=F0401
-
 """Browser code for PO templates."""
 
 __metaclass__ = type

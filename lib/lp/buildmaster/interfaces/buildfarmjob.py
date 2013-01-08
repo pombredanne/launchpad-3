@@ -1,8 +1,6 @@
 # Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Interface for Soyuz build farm jobs."""
 
 __metaclass__ = type
@@ -162,6 +160,20 @@ class IBuildFarmJobOld(Interface):
         """Job's finished.  Delete its supporting data."""
 
 
+class IBuildFarmJobDB(Interface):
+    """Operations on a `BuildFarmJob` DB row.
+
+    This is deprecated while it's flattened into the concrete implementations.
+    """
+
+    id = Attribute('The build farm job ID.')
+
+    job_type = Choice(
+        title=_("Job type"), required=True, readonly=True,
+        vocabulary=BuildFarmJobType,
+        description=_("The specific type of job."))
+
+
 class IBuildFarmJob(Interface):
     """Operations that jobs for the build farm must implement."""
 
@@ -264,13 +276,6 @@ class IBuildFarmJob(Interface):
         default=0,
         description=_("Number of consecutive failures for this job."))
 
-    def getSpecificJob():
-        """Return the specific build job associated with this record.
-
-        :raises InconsistentBuildFarmJobError: if a specific job could not be
-            returned.
-        """
-
     def makeJob():
         """Create the specific job relating this with an lp.services.job.
 
@@ -352,8 +357,4 @@ class IBuildFarmJobSet(Interface):
         :param user: If given, this will be used to determine private builds
             that should be included.
         :return: a `ResultSet` representing the requested builds.
-        """
-
-    def getByID(job_id):
-        """Look up a `IBuildFarmJob` record by id.
         """

@@ -13,7 +13,7 @@ import tempfile
 
 from storm.store import Store
 from zope.component import getUtility
-from zope.security.interfaces import Unauthorized
+from zope.security.management import checkPermission
 from zope.security.proxy import removeSecurityProxy
 
 from lp.archiveuploader.uploadprocessor import parse_build_upload_leaf_name
@@ -78,10 +78,6 @@ class TestPackageBuild(TestPackageBuildBase):
         joes_ppa = self.factory.makeArchive(owner=joe, name="ppa")
         self.package_build = self.makePackageBuild(archive=joes_ppa)
 
-    def test_providesInterface(self):
-        # PackageBuild provides IPackageBuild
-        self.assertProvides(self.package_build, IPackageBuild)
-
     def test_saves_record(self):
         # A package build can be stored in the database.
         store = Store.of(self.package_build)
@@ -91,24 +87,44 @@ class TestPackageBuild(TestPackageBuildBase):
             PackageBuild.id == self.package_build.id).one()
         self.assertEqual(self.package_build, retrieved_build)
 
-    def test_unimplemented_methods(self):
-        # Classes deriving from PackageBuild must provide various
-        # methods.
-        self.assertRaises(
-            NotImplementedError, self.package_build.estimateDuration)
-        self.assertRaises(
-            NotImplementedError, self.package_build.verifySuccessfulUpload)
-        self.assertRaises(NotImplementedError, self.package_build.notify)
-        self.assertRaises(
-            NotImplementedError, self.package_build.handleStatus,
-            None, None, None)
-
     def test_default_values(self):
         # PackageBuild has a number of default values.
-        self.failUnlessEqual(
-            'multiverse', self.package_build.current_component.name)
-        self.failUnlessEqual(None, self.package_build.distribution)
-        self.failUnlessEqual(None, self.package_build.distro_series)
+        pb = removeSecurityProxy(self.package_build)
+        self.failUnlessEqual(None, pb.distribution)
+        self.failUnlessEqual(None, pb.distro_series)
+
+    def test_destroySelf_removes_BuildFarmJob(self):
+        # Destroying a packagebuild also destroys the BuildFarmJob it
+        # references.
+        naked_build = removeSecurityProxy(self.package_build)
+        store = Store.of(self.package_build)
+        # Ensure build_farm_job_id is set.
+        store.flush()
+        build_farm_job_id = naked_build.build_farm_job_id
+        naked_build.destroySelf()
+        result = store.find(
+            BuildFarmJob, BuildFarmJob.id == build_farm_job_id)
+        self.assertIs(None, result.one())
+
+
+class TestPackageBuildMixin(TestCaseWithFactory):
+    """Test methods provided by PackageBuildMixin."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestPackageBuildMixin, self).setUp()
+        # BuildFarmJobMixin only operates as part of a concrete
+        # IBuildFarmJob implementation. Here we use
+        # SourcePackageRecipeBuild.
+        joe = self.factory.makePerson(name="joe")
+        joes_ppa = self.factory.makeArchive(owner=joe, name="ppa")
+        self.package_build = self.factory.makeSourcePackageRecipeBuild(
+            archive=joes_ppa)
+
+    def test_providesInterface(self):
+        # PackageBuild provides IPackageBuild
+        self.assertProvides(self.package_build, IPackageBuild)
 
     def test_log_url(self):
         # The url of the build log file is determined by the PackageBuild.
@@ -117,8 +133,8 @@ class TestPackageBuild(TestPackageBuildBase):
         log_url = self.package_build.log_url
         self.failUnlessEqual(
             'http://launchpad.dev/~joe/'
-            '+archive/ppa/+build/%d/+files/mybuildlog.txt' % (
-                self.package_build.build_farm_job.id),
+            '+archive/ppa/+recipebuild/%d/+files/mybuildlog.txt' % (
+                self.package_build.id),
             log_url)
 
     def test_storeUploadLog(self):
@@ -152,44 +168,13 @@ class TestPackageBuild(TestPackageBuildBase):
     def test_upload_log_url(self):
         # The url of the upload log file is determined by the PackageBuild.
         Store.of(self.package_build).flush()
-        build_id = self.package_build.build_farm_job.id
         self.package_build.storeUploadLog("Some content")
         log_url = self.package_build.upload_log_url
         self.failUnlessEqual(
             'http://launchpad.dev/~joe/'
-            '+archive/ppa/+build/%d/+files/upload_%d_log.txt' % (
-                build_id, build_id),
+            '+archive/ppa/+recipebuild/%d/+files/upload_%d_log.txt' % (
+                self.package_build.id, self.package_build.build_farm_job.id),
             log_url)
-
-    def test_view_package_build(self):
-        # Anonymous access can read public builds, but not edit.
-        self.failUnlessEqual(
-            None, self.package_build.dependencies)
-        self.assertRaises(
-            Unauthorized, setattr, self.package_build,
-            'dependencies', u'my deps')
-
-    def test_edit_package_build(self):
-        # An authenticated user who belongs to the owning archive team
-        # can edit the build.
-        login_person(self.package_build.archive.owner)
-        self.package_build.dependencies = u'My deps'
-        self.failUnlessEqual(
-            u'My deps', self.package_build.dependencies)
-
-        # But other users cannot.
-        other_person = self.factory.makePerson()
-        login_person(other_person)
-        self.assertRaises(
-            Unauthorized, setattr, self.package_build,
-            'dependencies', u'my deps')
-
-    def test_admin_package_build(self):
-        # Users with edit access can update attributes.
-        login('admin@canonical.com')
-        self.package_build.dependencies = u'My deps'
-        self.failUnlessEqual(
-            u'My deps', self.package_build.dependencies)
 
     def test_getUploadDirLeaf(self):
         # getUploadDirLeaf returns the current time, followed by the build
@@ -202,18 +187,29 @@ class TestPackageBuild(TestPackageBuildBase):
             '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_cookie),
             upload_leaf)
 
-    def test_destroySelf_removes_BuildFarmJob(self):
-        # Destroying a packagebuild also destroys the BuildFarmJob it
-        # references.
-        naked_build = removeSecurityProxy(self.package_build)
-        store = Store.of(self.package_build)
-        # Ensure build_farm_job_id is set.
-        store.flush()
-        build_farm_job_id = naked_build.build_farm_job_id
-        naked_build.destroySelf()
-        result = store.find(
-            BuildFarmJob, BuildFarmJob.id == build_farm_job_id)
-        self.assertIs(None, result.one())
+    def test_view_package_build(self):
+        # Anonymous access can read public builds, but not edit.
+        self.assertTrue(checkPermission('launchpad.View', self.package_build))
+        self.assertFalse(checkPermission('launchpad.Edit', self.package_build))
+
+    def test_edit_package_build(self):
+        # An authenticated user who belongs to the owning archive team
+        # can edit the build.
+        login_person(self.package_build.archive.owner)
+        self.assertTrue(checkPermission('launchpad.View', self.package_build))
+        self.assertTrue(checkPermission('launchpad.Edit', self.package_build))
+
+        # But other users cannot.
+        other_person = self.factory.makePerson()
+        login_person(other_person)
+        self.assertTrue(checkPermission('launchpad.View', self.package_build))
+        self.assertFalse(checkPermission('launchpad.Edit', self.package_build))
+
+    def test_admin_package_build(self):
+        # Users with edit access can update attributes.
+        login('admin@canonical.com')
+        self.assertTrue(checkPermission('launchpad.View', self.package_build))
+        self.assertTrue(checkPermission('launchpad.Edit', self.package_build))
 
 
 class TestPackageBuildSet(TestPackageBuildBase):

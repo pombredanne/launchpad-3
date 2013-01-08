@@ -32,10 +32,21 @@ from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.soyuz.interfaces.archive import IArchive
 
 
-class IPackageBuild(IBuildFarmJob):
-    """Attributes and operations specific to package build jobs."""
+class IPackageBuildDB(Interface):
+    """Operations on a `PackageBuild` DB row.
+
+    This is deprecated while it's flattened into the concrete implementations.
+    """
 
     id = Attribute('The package build ID.')
+
+    build_farm_job = Reference(
+        title=_('Build farm job'), schema=IBuildFarmJob, required=True,
+        readonly=True, description=_('The base build farm job.'))
+
+
+class IPackageBuild(IBuildFarmJob):
+    """Attributes and operations specific to package build jobs."""
 
     archive = exported(
         Reference(
@@ -95,7 +106,7 @@ class IPackageBuild(IBuildFarmJob):
 
     def getLogFromSlave(build):
         """Get last buildlog from slave. 
-        
+
         :return: A Deferred that fires with the librarian ID of the log
             when the log is finished downloading.
         """

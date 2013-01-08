@@ -16,7 +16,6 @@ Don't run this on any production systems.
 __metaclass__ = type
 __all__ = []
 
-# pylint: disable-msg=W0403
 import _pythonpath
 
 from distutils.version import LooseVersion

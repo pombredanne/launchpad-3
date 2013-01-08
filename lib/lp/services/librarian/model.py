@@ -11,10 +11,7 @@ __all__ = [
     'TimeLimitedToken',
     ]
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
+from datetime import datetime
 from hashlib import md5
 import random
 from urlparse import urlparse
@@ -88,8 +85,6 @@ class LibraryFileContent(SQLBase):
 
 class LibraryFileAlias(SQLBase):
     """A filename and mimetype that we can serve some given content with."""
-    # The updateLastAccessed method has unreachable code.
-    # pylint: disable-msg=W0101
 
     implements(ILibraryFileAlias)
 
@@ -102,7 +97,6 @@ class LibraryFileAlias(SQLBase):
     mimetype = StringCol(notNull=True)
     expires = UtcDateTimeCol(notNull=False, default=None)
     restricted = BoolCol(notNull=True, default=False)
-    last_accessed = UtcDateTimeCol(notNull=True, default=DEFAULT)
     hits = IntCol(notNull=True, default=0)
 
     products = SQLRelatedJoin('ProductRelease', joinColumn='libraryfile',
@@ -187,22 +181,6 @@ class LibraryFileAlias(SQLBase):
         if self._datafile is not None:
             self._datafile.close()
             self._datafile = None
-
-    def updateLastAccessed(self):
-        """Update last_accessed if it has not been updated recently.
-
-        This method relies on the system clock being vaguely sane, but
-        does not cause real harm if this is not the case.
-        """
-        # XXX: stub 2007-04-10 Bug=86171: Feature disabled due to.
-        return
-
-        # Update last_accessed no more than once every 6 hours.
-        precision = timedelta(hours=6)
-        UTC = pytz.timezone('UTC')
-        now = datetime.now(UTC)
-        if self.last_accessed + precision < now:
-            self.last_accessed = UTC_NOW
 
     @property
     def last_downloaded(self):
