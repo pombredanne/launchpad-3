@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for package queue."""
@@ -27,6 +27,10 @@ from lp.services.database.bulk import (
     )
 from lp.services.job.model.job import Job
 from lp.services.librarian.browser import FileNavigationMixin
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from lp.services.webapp import (
     GetitemNavigation,
     LaunchpadView,
@@ -41,10 +45,6 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.files import (
-    IBinaryPackageFileSet,
-    ISourcePackageReleaseFileSet,
-    )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.publishing import name_priority_map
 from lp.soyuz.interfaces.queue import (
@@ -55,10 +55,17 @@ from lp.soyuz.interfaces.queue import (
     )
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.archive import Archive
-from lp.soyuz.model.component import Component
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.files import (
+    BinaryPackageFile,
+    SourcePackageReleaseFile,
+    )
 from lp.soyuz.model.packagecopyjob import PackageCopyJob
-from lp.soyuz.model.queue import PackageUploadSource
-from lp.soyuz.model.section import Section
+from lp.soyuz.model.queue import (
+    PackageUploadBuild,
+    PackageUploadSource,
+    )
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
@@ -152,24 +159,6 @@ class QueueItemsView(LaunchpadView):
             build_upload_files[upload_id].append(binary_file)
         return build_upload_files, binary_package_names
 
-    def source_dict(self, upload_ids, source_files):
-        """Return a dictionary of PackageUploadSource keyed on SPR ID.
-
-        :param upload_ids: A list of PackageUpload IDs.
-        """
-        sourcepackagerelease_ids = [
-            source_file.sourcepackagerelease.id
-            for source_file in source_files]
-
-        upload_set = getUtility(IPackageUploadSet)
-        pkg_upload_sources = upload_set.getSourceBySourcePackageReleaseIDs(
-            sourcepackagerelease_ids)
-        package_upload_source_dict = {}
-        for pkg_upload_source in pkg_upload_sources:
-            package_upload_source_dict[
-                pkg_upload_source.sourcepackagerelease.id] = pkg_upload_source
-        return package_upload_source_dict
-
     def source_files_dict(self, package_upload_source_dict, source_files):
         """Return a dictionary of source files keyed on PackageUpload ID."""
         source_upload_files = {}
@@ -226,19 +215,22 @@ class QueueItemsView(LaunchpadView):
             return None
 
         upload_ids = [upload.id for upload in uploads]
-        binary_file_set = getUtility(IBinaryPackageFileSet)
-        binary_files = list(binary_file_set.getByPackageUploadIDs(upload_ids))
-        binary_file_set.loadLibraryFiles(binary_files)
-        packageuploadsources = load_referencing(
+        puses = load_referencing(
             PackageUploadSource, uploads, ['packageuploadID'])
-        source_file_set = getUtility(ISourcePackageReleaseFileSet)
-        source_files = list(source_file_set.getByPackageUploadIDs(upload_ids))
-        source_sprs = load_related(
-            SourcePackageRelease, packageuploadsources,
-            ['sourcepackagereleaseID'])
+        pubs = load_referencing(
+            PackageUploadBuild, uploads, ['packageuploadID'])
 
-        load_related(Section, source_sprs, ['sectionID'])
-        load_related(Component, source_sprs, ['componentID'])
+        source_sprs = load_related(
+            SourcePackageRelease, puses, ['sourcepackagereleaseID'])
+        bpbs = load_related(BinaryPackageBuild, pubs, ['buildID'])
+        bprs = load_referencing(BinaryPackageRelease, bpbs, ['buildID'])
+        source_files = load_referencing(
+            SourcePackageReleaseFile, source_sprs, ['sourcepackagereleaseID'])
+        binary_files = load_referencing(
+            BinaryPackageFile, bprs, ['binarypackagereleaseID'])
+        file_lfas = load_related(
+            LibraryFileAlias, source_files + binary_files, ['libraryfileID'])
+        load_related(LibraryFileContent, file_lfas, ['contentID'])
 
         # Get a dictionary of lists of binary files keyed by upload ID.
         package_upload_builds_dict = self.builds_dict(upload_ids, binary_files)
@@ -247,8 +239,9 @@ class QueueItemsView(LaunchpadView):
             package_upload_builds_dict, binary_files)
 
         # Get a dictionary of lists of source files keyed by upload ID.
-        package_upload_source_dict = self.source_dict(
-            upload_ids, source_files)
+        package_upload_source_dict = {}
+        for pus in puses:
+            package_upload_source_dict[pus.sourcepackagereleaseID] = pus
         source_upload_files = self.source_files_dict(
             package_upload_source_dict, source_files)
 
