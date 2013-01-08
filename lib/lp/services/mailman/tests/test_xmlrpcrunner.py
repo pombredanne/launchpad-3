@@ -40,6 +40,7 @@ from lp.services.mailman.tests import (
 from lp.services.xmlrpc import Transport
 from lp.testing import (
     person_logged_in,
+    monkey_patch,
     TestCase,
     )
 from lp.testing.fixture import CaptureOops
@@ -379,6 +380,20 @@ class OneLoopTestCase(MailmanTestCase):
         with locked_list(mm_list_2):
             self.assertEqual(1, mm_list_2.isMember(lp_user_email))
 
+    def test_get_subscriptions_shortcircut(self):
+        # The method exist earlty without completing the update when
+        # the runner is stopping.
+        team, mailing_list = self.makeTeamList('team-1', 'owner-1')
+        lp_user_email = 'albatros@eg.dom'
+        lp_user = self.factory.makePerson(name='albatros', email=lp_user_email)
+        with person_logged_in(lp_user):
+            # The factory person has auto join mailing list enabled.
+            lp_user.join(team)
+        self.runner.stop()
+        self.runner._get_subscriptions()
+        with locked_list(self.mm_list):
+            self.assertEqual(0, self.mm_list.isMember(lp_user_email))
+
     def test_constructing_to_active_recovery(self):
         # Lp is informed of the active list if it wrongly believes it is
         # being constructed.
@@ -418,3 +433,25 @@ class OneLoopTestCase(MailmanTestCase):
             MailingListStatus.UPDATING)
         self.runner._oneloop()
         self.assertEqual(MailingListStatus.ACTIVE, mailing_list.status)
+
+    def test_shortcircuit(self):
+        # Oneloop will exit early if the runner is stopping.
+        class State:
+
+            def __init__(self):
+                self.checked = None
+
+        shortcircut = State()
+
+        def fake_called():
+            shortcircut.checked = False
+
+        def fake_stop():
+            shortcircut.checked = True
+            self.runner.stop()
+
+        with monkey_patch(self.runner,
+                _check_list_actions=fake_stop, _get_subscriptions=fake_called):
+            self.runner._oneloop()
+            self.assertTrue(self.runner._shortcircuit())
+            self.assertTrue(shortcircut.checked)
