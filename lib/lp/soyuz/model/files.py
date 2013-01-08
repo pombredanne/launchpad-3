@@ -37,7 +37,6 @@ class BinaryPackageFile(SQLBase):
                        schema=BinaryPackageFileType)
 
 
-
 class SourceFileMixin:
     """Mix-in class for common functionality between source file classes."""
 

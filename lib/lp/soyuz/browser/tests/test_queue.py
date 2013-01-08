@@ -397,7 +397,7 @@ class TestQueueItemsView(TestCaseWithFactory):
         with person_logged_in(queue_admin):
             with StormStatementRecorder() as recorder:
                 view = self.makeView(distroseries, queue_admin)
-                view()   
+                view()
         self.assertThat(recorder, HasQueryCount(Equals(56)))
 
 
