@@ -159,22 +159,14 @@ class QueueItemsView(LaunchpadView):
             build_upload_files[upload_id].append(binary_file)
         return build_upload_files, binary_package_names
 
-    def source_dict(self, upload_ids, source_files):
+    def source_dict(self, puses):
         """Return a dictionary of PackageUploadSource keyed on SPR ID.
 
-        :param upload_ids: A list of PackageUpload IDs.
+        :param puses: A list of `PackageUploadSource`s.
         """
-        sourcepackagerelease_ids = [
-            source_file.sourcepackagerelease.id
-            for source_file in source_files]
-
-        upload_set = getUtility(IPackageUploadSet)
-        pkg_upload_sources = upload_set.getSourceBySourcePackageReleaseIDs(
-            sourcepackagerelease_ids)
         package_upload_source_dict = {}
-        for pkg_upload_source in pkg_upload_sources:
-            package_upload_source_dict[
-                pkg_upload_source.sourcepackagerelease.id] = pkg_upload_source
+        for pus in puses:
+            package_upload_source_dict[pus.sourcepackagereleaseID] = pus
         return package_upload_source_dict
 
     def source_files_dict(self, package_upload_source_dict, source_files):
@@ -251,8 +243,7 @@ class QueueItemsView(LaunchpadView):
             BinaryPackageFile, bprs, ['binarypackagereleaseID'])
         file_lfas = load_related(
             LibraryFileAlias, source_files + binary_files, ['libraryfileID'])
-        load_related(
-            LibraryFileContent, file_lfas, ['contentID'])
+        load_related(LibraryFileContent, file_lfas, ['contentID'])
 
         # Get a dictionary of lists of binary files keyed by upload ID.
         package_upload_builds_dict = self.builds_dict(upload_ids, binary_files)
@@ -261,8 +252,7 @@ class QueueItemsView(LaunchpadView):
             package_upload_builds_dict, binary_files)
 
         # Get a dictionary of lists of source files keyed by upload ID.
-        package_upload_source_dict = self.source_dict(
-            upload_ids, source_files)
+        package_upload_source_dict = self.source_dict(puses)
         source_upload_files = self.source_files_dict(
             package_upload_source_dict, source_files)
 

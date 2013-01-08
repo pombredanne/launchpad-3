@@ -398,7 +398,7 @@ class TestQueueItemsView(TestCaseWithFactory):
             with StormStatementRecorder() as recorder:
                 view = self.makeView(distroseries, queue_admin)
                 view()   
-        self.assertThat(recorder, HasQueryCount(Equals(57)))
+        self.assertThat(recorder, HasQueryCount(Equals(56)))
 
 
 class TestCompletePackageUpload(TestCaseWithFactory):
