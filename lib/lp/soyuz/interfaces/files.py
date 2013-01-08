@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Package file interfaces."""
@@ -7,9 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'IBinaryPackageFile',
-    'IBinaryPackageFileSet',
     'ISourcePackageReleaseFile',
-    'ISourcePackageReleaseFileSet',
     ]
 
 from lazr.restful.fields import Reference
@@ -48,21 +46,6 @@ class IBinaryPackageFile(Interface):
             )
 
 
-class IBinaryPackageFileSet(Interface):
-    """The set of all `BinaryPackageFile`s."""
-
-    def getByPackageUploadIDs(package_upload_ids):
-        """Return `BinaryPackageFile`s for the `PackageUpload` IDs."""
-
-    def loadLibraryFiles(binary_files):
-        """Bulk-load Librarian files associated with `binary_files`.
-
-        This loads the `LibraryFileAlias` and `LibraryFileContent` for each
-        of `binary_files` into the ORM cache, and returns an iterable of
-        `LibraryFileAlias`.
-        """
-
-
 class ISourcePackageReleaseFile(Interface):
     """A source package release to librarian link record."""
 
@@ -93,10 +76,3 @@ class ISourcePackageReleaseFile(Interface):
             title=_('Whether this file is an original tarball'),
             required=True, readonly=False,
             )
-
-
-class ISourcePackageReleaseFileSet(Interface):
-    """The set of all `SourcePackageRelease`s."""
-
-    def getByPackageUploadIDs(package_upload_ids):
-        """Return `SourcePackageReleaseFile`s for the `PackageUpload` IDs."""

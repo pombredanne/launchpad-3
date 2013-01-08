@@ -1,4 +1,5 @@
-= Package Diff =
+Package Diff
+============
 
 The 'package-diff' subsystem allows users to request a diff between
 two SourcePackageReleases.
@@ -7,7 +8,8 @@ The diff can be requested by any user with permission to view both
 packages and will be performed frequently by our infrastructure.
 
 
-== Requesting a Diff ==
+Requesting a Diff
+-----------------
 
 First we have to retrieve a SourcePackageRelease from the sampledata,
 let's use 'pmount' sources.
@@ -54,7 +56,8 @@ Its main attributes are:
  * 'from_source', which maps to a `ISourcePackageRelease`, the base
    source used in the diff.
 
-    >>> from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+    >>> from lp.soyuz.interfaces.sourcepackagerelease import (
+    ...     ISourcePackageRelease)
     >>> verifyObject(ISourcePackageRelease, package_diff.from_source)
     True
 
@@ -64,7 +67,6 @@ Its main attributes are:
  * 'to_source', which maps to a `ISourcePackageRelease`, the result
    source used in the diff.
 
-    >>> from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
     >>> verifyObject(ISourcePackageRelease, package_diff.to_source)
     True
 
@@ -106,7 +108,8 @@ error:
     requested by Celso Providelo
 
 
-== Diff request for source uploads ==
+Diff request for source uploads
+-------------------------------
 
 When a source package upload is processed, the upload-processor
 already requests a package diff against the immediate ancestry.
@@ -154,7 +157,7 @@ suitable ancentry, no diff is requested.
     >>> biscuit_one_pub = packager.uploadSourceVersion(
     ...     '1.0-1', policy='sync')
 
-    >>> biscuit_one_pub.sourcepackagerelease.package_diffs.count()
+    >>> len(biscuit_one_pub.sourcepackagerelease.package_diffs)
     0
 
 When 1.0-8 is uploaded and 1.0-1 is published, the upload-processor
@@ -260,7 +263,8 @@ the version found in its context.
     diff from 1.0-2 to 1.0-3
 
 
-== Performing a Diff ==
+Performing a Diff
+-----------------
 
 Now we will actually perform a package diff and look at the results.
 
@@ -394,7 +398,8 @@ for users to view it.
     text/plain
 
 
-== Dealing with all PackageDiff objects ==
+Dealing with all PackageDiff objects
+------------------------------------
 
 The PackageDiffSet utility implements simple auxiliary methods to deal
 directly with PackageDiffs objects.
@@ -479,7 +484,8 @@ if necessary.
     True
 
 
-== Special circumstances ==
+Special circumstances
+---------------------
 
 There is only one way a PackageDiff request will result in an empty
 diff, when the same source package is re-uploaded.
@@ -502,7 +508,7 @@ if it builds correctly.
     >>> packager.buildSource()
     >>> staging_ubuntu_pub = packager.uploadSourceVersion(
     ...     '1.0-1', policy='sync')
-    >>> staging_ubuntu_pub.sourcepackagerelease.package_diffs.count()
+    >>> len(staging_ubuntu_pub.sourcepackagerelease.package_diffs)
     0
 
     >>> staging_ppa_pub = packager.uploadSourceVersion(
@@ -549,7 +555,7 @@ primary archive.
     >>> packager.buildSource()
     >>> collision_ubuntu_pub = packager.uploadSourceVersion(
     ...     '1.0-1', policy='sync')
-    >>> collision_ubuntu_pub.sourcepackagerelease.package_diffs.count()
+    >>> len(collision_ubuntu_pub.sourcepackagerelease.package_diffs)
     0
 
 Then we taint the package content and rebuild the same source package
@@ -643,7 +649,8 @@ uploaded source.
     ...     '1.0-2', archive=foobar.archive)
     >>> transaction.commit()
 
-    >>> from lp.services.librarianserver.testing.server import fillLibrarianFile
+    >>> from lp.services.librarianserver.testing.server import (
+    ...     fillLibrarianFile)
     >>> [orig, upload_diff, dsc] = pub.sourcepackagerelease.files
     >>> fillLibrarianFile(dsc.libraryfile.id)
 
@@ -667,7 +674,8 @@ FAILED request (empty 'diff_content' and 'date_fullfilled').
     None
 
 
-== Problematic packages ==
+Problematic packages
+--------------------
 
 XXX 2009-11-23 Julian bug=314436
 Because of bug 314436, diffs of udev can generate huge output which fills the
@@ -693,7 +701,8 @@ default, which will stop the diff script from attempting to create the diff.
     FAILED
 
 
-== PackageDiff privacy ==
+PackageDiff privacy
+-------------------
 
 Packagediff decides whether the 'diff_content' file should be
 in the restricted librarian or not according to the privacy of the

@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -779,18 +779,6 @@
             permission="launchpad.Edit"
             set_schema="lp.soyuz.interfaces.files.IBinaryPackageFile"/>
     </class>
-    <securedutility
-        class="lp.soyuz.model.files.BinaryPackageFileSet"
-        provides="lp.soyuz.interfaces.files.IBinaryPackageFileSet">
-        <allow
-            interface="lp.soyuz.interfaces.files.IBinaryPackageFileSet"/>
-    </securedutility>
-    <securedutility
-        class="lp.soyuz.model.files.SourcePackageReleaseFileSet"
-        provides="lp.soyuz.interfaces.files.ISourcePackageReleaseFileSet">
-        <allow
-            interface="lp.soyuz.interfaces.files.ISourcePackageReleaseFileSet"/>
-    </securedutility>
 
     <!-- Packageset -->
 

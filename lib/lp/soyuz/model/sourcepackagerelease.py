@@ -30,6 +30,7 @@ from storm.expr import Join
 from storm.info import ClassAlias
 from storm.locals import (
     Int,
+    Desc,
     Reference,
     )
 from storm.store import Store
@@ -59,7 +60,10 @@ from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
@@ -165,8 +169,6 @@ class SourcePackageRelease(SQLBase):
         joinColumn='sourcepackagerelease', orderBy="libraryfile")
     publishings = SQLMultipleJoin('SourcePackagePublishingHistory',
         joinColumn='sourcepackagerelease', orderBy="-datecreated")
-    package_diffs = SQLMultipleJoin(
-        'PackageDiff', joinColumn='to_source', orderBy="-date_requested")
 
     _user_defined_fields = StringCol(dbName='user_defined_fields')
 
@@ -208,6 +210,12 @@ class SourcePackageRelease(SQLBase):
         if self._user_defined_fields is None:
             return []
         return simplejson.loads(self._user_defined_fields)
+
+    @cachedproperty
+    def package_diffs(self):
+        return list(Store.of(self).find(
+            PackageDiff, to_source=self).order_by(
+                Desc(PackageDiff.date_requested)))
 
     @property
     def builds(self):
@@ -584,6 +592,8 @@ class SourcePackageRelease(SQLBase):
         else:
             status = PackageDiffStatus.PENDING
 
+        Store.of(to_sourcepackagerelease).flush()
+        del get_property_cache(to_sourcepackagerelease).package_diffs
         return PackageDiff(
             from_source=self, to_source=to_sourcepackagerelease,
             requester=requester, status=status)
