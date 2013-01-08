@@ -159,16 +159,6 @@ class QueueItemsView(LaunchpadView):
             build_upload_files[upload_id].append(binary_file)
         return build_upload_files, binary_package_names
 
-    def source_dict(self, puses):
-        """Return a dictionary of PackageUploadSource keyed on SPR ID.
-
-        :param puses: A list of `PackageUploadSource`s.
-        """
-        package_upload_source_dict = {}
-        for pus in puses:
-            package_upload_source_dict[pus.sourcepackagereleaseID] = pus
-        return package_upload_source_dict
-
     def source_files_dict(self, package_upload_source_dict, source_files):
         """Return a dictionary of source files keyed on PackageUpload ID."""
         source_upload_files = {}
@@ -249,7 +239,9 @@ class QueueItemsView(LaunchpadView):
             package_upload_builds_dict, binary_files)
 
         # Get a dictionary of lists of source files keyed by upload ID.
-        package_upload_source_dict = self.source_dict(puses)
+        package_upload_source_dict = {}
+        for pus in puses:
+            package_upload_source_dict[pus.sourcepackagereleaseID] = pus
         source_upload_files = self.source_files_dict(
             package_upload_source_dict, source_files)
 
