@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -1184,7 +1184,7 @@ class TestProduct(TestCaseWithFactory):
                 # The second access does not require another query.
                 product.description
                 self.assertEqual(
-                queries_for_first_user_access, len(recorder.queries))
+                    queries_for_first_user_access, len(recorder.queries))
 
     def test_userCanView_works_with_IPersonRoles(self):
         # userCanView() maintains a cache of users known to have the
