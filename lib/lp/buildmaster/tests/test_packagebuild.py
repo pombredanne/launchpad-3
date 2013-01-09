@@ -298,6 +298,7 @@ class TestHandleStatusMixin:
         builder = self.factory.makeBuilder()
         self.build.buildqueue_record.builder = builder
         self.build.buildqueue_record.setDateStarted(UTC_NOW)
+        self.behavior = removeSecurityProxy(builder.current_build_behavior)
         self.slave = WaitingSlave('BuildStatus.OK')
         self.slave.valid_file_hashes.append('test_file_hash')
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(self.slave))
@@ -330,7 +331,7 @@ class TestHandleStatusMixin:
             self.assertEqual(BuildStatus.UPLOADING, self.build.status)
             self.assertResultCount(1, "incoming")
 
-        d = self.build.handleStatus('OK', None, {
+        d = self.behavior.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
         return d.addCallback(got_status)
@@ -343,7 +344,7 @@ class TestHandleStatusMixin:
             self.assertResultCount(0, "failed")
             self.assertIdentical(None, self.build.buildqueue_record)
 
-        d = self.build.handleStatus('OK', None, {
+        d = self.behavior.handleStatus('OK', None, {
             'filemap': {'/tmp/myfile.py': 'test_file_hash'},
             })
         return d.addCallback(got_status)
@@ -355,7 +356,7 @@ class TestHandleStatusMixin:
             self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
             self.assertResultCount(0, "failed")
 
-        d = self.build.handleStatus('OK', None, {
+        d = self.behavior.handleStatus('OK', None, {
             'filemap': {'../myfile.py': 'test_file_hash'},
             })
         return d.addCallback(got_status)
@@ -364,7 +365,7 @@ class TestHandleStatusMixin:
         # The build log is set during handleStatus.
         removeSecurityProxy(self.build).log = None
         self.assertEqual(None, self.build.log)
-        d = self.build.handleStatus('OK', None, {
+        d = self.behavior.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
 
@@ -377,9 +378,8 @@ class TestHandleStatusMixin:
         # An email notification is sent for a given build status if
         # notifications are allowed for that status.
 
-        naked_build = removeSecurityProxy(self.build)
         expected_notification = (
-            status in naked_build.ALLOWED_STATUS_NOTIFICATIONS)
+            status in self.behavior.ALLOWED_STATUS_NOTIFICATIONS)
 
         def got_status(ignored):
             if expected_notification:
@@ -391,7 +391,7 @@ class TestHandleStatusMixin:
                     len(pop_notifications()) > 0,
                     "Notifications received")
 
-        d = self.build.handleStatus(status, None, {})
+        d = self.behavior.handleStatus(status, None, {})
         return d.addCallback(got_status)
 
     def test_handleStatus_DEPFAIL_notifies(self):
@@ -407,7 +407,7 @@ class TestHandleStatusMixin:
         # The date finished is updated during handleStatus_OK.
         removeSecurityProxy(self.build).date_finished = None
         self.assertEqual(None, self.build.date_finished)
-        d = self.build.handleStatus('OK', None, {
+        d = self.behavior.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
 

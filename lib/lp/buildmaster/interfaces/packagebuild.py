@@ -92,34 +92,8 @@ class IPackageBuild(IBuildFarmJob):
             title=_("Distribution series"), required=True,
             description=_("Shortcut for its distribution series.")))
 
-    def getUploadDirLeaf(build_cookie, now=None):
-        """Return the directory-leaf where files to be uploaded are stored.
-
-        :param build_cookie: The build cookie as returned by the slave.
-        :param now: The `datetime` to use when constructing the leaf
-            directory name. If not provided, defaults to now.
-        """
-
-    def getBuildCookie():
-        """Return the build cookie (build id and build queue record id).
-        """
-
-    def getLogFromSlave(build):
-        """Get last buildlog from slave. 
-
-        :return: A Deferred that fires with the librarian ID of the log
-            when the log is finished downloading.
-        """
-
     def estimateDuration():
         """Estimate the build duration."""
-
-    def storeBuildInfo(build, librarian, slave_status):
-        """Store available information for the build job.
-
-        Derived classes can override this as needed, and call it from
-        custom status handlers, but it should not be called externally.
-        """
 
     def verifySuccessfulUpload():
         """Verify that the upload of this build completed succesfully."""
@@ -138,14 +112,6 @@ class IPackageBuild(IBuildFarmJob):
             in the notification email. If the notification is for a
             failed-to-upload error then this must be the content of the
             upload log.
-        """
-
-    def handleStatus(status, librarian, slave_status):
-        """Handle a finished build status from a slave.
-
-        :param status: Slave build status string with 'BuildStatus.' stripped.
-        :param slave_status: A dict as returned by IBuilder.slaveStatus
-        :return: A Deferred that fires when finished dealing with the build.
         """
 
     def queueBuild(suspended=False):
