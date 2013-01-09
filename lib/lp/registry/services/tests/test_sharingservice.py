@@ -1769,17 +1769,17 @@ class TestSharingService(TestCaseWithFactory):
             self.service.checkPillarAccess(
                 [product], InformationType.USERDATA, right_person))
 
-    def test_userHasGrantsOnPillar_respects_teams(self):
+    def test_checkPillarArtifactAccess_respects_teams(self):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY, owner=owner)
-        person = self.factory.makePerson()
+        user = self.factory.makePerson()
         team = self.factory.makeTeam(
-            membership_policy=TeamMembershipPolicy.MODERATED, members=[person])
+            membership_policy=TeamMembershipPolicy.MODERATED, members=[user])
         with person_logged_in(owner):
             bug = self.factory.makeBug(target=product)
             bug.subscribe(team, owner)
-        self.assertTrue(self.service.userHasGrantsOnPillar(product, person))
+        self.assertTrue(self.service.checkPillarArtifactAccess(product, user))
 
     def test_checkPillarAccess_no_policy(self):
         # checkPillarAccess returns False if there's no policy.

@@ -448,7 +448,7 @@ class LimitedViewProduct(ViewProduct):
     def checkAuthenticated(self, user):
         return (
             super(LimitedViewProduct, self).checkAuthenticated(user) or
-            getUtility(IService, 'sharing').userHasGrantsOnPillar(
+            getUtility(IService, 'sharing').checkPillarArtifactAccess(
                 self.obj, user))
 
 

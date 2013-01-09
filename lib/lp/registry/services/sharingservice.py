@@ -227,7 +227,7 @@ class SharingService:
 
         return bugtasks, branches, specifications
 
-    def userHasGrantsOnPillar(self, pillar, user):
+    def checkPillarArtifactAccess(self, pillar, user):
         """See `ISharingService`."""
         tables = [
             AccessPolicyGrantFlat,
