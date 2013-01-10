@@ -115,15 +115,6 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             bq.processor)
         self.assertEqual(bq, spb.buildqueue_record)
 
-    def test_getBuildCookie(self):
-        # A build cookie is made up of the job type and record id.
-        # The uploadprocessor relies on this format.
-        sprb = self.makeSourcePackageRecipeBuild()
-        Store.of(sprb).flush()
-        cookie = sprb.getBuildCookie()
-        expected_cookie = "RECIPEBRANCHBUILD-%d" % sprb.id
-        self.assertEquals(expected_cookie, cookie)
-
     def test_title(self):
         # A recipe build's title currently consists of the base
         # branch's unique name.

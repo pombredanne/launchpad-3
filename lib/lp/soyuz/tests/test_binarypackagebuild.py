@@ -81,14 +81,6 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.assertIsNotNone(bq.processor)
         self.assertEqual(bq, self.build.buildqueue_record)
 
-    def test_getBuildCookie(self):
-        # A build cookie is made up of the job type and record id.
-        # The uploadprocessor relies on this format.
-        Store.of(self.build).flush()
-        cookie = self.build.getBuildCookie()
-        expected_cookie = "PACKAGEBUILD-%d" % self.build.id
-        self.assertEqual(expected_cookie, cookie)
-
     def test_estimateDuration(self):
         # Without previous builds, a negligable package size estimate is 60s
         self.assertEqual(60, self.build.estimateDuration().seconds)

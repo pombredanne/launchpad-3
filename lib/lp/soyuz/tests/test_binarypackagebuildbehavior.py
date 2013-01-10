@@ -265,6 +265,16 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
             'Attempt to build virtual item on a non-virtual builder.',
             str(e))
 
+    def test_getBuildCookie(self):
+        # A build cookie is made up of the job type and record id.
+        # The uploadprocessor relies on this format.
+        build = self.factory.makeBinaryPackageBuild()
+        candidate = build.queueBuild()
+        behavior = candidate.required_build_behavior
+        cookie = removeSecurityProxy(behavior).getBuildCookie()
+        expected_cookie = "PACKAGEBUILD-%d" % build.id
+        self.assertEqual(expected_cookie, cookie)
+
 
 class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
     """Tests for the BinaryPackageBuildBehavior.

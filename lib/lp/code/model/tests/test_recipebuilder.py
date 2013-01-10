@@ -152,6 +152,16 @@ class TestRecipeBuilder(TestCaseWithFactory):
             AssertionError, job.verifyBuildRequest, BufferLogger())
         self.assertIn('invalid pocket due to the series status of', str(e))
 
+    def test_getBuildCookie(self):
+        # A build cookie is made up of the job type and record id.
+        # The uploadprocessor relies on this format.
+        build = self.factory.makeSourcePackageRecipeBuild()
+        job = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
+        job = IBuildFarmJobBehavior(job.specific_job)
+        cookie = removeSecurityProxy(job).getBuildCookie()
+        expected_cookie = "RECIPEBRANCHBUILD-%d" % build.id
+        self.assertEquals(expected_cookie, cookie)
+
     def _setBuilderConfig(self):
         """Setup a temporary builder config."""
         self.pushConfig(

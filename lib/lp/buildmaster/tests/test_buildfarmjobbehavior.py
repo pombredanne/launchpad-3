@@ -183,12 +183,14 @@ class TestGetUploadMethodsMixin:
     def setUp(self):
         super(TestGetUploadMethodsMixin, self).setUp()
         self.build = self.makeBuild()
+        self.behavior = removeSecurityProxy(
+            self.build.buildqueue_record.required_build_behavior)
 
     def test_getUploadDirLeafCookie_parseable(self):
         # getUploadDirLeaf should return a directory name
         # that is parseable by the upload processor.
-        upload_leaf = self.build.getUploadDirLeaf(
-            self.build.getBuildCookie())
+        upload_leaf = self.behavior.getUploadDirLeaf(
+            self.behavior.getBuildCookie())
         (job_type, job_id) = parse_build_upload_leaf_name(upload_leaf)
         self.assertEqual(
             (self.build.build_farm_job.job_type.name, self.build.id),
