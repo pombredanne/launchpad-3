@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for PersonSet."""
@@ -33,6 +33,7 @@ from lp.registry.interfaces.mailinglistsubscription import (
     )
 from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.registry.interfaces.person import (
+    IPerson,
     IPersonSet,
     PersonCreationRationale,
     TeamEmailAddressError,
@@ -806,30 +807,6 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
                 in self.account.openid_identifiers]
         self.assertIn(new_identifier, identifiers)
 
-    def testNewEmailAddress(self):
-        # Account looked up by OpenId identifier and new EmailAddress
-        # attached. We can do this because we trust our OpenId Provider.
-        new_email = u'new_email@example.com'
-        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
-            self.identifier.identifier, new_email, 'Ignored Name',
-            PersonCreationRationale.UNKNOWN, 'No Comment')
-        found = removeSecurityProxy(found)
-
-        self.assertIs(True, updated)
-        self.assertIs(self.person, found)
-        self.assertIs(self.account, found.account)
-        self.assertEqual(
-            [self.identifier], list(self.account.openid_identifiers))
-
-        # The old email address is still there and correctly linked.
-        self.assertIs(self.email, found.preferredemail)
-        self.assertIs(self.email.person, self.person)
-
-        # The new email address is there too and correctly linked.
-        new_email = self.store.find(EmailAddress, email=new_email).one()
-        self.assertIs(new_email.person, self.person)
-        self.assertEqual(EmailAddressStatus.NEW, new_email.status)
-
     def testNewAccountAndIdentifier(self):
         # If neither the OpenId Identifier nor the email address are
         # found, we create everything.
@@ -862,7 +839,7 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
             PersonCreationRationale.UNKNOWN, 'No Comment')
         found = removeSecurityProxy(found)
 
-        self.assertIs(True, updated)
+        self.assertTrue(updated)
 
         self.assertIsNot(None, found.account)
         self.assertEqual(
@@ -870,27 +847,31 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
         self.assertIs(self.email.person, found)
         self.assertEqual(EmailAddressStatus.PREFERRED, self.email.status)
 
-    def testMovedEmailAddress(self):
-        # The EmailAddress and OpenId Identifier are both in the
-        # database, but they are not linked to the same account. The
-        # identifier needs to be relinked to the correct account - the
-        # user able to log into the trusted SSO with that email address
-        # should be able to log into Launchpad with that email address.
-        # This lets us cope with the SSO migrating email addresses
-        # between SSO accounts.
+    def testEmailAddressAccountAndOpenIDAccountAreDifferent(self):
+        # The EmailAddress and OpenId Identifier are both in the database,
+        # but they are not linked to the same account. In this case, the
+        # OpenId Identifier trumps the EmailAddress's account.
         self.identifier.account = self.store.find(
             Account, displayname='Foo Bar').one()
+        email_account = self.email.account
 
         found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
             self.identifier.identifier, self.email.email, 'New Name',
             PersonCreationRationale.UNKNOWN, 'No Comment')
         found = removeSecurityProxy(found)
 
-        self.assertIs(True, updated)
-        self.assertIs(self.person, found)
+        self.assertFalse(updated)
+        self.assertIs(IPerson(self.identifier.account), found)
 
         self.assertIs(found.account, self.identifier.account)
         self.assertIn(self.identifier, list(found.account.openid_identifiers))
+        self.assertIs(email_account, self.email.account)
+
+    def testEmptyOpenIDIdentifier(self):
+        self.assertRaises(
+            AssertionError,
+            self.person_set.getOrCreateByOpenIDIdentifier, u'', 'foo@bar.com',
+            'New Name', PersonCreationRationale.UNKNOWN, 'No Comment')
 
     def testTeamEmailAddress(self):
         # If the EmailAddress is linked to a team, login fails. There is
