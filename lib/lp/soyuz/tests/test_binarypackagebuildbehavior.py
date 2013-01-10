@@ -511,7 +511,8 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
                 'buildlog', tmp_orig_file_name)
             return d.addCallback(got_orig_log)
 
-        d = self.behavior.getLogFromSlave(self.build)
+        d = removeSecurityProxy(self.behavior).getLogFromSlave(
+            self.build, self.build.buildqueue_record)
         return d.addCallback(got_log)
 
     def test_private_build_log_storage(self):

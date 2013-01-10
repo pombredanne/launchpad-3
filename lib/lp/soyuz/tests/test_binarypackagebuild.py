@@ -457,50 +457,6 @@ class TestBuildSetGetBuildsForBuilder(BaseTestCaseWithThreeBuilds):
         self.assertContentEqual(builds, i386_builds)
 
 
-class TestStoreBuildInfo(TestCaseWithFactory):
-
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        super(TestStoreBuildInfo, self).setUp()
-        self.publisher = SoyuzTestPublisher()
-        self.publisher.prepareBreezyAutotest()
-
-        gedit_src_hist = self.publisher.getPubSource(
-            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED)
-        self.build = gedit_src_hist.createMissingBuilds()[0]
-
-        self.builder = self.factory.makeBuilder()
-        self.patch(BuilderSlave, 'makeBuilderSlave',
-                   FakeMethod(WaitingSlave('BuildStatus.OK')))
-        self.build.buildqueue_record.markAsBuilding(self.builder)
-
-    def testDependencies(self):
-        """Verify that storeBuildInfo sets any dependencies."""
-        self.build.storeBuildInfo(
-            self.build, None, {'dependencies': 'somepackage'})
-        self.assertIsNot(None, self.build.log)
-        self.assertEqual(self.builder, self.build.builder)
-        self.assertEqual(u'somepackage', self.build.dependencies)
-
-    def testWithoutDependencies(self):
-        """Verify that storeBuildInfo clears the build's dependencies."""
-        # Set something just to make sure that storeBuildInfo actually
-        # empties it.
-        self.build.dependencies = u'something'
-        self.build.storeBuildInfo(self.build, None, {})
-        self.assertIsNot(None, self.build.log)
-        self.assertEqual(self.builder, self.build.builder)
-        self.assertIs(None, self.build.dependencies)
-        self.assertIsNot(None, self.build.date_finished)
-
-    def test_sets_date_finished(self):
-        # storeBuildInfo should set date_finished on the BuildFarmJob.
-        self.assertIs(None, self.build.date_finished)
-        self.build.storeBuildInfo(self.build, None, {})
-        self.assertIsNot(None, self.build.date_finished)
-
-
 class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
     """Test cases for BinaryPackageBuild on the webservice.
 
