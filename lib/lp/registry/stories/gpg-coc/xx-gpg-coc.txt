@@ -133,24 +133,12 @@ Get redirected to the user's homepage with a greeting:
     >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     The key 1024D/DFD20543 was successfully validated.
-    ...
 
 Certify the key is imported:
 
     >>> browser.open("http://launchpad.dev/~name12/+editpgpkeys")
     >>> browser.getControl(name='DEACTIVATE_GPGKEY').displayOptions
     ['1024D/DFD20543']
-
-Make sure that UIDs were properly processed; in particular, check that
-"sample.revoked@canonical.com", the revoked UID in the key, wasn't
-added as an email address:
-
-    >>> from lp.testing.pages import strip_label
-
-    >>> browser.open("http://launchpad.dev/~name12/+editemails")
-    >>> control = browser.getControl(name='field.UNVALIDATED_SELECTED')
-    >>> [strip_label(label) for label in sorted(control.displayOptions)]
-    ['sample.person@canonical.com', 'testtest@canonical.com']
 
 Verify that the key was imported with the "can encrypt" flag set:
 
@@ -309,14 +297,9 @@ If he signs the text correctly, he is redirected to his home page.
     >>> browser.getControl('Continue').click()
     >>> browser.url
     'http://launchpad.dev/~name12'
-
-The address associated with the key is not associated with his
-Launchpad account, so Launchpad gives him a message to that effect.
-
     >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     The key 1024D/17B05A8F was successfully validated.
-    Some of your key's UIDs (sign.only@canonical.com) are not registered...
 
 Now that the key has been validated, the login token is consumed:
 
