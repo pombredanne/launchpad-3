@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+import shutil
+import tempfile
 from textwrap import dedent
 
 from testtools import run_test_with
@@ -15,21 +17,32 @@ from testtools.deferredruntest import (
 from testtools.matchers import StartsWith
 import transaction
 from twisted.internet import defer
+from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.security.proxy import removeSecurityProxy
 
-from lp.buildmaster.enums import BuildFarmJobType
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
+from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import (
     MockBuilder,
     OkSlave,
+    WaitingSlave,
     )
+from lp.buildmaster.tests.test_packagebuild import TestHandleStatusMixin
 from lp.code.model.recipebuilder import RecipeBuildBehavior
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
+from lp.code.model.tests.test_sourcepackagerecipebuild import (
+    MakeSPRecipeBuildMixin,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
@@ -40,7 +53,9 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing.mail_helpers import pop_notifications
 
 
 class TestRecipeBuilder(TestCaseWithFactory):
@@ -315,3 +330,68 @@ class TestRecipeBuilder(TestCaseWithFactory):
         logger = BufferLogger()
         d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
         return assert_fails_with(d, CannotBuild)
+
+
+class TestBuildNotifications(TrialTestCase):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestBuildNotifications, self).setUp()
+        from lp.testing.factory import LaunchpadObjectFactory
+        self.factory = LaunchpadObjectFactory()
+
+    def prepareBehavior(self, fake_successful_upload=False):
+        queue_record = self.factory.makeSourcePackageRecipeBuildJob()
+        build = queue_record.specific_job.build
+        naked_build = removeSecurityProxy(build)
+        naked_build.status = BuildStatus.FULLYBUILT
+        naked_build.date_started = self.factory.getUniqueDate()
+        if fake_successful_upload:
+            naked_build.verifySuccessfulUpload = FakeMethod(
+                result=True)
+            # We overwrite the buildmaster root to use a temp directory.
+            tempdir = tempfile.mkdtemp()
+            self.addCleanup(shutil.rmtree, tempdir)
+            self.upload_root = tempdir
+            tmp_builddmaster_root = """
+            [builddmaster]
+            root: %s
+            """ % self.upload_root
+            config.push('tmp_builddmaster_root', tmp_builddmaster_root)
+            self.addCleanup(config.pop, 'tmp_builddmaster_root')
+        queue_record.builder = self.factory.makeBuilder()
+        slave = WaitingSlave('BuildStatus.OK')
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
+        return removeSecurityProxy(queue_record.builder.current_build_behavior)
+
+    def assertDeferredNotifyCount(self, status, behavior, expected_count):
+        d = behavior.handleStatus(status, None, {'filemap': {}})
+
+        def cb(result):
+            self.assertEqual(expected_count, len(pop_notifications()))
+
+        d.addCallback(cb)
+        return d
+
+    def test_handleStatus_PACKAGEFAIL(self):
+        """Failing to build the package immediately sends a notification."""
+        return self.assertDeferredNotifyCount(
+            "PACKAGEFAIL", self.prepareBehavior(), 1)
+
+    def test_handleStatus_OK(self):
+        """Building the source package does _not_ immediately send mail.
+
+        (The archive uploader mail send one later.
+        """
+        return self.assertDeferredNotifyCount(
+            "OK", self.prepareBehavior(), 0)
+
+    def test_handleStatus_OK_successful_upload(self):
+        return self.assertDeferredNotifyCount(
+            "OK", self.prepareBehavior(True), 0)
+
+
+class TestHandleStatusForSPRBuild(
+    MakeSPRecipeBuildMixin, TestHandleStatusMixin, TrialTestCase):
+    """IPackageBuild.handleStatus works with SPRecipe builds."""

@@ -495,7 +495,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
                 'buildlog', tmp_orig_file_name)
             return d.addCallback(got_orig_log)
 
-        d = self.build.getLogFromSlave(self.build)
+        d = self.behavior.getLogFromSlave(self.build)
         return d.addCallback(got_log)
 
     def test_private_build_log_storage(self):
