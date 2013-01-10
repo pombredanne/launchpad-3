@@ -14,6 +14,7 @@ from storm.store import Store
 from testtools.deferredruntest import AsynchronousDeferredRunTest
 import transaction
 from twisted.internet import defer
+from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -26,12 +27,17 @@ from lp.buildmaster.tests.mock_slaves import (
     OkSlave,
     WaitingSlave,
     )
+from lp.buildmaster.tests.test_buildfarmjobbehavior import (
+    TestGetUploadMethodsMixin,
+    TestHandleStatusMixin,
+    )
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     pocketsuffix,
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import BufferLogger
@@ -519,3 +525,25 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
 
         d = self.builder.updateBuild(self.candidate)
         return d.addCallback(got_update)
+
+
+class MakeBinaryPackageBuildMixin:
+    """Provide the makeBuild method returning a queud build."""
+
+    def makeBuild(self):
+        build = self.factory.makeBinaryPackageBuild(
+            status=BuildStatus.FULLYBUILT)
+        build.date_started = UTC_NOW
+        build.queueBuild()
+        return build
+
+
+class TestGetUploadMethodsForBinaryPackageBuild(
+    MakeBinaryPackageBuildMixin, TestGetUploadMethodsMixin,
+    TestCaseWithFactory):
+    """IPackageBuild.getUpload-related methods work with binary builds."""
+
+
+class TestHandleStatusForBinaryPackageBuild(
+    MakeBinaryPackageBuildMixin, TestHandleStatusMixin, TrialTestCase):
+    """IPackageBuild.handleStatus works with binary builds."""

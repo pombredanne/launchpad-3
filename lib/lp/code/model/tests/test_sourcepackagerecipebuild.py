@@ -23,9 +23,6 @@ from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
-from lp.buildmaster.tests.test_packagebuild import (
-    TestGetUploadMethodsMixin,
-    )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildJob,
@@ -41,7 +38,6 @@ from lp.services.database.lpstorm import IStore
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.sendmail import format_address
 from lp.services.webapp.authorization import check_permission
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
     ANONYMOUS,
@@ -591,27 +587,3 @@ class TestAsBuildmaster(TestCaseWithFactory):
         build.notify()
         notifications = pop_notifications()
         self.assertEquals(0, len(notifications))
-
-
-class MakeSPRecipeBuildMixin:
-    """Provide the common makeBuild method returning a queued build."""
-
-    def makeBuild(self):
-        person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroSeries()
-        processor_fam = getUtility(IProcessorFamilySet).getByName('x86')
-        distroseries_i386 = distroseries.newArch(
-            'i386', processor_fam, False, person,
-            supports_virtualized=True)
-        distroseries.nominatedarchindep = distroseries_i386
-        build = self.factory.makeSourcePackageRecipeBuild(
-            distroseries=distroseries,
-            status=BuildStatus.FULLYBUILT,
-            duration=timedelta(minutes=5))
-        build.queueBuild(build)
-        return build
-
-
-class TestGetUploadMethodsForSPRecipeBuild(
-    MakeSPRecipeBuildMixin, TestGetUploadMethodsMixin, TestCaseWithFactory):
-    """IPackageBuild.getUpload-related methods work with SPRecipe builds."""

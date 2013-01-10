@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from datetime import timedelta
 import shutil
 import tempfile
 from textwrap import dedent
@@ -35,12 +36,12 @@ from lp.buildmaster.tests.mock_slaves import (
     OkSlave,
     WaitingSlave,
     )
-from lp.buildmaster.tests.test_packagebuild import TestHandleStatusMixin
+from lp.buildmaster.tests.test_buildfarmjobbehavior import (
+    TestGetUploadMethodsMixin,
+    TestHandleStatusMixin,
+    )
 from lp.code.model.recipebuilder import RecipeBuildBehavior
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
-from lp.code.model.tests.test_sourcepackagerecipebuild import (
-    MakeSPRecipeBuildMixin,
-    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
 from lp.services.log.logger import BufferLogger
@@ -390,6 +391,21 @@ class TestBuildNotifications(TrialTestCase):
     def test_handleStatus_OK_successful_upload(self):
         return self.assertDeferredNotifyCount(
             "OK", self.prepareBehavior(True), 0)
+
+
+class MakeSPRecipeBuildMixin:
+    """Provide the common makeBuild method returning a queued build."""
+
+    def makeBuild(self):
+        build = self.factory.makeSourcePackageRecipeBuild(
+            status=BuildStatus.FULLYBUILT, duration=timedelta(minutes=5))
+        build.queueBuild()
+        return build
+
+
+class TestGetUploadMethodsForSPRecipeBuild(
+    MakeSPRecipeBuildMixin, TestGetUploadMethodsMixin, TestCaseWithFactory):
+    """IPackageBuild.getUpload-related methods work with SPRecipe builds."""
 
 
 class TestHandleStatusForSPRBuild(

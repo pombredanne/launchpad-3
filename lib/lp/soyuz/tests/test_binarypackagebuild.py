@@ -10,7 +10,6 @@ from datetime import (
 
 import pytz
 from storm.store import Store
-from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -20,10 +19,6 @@ from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
-from lp.buildmaster.tests.test_packagebuild import (
-    TestGetUploadMethodsMixin,
-    TestHandleStatusMixin,
-    )
 from lp.services.job.model.job import Job
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import OAuthPermission
@@ -512,27 +507,6 @@ class TestStoreBuildInfo(TestCaseWithFactory):
         self.assertIs(None, self.build.date_finished)
         self.build.storeBuildInfo(self.build, None, {})
         self.assertIsNot(None, self.build.date_finished)
-
-
-class MakeBinaryPackageBuildMixin:
-    """Provide the makeBuild method returning a queud build."""
-
-    def makeBuild(self):
-        test_publisher = SoyuzTestPublisher()
-        test_publisher.prepareBreezyAutotest()
-        binaries = test_publisher.getPubBinaries()
-        return binaries[0].binarypackagerelease.build
-
-
-class TestGetUploadMethodsForBinaryPackageBuild(
-    MakeBinaryPackageBuildMixin, TestGetUploadMethodsMixin,
-    TestCaseWithFactory):
-    """IPackageBuild.getUpload-related methods work with binary builds."""
-
-
-class TestHandleStatusForBinaryPackageBuild(
-    MakeBinaryPackageBuildMixin, TestHandleStatusMixin, TrialTestCase):
-    """IPackageBuild.handleStatus works with binary builds."""
 
 
 class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
