@@ -16,9 +16,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
-from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.services.job.model.job import Job
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import OAuthPermission
@@ -43,7 +41,6 @@ from lp.testing import (
     logout,
     TestCaseWithFactory,
     )
-from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
