@@ -853,6 +853,7 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
         # OpenId Identifier trumps the EmailAddress's account.
         self.identifier.account = self.store.find(
             Account, displayname='Foo Bar').one()
+        email_account = self.email.account
 
         found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
             self.identifier.identifier, self.email.email, 'New Name',
@@ -864,6 +865,7 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
 
         self.assertIs(found.account, self.identifier.account)
         self.assertIn(self.identifier, list(found.account.openid_identifiers))
+        self.assertIs(email_account, self.email.account)
 
     def testEmptyOpenIDIdentifier(self):
         self.assertRaises(
