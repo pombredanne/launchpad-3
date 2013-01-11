@@ -487,8 +487,7 @@ class ValidateEmailView(BaseTokenView, LaunchpadFormView):
         email = emailset.getByEmail(self.context.email)
         if email is None:
             email = emailset.new(
-                email=self.context.email,
-                person=self.context.requester)
+                email=self.context.email, person=self.context.requester)
         return email
 
     def markEmailAsValid(self, email):

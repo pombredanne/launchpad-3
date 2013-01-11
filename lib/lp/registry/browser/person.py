@@ -2574,9 +2574,7 @@ class PersonGPGView(LaunchpadView):
         self.info_message = structured('\n<br />\n'.join(comments))
 
     def _validateGPG(self, key):
-        logintokenset = getUtility(ILoginTokenSet)
         bag = getUtility(ILaunchBag)
-
         preferredemail = bag.user.preferredemail.email
         login = bag.login
 
@@ -2585,10 +2583,9 @@ class PersonGPGView(LaunchpadView):
         else:
             tokentype = LoginTokenType.VALIDATESIGNONLYGPG
 
-        token = logintokenset.new(self.context, login,
-                                  preferredemail,
-                                  tokentype,
-                                  fingerprint=key.fingerprint)
+        token = getUtility(ILoginTokenSet).new(
+            self.context, login, preferredemail, tokentype,
+            fingerprint=key.fingerprint)
 
         token.sendGPGValidationRequest(key)
 
@@ -2988,8 +2985,8 @@ class PersonEditEmailsView(LaunchpadFormView):
         if IEmailAddress.providedBy(email):
             email = email.email
         token = getUtility(ILoginTokenSet).new(
-                    self.context, getUtility(ILaunchBag).login, email,
-                    LoginTokenType.VALIDATEEMAIL)
+            self.context, getUtility(ILaunchBag).login, email,
+            LoginTokenType.VALIDATEEMAIL)
         token.sendEmailValidationRequest()
         self.request.response.addInfoNotification(
             "An e-mail message was sent to '%s' with "
@@ -3073,9 +3070,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                     '<a href="%s">%s</a>. If you think that is a '
                     'duplicated account, you can <a href="%s">merge it'
                     "</a> into your account.",
-                    newemail,
-                    canonical_url(owner),
-                    owner.displayname,
+                    newemail, canonical_url(owner), owner.displayname,
                     merge_url))
         return self.errors
 
@@ -3083,10 +3078,9 @@ class PersonEditEmailsView(LaunchpadFormView):
     def action_add_email(self, action, data):
         """Register a new email for the person in context."""
         newemail = data['newemail']
-        logintokenset = getUtility(ILoginTokenSet)
-        token = logintokenset.new(
-                    self.context, getUtility(ILaunchBag).login, newemail,
-                    LoginTokenType.VALIDATEEMAIL)
+        token = getUtility(ILoginTokenSet).new(
+            self.context, getUtility(ILaunchBag).login, newemail,
+            LoginTokenType.VALIDATEEMAIL)
         token.sendEmailValidationRequest()
 
         self.request.response.addInfoNotification(
