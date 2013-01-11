@@ -640,6 +640,38 @@ class MailingListSetTestCase(TestCaseWithFactory):
         list_subscribers = [(member.displayname, member.preferredemail.email)]
         self.assertEqual(list_subscribers, result[team.name])
 
+    def test_getSubscribedAddresses_excludes_former_participants(self):
+        # getSubscribedAddresses() only includes present participants of
+        # the team, even if they still participate in another team in
+        # the batch (bug #1098170).
+        team1, member1 = self.factory.makeTeamWithMailingListSubscribers(
+            'team1')
+        team2, member2 = self.factory.makeTeamWithMailingListSubscribers(
+            'team2')
+        team1.addMember(member2, reviewer=team1.teamowner)
+        team1.mailing_list.subscribe(member2, address=member2.preferredemail)
+
+        result = self.mailing_list_set.getSubscribedAddresses(
+            ['team1', 'team2'])
+        self.assertEqual(
+            sorted([
+                (member1.displayname, member1.preferredemail.email),
+                (member2.displayname, member2.preferredemail.email)]),
+            result['team1'])
+        self.assertEqual(
+            [(member2.displayname, member2.preferredemail.email)],
+            result['team2'])
+
+        member2.retractTeamMembership(team1, member2)
+        result = self.mailing_list_set.getSubscribedAddresses(
+            ['team1', 'team2'])
+        self.assertEqual(
+            [(member1.displayname, member1.preferredemail.email)],
+            result['team1'])
+        self.assertEqual(
+            [(member2.displayname, member2.preferredemail.email)],
+            result['team2'])
+
     def test_getSubscribedAddresses_preferredemail_dict_values(self):
         # getSubscribedAddresses() dict values include users who want email to
         # go to their preferred address.
