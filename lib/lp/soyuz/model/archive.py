@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for table Archive."""
@@ -2304,32 +2304,6 @@ class ArchiveSet:
     def __iter__(self):
         """See `IArchiveSet`."""
         return iter(Archive.select())
-
-    def getNumberOfPPASourcesForDistribution(self, distribution):
-        cur = cursor()
-        query = """
-             SELECT SUM(sources_cached) FROM Archive
-             WHERE purpose = %s AND private = FALSE AND
-                   distribution = %s
-        """ % sqlvalues(ArchivePurpose.PPA, distribution)
-        cur.execute(query)
-        size = cur.fetchall()[0][0]
-        if size is None:
-            return 0
-        return int(size)
-
-    def getNumberOfPPABinariesForDistribution(self, distribution):
-        cur = cursor()
-        query = """
-             SELECT SUM(binaries_cached) FROM Archive
-             WHERE purpose = %s AND private = FALSE AND
-                   distribution = %s
-        """ % sqlvalues(ArchivePurpose.PPA, distribution)
-        cur.execute(query)
-        size = cur.fetchall()[0][0]
-        if size is None:
-            return 0
-        return int(size)
 
     def getPPAOwnedByPerson(self, person, name=None, statuses=None,
                             has_packages=False):

@@ -30,22 +30,6 @@ supported for PPA.
     Hoary (5.04) - development i386 (official)
     Warty (4.10) - current i386 (official)
 
-The sample data contains three PPAs.  Only Celso's and Mark's have
-packages (the active ones). Altogether there 4 sources and 4 binaries
-published across all ubuntu PPAs.
-
-    >>> print extract_text(
-    ...    find_tag_by_id(anon_browser.contents, 'ppa_statistics'))
-    Statistics
-    Registered PPAs:
-    3
-    Active PPAs:
-    2
-    Published sources:
-    4
-    Published binaries:
-    4
-
 Up to 5 latest source publications are also presented in the 'Latest
 sources' section.
 
@@ -90,13 +74,6 @@ PPA supported architectures reflects what we have in sampledata.
     Sarge (3.1) - frozen
     Woody (3.0) - current i386 (official)
 
-Archive and package counter are empty.
-
-    >>> print extract_text(
-    ...    find_tag_by_id(anon_browser.contents, 'ppa_statistics'))
-    Statistics
-    Debian does not have any registered PPA.
-
 'Latest uploads' section is not presented.
 
     >>> print find_tag_by_id(anon_browser.contents, 'ppa_latest_uploads')
@@ -140,9 +117,6 @@ PENDING or PUBLISHED source record) PPAs.
 
 When a search is requested the information sections are not rendered.
 
-    >>> print find_tag_by_id(anon_browser.contents, 'ppa_statistics')
-    None
-
     >>> print find_tag_by_id(anon_browser.contents, 'ppa_most_active')
     None
 
@@ -158,10 +132,6 @@ with no 'name_filter' GET argument, in other words, when no search was
 request.
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu/+ppas")
-
-    >>> find_tag_by_id(
-    ...     anon_browser.contents, 'ppa_statistics') is not None
-    True
 
     >>> find_tag_by_id(
     ...     anon_browser.contents, 'ppa_most_active') is not None
