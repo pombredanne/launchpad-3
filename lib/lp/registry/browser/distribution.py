@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for distributions."""
@@ -780,32 +780,8 @@ class DistributionPPASearchView(LaunchpadView):
         return self.batchnav.currentBatch()
 
     @property
-    def number_of_registered_ppas(self):
-        """The number of archives with PPA purpose.
-
-        It doesn't include private PPAs.
-        """
-        return self.context.searchPPAs(show_inactive=True).count()
-
-    @property
-    def number_of_active_ppas(self):
-        """The number of PPAs with at least one source publication.
-
-        It doesn't include private PPAs.
-        """
-        return self.context.searchPPAs(show_inactive=False).count()
-
-    @property
-    def number_of_ppa_sources(self):
-        """The number of sources published across all PPAs."""
-        return getUtility(IArchiveSet).getNumberOfPPASourcesForDistribution(
-            self.context)
-
-    @property
-    def number_of_ppa_binaries(self):
-        """The number of binaries published across all PPAs."""
-        return getUtility(IArchiveSet).getNumberOfPPABinariesForDistribution(
-            self.context)
+    def distribution_has_ppas(self):
+        return not self.context.getAllPPAs().is_empty()
 
     @property
     def latest_ppa_source_publications(self):

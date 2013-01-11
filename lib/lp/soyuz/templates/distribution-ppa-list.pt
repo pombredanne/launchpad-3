@@ -9,8 +9,7 @@
 <body>
 
   <div metal:fill-slot="main"
-       tal:define="registered_ppas view/number_of_registered_ppas;
-                   batch view/search_results;
+       tal:define="batch view/search_results;
                    no_search python:not (view.name_filter or batch);
                    empty_results python:view.name_filter and not batch">
 
@@ -24,7 +23,7 @@
           >help page</a>.</p>
 
       <form name="ppa_search" action="" method="GET"
-            tal:condition="registered_ppas">
+            tal:condition="view/distribution_has_ppas">
         <p>Search user-contributed software packages published in any
            <tal:distribution replace="context/title"
             >Ubuntu</tal:distribution> PPA.</p>
@@ -55,34 +54,8 @@
 
       <div class="yui-u first">
 
-        <div id="ppa_statistics" class="portlet">
-          <h2>Statistics</h2>
-          <div class="two-column-list" tal:condition="registered_ppas">
-            <dl>
-              <dt> Registered PPAs:</dt>
-                <dd tal:content="registered_ppas">10</dd>
-            </dl>
-            <dl>
-              <dt>Active PPAs:</dt>
-                <dd tal:content="view/number_of_active_ppas">4</dd>
-            </dl>
-            <dl>
-              <dt>Published sources:</dt>
-                <dd tal:content="view/number_of_ppa_sources">20</dd>
-            </dl>
-            <dl>
-              <dt>Published binaries:</dt>
-                <dd tal:content="view/number_of_ppa_binaries">20</dd>
-            </dl>
-          </div>
-          <p tal:condition="not: registered_ppas">
-            <span tal:replace="context/displayname">Ubuntu Linux</span>
-            does not have any registered PPA.
-          </p>
-        </div> <!-- ppa_statistics -->
-
         <div id="ppa_latest_uploads" class="portlet"
-             tal:condition="registered_ppas">
+             tal:condition="view/distribution_has_ppas">
           <h2>Latest uploads</h2>
           <ul class="source package">
             <li class="sprite package-source"
@@ -99,7 +72,7 @@
         </div> <!-- ppa_latest_uploads -->
 
         <div id="ppa_most_active" class="portlet"
-             tal:condition="registered_ppas">
+             tal:condition="view/distribution_has_ppas">
           <h2>Most active</h2>
           <p>PPAs with the highest number of uploads in the
              last 7 days.</p>
