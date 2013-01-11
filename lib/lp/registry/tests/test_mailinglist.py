@@ -508,7 +508,7 @@ class MailingListSetTestCase(TestCaseWithFactory):
             'team2', auto_subscribe=False)
         team_names = [team1.name, team2.name]
         result = self.mailing_list_set.getSenderAddresses(team_names)
-        self.assertEqual(team_names, sorted(result.keys()))
+        self.assertContentEqual(team_names, result.keys())
 
     def test_getSenderAddresses_dict_values(self):
         # getSenderAddresses() returns a dict of team namess with a list of
@@ -517,10 +517,9 @@ class MailingListSetTestCase(TestCaseWithFactory):
         team1, member1 = self.factory.makeTeamWithMailingListSubscribers(
             'team1', auto_subscribe=False)
         result = self.mailing_list_set.getSenderAddresses([team1.name])
-        list_senders = sorted([
-            (m.displayname, m.preferredemail.email)
-            for m in team1.allmembers])
-        self.assertEqual(list_senders, sorted(result[team1.name]))
+        list_senders = [
+            (m.displayname, m.preferredemail.email) for m in team1.allmembers]
+        self.assertContentEqual(list_senders, result[team1.name])
 
     def test_getSenderAddresses_multiple_and_lowercase_email(self):
         # getSenderAddresses() contains multiple email addresses for
@@ -530,9 +529,8 @@ class MailingListSetTestCase(TestCaseWithFactory):
             'team1', auto_subscribe=False)
         email = self.factory.makeEmail('me@EG.dom', member1)
         result = self.mailing_list_set.getSenderAddresses([team1.name])
-        list_senders = sorted([
-            (m.displayname, m.preferredemail.email)
-            for m in team1.allmembers])
+        list_senders = [
+            (m.displayname, m.preferredemail.email) for m in team1.allmembers]
         list_senders.append((member1.displayname, email.email.lower()))
         self.assertContentEqual(list_senders, result[team1.name])
 
@@ -541,10 +539,10 @@ class MailingListSetTestCase(TestCaseWithFactory):
         team1, member1 = self.factory.makeTeamWithMailingListSubscribers(
             'team1', auto_subscribe=False)
         result = self.mailing_list_set.getSenderAddresses([team1.name])
-        list_senders = sorted([
+        list_senders = [
             (m.displayname, m.preferredemail.email)
-            for m in team1.allmembers if m.preferredemail])
-        self.assertEqual(list_senders, sorted(result[team1.name]))
+            for m in team1.allmembers if m.preferredemail]
+        self.assertContentEqual(list_senders, result[team1.name])
 
     def test_getSenderAddresses_non_members(self):
         # getSenderAddresses() only contains active and admin members.
@@ -556,10 +554,10 @@ class MailingListSetTestCase(TestCaseWithFactory):
         with person_logged_in(non_member):
             non_member.join(team)
         result = self.mailing_list_set.getSenderAddresses([team.name])
-        list_senders = sorted([
+        list_senders = [
             (team.teamowner.displayname, team.teamowner.preferredemail.email),
-            (member.displayname, member.preferredemail.email)])
-        self.assertEqual(list_senders, sorted(result[team.name]))
+            (member.displayname, member.preferredemail.email)]
+        self.assertContentEqual(list_senders, result[team.name])
 
     def test_getSenderAddresses_inactive_list(self):
         # Inactive lists are not include
@@ -583,7 +581,7 @@ class MailingListSetTestCase(TestCaseWithFactory):
             'team2')
         team_names = [team1.name, team2.name]
         result = self.mailing_list_set.getSubscribedAddresses(team_names)
-        self.assertEqual(team_names, sorted(result.keys()))
+        self.assertContentEqual(team_names, result.keys())
 
     def test_getSubscribedAddresses_dict_values(self):
         # getSubscribedAddresses() returns a dict of teams names with a list
@@ -622,10 +620,10 @@ class MailingListSetTestCase(TestCaseWithFactory):
         team2, member2 = self.factory.makeTeamWithMailingListSubscribers(
             'team2', super_team=team1)
         result = self.mailing_list_set.getSubscribedAddresses([team1.name])
-        list_subscribers = sorted([
+        list_subscribers = [
             (member1.displayname, member1.preferredemail.email),
-            (member2.displayname, member2.preferredemail.email)])
-        self.assertEqual(list_subscribers, sorted(result[team1.name]))
+            (member2.displayname, member2.preferredemail.email)]
+        self.assertContentEqual(list_subscribers, result[team1.name])
 
     def test_getSubscribedAddresses_non_members(self):
         # getSubscribedAddresses() only contains active and admin members..
@@ -653,22 +651,21 @@ class MailingListSetTestCase(TestCaseWithFactory):
 
         result = self.mailing_list_set.getSubscribedAddresses(
             ['team1', 'team2'])
-        self.assertEqual(
-            sorted([
-                (member1.displayname, member1.preferredemail.email),
-                (member2.displayname, member2.preferredemail.email)]),
+        self.assertContentEqual(
+            [(member1.displayname, member1.preferredemail.email),
+             (member2.displayname, member2.preferredemail.email)],
             result['team1'])
-        self.assertEqual(
+        self.assertContentEqual(
             [(member2.displayname, member2.preferredemail.email)],
             result['team2'])
 
         member2.retractTeamMembership(team1, member2)
         result = self.mailing_list_set.getSubscribedAddresses(
             ['team1', 'team2'])
-        self.assertEqual(
+        self.assertContentEqual(
             [(member1.displayname, member1.preferredemail.email)],
             result['team1'])
-        self.assertEqual(
+        self.assertContentEqual(
             [(member2.displayname, member2.preferredemail.email)],
             result['team2'])
 
@@ -805,11 +802,11 @@ class MessageApprovalTestCase(MailingListMessageTestCase):
         team, member, sender, held_message = test_objects
         held_message.approve(team.teamowner)
         result = self.mailing_list_set.getSenderAddresses([team.name])
-        list_senders = sorted([
+        list_senders = [
             (team.teamowner.displayname, team.teamowner.preferredemail.email),
             (member.displayname, member.preferredemail.email),
-            (sender.displayname, sender.preferredemail.email)])
-        self.assertEqual(list_senders, sorted(result[team.name]))
+            (sender.displayname, sender.preferredemail.email)]
+        self.assertContentEqual(list_senders, result[team.name])
 
     def test_new_state(self):
         test_objects = self.makeMailingListAndHeldMessage()
