@@ -243,6 +243,17 @@ class TestPPAExpiry(ArchiveExpiryTestBase, ArchiveExpiryCommonTests):
         self.assertSourceNotExpired(source)
         self.assertBinaryNotExpired(binary)
 
+    def testWhitelistingWorks(self):
+        """Test that whitelisted private PPAs are expired anyway."""
+        p3a = self.factory.makeArchive(private=True)
+        source, binary = self._setUpExpirablePublications(archive=p3a)
+        script = self.getScript()
+        script.whitelist = ['%s/%s' % (p3a.owner.name, p3a.name)]
+        switch_dbuser(self.dbuser)
+        script.main()
+        self.assertSourceExpired(source)
+        self.assertBinaryExpired(binary)
+
     def testPrivatePPAsNotExpired(self):
         """Test that private PPAs are not expired."""
         self.archive.private = True
