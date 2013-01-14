@@ -4908,8 +4908,8 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
     email_addr = email_addr.strip().lower()
 
     if not valid_email(email_addr):
-        raise NicknameGenerationError("%s is not a valid email address"
-                                      % email_addr)
+        raise NicknameGenerationError(
+            "%s is not a valid email address" % email_addr)
 
     user = re.match("^(\S+)@(?:\S+)$", email_addr).groups()[0]
     user = user.replace(".", "-").replace("_", "-")
@@ -4933,7 +4933,7 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
     # We seed the random number generator so we get consistent results,
     # making the algorithm repeatable and thus testable.
     random_state = random.getstate()
-    random.seed(sum(ord(letter) for letter in generated_nick))
+    random.seed(sum(ord(letter) for letter in email_addr))
     try:
         attempts = 0
         prefix = ''
