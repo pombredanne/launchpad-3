@@ -35,7 +35,7 @@ class TestNicknameGeneration(TestCaseWithFactory):
         # If an email starts with symbols, generate_nick still creates a
         # valid nick that doesn't start with symbols.
         parts = ['---bar', 'foo.bar', 'foo-bar', 'foo+bar']
-        nicks = [generate_nick("%s@example.come" % part) for part in parts]
+        nicks = [generate_nick("%s@example.com" % part) for part in parts]
         self.assertEqual(['bar', 'foo-bar', 'foo-bar', 'foo+bar'], nicks)
 
     def test_enforces_minimum_length(self):
