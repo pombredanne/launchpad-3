@@ -397,10 +397,10 @@ class PersonTranslationView(LaunchpadView):
         """Suggest translations for this person to help complete."""
         # Maximum number of translations to list that need the most work
         # done.
-        max_urgent_targets = 3
+        max_urgent_targets = 5
         # Maximum number of translations to list that are almost
         # complete.
-        max_almost_complete_targets = 3
+        max_almost_complete_targets = 5
         # Length of overall list to display.
         list_length = 10
 
@@ -414,8 +414,6 @@ class PersonTranslationView(LaunchpadView):
         overall = self._addToTargetsList(
             overall, almost_complete, max_almost_complete_targets,
             list_length)
-
-        fetch = 5 * (list_length - len(overall))
 
         return overall
 
