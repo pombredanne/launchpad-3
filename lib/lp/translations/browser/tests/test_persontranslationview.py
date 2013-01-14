@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -308,38 +308,9 @@ class TestPersonTranslationView(TestCaseWithFactory):
             nonurgent_pofile.potemplate.productseries.product,
             descriptions[0]['target'])
 
-    def test_suggestTargetsForTranslation(self):
-        # suggestTargetsForTranslation finds targets that the person
-        # could help translate.
-        previous_contrib = self._makePOFiles(1, previously_worked_on=True)
-        pofile = self._makePOFiles(1, previously_worked_on=False)[0]
-        self._addUntranslatedMessages(pofile, 1)
-
-        descriptions = self.view._suggestTargetsForTranslation()
-
-        self.assertEqual(1, len(descriptions))
-        self.assertEqual(
-            pofile.potemplate.productseries.product,
-            descriptions[0]['target'])
-
-    def test_suggestTargetsForTranslation_limits_query(self):
-        # The max_fetch argument limits how many POFiles
-        # suggestTargetsForTranslation fetches.
-        previous_contrib = self._makePOFiles(1, previously_worked_on=True)
-        pofiles = self._makePOFiles(3, previously_worked_on=False)
-        for pofile in pofiles:
-            self._addUntranslatedMessages(pofile, 1)
-
-        descriptions = self.view._suggestTargetsForTranslation(max_fetch=2)
-
-        self.assertEqual(2, len(descriptions))
-        self.assertNotEqual(
-            descriptions[0]['target'], descriptions[1]['target'])
-
     def test_top_projects_and_packages_to_translate(self):
         # top_projects_and_packages_to_translate lists targets that the
-        # user has worked on and could help translate, followed by
-        # randomly suggested ones that also need translation.
+        # user has worked on and could help translate.
         worked_on = self._makePOFiles(1, previously_worked_on=True)[0]
         self._addUntranslatedMessages(worked_on, 1)
         not_worked_on = self._makePOFiles(1, previously_worked_on=False)[0]
@@ -347,13 +318,10 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
         descriptions = self.view.top_projects_and_packages_to_translate
 
-        self.assertEqual(2, len(descriptions))
+        self.assertEqual(1, len(descriptions))
         self.assertEqual(
             worked_on.potemplate.productseries.product,
             descriptions[0]['target'])
-        self.assertEqual(
-            not_worked_on.potemplate.productseries.product,
-            descriptions[1]['target'])
 
     def test_top_p_n_p_to_translate_caps_existing_involvement(self):
         # top_projects_and_packages_to_translate shows no more than 6
@@ -402,7 +370,7 @@ class TestPersonTranslationView(TestCaseWithFactory):
                 self._addUntranslatedMessages(pofile, 1)
 
         descriptions = self.view.top_projects_and_packages_to_translate
-        self.assertEqual(10, len(descriptions))
+        self.assertEqual(6, len(descriptions))
 
     def test_requires_preferred_languages(self):
         # requires_preferred_languages tells the page whether this
