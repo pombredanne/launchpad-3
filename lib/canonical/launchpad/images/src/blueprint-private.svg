@@ -16,7 +16,7 @@
    width="30"
    height="14"
    sodipodi:docname="blueprint-private.svg"
-   inkscape:export-filename="/var/lib/lxc/lpdev/rootfs/home/ubuntu/launchpad/lp-branches/devel/lib/canonical/launchpad/images/blueprint-private.png"
+   inkscape:export-filename="/home/wgrant/launchpad/lp-branches/devel/lib/canonical/launchpad/images/blueprint-private.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90">
   <metadata
@@ -43,14 +43,14 @@
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
      inkscape:window-width="958"
-     inkscape:window-height="1059"
+     inkscape:window-height="1027"
      id="namedview4"
      showgrid="false"
      inkscape:zoom="12.113024"
      inkscape:cx="16.075462"
      inkscape:cy="7.0017203"
-     inkscape:window-x="960"
-     inkscape:window-y="19"
+     inkscape:window-x="770"
+     inkscape:window-y="24"
      inkscape:window-maximized="0"
      inkscape:current-layer="svg2"
      showguides="true"
@@ -58,28 +58,15 @@
   <image
      width="14"
      height="14"
-     xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAABHNCSVQICAgIfAhkiAAAAN1JREFU
-KJFj/P//P8O0vQz/GQiALGcGRmQ+C4zhoo1b056rmGIsyJwZ+3BrLloGcVVfFMRmFnQFUZa4NS87
-jsXGP38Rgi3zcGsOqIXYDNf4Dy14CoJxa56wFtnGf5gGvPuMqUmIF82p/6Aaf/1BVViD5uxp+Wga
-0Z385y8Dw7cfDAxVUajysLCAazxxF1Xi1x8Ghm8/If5hYED4GeYiFgYGRKooWsbwH9nGL98ZGFK8
-IPwv33HYCAPbLiI59Se6LA6NsFQRUMvw/98/BgYNWUyNsEDEsBEGluzBJQMBAOGOVJH4JeTsAAAA
-AElFTkSuQmCC
-"
+     xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAABHNCSVQICAgIfAhkiAAAAN1JREFU KJFj/P//P8O0vQz/GQiALGcGRmQ+C4zhoo1b056rmGIsyJwZ+3BrLloGcVVfFMRmFnQFUZa4NS87 jsXGP38Rgi3zcGsOqIXYDNf4Dy14CoJxa56wFtnGf5gGvPuMqUmIF82p/6Aaf/1BVViD5uxp+Wga 0Z385y8Dw7cfDAxVUajysLCAazxxF1Xi1x8Ghm8/If5hYED4GeYiFgYGRKooWsbwH9nGL98ZGFK8 IPwv33HYCAPbLiI59Se6LA6NsFQRUMvw/98/BgYNWUyNsEDEsBEGluzBJQMBAOGOVJH4JeTsAAAA AElFTkSuQmCC "
      id="image10"
      x="0"
      y="0" />
   <image
-     y="0.49163899"
-     x="16.147388"
+     y="0"
+     x="16"
      id="image3068"
-     xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAABHNCSVQICAgIfAhkiAAAAS9JREFU
-KJGt0L9Kw1AUBvAvaSoEU9vgJq2DiA4ODooP4CQu4qB0chG6uLj6AP55ApfiIjgojg4ObQUdu6il
-i9VXKElI0mty77kOItyUm06e7YPvx7n3GBib2/ubbdMsXkiiZQAwDeODkzyp79Uf1J6hhmbzcq1Q
-nHpaXFoolctlAIDvBxgMPkPxnWw2Gkfdv66pwjCKT6u1uRIRod3qRO1WJyISmK9VnXAUn6ndDOSC
-b7iui957309ZspuyZKf32gsqbgXEaV3tWmogIieIPMRR5Nh26Xk4HEqYo+kg9CBIONo/vt1Bjh9K
-N6v7vyazcWXraiLqPx7mPFUw8OBai6yZg2xWgyQGwX0tLBDLhyQYeKqHlpgABTFw7mmhmLQRksOe
-PdZCSJ4Pv17O9eg/5wcczoJwmRaCBQAAAABJRU5ErkJggg==
-"
+     xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAABHNCSVQICAgIfAhkiAAAAS9JREFU KJGt0L9Kw1AUBvAvaSoEU9vgJq2DiA4ODooP4CQu4qB0chG6uLj6AP55ApfiIjgojg4ObQUdu6il i9VXKElI0mty77kOItyUm06e7YPvx7n3GBib2/ubbdMsXkiiZQAwDeODkzyp79Uf1J6hhmbzcq1Q nHpaXFoolctlAIDvBxgMPkPxnWw2Gkfdv66pwjCKT6u1uRIRod3qRO1WJyISmK9VnXAUn6ndDOSC b7iui957309ZspuyZKf32gsqbgXEaV3tWmogIieIPMRR5Nh26Xk4HEqYo+kg9CBIONo/vt1Bjh9K N6v7vyazcWXraiLqPx7mPFUw8OBai6yZg2xWgyQGwX0tLBDLhyQYeKqHlpgABTFw7mmhmLQRksOe PdZCSJ4Pv17O9eg/5wcczoJwmRaCBQAAAABJRU5ErkJggg== "
      height="14"
      width="14" />
 </svg>
