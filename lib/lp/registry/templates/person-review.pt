@@ -48,7 +48,7 @@
                 <td><tal:reason replace="view/context/creation_rationale/title" /></td>
               </tr>
               <tr>
-                <th>OpenID Identifiers:</th>
+                <th>OpenID identifiers:</th>
                 <td>
                   <ul>
                     <li tal:repeat="identifier view/context/openid_identifiers"
@@ -57,9 +57,20 @@
                 </td>
               </tr>
               <tr>
-                <th>Email Addresses:</th>
+                <th>Email addresses:</th>
                 <td>
                   <tal:emails repeat="email view/email_addresses">
+                    <span style="white-space: nowrap">
+                      <tal:email replace="email">foo2@bar.com</tal:email>
+                      <br tal:omit-tag="repeat/email/end" />
+                    </span>
+                  </tal:emails>
+                </td>
+              </tr>
+              <tr>
+                <th>Guessed email addresses:</th>
+                <td>
+                  <tal:emails repeat="email view/guessed_email_addresses">
                     <span style="white-space: nowrap">
                       <tal:email replace="email">foo2@bar.com</tal:email>
                       <br tal:omit-tag="repeat/email/end" />

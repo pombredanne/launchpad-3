@@ -1207,6 +1207,15 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         return emails
 
     @property
+    def guessed_email_addresses(self):
+        """A list of the user's new email addresses.
+
+        This is just EmailAddressStatus.NEW addresses, not unvalidated ones
+        created through the web UI. They only have LoginTokens.
+        """
+        return sorted(email.email for email in self.person.guessedemails)
+
+    @property
     def next_url(self):
         """See `LaunchpadEditFormView`."""
         is_suspended = self.context.status == AccountStatus.SUSPENDED

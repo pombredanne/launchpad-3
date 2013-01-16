@@ -64,8 +64,9 @@ hidden from the UI.
     ...     print extract_text(tr)
     Created: 2005-06-06
     Creation reason: Created by the owner himself, coming from Launchpad.
-    OpenID Identifiers: salgado_oid
-    Email Addresses: guilherme.salgado@canonical.com
+    OpenID identifiers: salgado_oid
+    Email addresses: guilherme.salgado@canonical.com
+    Guessed email addresses: salgado@ubuntu.com
 
 The page also contains a link back to the +review page.
 
