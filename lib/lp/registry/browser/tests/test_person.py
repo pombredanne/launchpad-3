@@ -657,34 +657,6 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         self.assertEqual(expected_url, response.getHeader('location'))
 
 
-class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
-                                   TestCaseWithFactory):
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(PersonAdministerViewTestCase, self).setUp()
-        self.person = self.factory.makePerson()
-        login_celebrity('admin')
-        self.ppa = self.factory.makeArchive(owner=self.person)
-        self.view = create_initialized_view(self.person, '+review')
-
-    def test_init_admin(self):
-        # An admin sees all the fields.
-        self.assertEqual('Review person', self.view.label)
-        self.assertEqual(
-            ['name', 'displayname', 'personal_standing',
-             'personal_standing_reason'],
-            self.view.field_names)
-
-    def test_init_registry_expert(self):
-        # Registry experts do not see the displayname field.
-        login_celebrity('registry_experts')
-        self.view.setUpFields()
-        self.assertEqual(
-            ['name', 'personal_standing', 'personal_standing_reason'],
-            self.view.field_names)
-
-
 class TestPersonParticipationView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
