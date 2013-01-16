@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
@@ -48,6 +48,8 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.model.answercontact import AnswerContact
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
+from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
@@ -104,6 +106,7 @@ from lp.services.job.model.job import Job
 from lp.services.librarian.model import TimeLimitedToken
 from lp.services.log.logger import PrefixFilter
 from lp.services.looptuner import TunableLoop
+from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.oauth.model import OAuthNonce
 from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
 from lp.services.propertycache import cachedproperty
@@ -1335,6 +1338,40 @@ class UnusedAccessPolicyPruner(TunableLoop):
         transaction.commit()
 
 
+class PopulateSpecificationAccessPolicy(TunableLoop):
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(PopulateSpecificationAccessPolicy, self).__init__(
+            log, abort_time)
+        self.memcache_key = '%s:spec-populate-ap' % config.instance_name
+        watermark = getUtility(IMemcacheClient).get(self.memcache_key)
+        self.start_at = watermark or 0
+
+    def findSpecifications(self):
+        return IMasterStore(Specification).find(
+            Specification,
+            Specification.information_type.is_in(PRIVATE_INFORMATION_TYPES),
+            SQL("Specification.access_policy IS NULL"),
+            Specification.id >= self.start_at).order_by(Specification.id)
+
+    def isDone(self):
+        return self.findSpecifications().is_empty()
+
+    def __call__(self, chunk_size):
+        for specification in self.findSpecifications()[:chunk_size]:
+            specification._reconcileAccess()
+            IMasterStore(Specification).execute(
+                'SELECT specification_denorm_access(?)', (specification.id,))
+            self.start_at = specification.id + 1
+        result = getUtility(IMemcacheClient).set(
+            self.memcache_key, self.start_at)
+        if not result:
+            self.log.warning('Failed to set start_at in memcache.')
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1590,6 +1627,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
+        PopulateSpecificationAccessPolicy,
         ]
     experimental_tunable_loops = []
 
