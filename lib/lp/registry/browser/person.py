@@ -1168,6 +1168,7 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
     """Administer an `IAccount` belonging to an `IPerson`."""
     schema = IAccount
     label = "Review person's account"
+    field_names = ['displayname', 'status', 'status_comment']
     custom_widget(
         'status_comment', TextAreaWidget, height=5, width=60)
 
@@ -1178,10 +1179,6 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         # It also means that permissions are checked on IAccount, not IPerson.
         self.person = self.context
         self.context = self.person.account
-        # Set fields to be displayed.
-        self.field_names = ['status', 'status_comment']
-        if self.viewed_by_admin:
-            self.field_names = ['displayname'] + self.field_names
 
     @property
     def is_viewing_person(self):
@@ -1191,11 +1188,6 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         template. It needs to know what the context is.
         """
         return False
-
-    @property
-    def viewed_by_admin(self):
-        """Is the user a Launchpad admin?"""
-        return check_permission('launchpad.Admin', self.context)
 
     @property
     def email_addresses(self):
@@ -1218,10 +1210,6 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
     @property
     def next_url(self):
         """See `LaunchpadEditFormView`."""
-        is_suspended = self.context.status == AccountStatus.SUSPENDED
-        if is_suspended and not self.viewed_by_admin:
-            # Non-admins cannot see suspended persons.
-            return canonical_url(getUtility(IPersonSet))
         return canonical_url(self.person)
 
     @property
