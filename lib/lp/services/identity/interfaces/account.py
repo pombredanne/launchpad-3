@@ -11,10 +11,10 @@ __all__ = [
     'AccountSuspendedError',
     'AccountCreationRationale',
     'IAccount',
-    'IAccountPrivate',
     'IAccountPublic',
     'IAccountSet',
     'IAccountSpecialRestricted',
+    'IAccountViewRestricted',
     'INACTIVE_ACCOUNT_STATUSES',
     ]
 
@@ -255,7 +255,7 @@ class IAccountPublic(Interface):
         readonly=False, vocabulary=AccountStatus)
 
 
-class IAccountPrivate(Interface):
+class IAccountViewRestricted(Interface):
     """Private information on an `IAccount`."""
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
@@ -287,7 +287,8 @@ class IAccountSpecialRestricted(Interface):
         """
 
 
-class IAccount(IAccountPublic, IAccountPrivate, IAccountSpecialRestricted):
+class IAccount(IAccountPublic, IAccountViewRestricted,
+               IAccountSpecialRestricted):
     """Interface describing an `Account`."""
 
 
