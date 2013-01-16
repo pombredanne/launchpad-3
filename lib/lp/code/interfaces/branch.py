@@ -786,6 +786,9 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         """
 
     # subscription-related methods
+    def userCanBeSubscribed(person):
+        """Return if the `IPerson` can be subscribed to the branch."""
+
     @operation_parameters(
         person=Reference(
             title=_("The person to subscribe."),
