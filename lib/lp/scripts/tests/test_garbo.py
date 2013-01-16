@@ -102,6 +102,7 @@ from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.model.job import Job
 from lp.services.librarian.model import TimeLimitedToken
 from lp.services.log.logger import NullHandler
+from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.messages.model.message import Message
 from lp.services.oauth.model import (
     OAuthAccessToken,
@@ -1303,6 +1304,12 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         with dbuser('testadmin'):
             specification.transitionToInformationType(
                 InformationType.PROPRIETARY, specification.owner)
+            IMasterStore(Specification).execute(
+                'UPDATE specification SET access_policy = NULL WHERE id = ?',
+                (specification.id,))
+            getUtility(IMemcacheClient).set(
+                '%s:spec-populate-ap' % config.instance_name, 0)
+
         access_artifact = self.factory.makeAccessArtifact(
             concrete=specification)
         apas = getUtility(IAccessPolicyArtifactSource).findByArtifact(
