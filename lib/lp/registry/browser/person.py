@@ -1133,22 +1133,11 @@ class PersonAdministerView(PersonRenameFormMixin):
     """Administer an `IPerson`."""
     schema = IPerson
     label = "Review person"
-    default_field_names = [
+    field_names = [
         'name', 'displayname',
         'personal_standing', 'personal_standing_reason']
     custom_widget(
         'personal_standing_reason', TextAreaWidget, height=5, width=60)
-
-    def setUpFields(self):
-        """Setup the normal fields from the schema, as appropriate.
-
-        If not an admin (e.g. registry expert), remove the displayname field.
-        """
-        self.field_names = self.default_field_names[:]
-        admin = check_permission('launchpad.Admin', self.context)
-        if not admin:
-            self.field_names.remove('displayname')
-        super(PersonAdministerView, self).setUpFields()
 
     @property
     def is_viewing_person(self):

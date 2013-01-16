@@ -1,23 +1,49 @@
 Review person
 =============
 
-Launchpad admins such as Foo Bar can review users and update some of
-their information.
+Registry admins can review users and update some of their information.
 
-    >>> admin_browser.open('http://launchpad.dev/~salgado')
+    >>> email = "expert@example.com"
+    >>> expert = factory.makeRegistryExpert(email=email)
+    >>> expert_browser = setupBrowser(auth='Basic %s:test' % email)
+    >>> logout()
 
-    >>> admin_browser.getLink('Administer').click()
-    >>> print admin_browser.url
+    >>> expert_browser.open('http://launchpad.dev/~salgado')
+    >>> expert_browser.getLink('Administer').click()
+    >>> print expert_browser.url
     http://launchpad.dev/~salgado/+review
 
-    >>> print admin_browser.title
+    >>> print expert_browser.title
     Review person...
 
+    >>> expert_browser.getControl('Name', index=0).value = 'no-way'
+    >>> expert_browser.getControl('Personal standing').value = ['GOOD']
+    >>> expert_browser.getControl(
+    ...     name='field.personal_standing_reason').value = 'good guy'
+    >>> expert_browser.getControl('Change').click()
+    >>> print expert_browser.url
+    http://launchpad.dev/~no-way
+
+Registry experts can't change the displayname.
+
+    >>> expert_browser.getLink('Administer').click()
+    >>> expert_browser.getControl(
+    ...     'Display Name', index=0).value = 'The one and only Salgado'
+    >>> expert_browser.getControl('Change').click()
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+But Launchpad admins can.
+    >>> admin_browser.open('http://launchpad.dev/~no-way/+review')
+    >>> admin_browser.getControl('Name', index=0).value = 'salgado'
     >>> admin_browser.getControl(
     ...     'Display Name', index=0).value = 'The one and only Salgado'
     >>> admin_browser.getControl('Change').click()
     >>> print admin_browser.title
     The one and only Salgado in Launchpad
+    >>> print admin_browser.url
+    http://launchpad.dev/~salgado
 
 
 Review account
@@ -25,15 +51,15 @@ Review account
 
 The review page has a link to the review account page.
 
-    >>> admin_browser.open('http://launchpad.dev/~salgado')
-    >>> admin_browser.getLink('Administer Account').click()
-    >>> print admin_browser.title
+    >>> expert_browser.open('http://launchpad.dev/~salgado')
+    >>> expert_browser.getLink('Administer Account').click()
+    >>> print expert_browser.title
     Review person's account...
 
 The +reviewaccount page displays account information that is normally
 hidden from the UI.
 
-    >>> content = find_main_content(admin_browser.contents)
+    >>> content = find_main_content(expert_browser.contents)
     >>> for tr in content.find(id='summary').findAll('tr'):
     ...     print extract_text(tr)
     Created: 2005-06-06
@@ -43,66 +69,6 @@ hidden from the UI.
 
 The page also contains a link back to the +review page.
 
-    >>> link = admin_browser.getLink(url='+review')
+    >>> link = expert_browser.getLink(url='+review')
     >>> print link.text
     edit[IMG] Review the user's Launchpad information
-
-
-Registry experts
-----------------
-
-Registry experts can see the +review page, minus the displayname.
-
-    >>> email = "expert@example.com"
-    >>> expert = factory.makeRegistryExpert(email=email)
-    >>> expert_browser = setupBrowser(auth='Basic %s:test' % email)
-    >>> logout()
-    >>> expert_browser.open('http://launchpad.dev/~no-priv/+review')
-    >>> print expert_browser.title
-    Review person...
-
-    >>> expert_browser.getControl('Name', index=0).value = "no-way"
-    >>> expert_browser.getControl(
-    ...     'Display Name', index=0)
-    Traceback (most recent call last):
-    ...
-    LookupError: label 'Display Name'
-
-    >>> expert_browser.getControl('Personal standing').value = ['GOOD']
-    >>> expert_browser.getControl(
-    ...     name='field.personal_standing_reason').value = 'good guy'
-    >>> expert_browser.getControl('Change').click()
-    >>> print expert_browser.url
-    http://launchpad.dev/~no-way
-
-However, members of the registry team only get partial access to the
-review account page to be able to suspend spam accounts.
-
-    >>> expert_browser.open('http://launchpad.dev/~no-way/+reviewaccount')
-    >>> print expert_browser.title
-    Review person's account...
-
-The +reviewaccount page does not display account information for registry
-experts. It also has no form elements to change the display name.
-
-    >>> content = find_main_content(expert_browser.contents)
-    >>> print content.find(id='summary')
-    None
-    >>> print content.find(name='field.displayname')
-    None
-
-The only option for registry experts is to change an account's status and to
-provide a reason why they did it. After suspending the account the
-page will only be visible to admins, so the registry expert will be
-redirected to the "people" main page. A feedback message informs the expert
-about the suspension.
-
-    >>> control = expert_browser.getControl(name='field.status_comment')
-    >>> control.value = 'This is SPAM!'
-    >>> expert_browser.getControl(
-    ...     'The status of this account').value = ['SUSPENDED']
-    >>> expert_browser.getControl('Change').click()
-    >>> print expert_browser.url
-    http://launchpad.dev/people
-    >>> print get_feedback_messages(expert_browser.contents)[0]
-    The account &quot;No Privileges Person&quot; has been suspended.
