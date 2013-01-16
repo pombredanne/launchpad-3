@@ -52,9 +52,6 @@
             permission="launchpad.View"
             interface="lp.services.identity.interfaces.account.IAccountViewRestricted"/>
         <require
-            permission="launchpad.Special"
-            interface="lp.services.identity.interfaces.account.IAccountSpecialRestricted"/>
-        <require
             permission="launchpad.Moderate"
             set_attributes="status date_status_set status_comment"/>
         <require
