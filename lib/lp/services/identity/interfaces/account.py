@@ -11,10 +11,10 @@ __all__ = [
     'AccountSuspendedError',
     'AccountCreationRationale',
     'IAccount',
-    'IAccountPrivate',
     'IAccountPublic',
     'IAccountSet',
     'IAccountSpecialRestricted',
+    'IAccountViewRestricted',
     'INACTIVE_ACCOUNT_STATUSES',
     ]
 
@@ -244,6 +244,7 @@ class AccountStatusChoice(Choice):
 
 class IAccountPublic(Interface):
     """Public information on an `IAccount`."""
+
     id = Int(title=_('ID'), required=True, readonly=True)
 
     displayname = StrippedTextLine(
@@ -255,8 +256,9 @@ class IAccountPublic(Interface):
         readonly=False, vocabulary=AccountStatus)
 
 
-class IAccountPrivate(Interface):
+class IAccountViewRestricted(Interface):
     """Private information on an `IAccount`."""
+
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
 
@@ -265,10 +267,6 @@ class IAccountPrivate(Interface):
         readonly=True, values=AccountCreationRationale.items)
 
     openid_identifiers = Attribute(_("Linked OpenId Identifiers"))
-
-
-class IAccountSpecialRestricted(Interface):
-    """Attributes of `IAccount` protected with launchpad.Special."""
 
     date_status_set = Datetime(
         title=_('Date status last modified.'),
@@ -287,7 +285,7 @@ class IAccountSpecialRestricted(Interface):
         """
 
 
-class IAccount(IAccountPublic, IAccountPrivate, IAccountSpecialRestricted):
+class IAccount(IAccountPublic, IAccountViewRestricted):
     """Interface describing an `Account`."""
 
 
