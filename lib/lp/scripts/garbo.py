@@ -48,7 +48,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.model.answercontact import AnswerContact
-from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
@@ -1352,19 +1351,17 @@ class PopulateSpecificationAccessPolicy(TunableLoop):
     def findSpecifications(self):
         return IMasterStore(Specification).find(
             Specification,
-            Specification.information_type.is_in(PRIVATE_INFORMATION_TYPES),
-            SQL("Specification.access_policy IS NULL"),
             Specification.id >= self.start_at).order_by(Specification.id)
 
     def isDone(self):
         return self.findSpecifications().is_empty()
 
     def __call__(self, chunk_size):
-        for specification in self.findSpecifications()[:chunk_size]:
-            specification._reconcileAccess()
-            IMasterStore(Specification).execute(
-                'SELECT specification_denorm_access(?)', (specification.id,))
-            self.start_at = specification.id + 1
+        spec_ids = [spec.id for spec in self.findSpecifications()[:chunk_size]]
+        IMasterStore(Specification).execute(
+            'SELECT specification_denorm_access(id) FROM specification '
+            'WHERE id IN %s' % sqlvalues(spec_ids))
+        self.start_at = spec_ids[-1] + 1
         result = getUtility(IMemcacheClient).set(
             self.memcache_key, self.start_at)
         if not result:
