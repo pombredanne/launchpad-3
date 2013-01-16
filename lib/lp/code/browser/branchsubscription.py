@@ -217,8 +217,8 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
         if data.has_key('person'):
             person = data['person']
             subscription = self.context.getSubscription(person)
-            if (subscription is None and person.is_team and 
-                person.anyone_can_join()):
+            if subscription is None and not self.context.userCanBeSubscribed(
+                person):
                 self.setFieldError('person', "Open and delegated teams "
                 "cannot be subscribed to private branches.")
 
