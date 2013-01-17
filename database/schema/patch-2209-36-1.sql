@@ -4,6 +4,6 @@
 SET client_min_messages=ERROR;
 
 ALTER TABLE binarypackagepublishinghistory
-    ADD COLUMN phased_update_percentage INTEGER;
+    ADD COLUMN phased_update_percentage SMALLINT;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 36, 1);
