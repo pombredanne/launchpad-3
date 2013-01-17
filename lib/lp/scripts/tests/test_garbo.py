@@ -38,7 +38,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.model.answercontact import AnswerContact
 from lp.app.enums import InformationType
-from lp.blueprints.model.specification import Specification
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
@@ -58,12 +57,8 @@ from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
-    SpecificationSharingPolicy,
     )
-from lp.registry.interfaces.accesspolicy import (
-    IAccessPolicyArtifactSource,
-    IAccessPolicySource,
-    )
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.commercialsubscription import CommercialSubscription
@@ -102,7 +97,6 @@ from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.model.job import Job
 from lp.services.librarian.model import TimeLimitedToken
 from lp.services.log.logger import NullHandler
-from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.messages.model.message import Message
 from lp.services.oauth.model import (
     OAuthAccessToken,
@@ -127,10 +121,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.dbuser import (
-    dbuser,
-    switch_dbuser,
-    )
+from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadScriptLayer,
@@ -1281,42 +1272,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         job_data = load_garbo_job_state(
             'PopulateLatestPersonSourcePackageReleaseCache')
         self.assertEqual(spph_2.id, job_data['last_spph_id'])
-
-    def test_PopulateSpecificationAccessPolicy(self):
-        # Specifications without a access_policy have one set by the job.
-        with dbuser('testadmin'):
-            specification = self.factory.makeSpecification()
-            product = removeSecurityProxy(specification.product)
-            product.specification_sharing_policy = (
-                SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY)
-            self.factory.makeAccessPolicy(pillar=product)
-
-        def get_access_policy():
-            return IMasterStore(Specification).execute(
-                'SELECT access_policy FROM specification WHERE id = ?',
-                (specification.id,)).get_one()[0]
-
-        # The specification is public, so running the garbo job will have no
-        # effect.
-        self.runHourly()
-        self.assertIs(None, get_access_policy())
-
-        with dbuser('testadmin'):
-            specification.transitionToInformationType(
-                InformationType.PROPRIETARY, specification.owner)
-            IMasterStore(Specification).execute(
-                'UPDATE specification SET access_policy = NULL WHERE id = ?',
-                (specification.id,))
-            getUtility(IMemcacheClient).set(
-                '%s:spec-populate-ap' % config.instance_name, 0)
-
-        access_artifact = self.factory.makeAccessArtifact(
-            concrete=specification)
-        apas = getUtility(IAccessPolicyArtifactSource).findByArtifact(
-            (access_artifact,))
-        # Now it will be set.
-        self.runHourly()
-        self.assertEqual(apas[0].policy.id, get_access_policy())
 
 
 class TestGarboTasks(TestCaseWithFactory):

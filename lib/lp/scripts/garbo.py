@@ -48,7 +48,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.model.answercontact import AnswerContact
-from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
@@ -105,7 +104,6 @@ from lp.services.job.model.job import Job
 from lp.services.librarian.model import TimeLimitedToken
 from lp.services.log.logger import PrefixFilter
 from lp.services.looptuner import TunableLoop
-from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.oauth.model import OAuthNonce
 from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
 from lp.services.propertycache import cachedproperty
@@ -1337,38 +1335,6 @@ class UnusedAccessPolicyPruner(TunableLoop):
         transaction.commit()
 
 
-class PopulateSpecificationAccessPolicy(TunableLoop):
-
-    maximum_chunk_size = 5000
-
-    def __init__(self, log, abort_time=None):
-        super(PopulateSpecificationAccessPolicy, self).__init__(
-            log, abort_time)
-        self.memcache_key = '%s:spec-populate-ap' % config.instance_name
-        watermark = getUtility(IMemcacheClient).get(self.memcache_key)
-        self.start_at = watermark or 0
-
-    def findSpecifications(self):
-        return IMasterStore(Specification).find(
-            Specification,
-            Specification.id >= self.start_at).order_by(Specification.id)
-
-    def isDone(self):
-        return self.findSpecifications().is_empty()
-
-    def __call__(self, chunk_size):
-        spec_ids = [spec.id for spec in self.findSpecifications()[:chunk_size]]
-        IMasterStore(Specification).execute(
-            'SELECT specification_denorm_access(id) FROM specification '
-            'WHERE id IN %s' % sqlvalues(spec_ids))
-        self.start_at = spec_ids[-1] + 1
-        result = getUtility(IMemcacheClient).set(
-            self.memcache_key, self.start_at)
-        if not result:
-            self.log.warning('Failed to set start_at in memcache.')
-        transaction.commit()
-
-
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1624,7 +1590,6 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
-        PopulateSpecificationAccessPolicy,
         ]
     experimental_tunable_loops = []
 
