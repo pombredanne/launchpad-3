@@ -1301,8 +1301,8 @@ def get_specification_privacy_filter(user):
             )), False)
 
     return tables, [
-        active_products, Or(public_spec_filter, artifact_grant_query,
-            policy_grant_query)]
+        active_products,
+        Or(public_spec_filter, artifact_grant_query, policy_grant_query)]
 
 
 def get_specification_filters(filter):

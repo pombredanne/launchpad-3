@@ -24,6 +24,7 @@ from storm.expr import (
     And,
     In,
     Join,
+    LeftJoin,
     Not,
     Or,
     Select,
@@ -447,7 +448,7 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
                     Specification,
                     Specification.id ==
                         SpecificationSubscription.specificationID),
-                Join(
+                LeftJoin(
                     Product, Product.id == Specification.productID))
             specifications_subscriptions = IStore(
                 SpecificationSubscription).using(*tables).find(
