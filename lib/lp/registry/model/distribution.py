@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for implementing distribution items."""
@@ -952,15 +952,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                     constraint)
 
         if prejoin_people:
-            results = self._preload_specifications_people([Specification],
-                                                          query)
+            results = self._preload_specifications_people(
+                [Specification], query)
         else:
-            results = Store.of(self).find(
-                Specification,
-                SQL(query))
+            results = Store.of(self).find(Specification, SQL(query))
         results.order_by(order)
         if quantity is not None:
-            results = results[:quantity]
+            results.config(limit=quantity)
         return results
 
     def getSpecification(self, name):

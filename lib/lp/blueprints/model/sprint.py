@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -39,8 +39,8 @@ from lp.blueprints.interfaces.sprint import (
     )
 from lp.blueprints.model.specification import (
     get_specification_filters,
+    get_specification_privacy_filter,
     HasSpecificationsMixin,
-    visible_specification_query,
     )
 from lp.blueprints.model.sprintattendance import SprintAttendance
 from lp.blueprints.model.sprintspecification import SprintSpecification
@@ -118,14 +118,14 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         specifications() method because we want to reuse this query in the
         specificationLinks() method.
         """
-        # import here to avoid circular deps
+        # Avoid circular imports.
         from lp.blueprints.model.specification import Specification
-        tables, query = visible_specification_query(user)
+        tables, query = get_specification_privacy_filter(user)
         tables.append(Join(
             SprintSpecification,
-            SprintSpecification.specification == Specification.id
-        ))
-        query.extend([SprintSpecification.sprintID == self.id])
+            SprintSpecification.specification == Specification.id))
+        query.append(SprintSpecification.sprintID == self.id)
+
         if not filter:
             # filter could be None or [] then we decide the default
             # which for a sprint is to show everything approved

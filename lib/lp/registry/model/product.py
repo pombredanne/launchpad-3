@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes including and related to Product."""
@@ -92,11 +92,11 @@ from lp.app.model.launchpad import InformationTypeMixin
 from lp.blueprints.enums import SpecificationFilter
 from lp.blueprints.model.specification import (
     get_specification_filters,
+    get_specification_privacy_filter,
     HasSpecificationsMixin,
     Specification,
     SPECIFICATION_POLICY_ALLOWED_TYPES,
     SPECIFICATION_POLICY_DEFAULT_TYPES,
-    visible_specification_query,
     )
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
@@ -1469,14 +1469,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         #  - completeness.
         #  - informational.
         #
-        tables, clauses = visible_specification_query(user)
+        tables, clauses = get_specification_privacy_filter(user)
         clauses.append(Specification.product == self)
         clauses.extend(get_specification_filters(filter))
         if prejoin_people:
             results = self._preload_specifications_people(tables, clauses)
         else:
-            tableset = Store.of(self).using(*tables)
-            results = tableset.find(Specification, *clauses)
+            results = Store.of(self).using(*tables).find(
+                Specification, *clauses)
         results.order_by(order).config(distinct=True)
         if quantity is not None:
             results = results[:quantity]

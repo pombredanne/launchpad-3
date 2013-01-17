@@ -1,9 +1,10 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
     'get_specification_filters',
+    'get_specification_privacy_filter',
     'HasSpecificationsMixin',
     'recursive_blocked_query',
     'recursive_dependent_query',
@@ -12,7 +13,6 @@ __all__ = [
     'SPECIFICATION_POLICY_DEFAULT_TYPES',
     'SpecificationSet',
     'spec_started_clause',
-    'visible_specification_query',
     ]
 
 from lazr.lifecycle.event import (
@@ -30,6 +30,7 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
+    Coalesce,
     In,
     Join,
     LeftJoin,
@@ -111,7 +112,12 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.database.stormexpr import fti_search
+from lp.services.database.stormexpr import (
+    Array,
+    ArrayAgg,
+    ArrayIntersects,
+    fti_search,
+    )
 from lp.services.mail.helpers import get_contact_email_addresses
 from lp.services.propertycache import (
     cachedproperty,
@@ -1058,7 +1064,6 @@ class HasSpecificationsMixin:
             method.
         :return: A DecoratedResultSet with Person precaching setup.
         """
-        # Circular import.
         if isinstance(clauses, basestring):
             clauses = [SQL(clauses)]
 
@@ -1157,39 +1162,32 @@ class SpecificationSet(HasSpecificationsMixin):
                        prejoin_people=True):
         store = IStore(Specification)
 
-        # Take the visibility due to privacy into account.
-        privacy_tables, clauses = visible_specification_query(user)
-
         if not filter:
             # Default to showing incomplete specs
             filter = [SpecificationFilter.INCOMPLETE]
 
-        spec_clauses = get_specification_filters(filter)
-        clauses.extend(spec_clauses)
+        tables, clauses = get_specification_privacy_filter(user)
+        clauses.extend(get_specification_filters(filter))
 
-        # sort by priority descending, by default
+        # Sort by priority descending, by default.
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = [Desc(Specification.priority),
-                     Specification.definition_status,
-                     Specification.name]
-
+            order = [
+                Desc(Specification.priority), Specification.definition_status,
+                Specification.name]
         elif sort == SpecificationSort.DATE:
             if SpecificationFilter.COMPLETE in filter:
-                # if we are showing completed, we care about date completed
-                order = [Desc(Specification.date_completed),
-                         Specification.id]
+                # If we are showing completed, we care about date completed.
+                order = [Desc(Specification.date_completed), Specification.id]
             else:
-                # if not specially looking for complete, we care about date
-                # registered
+                # If not specially looking for complete, we care about date
+                # registered.
                 order = [Desc(Specification.datecreated), Specification.id]
 
         if prejoin_people:
-            results = self._preload_specifications_people(
-                privacy_tables, clauses)
+            results = self._preload_specifications_people(tables, clauses)
         else:
-            results = store.using(*privacy_tables).find(
-                Specification, *clauses)
-        return results.order_by(*order)[:quantity]
+            results = store.using(*tables).find(Specification, *clauses)
+        return results.order_by(*order).config(limit=quantity)
 
     def getByURL(self, url):
         """See ISpecificationSet."""
@@ -1266,46 +1264,45 @@ class SpecificationSet(HasSpecificationsMixin):
         return Specification.get(spec_id)
 
 
-def visible_specification_query(user):
-    """Return a Storm expression and list of tables for filtering
-    specifications by privacy.
-
-    :param user: A Person ID or a column reference.
-    :return: A tuple of tables, clauses to filter out specifications that the
-        user cannot see.
-    """
+def get_specification_privacy_filter(user):
+    # Circular imports.
+    from lp.registry.model.accesspolicy import AccessPolicyGrant
     from lp.registry.model.product import Product
-    from lp.registry.model.accesspolicy import (
-        AccessArtifact,
-        AccessPolicy,
-        AccessPolicyGrantFlat,
-        )
     tables = [
-        Specification,
-        LeftJoin(Product, Specification.productID == Product.id),
-        LeftJoin(AccessPolicy, And(
-            Or(Specification.productID == AccessPolicy.product_id,
-               Specification.distributionID ==
-               AccessPolicy.distribution_id),
-            Specification.information_type == AccessPolicy.type)),
-        LeftJoin(AccessPolicyGrantFlat,
-                 AccessPolicy.id == AccessPolicyGrantFlat.policy_id),
-        LeftJoin(
-            TeamParticipation,
-            And(AccessPolicyGrantFlat.grantee == TeamParticipation.teamID,
-                TeamParticipation.person == user)),
-        LeftJoin(AccessArtifact,
-                 AccessPolicyGrantFlat.abstract_artifact_id ==
-                 AccessArtifact.id)
-        ]
-    clauses = [
-        Or(Specification.information_type.is_in(PUBLIC_INFORMATION_TYPES),
-           And(AccessPolicyGrantFlat.id != None,
-               TeamParticipation.personID != None,
-               Or(AccessPolicyGrantFlat.abstract_artifact == None,
-                  AccessArtifact.specification_id == Specification.id))),
-        Or(Specification.product == None, Product.active == True)]
-    return tables, clauses
+        Specification, LeftJoin(
+            Product, Specification.productID == Product.id)]
+    active_products = (
+        Or(Specification.product == None, Product.active == True))
+    public_spec_filter = (
+        Specification.information_type.is_in(PUBLIC_INFORMATION_TYPES))
+
+    if user is None:
+        return tables, [active_products, public_spec_filter]
+
+    artifact_grant_query = Coalesce(
+        ArrayIntersects(
+            SQL('Specification.access_grants'),
+            Select(
+                ArrayAgg(TeamParticipation.teamID),
+                tables=TeamParticipation,
+                where=(TeamParticipation.person == user)
+            )), False)
+
+    policy_grant_query = Coalesce(
+        ArrayIntersects(
+            Array(SQL('Specification.access_policy')),
+            Select(
+                ArrayAgg(AccessPolicyGrant.policy_id),
+                tables=(AccessPolicyGrant,
+                        Join(TeamParticipation,
+                            TeamParticipation.teamID ==
+                            AccessPolicyGrant.grantee_id)),
+                where=(TeamParticipation.person == user)
+            )), False)
+
+    return tables, [
+        active_products, Or(public_spec_filter, artifact_grant_query,
+            policy_grant_query)]
 
 
 def get_specification_filters(filter):

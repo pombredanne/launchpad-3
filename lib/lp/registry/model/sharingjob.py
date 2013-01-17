@@ -1,6 +1,5 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
 
 """Job classes related to the sharing feature are in here."""
 
@@ -44,8 +43,8 @@ from zope.interface import (
 from lp.app.enums import InformationType
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.model.specification import (
+    get_specification_privacy_filter,
     Specification,
-    visible_specification_query,
     )
 from lp.blueprints.model.specificationsubscription import (
     SpecificationSubscription,
@@ -439,14 +438,17 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
                 sub.branch.unsubscribe(
                     sub.person, self.requestor, ignore_permissions=True)
         if specification_filters:
-            specification_filters.append(
-                spec_not_visible(SpecificationSubscription.personID))
+            _, privacy_query = get_specification_privacy_filter(
+                SpecificationSubscription.personID)
+            specification_filters.append(Not(Or(*privacy_query)))
             tables = (
                 SpecificationSubscription,
                 Join(
                     Specification,
                     Specification.id ==
-                        SpecificationSubscription.specificationID))
+                        SpecificationSubscription.specificationID),
+                Join(
+                    Product, Product.id == Specification.productID))
             specifications_subscriptions = IStore(
                 SpecificationSubscription).using(*tables).find(
                 SpecificationSubscription, *specification_filters).config(
@@ -454,10 +456,3 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
             for sub in specifications_subscriptions:
                 sub.specification.unsubscribe(
                     sub.person, self.requestor, ignore_permissions=True)
-
-
-def spec_not_visible(person_id):
-    """Return an expression for finding specs not visible to the person."""
-    tables, clauses = visible_specification_query(person_id)
-    subselect = Select(Specification.id, tables=tables, where=And(clauses))
-    return Not(Specification.id.is_in(subselect))
