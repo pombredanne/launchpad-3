@@ -376,17 +376,20 @@ class BuildFarmJobBehaviorBase:
         d.addCallback(build_info_stored)
         return d
 
-    def _handleStatus_PACKAGEFAIL(self, librarian, slave_status, logger,
-                                  send_notification):
-        """Handle a package that had failed to build.
+    def _handleStatus_generic_failure(self, status, librarian, slave_status,
+                                      logger, send_notification):
+        """Handle a generic build failure.
 
-        Build has failed when trying the work with the target package,
-        set the job status as FAILEDTOBUILD, store available info and
-        remove Buildqueue entry.
+        The build, not the builder, has failed. Set its status, store
+        available information, and remove the queue entry.
         """
-        self.build.status = BuildStatus.FAILEDTOBUILD
+        self.build.status = status
 
         def build_info_stored(ignored):
+            logger.critical(
+                "***** %s is %s *****" % (
+                self.build.buildqueue_record.builder.name, status.name))
+
             if send_notification:
                 self.build.notify()
             d = self.build.buildqueue_record.builder.cleanSlave()
@@ -395,50 +398,27 @@ class BuildFarmJobBehaviorBase:
 
         d = self.storeBuildInfo(self.build, librarian, slave_status)
         return d.addCallback(build_info_stored)
+
+    def _handleStatus_PACKAGEFAIL(self, librarian, slave_status, logger,
+                                  send_notification):
+        """Handle a package that had failed to build."""
+        return self._handleStatus_generic_failure(
+            BuildStatus.FAILEDTOBUILD, librarian, slave_status, logger,
+            send_notification)
 
     def _handleStatus_DEPFAIL(self, librarian, slave_status, logger,
                               send_notification):
-        """Handle a package that had missing dependencies.
-
-        Build has failed by missing dependencies, set the job status as
-        MANUALDEPWAIT, store available information, remove BuildQueue
-        entry and release builder slave for another job.
-        """
-        self.build.status = BuildStatus.MANUALDEPWAIT
-
-        def build_info_stored(ignored):
-            logger.critical("***** %s is MANUALDEPWAIT *****"
-                            % self.build.buildqueue_record.builder.name)
-            if send_notification:
-                self.build.notify()
-            d = self.build.buildqueue_record.builder.cleanSlave()
-            return d.addCallback(
-                lambda x: self.build.buildqueue_record.destroySelf())
-
-        d = self.storeBuildInfo(self.build, librarian, slave_status)
-        return d.addCallback(build_info_stored)
+        """Handle a package that had missing dependencies."""
+        return self._handleStatus_generic_failure(
+            BuildStatus.MANUALDEPWAIT, librarian, slave_status, logger,
+            send_notification)
 
     def _handleStatus_CHROOTFAIL(self, librarian, slave_status, logger,
                                  send_notification):
-        """Handle a package that had failed when unpacking the CHROOT.
-
-        Build has failed when installing the current CHROOT, mark the
-        job as CHROOTFAIL, store available information, remove BuildQueue
-        and release the builder.
-        """
-        self.build.status = BuildStatus.CHROOTWAIT
-
-        def build_info_stored(ignored):
-            logger.critical("***** %s is CHROOTWAIT *****" %
-                            self.build.buildqueue_record.builder.name)
-            if send_notification:
-                self.build.notify()
-            d = self.build.buildqueue_record.builder.cleanSlave()
-            return d.addCallback(
-                lambda x: self.build.buildqueue_record.destroySelf())
-
-        d = self.storeBuildInfo(self.build, librarian, slave_status)
-        return d.addCallback(build_info_stored)
+        """Handle a package that had failed when unpacking the CHROOT."""
+        return self._handleStatus_generic_failure(
+            BuildStatus.CHROOTWAIT, librarian, slave_status, logger,
+            send_notification)
 
     def _handleStatus_BUILDERFAIL(self, librarian, slave_status, logger,
                                   send_notification):
