@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -408,7 +408,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         self.assertContentEqual(
             self.potmsgset.getExternallyUsedTranslationMessages(language),
             [other_translation, current_translation])
-        self.assertEquals(
+        self.assertContentEqual(
             self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
                 used_languages=[language])[language].used,
             [other_translation, current_translation])

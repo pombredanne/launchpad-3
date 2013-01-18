@@ -870,6 +870,10 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         return self._associatedSuiteSourcePackages
 
+    def userCanBeSubscribed(self, person):
+        return not (person.is_team and self.information_type in
+            PRIVATE_INFORMATION_TYPES and person.anyone_can_join())
+
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,
                   code_review_level, subscribed_by,
@@ -879,8 +883,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         Subscribe person to this branch and also to any editable stacked on
         branches they cannot see.
         """
-        if (person.is_team and self.information_type in
-            PRIVATE_INFORMATION_TYPES and person.anyone_can_join()):
+        if not self.userCanBeSubscribed(person):
             raise SubscriptionPrivacyViolation(
                 "Open and delegated teams cannot be subscribed to private "
                 "branches.")

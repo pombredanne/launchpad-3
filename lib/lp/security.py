@@ -382,22 +382,10 @@ class EditAccountBySelfOrAdmin(AuthorizationBase):
 class ViewAccount(EditAccountBySelfOrAdmin):
     permission = 'launchpad.View'
 
-
-class ViewOpenIdIdentifierBySelfOrAdmin(AuthorizationBase):
-    permission = 'launchpad.View'
-    usedfor = IOpenIdIdentifier
-
-    def checkAuthenticated(self, user):
-        return user.in_admin or user.person.accountID == self.obj.accountID
-
-
-class SpecialAccount(EditAccountBySelfOrAdmin):
-    permission = 'launchpad.Special'
-
     def checkAuthenticated(self, user):
         """Extend permission to registry experts."""
         return (
-            super(SpecialAccount, self).checkAuthenticated(user)
+            super(ViewAccount, self).checkAuthenticated(user)
             or user.in_registry_experts)
 
 
@@ -407,6 +395,14 @@ class ModerateAccountByRegistryExpert(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return user.in_admin or user.in_registry_experts
+
+
+class ViewOpenIdIdentifierBySelfOrAdmin(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IOpenIdIdentifier
+
+    def checkAuthenticated(self, user):
+        return user.in_admin or user.person.accountID == self.obj.accountID
 
 
 class EditOAuthAccessToken(AuthorizationBase):
@@ -448,7 +444,7 @@ class LimitedViewProduct(ViewProduct):
     def checkAuthenticated(self, user):
         return (
             super(LimitedViewProduct, self).checkAuthenticated(user) or
-            getUtility(IService, 'sharing').userHasGrantsOnPillar(
+            getUtility(IService, 'sharing').checkPillarArtifactAccess(
                 self.obj, user))
 
 

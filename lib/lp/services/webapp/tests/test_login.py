@@ -169,10 +169,12 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
     def _createViewWithResponse(
             self, account, response_status=SUCCESS, response_msg='',
             view_class=StubbedOpenIDCallbackView,
-            email='non-existent@example.com'):
+            email='non-existent@example.com', identifier=None):
+        if identifier is None:
+            identifier = ITestOpenIDPersistentIdentity(
+                account).openid_identity_url
         openid_response = FakeOpenIDResponse(
-            ITestOpenIDPersistentIdentity(account).openid_identity_url,
-            status=response_status, message=response_msg,
+            identifier, status=response_status, message=response_msg,
             email=email, full_name='Foo User')
         return self._createAndRenderView(
             openid_response, view_class=view_class)
@@ -429,11 +431,11 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # team, there's not much we can do. See bug #556680 for
         # discussions about a proper solution.
         self.factory.makeTeam(email="foo@bar.com")
-        person = self.factory.makePerson()
 
         with SRegResponse_fromSuccessResponse_stubbed():
             view, html = self._createViewWithResponse(
-                person.account, email="foo@bar.com")
+                None, email="foo@bar.com",
+                identifier=self.factory.getUniqueString())
         self.assertFalse(view.login_called)
         main_content = extract_text(find_main_content(html))
         self.assertIn('Team email address conflict', main_content)

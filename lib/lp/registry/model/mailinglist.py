@@ -30,6 +30,7 @@ from sqlobject import (
 from storm.expr import (
     And,
     Join,
+    Or,
     )
 from storm.info import ClassAlias
 from storm.store import Store
@@ -563,10 +564,6 @@ class MailingListSet:
     def getSubscribedAddresses(self, team_names):
         """See `IMailingListSet`."""
         store = IStore(MailingList)
-        # In order to handle the case where the preferred email address is
-        # used (i.e. where MailingListSubscription.email_address is NULL), we
-        # need to UNION, those using a specific address and those using the
-        # preferred address.
         Team = ClassAlias(Person)
         tables = (
             EmailAddress,
@@ -582,31 +579,22 @@ class MailingListSet:
             Join(Team, Team.id == MailingList.teamID),
             )
         team_ids, list_ids = self._getTeamIdsAndMailingListIds(team_names)
-        # Find all the people who are subscribed with their preferred address.
         preferred = store.using(*tables).find(
             (EmailAddress.email, Person.displayname, Team.name),
             And(MailingListSubscription.mailing_listID.is_in(list_ids),
                 TeamParticipation.teamID.is_in(team_ids),
                 MailingList.teamID == TeamParticipation.teamID,
                 MailingList.status != MailingListStatus.INACTIVE,
-                MailingListSubscription.email_addressID == None,
-                EmailAddress.status == EmailAddressStatus.PREFERRED,
-                Account.status == AccountStatus.ACTIVE))
+                Account.status == AccountStatus.ACTIVE,
+                Or(
+                    And(MailingListSubscription.email_addressID == None,
+                        EmailAddress.status == EmailAddressStatus.PREFERRED),
+                    EmailAddress.id ==
+                        MailingListSubscription.email_addressID),
+                ))
         # Sort by team name.
         by_team = collections.defaultdict(set)
         for email, display_name, team_name in preferred:
-            assert team_name in team_names, (
-                'Unexpected team name in results: %s' % team_name)
-            value = (display_name, email.lower())
-            by_team[team_name].add(value)
-        explicit = store.using(*tables).find(
-            (EmailAddress.email, Person.displayname, Team.name),
-            And(MailingListSubscription.mailing_listID.is_in(list_ids),
-                TeamParticipation.teamID.is_in(team_ids),
-                MailingList.status != MailingListStatus.INACTIVE,
-                EmailAddress.id == MailingListSubscription.email_addressID,
-                Account.status == AccountStatus.ACTIVE))
-        for email, display_name, team_name in explicit:
             assert team_name in team_names, (
                 'Unexpected team name in results: %s' % team_name)
             value = (display_name, email.lower())

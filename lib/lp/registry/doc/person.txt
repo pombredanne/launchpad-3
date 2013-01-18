@@ -525,7 +525,7 @@ account_status is NOACCOUNT, though.
     >>> not_a_person.convertToTeam(team_owner=landscape_devs)
     Traceback (most recent call last):
     ...
-    AlreadyConvertedException: foo-v has already been converted to a team.
+    AlreadyConvertedException: foo-o has already been converted to a team.
 
 
 Team members

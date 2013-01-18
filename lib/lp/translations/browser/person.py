@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person-related translations view classes."""
@@ -333,17 +333,6 @@ class PersonTranslationView(LaunchpadView):
 
         return TranslateLinksAggregator().aggregate(pofiles)
 
-    def _suggestTargetsForTranslation(self, max_fetch=None):
-        """Suggest translations this person could be helping complete."""
-        person = ITranslationsPerson(self.context)
-        pofiles = person.suggestTranslatableFiles(
-            no_older_than=self.history_horizon)
-
-        if max_fetch is not None:
-            pofiles = pofiles[:max_fetch]
-
-        return TranslateLinksAggregator().aggregate(pofiles)
-
     @cachedproperty
     def all_projects_and_packages_to_review(self):
         """Top projects and packages for this person to review."""
@@ -408,10 +397,10 @@ class PersonTranslationView(LaunchpadView):
         """Suggest translations for this person to help complete."""
         # Maximum number of translations to list that need the most work
         # done.
-        max_urgent_targets = 3
+        max_urgent_targets = 5
         # Maximum number of translations to list that are almost
         # complete.
-        max_almost_complete_targets = 3
+        max_almost_complete_targets = 5
         # Length of overall list to display.
         list_length = 10
 
@@ -425,11 +414,6 @@ class PersonTranslationView(LaunchpadView):
         overall = self._addToTargetsList(
             overall, almost_complete, max_almost_complete_targets,
             list_length)
-
-        fetch = 5 * (list_length - len(overall))
-        suggestions = self._suggestTargetsForTranslation(fetch)
-        overall = self._addToTargetsList(
-            overall, suggestions, list_length, list_length)
 
         return overall
 

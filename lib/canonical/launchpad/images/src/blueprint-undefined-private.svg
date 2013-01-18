@@ -16,7 +16,7 @@
    width="30"
    height="14"
    sodipodi:docname="blueprint-undefined-private.svg"
-   inkscape:export-filename="/var/lib/lxc/lpdev/rootfs/home/ubuntu/launchpad/lp-branches/devel/lib/canonical/launchpad/images/blueprint-undefined-private.png"
+   inkscape:export-filename="/home/wgrant/launchpad/lp-branches/devel/lib/canonical/launchpad/images/blueprint-undefined-private.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90">
   <metadata
@@ -46,11 +46,11 @@
      inkscape:window-height="404"
      id="namedview4"
      showgrid="false"
-     inkscape:zoom="1"
-     inkscape:cx="7"
-     inkscape:cy="7"
-     inkscape:window-x="0"
-     inkscape:window-y="19"
+     inkscape:zoom="11.313708"
+     inkscape:cx="37.398666"
+     inkscape:cy="7.7033505"
+     inkscape:window-x="128"
+     inkscape:window-y="24"
      inkscape:window-maximized="0"
      inkscape:current-layer="svg2" />
   <image
@@ -61,8 +61,8 @@
      x="0"
      y="0" />
   <image
-     y="0.49541569"
-     x="16.099518"
+     y="0"
+     x="16"
      id="image3068"
      xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAABHNCSVQICAgIfAhkiAAAAS9JREFU KJGt0L9Kw1AUBvAvaSoEU9vgJq2DiA4ODooP4CQu4qB0chG6uLj6AP55ApfiIjgojg4ObQUdu6il i9VXKElI0mty77kOItyUm06e7YPvx7n3GBib2/ubbdMsXkiiZQAwDeODkzyp79Uf1J6hhmbzcq1Q nHpaXFoolctlAIDvBxgMPkPxnWw2Gkfdv66pwjCKT6u1uRIRod3qRO1WJyISmK9VnXAUn6ndDOSC b7iui957309ZspuyZKf32gsqbgXEaV3tWmogIieIPMRR5Nh26Xk4HEqYo+kg9CBIONo/vt1Bjh9K N6v7vyazcWXraiLqPx7mPFUw8OBai6yZg2xWgyQGwX0tLBDLhyQYeKqHlpgABTFw7mmhmLQRksOe PdZCSJ4Pv17O9eg/5wcczoJwmRaCBQAAAABJRU5ErkJggg== "
      height="14"
