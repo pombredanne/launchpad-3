@@ -65,6 +65,9 @@ class FakeBuildQueue:
         self.date_started = datetime.datetime.now(pytz.UTC)
         self.destroySelf = FakeMethod()
 
+    def getLogFileName(self):
+        return self.specific_job.getLogFileName()
+
 
 class MakeBehaviorMixin(object):
     """Provide common test methods."""

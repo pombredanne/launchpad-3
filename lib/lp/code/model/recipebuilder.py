@@ -36,6 +36,13 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
     adapts(ISourcePackageRecipeBuildJob)
     implements(IBuildFarmJobBehavior)
 
+    # The list of build status values for which email notifications are
+    # allowed to be sent. It is up to each callback as to whether it will
+    # consider sending a notification but it won't do so if the status is not
+    # in this list.
+    ALLOWED_STATUS_NOTIFICATIONS = [
+        'OK', 'PACKAGEFAIL', 'DEPFAIL', 'CHROOTFAIL']
+
     status = None
 
     @property
@@ -133,9 +140,9 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         d = self._builder.slave.cacheFile(logger, chroot)
 
         def got_cache_file(ignored):
-            # Generate a string which can be used to cross-check when obtaining
-            # results so we know we are referring to the right database object in
-            # subsequent runs.
+            # Generate a string which can be used to cross-check when
+            # obtaining results so we know we are referring to the right
+            # database object in subsequent runs.
             buildid = "%s-%s" % (self.build.id, build_queue_id)
             cookie = self.buildfarmjob.generateSlaveBuildCookie()
             chroot_sha1 = chroot.content.sha1

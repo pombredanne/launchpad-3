@@ -122,30 +122,19 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
     def setBuildStatus(self, status):
         self.build.status = status
 
-    @staticmethod
-    def getLogFromSlave(templates_build, queue_item):
-        """See `IPackageBuild`."""
-        SLAVE_LOG_FILENAME = 'buildlog'
-        builder = queue_item.builder
-        d = builder.transferSlaveFileToLibrarian(
-            SLAVE_LOG_FILENAME,
-            templates_build.buildfarmjob.getLogFileName(),
-            False)
-        return d
-
-    @staticmethod
-    def storeBuildInfo(build, queue_item, build_status):
+    @classmethod
+    def storeBuildInfo(cls, build, queue_item, build_status):
         """See `IPackageBuild`."""
         def got_log(lfa_id):
-            build.build.log = lfa_id
-            build.build.builder = queue_item.builder
-            build.build.date_started = queue_item.date_started
+            build.log = lfa_id
+            build.builder = queue_item.builder
+            build.date_started = queue_item.date_started
             # XXX cprov 20060615 bug=120584: Currently buildduration includes
             # the scanner latency, it should really be asking the slave for
             # the duration spent building locally.
-            build.build.date_finished = datetime.datetime.now(pytz.UTC)
+            build.date_finished = datetime.datetime.now(pytz.UTC)
 
-        d = build.getLogFromSlave(build, queue_item)
+        d = cls.getLogFromSlave(build, queue_item)
         return d.addCallback(got_log)
 
     def updateBuild_WAITING(self, queue_item, slave_status, logtail, logger):
@@ -207,6 +196,6 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             self.setBuildStatus(BuildStatus.FAILEDTOBUILD)
             return clean_slave(None)
 
-        d = self.storeBuildInfo(self, queue_item, build_status)
+        d = self.storeBuildInfo(self.build, queue_item, build_status)
         d.addCallback(build_info_stored)
         return d
