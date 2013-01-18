@@ -259,6 +259,11 @@ class BuildFarmJobBehaviorBase:
                 "Unknown BuildStatus '%s' for builder '%s'"
                 % (status, self.build.buildqueue_record.builder.url))
             return
+        logger.info(
+            'Processing finished %s build %s (%s) from builder %s'
+            % (status, self.getBuildCookie(),
+               self.build.buildqueue_record.specific_job.build.title,
+               self.build.buildqueue_record.builder.name))
         d = method(librarian, slave_status, logger, send_notification)
         return d
 
@@ -279,10 +284,6 @@ class BuildFarmJobBehaviorBase:
         """
         build = self.build
         filemap = slave_status['filemap']
-
-        logger.info("Processing successful build %s from builder %s" % (
-            build.buildqueue_record.specific_job.build.title,
-            build.buildqueue_record.builder.name))
 
         # If this is a binary package build, discard it if its source is
         # no longer published.
@@ -386,10 +387,6 @@ class BuildFarmJobBehaviorBase:
         self.build.status = status
 
         def build_info_stored(ignored):
-            logger.critical(
-                "***** %s is %s *****" % (
-                self.build.buildqueue_record.builder.name, status.name))
-
             if send_notification:
                 self.build.notify()
             d = self.build.buildqueue_record.builder.cleanSlave()
@@ -428,8 +425,6 @@ class BuildFarmJobBehaviorBase:
         The environment is working well, so mark the job as NEEDSBUILD again
         and 'clean' the builder to do another jobs.
         """
-        logger.warning("***** %s has failed *****"
-                       % self.build.buildqueue_record.builder.name)
         self.build.buildqueue_record.builder.failBuilder(
             "Builder returned BUILDERFAIL when asked for its status")
 
@@ -447,11 +442,6 @@ class BuildFarmJobBehaviorBase:
         later, the build records is delayed by reducing the lastscore to
         ZERO.
         """
-        logger.warning(
-            "***** %s is GIVENBACK by %s *****"
-            % (self.build.buildqueue_record.specific_job.build.title,
-               self.build.buildqueue_record.builder.name))
-
         def build_info_stored(ignored):
             # XXX cprov 2006-05-30: Currently this information is not
             # properly presented in the Web UI. We will discuss it in
