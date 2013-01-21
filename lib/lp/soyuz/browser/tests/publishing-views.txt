@@ -1,4 +1,6 @@
-= Source Package Publishing Views =
+===============================
+Source Package Publishing Views
+===============================
 
 The default view for SourcePackagePublishingHistory offers a
 convenience property that can be used to display files that are
@@ -175,7 +177,8 @@ It handles phased update percentages correctly.
     50% of users
 
 
-== SourcePublishingRecordView ==
+SourcePublishingRecordView
+==========================
 
 The SourcePublishingRecordView includes a build_status_summary property
 that returns a dict summary of the build status for the context record:
