@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ftparchive.py"""
@@ -137,10 +137,12 @@ class TestFTPArchive(TestCaseWithFactory):
             self._logger, self._config, self._dp, self._distribution,
             self._publisher)
 
-    def _publishDefaultOverrides(self, fa, component):
+    def _publishDefaultOverrides(self, fa, component,
+                                 phased_update_percentage=None):
         source_overrides = FakeSelectResult([('foo', component, 'misc')])
-        binary_overrides = FakeSelectResult(
-            [('foo', component, 'misc', PackagePublishingPriority.EXTRA)])
+        binary_overrides = FakeSelectResult([(
+            'foo', component, 'misc', 'i386', PackagePublishingPriority.EXTRA,
+            phased_update_percentage)])
         fa.publishOverrides('hoary-test', source_overrides, binary_overrides)
 
     def _publishDefaultFileLists(self, fa, component):
@@ -188,9 +190,10 @@ class TestFTPArchive(TestCaseWithFactory):
         published_binaries = fa.getBinariesForOverrides(
             hoary, PackagePublishingPocket.RELEASE)
         expectedBinaries = [
-            ('pmount', 'main', 'base', PackagePublishingPriority.EXTRA),
-            ('pmount', 'universe', 'editors',
-             PackagePublishingPriority.IMPORTANT),
+            ('pmount', 'hppa', 'main', 'base',
+             PackagePublishingPriority.EXTRA, None),
+            ('pmount', 'i386', 'universe', 'editors',
+             PackagePublishingPriority.IMPORTANT, None),
             ]
         self.assertEqual(expectedBinaries, list(published_binaries))
 
@@ -232,6 +235,18 @@ class TestFTPArchive(TestCaseWithFactory):
             self._overdir, "override.hoary-test.extra.universe")
         with open(result_path) as result_file:
             self.assertIn("\t".join(sentinel), result_file.read().splitlines())
+
+    def test_publishOverrides_phase(self):
+        # Publications with a non-None phased update percentage produce
+        # Phased-Update-Percentage extra overrides.
+        fa = self._setUpFTPArchiveHandler()
+        self._publishDefaultOverrides(fa, 'main', phased_update_percentage=50)
+
+        path = os.path.join(self._overdir, "override.hoary-test.extra.main")
+        with open(path) as result_file:
+            self.assertIn(
+                "foo/i386\tPhased-Update-Percentage\t50",
+                result_file.read().splitlines())
 
     def test_getSourceFiles(self):
         # getSourceFiles returns a list of tuples containing:

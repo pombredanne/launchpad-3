@@ -276,7 +276,8 @@ class FTPArchiveHandler:
         """Fetch override information about all published binaries.
 
         The override information consists of tuples with 'binaryname',
-        'component', 'section' and 'priority' strings, in this order.
+        'architecture', 'component', 'section' and 'priority' strings and
+        'phased_update_percentage' integers, in this order.
 
         :param distroseries: target `IDistroSeries`
         :param pocket: target `PackagePublishingPocket`
@@ -296,6 +297,9 @@ class FTPArchiveHandler:
             Join(BinaryPackageName,
                  BinaryPackageName.id ==
                      BinaryPackageRelease.binarypackagenameID),
+            Join(DistroArchSeries,
+                 DistroArchSeries.id ==
+                     BinaryPackagePublishingHistory.distroarchseriesID),
             )
 
         architectures_ids = [arch.id for arch in distroseries.architectures]
@@ -303,8 +307,10 @@ class FTPArchiveHandler:
             return EmptyResultSet()
 
         result_set = store.using(*origins).find(
-            (BinaryPackageName.name, Component.name, Section.name,
-             BinaryPackagePublishingHistory.priority),
+            (BinaryPackageName.name, DistroArchSeries.architecturetag,
+             Component.name, Section.name,
+             BinaryPackagePublishingHistory.priority,
+             BinaryPackagePublishingHistory.phased_update_percentage),
             BinaryPackagePublishingHistory.archive == self.publisher.archive,
             BinaryPackagePublishingHistory.distroarchseriesID.is_in(
                 architectures_ids),
@@ -343,7 +349,8 @@ class FTPArchiveHandler:
         Attributes which must be present in sourceoverrides are:
             drname, spname, cname, sname
         Attributes which must be present in binaryoverrides are:
-            drname, spname, cname, sname, priority
+            drname, spname, cname, sname, archtag, priority,
+            phased_update_percentage
 
         The binary priority will be mapped via the values in
         dbschema.py.
@@ -354,34 +361,37 @@ class FTPArchiveHandler:
         # overrides[component][src/bin] = sets of tuples
         overrides = defaultdict(lambda: defaultdict(set))
 
-        def updateOverride(packagename, component, section, priority=None):
+        def updateOverride(packagename, component, section, archtag=None,
+                           priority=None, phased_update_percentage=None):
             """Generates and packs tuples of data required for overriding.
 
-            If priority is provided, it's a binary tuple; otherwise,
-            it's a source tuple.
+            If archtag is provided, it's a binary tuple; otherwise, it's a
+            source tuple.
 
-            Note that these tuples must contain /strings/, and not
-            objects, because they will be printed out verbatim into the
-            override files. This is why we use priority_displayed here,
-            and why we get the string names of the publication's foreign
-            keys to component, section, etc.
+            Note that these tuples must contain /strings/ (or integers in
+            the case of phased_update_percentage), and not objects, because
+            they will be printed out verbatim into the override files. This
+            is why we use priority_displayed here, and why we get the string
+            names of the publication's foreign keys to component, section,
+            etc.
             """
             if component != DEFAULT_COMPONENT:
                 section = "%s/%s" % (component, section)
 
             override = overrides[component]
             # We use sets in this structure to avoid generating
-            # duplicated overrides. This issue is an outcome of the fact
-            # that the PublishingHistory views select across all
-            # architectures -- and therefore we have N binaries for N
-            # archs.
-            if priority:
+            # duplicated overrides.
+            if archtag:
                 priority = priority.title.lower()
-                # We pick up debian-installer packages here
+                # We pick up debian-installer packages here, although they
+                # do not need phased updates.
                 if section.endswith("debian-installer"):
                     override['d-i'].add((packagename, priority, section))
                 else:
-                    override['bin'].add((packagename, priority, section))
+                    package_arch = "%s/%s" % (packagename, archtag)
+                    override['bin'].add((
+                        package_arch, priority, section,
+                        phased_update_percentage))
             else:
                 override['src'].add((packagename, section))
 
@@ -431,21 +441,30 @@ class FTPArchiveHandler:
         # Start to write the files out
         ef = open(ef_override, "w")
         f = open(main_override, "w")
-        for package, priority, section in bin_overrides:
-            origin = "\t".join([package, "Origin", "Ubuntu"])
-            bugs = "\t".join([package, "Bugs",
-                        "https://bugs.launchpad.net/ubuntu/+filebug"])
+        basic_override_seen = set()
+        for (package_arch, priority, section,
+             phased_update_percentage) in bin_overrides:
+            package = package_arch.split("/")[0]
+            if package not in basic_override_seen:
+                basic_override_seen.add(package)
+                f.write("\t".join((package, priority, section)))
+                f.write("\n")
 
-            f.write("\t".join((package, priority, section)))
-            f.write("\n")
-            # XXX: dsilvers 2006-08-23 bug=3900:
-            # This needs to be made databaseish and be actually managed within
-            # Launchpad. (Or else we need to change the ubuntu as appropriate
-            # and look for bugs addresses etc in launchpad.
-            ef.write(origin)
-            ef.write("\n")
-            ef.write(bugs)
-            ef.write("\n")
+                # XXX: dsilvers 2006-08-23 bug=3900:
+                # This needs to be made databaseish and be actually managed
+                # within Launchpad.  (Or else we need to change Ubuntu as
+                # appropriate and look for bugs addresses etc in Launchpad.)
+                ef.write("\t".join([package, "Origin", "Ubuntu"]))
+                ef.write("\n")
+                ef.write("\t".join([
+                    package, "Bugs",
+                    "https://bugs.launchpad.net/ubuntu/+filebug"]))
+                ef.write("\n")
+            if phased_update_percentage is not None:
+                ef.write("\t".join([
+                    package_arch, "Phased-Update-Percentage",
+                    str(phased_update_percentage)]))
+                ef.write("\n")
         f.close()
 
         if os.path.exists(extra_extra_overrides):

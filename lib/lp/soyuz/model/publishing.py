@@ -1098,6 +1098,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append('Size', bin_size)
         fields.append('MD5sum', bin_md5)
         fields.append('SHA1', bin_sha1)
+        fields.append(
+            'Phased-Update-Percentage', self.phased_update_percentage)
         fields.append('Description', bin_description)
         if bpr.user_defined_fields:
             fields.extend(bpr.user_defined_fields)
