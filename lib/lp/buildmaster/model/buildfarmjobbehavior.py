@@ -98,6 +98,7 @@ class BuildFarmJobBehaviorBase:
             build.is_private)
         return d
 
+    @classmethod
     @defer.inlineCallbacks
     def storeBuildInfo(cls, build, status, librarian, slave_status):
         """See `IPackageBuild`."""
