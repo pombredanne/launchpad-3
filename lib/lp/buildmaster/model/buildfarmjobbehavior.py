@@ -98,29 +98,27 @@ class BuildFarmJobBehaviorBase:
             build.is_private)
         return d
 
-    @classmethod
-    def storeBuildInfo(cls, status, build, librarian, slave_status):
+    @defer.inlineCallbacks
+    def storeBuildInfo(cls, build, status, librarian, slave_status):
         """See `IPackageBuild`."""
         if status is not None:
             build.status = status
 
-        def got_log(lfa_id):
-            # log, builder and date_finished are read-only, so we must
-            # currently remove the security proxy to set them.
-            naked_build = removeSecurityProxy(build)
-            naked_build.log = lfa_id
-            naked_build.builder = build.buildqueue_record.builder
-            # XXX cprov 20060615 bug=120584: Currently buildduration includes
-            # the scanner latency, it should really be asking the slave for
-            # the duration spent building locally.
-            naked_build.date_finished = datetime.datetime.now(pytz.UTC)
-            if slave_status.get('dependencies') is not None:
-                build.dependencies = unicode(slave_status.get('dependencies'))
-            else:
-                build.dependencies = None
+        lfa_id = yield cls.getLogFromSlave(build, build.buildqueue_record)
 
-        d = cls.getLogFromSlave(build, build.buildqueue_record)
-        return d.addCallback(got_log)
+        # log, builder and date_finished are read-only, so we must
+        # currently remove the security proxy to set them.
+        naked_build = removeSecurityProxy(build)
+        naked_build.log = lfa_id
+        naked_build.builder = build.buildqueue_record.builder
+        # XXX cprov 20060615 bug=120584: Currently buildduration includes
+        # the scanner latency, it should really be asking the slave for
+        # the duration spent building locally.
+        naked_build.date_finished = datetime.datetime.now(pytz.UTC)
+        if slave_status.get('dependencies') is not None:
+            build.dependencies = unicode(slave_status.get('dependencies'))
+        else:
+            build.dependencies = None
 
     def updateBuild(self, queueItem):
         """See `IBuildFarmJobBehavior`."""
@@ -270,13 +268,7 @@ class BuildFarmJobBehaviorBase:
         d = method(librarian, slave_status, logger, send_notification)
         return d
 
-    def _release_builder_and_remove_queue_item(self):
-        # Release the builder for another job.
-        d = self.build.buildqueue_record.builder.cleanSlave()
-        # Remove BuildQueue record.
-        return d.addCallback(
-            lambda x: self.build.buildqueue_record.destroySelf())
-
+    @defer.inlineCallbacks
     def _handleStatus_OK(self, librarian, slave_status, logger,
                          send_notification):
         """Handle a package that built successfully.
@@ -294,7 +286,9 @@ class BuildFarmJobBehaviorBase:
             build = build.buildqueue_record.specific_job.build
             if not build.current_source_publication:
                 build.status = BuildStatus.SUPERSEDED
-                return self._release_builder_and_remove_queue_item()
+                yield self.build.buildqueue_record.builder.cleanSlave()
+                self.build.buildqueue_record.destroySelf()
+                return
 
         # Explode before collect a binary that is denied in this
         # distroseries/pocket/archive
@@ -336,52 +330,42 @@ class BuildFarmJobBehaviorBase:
                     "for the build %d." % (filename, build.id))
                 break
             filenames_to_download[filemap[filename]] = out_file_name
-
-        def build_info_stored(ignored):
-            # We only attempt the upload if we successfully copied all the
-            # files from the slave.
-            if successful_copy_from_slave:
-                logger.info(
-                    "Gathered %s %d completely. Moving %s to uploader queue."
-                    % (build.__class__.__name__, build.id, upload_leaf))
-                target_dir = os.path.join(root, "incoming")
-            else:
-                logger.warning(
-                    "Copy from slave for build %s was unsuccessful.", build.id)
-                if send_notification:
-                    build.notify(
-                        extra_info='Copy from slave was unsuccessful.')
-                target_dir = os.path.join(root, "failed")
-
-            if not os.path.exists(target_dir):
-                os.mkdir(target_dir)
-
-            # Release the builder for another job.
-            d = self._release_builder_and_remove_queue_item()
-
-            # Commit so there are no race conditions with archiveuploader
-            # about build.status.
-            Store.of(build).commit()
-
-            # Move the directory used to grab the binaries into
-            # the incoming directory so the upload processor never
-            # sees half-finished uploads.
-            os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
-
-            return d
+        yield slave.getFiles(filenames_to_download)
 
         status = (
             BuildStatus.UPLOADING if successful_copy_from_slave
             else BuildStatus.FAILEDTOUPLOAD)
+        yield self.storeBuildInfo(build, status, librarian, slave_status)
 
-        d = slave.getFiles(filenames_to_download)
-        # Store build information, build record was already updated during
-        # the binary upload.
-        d.addCallback(
-            lambda x: self.storeBuildInfo(
-                status, build, librarian, slave_status))
-        d.addCallback(build_info_stored)
-        return d
+        # We only attempt the upload if we successfully copied all the
+        # files from the slave.
+        if successful_copy_from_slave:
+            logger.info(
+                "Gathered %s %d completely. Moving %s to uploader queue."
+                % (build.__class__.__name__, build.id, upload_leaf))
+            target_dir = os.path.join(root, "incoming")
+        else:
+            logger.warning(
+                "Copy from slave for build %s was unsuccessful.", build.id)
+            if send_notification:
+                build.notify(
+                    extra_info='Copy from slave was unsuccessful.')
+            target_dir = os.path.join(root, "failed")
+
+        if not os.path.exists(target_dir):
+            os.mkdir(target_dir)
+
+        yield self.build.buildqueue_record.builder.cleanSlave()
+        self.build.buildqueue_record.destroySelf()
+
+        # Commit so there are no race conditions with archiveuploader
+        # about build.status.
+        Store.of(build).commit()
+
+        # Move the directory used to grab the binaries into
+        # the incoming directory so the upload processor never
+        # sees half-finished uploads.
+        os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
 
     @defer.inlineCallbacks
     def _handleStatus_generic_failure(self, status, librarian, slave_status,
@@ -391,7 +375,7 @@ class BuildFarmJobBehaviorBase:
         The build, not the builder, has failed. Set its status, store
         available information, and remove the queue entry.
         """
-        yield self.storeBuildInfo(status, self.build, librarian, slave_status)
+        yield self.storeBuildInfo(self.build, status, librarian, slave_status)
         if send_notification:
             self.build.notify()
         yield self.build.buildqueue_record.builder.cleanSlave()
@@ -427,7 +411,7 @@ class BuildFarmJobBehaviorBase:
         """
         self.build.buildqueue_record.builder.failBuilder(
             "Builder returned BUILDERFAIL when asked for its status")
-        yield self.storeBuildInfo(None, self.build, librarian, slave_status)
+        yield self.storeBuildInfo(self.build, None, librarian, slave_status)
         self.build.buildqueue_record.reset()
 
     @defer.inlineCallbacks
@@ -439,7 +423,7 @@ class BuildFarmJobBehaviorBase:
         later, the build records is delayed by reducing the lastscore to
         ZERO.
         """
-        yield self.storeBuildInfo(None, self.build, librarian, slave_status)
+        yield self.storeBuildInfo(self.build, None, librarian, slave_status)
         yield self.build.buildqueue_record.builder.cleanSlave()
         self.build.buildqueue_record.reset()
 
