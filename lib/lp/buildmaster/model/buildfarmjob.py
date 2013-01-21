@@ -10,6 +10,7 @@ __all__ = [
     'BuildFarmJobOldDerived',
     ]
 
+import datetime
 import hashlib
 
 from lazr.delegates import delegates
@@ -323,6 +324,32 @@ class BuildFarmJobMixin:
                                    BuildStatus.CANCELLING,
                                    BuildStatus.UPLOADING,
                                    BuildStatus.SUPERSEDED]
+
+    def setLog(self, log):
+        """See `IBuildFarmJob`."""
+        self.log = log
+
+    def markAsFinished(self, status, builder, slave_status):
+        """See `IBuildFarmJob`."""
+        assert status in (
+            BuildStatus.FAILEDTOBUILD, BuildStatus.MANUALDEPWAIT,
+            BuildStatus.CHROOTWAIT, BuildStatus.UPLOADING,
+            BuildStatus.FAILEDTOUPLOAD)
+        self.status = status
+        self.builder = builder
+        # XXX cprov 20060615 bug=120584: Currently buildduration includes
+        # the scanner latency, it should really be asking the slave for
+        # the duration spent building locally.
+        self.date_finished = datetime.datetime.now(pytz.UTC)
+        # XXX: This should be in PackageBuild
+        if slave_status.get('dependencies') is not None:
+            self.dependencies = unicode(slave_status.get('dependencies'))
+        else:
+            self.dependencies = None
+
+    def markAsSuperseded(self):
+        """See `IBuildFarmJob`."""
+        self.status = BuildStatus.SUPERSEDED
 
     def gotFailure(self):
         """See `IBuildFarmJob`."""

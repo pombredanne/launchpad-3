@@ -98,28 +98,12 @@ class BuildFarmJobBehaviorBase:
             build.is_private)
         return d
 
-    @classmethod
     @defer.inlineCallbacks
-    def storeBuildInfo(cls, build, status, librarian, slave_status):
-        """See `IPackageBuild`."""
-        if status is not None:
-            build.status = status
-
-        lfa_id = yield cls.getLogFromSlave(build, build.buildqueue_record)
-
-        # log, builder and date_finished are read-only, so we must
-        # currently remove the security proxy to set them.
-        naked_build = removeSecurityProxy(build)
-        naked_build.log = lfa_id
-        naked_build.builder = build.buildqueue_record.builder
-        # XXX cprov 20060615 bug=120584: Currently buildduration includes
-        # the scanner latency, it should really be asking the slave for
-        # the duration spent building locally.
-        naked_build.date_finished = datetime.datetime.now(pytz.UTC)
-        if slave_status.get('dependencies') is not None:
-            build.dependencies = unicode(slave_status.get('dependencies'))
-        else:
-            build.dependencies = None
+    def storeLogFromSlave(self):
+        """See `IBuildFarmJob`."""
+        lfa_id = yield self.getLogFromSlave(
+            self.build, self.build.buildqueue_record)
+        self.build.setLog(lfa_id)
 
     def updateBuild(self, queueItem):
         """See `IBuildFarmJobBehavior`."""
@@ -286,7 +270,7 @@ class BuildFarmJobBehaviorBase:
         if build.build_farm_job_type == BuildFarmJobType.PACKAGEBUILD:
             build = build.buildqueue_record.specific_job.build
             if not build.current_source_publication:
-                build.status = BuildStatus.SUPERSEDED
+                build.markAsSuperseded()
                 yield self.build.buildqueue_record.builder.cleanSlave()
                 self.build.buildqueue_record.destroySelf()
                 return
@@ -336,7 +320,9 @@ class BuildFarmJobBehaviorBase:
         status = (
             BuildStatus.UPLOADING if successful_copy_from_slave
             else BuildStatus.FAILEDTOUPLOAD)
-        yield self.storeBuildInfo(build, status, librarian, slave_status)
+        build.markAsFinished(
+            status, build.buildqueue_record.builder, slave_status)
+        yield self.storeLogFromSlave()
 
         # We only attempt the upload if we successfully copied all the
         # files from the slave.
@@ -376,7 +362,9 @@ class BuildFarmJobBehaviorBase:
         The build, not the builder, has failed. Set its status, store
         available information, and remove the queue entry.
         """
-        yield self.storeBuildInfo(self.build, status, librarian, slave_status)
+        self.build.markAsFinished(
+            status, self.build.buildqueue_record.builder, slave_status)
+        yield self.storeLogFromSlave()
         if send_notification:
             self.build.notify()
         yield self.build.buildqueue_record.builder.cleanSlave()
@@ -403,7 +391,6 @@ class BuildFarmJobBehaviorBase:
             BuildStatus.CHROOTWAIT, librarian, slave_status, logger,
             send_notification)
 
-    @defer.inlineCallbacks
     def _handleStatus_BUILDERFAIL(self, librarian, slave_status, logger,
                                   send_notification):
         """Handle builder failures.
@@ -412,7 +399,6 @@ class BuildFarmJobBehaviorBase:
         """
         self.build.buildqueue_record.builder.failBuilder(
             "Builder returned BUILDERFAIL when asked for its status")
-        yield self.storeBuildInfo(self.build, None, librarian, slave_status)
         self.build.buildqueue_record.reset()
 
     @defer.inlineCallbacks
@@ -424,7 +410,6 @@ class BuildFarmJobBehaviorBase:
         later, the build records is delayed by reducing the lastscore to
         ZERO.
         """
-        yield self.storeBuildInfo(self.build, None, librarian, slave_status)
         yield self.build.buildqueue_record.builder.cleanSlave()
         self.build.buildqueue_record.reset()
 
