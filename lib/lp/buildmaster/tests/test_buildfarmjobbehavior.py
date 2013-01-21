@@ -377,5 +377,6 @@ class TestStoreBuildInfo(TestCaseWithFactory):
     def test_sets_date_finished(self):
         # storeBuildInfo should set date_finished on the BuildFarmJob.
         self.assertIs(None, self.build.date_finished)
-        self.behavior.storeBuildInfo(self.build, None, None, {})
+        self.behavior.storeBuildInfo(
+            self.build, BuildStatus.FULLYBUILT, None, {})
         self.assertIsNot(None, self.build.date_finished)

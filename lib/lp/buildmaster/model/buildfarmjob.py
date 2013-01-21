@@ -327,29 +327,35 @@ class BuildFarmJobMixin:
 
     def setLog(self, log):
         """See `IBuildFarmJob`."""
+        assert self.log is None
         self.log = log
 
-    def markAsFinished(self, status, builder, slave_status):
+    def updateStatus(self, status, builder, slave_status):
         """See `IBuildFarmJob`."""
         assert status in (
             BuildStatus.FAILEDTOBUILD, BuildStatus.MANUALDEPWAIT,
             BuildStatus.CHROOTWAIT, BuildStatus.UPLOADING,
-            BuildStatus.FAILEDTOUPLOAD)
+            BuildStatus.FAILEDTOUPLOAD, BuildStatus.SUPERSEDED)
+        assert self.status != status
         self.status = status
-        self.builder = builder
-        # XXX cprov 20060615 bug=120584: Currently buildduration includes
-        # the scanner latency, it should really be asking the slave for
-        # the duration spent building locally.
-        self.date_finished = datetime.datetime.now(pytz.UTC)
-        # XXX: This should be in PackageBuild
-        if slave_status.get('dependencies') is not None:
-            self.dependencies = unicode(slave_status.get('dependencies'))
-        else:
-            self.dependencies = None
+        if self.builder is None:
+            self.builder = builder
+        assert self.builder == builder
 
-    def markAsSuperseded(self):
-        """See `IBuildFarmJob`."""
-        self.status = BuildStatus.SUPERSEDED
+        if self.date_started is not None and status not in (
+            BuildStatus.NEEDSBUILD, BuildStatus.BUILDING,
+            BuildStatus.CANCELLING):
+            # XXX cprov 20060615 bug=120584: Currently buildduration includes
+            # the scanner latency, it should really be asking the slave for
+            # the duration spent building locally.
+            self.date_finished = datetime.datetime.now(pytz.UTC)
+
+        if status == BuildStatus.MANUALDEPWAIT:
+            # XXX: This should be in PackageBuild
+            if slave_status and slave_status.get('dependencies') is not None:
+                self.dependencies = unicode(slave_status.get('dependencies'))
+            else:
+                self.dependencies = None
 
     def gotFailure(self):
         """See `IBuildFarmJob`."""

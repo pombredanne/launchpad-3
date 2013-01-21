@@ -270,7 +270,7 @@ class BuildFarmJobBehaviorBase:
         if build.build_farm_job_type == BuildFarmJobType.PACKAGEBUILD:
             build = build.buildqueue_record.specific_job.build
             if not build.current_source_publication:
-                build.markAsSuperseded()
+                build.updateStatus(BuildStatus.SUPERSEDED, None, None)
                 yield self.build.buildqueue_record.builder.cleanSlave()
                 self.build.buildqueue_record.destroySelf()
                 return
@@ -320,7 +320,9 @@ class BuildFarmJobBehaviorBase:
         status = (
             BuildStatus.UPLOADING if successful_copy_from_slave
             else BuildStatus.FAILEDTOUPLOAD)
-        build.markAsFinished(
+        # XXX wgrant: The builder should be set long before here, but
+        # currently isn't.
+        build.updateStatus(
             status, build.buildqueue_record.builder, slave_status)
         yield self.storeLogFromSlave()
 
@@ -362,7 +364,9 @@ class BuildFarmJobBehaviorBase:
         The build, not the builder, has failed. Set its status, store
         available information, and remove the queue entry.
         """
-        self.build.markAsFinished(
+        # XXX wgrant: The builder should be set long before here, but
+        # currently isn't.
+        self.build.updateStatus(
             status, self.build.buildqueue_record.builder, slave_status)
         yield self.storeLogFromSlave()
         if send_notification:

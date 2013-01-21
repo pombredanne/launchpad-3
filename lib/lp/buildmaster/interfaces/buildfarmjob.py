@@ -288,14 +288,13 @@ class IBuildFarmJob(Interface):
     def setLog(log):
         """Set the `LibraryFileAlias` that contains the job log."""
 
-    def markAsSuperseded():
-        """Update job metadata when the build is superseded."""
+    def updateStatus(status, builder, slave_status):
+        """Update job metadata when the build status changes.
 
-    def markAsFinished(status, builder, slave_status):
-        """Update job metadata when the build has failed.
-
-        This method should only be used when the job was actually processed,
-        and not for faking a complete build by eg. gina."""
+        This automatically handles setting status, date_finished, builder,
+        dependencies. Later it will set date_started and manage the
+        denormalised search schema.
+        """
 
     def gotFailure():
         """Increment the failure_count for this job."""
