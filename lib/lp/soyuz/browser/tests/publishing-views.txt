@@ -6,8 +6,6 @@ related to that publication; this includes binary and source
 files. The property returns a sorted list of dictionaries with URLs,
 filenames and filesizes.
 
-    >>> from zope.component import getMultiAdapter
-    >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.testing import celebrity_logged_in
 
 We'll create SourcePackagePublishingHistory entries for
@@ -30,8 +28,7 @@ and properties for querying the publishing history record:
 If the publishing record does not include a removal comment, then
 the view property returns 'None provided.'
 
-    >>> view = getMultiAdapter(
-    ...    (foo_pub, LaunchpadTestRequest()), name="+listing-compact")
+    >>> view = create_initialized_view(foo_pub, "+listing-compact")
     >>> view.wasDeleted()
     True
     >>> print view.context.removal_comment
@@ -61,9 +58,7 @@ dictionaries containing:
 
 for each file related with the alsa-utils source publication in ubuntu.
 
-    >>> view = getMultiAdapter(
-    ...    (alsa_pub, LaunchpadTestRequest()),
-    ...    name="+listing-archive-detailed")
+    >>> view = create_initialized_view(alsa_pub, "+listing-archive-detailed")
 
     >>> view.published_source_and_binary_files
     [{'url': u'http://launchpad.dev/ubuntutest/+archive/primary/+files/alsa-utils-test_666.dsc',
@@ -80,9 +75,8 @@ inspected.
     >>> iceweasel_source_pub = cprov.archive.getPublishedSources(
     ...     u'iceweasel').first()
 
-    >>> ppa_source_view = getMultiAdapter(
-    ...     (iceweasel_source_pub, LaunchpadTestRequest()),
-    ...     name="+listing-archive-detailed")
+    >>> ppa_source_view = create_initialized_view(
+    ...     iceweasel_source_pub, "+listing-archive-detailed")
 
     >>> ppa_source_view.published_source_and_binary_files
     [{'url': u'http://launchpad.dev/~cprov/+archive/ppa/+files/firefox_0.9.2.orig.tar.gz',
@@ -104,9 +98,8 @@ publication.
 
 Continuing to use the 'iceweasel' source publication in Celso's PPA.
 
-    >>> source_details_view = getMultiAdapter(
-    ...     (iceweasel_source_pub, LaunchpadTestRequest()),
-    ...     name="+record-details")
+    >>> source_details_view = create_initialized_view(
+    ...     iceweasel_source_pub, "+record-details")
 
 We probe the 'is_source' and 'is_binary' properties.
 
@@ -122,9 +115,8 @@ BinaryPackagePublishingHistoryView.
 
     >>> iceweasel_binary_pub = iceweasel_source_pub.getPublishedBinaries()[0]
 
-    >>> binary_details_view = getMultiAdapter(
-    ...     (iceweasel_binary_pub, LaunchpadTestRequest()),
-    ...     name="+record-details")
+    >>> binary_details_view = create_initialized_view(
+    ...     iceweasel_binary_pub, "+record-details")
 
     >>> print binary_details_view.is_source
     False
@@ -200,4 +192,3 @@ As well as some helpers to determine the publishing status from templates:
     >>> for build in src_pub_record_view.pending_builds:
     ...     print build.title
     i386 build of iceweasel 1.0 in ubuntu warty RELEASE
-
