@@ -99,25 +99,27 @@ class BuildFarmJobBehaviorBase:
         return d
 
     @classmethod
-    def storeBuildInfo(cls, build, librarian, slave_status):
+    @defer.inlineCallbacks
+    def storeBuildInfo(cls, build, status, librarian, slave_status):
         """See `IPackageBuild`."""
-        def got_log(lfa_id):
-            # log, builder and date_finished are read-only, so we must
-            # currently remove the security proxy to set them.
-            naked_build = removeSecurityProxy(build)
-            naked_build.log = lfa_id
-            naked_build.builder = build.buildqueue_record.builder
-            # XXX cprov 20060615 bug=120584: Currently buildduration includes
-            # the scanner latency, it should really be asking the slave for
-            # the duration spent building locally.
-            naked_build.date_finished = datetime.datetime.now(pytz.UTC)
-            if slave_status.get('dependencies') is not None:
-                build.dependencies = unicode(slave_status.get('dependencies'))
-            else:
-                build.dependencies = None
+        if status is not None:
+            build.status = status
 
-        d = cls.getLogFromSlave(build, build.buildqueue_record)
-        return d.addCallback(got_log)
+        lfa_id = yield cls.getLogFromSlave(build, build.buildqueue_record)
+
+        # log, builder and date_finished are read-only, so we must
+        # currently remove the security proxy to set them.
+        naked_build = removeSecurityProxy(build)
+        naked_build.log = lfa_id
+        naked_build.builder = build.buildqueue_record.builder
+        # XXX cprov 20060615 bug=120584: Currently buildduration includes
+        # the scanner latency, it should really be asking the slave for
+        # the duration spent building locally.
+        naked_build.date_finished = datetime.datetime.now(pytz.UTC)
+        if slave_status.get('dependencies') is not None:
+            build.dependencies = unicode(slave_status.get('dependencies'))
+        else:
+            build.dependencies = None
 
     def updateBuild(self, queueItem):
         """See `IBuildFarmJobBehavior`."""
@@ -259,16 +261,15 @@ class BuildFarmJobBehaviorBase:
                 "Unknown BuildStatus '%s' for builder '%s'"
                 % (status, self.build.buildqueue_record.builder.url))
             return
+        logger.info(
+            'Processing finished %s build %s (%s) from builder %s'
+            % (status, self.getBuildCookie(),
+               self.build.buildqueue_record.specific_job.build.title,
+               self.build.buildqueue_record.builder.name))
         d = method(librarian, slave_status, logger, send_notification)
         return d
 
-    def _release_builder_and_remove_queue_item(self):
-        # Release the builder for another job.
-        d = self.build.buildqueue_record.builder.cleanSlave()
-        # Remove BuildQueue record.
-        return d.addCallback(
-            lambda x: self.build.buildqueue_record.destroySelf())
-
+    @defer.inlineCallbacks
     def _handleStatus_OK(self, librarian, slave_status, logger,
                          send_notification):
         """Handle a package that built successfully.
@@ -280,17 +281,15 @@ class BuildFarmJobBehaviorBase:
         build = self.build
         filemap = slave_status['filemap']
 
-        logger.info("Processing successful build %s from builder %s" % (
-            build.buildqueue_record.specific_job.build.title,
-            build.buildqueue_record.builder.name))
-
         # If this is a binary package build, discard it if its source is
         # no longer published.
         if build.build_farm_job_type == BuildFarmJobType.PACKAGEBUILD:
             build = build.buildqueue_record.specific_job.build
             if not build.current_source_publication:
                 build.status = BuildStatus.SUPERSEDED
-                return self._release_builder_and_remove_queue_item()
+                yield self.build.buildqueue_record.builder.cleanSlave()
+                self.build.buildqueue_record.destroySelf()
+                return
 
         # Explode before collect a binary that is denied in this
         # distroseries/pocket/archive
@@ -332,133 +331,91 @@ class BuildFarmJobBehaviorBase:
                     "for the build %d." % (filename, build.id))
                 break
             filenames_to_download[filemap[filename]] = out_file_name
+        yield slave.getFiles(filenames_to_download)
 
-        def build_info_stored(ignored):
-            # We only attempt the upload if we successfully copied all the
-            # files from the slave.
-            if successful_copy_from_slave:
-                logger.info(
-                    "Gathered %s %d completely. Moving %s to uploader queue."
-                    % (build.__class__.__name__, build.id, upload_leaf))
-                target_dir = os.path.join(root, "incoming")
-                build.status = BuildStatus.UPLOADING
-            else:
-                logger.warning(
-                    "Copy from slave for build %s was unsuccessful.", build.id)
-                build.status = BuildStatus.FAILEDTOUPLOAD
-                if send_notification:
-                    build.notify(
-                        extra_info='Copy from slave was unsuccessful.')
-                target_dir = os.path.join(root, "failed")
+        status = (
+            BuildStatus.UPLOADING if successful_copy_from_slave
+            else BuildStatus.FAILEDTOUPLOAD)
+        yield self.storeBuildInfo(build, status, librarian, slave_status)
 
-            if not os.path.exists(target_dir):
-                os.mkdir(target_dir)
+        # We only attempt the upload if we successfully copied all the
+        # files from the slave.
+        if successful_copy_from_slave:
+            logger.info(
+                "Gathered %s %d completely. Moving %s to uploader queue."
+                % (build.__class__.__name__, build.id, upload_leaf))
+            target_dir = os.path.join(root, "incoming")
+        else:
+            logger.warning(
+                "Copy from slave for build %s was unsuccessful.", build.id)
+            if send_notification:
+                build.notify(
+                    extra_info='Copy from slave was unsuccessful.')
+            target_dir = os.path.join(root, "failed")
 
-            # Release the builder for another job.
-            d = self._release_builder_and_remove_queue_item()
+        if not os.path.exists(target_dir):
+            os.mkdir(target_dir)
 
-            # Commit so there are no race conditions with archiveuploader
-            # about build.status.
-            Store.of(build).commit()
+        yield self.build.buildqueue_record.builder.cleanSlave()
+        self.build.buildqueue_record.destroySelf()
 
-            # Move the directory used to grab the binaries into
-            # the incoming directory so the upload processor never
-            # sees half-finished uploads.
-            os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
+        # Commit so there are no race conditions with archiveuploader
+        # about build.status.
+        Store.of(build).commit()
 
-            return d
+        # Move the directory used to grab the binaries into
+        # the incoming directory so the upload processor never
+        # sees half-finished uploads.
+        os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
 
-        d = slave.getFiles(filenames_to_download)
-        # Store build information, build record was already updated during
-        # the binary upload.
-        d.addCallback(
-            lambda x: self.storeBuildInfo(build, librarian, slave_status))
-        d.addCallback(build_info_stored)
-        return d
+    @defer.inlineCallbacks
+    def _handleStatus_generic_failure(self, status, librarian, slave_status,
+                                      logger, send_notification):
+        """Handle a generic build failure.
+
+        The build, not the builder, has failed. Set its status, store
+        available information, and remove the queue entry.
+        """
+        yield self.storeBuildInfo(self.build, status, librarian, slave_status)
+        if send_notification:
+            self.build.notify()
+        yield self.build.buildqueue_record.builder.cleanSlave()
+        self.build.buildqueue_record.destroySelf()
 
     def _handleStatus_PACKAGEFAIL(self, librarian, slave_status, logger,
                                   send_notification):
-        """Handle a package that had failed to build.
-
-        Build has failed when trying the work with the target package,
-        set the job status as FAILEDTOBUILD, store available info and
-        remove Buildqueue entry.
-        """
-        self.build.status = BuildStatus.FAILEDTOBUILD
-
-        def build_info_stored(ignored):
-            if send_notification:
-                self.build.notify()
-            d = self.build.buildqueue_record.builder.cleanSlave()
-            return d.addCallback(
-                lambda x: self.build.buildqueue_record.destroySelf())
-
-        d = self.storeBuildInfo(self.build, librarian, slave_status)
-        return d.addCallback(build_info_stored)
+        """Handle a package that had failed to build."""
+        return self._handleStatus_generic_failure(
+            BuildStatus.FAILEDTOBUILD, librarian, slave_status, logger,
+            send_notification)
 
     def _handleStatus_DEPFAIL(self, librarian, slave_status, logger,
                               send_notification):
-        """Handle a package that had missing dependencies.
-
-        Build has failed by missing dependencies, set the job status as
-        MANUALDEPWAIT, store available information, remove BuildQueue
-        entry and release builder slave for another job.
-        """
-        self.build.status = BuildStatus.MANUALDEPWAIT
-
-        def build_info_stored(ignored):
-            logger.critical("***** %s is MANUALDEPWAIT *****"
-                            % self.build.buildqueue_record.builder.name)
-            if send_notification:
-                self.build.notify()
-            d = self.build.buildqueue_record.builder.cleanSlave()
-            return d.addCallback(
-                lambda x: self.build.buildqueue_record.destroySelf())
-
-        d = self.storeBuildInfo(self.build, librarian, slave_status)
-        return d.addCallback(build_info_stored)
+        """Handle a package that had missing dependencies."""
+        return self._handleStatus_generic_failure(
+            BuildStatus.MANUALDEPWAIT, librarian, slave_status, logger,
+            send_notification)
 
     def _handleStatus_CHROOTFAIL(self, librarian, slave_status, logger,
                                  send_notification):
-        """Handle a package that had failed when unpacking the CHROOT.
+        """Handle a package that had failed when unpacking the CHROOT."""
+        return self._handleStatus_generic_failure(
+            BuildStatus.CHROOTWAIT, librarian, slave_status, logger,
+            send_notification)
 
-        Build has failed when installing the current CHROOT, mark the
-        job as CHROOTFAIL, store available information, remove BuildQueue
-        and release the builder.
-        """
-        self.build.status = BuildStatus.CHROOTWAIT
-
-        def build_info_stored(ignored):
-            logger.critical("***** %s is CHROOTWAIT *****" %
-                            self.build.buildqueue_record.builder.name)
-            if send_notification:
-                self.build.notify()
-            d = self.build.buildqueue_record.builder.cleanSlave()
-            return d.addCallback(
-                lambda x: self.build.buildqueue_record.destroySelf())
-
-        d = self.storeBuildInfo(self.build, librarian, slave_status)
-        return d.addCallback(build_info_stored)
-
+    @defer.inlineCallbacks
     def _handleStatus_BUILDERFAIL(self, librarian, slave_status, logger,
                                   send_notification):
         """Handle builder failures.
 
-        Build has been failed when trying to build the target package,
-        The environment is working well, so mark the job as NEEDSBUILD again
-        and 'clean' the builder to do another jobs.
+        Fail the builder, and reset the job.
         """
-        logger.warning("***** %s has failed *****"
-                       % self.build.buildqueue_record.builder.name)
         self.build.buildqueue_record.builder.failBuilder(
             "Builder returned BUILDERFAIL when asked for its status")
+        yield self.storeBuildInfo(self.build, None, librarian, slave_status)
+        self.build.buildqueue_record.reset()
 
-        def build_info_stored(ignored):
-            # simply reset job
-            self.build.buildqueue_record.reset()
-        d = self.storeBuildInfo(self.build, librarian, slave_status)
-        return d.addCallback(build_info_stored)
-
+    @defer.inlineCallbacks
     def _handleStatus_GIVENBACK(self, librarian, slave_status, logger,
                                 send_notification):
         """Handle automatic retry requested by builder.
@@ -467,22 +424,9 @@ class BuildFarmJobBehaviorBase:
         later, the build records is delayed by reducing the lastscore to
         ZERO.
         """
-        logger.warning(
-            "***** %s is GIVENBACK by %s *****"
-            % (self.build.buildqueue_record.specific_job.build.title,
-               self.build.buildqueue_record.builder.name))
-
-        def build_info_stored(ignored):
-            # XXX cprov 2006-05-30: Currently this information is not
-            # properly presented in the Web UI. We will discuss it in
-            # the next Paris Summit, infinity has some ideas about how
-            # to use this content. For now we just ensure it's stored.
-            d = self.build.buildqueue_record.builder.cleanSlave()
-            self.build.buildqueue_record.reset()
-            return d
-
-        d = self.storeBuildInfo(self.build, librarian, slave_status)
-        return d.addCallback(build_info_stored)
+        yield self.storeBuildInfo(self.build, None, librarian, slave_status)
+        yield self.build.buildqueue_record.builder.cleanSlave()
+        self.build.buildqueue_record.reset()
 
 
 class IdleBuildBehavior(BuildFarmJobBehaviorBase):
