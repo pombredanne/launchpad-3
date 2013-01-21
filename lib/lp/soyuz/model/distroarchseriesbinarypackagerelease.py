@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes to represent binary package releases in a
@@ -155,6 +155,14 @@ class DistroArchSeriesBinaryPackageRelease:
         if pub is None:
             return None
         return pub.priority
+
+    @property
+    def phased_update_percentage(self):
+        """See `IDistroArchSeriesBinaryPackageRelease`."""
+        pub = self._latest_publishing_record()
+        if pub is None:
+            return None
+        return pub.phased_update_percentage
 
     # map the BinaryPackageRelease attributes up to this class so it
     # responds to the same interface

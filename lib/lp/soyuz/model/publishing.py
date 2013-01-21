@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -25,6 +25,7 @@ import sys
 import pytz
 from sqlobject import (
     ForeignKey,
+    IntCol,
     StringCol,
     )
 from storm.expr import (
@@ -955,6 +956,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     section = ForeignKey(foreignKey='Section', dbName='section')
     priority = EnumCol(dbName='priority', schema=PackagePublishingPriority)
     status = EnumCol(dbName='status', schema=PackagePublishingStatus)
+    phased_update_percentage = IntCol(
+        dbName='phased_update_percentage', notNull=False, default=None)
     scheduleddeletiondate = UtcDateTimeCol(default=None)
     datepublished = UtcDateTimeCol(default=None)
     datecreated = UtcDateTimeCol(default=UTC_NOW)
@@ -1207,14 +1210,15 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 dominated.supersede(dominant, logger)
 
     def changeOverride(self, new_component=None, new_section=None,
-                       new_priority=None):
+                       new_priority=None, new_phased_update_percentage=None):
         """See `IBinaryPackagePublishingHistory`."""
 
         # Check we have been asked to do something
         if (new_component is None and new_section is None
-            and new_priority is None):
-            raise AssertionError("changeOverride must be passed a new"
-                                 "component, section and/or priority.")
+            and new_priority is None and new_phased_update_percentage is None):
+            raise AssertionError("changeOverride must be passed a new "
+                                 "component, section, priority and/or "
+                                 "phased_update_percentage.")
 
         # Check there is a change to make
         if new_component is None:
@@ -1229,10 +1233,20 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             new_priority = self.priority
         elif isinstance(new_priority, basestring):
             new_priority = name_priority_map[new_priority]
+        if new_phased_update_percentage is None:
+            new_phased_update_percentage = self.phased_update_percentage
+        elif (new_phased_update_percentage < 0 or
+              new_phased_update_percentage > 100):
+            raise ValueError(
+                "new_phased_update_percentage must be between 0 and 100 "
+                "(inclusive).")
+        elif new_phased_update_percentage == 100:
+            new_phased_update_percentage = None
 
         if (new_component == self.component and
             new_section == self.section and
-            new_priority == self.priority):
+            new_priority == self.priority and
+            new_phased_update_percentage == self.phased_update_percentage):
             return
 
         if new_component != self.component:
@@ -1264,7 +1278,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             component=new_component,
             section=new_section,
             priority=new_priority,
-            archive=self.archive)
+            archive=self.archive,
+            phased_update_percentage=new_phased_update_percentage)
 
     def copyTo(self, distroseries, pocket, archive):
         """See `BinaryPackagePublishingHistory`."""
