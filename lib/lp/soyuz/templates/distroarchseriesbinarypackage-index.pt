@@ -33,6 +33,8 @@
            <th>Pocket</th>
            <th>Component</th>
            <th>Section</th>
+           <th>Priority</th>
+           <th>Phased updates</th>
            <th>Version</th>
          </tr>
        </thead>

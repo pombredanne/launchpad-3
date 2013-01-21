@@ -149,6 +149,31 @@ exception to be thrown.
     ...
     KeyError: 'key_not_there'
 
+The view knows how to render a publication's phased update percentage.
+
+    >>> print binary_details_view.phased_update_percentage
+
+    >>> login('celso.providelo@canonical.com')
+    >>> iceweasel_binary_pub_phased = iceweasel_binary_pub.changeOverride(
+    ...     new_phased_update_percentage=50)
+    >>> binary_details_view = create_initialized_view(
+    ...     iceweasel_binary_pub_phased, "+record-details")
+    >>> print binary_details_view.phased_update_percentage
+    50% of users
+
+BinaryPackagePublishingHistory:+listing-summary is included in
+DistroArchSeriesBinaryPackage:+index, showing a summary of each publication.
+It handles phased update percentages correctly.
+
+    >>> binary_summary_view = create_initialized_view(
+    ...     iceweasel_binary_pub, "+listing-summary")
+    >>> print binary_summary_view.phased_update_percentage
+
+    >>> binary_summary_view_phased = create_initialized_view(
+    ...     iceweasel_binary_pub_phased, "+listing-summary")
+    >>> print binary_summary_view_phased.phased_update_percentage
+    50% of users
+
 
 == SourcePublishingRecordView ==
 

@@ -24,6 +24,10 @@
     <td tal:content="context/pocket/title/fmt:lower">Release</td>
     <td tal:content="context/component/name">main</td>
     <td tal:content="context/section/name">web</td>
+    <tal:binary_history condition="view/is_binary">
+      <td tal:content="context/priority/title">Optional</td>
+      <td tal:content="view/phased_update_percentage">50% of users</td>
+    </tal:binary_history>
     <td>
       <a tal:content="version_name"
          tal:attributes="href version_url"
