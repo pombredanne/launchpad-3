@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from collections import defaultdict
@@ -403,8 +403,7 @@ class FTPArchiveHandler:
                 suite, component))
             self.generateOverrideForComponent(overrides, suite, component)
 
-    def generateOverrideForComponent(self, overrides, distroseries,
-                                     component):
+    def generateOverrideForComponent(self, overrides, suite, component):
         """Generates overrides for a specific component."""
         src_overrides = sorted(overrides[component]['src'])
         bin_overrides = sorted(overrides[component]['bin'])
@@ -412,24 +411,22 @@ class FTPArchiveHandler:
 
         # Set up filepaths for the overrides we read
         extra_extra_overrides = os.path.join(self._config.miscroot,
-            "more-extra.override.%s.main" % distroseries)
+            "more-extra.override.%s.main" % suite)
         if not os.path.exists(extra_extra_overrides):
-            unpocketed_series = "-".join(distroseries.split('-')[:-1])
+            unpocketed_series = "-".join(suite.split('-')[:-1])
             extra_extra_overrides = os.path.join(self._config.miscroot,
                 "more-extra.override.%s.main" % unpocketed_series)
         # And for the overrides we write out
         main_override = os.path.join(self._config.overrideroot,
-                                     "override.%s.%s" %
-                                     (distroseries, component))
+                                     "override.%s.%s" % (suite, component))
         ef_override = os.path.join(self._config.overrideroot,
-                                   "override.%s.extra.%s" %
-                                   (distroseries, component))
+                                   "override.%s.extra.%s" % (suite, component))
         di_override = os.path.join(self._config.overrideroot,
                                    "override.%s.%s.debian-installer" %
-                                   (distroseries, component))
+                                   (suite, component))
         source_override = os.path.join(self._config.overrideroot,
                                        "override.%s.%s.src" %
-                                       (distroseries, component))
+                                       (suite, component))
 
         # Start to write the files out
         ef = open(ef_override, "w")
