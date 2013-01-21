@@ -337,17 +337,19 @@ class BuildFarmJobMixin:
             BuildStatus.BUILDING,
             BuildStatus.FAILEDTOBUILD, BuildStatus.MANUALDEPWAIT,
             BuildStatus.CHROOTWAIT, BuildStatus.UPLOADING,
-            BuildStatus.FAILEDTOUPLOAD, BuildStatus.SUPERSEDED)
+            BuildStatus.FAILEDTOUPLOAD, BuildStatus.SUPERSEDED,
+            BuildStatus.FULLYBUILT)
         assert self.status != status
         self.status = status
 
         # If there's a builder provided, set it if we don't already have
         # one, or otherwise crash if it's different from the one we
         # expected.
-        if self.builder is None:
-            self.builder = builder
-        else:
-            assert self.builder == builder
+        if builder is not None:
+            if self.builder is None:
+                self.builder = builder
+            else:
+                assert self.builder == builder
 
         # If we're starting to build, set date_started and
         # date_first_dispatched if required.
