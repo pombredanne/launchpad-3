@@ -237,8 +237,11 @@ class TestBuildPackageJob(TestBuildJobBase):
         build, bq = find_job(self, 'gcc', '386')
         build_package_job = bq.specific_job
         build_package_job.jobStarted()
-        self.failUnlessEqual(
+        self.assertEqual(
             BuildStatus.BUILDING, build_package_job.build.status)
+        self.assertIsNot(None, build_package_job.build.date_started)
+        self.assertIsNot(None, build_package_job.build.date_first_dispatched)
+        self.assertIs(None, build_package_job.build.date_finished)
 
 
 class TestBuildPackageJobScore(TestCaseWithFactory):

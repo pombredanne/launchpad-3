@@ -90,7 +90,8 @@ class BuildFarmJobOld:
 
     def jobStarted(self):
         """See `IBuildFarmJobOld`."""
-        pass
+        # XXX wgrant: builder should be set here.
+        self.build.updateStatus(BuildStatus.BUILDING, None, None)
 
     def jobReset(self):
         """See `IBuildFarmJobOld`."""
@@ -333,18 +334,34 @@ class BuildFarmJobMixin:
     def updateStatus(self, status, builder, slave_status):
         """See `IBuildFarmJob`."""
         assert status in (
+            BuildStatus.BUILDING,
             BuildStatus.FAILEDTOBUILD, BuildStatus.MANUALDEPWAIT,
             BuildStatus.CHROOTWAIT, BuildStatus.UPLOADING,
             BuildStatus.FAILEDTOUPLOAD, BuildStatus.SUPERSEDED)
         assert self.status != status
         self.status = status
+
+        # If there's a builder provided, set it if we don't already have
+        # one, or otherwise crash if it's different from the one we
+        # expected.
         if self.builder is None:
             self.builder = builder
-        assert self.builder == builder
+        else:
+            assert self.builder == builder
 
-        if self.date_started is not None and status not in (
-            BuildStatus.NEEDSBUILD, BuildStatus.BUILDING,
-            BuildStatus.CANCELLING):
+        # If we're starting to build, set date_started and
+        # date_first_dispatched if required.
+        if self.date_started is None and status == BuildStatus.BUILDING:
+            self.date_started = datetime.datetime.now(pytz.UTC)
+            if self.date_first_dispatched is None:
+                self.date_first_dispatched = self.date_started
+
+        # If we're in a final build state (or UPLOADING, which sort of
+        # is), set date_finished if date_started is.
+        if (self.date_started is not None and self.date_finished is None
+            and status not in (
+                BuildStatus.NEEDSBUILD, BuildStatus.BUILDING,
+                BuildStatus.CANCELLING)):
             # XXX cprov 20060615 bug=120584: Currently buildduration includes
             # the scanner latency, it should really be asking the slave for
             # the duration spent building locally.
