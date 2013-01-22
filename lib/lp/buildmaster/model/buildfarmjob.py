@@ -90,8 +90,7 @@ class BuildFarmJobOld:
 
     def jobStarted(self):
         """See `IBuildFarmJobOld`."""
-        # XXX wgrant: builder should be set here.
-        self.build.updateStatus(BuildStatus.BUILDING)
+        pass
 
     def jobReset(self):
         """See `IBuildFarmJobOld`."""
