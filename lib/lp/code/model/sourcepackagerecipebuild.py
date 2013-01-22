@@ -36,7 +36,7 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
-from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
     PackageBuild,
@@ -71,7 +71,6 @@ from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.soyuz.interfaces.archive import CannotUploadToArchive
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
@@ -392,7 +391,7 @@ class SourcePackageRecipeBuild(PackageBuildMixin, PackageBuildDerived, Storm):
         return self.requester
 
 
-class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
+class SourcePackageRecipeBuildJob(BuildFarmJobOld, Storm):
     classProvides(ISourcePackageRecipeBuildJobSource)
     implements(ISourcePackageRecipeBuildJob)
 
@@ -420,12 +419,6 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
         self.build = build
         self.job = job
         super(SourcePackageRecipeBuildJob, self).__init__()
-
-    def _set_build_farm_job(self):
-        """Setup the IBuildFarmJob delegate.
-
-        We override this to provide a delegate specific to package builds."""
-        self.build_farm_job = BuildFarmBuildJob(self.build)
 
     @staticmethod
     def preloadBuildFarmJobs(jobs):

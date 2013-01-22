@@ -7,7 +7,6 @@ __all__ = [
     'BuildFarmJobDerived',
     'BuildFarmJobMixin',
     'BuildFarmJobOld',
-    'BuildFarmJobOldDerived',
     ]
 
 import datetime
@@ -59,94 +58,12 @@ from lp.services.database.lpstorm import (
 
 
 class BuildFarmJobOld:
-    """See `IBuildFarmJobOld`."""
+    """Some common implementation for IBuildFarmJobOld."""
+
     implements(IBuildFarmJobOld)
+
     processor = None
     virtualized = None
-
-    def score(self):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-    def getLogFileName(self):
-        """See `IBuildFarmJobOld`."""
-        return 'buildlog.txt'
-
-    def getName(self):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-    def getTitle(self):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-    def getByJob(self, job):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-    def getByJobs(self, job):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-    def jobStarted(self):
-        """See `IBuildFarmJobOld`."""
-        pass
-
-    def jobReset(self):
-        """See `IBuildFarmJobOld`."""
-        pass
-
-    def jobAborted(self):
-        """See `IBuildFarmJobOld`."""
-        pass
-
-    def jobCancel(self):
-        """See `IBuildFarmJobOld`."""
-        pass
-
-    @staticmethod
-    def addCandidateSelectionCriteria(processor, virtualized):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-    @staticmethod
-    def postprocessCandidate(job, logger):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-    def cleanUp(self):
-        """See `IBuildFarmJob`."""
-        pass
-
-    def generateSlaveBuildCookie(self):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-
-class BuildFarmJobOldDerived:
-    """Setup the delegation and provide some common implementation."""
-    delegates(IBuildFarmJobOld, context='build_farm_job')
-
-    def __init__(self, *args, **kwargs):
-        """Ensure the instance to which we delegate is set on creation."""
-        self._set_build_farm_job()
-        super(BuildFarmJobOldDerived, self).__init__(*args, **kwargs)
-
-    def __storm_loaded__(self):
-        """Set the attribute for our IBuildFarmJob delegation.
-
-        This is needed here as __init__() is not called when a storm object
-        is loaded from the database.
-        """
-        self._set_build_farm_job()
-
-    def _set_build_farm_job(self):
-        """Set the build farm job to which we will delegate.
-
-        Deriving classes must set the build_farm_job attribute for the
-        delegation.
-        """
-        raise NotImplementedError
 
     @staticmethod
     def preloadBuildFarmJobs(jobs):
@@ -169,6 +86,22 @@ class BuildFarmJobOldDerived:
         job_ids = [job.id for job in jobs]
         return store.find(
             cls, cls.job_id.is_in(job_ids))
+
+    def score(self):
+        """See `IBuildFarmJobOld`."""
+        raise NotImplementedError
+
+    def getLogFileName(self):
+        """See `IBuildFarmJobOld`."""
+        return 'buildlog.txt'
+
+    def getName(self):
+        """See `IBuildFarmJobOld`."""
+        raise NotImplementedError
+
+    def getTitle(self):
+        """See `IBuildFarmJob`."""
+        return self.build.title
 
     def generateSlaveBuildCookie(self):
         """See `IBuildFarmJobOld`."""
@@ -207,6 +140,23 @@ class BuildFarmJobOldDerived:
     def postprocessCandidate(job, logger):
         """See `IBuildFarmJobOld`."""
         return True
+
+    def jobStarted(self):
+        """See `IBuildFarmJobOld`."""
+        # XXX wgrant: builder should be set here.
+        self.build.updateStatus(BuildStatus.BUILDING)
+
+    def jobReset(self):
+        """See `IBuildFarmJob`."""
+        self.build.updateStatus(BuildStatus.NEEDSBUILD)
+
+    def jobAborted(self):
+        """See `IBuildFarmJob`."""
+        self.build.updateStatus(BuildStatus.NEEDSBUILD)
+
+    def jobCancel(self):
+        """See `IBuildFarmJob`."""
+        self.build.updateStatus(BuildStatus.CANCELLED)
 
 
 class BuildFarmJob(Storm):
