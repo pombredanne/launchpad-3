@@ -1235,6 +1235,7 @@ COMMENT ON COLUMN BinaryPackagePublishingHistory.pocket IS 'The pocket into whic
 COMMENT ON COLUMN BinaryPackagePublishingHistory.archive IS 'Target archive for this publishing record.';
 COMMENT ON COLUMN BinaryPackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
 COMMENT ON COLUMN BinaryPackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.phased_update_percentage IS 'Percentage of users for whom this package should be recommended. NULL indicates no phasing, i.e. publish the update for everyone.';
 
 -- ProcessorFamily
 
