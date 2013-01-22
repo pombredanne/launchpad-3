@@ -11,11 +11,9 @@ __all__ = [
     'TranslationTemplatesBuildBehavior',
     ]
 
-import datetime
 import os
 import tempfile
 
-import pytz
 from twisted.internet import defer
 from zope.component import getUtility
 from zope.interface import implements
