@@ -98,10 +98,10 @@ class BuildFarmJobBehaviorBase:
         return d
 
     @defer.inlineCallbacks
-    def storeLogFromSlave(self):
+    def storeLogFromSlave(self, build_queue=None):
         """See `IBuildFarmJob`."""
         lfa_id = yield self.getLogFromSlave(
-            self.build, self.build.buildqueue_record)
+            self.build, build_queue or self.build.buildqueue_record)
         self.build.setLog(lfa_id)
 
     def updateBuild(self, queueItem):
