@@ -125,16 +125,15 @@ from lp.app.validators.name import (
     sanitize_name,
     valid_name,
     )
-from lp.blueprints.enums import (
-    SpecificationFilter,
-    SpecificationSort,
-    )
+from lp.blueprints.enums import SpecificationFilter
 from lp.blueprints.model.specification import (
-    get_specification_filters,
     HasSpecificationsMixin,
-    spec_started_clause,
     Specification,
-    visible_specification_query,
+    )
+from lp.blueprints.model.specificationsearch import (
+    get_specification_active_product_filter,
+    get_specification_privacy_filter,
+    search_specifications,
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugtarget import IBugTarget
@@ -856,10 +855,8 @@ class Person(
         # because the default if nothing is said is ANY.
 
         roles = set([
-            SpecificationFilter.CREATOR,
-            SpecificationFilter.ASSIGNEE,
-            SpecificationFilter.DRAFTER,
-            SpecificationFilter.APPROVER,
+            SpecificationFilter.CREATOR, SpecificationFilter.ASSIGNEE,
+            SpecificationFilter.DRAFTER, SpecificationFilter.APPROVER,
             SpecificationFilter.SUBSCRIBER])
         # If no roles are given, then we want everything.
         if filter.intersection(roles) == set():
@@ -877,32 +874,18 @@ class Person(
             role_clauses.append(
                 Specification.id.is_in(
                     Select(SpecificationSubscription.specificationID,
-                        [SpecificationSubscription.person == self]
-                    )))
-        tables, clauses = visible_specification_query(user)
-        clauses.append(Or(*role_clauses))
-        # Defaults for completeness: if nothing is said about completeness
-        # then we want to show INCOMPLETE.
+                        [SpecificationSubscription.person == self])))
+
+        clauses = [Or(*role_clauses)]
         if SpecificationFilter.COMPLETE not in filter:
             if (in_progress and SpecificationFilter.INCOMPLETE not in filter
                 and SpecificationFilter.ALL not in filter):
-                clauses.append(spec_started_clause)
-            filter.add(SpecificationFilter.INCOMPLETE)
+                filter.update(
+                    [SpecificationFilter.INCOMPLETE,
+                    SpecificationFilter.STARTED])
 
-        clauses.extend(get_specification_filters(filter))
-        results = Store.of(self).using(*tables).find(Specification, *clauses)
-        # The default sort is priority descending, so only explictly sort for
-        # DATE.
-        if sort == SpecificationSort.DATE:
-            sort = Desc(Specification.datecreated)
-        elif getattr(sort, 'enum', None) is SpecificationSort:
-            sort = None
-        if sort is not None:
-            results = results.order_by(sort)
-        results.config(distinct=True)
-        if quantity is not None:
-            results = results[:quantity]
-        return results
+        return search_specifications(
+            self, clauses, user, sort, quantity, list(filter), prejoin_people)
 
     # XXX: Tom Berger 2008-04-14 bug=191799:
     # The implementation of these functions
@@ -1482,20 +1465,22 @@ class Person(
         from lp.registry.model.distribution import Distribution
         store = Store.of(self)
         WorkItem = SpecificationWorkItem
-        origin, query = visible_specification_query(user)
+        origin = [Specification]
+        productjoin, query = get_specification_active_product_filter(self)
+        origin.extend(productjoin)
+        query.extend(get_specification_privacy_filter(user))
         origin.extend([
             Join(WorkItem, WorkItem.specification == Specification.id),
             # WorkItems may not have a milestone and in that case they inherit
             # the one from the spec.
             Join(Milestone,
                  Coalesce(WorkItem.milestone_id,
-                          Specification.milestoneID) == Milestone.id),
-            ])
+                          Specification.milestoneID) == Milestone.id)])
         today = datetime.today().date()
         query.extend([
             Milestone.dateexpected <= date, Milestone.dateexpected >= today,
             WorkItem.deleted == False,
-            OR(WorkItem.assignee_id.is_in(self.participant_ids),
+            Or(WorkItem.assignee_id.is_in(self.participant_ids),
                Specification._assigneeID.is_in(self.participant_ids))])
         result = store.using(*origin).find(WorkItem, *query)
         result.config(distinct=True)
@@ -1680,6 +1665,12 @@ class Person(
                                               requester=reviewer)
         return (status_changed, tm.status)
 
+    def _accept_or_decline_membership(self, team, status, comment):
+        tm = TeamMembership.selectOneBy(person=self, team=team)
+        assert tm is not None
+        assert tm.status == TeamMembershipStatus.INVITED
+        tm.setStatus(status, getUtility(ILaunchBag).user, comment=comment)
+
     # The three methods below are not in the IPerson interface because we want
     # to protect them with a launchpad.Edit permission. We could do that by
     # defining explicit permissions for all IPerson methods/attributes in
@@ -1691,12 +1682,8 @@ class Person(
         the INVITED status. The status of this TeamMembership will be changed
         to APPROVED.
         """
-        tm = TeamMembership.selectOneBy(person=self, team=team)
-        assert tm is not None
-        assert tm.status == TeamMembershipStatus.INVITED
-        tm.setStatus(
-            TeamMembershipStatus.APPROVED, getUtility(ILaunchBag).user,
-            comment=comment)
+        self._accept_or_decline_membership(
+            team, TeamMembershipStatus.APPROVED, comment)
 
     def declineInvitationToBeMemberOf(self, team, comment):
         """Decline an invitation to become a member of the given team.
@@ -1705,12 +1692,8 @@ class Person(
         the INVITED status. The status of this TeamMembership will be changed
         to INVITATION_DECLINED.
         """
-        tm = TeamMembership.selectOneBy(person=self, team=team)
-        assert tm is not None
-        assert tm.status == TeamMembershipStatus.INVITED
-        tm.setStatus(
-            TeamMembershipStatus.INVITATION_DECLINED,
-            getUtility(ILaunchBag).user, comment=comment)
+        self._accept_or_decline_membership(
+            team, TeamMembershipStatus.INVITATION_DECLINED, comment)
 
     def retractTeamMembership(self, team, user, comment=None):
         """See `IPerson`"""
@@ -1765,14 +1748,11 @@ class Person(
     def getOwnedTeams(self, user=None):
         """See `IPerson`."""
         query = And(
-            get_person_visibility_terms(user),
-            Person.teamowner == self.id,
+            get_person_visibility_terms(user), Person.teamowner == self.id,
             Person.merged == None)
-        store = IStore(Person)
-        results = store.find(
+        return IStore(Person).find(
             Person, query).order_by(
                 Upper(Person.displayname), Upper(Person.name))
-        return results
 
     @cachedproperty
     def administrated_teams(self):

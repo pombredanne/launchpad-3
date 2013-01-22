@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for implementing distribution items."""
@@ -69,15 +69,11 @@ from lp.app.validators.name import (
     valid_name,
     )
 from lp.archivepublisher.debversion import Version
-from lp.blueprints.enums import (
-    SpecificationDefinitionStatus,
-    SpecificationFilter,
-    SpecificationImplementationStatus,
-    )
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
     )
+from lp.blueprints.model.specificationsearch import search_specifications
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
@@ -882,86 +878,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
           - informationalness: we will show ANY if nothing is said
 
         """
-
-        # Make a new list of the filter, so that we do not mutate what we
-        # were passed as a filter
-        if not filter:
-            # it could be None or it could be []
-            filter = [SpecificationFilter.INCOMPLETE]
-
-        # now look at the filter and fill in the unsaid bits
-
-        # defaults for completeness: if nothing is said about completeness
-        # then we want to show INCOMPLETE
-        completeness = False
-        for option in [
-            SpecificationFilter.COMPLETE,
-            SpecificationFilter.INCOMPLETE]:
-            if option in filter:
-                completeness = True
-        if completeness is False:
-            filter.append(SpecificationFilter.INCOMPLETE)
-
-        # defaults for acceptance: in this case we have nothing to do
-        # because specs are not accepted/declined against a distro
-
-        # defaults for informationalness: we don't have to do anything
-        # because the default if nothing is said is ANY
-
-        order = self._specification_sort(sort)
-
-        # figure out what set of specifications we are interested in. for
-        # distributions, we need to be able to filter on the basis of:
-        #
-        #  - completeness. by default, only incomplete specs shown
-        #  - informational.
-        #
-        base = 'Specification.distribution = %s' % self.id
-        query = base
-        # look for informational specs
-        if SpecificationFilter.INFORMATIONAL in filter:
-            query += (' AND Specification.implementation_status = %s ' %
-                quote(SpecificationImplementationStatus.INFORMATIONAL))
-
-        # filter based on completion. see the implementation of
-        # Specification.is_complete() for more details
-        completeness = Specification.completeness_clause
-
-        if SpecificationFilter.COMPLETE in filter:
-            query += ' AND ( %s ) ' % completeness
-        elif SpecificationFilter.INCOMPLETE in filter:
-            query += ' AND NOT ( %s ) ' % completeness
-
-        # Filter for validity. If we want valid specs only then we should
-        # exclude all OBSOLETE or SUPERSEDED specs
-        if SpecificationFilter.VALID in filter:
-            query += (' AND Specification.definition_status NOT IN '
-                '( %s, %s ) ' % sqlvalues(
-                    SpecificationDefinitionStatus.OBSOLETE,
-                    SpecificationDefinitionStatus.SUPERSEDED))
-
-        # ALL is the trump card
-        if SpecificationFilter.ALL in filter:
-            query = base
-
-        # Filter for specification text
-        for constraint in filter:
-            if isinstance(constraint, basestring):
-                # a string in the filter is a text search filter
-                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
-                    constraint)
-
-        if prejoin_people:
-            results = self._preload_specifications_people([Specification],
-                                                          query)
-        else:
-            results = Store.of(self).find(
-                Specification,
-                SQL(query))
-        results.order_by(order)
-        if quantity is not None:
-            results = results[:quantity]
-        return results
+        base_clauses = [Specification.distributionID == self.id]
+        return search_specifications(
+            self, base_clauses, user, sort, quantity, filter, prejoin_people)
 
     def getSpecification(self, name):
         """See `ISpecificationTarget`."""
