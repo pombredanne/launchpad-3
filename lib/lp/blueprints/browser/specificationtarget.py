@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ISpecificationTarget browser views."""
@@ -347,8 +347,7 @@ class HasSpecificationsView(LaunchpadView):
                 and self.context.private
                 and not check_permission('launchpad.View', self.context)):
             return []
-        filter = self.spec_filter
-        return self.context.specifications(self.user, filter=filter)
+        return self.context.specifications(self.user, filter=self.spec_filter)
 
     @cachedproperty
     def specs_batched(self):

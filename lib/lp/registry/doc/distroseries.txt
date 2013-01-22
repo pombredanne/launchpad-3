@@ -458,7 +458,8 @@ total_bugs, and total_messages (translatable messages).
 
     >>> for summary in hoary.getPrioritizedUnlinkedSourcePackages():
     ...     print  summary['package'].name
-    ...     print '%(bug_count)s %(total_messages)s' % summary
+    ...     naked_summary = removeSecurityProxy(summary)
+    ...     print '%(bug_count)s %(total_messages)s' % naked_summary
     pmount  0  64
     alsa-utils  0  0
     cnews  0  0
@@ -630,7 +631,7 @@ the future.
     ...     PackagePublishingPocket.RELEASE, component_main,
     ...     warty.main_archive)
     >>> spphs.count()
-    5 
+    5
     >>> for name in sorted(set(
     ...         pkgpub.sourcepackagerelease.sourcepackagename.name
     ...         for pkgpub in spphs)):

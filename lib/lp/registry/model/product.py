@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes including and related to Product."""
@@ -91,13 +91,12 @@ from lp.app.interfaces.services import IService
 from lp.app.model.launchpad import InformationTypeMixin
 from lp.blueprints.enums import SpecificationFilter
 from lp.blueprints.model.specification import (
-    get_specification_filters,
     HasSpecificationsMixin,
     Specification,
     SPECIFICATION_POLICY_ALLOWED_TYPES,
     SPECIFICATION_POLICY_DEFAULT_TYPES,
-    visible_specification_query,
     )
+from lp.blueprints.model.specificationsearch import search_specifications
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
@@ -1435,52 +1434,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                        prejoin_people=True):
         """See `IHasSpecifications`."""
 
-        # Make a new list of the filter, so that we do not mutate what we
-        # were passed as a filter
-        if not filter:
-            # filter could be None or [] then we decide the default
-            # which for a product is to show incomplete specs
-            filter = [SpecificationFilter.INCOMPLETE]
-
-        # now look at the filter and fill in the unsaid bits
-
-        # defaults for completeness: if nothing is said about completeness
-        # then we want to show INCOMPLETE
-        completeness = False
-        for option in [
-            SpecificationFilter.COMPLETE,
-            SpecificationFilter.INCOMPLETE]:
-            if option in filter:
-                completeness = True
-        if completeness is False:
-            filter.append(SpecificationFilter.INCOMPLETE)
-
-        # defaults for acceptance: in this case we have nothing to do
-        # because specs are not accepted/declined against a distro
-
-        # defaults for informationalness: we don't have to do anything
-        # because the default if nothing is said is ANY
-
-        order = self._specification_sort(sort)
-
-        # figure out what set of specifications we are interested in. for
-        # products, we need to be able to filter on the basis of:
-        #
-        #  - completeness.
-        #  - informational.
-        #
-        tables, clauses = visible_specification_query(user)
-        clauses.append(Specification.product == self)
-        clauses.extend(get_specification_filters(filter))
-        if prejoin_people:
-            results = self._preload_specifications_people(tables, clauses)
-        else:
-            tableset = Store.of(self).using(*tables)
-            results = tableset.find(Specification, *clauses)
-        results.order_by(order).config(distinct=True)
-        if quantity is not None:
-            results = results[:quantity]
-        return results
+        base_clauses = [Specification.productID == self.id]
+        return search_specifications(
+            self, base_clauses, user, sort, quantity, filter, prejoin_people)
 
     def getSpecification(self, name):
         """See `ISpecificationTarget`."""
