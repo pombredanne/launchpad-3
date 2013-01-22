@@ -247,7 +247,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
                        series=None, prejoin_people=True):
         """See `IHasSpecifications`."""
         base_clauses = [
-            Specification.productID == Product.id, Product.active == True,
+            Specification.productID == Product.id,
             Product.projectID == self.id]
         tables = [Specification]
         if series:
