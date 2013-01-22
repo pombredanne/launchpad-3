@@ -8,7 +8,6 @@ __all__ = [
     'get_specification_filters',
     'get_specification_active_product_filter',
     'get_specification_privacy_filter',
-    'get_specification_started_clause',
     'search_specifications',
     ]
 
@@ -181,6 +180,9 @@ def get_specification_filters(filter, goalstatus=True):
             goalstatus = SpecificationGoalStatus.DECLINED
         if goalstatus:
             clauses.append(Specification.goalstatus == goalstatus)
+
+    if SpecificationFilter.STARTED in filter:
+        clauses.append(get_specification_started_clause())
 
     # Filter for validity. If we want valid specs only, then we should exclude
     # all OBSOLETE or SUPERSEDED specs.

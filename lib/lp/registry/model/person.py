@@ -133,7 +133,6 @@ from lp.blueprints.model.specification import (
 from lp.blueprints.model.specificationsearch import (
     get_specification_active_product_filter,
     get_specification_privacy_filter,
-    get_specification_started_clause,
     search_specifications,
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
@@ -881,12 +880,12 @@ class Person(
         if SpecificationFilter.COMPLETE not in filter:
             if (in_progress and SpecificationFilter.INCOMPLETE not in filter
                 and SpecificationFilter.ALL not in filter):
-                clauses.append(get_specification_started_clause())
-                filter.add(SpecificationFilter.INCOMPLETE)
+                filter.update(
+                    [SpecificationFilter.INCOMPLETE,
+                    SpecificationFilter.STARTED])
 
         return search_specifications(
-            self, clauses, user, sort, quantity, list(filter),
-            prejoin_people)
+            self, clauses, user, sort, quantity, list(filter), prejoin_people)
 
     # XXX: Tom Berger 2008-04-14 bug=191799:
     # The implementation of these functions
