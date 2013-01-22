@@ -12,6 +12,7 @@ from datetime import (
 
 import pytz
 from storm.store import Store
+from testtools.matchers import GreaterThan
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -29,6 +30,7 @@ from lp.buildmaster.interfaces.buildfarmjob import (
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.services.database.sqlbase import flush_database_updates
 from lp.testing import (
+    admin_logged_in,
     login,
     TestCaseWithFactory,
     )
@@ -164,6 +166,71 @@ class TestBuildFarmJobMixin(TestCaseWithFactory):
         self.build_farm_job.status = BuildStatus.FULLYBUILT
         self.failUnlessEqual(
             BuildStatus.FULLYBUILT, self.build_farm_job.status)
+
+    def test_updateStatus_sets_status(self):
+        # updateStatus always sets status.
+        self.assertEqual(BuildStatus.NEEDSBUILD, self.build_farm_job.status)
+        self.build_farm_job.updateStatus(BuildStatus.FULLYBUILT)
+        self.assertEqual(BuildStatus.FULLYBUILT, self.build_farm_job.status)
+
+    def test_updateStatus_sets_builder(self):
+        # updateStatus sets builder if it's passed.
+        builder = self.factory.makeBuilder()
+        self.assertIs(None, self.build_farm_job.builder)
+        self.build_farm_job.updateStatus(
+            BuildStatus.FULLYBUILT, builder=builder)
+        self.assertEqual(builder, self.build_farm_job.builder)
+
+    def test_updateStatus_BUILDING_sets_date_started(self):
+        # updateStatus sets date_started on transition to BUILDING.
+        # date_first_dispatched is also set if it isn't already.
+        self.assertEqual(BuildStatus.NEEDSBUILD, self.build_farm_job.status)
+        self.assertIs(None, self.build_farm_job.date_started)
+        self.assertIs(None, self.build_farm_job.date_first_dispatched)
+
+        self.build_farm_job.updateStatus(BuildStatus.CANCELLED)
+        self.assertIs(None, self.build_farm_job.date_started)
+        self.assertIs(None, self.build_farm_job.date_first_dispatched)
+
+        # Setting it to BUILDING for the first time sets date_started
+        # and date_first_dispatched.
+        self.build_farm_job.updateStatus(BuildStatus.BUILDING)
+        self.assertIsNot(None, self.build_farm_job.date_started)
+        first = self.build_farm_job.date_started
+        self.assertEqual(first, self.build_farm_job.date_first_dispatched)
+
+        self.build_farm_job.updateStatus(BuildStatus.FAILEDTOBUILD)
+        with admin_logged_in():
+            self.build_farm_job.retry()
+        self.assertIs(None, self.build_farm_job.date_started)
+        self.assertEqual(first, self.build_farm_job.date_first_dispatched)
+
+        # But BUILDING a second time doesn't change
+        # date_first_dispatched.
+        self.build_farm_job.updateStatus(BuildStatus.BUILDING)
+        self.assertThat(self.build_farm_job.date_started, GreaterThan(first))
+        self.assertEqual(first, self.build_farm_job.date_first_dispatched)
+
+    def test_updateStatus_sets_date_finished(self):
+        # updateStatus sets date_finished if it's a final state and
+        # date_started is set.
+        # UPLOADING counts as the end of the job. date_finished doesn't
+        # include the upload time.
+        for status in (
+                BuildStatus.FULLYBUILT, BuildStatus.FAILEDTOBUILD,
+                BuildStatus.CHROOTWAIT, BuildStatus.MANUALDEPWAIT,
+                BuildStatus.UPLOADING, BuildStatus.FAILEDTOUPLOAD,
+                BuildStatus.CANCELLED, BuildStatus.SUPERSEDED):
+            build = self.factory.makeBinaryPackageBuild()
+            build.updateStatus(status)
+            self.assertIs(None, build.date_started)
+            self.assertIs(None, build.date_finished)
+            build.updateStatus(BuildStatus.BUILDING)
+            self.assertIsNot(None, build.date_started)
+            self.assertIs(None, build.date_finished)
+            build.updateStatus(status)
+            self.assertIsNot(None, build.date_started)
+            self.assertIsNot(None, build.date_finished)
 
 
 class TestBuildFarmJobSet(TestBuildFarmJobBase, TestCaseWithFactory):

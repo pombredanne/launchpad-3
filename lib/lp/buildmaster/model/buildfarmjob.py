@@ -10,6 +10,7 @@ __all__ = [
     'BuildFarmJobOldDerived',
     ]
 
+import datetime
 import hashlib
 
 from lazr.delegates import delegates
@@ -323,6 +324,44 @@ class BuildFarmJobMixin:
                                    BuildStatus.CANCELLING,
                                    BuildStatus.UPLOADING,
                                    BuildStatus.SUPERSEDED]
+
+    def setLog(self, log):
+        """See `IBuildFarmJob`."""
+        assert self.log is None
+        self.log = log
+
+    def updateStatus(self, status, builder=None, slave_status=None,
+                     date_started=None, date_finished=None):
+        """See `IBuildFarmJob`."""
+        self.status = status
+
+        # If there's a builder provided, set it if we don't already have
+        # one, or otherwise crash if it's different from the one we
+        # expected.
+        if builder is not None:
+            if self.builder is None:
+                self.builder = builder
+            else:
+                assert self.builder == builder
+
+        # If we're starting to build, set date_started and
+        # date_first_dispatched if required.
+        if self.date_started is None and status == BuildStatus.BUILDING:
+            self.date_started = date_started or datetime.datetime.now(pytz.UTC)
+            if self.date_first_dispatched is None:
+                self.date_first_dispatched = self.date_started
+
+        # If we're in a final build state (or UPLOADING, which sort of
+        # is), set date_finished if date_started is.
+        if (self.date_started is not None and self.date_finished is None
+            and status not in (
+                BuildStatus.NEEDSBUILD, BuildStatus.BUILDING,
+                BuildStatus.CANCELLING)):
+            # XXX cprov 20060615 bug=120584: Currently buildduration includes
+            # the scanner latency, it should really be asking the slave for
+            # the duration spent building locally.
+            self.date_finished = (
+                date_finished or datetime.datetime.now(pytz.UTC))
 
     def gotFailure(self):
         """See `IBuildFarmJob`."""

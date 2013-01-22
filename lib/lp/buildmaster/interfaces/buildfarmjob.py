@@ -285,6 +285,19 @@ class IBuildFarmJob(Interface):
         services job directly on the BuildFarmJob.
         """
 
+    def setLog(log):
+        """Set the `LibraryFileAlias` that contains the job log."""
+
+    def updateStatus(status, builder=None, slave_status=None,
+                     date_started=None, date_finished=None):
+        """Update job metadata when the build status changes.
+
+        This automatically handles setting status, date_finished, builder,
+        dependencies. Later it will manage the denormalised search schema.
+
+        date_started and date_finished override the default (now).
+        """
+
     def gotFailure():
         """Increment the failure_count for this job."""
 

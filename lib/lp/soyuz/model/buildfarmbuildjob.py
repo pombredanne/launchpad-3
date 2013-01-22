@@ -11,7 +11,6 @@ from zope.interface import implements
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
-from lp.services.database.constants import UTC_NOW
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 
 
@@ -35,12 +34,9 @@ class BuildFarmBuildJob(BuildFarmJobOld):
         return self.build.title
 
     def jobStarted(self):
-        """See `IBuildFarmJob`."""
-        self.build.status = BuildStatus.BUILDING
-        # The build started, set the start time if not set already.
-        self.build.date_started = UTC_NOW
-        if self.build.date_first_dispatched is None:
-            self.build.date_first_dispatched = UTC_NOW
+        """See `IBuildFarmJobOld`."""
+        # XXX wgrant: builder should be set here.
+        self.build.updateStatus(BuildStatus.BUILDING)
 
     def jobReset(self):
         """See `IBuildFarmJob`."""
