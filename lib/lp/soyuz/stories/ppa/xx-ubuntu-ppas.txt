@@ -387,7 +387,7 @@ is also included in the statistics portlet.
     >>> cprov_ppa = getUtility(IPersonSet).getByName('cprov').archive
     >>> builds = getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
     ...     cprov_ppa)
-    >>> builds[0].status = BuildStatus.BUILDING
+    >>> builds[0].updateStatus(BuildStatus.BUILDING)
     >>> logout()
 
     >>> anon_browser.reload()

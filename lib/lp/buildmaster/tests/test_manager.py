@@ -321,7 +321,8 @@ class TestSlaveScannerScan(TestCase):
         builder = getUtility(IBuilderSet)[scanner.builder_name]
 
         builder.failure_count = builder_count
-        builder.currentjob.specific_job.build.failure_count = job_count
+        removeSecurityProxy(
+            builder.currentjob.specific_job.build).failure_count = job_count
         # The _scanFailed() calls abort, so make sure our existing
         # failure counts are persisted.
         self.layer.txn.commit()
@@ -447,7 +448,7 @@ class TestSlaveScannerScan(TestCase):
 
         # Now set the build to CANCELLING.
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
-        build.status = BuildStatus.CANCELLING
+        build.updateStatus(BuildStatus.CANCELLING)
 
         # Run 'scan' and check its results.
         switch_dbuser(config.builddmaster.dbuser)
@@ -496,9 +497,6 @@ class TestCancellationChecking(TestCaseWithFactory):
 
     def test_ignores_build_not_cancelling(self):
         # If the active build is not in a CANCELLING state, ignore it.
-        buildqueue = self.builder.currentjob
-        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
-        build.status = BuildStatus.BUILDING
         d = self.scanner.checkCancellation(self.builder)
         return d.addCallback(self.assertFalse)
 
@@ -516,7 +514,7 @@ class TestCancellationChecking(TestCaseWithFactory):
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         buildqueue = self.builder.currentjob
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
-        build.status = BuildStatus.CANCELLING
+        build.updateStatus(BuildStatus.CANCELLING)
 
         def check(result):
             self.assertEqual(1, call_counter.call_count)

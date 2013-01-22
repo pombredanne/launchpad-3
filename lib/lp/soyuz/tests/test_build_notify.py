@@ -75,14 +75,15 @@ class TestBuildNotify(TestCaseWithFactory):
             spph.sourcepackagerelease.dscsigningkey = self.gpgkey
             [build] = spph.createMissingBuilds()
             with person_logged_in(self.admin):
-                build.status = status
-                build.builder = self.builder
+                naked_build = removeSecurityProxy(build)
+                naked_build.status = status
+                naked_build.builder = self.builder
                 if status != BuildStatus.BUILDING:
                     build.buildqueue_record.destroySelf()
                 else:
                     build.buildqueue_record.builder = self.builder
-                build.date_started = datetime.now(pytz.UTC)
-                build.date_finished = build.date_started + timedelta(
+                naked_build.date_started = datetime.now(pytz.UTC)
+                naked_build.date_finished = build.date_started + timedelta(
                     minutes=5 * (status.value + 1))
             self.builds.append(build)
 

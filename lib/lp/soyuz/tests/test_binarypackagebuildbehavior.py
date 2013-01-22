@@ -470,7 +470,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
     def test_log_file_collection(self):
         self.patch(BuilderSlave, 'makeBuilderSlave',
                    FakeMethod(WaitingSlave('BuildStatus.OK')))
-        self.build.status = BuildStatus.FULLYBUILT
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
         old_tmps = sorted(os.listdir('/tmp'))
 
         def got_log(logfile_lfa_id):
@@ -542,10 +542,9 @@ class MakeBinaryPackageBuildMixin:
     """Provide the makeBuild method returning a queud build."""
 
     def makeBuild(self):
-        build = self.factory.makeBinaryPackageBuild(
-            status=BuildStatus.FULLYBUILT)
-        build.date_started = UTC_NOW
+        build = self.factory.makeBinaryPackageBuild()
         build.queueBuild()
+        build.updateStatus(BuildStatus.BUILDING)
         return build
 
 
