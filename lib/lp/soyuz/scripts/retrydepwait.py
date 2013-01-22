@@ -9,7 +9,6 @@ __all__ = [
 
 import transaction
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
@@ -57,9 +56,7 @@ class RetryDepwaitTunableLoop(TunableLoop):
 
     def __call__(self, chunk_size):
         bfjs = list(self.findBuildFarmJobs()[:chunk_size])
-        bpbs = [
-            removeSecurityProxy(build) for build in
-            getUtility(IBinaryPackageBuildSet).getByBuildFarmJobs(bfjs)]
+        bpbs = getUtility(IBinaryPackageBuildSet).getByBuildFarmJobs(bfjs)
         sprs = load_related(
             SourcePackageRelease, bpbs, ['source_package_release_id'])
         load_related(SourcePackageName, sprs, ['sourcepackagenameID'])

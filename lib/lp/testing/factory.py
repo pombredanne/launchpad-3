@@ -3650,9 +3650,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 status=status,
                 archive=archive,
                 pocket=pocket,
-                date_created=date_created)
-        naked_build = removeSecurityProxy(binary_package_build)
-        naked_build.builder = builder
+                date_created=date_created,
+                builder=builder)
         IStore(binary_package_build).flush()
         return binary_package_build
 

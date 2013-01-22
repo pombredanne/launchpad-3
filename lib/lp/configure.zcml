@@ -30,6 +30,7 @@
     <include package="lp.hardwaredb" />
     <include package="lp.soyuz" />
     <include package="lp.translations" />
+    <include package="lp.testing" />
     <include package="lp.testopenid" />
     <include package="lp.registry" />
     <include package="lp.xmlrpc" />

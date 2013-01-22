@@ -78,12 +78,16 @@ class IBinaryPackageBuildView(IPackageBuild):
         required=True, readonly=True,
         description=_("The SourcePackageRelease requested to build."))
 
+    source_package_release_id = Int()
+
     distro_arch_series = Reference(
         title=_("Architecture"),
         # Really IDistroArchSeries
         schema=Interface,
         required=True, readonly=True,
         description=_("The DistroArchSeries context for this build."))
+
+    distro_arch_series_id = Int()
 
     # Properties
     current_source_publication = exported(
