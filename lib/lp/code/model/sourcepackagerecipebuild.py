@@ -71,7 +71,6 @@ from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.soyuz.interfaces.archive import CannotUploadToArchive
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
@@ -420,12 +419,6 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
         self.build = build
         self.job = job
         super(SourcePackageRecipeBuildJob, self).__init__()
-
-    def _set_build_farm_job(self):
-        """Setup the IBuildFarmJob delegate.
-
-        We override this to provide a delegate specific to package builds."""
-        self.build_farm_job = BuildFarmBuildJob(self.build)
 
     @staticmethod
     def preloadBuildFarmJobs(jobs):

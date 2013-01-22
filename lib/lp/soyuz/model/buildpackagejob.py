@@ -36,7 +36,6 @@ from lp.soyuz.interfaces.buildpackagejob import (
     SCORE_BY_URGENCY,
     )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 from lp.soyuz.model.packageset import Packageset
 
 
@@ -56,12 +55,6 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
     def __init__(self, build, job):
         self.build, self.job = build, job
         super(BuildPackageJob, self).__init__()
-
-    def _set_build_farm_job(self):
-        """Setup the IBuildFarmJob delegate.
-
-        We override this to provide a delegate specific to package builds."""
-        self.build_farm_job = BuildFarmBuildJob(self.build)
 
     @staticmethod
     def preloadBuildFarmJobs(jobs):

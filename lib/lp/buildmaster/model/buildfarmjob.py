@@ -141,12 +141,8 @@ class BuildFarmJobOldDerived:
         self._set_build_farm_job()
 
     def _set_build_farm_job(self):
-        """Set the build farm job to which we will delegate.
-
-        Deriving classes must set the build_farm_job attribute for the
-        delegation.
-        """
-        raise NotImplementedError
+        """Set the build farm job to which we will delegate."""
+        self.build_farm_job = BuildFarmJobOld()
 
     @staticmethod
     def preloadBuildFarmJobs(jobs):
@@ -169,6 +165,10 @@ class BuildFarmJobOldDerived:
         job_ids = [job.id for job in jobs]
         return store.find(
             cls, cls.job_id.is_in(job_ids))
+
+    def getTitle(self):
+        """See `IBuildFarmJob`."""
+        return self.build.title
 
     def generateSlaveBuildCookie(self):
         """See `IBuildFarmJobOld`."""
@@ -207,6 +207,23 @@ class BuildFarmJobOldDerived:
     def postprocessCandidate(job, logger):
         """See `IBuildFarmJobOld`."""
         return True
+
+    def jobStarted(self):
+        """See `IBuildFarmJobOld`."""
+        # XXX wgrant: builder should be set here.
+        self.build.updateStatus(BuildStatus.BUILDING)
+
+    def jobReset(self):
+        """See `IBuildFarmJob`."""
+        self.build.updateStatus(BuildStatus.NEEDSBUILD)
+
+    def jobAborted(self):
+        """See `IBuildFarmJob`."""
+        self.build.updateStatus(BuildStatus.NEEDSBUILD)
+
+    def jobCancel(self):
+        """See `IBuildFarmJob`."""
+        self.build.updateStatus(BuildStatus.CANCELLED)
 
 
 class BuildFarmJob(Storm):
