@@ -40,12 +40,12 @@ class BuildFarmBuildJob(BuildFarmJobOld):
 
     def jobReset(self):
         """See `IBuildFarmJob`."""
-        self.build.status = BuildStatus.NEEDSBUILD
+        self.build.updateStatus(BuildStatus.NEEDSBUILD)
 
     def jobAborted(self):
         """See `IBuildFarmJob`."""
-        self.build.status = BuildStatus.NEEDSBUILD
+        self.build.updateStatus(BuildStatus.NEEDSBUILD)
 
     def jobCancel(self):
         """See `IBuildFarmJob`."""
-        self.build.status = BuildStatus.CANCELLED
+        self.build.updateStatus(BuildStatus.CANCELLED)

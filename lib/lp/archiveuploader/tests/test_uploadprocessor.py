@@ -2091,10 +2091,8 @@ class TestUploadHandler(TestUploadProcessorBase):
 
         builder = self.factory.makeBuilder()
         build.buildqueue_record.markAsBuilding(builder)
-        build.builder = build.buildqueue_record.builder
-
-        build.status = BuildStatus.UPLOADING
-        build.date_finished = UTC_NOW
+        build.updateStatus(
+            BuildStatus.UPLOADING, builder=build.buildqueue_record.builder)
         self.switchToUploader()
 
         # Upload and accept a binary for the primary archive source.
@@ -2137,7 +2135,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         queue_item.setDone()
 
         build.buildqueue_record.markAsBuilding(self.factory.makeBuilder())
-        build.status = BuildStatus.UPLOADING
+        build.updateStatus(BuildStatus.UPLOADING)
         self.switchToUploader()
 
         # Upload and accept a binary for the primary archive source.
@@ -2186,8 +2184,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         removeSecurityProxy(build).date_started = UTC_NOW
         # Commit so date_started is recorded and doesn't cause constraint
         # violations later.
-        build.status = BuildStatus.UPLOADING
-        build.date_finished = UTC_NOW
+        build.updateStatus(BuildStatus.UPLOADING)
         Store.of(build).flush()
         BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
             leaf_name).process()
@@ -2234,8 +2231,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         # Commit so date_started is recorded and doesn't cause constraint
         # violations later.
         Store.of(build).flush()
-        build.status = BuildStatus.UPLOADING
-        build.date_finished = UTC_NOW
+        build.updateStatus(BuildStatus.UPLOADING)
         BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
             leaf_name).process()
         self.layer.txn.commit()
@@ -2285,8 +2281,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         # Commit so date_started is recorded and doesn't cause constraint
         # violations later.
         Store.of(build).flush()
-        build.status = BuildStatus.UPLOADING
-        build.date_finished = UTC_NOW
+        build.updateStatus(BuildStatus.UPLOADING)
         BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
             leaf_name).process()
         self.layer.txn.commit()
@@ -2315,7 +2310,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         queue_item.setDone()
 
         build.buildqueue_record.markAsBuilding(self.factory.makeBuilder())
-        build.status = BuildStatus.BUILDING
+        build.updateStatus(BuildStatus.BUILDING)
         self.switchToUploader()
 
         shutil.rmtree(upload_dir)

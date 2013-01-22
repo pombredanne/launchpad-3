@@ -157,15 +157,12 @@ class TestBuildFarmJobMixin(TestCaseWithFactory):
         self.failUnlessEqual(
             BuildStatus.NEEDSBUILD, self.build_farm_job.status)
         self.assertRaises(
-            Unauthorized, setattr, self.build_farm_job,
-            'status', BuildStatus.FULLYBUILT)
+            Unauthorized, getattr, self.build_farm_job, 'retry')
 
     def test_edit_build_farm_job(self):
         # Users with edit access can update attributes.
         login('admin@canonical.com')
-        self.build_farm_job.status = BuildStatus.FULLYBUILT
-        self.failUnlessEqual(
-            BuildStatus.FULLYBUILT, self.build_farm_job.status)
+        self.assertRaises(AssertionError, self.build_farm_job.retry)
 
     def test_updateStatus_sets_status(self):
         # updateStatus always sets status.

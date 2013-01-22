@@ -1059,7 +1059,7 @@ class TestPersonRelatedPackagesFailedBuild(TestCaseWithFactory):
         binaries = publisher.getPubBinaries(
             pub_source=src_pub)
         self.build = binaries[0].binarypackagerelease.build
-        self.build.status = BuildStatus.FAILEDTOBUILD
+        self.build.updateStatus(BuildStatus.FAILEDTOBUILD)
         self.build.archive = publisher.distroseries.main_archive
         # Update the releases cache table.
         switch_dbuser('garbo_frequently')

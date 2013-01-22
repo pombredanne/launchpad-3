@@ -420,7 +420,7 @@ class CopyCheckerHarness:
 
     def test_cannot_copy_binaries_from_FTBFS(self):
         [build] = self.source.createMissingBuilds()
-        build.status = BuildStatus.FAILEDTOBUILD
+        build.updateStatus(BuildStatus.FAILEDTOBUILD)
         self.assertCannotCopyBinaries(
             'source has no binaries to be copied')
 
@@ -430,7 +430,7 @@ class CopyCheckerHarness:
         # retried anytime, but they will fail-to-upload if a copy
         # has built successfully.
         [build] = self.source.createMissingBuilds()
-        build.status = BuildStatus.FAILEDTOBUILD
+        build.updateStatus(BuildStatus.FAILEDTOBUILD)
         self.assertCanCopySourceOnly()
 
     def test_cannot_copy_binaries_from_binaries_pending_publication(self):
