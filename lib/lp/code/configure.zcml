@@ -883,9 +883,6 @@
   <class
      class="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuild">
     <require permission="launchpad.View" interface="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"/>
-    <!-- This is needed for UploadProcessor to run. The permission isn't
-         important; launchpad.Edit isn't actually held by anybody. -->
-    <require permission="launchpad.Edit" set_attributes="status upload_log date_finished requester" />
   </class>
 
   <securedutility
