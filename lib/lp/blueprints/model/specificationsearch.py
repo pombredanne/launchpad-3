@@ -84,8 +84,6 @@ def search_specifications(context, base_clauses, user, sort=None,
             Desc(Specification.priority), Specification.definition_status,
             Specification.name]
     elif sort == SpecificationSort.DATE:
-        show_proposed = set(
-            [SpecificationFilter.ALL, SpecificationFilter.PROPOSED])
         if SpecificationFilter.COMPLETE in spec_filter:
             # If we are showing completed, we care about date completed.
             order = [Desc(Specification.date_completed), Specification.id]
@@ -93,6 +91,8 @@ def search_specifications(context, base_clauses, user, sort=None,
             # If not specially looking for complete, we care about date
             # registered.
             order = []
+            show_proposed = set(
+                [SpecificationFilter.ALL, SpecificationFilter.PROPOSED])
             if default_acceptance and not (set(spec_filter) & show_proposed):
                 order.append(Desc(Specification.date_goal_decided))
             order.extend([Desc(Specification.datecreated), Specification.id])
