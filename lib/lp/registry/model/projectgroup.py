@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad ProjectGroup-related Database Table Objects."""
@@ -44,16 +44,12 @@ from lp.app.interfaces.launchpad import (
     IHasLogo,
     IHasMugshot,
     )
-from lp.blueprints.enums import (
-    SpecificationFilter,
-    SpecificationImplementationStatus,
-    SpecificationSort,
-    SprintSpecificationStatus,
-    )
+from lp.blueprints.enums import SprintSpecificationStatus
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
     )
+from lp.blueprints.model.specificationsearch import search_specifications
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.model.bugtarget import (
@@ -96,7 +92,6 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.sqlbase import (
-    quote,
     SQLBase,
     sqlvalues,
     )
@@ -251,70 +246,18 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def specifications(self, user, sort=None, quantity=None, filter=None,
                        series=None, prejoin_people=True):
         """See `IHasSpecifications`."""
-
-        # Make a new list of the filter, so that we do not mutate what we
-        # were passed as a filter
-        if not filter:
-            # filter could be None or [] then we decide the default
-            # which for a project group is to show incomplete specs
-            filter = [SpecificationFilter.INCOMPLETE]
-
-        # sort by priority descending, by default
-        if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.definition_status',
-                     'Specification.name']
-        elif sort == SpecificationSort.DATE:
-            order = ['-Specification.datecreated', 'Specification.id']
-
-        # figure out what set of specifications we are interested in. for
-        # project groups, we need to be able to filter on the basis of:
-        #
-        #  - completeness. by default, only incomplete specs shown
-        #  - informational.
-        #
-        base = """
-            Specification.product = Product.id AND
-            Product.active IS TRUE AND
-            Product.project = %s
-            """ % self.id
-        query = base
-        # look for informational specs
-        if SpecificationFilter.INFORMATIONAL in filter:
-            query += (' AND Specification.implementation_status = %s' %
-              quote(SpecificationImplementationStatus.INFORMATIONAL))
-
-        # filter based on completion. see the implementation of
-        # Specification.is_complete() for more details
-        completeness = Specification.completeness_clause
-
-        if SpecificationFilter.COMPLETE in filter:
-            query += ' AND ( %s ) ' % completeness
-        elif SpecificationFilter.INCOMPLETE in filter:
-            query += ' AND NOT ( %s ) ' % completeness
-
-        # ALL is the trump card
-        if SpecificationFilter.ALL in filter:
-            query = base
-
-        # Filter for specification text
-        for constraint in filter:
-            if isinstance(constraint, basestring):
-                # a string in the filter is a text search filter
-                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
-                    constraint)
-
-        clause_tables = ['Product']
-        if series is not None:
-            query += ('AND Specification.productseries = ProductSeries.id'
-                      ' AND ProductSeries.name = %s'
-                      % sqlvalues(series))
-            clause_tables.append('ProductSeries')
-
-        results = Specification.select(query, orderBy=order, limit=quantity,
-            clauseTables=clause_tables)
-        if prejoin_people:
-            results = results.prejoin(['_assignee', '_approver', '_drafter'])
-        return results
+        base_clauses = [
+            Specification.productID == Product.id, Product.active == True,
+            Product.projectID == self.id]
+        tables = [Specification]
+        if series:
+            base_clauses.append(ProductSeries.name == series)
+            tables.append(
+                Join(ProductSeries,
+                Specification.productseriesID == ProductSeries.id))
+        return search_specifications(
+            self, base_clauses, user, sort, quantity, filter, prejoin_people,
+            tables=tables)
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this milestone."""

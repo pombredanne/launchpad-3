@@ -41,9 +41,9 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import ISpecificationSet
-from lp.blueprints.model.specification import (
+from lp.blueprints.model.specification import Specification
+from lp.blueprints.model.specificationsearch import (
     get_specification_privacy_filter,
-    Specification,
     )
 from lp.registry.enums import (
     SharingPermission,
@@ -408,10 +408,10 @@ class SpecificationTests(TestCaseWithFactory):
                 error_expected=False, attribute='name', value='foo')
 
     def _fetch_specs_visible_for_user(self, user):
-        tables, query = get_specification_privacy_filter(user)
-        return Store.of(self.product).using(*tables).find(
+        return Store.of(self.product).find(
             Specification,
-            Specification.productID == self.product.id, *query)
+            Specification.productID == self.product.id,
+            *get_specification_privacy_filter(user))
 
     def test_get_specification_privacy_filter(self):
         # get_specification_privacy_filter returns a Storm expression

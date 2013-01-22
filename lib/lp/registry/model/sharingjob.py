@@ -24,7 +24,6 @@ from storm.expr import (
     And,
     In,
     Join,
-    LeftJoin,
     Not,
     Or,
     Select,
@@ -43,9 +42,9 @@ from zope.interface import (
 
 from lp.app.enums import InformationType
 from lp.blueprints.interfaces.specification import ISpecification
-from lp.blueprints.model.specification import (
+from lp.blueprints.model.specification import Specification
+from lp.blueprints.model.specificationsearch import (
     get_specification_privacy_filter,
-    Specification,
     )
 from lp.blueprints.model.specificationsubscription import (
     SpecificationSubscription,
@@ -439,17 +438,14 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
                 sub.branch.unsubscribe(
                     sub.person, self.requestor, ignore_permissions=True)
         if specification_filters:
-            _, privacy_query = get_specification_privacy_filter(
-                SpecificationSubscription.personID)
-            specification_filters.append(Not(Or(*privacy_query)))
+            specification_filters.append(Not(*get_specification_privacy_filter(
+                SpecificationSubscription.personID)))
             tables = (
                 SpecificationSubscription,
                 Join(
                     Specification,
                     Specification.id ==
-                        SpecificationSubscription.specificationID),
-                LeftJoin(
-                    Product, Product.id == Specification.productID))
+                        SpecificationSubscription.specificationID))
             specifications_subscriptions = IStore(
                 SpecificationSubscription).using(*tables).find(
                 SpecificationSubscription, *specification_filters).config(

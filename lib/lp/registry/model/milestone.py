@@ -38,9 +38,10 @@ from zope.interface import implements
 
 from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
-from lp.blueprints.model.specification import (
+from lp.blueprints.model.specification import Specification
+from lp.blueprints.model.specificationsearch import (
+    get_specification_active_product_filter,
     get_specification_privacy_filter,
-    Specification,
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
@@ -155,7 +156,11 @@ class MilestoneData:
     def getSpecifications(self, user):
         """See `IMilestoneData`"""
         from lp.registry.model.person import Person
-        origin, clauses = get_specification_privacy_filter(user)
+        origin = [Specification]
+        product_origin, clauses = get_specification_active_product_filter(
+            self)
+        origin.extend(product_origin)
+        clauses.extend(get_specification_privacy_filter(user))
         origin.append(LeftJoin(Person, Specification._assigneeID == Person.id))
         milestones = self._milestone_ids_expr(user)
 

@@ -125,16 +125,16 @@ from lp.app.validators.name import (
     sanitize_name,
     valid_name,
     )
-from lp.blueprints.enums import (
-    SpecificationFilter,
-    SpecificationSort,
-    )
+from lp.blueprints.enums import SpecificationFilter
 from lp.blueprints.model.specification import (
-    get_specification_filters,
-    get_specification_privacy_filter,
     HasSpecificationsMixin,
-    spec_started_clause,
     Specification,
+    )
+from lp.blueprints.model.specificationsearch import (
+    get_specification_active_product_filter,
+    get_specification_privacy_filter,
+    get_specification_started_clause,
+    search_specifications,
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugtarget import IBugTarget
@@ -856,10 +856,8 @@ class Person(
         # because the default if nothing is said is ANY.
 
         roles = set([
-            SpecificationFilter.CREATOR,
-            SpecificationFilter.ASSIGNEE,
-            SpecificationFilter.DRAFTER,
-            SpecificationFilter.APPROVER,
+            SpecificationFilter.CREATOR, SpecificationFilter.ASSIGNEE,
+            SpecificationFilter.DRAFTER, SpecificationFilter.APPROVER,
             SpecificationFilter.SUBSCRIBER])
         # If no roles are given, then we want everything.
         if filter.intersection(roles) == set():
@@ -877,32 +875,18 @@ class Person(
             role_clauses.append(
                 Specification.id.is_in(
                     Select(SpecificationSubscription.specificationID,
-                        [SpecificationSubscription.person == self]
-                    )))
-        tables, clauses = get_specification_privacy_filter(user)
-        clauses.append(Or(*role_clauses))
-        # Defaults for completeness: if nothing is said about completeness
-        # then we want to show INCOMPLETE.
+                        [SpecificationSubscription.person == self])))
+
+        clauses = [Or(*role_clauses)]
         if SpecificationFilter.COMPLETE not in filter:
             if (in_progress and SpecificationFilter.INCOMPLETE not in filter
                 and SpecificationFilter.ALL not in filter):
-                clauses.append(spec_started_clause)
-            filter.add(SpecificationFilter.INCOMPLETE)
+                clauses.append(get_specification_started_clause())
+                filter.add(SpecificationFilter.INCOMPLETE)
 
-        clauses.extend(get_specification_filters(filter))
-        results = Store.of(self).using(*tables).find(Specification, *clauses)
-        # The default sort is priority descending, so only explictly sort for
-        # DATE.
-        if sort == SpecificationSort.DATE:
-            sort = Desc(Specification.datecreated)
-        elif getattr(sort, 'enum', None) is SpecificationSort:
-            sort = None
-        if sort is not None:
-            results = results.order_by(sort)
-        results.config(distinct=True)
-        if quantity is not None:
-            results.config(limit=quantity)
-        return results
+        return search_specifications(
+            self, clauses, user, sort, quantity, list(filter),
+            prejoin_people)
 
     # XXX: Tom Berger 2008-04-14 bug=191799:
     # The implementation of these functions
@@ -1482,7 +1466,10 @@ class Person(
         from lp.registry.model.distribution import Distribution
         store = Store.of(self)
         WorkItem = SpecificationWorkItem
-        origin, query = get_specification_privacy_filter(user)
+        origin = [Specification]
+        productjoin, query = get_specification_active_product_filter(self)
+        origin.extend(productjoin)
+        query.extend(get_specification_privacy_filter(user))
         origin.extend([
             Join(WorkItem, WorkItem.specification == Specification.id),
             # WorkItems may not have a milestone and in that case they inherit

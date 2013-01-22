@@ -37,10 +37,11 @@ from lp.blueprints.interfaces.sprint import (
     ISprint,
     ISprintSet,
     )
-from lp.blueprints.model.specification import (
+from lp.blueprints.model.specification import HasSpecificationsMixin
+from lp.blueprints.model.specificationsearch import (
+    get_specification_active_product_filter,
     get_specification_filters,
     get_specification_privacy_filter,
-    HasSpecificationsMixin,
     )
 from lp.blueprints.model.sprintattendance import SprintAttendance
 from lp.blueprints.model.sprintspecification import SprintSpecification
@@ -120,7 +121,9 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         """
         # Avoid circular imports.
         from lp.blueprints.model.specification import Specification
-        tables, query = get_specification_privacy_filter(user)
+        tables, query = get_specification_active_product_filter(self)
+        tables.insert(0, Specification)
+        query.append(get_specification_privacy_filter(user))
         tables.append(Join(
             SprintSpecification,
             SprintSpecification.specification == Specification.id))
@@ -153,7 +156,7 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         if len(statuses) > 0:
             query.append(Or(*statuses))
         # Filter for specification text
-        query.extend(get_specification_filters(filter))
+        query.extend(get_specification_filters(filter, goalstatus=False))
         return tables, query
 
     def all_specifications(self, user):

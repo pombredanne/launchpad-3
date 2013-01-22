@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Models for `IProductSeries`."""
@@ -38,18 +38,12 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadCelebrities,
     IServiceUsage,
     )
-from lp.blueprints.enums import (
-    SpecificationDefinitionStatus,
-    SpecificationFilter,
-    SpecificationGoalStatus,
-    SpecificationImplementationStatus,
-    SpecificationSort,
-    )
 from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
     )
+from lp.blueprints.model.specificationsearch import search_specifications
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
@@ -79,7 +73,6 @@ from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.sqlbase import (
-    quote,
     SQLBase,
     sqlvalues,
     )
@@ -334,116 +327,10 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
           - informational, which defaults to showing BOTH if nothing is said
 
         """
-
-        # Make a new list of the filter, so that we do not mutate what we
-        # were passed as a filter
-        if not filter:
-            # filter could be None or [] then we decide the default
-            # which for a productseries is to show everything accepted
-            filter = [SpecificationFilter.ACCEPTED]
-
-        # defaults for completeness: in this case we don't actually need to
-        # do anything, because the default is ANY
-
-        # defaults for acceptance: in this case, if nothing is said about
-        # acceptance, we want to show only accepted specs
-        acceptance = False
-        for option in [
-            SpecificationFilter.ACCEPTED,
-            SpecificationFilter.DECLINED,
-            SpecificationFilter.PROPOSED]:
-            if option in filter:
-                acceptance = True
-        if acceptance is False:
-            filter.append(SpecificationFilter.ACCEPTED)
-
-        # defaults for informationalness: we don't have to do anything
-        # because the default if nothing is said is ANY
-
-        # sort by priority descending, by default
-        if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'definition_status', 'name']
-        elif sort == SpecificationSort.DATE:
-            # we are showing specs for a GOAL, so under some circumstances
-            # we care about the order in which the specs were nominated for
-            # the goal, and in others we care about the order in which the
-            # decision was made.
-
-            # we need to establish if the listing will show specs that have
-            # been decided only, or will include proposed specs.
-            show_proposed = set([
-                SpecificationFilter.ALL,
-                SpecificationFilter.PROPOSED,
-                ])
-            if len(show_proposed.intersection(set(filter))) > 0:
-                # we are showing proposed specs so use the date proposed
-                # because not all specs will have a date decided.
-                order = ['-Specification.datecreated', 'Specification.id']
-            else:
-                # this will show only decided specs so use the date the spec
-                # was accepted or declined for the sprint
-                order = ['-Specification.date_goal_decided',
-                         '-Specification.datecreated',
-                         'Specification.id']
-
-        # figure out what set of specifications we are interested in. for
-        # productseries, we need to be able to filter on the basis of:
-        #
-        #  - completeness. by default, only incomplete specs shown
-        #  - goal status. by default, only accepted specs shown
-        #  - informational.
-        #
-        base = 'Specification.productseries = %s' % self.id
-        query = base
-        # look for informational specs
-        if SpecificationFilter.INFORMATIONAL in filter:
-            query += (' AND Specification.implementation_status = %s' %
-              quote(SpecificationImplementationStatus.INFORMATIONAL))
-
-        # filter based on completion. see the implementation of
-        # Specification.is_complete() for more details
-        completeness = Specification.completeness_clause
-
-        if SpecificationFilter.COMPLETE in filter:
-            query += ' AND ( %s ) ' % completeness
-        elif SpecificationFilter.INCOMPLETE in filter:
-            query += ' AND NOT ( %s ) ' % completeness
-
-        # look for specs that have a particular goalstatus (proposed,
-        # accepted or declined)
-        if SpecificationFilter.ACCEPTED in filter:
-            query += ' AND Specification.goalstatus = %d' % (
-                SpecificationGoalStatus.ACCEPTED.value)
-        elif SpecificationFilter.PROPOSED in filter:
-            query += ' AND Specification.goalstatus = %d' % (
-                SpecificationGoalStatus.PROPOSED.value)
-        elif SpecificationFilter.DECLINED in filter:
-            query += ' AND Specification.goalstatus = %d' % (
-                SpecificationGoalStatus.DECLINED.value)
-
-        # Filter for validity. If we want valid specs only then we should
-        # exclude all OBSOLETE or SUPERSEDED specs
-        if SpecificationFilter.VALID in filter:
-            query += (
-                ' AND Specification.definition_status NOT IN ( %s, %s ) '
-                % sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
-                            SpecificationDefinitionStatus.SUPERSEDED))
-
-        # ALL is the trump card
-        if SpecificationFilter.ALL in filter:
-            query = base
-
-        # Filter for specification text
-        for constraint in filter:
-            if isinstance(constraint, basestring):
-                # a string in the filter is a text search filter
-                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
-                    constraint)
-
-        results = Specification.select(query, orderBy=order, limit=quantity)
-        if prejoin_people:
-            results = results.prejoin(['_assignee', '_approver', '_drafter'])
-        return results
+        base_clauses = [Specification.productseriesID == self.id]
+        return search_specifications(
+            self, base_clauses, user, sort, quantity, filter, prejoin_people,
+            default_acceptance=True)
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this product series."""
