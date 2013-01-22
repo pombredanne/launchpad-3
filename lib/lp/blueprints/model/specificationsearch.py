@@ -53,21 +53,19 @@ def search_specifications(context, base_clauses, user, sort=None,
                           quantity=None, spec_filter=None, prejoin_people=True,
                           tables=[], default_acceptance=False):
     store = IStore(Specification)
-    default = SpecificationFilter.INCOMPLETE
-    options = [SpecificationFilter.COMPLETE, SpecificationFilter.INCOMPLETE]
-    if default_acceptance:
+    if not default_acceptance:
+        default = SpecificationFilter.INCOMPLETE
+        options = set([
+            SpecificationFilter.COMPLETE, SpecificationFilter.INCOMPLETE])
+    else:
         default = SpecificationFilter.ACCEPTED
-        options = [
+        options = set([
             SpecificationFilter.ACCEPTED, SpecificationFilter.DECLINED,
-            SpecificationFilter.PROPOSED]
+            SpecificationFilter.PROPOSED])
     if not spec_filter:
         spec_filter = [default]
 
-    check_option = False
-    for option in options:
-        if option in spec_filter:
-            check_option = True
-    if check_option is False:
+    if not set(spec_filter) & options:
         spec_filter.append(default)
 
     if not tables:
