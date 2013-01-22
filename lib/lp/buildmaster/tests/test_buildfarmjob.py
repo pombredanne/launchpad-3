@@ -232,24 +232,6 @@ class TestBuildFarmJobMixin(TestCaseWithFactory):
             self.assertIsNot(None, build.date_started)
             self.assertIsNot(None, build.date_finished)
 
-    def test_updateStatus_MANUALDEPWAIT_sets_dependencies(self):
-        # updateStatus sets dependencies for a MANUALDEPWAIT build.
-        self.build_farm_job.updateStatus(
-            BuildStatus.MANUALDEPWAIT, slave_status={'dependencies': u'deps'})
-        self.assertEqual(u'deps', self.build_farm_job.dependencies)
-        self.build_farm_job.updateStatus(
-            BuildStatus.MANUALDEPWAIT, slave_status={})
-        self.assertEqual(None, self.build_farm_job.dependencies)
-
-    def test_updateStatus_unsets_dependencies_for_other_statuses(self):
-        # updateStatus unsets existing dependencies when transitioning
-        # to another state.
-        self.build_farm_job.updateStatus(
-            BuildStatus.MANUALDEPWAIT, slave_status={'dependencies': u'deps'})
-        self.assertEqual(u'deps', self.build_farm_job.dependencies)
-        self.build_farm_job.updateStatus(BuildStatus.FULLYBUILT)
-        self.assertEqual(None, self.build_farm_job.dependencies)
-
 
 class TestBuildFarmJobSet(TestBuildFarmJobBase, TestCaseWithFactory):
 

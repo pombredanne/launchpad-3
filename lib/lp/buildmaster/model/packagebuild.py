@@ -149,6 +149,18 @@ class PackageBuildMixin(BuildFarmJobMixin):
         """See `IPackageBuild`."""
         raise NotImplementedError
 
+    def updateStatus(self, status, builder=None, slave_status=None,
+                     date_started=None, date_finished=None):
+        super(PackageBuildMixin, self).updateStatus(
+            status, builder=builder, slave_status=slave_status,
+            date_started=date_started, date_finished=date_finished)
+
+        if (status == BuildStatus.MANUALDEPWAIT and slave_status is not None
+            and slave_status.get('dependencies') is not None):
+            self.dependencies = unicode(slave_status.get('dependencies'))
+        else:
+            self.dependencies = None
+
     def verifySuccessfulUpload(self):
         """See `IPackageBuild`."""
         raise NotImplementedError
