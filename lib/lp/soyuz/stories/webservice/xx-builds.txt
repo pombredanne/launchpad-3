@@ -100,13 +100,10 @@ For testing purposes we will set 'buildlog' and 'upload_log' to the
 same library file, so both can be verified.
 
     >>> login('foo.bar@canonical.com')
-
     >>> from lp.soyuz.interfaces.binarypackagebuild import (
     ...     IBinaryPackageBuildSet)
-
     >>> build = getUtility(IBinaryPackageBuildSet).getByID(26)
-    >>> build.upload_log = build.log
-
+    >>> build.storeUploadLog('i am a log')
     >>> logout()
 
 IBinaryPackageBuild 'build_log_url' and 'upload_log_url' are webapp
@@ -217,7 +214,7 @@ alter the buildstate to one that cannot be retried:
 
     >>> login('foo.bar@canonical.com')
     >>> from lp.buildmaster.enums import BuildStatus
-    >>> build.status = BuildStatus.FAILEDTOUPLOAD
+    >>> build.updateStatus(BuildStatus.FAILEDTOUPLOAD)
     >>> logout()
 
     >>> print cprov_webservice.named_post(

@@ -159,7 +159,7 @@ augments the IBuildSet.getStatusSummaryForBuilds() method to include the
     ...     sourcename='abc', architecturehintlist='any')
     >>> builds = spph.createMissingBuilds()
     >>> for build in builds:
-    ...     build.status = BuildStatus.FULLYBUILT
+    ...     build.updateStatus(BuildStatus.FULLYBUILT)
 
 Create a helper for printing the build status summary:
 
@@ -218,7 +218,7 @@ Nor will it be included in the unpublished builds:
 By default, only FULLYBUILT builds are included in the returned
 unpublished builds:
 
-    >>> builds[1].status = BuildStatus.SUPERSEDED
+    >>> builds[1].updateStatus(BuildStatus.SUPERSEDED)
     >>> for build in spph.getUnpublishedBuilds():
     ...     print build.title
 
@@ -233,7 +233,7 @@ But the returned build-states can be set explicitly:
 
 Just switch it back to FULLYBUILT before continuing:
 
-    >>> builds[1].status = BuildStatus.FULLYBUILT
+    >>> builds[1].updateStatus(BuildStatus.FULLYBUILT)
 
 After publishing the second binary, the status changes to FULLYBUILT as
 per normal:
@@ -272,8 +272,8 @@ that build:
     >>> spph = test_publisher.getPubSource(
     ...     sourcename='def', architecturehintlist='any')
     >>> builds = spph.createMissingBuilds()
-    >>> builds[0].status = BuildStatus.SUPERSEDED
-    >>> builds[1].status = BuildStatus.FULLYBUILT
+    >>> builds[0].updateStatus(BuildStatus.SUPERSEDED)
+    >>> builds[1].updateStatus(BuildStatus.FULLYBUILT)
     >>> build_status_summary = spph.getStatusSummaryForBuilds()
     >>> print_build_status_summary(build_status_summary)
     FULLYBUILT_PENDING
@@ -1188,7 +1188,7 @@ is correct:
     ...     sourcename='stu', architecturehintlist='any')
     ...     missing_builds = spph.createMissingBuilds()
     ...     for build in missing_builds:
-    ...         build.status = BuildStatus.FULLYBUILT
+    ...         build.updateStatus(BuildStatus.FULLYBUILT)
     ...         builds.append(build)
     ...     sources.append(spph)
     >>> len(builds)

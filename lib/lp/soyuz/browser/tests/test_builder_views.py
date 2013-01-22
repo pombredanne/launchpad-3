@@ -164,11 +164,9 @@ class BuildCreationMixin(object):
 
     def markAsBuilt(self, build):
         lfa = self.factory.makeLibraryFileAlias()
-        naked_build = removeSecurityProxy(build)
-        naked_build.log = lfa
-        naked_build.date_started = self.factory.getUniqueDate()
-        naked_build.date_finished = self.factory.getUniqueDate()
-        naked_build.status = BuildStatus.FULLYBUILT
+        build.updateStatus(BuildStatus.BUILDING)
+        build.updateStatus(BuildStatus.FULLYBUILT)
+        build.setLog(lfa)
         transaction.commit()
 
     def createTranslationTemplateBuildWithBuilder(self, builder=None):

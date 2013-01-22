@@ -58,8 +58,9 @@ class TestBuildDepWait(TestCaseWithFactory):
         spn = self.factory.getUniqueString()
         version = "%s.1" % self.factory.getUniqueInteger()
         with person_logged_in(self.admin):
-            build.status = BuildStatus.MANUALDEPWAIT
-            build.dependencies = unicode(spn)
+            build.updateStatus(
+                BuildStatus.MANUALDEPWAIT,
+                slave_status={'dependencies': unicode(spn)})
             [bpph] = self.publisher.getPubBinaries(
                 binaryname=spn, distroseries=self.distroseries,
                 version=version, builder=self.builder, archive=self.archive,
@@ -80,8 +81,9 @@ class TestBuildDepWait(TestCaseWithFactory):
         spn = self.factory.getUniqueString()
         version = "%s.1" % self.factory.getUniqueInteger()
         with person_logged_in(self.admin):
-            build.status = BuildStatus.MANUALDEPWAIT
-            build.dependencies = unicode(spn)
+            build.updateStatus(
+                BuildStatus.MANUALDEPWAIT,
+                slave_status={'dependencies': unicode(spn)})
             [bpph] = self.publisher.getPubBinaries(
                 binaryname=spn, distroseries=self.distroseries,
                 version=version, builder=self.builder, archive=self.archive,

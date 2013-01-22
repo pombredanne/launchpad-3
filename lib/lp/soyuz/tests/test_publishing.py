@@ -335,7 +335,7 @@ class SoyuzTestPublisher:
         builds = pub_source.createMissingBuilds()
         published_binaries = []
         for build in builds:
-            build.builder = builder
+            build.updateStatus(BuildStatus.FULLYBUILT, builder=builder)
             pub_binaries = []
             if with_debug:
                 binarypackagerelease_ddeb = self.uploadBinaryForBuild(
@@ -427,12 +427,10 @@ class SoyuzTestPublisher:
         binarypackagerelease.addFile(alias)
 
         # Adjust the build record in way it looks complete.
-        naked_build = removeSecurityProxy(build)
-        naked_build.status = BuildStatus.FULLYBUILT
-        naked_build.date_finished = datetime.datetime(
-            2008, 1, 1, 0, 5, 0, tzinfo=pytz.UTC)
-        naked_build.date_started = (
-            build.date_finished - datetime.timedelta(minutes=5))
+        date_finished = datetime.datetime(2008, 1, 1, 0, 5, 0, tzinfo=pytz.UTC)
+        date_started = date_finished - datetime.timedelta(minutes=5)
+        build.updateStatus(BuildStatus.BUILDING, date_started=date_started)
+        build.updateStatus(BuildStatus.FULLYBUILT, date_finished=date_finished)
         buildlog_filename = 'buildlog_%s-%s-%s.%s_%s_%s.txt.gz' % (
             build.distribution.name,
             build.distro_series.name,
@@ -440,9 +438,11 @@ class SoyuzTestPublisher:
             build.source_package_release.name,
             build.source_package_release.version,
             build.status.name)
-        naked_build.log = self.addMockFile(
-            buildlog_filename, filecontent='Built!',
-            restricted=build.archive.private)
+        if not build.log:
+            build.setLog(
+                self.addMockFile(
+                    buildlog_filename, filecontent='Built!',
+                    restricted=build.archive.private))
 
         return binarypackagerelease
 

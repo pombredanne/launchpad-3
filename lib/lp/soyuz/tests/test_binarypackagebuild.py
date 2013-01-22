@@ -87,10 +87,11 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         build = spr.createBuild(
             distro_arch_series=self.build.distro_arch_series,
             archive=spr.upload_archive, pocket=spr.package_upload.pocket)
-        build.status = BuildStatus.FULLYBUILT
         now = datetime.now(pytz.UTC)
-        build.date_finished = now
-        build.date_started = now - timedelta(seconds=duration)
+        build.updateStatus(
+            BuildStatus.BUILDING,
+            date_started=now - timedelta(seconds=duration))
+        build.updateStatus(BuildStatus.FULLYBUILT, date_finished=now)
         return build
 
     def test_estimateDuration_with_history(self):
@@ -171,7 +172,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         build = self.factory.makeBinaryPackageBuild(archive=ppa)
         bq = build.queueBuild()
-        build.status = BuildStatus.BUILDING
+        build.updateStatus(BuildStatus.BUILDING)
         build.cancel()
         self.assertEqual(BuildStatus.CANCELLING, build.status)
         self.assertEqual(bq, build.buildqueue_record)
@@ -198,9 +199,9 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
             status=PackagePublishingStatus.PUBLISHED)
 
         [depwait_build] = depwait_source.createMissingBuilds()
-        depwait_build.status = BuildStatus.MANUALDEPWAIT
-        depwait_build.dependencies = u'dep-bin'
-
+        depwait_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT,
+            slave_status={'dependencies': u'dep-bin'})
         return depwait_build
 
     def testBuildqueueRemoval(self):
@@ -253,7 +254,8 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         self.assertEqual(depwait_build.dependencies, '')
 
     def assertRaisesUnparsableDependencies(self, depwait_build, dependencies):
-        depwait_build.dependencies = dependencies
+        # XXX wgrant: This shouldn't use rSP
+        removeSecurityProxy(depwait_build).dependencies = dependencies
         self.assertRaises(
             UnparsableDependencies, depwait_build.updateDependencies)
 
@@ -301,10 +303,11 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         depwait_build = self._setupSimpleDepwaitContext()
         self.layer.txn.commit()
 
-        depwait_build.dependencies = u'dep-bin (>> 666)'
+        # XXX wgrant: should not use rSP
+        removeSecurityProxy(depwait_build).dependencies = u'dep-bin (>> 666)'
         depwait_build.updateDependencies()
         self.assertEqual(depwait_build.dependencies, u'dep-bin (>> 666)')
-        depwait_build.dependencies = u'dep-bin (>= 666)'
+        removeSecurityProxy(depwait_build).dependencies = u'dep-bin (>= 666)'
         depwait_build.updateDependencies()
         self.assertEqual(depwait_build.dependencies, u'')
 
@@ -320,10 +323,11 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
             status=PackagePublishingStatus.PUBLISHED)
         self.layer.txn.commit()
 
-        depwait_build.dependencies = u'dep-bin (= 666)'
+        # XXX wgrant: should not use rSP
+        removeSecurityProxy(depwait_build).dependencies = u'dep-bin (= 666)'
         depwait_build.updateDependencies()
         self.assertEqual(depwait_build.dependencies, u'')
-        depwait_build.dependencies = u'dep-bin (= 999)'
+        removeSecurityProxy(depwait_build).dependencies = u'dep-bin (= 999)'
         depwait_build.updateDependencies()
         self.assertEqual(depwait_build.dependencies, u'')
 
@@ -435,7 +439,7 @@ class TestBuildSetGetBuildsForBuilder(BaseTestCaseWithThreeBuilds):
 
         # Ensure that our builds were all built by the test builder.
         for build in self.builds:
-            build.builder = self.builder
+            build.updateStatus(BuildStatus.FULLYBUILT, builder=self.builder)
 
     def test_getBuildsForBuilder_no_params(self):
         # All builds should be returned when called without filtering

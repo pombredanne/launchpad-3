@@ -79,10 +79,10 @@ class TestRetryDepwait(TestCaseWithFactory):
 
     def test_only_retries_depwait(self):
         # Builds in non-depwait statuses aren't retried.
-        self.build.status = BuildStatus.FAILEDTOBUILD
+        self.build.updateStatus(BuildStatus.FAILEDTOBUILD)
         self.assertStatusAfterLoop(BuildStatus.FAILEDTOBUILD)
 
-        self.build.status = BuildStatus.MANUALDEPWAIT
+        self.build.updateStatus(BuildStatus.MANUALDEPWAIT)
         self.assertStatusAfterLoop(BuildStatus.NEEDSBUILD)
 
     def runScript(self):

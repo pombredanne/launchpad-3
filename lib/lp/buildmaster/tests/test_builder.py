@@ -638,8 +638,8 @@ class TestFindBuildCandidatePPABase(TestFindBuildCandidateBase):
         count = 0
         for build in builds_list[:num_builds]:
             if build.distro_arch_series.architecturetag == archtag:
-                build.status = BuildStatus.BUILDING
-                build.builder = self.builders[count]
+                build.updateStatus(
+                    BuildStatus.BUILDING, builder=self.builders[count])
             count += 1
 
     def setUp(self):
@@ -706,7 +706,7 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidatePPABase):
     def test_findBuildCandidate_first_build_finished(self):
         # When joe's first ppa build finishes, his fourth i386 build
         # will be the next build candidate.
-        self.joe_builds[0].status = BuildStatus.FAILEDTOBUILD
+        self.joe_builds[0].updateStatus(BuildStatus.FAILEDTOBUILD)
         next_job = removeSecurityProxy(self.builder4)._findBuildCandidate()
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('joesppa', build.archive.name)
@@ -771,8 +771,7 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
 
         # Now even if we set the build building, we'll still get the
         # second non-ppa build for the same archive as the next candidate.
-        build.status = BuildStatus.BUILDING
-        build.builder = self.frog_builder
+        build.updateStatus(BuildStatus.BUILDING, builder=self.frog_builder)
         next_job = removeSecurityProxy(
             self.frog_builder)._findBuildCandidate()
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)

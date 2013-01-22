@@ -158,7 +158,7 @@ Assign the build to the 'frog' builder:
 
     >>> frog = getUtility(IBuilderSet)['frog']
     >>> frog.builderok = True
-    >>> private_build.builder = frog
+    >>> private_build.updateStatus(BuildStatus.BUILDING, builder=frog)
     >>> private_job = private_build.buildqueue_record
     >>> private_job.builder = frog
     >>> private_job_id = private_job.id

@@ -1008,7 +1008,7 @@ in No Privileges' PPA.
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> [build] = jblack_friends_foo_src.createMissingBuilds()
     >>> from lp.buildmaster.enums import BuildStatus
-    >>> build.status = BuildStatus.FAILEDTOBUILD
+    >>> build.updateStatus(BuildStatus.FAILEDTOBUILD)
 
     >>> flush_database_updates()
     >>> logout()

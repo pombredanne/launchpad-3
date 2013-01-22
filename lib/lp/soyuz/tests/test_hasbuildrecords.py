@@ -126,19 +126,19 @@ class TestDistributionHasBuildRecords(TestCaseWithFactory):
                 distroseries=self.distroseries, architecturehintlist='any')
             builds = spph.createMissingBuilds()
             for b in builds:
+                b.updateStatus(BuildStatus.BUILDING)
                 if i == 4:
-                    b.status = BuildStatus.FAILEDTOBUILD
+                    b.updateStatus(BuildStatus.FAILEDTOBUILD)
                 else:
-                    b.status = BuildStatus.FULLYBUILT
+                    b.updateStatus(BuildStatus.FULLYBUILT)
                 b.buildqueue_record.destroySelf()
-                b.date_started = datetime.now(pytz.UTC)
-                b.date_finished = b.date_started + timedelta(minutes=5)
             self.builds += builds
 
     def test_get_build_records(self):
         # A Distribution also implements IHasBuildRecords.
         builds = self.distribution.getBuildRecords().count()
         self.assertEquals(10, builds)
+
 
 class TestDistroSeriesHasBuildRecords(TestHasBuildRecordsInterface):
     """Test the DistroSeries implementation of IHasBuildRecords."""
@@ -226,7 +226,7 @@ class TestBuilderHasBuildRecords(TestHasBuildRecordsInterface):
 
         # Ensure that our builds were all built by the test builder.
         for build in self.builds:
-            build.builder = self.context
+            build.updateStatus(BuildStatus.FULLYBUILT, builder=self.context)
 
     def test_binary_only_false(self):
         # A builder can optionally return the more general
@@ -287,12 +287,9 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
 
         # Set them as sucessfully built
         for build in self.builds:
-            build.status = BuildStatus.FULLYBUILT
+            build.updateStatus(BuildStatus.BUILDING)
+            build.updateStatus(BuildStatus.FULLYBUILT)
             build.buildqueue_record.destroySelf()
-            removeSecurityProxy(build).date_created = (
-                self.factory.getUniqueDate())
-            build.date_started = datetime.now(pytz.UTC)
-            build.date_finished = build.date_started + timedelta(minutes=5)
 
     def test_get_build_records(self):
         # We can fetch builds records from a SourcePackage.
