@@ -17,7 +17,7 @@ from zope.interface import implements
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.bulk import load_related
 from lp.services.database.lpstorm import IStore
@@ -36,11 +36,10 @@ from lp.soyuz.interfaces.buildpackagejob import (
     SCORE_BY_URGENCY,
     )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 from lp.soyuz.model.packageset import Packageset
 
 
-class BuildPackageJob(BuildFarmJobOldDerived, Storm):
+class BuildPackageJob(BuildFarmJobOld, Storm):
     """See `IBuildPackageJob`."""
     implements(IBuildPackageJob)
 
@@ -56,12 +55,6 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
     def __init__(self, build, job):
         self.build, self.job = build, job
         super(BuildPackageJob, self).__init__()
-
-    def _set_build_farm_job(self):
-        """Setup the IBuildFarmJob delegate.
-
-        We override this to provide a delegate specific to package builds."""
-        self.build_farm_job = BuildFarmBuildJob(self.build)
 
     @staticmethod
     def preloadBuildFarmJobs(jobs):
