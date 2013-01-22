@@ -111,6 +111,24 @@ class TestPackageBuildMixin(TestCaseWithFactory):
         # PackageBuild provides IPackageBuild
         self.assertProvides(self.package_build, IPackageBuild)
 
+    def test_updateStatus_MANUALDEPWAIT_sets_dependencies(self):
+        # updateStatus sets dependencies for a MANUALDEPWAIT build.
+        self.package_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT, slave_status={'dependencies': u'deps'})
+        self.assertEqual(u'deps', self.package_build.dependencies)
+        self.package_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT, slave_status={})
+        self.assertEqual(None, self.package_build.dependencies)
+
+    def test_updateStatus_unsets_dependencies_for_other_statuses(self):
+        # updateStatus unsets existing dependencies when transitioning
+        # to another state.
+        self.package_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT, slave_status={'dependencies': u'deps'})
+        self.assertEqual(u'deps', self.package_build.dependencies)
+        self.package_build.updateStatus(BuildStatus.FULLYBUILT)
+        self.assertEqual(None, self.package_build.dependencies)
+
     def test_log_url(self):
         # The url of the build log file is determined by the PackageBuild.
         lfa = self.factory.makeLibraryFileAlias('mybuildlog.txt')

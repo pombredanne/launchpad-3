@@ -681,7 +681,7 @@ class BuildUploadHandler(UploadHandler):
             result = UploadStatusEnum.FAILED
         if (result != UploadStatusEnum.ACCEPTED or
             not self.build.verifySuccessfulUpload()):
-            self.build.status = BuildStatus.FAILEDTOUPLOAD
+            self.build.updateStatus(BuildStatus.FAILEDTOUPLOAD)
         if self.build.status != BuildStatus.FULLYBUILT:
             if recipe_deleted:
                 # For a deleted recipe, no need to notify that uploading has
