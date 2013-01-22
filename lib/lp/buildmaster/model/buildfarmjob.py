@@ -363,12 +363,12 @@ class BuildFarmJobMixin:
             self.date_finished = (
                 date_finished or datetime.datetime.now(pytz.UTC))
 
-        if status == BuildStatus.MANUALDEPWAIT:
-            # XXX: This should be in PackageBuild
-            if slave_status and slave_status.get('dependencies') is not None:
-                self.dependencies = unicode(slave_status.get('dependencies'))
-            else:
-                self.dependencies = None
+        # XXX: This should be in PackageBuild
+        if (status == BuildStatus.MANUALDEPWAIT and slave_status is not None
+            and slave_status.get('dependencies') is not None):
+            self.dependencies = unicode(slave_status.get('dependencies'))
+        else:
+            self.dependencies = None
 
     def gotFailure(self):
         """See `IBuildFarmJob`."""
