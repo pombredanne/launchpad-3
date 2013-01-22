@@ -420,9 +420,6 @@ class SourceUploadFile(SourceFileMixin, PackageUploadFile):
         """See PackageUploadFile."""
         # The master verifies the status to confirm successful upload.
         build.updateStatus(BuildStatus.FULLYBUILT)
-        # If this upload is successful, any existing log is wrong and
-        # unuseful.
-        # XXX wgrant: Just assert this in updateStatus?
 
         # Sanity check; raise an error if the build we've been
         # told to link to makes no sense.
