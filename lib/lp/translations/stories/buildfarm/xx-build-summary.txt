@@ -97,8 +97,8 @@ There's a detailed page for the build record.
     >>> print extract_text(find_main_content(user_browser.contents))
     P...
     Build status
-        Needs building
-        Not started yet.
+        Currently building
+        Started ...
     Build details
         Branch: lp://dev/...
         Not imported anywhere.
@@ -123,8 +123,8 @@ product series.
     >>> print extract_text(find_main_content(user_browser.contents))
     P...
     Build status
-        Needs building
-        Not started yet.
+        Currently building
+        Started ...
     Build details
         Branch: lp://dev/...
         For import into: qblark trunk series
