@@ -249,7 +249,7 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
             logger.debug(
                 "Build %s FAILEDTOBUILD, queue item %s REMOVED"
                 % (build.id, job.id))
-            build.status = BuildStatus.FAILEDTOBUILD
+            build.updateStatus(BuildStatus.FAILEDTOBUILD)
             job.destroySelf()
             return False
 
@@ -260,7 +260,7 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
             logger.debug(
                 "Build %s SUPERSEDED, queue item %s REMOVED"
                 % (build.id, job.id))
-            build.status = BuildStatus.SUPERSEDED
+            build.updateStatus(BuildStatus.SUPERSEDED)
             job.destroySelf()
             return False
 

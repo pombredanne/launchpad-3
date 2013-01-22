@@ -270,7 +270,7 @@ class BuildFarmJobBehaviorBase:
         if build.build_farm_job_type == BuildFarmJobType.PACKAGEBUILD:
             build = build.buildqueue_record.specific_job.build
             if not build.current_source_publication:
-                build.updateStatus(BuildStatus.SUPERSEDED, None, None)
+                build.updateStatus(BuildStatus.SUPERSEDED)
                 yield self.build.buildqueue_record.builder.cleanSlave()
                 self.build.buildqueue_record.destroySelf()
                 return
@@ -323,7 +323,8 @@ class BuildFarmJobBehaviorBase:
         # XXX wgrant: The builder should be set long before here, but
         # currently isn't.
         build.updateStatus(
-            status, build.buildqueue_record.builder, slave_status)
+            status, builder=build.buildqueue_record.builder,
+            slave_status=slave_status)
         yield self.storeLogFromSlave()
 
         # We only attempt the upload if we successfully copied all the
@@ -367,7 +368,8 @@ class BuildFarmJobBehaviorBase:
         # XXX wgrant: The builder should be set long before here, but
         # currently isn't.
         self.build.updateStatus(
-            status, self.build.buildqueue_record.builder, slave_status)
+            status, builder=self.build.buildqueue_record.builder,
+            slave_status=slave_status)
         yield self.storeLogFromSlave()
         if send_notification:
             self.build.notify()

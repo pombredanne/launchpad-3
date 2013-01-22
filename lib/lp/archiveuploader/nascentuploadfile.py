@@ -419,11 +419,10 @@ class SourceUploadFile(SourceFileMixin, PackageUploadFile):
     def checkBuild(self, build):
         """See PackageUploadFile."""
         # The master verifies the status to confirm successful upload.
-        build.updateStatus(BuildStatus.FULLYBUILT, None, None)
+        build.updateStatus(BuildStatus.FULLYBUILT)
         # If this upload is successful, any existing log is wrong and
         # unuseful.
         # XXX wgrant: Just assert this in updateStatus?
-        build.upload_log = None
 
         # Sanity check; raise an error if the build we've been
         # told to link to makes no sense.
@@ -866,8 +865,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         build = sourcepackagerelease.getBuildByArch(
             dar, self.policy.archive)
         if build is not None:
-            if build.status != BuildStatus.FULLYBUILT:
-                build.updateStatus(BuildStatus.FULLYBUILT, None, None)
+            build.updateStatus(BuildStatus.FULLYBUILT)
             self.logger.debug("Updating build for %s: %s" % (
                 dar.architecturetag, build.id))
         else:
@@ -888,8 +886,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 "Upload to unknown architecture %s for distroseries %s" %
                 (self.archtag, self.policy.distroseries))
 
-        if build.status != BuildStatus.FULLYBUILT:
-            build.updateStatus(BuildStatus.FULLYBUILT, None, None)
+        build.updateStatus(BuildStatus.FULLYBUILT)
 
         # Sanity check; raise an error if the build we've been
         # told to link to makes no sense.

@@ -91,7 +91,7 @@ class BuildFarmJobOld:
     def jobStarted(self):
         """See `IBuildFarmJobOld`."""
         # XXX wgrant: builder should be set here.
-        self.build.updateStatus(BuildStatus.BUILDING, None, None)
+        self.build.updateStatus(BuildStatus.BUILDING)
 
     def jobReset(self):
         """See `IBuildFarmJobOld`."""
@@ -331,15 +331,9 @@ class BuildFarmJobMixin:
         assert self.log is None
         self.log = log
 
-    def updateStatus(self, status, builder, slave_status):
+    def updateStatus(self, status, builder=None, slave_status=None,
+                     date_started=None, date_finished=None):
         """See `IBuildFarmJob`."""
-        assert status in (
-            BuildStatus.BUILDING,
-            BuildStatus.FAILEDTOBUILD, BuildStatus.MANUALDEPWAIT,
-            BuildStatus.CHROOTWAIT, BuildStatus.UPLOADING,
-            BuildStatus.FAILEDTOUPLOAD, BuildStatus.SUPERSEDED,
-            BuildStatus.FULLYBUILT)
-        assert self.status != status
         self.status = status
 
         # If there's a builder provided, set it if we don't already have
@@ -354,7 +348,7 @@ class BuildFarmJobMixin:
         # If we're starting to build, set date_started and
         # date_first_dispatched if required.
         if self.date_started is None and status == BuildStatus.BUILDING:
-            self.date_started = datetime.datetime.now(pytz.UTC)
+            self.date_started = date_started or datetime.datetime.now(pytz.UTC)
             if self.date_first_dispatched is None:
                 self.date_first_dispatched = self.date_started
 
@@ -367,7 +361,8 @@ class BuildFarmJobMixin:
             # XXX cprov 20060615 bug=120584: Currently buildduration includes
             # the scanner latency, it should really be asking the slave for
             # the duration spent building locally.
-            self.date_finished = datetime.datetime.now(pytz.UTC)
+            self.date_finished = (
+                date_finished or datetime.datetime.now(pytz.UTC))
 
         if status == BuildStatus.MANUALDEPWAIT:
             # XXX: This should be in PackageBuild
