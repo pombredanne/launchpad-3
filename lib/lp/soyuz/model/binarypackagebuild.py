@@ -811,14 +811,14 @@ class BinaryPackageBuildSet:
 
     def new(self, distro_arch_series, source_package_release, processor,
             archive, pocket, status=BuildStatus.NEEDSBUILD,
-            date_created=None):
+            date_created=None, builder=None):
         """See `IBinaryPackageBuildSet`."""
         # Create the PackageBuild to which the new BinaryPackageBuild
         # will delegate.
         package_build = getUtility(IPackageBuildSource).new(
             BinaryPackageBuild.build_farm_job_type,
             archive.require_virtualized, archive, pocket, processor,
-            status, date_created=date_created)
+            status, date_created=date_created, builder=builder)
 
         binary_package_build = BinaryPackageBuild(
             package_build=package_build,
