@@ -1068,13 +1068,22 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 
     layer = LaunchpadFunctionalLayer
 
-    def test_index(self):
+    def makeSuccessfulBuild(self, archive=None):
+        if archive is None:
+            archive = self.ppa
         recipe = self.makeRecipe()
         build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
-        build.status = BuildStatus.FULLYBUILT
-        build.date_started = datetime(2010, 03, 16, tzinfo=UTC)
-        build.date_finished = datetime(2010, 03, 16, tzinfo=UTC)
+            recipe=recipe, distroseries=self.squirrel, archive=archive))
+        build.updateStatus(
+            BuildStatus.BUILDING,
+            date_started=datetime(2010, 03, 16, tzinfo=UTC))
+        build.updateStatus(
+            BuildStatus.FULLYBUILT,
+            date_finished=datetime(2010, 03, 16, tzinfo=UTC))
+        return build
+
+    def test_index(self):
+        build = self.makeSuccessfulBuild()
 
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Master Chef Recipes cake_recipe
@@ -1097,34 +1106,24 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 
             Recipe contents Edit
             # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
-            lp://dev/~chef/chocolate/cake""", self.getMainText(recipe))
+            lp://dev/~chef/chocolate/cake""", self.getMainText(build.recipe))
 
     def test_index_success_with_buildlog(self):
         # The buildlog is shown if it is there.
-        recipe = self.makeRecipe()
-        build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
-        build.status = BuildStatus.FULLYBUILT
-        build.date_started = datetime(2010, 03, 16, tzinfo=UTC)
-        build.date_finished = datetime(2010, 03, 16, tzinfo=UTC)
-        build.log = self.factory.makeLibraryFileAlias()
+        build = self.makeSuccessfulBuild()
+        build.setLog(self.factory.makeLibraryFileAlias())
 
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Latest builds
             Status .* Archive
             Successful build on 2010-03-16 buildlog \(.*\)
                 Secret Squirrel Secret PPA
-            Request build\(s\)""", self.getMainText(recipe))
+            Request build\(s\)""", self.getMainText(build.recipe))
 
     def test_index_success_with_binary_builds(self):
         # Binary builds are shown after the recipe builds if there are any.
-        recipe = self.makeRecipe()
-        build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
-        build.status = BuildStatus.FULLYBUILT
-        build.date_started = datetime(2010, 03, 16, tzinfo=UTC)
-        build.date_finished = datetime(2010, 03, 16, tzinfo=UTC)
-        build.log = self.factory.makeLibraryFileAlias()
+        build = self.makeSuccessfulBuild()
+        build.setLog(self.factory.makeLibraryFileAlias())
         package_name = self.factory.getOrMakeSourcePackageName('chocolate')
         source_package_release = self.factory.makeSourcePackageRelease(
             archive=self.ppa, sourcepackagename=package_name,
@@ -1146,17 +1145,12 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             Successful build on 2010-03-16 buildlog \(.*\)
                Secret Squirrel Secret PPA chocolate - 0\+r42 in .*
                \(estimated\) i386
-            Request build\(s\)""", self.getMainText(recipe))
+            Request build\(s\)""", self.getMainText(build.recipe))
 
     def test_index_success_with_completed_binary_build(self):
         # Binary builds show their buildlog too.
-        recipe = self.makeRecipe()
-        build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
-        build.status = BuildStatus.FULLYBUILT
-        build.date_started = datetime(2010, 03, 16, tzinfo=UTC)
-        build.date_finished = datetime(2010, 03, 16, tzinfo=UTC)
-        build.log = self.factory.makeLibraryFileAlias()
+        build = self.makeSuccessfulBuild()
+        build.setLog(self.factory.makeLibraryFileAlias())
         package_name = self.factory.getOrMakeSourcePackageName('chocolate')
         source_package_release = self.factory.makeSourcePackageRelease(
             archive=self.ppa, sourcepackagename=package_name,
@@ -1172,31 +1166,28 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
                 distroarchseries=self.squirrel.nominatedarchindep,
                 processor=builder.processor))
         binary_build.queueBuild()
-        binary_build.status = BuildStatus.FULLYBUILT
-        binary_build.date_started = datetime(2010, 04, 16, tzinfo=UTC)
-        binary_build.date_finished = datetime(2010, 04, 16, tzinfo=UTC)
-        binary_build.log = self.factory.makeLibraryFileAlias()
+        binary_build.updateStatus(
+            BuildStatus.BUILDING,
+            date_started=datetime(2010, 04, 16, tzinfo=UTC))
+        binary_build.updateStatus(
+            BuildStatus.FULLYBUILT,
+            date_finished=datetime(2010, 04, 16, tzinfo=UTC))
+        binary_build.setLog(self.factory.makeLibraryFileAlias())
 
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Latest builds
             Status .* Archive
             Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel
               Secret PPA chocolate - 0\+r42 on 2010-04-16 buildlog \(.*\) i386
-            Request build\(s\)""", self.getMainText(recipe))
+            Request build\(s\)""", self.getMainText(build.recipe))
 
     def test_index_success_with_sprb_into_private_ppa(self):
         # The index page hides builds into archives the user can't view.
-        recipe = self.makeRecipe()
         archive = self.factory.makeArchive(private=True)
-        sprb = removeSecurityProxy(
-            self.factory.makeSourcePackageRecipeBuild(
-                recipe=recipe, distroseries=self.squirrel, archive=archive))
-        sprb.status = BuildStatus.FULLYBUILT
-        sprb.date_started = datetime(2010, 04, 16, tzinfo=UTC)
-        sprb.date_finished = datetime(2010, 04, 16, tzinfo=UTC)
-        sprb.log = self.factory.makeLibraryFileAlias()
+        build = self.makeSuccessfulBuild(archive=archive)
         self.assertIn(
-            "This recipe has not been built yet.", self.getMainText(recipe))
+            "This recipe has not been built yet.",
+            self.getMainText(build.recipe))
 
     def test_index_no_builds(self):
         """A message should be shown when there are no builds."""
@@ -1259,12 +1250,11 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             view.builds)
 
         def set_status(build, status):
-            naked_build = removeSecurityProxy(build)
-            naked_build.status = status
-            naked_build.date_started = naked_build.date_created
-            if status == BuildStatus.FULLYBUILT:
-                naked_build.date_finished = (
-                    naked_build.date_created + timedelta(minutes=10))
+            build.updateStatus(
+                BuildStatus.BUILDING, date_started=build.date_created)
+            build.updateStatus(
+                status,
+                date_finished=build.date_created + timedelta(minutes=10))
         set_status(build6, BuildStatus.FULLYBUILT)
         set_status(build5, BuildStatus.FAILEDTOBUILD)
         # When there are 4+ pending builds, only the most
@@ -1709,16 +1699,16 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         """Test the index page of a completed build."""
         release = self.makeBuildAndRelease()
         self.makeBinaryBuild(release, 'itanic')
-        naked_build = removeSecurityProxy(release.source_package_recipe_build)
-        naked_build.status = BuildStatus.FULLYBUILT
-        naked_build.date_finished = datetime(2009, 1, 1, tzinfo=UTC)
-        naked_build.date_started = (
-            naked_build.date_finished - timedelta(minutes=1))
-        naked_build.buildqueue_record.destroySelf()
-        naked_build.log = self.factory.makeLibraryFileAlias(
-            content='buildlog')
-        naked_build.upload_log = self.factory.makeLibraryFileAlias(
-            content='upload_log')
+        build = release.source_package_recipe_build
+        build.updateStatus(
+            BuildStatus.BUILDING,
+            date_started=datetime(2009, 1, 1, tzinfo=UTC))
+        build.updateStatus(
+            BuildStatus.FULLYBUILT,
+            date_finished=build.date_started + timedelta(minutes=1))
+        build.buildqueue_record.destroySelf()
+        build.setLog(self.factory.makeLibraryFileAlias(content='buildlog'))
+        build.storeUploadLog('upload_log')
         main_text = self.getMainText(
             release.source_package_recipe_build, '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\

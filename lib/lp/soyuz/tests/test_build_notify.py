@@ -75,16 +75,15 @@ class TestBuildNotify(TestCaseWithFactory):
             spph.sourcepackagerelease.dscsigningkey = self.gpgkey
             [build] = spph.createMissingBuilds()
             with person_logged_in(self.admin):
-                naked_build = removeSecurityProxy(build)
-                naked_build.status = status
-                naked_build.builder = self.builder
+                build.updateStatus(BuildStatus.BUILDING, builder=self.builder)
+                build.updateStatus(status,
+                    date_finished=(
+                        build.date_started + timedelta(
+                            minutes=5 * (status.value + 1))))
                 if status != BuildStatus.BUILDING:
                     build.buildqueue_record.destroySelf()
                 else:
                     build.buildqueue_record.builder = self.builder
-                naked_build.date_started = datetime.now(pytz.UTC)
-                naked_build.date_finished = build.date_started + timedelta(
-                    minutes=5 * (status.value + 1))
             self.builds.append(build)
 
     def _assert_mail_is_correct(self, build, notification, ppa=False):
@@ -102,7 +101,6 @@ class TestBuildNotify(TestCaseWithFactory):
             self.assertEquals(
                 get_ppa_reference(self.ppa), notification['X-Launchpad-PPA'])
         body = notification.get_payload(decode=True)
-        duration = DurationFormatterAPI(build.duration).approximateduration()
         build_log = 'None'
         if ppa is True:
             archive = '%s PPA' % get_ppa_reference(build.archive)
@@ -125,6 +123,9 @@ class TestBuildNotify(TestCaseWithFactory):
             duration = 'uploading'
             build_log = 'see builder page'
             builder = 'not available'
+        else:
+            duration = DurationFormatterAPI(
+                build.duration).approximateduration()
         expected_body = dedent("""
          * Source Package: %s
          * Version: %s
