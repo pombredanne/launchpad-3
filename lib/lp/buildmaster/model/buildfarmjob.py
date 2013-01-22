@@ -7,7 +7,6 @@ __all__ = [
     'BuildFarmJobDerived',
     'BuildFarmJobMixin',
     'BuildFarmJobOld',
-    'BuildFarmJobOldDerived',
     ]
 
 import datetime
@@ -58,8 +57,8 @@ from lp.services.database.lpstorm import (
     )
 
 
-class BuildFarmJobOldDerived:
-    """Setup the delegation and provide some common implementation."""
+class BuildFarmJobOld:
+    """Some common implementation for IBuildFarmJobOld."""
 
     implements(IBuildFarmJobOld)
 

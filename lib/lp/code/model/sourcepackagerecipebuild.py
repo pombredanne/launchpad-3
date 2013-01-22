@@ -36,7 +36,7 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
-from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
     PackageBuild,
@@ -391,7 +391,7 @@ class SourcePackageRecipeBuild(PackageBuildMixin, PackageBuildDerived, Storm):
         return self.requester
 
 
-class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
+class SourcePackageRecipeBuildJob(BuildFarmJobOld, Storm):
     classProvides(ISourcePackageRecipeBuildJobSource)
     implements(ISourcePackageRecipeBuildJob)
 

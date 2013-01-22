@@ -24,7 +24,7 @@ from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.model.branchjob import (
@@ -50,7 +50,7 @@ from lp.translations.pottery.detect_intltool import is_intltool_structure
 HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE = 2510
 
 
-class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
+class TranslationTemplatesBuildJob(BuildFarmJobOld, BranchJobDerived):
     """An `IBuildFarmJob` implementation that generates templates.
 
     Implementation-wise, this is actually a `BranchJob`.

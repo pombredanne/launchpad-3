@@ -17,7 +17,7 @@ from zope.interface import implements
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.bulk import load_related
 from lp.services.database.lpstorm import IStore
@@ -39,7 +39,7 @@ from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.packageset import Packageset
 
 
-class BuildPackageJob(BuildFarmJobOldDerived, Storm):
+class BuildPackageJob(BuildFarmJobOld, Storm):
     """See `IBuildPackageJob`."""
     implements(IBuildPackageJob)
 
