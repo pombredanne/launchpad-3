@@ -16,7 +16,6 @@ import os.path
 import socket
 import xmlrpclib
 
-import pytz
 from storm.store import Store
 from twisted.internet import defer
 from zope.component import getUtility
