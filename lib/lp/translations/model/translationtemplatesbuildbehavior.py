@@ -117,9 +117,6 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             if len(raw_slave_status) >= 4:
                 status['filemap'] = raw_slave_status[3]
 
-    def setBuildStatus(self, status):
-        self.build.status = status
-
     @defer.inlineCallbacks
     def updateBuild_WAITING(self, queue_item, slave_status, logtail, logger):
         """Deal with a finished ("WAITING" state, perversely) build job.
