@@ -14,6 +14,7 @@ __all__ = [
 import os
 import tempfile
 
+import transaction
 from twisted.internet import defer
 from zope.component import getUtility
 from zope.interface import implements
@@ -138,6 +139,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         if build_status == 'OK':
             self.build.updateStatus(
                 BuildStatus.UPLOADING, builder=queue_item.builder)
+            transaction.commit()
             logger.debug("Processing successful templates build.")
             filemap = slave_status.get('filemap')
             filename = yield self._readTarball(queue_item, filemap, logger)
@@ -168,8 +170,10 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         else:
             self.build.updateStatus(
                 BuildStatus.FAILEDTOBUILD, builder=queue_item.builder)
+        transaction.commit()
 
         yield self.storeLogFromSlave(build_queue=queue_item)
 
         yield queue_item.builder.cleanSlave()
         queue_item.destroySelf()
+        transaction.commit()

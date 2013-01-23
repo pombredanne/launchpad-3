@@ -16,7 +16,7 @@ import os.path
 import socket
 import xmlrpclib
 
-from storm.store import Store
+import transaction
 from twisted.internet import defer
 from zope.component import getUtility
 from zope.interface import implements
@@ -103,6 +103,7 @@ class BuildFarmJobBehaviorBase:
         lfa_id = yield self.getLogFromSlave(
             self.build, build_queue or self.build.buildqueue_record)
         self.build.setLog(lfa_id)
+        transaction.commit()
 
     def updateBuild(self, queueItem):
         """See `IBuildFarmJobBehavior`."""
@@ -139,6 +140,7 @@ class BuildFarmJobBehaviorBase:
                 # known.
                 queueItem._builder = None
                 queueItem.setDateStarted(None)
+                transaction.commit()
                 return
 
             # Since logtail is a xmlrpclib.Binary container and it is
@@ -165,12 +167,14 @@ class BuildFarmJobBehaviorBase:
             "Builder %s forgot about buildqueue %d -- resetting buildqueue "
             "record" % (queueItem.builder.url, queueItem.id))
         queueItem.reset()
+        transaction.commit()
 
     def updateBuild_BUILDING(self, queueItem, slave_status, logtail, logger):
         """Build still building, collect the logtail"""
         if queueItem.job.status != JobStatus.RUNNING:
             queueItem.job.start()
         queueItem.logtail = encoding.guess(str(logtail))
+        transaction.commit()
 
     def updateBuild_ABORTING(self, queueItem, slave_status, logtail, logger):
         """Build was ABORTED.
@@ -178,6 +182,7 @@ class BuildFarmJobBehaviorBase:
         Master-side should wait until the slave finish the process correctly.
         """
         queueItem.logtail = "Waiting for slave process to be terminated"
+        transaction.commit()
 
     def updateBuild_ABORTED(self, queueItem, slave_status, logtail, logger):
         """ABORTING process has successfully terminated.
@@ -191,6 +196,7 @@ class BuildFarmJobBehaviorBase:
             if queueItem.job.status != JobStatus.FAILED:
                 queueItem.job.fail()
             queueItem.specific_job.jobAborted()
+            transaction.commit()
         return d.addCallback(got_cleaned)
 
     def extractBuildStatus(self, slave_status):
@@ -269,8 +275,8 @@ class BuildFarmJobBehaviorBase:
         if build.build_farm_job_type == BuildFarmJobType.PACKAGEBUILD:
             build = build.buildqueue_record.specific_job.build
             if not build.current_source_publication:
-                build.updateStatus(BuildStatus.SUPERSEDED)
                 yield self.build.buildqueue_record.builder.cleanSlave()
+                build.updateStatus(BuildStatus.SUPERSEDED)
                 self.build.buildqueue_record.destroySelf()
                 return
 
@@ -324,6 +330,8 @@ class BuildFarmJobBehaviorBase:
         build.updateStatus(
             status, builder=build.buildqueue_record.builder,
             slave_status=slave_status)
+        transaction.commit()
+
         yield self.storeLogFromSlave()
 
         # We only attempt the upload if we successfully copied all the
@@ -346,10 +354,7 @@ class BuildFarmJobBehaviorBase:
 
         yield self.build.buildqueue_record.builder.cleanSlave()
         self.build.buildqueue_record.destroySelf()
-
-        # Commit so there are no race conditions with archiveuploader
-        # about build.status.
-        Store.of(build).commit()
+        transaction.commit()
 
         # Move the directory used to grab the binaries into
         # the incoming directory so the upload processor never
@@ -369,11 +374,13 @@ class BuildFarmJobBehaviorBase:
         self.build.updateStatus(
             status, builder=self.build.buildqueue_record.builder,
             slave_status=slave_status)
+        transaction.commit()
         yield self.storeLogFromSlave()
         if send_notification:
             self.build.notify()
         yield self.build.buildqueue_record.builder.cleanSlave()
         self.build.buildqueue_record.destroySelf()
+        transaction.commit()
 
     def _handleStatus_PACKAGEFAIL(self, librarian, slave_status, logger,
                                   send_notification):
@@ -405,6 +412,7 @@ class BuildFarmJobBehaviorBase:
         self.build.buildqueue_record.builder.failBuilder(
             "Builder returned BUILDERFAIL when asked for its status")
         self.build.buildqueue_record.reset()
+        transaction.commit()
 
     @defer.inlineCallbacks
     def _handleStatus_GIVENBACK(self, librarian, slave_status, logger,
@@ -417,6 +425,7 @@ class BuildFarmJobBehaviorBase:
         """
         yield self.build.buildqueue_record.builder.cleanSlave()
         self.build.buildqueue_record.reset()
+        transaction.commit()
 
 
 class IdleBuildBehavior(BuildFarmJobBehaviorBase):
