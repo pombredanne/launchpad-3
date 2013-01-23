@@ -353,8 +353,16 @@ class TestNotification(TestCaseWithFactory):
         notifications = pop_notifications()
         self.assertEqual(0, len(notifications))
 
-    def _run_recipients_test(self, changes, blamer, maintainer, changer,
-                             purpose=ArchivePurpose.PRIMARY):
+    def _setup_recipients(self):
+        blamer = self.factory.makePerson()
+        maintainer = self.factory.makePerson(
+            'maintainer@example.com', displayname='Maintainer')
+        changer = self.factory.makePerson(
+            'changer@example.com', displayname='Changer')
+        return blamer, maintainer, changer
+
+    def assertRecipientsEqual(self, expected, changes, blamer, maintainer,
+                              changer, purpose=ArchivePurpose.PRIMARY):
         distribution = self.factory.makeDistribution()
         archive = self.factory.makeArchive(
             distribution=distribution, purpose=purpose)
@@ -369,86 +377,62 @@ class TestNotification(TestCaseWithFactory):
                     distroseries=distroseries, component=component))
         distribution.main_archive.newComponentUploader(maintainer, component)
         distribution.main_archive.newComponentUploader(changer, component)
-        return get_upload_notification_recipients(
+        observed = get_upload_notification_recipients(
             blamer, archive, distroseries, logger=None, changes=changes)
+        self.assertContentEqual(
+            [format_address_for_person(person) for person in expected],
+            observed)
 
     def test_get_upload_notification_recipients_good_emails(self):
         # Test get_upload_notification_recipients with good email addresses..
-        blamer = self.factory.makePerson()
-        maintainer = self.factory.makePerson(
-            'maintainer@example.com', displayname='Maintainer')
-        changer = self.factory.makePerson(
-            'changer@example.com', displayname='Changer')
+        blamer, maintainer, changer = self._setup_recipients()
         changes = {
             'Date': '2001-01-01',
             'Changed-By': 'Changer <changer@example.com>',
             'Maintainer': 'Maintainer <maintainer@example.com>',
             'Changes': ' * Foo!',
             }
-        recipients = self._run_recipients_test(
+        self.assertRecipientsEqual(
+            [blamer, maintainer, changer],
             changes, blamer, maintainer, changer)
-        expected = [
-            format_address_for_person(person)
-            for person in (blamer, maintainer, changer)]
-        self.assertContentEqual(expected, recipients)
 
     def test_get_upload_notification_recipients_bad_maintainer_email(self):
-        blamer = self.factory.makePerson()
-        maintainer = self.factory.makePerson(
-            'maintainer@example.com', displayname='Maintainer')
-        changer = self.factory.makePerson(
-            'changer@example.com', displayname='Changer')
+        blamer, maintainer, changer = self._setup_recipients()
         changes = {
             'Date': '2001-01-01',
             'Changed-By': 'Changer <changer@example.com>',
             'Maintainer': 'Maintainer <maintainer at example.com>',
             'Changes': ' * Foo!',
             }
-        recipients = self._run_recipients_test(
-            changes, blamer, maintainer, changer)
-        expected = [
-            format_address_for_person(person) for person in (blamer, changer)]
-        self.assertContentEqual(expected, recipients)
+        self.assertRecipientsEqual(
+            [blamer, changer], changes, blamer, maintainer, changer)
 
     def test_get_upload_notification_recipients_bad_changedby_email(self):
         # Test get_upload_notification_recipients with invalid changedby
         # email address.
-        blamer = self.factory.makePerson()
-        maintainer = self.factory.makePerson(
-            'maintainer@example.com', displayname='Maintainer')
-        changer = self.factory.makePerson(
-            'changer@example.com', displayname='Changer')
+        blamer, maintainer, changer = self._setup_recipients()
         changes = {
             'Date': '2001-01-01',
             'Changed-By': 'Changer <changer at example.com>',
             'Maintainer': 'Maintainer <maintainer@example.com>',
             'Changes': ' * Foo!',
             }
-        recipients = self._run_recipients_test(
-            changes, blamer, maintainer, changer)
-        expected = [
-            format_address_for_person(person)
-            for person in (blamer, maintainer)]
-        self.assertContentEqual(expected, recipients)
+        self.assertRecipientsEqual(
+            [blamer, maintainer], changes, blamer, maintainer, changer)
 
     def test_get_upload_notification_recipients_copy_archive(self):
         # Notifications for uploads to copy archives only go to the archive
         # owner.
-        blamer = self.factory.makePerson()
-        maintainer = self.factory.makePerson(
-            'maintainer@example.com', displayname='Maintainer')
-        changer = self.factory.makePerson(
-            'changer@example.com', displayname='Changer')
+        blamer, maintainer, changer = self._setup_recipients()
         changes = {
             'Date': '2001-01-01',
             'Changed-By': 'Changer <changer@example.com>',
             'Maintainer': 'Maintainer <maintainer@example.com>',
             'Changes': ' * Foo!',
             }
-        recipients = self._run_recipients_test(
-            changes, blamer, maintainer, changer, purpose=ArchivePurpose.COPY)
-        expected = [format_address_for_person(blamer)]
-        self.assertContentEqual(expected, recipients)
+        self.assertRecipientsEqual(
+            [blamer], changes, blamer, maintainer, changer,
+            purpose=ArchivePurpose.COPY)
 
     def test_assemble_body_handles_no_preferred_email_for_changer(self):
         # If changer has no preferred email address,
