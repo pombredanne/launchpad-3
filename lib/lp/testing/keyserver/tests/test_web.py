@@ -65,8 +65,8 @@ class TestWebResources(TestCase):
         d = self.getURL(path)
         return d.addCallback(self.assertThat, DocTestMatches(content))
 
-    def assertRaises500ErrorForKeyNotFound(self, path):
-        """Assert that the test server returns a 500 response
+    def assertRaises404ErrorForKeyNotFound(self, path):
+        """Assert that the test server returns a 404 response
         for attempts to retrieve an unknown key.
         ."""
         d = self.getURL(path)
@@ -94,7 +94,7 @@ class TestWebResources(TestCase):
                 self.fail('Response was not an HTTP error response.')
             if not isinstance(failure, Failure):
                 raise failure
-            self.assertEqual('500', failure.value.status)
+            self.assertEqual('404', failure.value.status)
             self.assertEqual(
                 '<html><head><title>Error handling request</title></head>\n'
                 '<body><h1>Error handling request</h1>'
@@ -153,7 +153,7 @@ mQGiBEJdmOcRBADkNJPTBuCIefBdRAhvWyD9SSVHh8GHQWS7l9sRLEsirQkKz1yB
 
     def test_nonexistent_key(self):
         # If we request a nonexistent key, we get a nice error.
-        return self.assertRaises500ErrorForKeyNotFound(
+        return self.assertRaises404ErrorForKeyNotFound(
             '/pks/lookup?op=get&search=0xDFD20544')
 
     def test_add_key(self):
