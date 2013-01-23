@@ -347,8 +347,8 @@ class ISpecificBuildFarmJobSource(Interface):
 class IBuildFarmJobSource(Interface):
     """A utility of BuildFarmJob used to create _things_."""
 
-    def new(job_type, status=None, processor=None,
-            virtualized=None):
+    def new(job_type, status=None, processor=None, virtualized=None,
+            builder=None):
         """Create a new `IBuildFarmJob`.
 
         :param job_type: A `BuildFarmJobType` item.
@@ -356,6 +356,7 @@ class IBuildFarmJobSource(Interface):
         :param processor: An optional processor for this job.
         :param virtualized: An optional boolean indicating whether
             this job should be run virtualized.
+        :param builder: An optional `IBuilder`.
         """
 
 

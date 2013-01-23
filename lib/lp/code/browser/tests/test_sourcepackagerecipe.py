@@ -47,6 +47,7 @@ from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
+    admin_logged_in,
     ANONYMOUS,
     BrowserTestCase,
     login,
@@ -1072,8 +1073,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         if archive is None:
             archive = self.ppa
         recipe = self.makeRecipe()
-        build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe, distroseries=self.squirrel, archive=archive))
+        build = self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, distroseries=self.squirrel, archive=archive)
         build.updateStatus(
             BuildStatus.BUILDING,
             date_started=datetime(2010, 03, 16, tzinfo=UTC))
@@ -1160,11 +1161,10 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             sourcepackagerelease=source_package_release, archive=self.ppa,
             distroseries=self.squirrel)
         builder = self.factory.makeBuilder()
-        binary_build = removeSecurityProxy(
-            self.factory.makeBinaryPackageBuild(
+        binary_build = self.factory.makeBinaryPackageBuild(
                 source_package_release=source_package_release,
                 distroarchseries=self.squirrel.nominatedarchindep,
-                processor=builder.processor))
+                processor=builder.processor)
         binary_build.queueBuild()
         binary_build.updateStatus(
             BuildStatus.BUILDING,
@@ -1184,10 +1184,11 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
     def test_index_success_with_sprb_into_private_ppa(self):
         # The index page hides builds into archives the user can't view.
         archive = self.factory.makeArchive(private=True)
-        build = self.makeSuccessfulBuild(archive=archive)
-        self.assertIn(
-            "This recipe has not been built yet.",
-            self.getMainText(build.recipe))
+        with admin_logged_in():
+            build = self.makeSuccessfulBuild(archive=archive)
+            self.assertIn(
+                "This recipe has not been built yet.",
+                self.getMainText(build.recipe))
 
     def test_index_no_builds(self):
         """A message should be shown when there are no builds."""
@@ -1199,8 +1200,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 
     def test_index_no_suitable_builders(self):
         recipe = self.makeRecipe()
-        removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
+        self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, distroseries=self.squirrel, archive=self.ppa)
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Latest builds
             Status .* Archive
@@ -1395,7 +1396,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         for x in xrange(5):
             build = recipe.requestBuild(
                 self.ppa, self.chef, series, PackagePublishingPocket.RELEASE)
-            removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
+            build.updateStatus(BuildStatus.FULLYBUILT)
         harness = LaunchpadFormHarness(
             recipe, SourcePackageRecipeRequestDailyBuildView)
         harness.submit('build', {})
@@ -1520,7 +1521,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         for x in range(5):
             build = recipe.requestBuild(
                 self.ppa, self.chef, woody, PackagePublishingPocket.RELEASE)
-            removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
+            build.updateStatus(BuildStatus.FULLYBUILT)
 
         browser = self.getViewBrowser(recipe, '+request-builds')
         browser.getControl('Woody').click()
@@ -1638,10 +1639,10 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         """Time should be estimated until the job is completed."""
         view = self.makeBuildView()
         self.assertTrue(view.estimate)
-        view.context.buildqueue_record.job.start()
+        view.context.updateStatus(BuildStatus.BUILDING)
         clear_property_cache(view)
         self.assertTrue(view.estimate)
-        removeSecurityProxy(view.context).date_finished = datetime.now(UTC)
+        view.context.updateStatus(BuildStatus.FULLYBUILT)
         clear_property_cache(view)
         self.assertFalse(view.estimate)
 
@@ -1767,10 +1768,12 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         build.buildqueue_record.builder = self.factory.makeBuilder()
         main_text = self.getMainText(build, '+index')
         self.assertNotIn('Logs have no tails!', main_text)
-        removeSecurityProxy(build).status = BuildStatus.BUILDING
+        with admin_logged_in():
+            build.updateStatus(BuildStatus.BUILDING)
         main_text = self.getMainText(build, '+index')
         self.assertIn('Logs have no tails!', main_text)
-        removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
+        with admin_logged_in():
+            build.updateStatus(BuildStatus.FULLYBUILT)
         self.assertIn('Logs have no tails!', main_text)
 
     def getMainText(self, build, view_name=None):
@@ -1781,8 +1784,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
     def test_buildlog(self):
         """A link to the build log is shown if available."""
         build = self.makeBuild()
-        removeSecurityProxy(build).log = (
-            self.factory.makeLibraryFileAlias())
+        build.setLog(self.factory.makeLibraryFileAlias())
         build_log_url = build.log_url
         browser = self.getViewBrowser(build)
         link = browser.getLink('buildlog')
@@ -1791,8 +1793,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
     def test_uploadlog(self):
         """A link to the upload log is shown if available."""
         build = self.makeBuild()
-        removeSecurityProxy(build).upload_log = (
-            self.factory.makeLibraryFileAlias())
+        build.storeUploadLog('uploaded')
         upload_log_url = build.upload_log_url
         browser = self.getViewBrowser(build)
         link = browser.getLink('uploadlog')

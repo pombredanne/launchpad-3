@@ -134,7 +134,7 @@ class IPackageBuildSource(Interface):
     """A utility of this interface used to create _things_."""
 
     def new(job_type, virtualized, archive, pocket, processor=None,
-            status=BuildStatus.NEEDSBUILD, dependencies=None):
+            status=BuildStatus.NEEDSBUILD, dependencies=None, builder=None):
         """Create a new `IPackageBuild`.
 
         :param job_type: A `BuildFarmJobType` item.
@@ -146,6 +146,7 @@ class IPackageBuildSource(Interface):
             job. Default is None (processor-independent).
         :param status: A `BuildStatus` item defaulting to NEEDSBUILD.
         :param dependencies: An optional debian-like dependency line.
+        :parma builder: An optional `IBuilder`.
         """
 
 

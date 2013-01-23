@@ -2274,7 +2274,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         os.mkdir(os.path.join(self.incoming_folder, leaf_name))
         self.options.context = 'buildd'
         self.options.builds = True
-        removeSecurityProxy(build).date_started = UTC_NOW
+        build.updateStatus(BuildStatus.BUILDING)
         self.switchToAdmin()
         build.recipe.destroySelf()
         self.switchToUploader()

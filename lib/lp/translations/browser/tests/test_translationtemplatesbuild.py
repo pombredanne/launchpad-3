@@ -11,7 +11,10 @@ from pytz import utc
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.buildmaster.enums import BuildFarmJobType
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCaseWithFactory
@@ -71,7 +74,7 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         build = self._makeBuild()
         view = self._makeView(build)
         self.assertEqual("Not started yet.", view.renderDispatchTime())
-        removeSecurityProxy(build.build_farm_job).date_started = now()
+        build.updateStatus(BuildStatus.BUILDING)
         self.assertIn("Started", view.renderDispatchTime())
 
     def test_renderFinishTime(self):
@@ -79,7 +82,7 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         build = self._makeBuild()
         view = self._makeView(build)
         self.assertEqual("", view.renderFinishTime())
-        removeSecurityProxy(build.build_farm_job).date_started = now()
+        build.updateStatus(BuildStatus.BUILDING)
         self.assertEqual("Not finished yet.", view.renderFinishTime())
-        removeSecurityProxy(build.build_farm_job).date_finished = now()
+        build.updateStatus(BuildStatus.FULLYBUILT)
         self.assertIn("Finished", view.renderFinishTime())

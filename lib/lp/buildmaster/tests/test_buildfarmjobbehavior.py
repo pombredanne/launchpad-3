@@ -283,7 +283,6 @@ class TestHandleStatusMixin:
 
     def test_handleStatus_OK_sets_build_log(self):
         # The build log is set during handleStatus.
-        removeSecurityProxy(self.build).log = None
         self.assertEqual(None, self.build.log)
         d = self.behavior.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
@@ -325,7 +324,6 @@ class TestHandleStatusMixin:
 
     def test_date_finished_set(self):
         # The date finished is updated during handleStatus_OK.
-        removeSecurityProxy(self.build).date_finished = None
         self.assertEqual(None, self.build.date_finished)
         d = self.behavior.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},

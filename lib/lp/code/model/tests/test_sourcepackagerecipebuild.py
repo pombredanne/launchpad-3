@@ -190,26 +190,27 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         cur_date = self.factory.getUniqueDate()
         self.assertEqual(timedelta(minutes=10), spb.estimateDuration())
         for minutes in [20, 5, 1]:
-            build = removeSecurityProxy(
-                self.factory.makeSourcePackageRecipeBuild(recipe=spb.recipe))
-            build.date_started = cur_date
-            build.date_finished = cur_date + timedelta(minutes=minutes)
+            build = self.factory.makeSourcePackageRecipeBuild(
+                recipe=spb.recipe)
+            build.updateStatus(BuildStatus.BUILDING, date_started=cur_date)
+            build.updateStatus(
+                BuildStatus.FULLYBUILT,
+                date_finished=cur_date + timedelta(minutes=minutes))
         self.assertEqual(timedelta(minutes=5), spb.estimateDuration())
 
     def test_getFileByName(self):
         """getFileByName returns the logs when requested by name."""
         spb = self.factory.makeSourcePackageRecipeBuild()
-        removeSecurityProxy(spb).log = (
+        spb.setLog(
             self.factory.makeLibraryFileAlias(filename='buildlog.txt.gz'))
         self.assertEqual(spb.log, spb.getFileByName('buildlog.txt.gz'))
         self.assertRaises(NotFoundError, spb.getFileByName, 'foo')
-        removeSecurityProxy(spb).log = (
-            self.factory.makeLibraryFileAlias(filename='foo'))
+        spb.setLog(self.factory.makeLibraryFileAlias(filename='foo'))
         self.assertEqual(spb.log, spb.getFileByName('foo'))
         self.assertRaises(NotFoundError, spb.getFileByName, 'buildlog.txt.gz')
-        removeSecurityProxy(spb).upload_log = (
-            self.factory.makeLibraryFileAlias(filename='upload.txt.gz'))
-        self.assertEqual(spb.upload_log, spb.getFileByName('upload.txt.gz'))
+        spb.storeUploadLog('uploaded')
+        self.assertEqual(
+            spb.upload_log, spb.getFileByName(spb.upload_log.filename))
 
     def test_binary_builds(self):
         """The binary_builds property should be populated automatically."""
@@ -303,11 +304,11 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             owner=owner, name=u'funky-recipe', build_daily=True,
             is_stale=True)
         series = list(recipe.distroseries)[0]
-        existing_build = recipe.requestBuild(
-            recipe.daily_build_archive, recipe.owner, series,
-            PackagePublishingPocket.RELEASE)
-        removeSecurityProxy(existing_build).date_created = (
-            datetime.now(utc) - timedelta(hours=24, seconds=1))
+        self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, archive=recipe.daily_build_archive,
+            requester=recipe.owner, distroseries=series,
+            pocket=PackagePublishingPocket.RELEASE,
+            date_created=datetime.now(utc) - timedelta(hours=24, seconds=1))
         removeSecurityProxy(recipe).is_stale = True
 
         logger = BufferLogger()
@@ -363,13 +364,12 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # stale, we'll fire another off.
         recipe = self.factory.makeSourcePackageRecipe(
             build_daily=True, is_stale=True)
-        build = recipe.requestBuild(
-            recipe.daily_build_archive, recipe.owner,
-            list(recipe.distroseries)[0], PackagePublishingPocket.RELEASE)
-        nb = removeSecurityProxy(build)
-        nb.date_created = datetime.now(utc) - timedelta(hours=24, seconds=1)
-        # The build also needs to be completed
-        nb.status = BuildStatus.FULLYBUILT
+        build = self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, archive=recipe.daily_build_archive,
+            requester=recipe.owner, distroseries=list(recipe.distroseries)[0],
+            pocket=PackagePublishingPocket.RELEASE,
+            date_created=datetime.now(utc) - timedelta(hours=24, seconds=1),
+            status=BuildStatus.FULLYBUILT)
         daily_builds = SourcePackageRecipeBuild.makeDailyBuilds()
         self.assertEquals(1, len(daily_builds))
         actual_title = [b.title for b in daily_builds]
@@ -381,14 +381,13 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         recipe = self.factory.makeSourcePackageRecipe(
             build_daily=True, is_stale=True)
         for timediff in (timedelta(hours=24, seconds=1), timedelta(hours=8)):
-            build = recipe.requestBuild(
-                recipe.daily_build_archive, recipe.owner,
-                list(recipe.distroseries)[0],
-                PackagePublishingPocket.RELEASE)
-            nb = removeSecurityProxy(build)
-            nb.date_created = datetime.now(utc) - timediff
-            # The build also needs to be completed
-            nb.status = BuildStatus.FULLYBUILT
+            self.factory.makeSourcePackageRecipeBuild(
+                recipe=recipe, archive=recipe.daily_build_archive,
+                requester=recipe.owner,
+                distroseries=list(recipe.distroseries)[0],
+                pocket=PackagePublishingPocket.RELEASE,
+                date_created=datetime.now(utc) - timediff,
+                status=BuildStatus.FULLYBUILT)
         daily_builds = SourcePackageRecipeBuild.makeDailyBuilds()
         self.assertEquals([], list(daily_builds))
 
@@ -398,13 +397,12 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         recipe = self.factory.makeSourcePackageRecipe(
             build_daily=True, is_stale=True)
         archive = self.factory.makeArchive(owner=recipe.owner)
-        build = recipe.requestBuild(
-            archive, recipe.owner, list(recipe.distroseries)[0],
-            PackagePublishingPocket.RELEASE)
-        nb = removeSecurityProxy(build)
-        nb.date_created = datetime.now(utc) - timedelta(hours=8)
-        # The build also needs to be completed
-        nb.status = BuildStatus.FULLYBUILT
+        build = self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, archive=archive, requester=recipe.owner,
+            distroseries=list(recipe.distroseries)[0],
+            pocket=PackagePublishingPocket.RELEASE,
+            date_created=datetime.now(utc) - timedelta(hours=8),
+            status=BuildStatus.FULLYBUILT)
         daily_builds = SourcePackageRecipeBuild.makeDailyBuilds()
         actual_title = [b.title for b in daily_builds]
         self.assertEquals([build.title], actual_title)
@@ -447,13 +445,14 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
                 requester, recipe, series, _now=now)
         self.assertContentEqual([], get_recent())
         yesterday = now - timedelta(days=1)
-        recent_build = self.factory.makeSourcePackageRecipeBuild(
+        self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe, distroseries=series, requester=requester,
             date_created=yesterday)
         self.assertContentEqual([], get_recent())
-        a_second = timedelta(seconds=1)
-        removeSecurityProxy(recent_build).date_created += a_second
-        self.assertContentEqual([recent_build], get_recent())
+        more_recent_build = self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, distroseries=series, requester=requester,
+            date_created=yesterday + timedelta(seconds=1))
+        self.assertContentEqual([more_recent_build], get_recent())
 
     def test_destroySelf(self):
         # ISourcePackageRecipeBuild should make sure to remove jobs and build
@@ -542,7 +541,7 @@ class TestAsBuildmaster(TestCaseWithFactory):
         secret = self.factory.makeDistroSeries(name=u'distroseries')
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=cake, distroseries=secret, archive=pantry)
-        removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
+        build.updateStatus(BuildStatus.FULLYBUILT)
         IStore(build).flush()
         build.notify()
         self.assertEquals(0, len(pop_notifications()))
@@ -572,7 +571,7 @@ class TestAsBuildmaster(TestCaseWithFactory):
         secret = self.factory.makeDistroSeries(name=u'distroseries')
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=cake, distroseries=secret, archive=pantry)
-        removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
+        build.updateStatus(BuildStatus.FULLYBUILT)
         cake.destroySelf()
         IStore(build).flush()
         build.notify()
