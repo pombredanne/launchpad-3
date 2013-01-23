@@ -100,8 +100,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.assertEqual(335, self.build.estimateDuration().seconds)
 
     def addFakeBuildLog(self):
-        lfa = self.factory.makeLibraryFileAlias('mybuildlog.txt')
-        removeSecurityProxy(self.build).log = lfa
+        self.build.setLog(self.factory.makeLibraryFileAlias('mybuildlog.txt'))
 
     def test_log_url(self):
         # The log URL for a binary package build will use

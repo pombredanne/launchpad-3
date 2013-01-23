@@ -273,7 +273,6 @@ class BuildFarmJobMixin:
 
     def setLog(self, log):
         """See `IBuildFarmJob`."""
-        assert self.log is None
         self.log = log
 
     def updateStatus(self, status, builder=None, slave_status=None,

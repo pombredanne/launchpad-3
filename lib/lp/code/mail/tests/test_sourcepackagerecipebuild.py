@@ -42,6 +42,7 @@ superseded_body = u"""\
  * Builder: 
 """
 
+
 class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
@@ -62,10 +63,10 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=cake, distroseries=secret, archive=pantry,
             status=BuildStatus.FULLYBUILT, duration=timedelta(minutes=5))
-        naked_build = removeSecurityProxy(build)
-        naked_build.builder = self.factory.makeBuilder(name='bob')
-        naked_build.log = self.factory.makeLibraryFileAlias()
-        Store.of(build).flush()
+        build.updateStatus(
+            BuildStatus.FULLYBUILT,
+            builder=self.factory.makeBuilder(name='bob'))
+        build.setLog(self.factory.makeLibraryFileAlias())
         ctrl = self.makeStatusEmail(build)
         self.assertEqual(
             u'[recipe build #%d] of ~person recipe in distroseries: '

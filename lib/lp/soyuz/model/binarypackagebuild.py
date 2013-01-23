@@ -391,7 +391,7 @@ class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
         # If the build is currently building we need to tell the
         # buildd-manager to terminate it.
         if self.status == BuildStatus.BUILDING:
-            self.status = BuildStatus.CANCELLING
+            self.updateStatus(BuildStatus.CANCELLING)
             return
 
         # Otherwise we can cancel it here.

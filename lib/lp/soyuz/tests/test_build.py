@@ -12,8 +12,6 @@ from exceptions import AssertionError
 import pytz
 import transaction
 from zope.component import getUtility
-from zope.security.interfaces import Unauthorized
-from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import IPersonSet
@@ -241,14 +239,9 @@ class TestBuild(TestCaseWithFactory):
     def test_retry_does_not_modify_first_dispatch(self):
         # Retrying a build does not modify the first dispatch time of the
         # build
-        spph = self.publisher.getPubSource(
-            sourcename=self.factory.getUniqueString(),
-            version="%s.1" % self.factory.getUniqueInteger(),
-            distroseries=self.distroseries)
-        [build] = spph.createMissingBuilds()
+        build = self.factory.makeBinaryPackageBuild()
+        build.updateStatus(BuildStatus.BUILDING, date_started=self.now)
         build.updateStatus(BuildStatus.FAILEDTOBUILD)
-        build.buildqueue_record.destroySelf()
-        removeSecurityProxy(build).date_first_dispatched = self.now
         with person_logged_in(self.admin):
             build.retry()
         self.assertEquals(BuildStatus.NEEDSBUILD, build.status)

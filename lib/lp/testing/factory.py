@@ -2877,12 +2877,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             requester=requester,
             pocket=pocket,
             date_created=date_created)
-        removeSecurityProxy(spr_build).status = status
         if duration is not None:
-            naked_sprb = removeSecurityProxy(spr_build)
-            if naked_sprb.date_started is None:
-                naked_sprb.date_started = spr_build.date_created
-            naked_sprb.date_finished = naked_sprb.date_started + duration
+            removeSecurityProxy(spr_build).updateStatus(
+                BuildStatus.BUILDING, date_started=spr_build.date_created)
+            removeSecurityProxy(spr_build).updateStatus(
+                status, date_finished=spr_build.date_started + duration)
+        else:
+            removeSecurityProxy(spr_build).updateStatus(status)
         IStore(spr_build).flush()
         return spr_build
 

@@ -325,12 +325,9 @@ class TestBuildFarmJobSet(TestBuildFarmJobBase, TestCaseWithFactory):
         build_2 = self.makeBuildFarmJob(
             builder=self.builder,
             date_finished=datetime(2008, 11, 10, tzinfo=pytz.UTC))
+        build_3 = self.makeBuildFarmJob(
+            builder=self.builder,
+            date_finished=datetime(2008, 9, 10, tzinfo=pytz.UTC))
 
         result = self.build_farm_job_set.getBuildsForBuilder(self.builder)
-        self.assertEqual([build_2, build_1], list(result))
-
-        removeSecurityProxy(build_2).date_finished = (
-            datetime(2008, 8, 10, tzinfo=pytz.UTC))
-        result = self.build_farm_job_set.getBuildsForBuilder(self.builder)
-
-        self.assertEqual([build_1, build_2], list(result))
+        self.assertEqual([build_2, build_1, build_3], list(result))
