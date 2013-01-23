@@ -153,9 +153,7 @@ class LookUp(Resource):
                     '<pre>\n%s\n</pre>\n</html>') % (keyid, keyid, content)
             return page
         else:
-            # No joke: our real-world keyserver returns a 500 error
-            # if it does not know about a key with the given ID.
-            request.setResponseCode(500)
+            request.setResponseCode(404)
             return KEY_NOT_FOUND_BODY
 
 

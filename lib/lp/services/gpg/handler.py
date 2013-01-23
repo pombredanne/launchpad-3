@@ -487,11 +487,13 @@ class GPGHandler:
         # (and for the code in callsites), but we should be able to see
         # if this problem occurs too often.
         except urllib2.HTTPError as exc:
-            # The key server behaves a bit odd when queried for non
-            # existent keys: Instead of responding with a 404, it
-            # returns a 500 error. But we can extract the fact that
-            # the key is unknown by looking into the response's content.
-            if exc.code == 500 and exc.fp is not None:
+            # Old versions of SKS return a 500 error when queried for a
+            # non-existent key. Production was upgraded in 2013/01, but
+            # let's leave this here for a while.
+            #
+            # We can extract the fact that the key is unknown by looking
+            # into the response's content.
+            if exc.code in (404, 500) and exc.fp is not None:
                 content = exc.fp.read()
                 no_key_message = 'Error handling request: No keys found'
                 if content.find(no_key_message) >= 0:
