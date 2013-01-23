@@ -471,17 +471,14 @@ def get_upload_notification_recipients(blamer, archive, distroseries,
                                        bprs=None):
     """Return a list of recipients for notification emails."""
     debug(logger, "Building recipients list.")
-    candidate_recipients = [
-        blamer,
-        ]
+    candidate_recipients = [blamer]
     info = fetch_information(spr, bprs, changes)
 
     changer = email_to_person(info['changedby'])
     maintainer = email_to_person(info['maintainer'])
 
     if blamer is None:
-        debug(
-            logger, "Changes file is unsigned; adding changer as recipient.")
+        debug(logger, "Changes file is unsigned; adding changer as recipient.")
         candidate_recipients.append(changer)
 
     if archive.is_ppa:
@@ -552,8 +549,7 @@ def build_uploaded_files_list(spr, builds, customfiles, logger):
 
     if customfiles:
         files.extend(
-            [(file.libraryfilealias.filename, '', '')
-            for file in customfiles])
+            [(file.libraryfilealias.filename, '', '') for file in customfiles])
 
     return files
 
@@ -585,8 +581,7 @@ def email_to_person(fullemail):
     try:
         # The 2nd arg to s_f_m() doesn't matter as it won't fail since every-
         # thing will have already parsed at this point.
-        (rfc822, rfc2047, name, email) = safe_fix_maintainer(
-            fullemail, "email")
+        rfc822, rfc2047, name, email = safe_fix_maintainer(fullemail, "email")
         return getUtility(IPersonSet).getByEmail(email)
     except ParseMaintError:
         return None

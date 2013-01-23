@@ -127,8 +127,7 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         # to the announce list, which is the one that gets the overridden
         # From:
         self.assertEqual(
-            "Lemmy Kilmister <lemmy@example.com>",
-            notifications[1]["From"])
+            "Lemmy Kilmister <lemmy@example.com>", notifications[1]["From"])
 
     def test_notify_from_person_override_with_unicode_names(self):
         # notify() takes an optional from_person to override the calculated
@@ -238,8 +237,7 @@ class TestNotification(TestCaseWithFactory):
             'Maintainer': 'Foo Bar <foo.bar@example.com>',
             'Changes': ' * Foo!',
             }
-        info = fetch_information(
-            None, None, changes)
+        info = fetch_information(None, None, changes)
         self.assertEqual('2001-01-01', info['date'])
         self.assertEqual(' * Foo!', info['changelog'])
         fields = [
@@ -366,8 +364,7 @@ class TestNotification(TestCaseWithFactory):
         distribution = self.factory.makeDistribution()
         archive = self.factory.makeArchive(
             distribution=distribution, purpose=purpose)
-        distroseries = self.factory.makeDistroSeries(
-            distribution=distribution)
+        distroseries = self.factory.makeDistroSeries(distribution=distribution)
         # Now set the uploaders.
         component = getUtility(IComponentSet).ensure('main')
         if component not in distroseries.components:
