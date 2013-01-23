@@ -11,11 +11,9 @@ __all__ = [
     'TranslationTemplatesBuildBehavior',
     ]
 
-import datetime
 import os
 import tempfile
 
-import pytz
 from twisted.internet import defer
 from zope.component import getUtility
 from zope.interface import implements
@@ -119,24 +117,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             if len(raw_slave_status) >= 4:
                 status['filemap'] = raw_slave_status[3]
 
-    def setBuildStatus(self, status):
-        self.build.status = status
-
-    @classmethod
-    def storeBuildInfo(cls, build, queue_item, build_status):
-        """See `IPackageBuild`."""
-        def got_log(lfa_id):
-            build.log = lfa_id
-            build.builder = queue_item.builder
-            build.date_started = queue_item.date_started
-            # XXX cprov 20060615 bug=120584: Currently buildduration includes
-            # the scanner latency, it should really be asking the slave for
-            # the duration spent building locally.
-            build.date_finished = datetime.datetime.now(pytz.UTC)
-
-        d = cls.getLogFromSlave(build, queue_item)
-        return d.addCallback(got_log)
-
+    @defer.inlineCallbacks
     def updateBuild_WAITING(self, queue_item, slave_status, logtail, logger):
         """Deal with a finished ("WAITING" state, perversely) build job.
 
@@ -154,48 +135,41 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             queue_item.specific_job.branch.bzr_identity,
             build_status))
 
-        def clean_slave(ignored):
-            d = queue_item.builder.cleanSlave()
-            return d.addCallback(lambda ignored: queue_item.destroySelf())
+        if build_status == 'OK':
+            self.build.updateStatus(
+                BuildStatus.UPLOADING, builder=queue_item.builder)
+            logger.debug("Processing successful templates build.")
+            filemap = slave_status.get('filemap')
+            filename = yield self._readTarball(queue_item, filemap, logger)
 
-        def got_tarball(filename):
             # XXX 2010-11-12 bug=674575
             # Please make addOrUpdateEntriesFromTarball() take files on
             # disk; reading arbitrarily sized files into memory is
             # dangerous.
             if filename is None:
                 logger.error("Build produced no tarball.")
-                self.setBuildStatus(BuildStatus.FULLYBUILT)
-                return
+                self.build.updateStatus(BuildStatus.FULLYBUILT)
+            else:
+                tarball_file = open(filename)
+                try:
+                    tarball = tarball_file.read()
+                    if tarball is None:
+                        logger.error("Build produced empty tarball.")
+                    else:
+                        logger.debug(
+                            "Uploading translation templates tarball.")
+                        self._uploadTarball(
+                            queue_item.specific_job.branch, tarball, logger)
+                        logger.debug("Upload complete.")
+                finally:
+                    self.build.updateStatus(BuildStatus.FULLYBUILT)
+                    tarball_file.close()
+                    os.remove(filename)
+        else:
+            self.build.updateStatus(
+                BuildStatus.FAILEDTOBUILD, builder=queue_item.builder)
 
-            tarball_file = open(filename)
-            try:
-                tarball = tarball_file.read()
-                if tarball is None:
-                    logger.error("Build produced empty tarball.")
-                else:
-                    logger.debug("Uploading translation templates tarball.")
-                    self._uploadTarball(
-                        queue_item.specific_job.branch, tarball, logger)
-                    logger.debug("Upload complete.")
-            finally:
-                self.setBuildStatus(BuildStatus.FULLYBUILT)
-                tarball_file.close()
-                os.remove(filename)
+        yield self.storeLogFromSlave(build_queue=queue_item)
 
-        def build_info_stored(ignored):
-            if build_status == 'OK':
-                self.setBuildStatus(BuildStatus.UPLOADING)
-                logger.debug("Processing successful templates build.")
-                filemap = slave_status.get('filemap')
-                d = self._readTarball(queue_item, filemap, logger)
-                d.addCallback(got_tarball)
-                d.addCallback(clean_slave)
-                return d
-
-            self.setBuildStatus(BuildStatus.FAILEDTOBUILD)
-            return clean_slave(None)
-
-        d = self.storeBuildInfo(self.build, queue_item, build_status)
-        d.addCallback(build_info_stored)
-        return d
+        yield queue_item.builder.cleanSlave()
+        queue_item.destroySelf()
