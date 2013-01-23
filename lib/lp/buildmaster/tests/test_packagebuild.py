@@ -132,7 +132,7 @@ class TestPackageBuildMixin(TestCaseWithFactory):
     def test_log_url(self):
         # The url of the build log file is determined by the PackageBuild.
         lfa = self.factory.makeLibraryFileAlias('mybuildlog.txt')
-        removeSecurityProxy(self.package_build).log = lfa
+        self.package_build.setLog(lfa)
         log_url = self.package_build.log_url
         self.failUnlessEqual(
             'http://launchpad.dev/~joe/'

@@ -97,16 +97,16 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         self.dependencies = dependencies
 
     @classmethod
-    def new(cls, job_type, virtualized, archive, pocket,
-            processor=None, status=BuildStatus.NEEDSBUILD, dependencies=None,
-            date_created=None):
+    def new(cls, job_type, virtualized, archive, pocket, processor=None,
+            status=BuildStatus.NEEDSBUILD, dependencies=None,
+            date_created=None, builder=None):
         """See `IPackageBuildSource`."""
         store = IMasterStore(PackageBuild)
 
         # Create the BuildFarmJob to which the new PackageBuild
         # will delegate.
         build_farm_job = getUtility(IBuildFarmJobSource).new(
-            job_type, status, processor, virtualized, date_created)
+            job_type, status, processor, virtualized, date_created, builder)
 
         package_build = cls(build_farm_job, archive, pocket, dependencies)
         store.add(package_build)

@@ -54,15 +54,8 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBinaryPackageBuild, self).setUp()
-        publisher = SoyuzTestPublisher()
-        publisher.prepareBreezyAutotest()
-        gedit_spph = publisher.getPubSource(
-            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED)
-        gedit_spr = gedit_spph.sourcepackagerelease
-        self.build = gedit_spr.createBuild(
-            distro_arch_series=publisher.distroseries['i386'],
-            archive=gedit_spr.upload_archive,
-            pocket=gedit_spr.package_upload.pocket)
+        self.build = self.factory.makeBinaryPackageBuild(
+            archive=self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY))
 
     def test_providesInterfaces(self):
         # Build provides IPackageBuild and IBuild.
@@ -79,14 +72,15 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.assertEqual(bq, self.build.buildqueue_record)
 
     def test_estimateDuration(self):
-        # Without previous builds, a negligable package size estimate is 60s
-        self.assertEqual(60, self.build.estimateDuration().seconds)
+        # Without previous builds, a negligable package size estimate is
+        # 300s.
+        self.assertEqual(300, self.build.estimateDuration().seconds)
 
     def create_previous_build(self, duration):
         spr = self.build.source_package_release
         build = spr.createBuild(
             distro_arch_series=self.build.distro_arch_series,
-            archive=spr.upload_archive, pocket=spr.package_upload.pocket)
+            archive=self.build.archive, pocket=self.build.pocket)
         now = datetime.now(pytz.UTC)
         build.updateStatus(
             BuildStatus.BUILDING,
@@ -99,32 +93,33 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.create_previous_build(335)
         self.assertEqual(335, self.build.estimateDuration().seconds)
 
-    def addFakeBuildLog(self):
-        lfa = self.factory.makeLibraryFileAlias('mybuildlog.txt')
-        removeSecurityProxy(self.build).log = lfa
+    def addFakeBuildLog(self, build):
+        build.setLog(self.factory.makeLibraryFileAlias('mybuildlog.txt'))
 
     def test_log_url(self):
         # The log URL for a binary package build will use
         # the distribution source package release when the context
         # is not a PPA or a copy archive.
-        self.addFakeBuildLog()
+        self.addFakeBuildLog(self.build)
         self.assertEqual(
-            'http://launchpad.dev/ubuntutest/+source/'
-            'gedit/666/+build/%d/+files/mybuildlog.txt' % self.build.id,
+            'http://launchpad.dev/%s/+source/'
+            '%s/%s/+build/%d/+files/mybuildlog.txt' % (
+                self.build.distribution.name,
+                self.build.source_package_release.sourcepackagename.name,
+                self.build.source_package_release.version, self.build.id),
             self.build.log_url)
 
     def test_log_url_ppa(self):
         # On the other hand, ppa or copy builds will have a url in the
         # context of the archive.
-        self.addFakeBuildLog()
-        ppa_owner = self.factory.makePerson(name="joe")
-        removeSecurityProxy(self.build).archive = self.factory.makeArchive(
-            owner=ppa_owner, name="myppa")
+        build = self.factory.makeBinaryPackageBuild(
+            archive=self.factory.makeArchive(purpose=ArchivePurpose.PPA))
+        self.addFakeBuildLog(build)
         self.assertEqual(
-            'http://launchpad.dev/~joe/'
-            '+archive/myppa/+build/%d/+files/mybuildlog.txt' % (
-                self.build.build_farm_job.id),
-            self.build.log_url)
+            'http://launchpad.dev/~%s/+archive/'
+            '%s/+build/%d/+files/mybuildlog.txt' % (
+                build.archive.owner.name, build.archive.name, build.id),
+            build.log_url)
 
     def test_getUploader(self):
         # For ACL purposes the uploader is the changes file signer.
@@ -254,8 +249,9 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         self.assertEqual(depwait_build.dependencies, '')
 
     def assertRaisesUnparsableDependencies(self, depwait_build, dependencies):
-        # XXX wgrant: This shouldn't use rSP
-        removeSecurityProxy(depwait_build).dependencies = dependencies
+        depwait_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT,
+            slave_status={'dependencies': dependencies})
         self.assertRaises(
             UnparsableDependencies, depwait_build.updateDependencies)
 
@@ -303,11 +299,14 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         depwait_build = self._setupSimpleDepwaitContext()
         self.layer.txn.commit()
 
-        # XXX wgrant: should not use rSP
-        removeSecurityProxy(depwait_build).dependencies = u'dep-bin (>> 666)'
+        depwait_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT,
+            slave_status={'dependencies': u'dep-bin (>> 666)'})
         depwait_build.updateDependencies()
         self.assertEqual(depwait_build.dependencies, u'dep-bin (>> 666)')
-        removeSecurityProxy(depwait_build).dependencies = u'dep-bin (>= 666)'
+        depwait_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT,
+            slave_status={'dependencies': u'dep-bin (>= 666)'})
         depwait_build.updateDependencies()
         self.assertEqual(depwait_build.dependencies, u'')
 
@@ -323,11 +322,14 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
             status=PackagePublishingStatus.PUBLISHED)
         self.layer.txn.commit()
 
-        # XXX wgrant: should not use rSP
-        removeSecurityProxy(depwait_build).dependencies = u'dep-bin (= 666)'
+        depwait_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT,
+            slave_status={'dependencies': u'dep-bin (= 666)'})
         depwait_build.updateDependencies()
         self.assertEqual(depwait_build.dependencies, u'')
-        removeSecurityProxy(depwait_build).dependencies = u'dep-bin (= 999)'
+        depwait_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT,
+            slave_status={'dependencies': u'dep-bin (= 999)'})
         depwait_build.updateDependencies()
         self.assertEqual(depwait_build.dependencies, u'')
 
@@ -510,7 +512,8 @@ class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
 
     def test_builder_is_exported(self):
         # The builder property is exported.
-        removeSecurityProxy(self.build).builder = self.factory.makeBuilder()
+        self.build.updateStatus(
+            BuildStatus.FULLYBUILT, builder=self.factory.makeBuilder())
         build_url = api_url(self.build)
         builder_url = api_url(self.build.builder)
         logout()

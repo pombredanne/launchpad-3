@@ -543,8 +543,8 @@ class MakeBinaryPackageBuildMixin:
 
     def makeBuild(self):
         build = self.factory.makeBinaryPackageBuild()
-        build.queueBuild()
         build.updateStatus(BuildStatus.BUILDING)
+        build.queueBuild()
         return build
 
 

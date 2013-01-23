@@ -201,24 +201,20 @@ class BuildFarmJob(Storm):
     dependencies = None
 
     def __init__(self, job_type, status=BuildStatus.NEEDSBUILD,
-                 processor=None, virtualized=None, date_created=None):
+                 processor=None, virtualized=None, date_created=None,
+                 builder=None):
         super(BuildFarmJob, self).__init__()
-        self.job_type, self.status, self.processor, self.virtualized = (
-            job_type,
-            status,
-            processor,
-            virtualized,
-            )
+        (self.job_type, self.status, self.processor, self.virtualized,
+         self.builder) = (job_type, status, processor, virtualized, builder)
         if date_created is not None:
             self.date_created = date_created
 
     @classmethod
     def new(cls, job_type, status=BuildStatus.NEEDSBUILD, processor=None,
-            virtualized=None, date_created=None):
+            virtualized=None, date_created=None, builder=None):
         """See `IBuildFarmJobSource`."""
         build_farm_job = BuildFarmJob(
-            job_type, status, processor, virtualized, date_created)
-
+            job_type, status, processor, virtualized, date_created, builder)
         store = IMasterStore(BuildFarmJob)
         store.add(build_farm_job)
         return build_farm_job
@@ -277,7 +273,6 @@ class BuildFarmJobMixin:
 
     def setLog(self, log):
         """See `IBuildFarmJob`."""
-        assert self.log is None
         self.log = log
 
     def updateStatus(self, status, builder=None, slave_status=None,

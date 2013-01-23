@@ -248,7 +248,7 @@ class SourcePackageRecipeBuild(PackageBuildMixin, PackageBuildDerived, Storm):
     def cancelBuild(self):
         """See `ISourcePackageRecipeBuild.`"""
         self._unqueueBuild()
-        self.status = BuildStatus.SUPERSEDED
+        self.updateStatus(BuildStatus.SUPERSEDED)
 
     def destroySelf(self):
         self._unqueueBuild()
