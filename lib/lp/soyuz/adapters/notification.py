@@ -491,6 +491,10 @@ def get_upload_notification_recipients(blamer, archive, distroseries,
         candidate_recipients.extend([
             permission.person
             for permission in archive.getUploadersForComponent()])
+    elif archive.is_copy:
+        # For copy archives, notifying anyone else will probably only
+        # confuse them.
+        pass
     else:
         # If this is not a PPA, we also consider maintainer and changed-by.
         if blamer is not None:

@@ -353,10 +353,11 @@ class TestNotification(TestCaseWithFactory):
         notifications = pop_notifications()
         self.assertEqual(0, len(notifications))
 
-    def _run_recipients_test(self, changes, blamer, maintainer, changer):
+    def _run_recipients_test(self, changes, blamer, maintainer, changer,
+                             purpose=ArchivePurpose.PRIMARY):
         distribution = self.factory.makeDistribution()
         archive = self.factory.makeArchive(
-            distribution=distribution, purpose=ArchivePurpose.PRIMARY)
+            distribution=distribution, purpose=purpose)
         distroseries = self.factory.makeDistroSeries(
             distribution=distribution)
         # Now set the uploaders.
@@ -366,8 +367,8 @@ class TestNotification(TestCaseWithFactory):
             store.add(
                 ComponentSelection(
                     distroseries=distroseries, component=component))
-        archive.newComponentUploader(maintainer, component)
-        archive.newComponentUploader(changer, component)
+        distribution.main_archive.newComponentUploader(maintainer, component)
+        distribution.main_archive.newComponentUploader(changer, component)
         return get_upload_notification_recipients(
             blamer, archive, distroseries, logger=None, changes=changes)
 
@@ -428,6 +429,25 @@ class TestNotification(TestCaseWithFactory):
         expected = [
             format_address_for_person(person)
             for person in (blamer, maintainer)]
+        self.assertContentEqual(expected, recipients)
+
+    def test_get_upload_notification_recipients_copy_archive(self):
+        # Notifications for uploads to copy archives only go to the archive
+        # owner.
+        blamer = self.factory.makePerson()
+        maintainer = self.factory.makePerson(
+            'maintainer@example.com', displayname='Maintainer')
+        changer = self.factory.makePerson(
+            'changer@example.com', displayname='Changer')
+        changes = {
+            'Date': '2001-01-01',
+            'Changed-By': 'Changer <changer@example.com>',
+            'Maintainer': 'Maintainer <maintainer@example.com>',
+            'Changes': ' * Foo!',
+            }
+        recipients = self._run_recipients_test(
+            changes, blamer, maintainer, changer, purpose=ArchivePurpose.COPY)
+        expected = [format_address_for_person(blamer)]
         self.assertContentEqual(expected, recipients)
 
     def test_assemble_body_handles_no_preferred_email_for_changer(self):
