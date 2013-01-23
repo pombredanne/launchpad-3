@@ -541,7 +541,7 @@ class TestAsBuildmaster(TestCaseWithFactory):
         secret = self.factory.makeDistroSeries(name=u'distroseries')
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=cake, distroseries=secret, archive=pantry)
-        removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
+        build.updateStatus(BuildStatus.FULLYBUILT)
         IStore(build).flush()
         build.notify()
         self.assertEquals(0, len(pop_notifications()))
@@ -571,7 +571,7 @@ class TestAsBuildmaster(TestCaseWithFactory):
         secret = self.factory.makeDistroSeries(name=u'distroseries')
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=cake, distroseries=secret, archive=pantry)
-        removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
+        build.updateStatus(BuildStatus.FULLYBUILT)
         cake.destroySelf()
         IStore(build).flush()
         build.notify()

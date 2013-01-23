@@ -406,7 +406,7 @@ class MakeSPRecipeBuildMixin:
 
     def makeBuild(self):
         build = self.factory.makeSourcePackageRecipeBuild(
-            status=BuildStatus.FULLYBUILT, duration=timedelta(minutes=5))
+            status=BuildStatus.BUILDING)
         build.queueBuild()
         return build
 

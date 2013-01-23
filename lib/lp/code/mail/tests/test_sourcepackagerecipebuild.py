@@ -121,8 +121,7 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
     def test_generateEmail_upload_failure(self):
         """GenerateEmail works when many fields are NULL."""
         build = self.factory.makeSourcePackageRecipeBuild()
-        removeSecurityProxy(build).upload_log = (
-            self.factory.makeLibraryFileAlias())
+        build.storeUploadLog('uploaded')
         upload_log_fragment = 'Upload Log: %s' % build.upload_log_url
         ctrl = self.makeStatusEmail(build)
         self.assertTrue(upload_log_fragment in ctrl.body)

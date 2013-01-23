@@ -17,6 +17,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.services.webapp import canonical_url
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
+    admin_logged_in,
     ANONYMOUS,
     BrowserTestCase,
     login,
@@ -256,7 +257,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         build = self.makeRecipeBuild()
         Store.of(build).flush()
         build_url = canonical_url(build)
-        removeSecurityProxy(build).builder = self.factory.makeBuilder()
+        build.updateStatus(
+            BuildStatus.FULLYBUILT, builder=self.factory.makeBuilder())
         browser = self.getViewBrowser(build.builder, '+history')
         self.assertTextMatchesExpressionIgnoreWhitespace(
              'Build history.*~chef/chocolate/cake recipe build',
@@ -267,11 +269,10 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
     def makeBuildingRecipe(self, archive=None):
         builder = self.factory.makeBuilder()
         build = self.factory.makeSourcePackageRecipeBuild(archive=archive)
-        naked_build = removeSecurityProxy(build)
-        naked_build.queueBuild()
-        naked_build.builder = builder
-        naked_build.buildqueue_record.builder = builder
-        naked_build.buildqueue_record.logtail = 'i am failing'
+        build.updateStatus(BuildStatus.BUILDING, builder=builder)
+        build.queueBuild()
+        build.buildqueue_record.builder = builder
+        build.buildqueue_record.logtail = 'i am failing'
         return build
 
     def makeNonRedirectingBrowser(self, url, user=None):
@@ -289,7 +290,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_builder_index_private(self):
         archive = self.factory.makeArchive(private=True)
-        build = self.makeBuildingRecipe(archive=archive)
+        with admin_logged_in():
+            build = self.makeBuildingRecipe(archive=archive)
         url = canonical_url(removeSecurityProxy(build).builder)
         random_person = self.factory.makePerson()
         logout()

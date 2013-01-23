@@ -236,10 +236,9 @@ class TestBuilderHasBuildRecords(TestHasBuildRecordsInterface):
         # can only test this by creating a lone IBuildFarmJob of a
         # different type.
         from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
-        build_farm_job = getUtility(IBuildFarmJobSource).new(
+        getUtility(IBuildFarmJobSource).new(
             job_type=BuildFarmJobType.RECIPEBRANCHBUILD, virtualized=True,
-            status=BuildStatus.BUILDING)
-        removeSecurityProxy(build_farm_job).builder = self.context
+            status=BuildStatus.BUILDING, builder=self.context)
 
         builds = self.context.getBuildRecords(binary_only=True)
         binary_only_count = builds.count()

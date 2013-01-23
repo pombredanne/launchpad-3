@@ -131,25 +131,21 @@ class TestBuildFarmJobMixin(TestCaseWithFactory):
         self.assertProvides(self.build_farm_job, IBuildFarmJob)
 
     def test_duration_none(self):
-        # If either start or finished is none, the duration will be
-        # none.
-        removeSecurityProxy(self.build_farm_job).date_started = (
-            datetime.now(pytz.UTC))
-        self.failUnlessEqual(None, self.build_farm_job.duration)
-
-        removeSecurityProxy(self.build_farm_job).date_started = None
-        removeSecurityProxy(self.build_farm_job).date_finished = (
-            datetime.now(pytz.UTC))
-        self.failUnlessEqual(None, self.build_farm_job.duration)
+        # If either finished is none, the duration will be none.
+        self.build_farm_job.updateStatus(BuildStatus.BUILDING)
+        self.assertIs(None, self.build_farm_job.duration)
+        self.build_farm_job.updateStatus(BuildStatus.FULLYBUILT)
+        self.assertIsNot(None, self.build_farm_job.duration)
 
     def test_duration_set(self):
         # If both start and finished are defined, the duration will be
         # returned.
         now = datetime.now(pytz.UTC)
         duration = timedelta(1)
-        naked_bfj = removeSecurityProxy(self.build_farm_job)
-        naked_bfj.date_started = now
-        naked_bfj.date_finished = now + duration
+        self.build_farm_job.updateStatus(
+            BuildStatus.BUILDING, date_started=now)
+        self.build_farm_job.updateStatus(
+            BuildStatus.FULLYBUILT, date_finished=now + duration)
         self.failUnlessEqual(duration, self.build_farm_job.duration)
 
     def test_view_build_farm_job(self):
