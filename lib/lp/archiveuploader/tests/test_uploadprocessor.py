@@ -2181,11 +2181,9 @@ class TestUploadHandler(TestUploadProcessorBase):
             "bar_1.0-1", queue_entry=leaf_name, relative_path=relative_path)
         self.options.context = 'buildd'
         self.options.builds = True
-        removeSecurityProxy(build).date_started = UTC_NOW
-        # Commit so date_started is recorded and doesn't cause constraint
-        # violations later.
+        build.updateStatus(BuildStatus.BUILDING)
         build.updateStatus(BuildStatus.UPLOADING)
-        Store.of(build).flush()
+        self.switchToUploader()
         BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
             leaf_name).process()
         self.layer.txn.commit()
@@ -2226,12 +2224,9 @@ class TestUploadHandler(TestUploadProcessorBase):
         os.mkdir(os.path.join(self.incoming_folder, leaf_name))
         self.options.context = 'buildd'
         self.options.builds = True
-        removeSecurityProxy(build).date_started = UTC_NOW
-        self.switchToUploader()
-        # Commit so date_started is recorded and doesn't cause constraint
-        # violations later.
-        Store.of(build).flush()
+        build.updateStatus(BuildStatus.BUILDING)
         build.updateStatus(BuildStatus.UPLOADING)
+        self.switchToUploader()
         BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
             leaf_name).process()
         self.layer.txn.commit()

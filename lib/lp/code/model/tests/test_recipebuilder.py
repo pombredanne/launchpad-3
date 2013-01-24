@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from datetime import timedelta
 import shutil
 import tempfile
 from textwrap import dedent

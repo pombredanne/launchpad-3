@@ -3,12 +3,6 @@
 
 """Test implementations of the IHasBuildRecords interface."""
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
-
-import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
