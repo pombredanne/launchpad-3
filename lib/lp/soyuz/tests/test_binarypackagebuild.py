@@ -341,28 +341,21 @@ class BaseTestCaseWithThreeBuilds(TestCaseWithFactory):
     def setUp(self):
         """Publish some builds for the test archive."""
         super(BaseTestCaseWithThreeBuilds, self).setUp()
-        self.publisher = SoyuzTestPublisher()
-        self.publisher.prepareBreezyAutotest()
-
-        # Create three builds for the publisher's default
-        # distroseries.
-        self.builds = []
-        self.sources = []
-        gedit_src_hist = self.publisher.getPubSource(
-            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED)
-        self.builds += gedit_src_hist.createMissingBuilds()
-        self.sources.append(gedit_src_hist)
-
-        firefox_src_hist = self.publisher.getPubSource(
-            sourcename="firefox", status=PackagePublishingStatus.PUBLISHED)
-        self.builds += firefox_src_hist.createMissingBuilds()
-        self.sources.append(firefox_src_hist)
-
-        gtg_src_hist = self.publisher.getPubSource(
-            sourcename="getting-things-gnome",
-            status=PackagePublishingStatus.PUBLISHED)
-        self.builds += gtg_src_hist.createMissingBuilds()
-        self.sources.append(gtg_src_hist)
+        self.ds = self.factory.makeDistroSeries()
+        i386_das = self.factory.makeDistroArchSeries(
+            distroseries=self.ds, architecturetag='i386')
+        hppa_das = self.factory.makeDistroArchSeries(
+            distroseries=self.ds, architecturetag='hppa')
+        self.builds = [
+            self.factory.makeBinaryPackageBuild(
+                archive=self.ds.main_archive, distroarchseries=i386_das),
+            self.factory.makeBinaryPackageBuild(
+                archive=self.ds.main_archive, distroarchseries=i386_das),
+            self.factory.makeBinaryPackageBuild(
+                archive=self.ds.main_archive, distroarchseries=hppa_das),
+            ]
+        self.sources = [
+            build.current_source_publication for build in self.builds]
 
 
 class TestBuildSet(TestCaseWithFactory):
@@ -402,7 +395,7 @@ class TestBuildSetGetBuildsForArchive(BaseTestCaseWithThreeBuilds):
         super(TestBuildSetGetBuildsForArchive, self).setUp()
 
         # Short-cuts for our tests.
-        self.archive = self.publisher.distroseries.main_archive
+        self.archive = self.ds.main_archive
         self.build_set = getUtility(IBinaryPackageBuildSet)
 
     def test_getBuildsForArchive_no_params(self):
@@ -412,11 +405,7 @@ class TestBuildSetGetBuildsForArchive(BaseTestCaseWithThreeBuilds):
 
     def test_getBuildsForArchive_by_arch_tag(self):
         # Results can be filtered by architecture tag.
-        i386_builds = self.builds[:]
-        hppa_build = i386_builds.pop()
-        removeSecurityProxy(hppa_build).distro_arch_series = (
-            self.publisher.distroseries['hppa'])
-
+        i386_builds = self.builds[:2]
         builds = self.build_set.getBuildsForArchive(self.archive,
                                                     arch_tag="i386")
         self.assertContentEqual(builds, i386_builds)
@@ -450,11 +439,7 @@ class TestBuildSetGetBuildsForBuilder(BaseTestCaseWithThreeBuilds):
 
     def test_getBuildsForBuilder_by_arch_tag(self):
         # Results can be filtered by architecture tag.
-        i386_builds = self.builds[:]
-        hppa_build = i386_builds.pop()
-        removeSecurityProxy(hppa_build).distro_arch_series = (
-            self.publisher.distroseries['hppa'])
-
+        i386_builds = self.builds[:2]
         builds = self.build_set.getBuildsForBuilder(self.builder.id,
                                                     arch_tag="i386")
         self.assertContentEqual(builds, i386_builds)
