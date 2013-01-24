@@ -37,7 +37,6 @@ from lp.registry.interfaces.pocket import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
-from lp.services.database.constants import UTC_NOW
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import BufferLogger

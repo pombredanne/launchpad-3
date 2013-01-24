@@ -3,13 +3,9 @@
 
 __metaclass__ = type
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
+from datetime import timedelta
 from textwrap import dedent
 
-import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -327,7 +323,7 @@ class TestBuildNotify(TestCaseWithFactory):
         actual_emails = [n['To'] for n in notifications]
         self.assertEquals(self.buildd_admins_email, actual_emails)
         # And undo what we just did.
-        config_data = config.pop('notify_owner')
+        config.pop('notify_owner')
 
     def test_build_notification_supresses_mail(self):
         # When the 'build_notification' config option is False, we don't
@@ -343,7 +339,7 @@ class TestBuildNotify(TestCaseWithFactory):
         notifications = pop_notifications()
         self.assertEquals(0, len(notifications))
         # And undo what we just did.
-        config_data = config.pop('send_build_notification')
+        config.pop('send_build_notification')
 
     def test_sponsored_upload_notification(self):
         # If the signing key is different to the creator, they are both

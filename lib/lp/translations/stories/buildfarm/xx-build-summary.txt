@@ -141,16 +141,12 @@ A completed translation templates build job shows up in the builder's
 build history.
 
     >>> login(ANONYMOUS)
-    >>> from datetime import datetime, timedelta
-    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from datetime import timedelta
     >>> from lp.buildmaster.enums import BuildStatus
-    >>> from pytz import utc
-    >>> naked_job = removeSecurityProxy(build.build_farm_job)
-    >>> naked_job.builder = builder
-    >>> naked_job.date_started = datetime(2010, 9, 14, 8, 0, tzinfo=utc)
-    >>> naked_job.date_finished = naked_job.date_started + timedelta(
-    ...     seconds=300)
-    >>> naked_job.status = BuildStatus.FULLYBUILT
+    >>> build.updateStatus(BuildStatus.BUILDING, builder=builder)
+    >>> build.updateStatus(
+    ...     BuildStatus.FULLYBUILT,
+    ...     date_finished=build.date_started + timedelta(seconds=300))
     >>> logout()
 
     >>> user_browser.open(builder_page)

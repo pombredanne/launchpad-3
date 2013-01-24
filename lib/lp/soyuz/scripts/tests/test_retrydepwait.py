@@ -46,11 +46,13 @@ class TestRetryDepwait(TestCaseWithFactory):
 
     def test_ignores_when_dependencies_unsatisfied(self):
         # Builds with unsatisfied dependencies are not retried.
-        self.build.dependencies = u'something'
+        self.build.updateStatus(
+            BuildStatus.MANUALDEPWAIT,
+            slave_status={'dependencies': u'something'})
         self.assertStatusAfterLoop(BuildStatus.MANUALDEPWAIT)
         self.assertEqual(1, self.build.updateDependencies.call_count)
 
-        self.build.dependencies = None
+        self.build.updateStatus(BuildStatus.MANUALDEPWAIT)
         self.assertStatusAfterLoop(BuildStatus.NEEDSBUILD)
         self.assertEqual(2, self.build.updateDependencies.call_count)
 
@@ -95,7 +97,9 @@ class TestRetryDepwait(TestCaseWithFactory):
         # Setting up a real depwait scenario and running the script
         # works.
         self.assertEqual(BuildStatus.MANUALDEPWAIT, self.build.status)
-        self.build.dependencies = bpn = self.factory.getUniqueUnicode()
+        bpn = self.factory.getUniqueUnicode()
+        self.build.updateStatus(
+            BuildStatus.MANUALDEPWAIT, slave_status={'dependencies': bpn})
 
         # With no binary to satisfy the dependency, running the script
         # does nothing.
