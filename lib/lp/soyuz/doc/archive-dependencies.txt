@@ -95,26 +95,30 @@ A proper name for this "model" would be 'cross-component-dependency'.
     >>> ubuntu_components = [
     ...     'main', 'restricted', 'universe', 'multiverse', 'partner']
 
+    >>> from lp.registry.interfaces.pocket import (
+    ...      PackagePublishingPocket)
     >>> from lp.soyuz.adapters.archivedependencies import (
     ...     get_components_for_context)
+    >>> from lp.soyuz.enums import ArchivePurpose
 
-    >>> ogre_pub = test_publisher.getPubSource(sourcename='ogre')
-    >>> [ogre_build] = ogre_pub.createMissingBuilds()
+    >>> archive = factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+    >>> ogre_build = factory.makeBinaryPackageBuild(
+    ...     archive=archive, pocket=PackagePublishingPocket.RELEASE)
 
-    >>> def testOgreComponents():
+    >>> def testOgreComponents(build):
     ...     print " Component | Ogre-Model"
     ...     print "-----------+---------------"
     ...     for component in ubuntu_components:
     ...         component = getUtility(IComponentSet)[component]
-    ...         ogre_pub.component = component
+    ...         build.current_source_publication.component = component
     ...         flush_database_caches()
     ...         components_term = " ".join(
     ...             get_components_for_context(
-    ...                 ogre_build.current_component, ogre_build.pocket))
-    ...         print '%10s | %s' % (ogre_build.current_component.name,
+    ...                 build.current_component, build.pocket))
+    ...         print '%10s | %s' % (build.current_component.name,
     ...                              components_term)
 
-    >>> testOgreComponents()
+    >>> testOgreComponents(ogre_build)
      Component | Ogre-Model
     -----------+---------------
           main | main
@@ -129,18 +133,13 @@ are currently published. This special-case is important because it
 avoids changes to accommodate the backported source in the already
 released series.
 
-    >>> from lp.registry.interfaces.pocket import (
-    ...      PackagePublishingPocket)
-    >>> from zope.security.proxy import removeSecurityProxy
-
-    >>> naked_build = removeSecurityProxy(ogre_build)
-    >>> naked_build.pocket = PackagePublishingPocket.BACKPORTS
-
 Ultimately, it means that a build targeted to the BACKPORTS pocket
 will behave as if it were published in the multiverse component,
 despite the component it is actually published in.
 
-    >>> testOgreComponents()
+    >>> back_build = factory.makeBinaryPackageBuild(
+    ...     archive=archive, pocket=PackagePublishingPocket.BACKPORTS)
+    >>> testOgreComponents(back_build)
      Component | Ogre-Model
     -----------+---------------
           main | main restricted universe multiverse

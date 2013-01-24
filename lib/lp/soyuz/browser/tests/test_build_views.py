@@ -3,12 +3,6 @@
 
 __metaclass__ = type
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
-
-import pytz
 import soupmatchers
 from testtools.matchers import (
     MatchesException,

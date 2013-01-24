@@ -197,15 +197,14 @@ The 'Needs building' build is 14x14:
 
 The 'building' build is 14x14:
 
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.buildmaster.enums import BuildStatus
-    >>> removeSecurityProxy(build).status = BuildStatus.BUILDING
+    >>> build.updateStatus(BuildStatus.BUILDING)
     >>> print test_tales("build/image:icon", build=build)
     <img width="14" height="14"...src="/@@/processing" />
 
 But the 'failed to build' build is 16x14:
 
-    >>> removeSecurityProxy(build).status = BuildStatus.FAILEDTOBUILD
+    >>> build.updateStatus(BuildStatus.FAILEDTOBUILD)
     >>> print test_tales("build/image:icon", build=build)
     <img width="16" height="14"...src="/@@/build-failed" />
 
