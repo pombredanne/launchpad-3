@@ -5,7 +5,6 @@ __metaclass__ = type
 __all__ = [
     'HasSpecificationsMixin',
     'recursive_blocked_query',
-    'recursive_dependent_query',
     'Specification',
     'SPECIFICATION_POLICY_ALLOWED_TYPES',
     'SPECIFICATION_POLICY_DEFAULT_TYPES',
@@ -101,6 +100,7 @@ from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
+    convert_storm_clause_to_string,
     cursor,
     SQLBase,
     sqlvalues,
@@ -113,26 +113,34 @@ from lp.services.propertycache import (
 from lp.services.webapp.interfaces import ILaunchBag
 
 
-def recursive_blocked_query(spec):
+def recursive_blocked_query(user):
+    from lp.blueprints.model.specificationsearch import (
+        get_specification_privacy_filter)
     return """
         RECURSIVE blocked(id) AS (
-            SELECT %s
+            SELECT ?
         UNION
             SELECT sd.specification
-            FROM specificationdependency sd, blocked b
-            WHERE sd.dependency = b.id
-        )""" % spec.id
+            FROM blocked b, specificationdependency sd
+            JOIN specification ON sd.specification = specification.id
+            WHERE sd.dependency = b.id AND (%s))""" % (
+                convert_storm_clause_to_string(
+                    *get_specification_privacy_filter(user)))
 
 
-def recursive_dependent_query(spec):
+def recursive_dependent_query(user):
+    from lp.blueprints.model.specificationsearch import (
+        get_specification_privacy_filter)
     return """
         RECURSIVE dependencies(id) AS (
-            SELECT %s
+            SELECT ?
         UNION
             SELECT sd.dependency
-            FROM specificationdependency sd, dependencies d
-            WHERE sd.specification = d.id
-        )""" % spec.id
+            FROM dependencies d, specificationdependency sd
+            JOIN specification ON sd.dependency = specification.id
+            WHERE sd.specification = d.id AND (%s))""" % (
+                convert_storm_clause_to_string(
+                    *get_specification_privacy_filter(user)))
 
 
 SPECIFICATION_POLICY_ALLOWED_TYPES = {
@@ -812,51 +820,21 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
                 return deplink
 
     def all_deps(self, user=None):
-        public_clause = True
-        if user is None:
-            public_clause = (
-                Specification.information_type == InformationType.PUBLIC,
-                )
-
-        results = Store.of(self).with_(
-            SQL(recursive_dependent_query(self))).find(
+        return list(Store.of(self).with_(
+            SQL(recursive_dependent_query(user), params=(self.id,))).find(
             Specification,
             Specification.id != self.id,
-            SQL('Specification.id in (select id from dependencies)'),
-            public_clause,
-            ).order_by(Specification.name, Specification.id)
-
-        results = list(results)
-
-        if user:
-            service = getUtility(IService, 'sharing')
-            (ignore, ignore, results) = service.getVisibleArtifacts(
-                user, specifications=results)
-        return results
+            Specification.id.is_in(SQL('select id from dependencies')),
+            ).order_by(Specification.name, Specification.id))
 
     def all_blocked(self, user=None):
         """See `ISpecification`."""
-        public_clause = True
-        if user is None:
-            public_clause = (
-                Specification.information_type == InformationType.PUBLIC,
-                )
-
-        results = Store.of(self).with_(
-            SQL(recursive_blocked_query(self))).find(
+        return list(Store.of(self).with_(
+            SQL(recursive_blocked_query(user), params=(self.id,))).find(
             Specification,
             Specification.id != self.id,
-            SQL('Specification.id in (select id from blocked)'),
-            public_clause,
-            ).order_by(Specification.name, Specification.id)
-
-        results = list(results)
-
-        if user:
-            service = getUtility(IService, 'sharing')
-            (ignore, ignore, results) = service.getVisibleArtifacts(
-                user, specifications=results)
-        return results
+            Specification.id.is_in(SQL('select id from blocked')),
+            ).order_by(Specification.name, Specification.id))
 
     # branches
     def getBranchLink(self, branch):
