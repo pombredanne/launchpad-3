@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Notification for uploads and copies."""
@@ -471,17 +471,14 @@ def get_upload_notification_recipients(blamer, archive, distroseries,
                                        bprs=None):
     """Return a list of recipients for notification emails."""
     debug(logger, "Building recipients list.")
-    candidate_recipients = [
-        blamer,
-        ]
+    candidate_recipients = [blamer]
     info = fetch_information(spr, bprs, changes)
 
     changer = email_to_person(info['changedby'])
     maintainer = email_to_person(info['maintainer'])
 
     if blamer is None:
-        debug(
-            logger, "Changes file is unsigned; adding changer as recipient.")
+        debug(logger, "Changes file is unsigned; adding changer as recipient.")
         candidate_recipients.append(changer)
 
     if archive.is_ppa:
@@ -491,6 +488,10 @@ def get_upload_notification_recipients(blamer, archive, distroseries,
         candidate_recipients.extend([
             permission.person
             for permission in archive.getUploadersForComponent()])
+    elif archive.is_copy:
+        # For copy archives, notifying anyone else will probably only
+        # confuse them.
+        pass
     else:
         # If this is not a PPA, we also consider maintainer and changed-by.
         if blamer is not None:
@@ -548,8 +549,7 @@ def build_uploaded_files_list(spr, builds, customfiles, logger):
 
     if customfiles:
         files.extend(
-            [(file.libraryfilealias.filename, '', '')
-            for file in customfiles])
+            [(file.libraryfilealias.filename, '', '') for file in customfiles])
 
     return files
 
@@ -581,8 +581,7 @@ def email_to_person(fullemail):
     try:
         # The 2nd arg to s_f_m() doesn't matter as it won't fail since every-
         # thing will have already parsed at this point.
-        (rfc822, rfc2047, name, email) = safe_fix_maintainer(
-            fullemail, "email")
+        rfc822, rfc2047, name, email = safe_fix_maintainer(fullemail, "email")
         return getUtility(IPersonSet).getByEmail(email)
     except ParseMaintError:
         return None
