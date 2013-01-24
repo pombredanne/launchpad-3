@@ -53,7 +53,7 @@ class TestHasBuildRecordsInterface(BaseTestCaseWithThreeBuilds):
     def setUp(self):
         """Use `SoyuzTestPublisher` to publish some sources in archives."""
         super(TestHasBuildRecordsInterface, self).setUp()
-        self.context = self.publisher.distroseries.distribution
+        self.context = self.ds.distribution
 
     def testProvidesHasBuildRecords(self):
         # Ensure that the context does in fact provide IHasBuildRecords
@@ -69,12 +69,7 @@ class TestHasBuildRecordsInterface(BaseTestCaseWithThreeBuilds):
 
         # Target one of the builds to hppa so that we have three builds
         # in total, two of which are i386 and one hppa.
-        i386_builds = self.builds[:]
-        hppa_build = i386_builds.pop()
-        removeSecurityProxy(
-            hppa_build).distro_arch_series = self.publisher.distroseries[
-                'hppa']
-
+        i386_builds = self.builds[:2]
         builds = self.context.getBuildRecords(arch_tag="i386")
         self.assertContentEqual(i386_builds, builds)
 
@@ -145,8 +140,7 @@ class TestDistroSeriesHasBuildRecords(TestHasBuildRecordsInterface):
 
     def setUp(self):
         super(TestDistroSeriesHasBuildRecords, self).setUp()
-
-        self.context = self.publisher.distroseries
+        self.context = self.ds
 
 
 class TestDistroArchSeriesHasBuildRecords(TestDistributionHasBuildRecords):
@@ -181,7 +175,7 @@ class TestArchiveHasBuildRecords(TestHasBuildRecordsInterface):
     def setUp(self):
         super(TestArchiveHasBuildRecords, self).setUp()
 
-        self.context = self.publisher.distroseries.main_archive
+        self.context = self.ds.main_archive
 
     def test_binary_only_false(self):
         # An archive can optionally return the more general
@@ -288,7 +282,6 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
         for build in self.builds:
             build.updateStatus(BuildStatus.BUILDING)
             build.updateStatus(BuildStatus.FULLYBUILT)
-            build.buildqueue_record.destroySelf()
 
     def test_get_build_records(self):
         # We can fetch builds records from a SourcePackage.
