@@ -34,10 +34,10 @@ SpecGraph to keep track of the nodes that have been added.
     ...         # and simply use their "mirror image" for blocked specs.
     ...         self._blocked_specs = self._dependencies
     ...
-    ...     def dependencies(self, user):
+    ...     def getDependencies(self, user):
     ...         return self._dependencies
     ...
-    ...     def blocked_specs(self, user):
+    ...     def getBlockedSpecs(self, user):
     ...         return self._blocked_specs
 
     >>> foo = Spec('foo', title='something with " and \n in it')

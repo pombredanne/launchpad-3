@@ -257,7 +257,7 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
     spec_dependency_links = SQLMultipleJoin('SpecificationDependency',
         joinColumn='specification', orderBy='id')
 
-    _dependencies = SQLRelatedJoin('Specification', joinColumn='specification',
+    dependencies = SQLRelatedJoin('Specification', joinColumn='specification',
         otherColumn='dependency', orderBy='title',
         intermediateTable='SpecificationDependency')
     information_type = EnumCol(
@@ -273,12 +273,12 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
             cond == Specification.id, *get_specification_privacy_filter(user)
             ).order_by(Specification.title))
 
-    def dependencies(self, user):
+    def getDependencies(self, user=None):
         return self._fetch_children_or_parents(
             SpecificationDependency.specificationID,
             SpecificationDependency.dependencyID, user)
 
-    def blocked_specs(self, user):
+    def getBlockedSpecs(self, user=None):
         return self._fetch_children_or_parents(
             SpecificationDependency.dependencyID,
             SpecificationDependency.specificationID, user)
@@ -661,7 +661,7 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
     @property
     def is_blocked(self):
         """See ISpecification."""
-        for spec in self._dependencies:
+        for spec in self.dependencies:
             if spec.is_incomplete:
                 return True
         return False

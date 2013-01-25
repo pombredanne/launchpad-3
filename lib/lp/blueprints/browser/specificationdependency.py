@@ -23,6 +23,7 @@ from lp.blueprints.interfaces.specificationdependency import (
     ISpecificationDependency,
     ISpecificationDependencyRemoval,
     )
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
@@ -99,18 +100,18 @@ class SpecificationDependencyTreeView(LaunchpadView):
     def page_title(self):
         return self.label
 
-    @property
+    @cachedproperty
     def all_blocked(self):
         return self.context.all_blocked(self.user)
 
-    @property
+    @cachedproperty
     def all_deps(self):
         return self.context.all_deps(self.user)
 
-    @property
+    @cachedproperty
     def dependencies(self):
-        return self.context.dependencies(self.user)
+        return self.context.getDependencies(self.user)
 
-    @property
+    @cachedproperty
     def blocked_specs(self):
-        return self.context.blocked_specs(self.user)
+        return self.context.getBlockedSpecs(self.user)
