@@ -338,6 +338,8 @@ class IProductReleaseView(Interface):
         Text(title=u'Constructed title for a project release.', readonly=True)
         )
 
+    can_have_release_files = Attribute("Whether release files can be added.")
+
     product = exported(
         Reference(title=u'The project that made this release.',
                   schema=Interface, readonly=True),

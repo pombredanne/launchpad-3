@@ -74,6 +74,7 @@ class ProductReleaseFileTestcase(TestCaseWithFactory):
 
     def test_addReleaseFile(self):
         release = self.factory.makeProductRelease()
+        self.assertTrue(release.can_have_release_files)
         maintainer = release.milestone.product.owner
         with person_logged_in(maintainer):
             release_file = release.addReleaseFile(
@@ -100,6 +101,7 @@ class ProductReleaseFileTestcase(TestCaseWithFactory):
             information_type=InformationType.PROPRIETARY, owner=owner)
         with person_logged_in(owner):
             release = self.factory.makeProductRelease(product=product)
+            self.assertFalse(release.can_have_release_files)
             self.assertRaises(
                 ProprietaryProduct, release.addReleaseFile,
                 'README', 'test', 'text/plain', owner)

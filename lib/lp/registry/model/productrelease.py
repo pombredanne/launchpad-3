@@ -108,6 +108,11 @@ class ProductRelease(SQLBase):
         """See `IProductRelease`."""
         return self.milestone.title
 
+    @property
+    def can_have_release_files(self):
+        """See `IProductRelease`."""
+        return self.product.information_type == InformationType.PUBLIC
+
     @staticmethod
     def normalizeFilename(filename):
         # Replace slashes in the filename with less problematic dashes.
@@ -145,7 +150,7 @@ class ProductRelease(SQLBase):
                        file_type=UpstreamFileType.CODETARBALL,
                        description=None):
         """See `IProductRelease`."""
-        if self.product.information_type != InformationType.PUBLIC:
+        if not self.can_have_release_files:
             raise ProprietaryProduct(
                 "Only public projects can have download files.")
         if self.hasReleaseFile(filename):
