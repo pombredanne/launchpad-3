@@ -25,8 +25,12 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
+from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
-from lp.registry.errors import InvalidFilename
+from lp.registry.errors import (
+    InvalidFilename,
+    ProprietaryProduct,
+    )
 from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
@@ -141,6 +145,9 @@ class ProductRelease(SQLBase):
                        file_type=UpstreamFileType.CODETARBALL,
                        description=None):
         """See `IProductRelease`."""
+        if self.product.information_type != InformationType.PUBLIC:
+            raise ProprietaryProduct(
+                "Only public projects can have download files.")
         if self.hasReleaseFile(filename):
             raise InvalidFilename
         # Create the alias for the file.
