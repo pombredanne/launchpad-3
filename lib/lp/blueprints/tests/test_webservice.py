@@ -179,8 +179,8 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
         spec2_name = spec2.name
         spec.createDependency(spec2)
         spec_webservice = self.getSpecOnWebservice(spec)
-        self.assertEqual(1, spec_webservice.dependencies.total_size)
-        self.assertEqual(spec2_name, spec_webservice.dependencies[0].name)
+        self.assertEqual(1, len(spec_webservice.dependencies()))
+        self.assertEqual(spec2_name, spec_webservice.dependencies()[0].name)
 
     def test_representation_contains_linked_branches(self):
         spec = self.factory.makeSpecification()

@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Specification interfaces."""
@@ -17,11 +17,13 @@ __all__ = [
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
+    export_read_operation,
     export_write_operation,
     exported,
     mutator_for,
     operation_for_version,
     operation_parameters,
+    operation_returns_collection_of,
     REQUEST_USER,
     )
 from lazr.restful.fields import (
@@ -397,13 +399,6 @@ class ISpecificationView(IHasOwner, IHasLinkedBranches):
     subscribers = Attribute('The set of subscribers to this spec.')
     sprints = Attribute('The sprints at which this spec is discussed.')
     sprint_links = Attribute('The entries that link this spec to sprints.')
-    dependencies = exported(
-        CollectionField(
-            title=_('Specs on which this one depends.'),
-            value_type=Reference(schema=Interface),  # ISpecification, really.
-            readonly=True),
-        as_of="devel")
-    blocked_specs = Attribute('Specs for which this spec is a dependency.')
     linked_branches = exported(
         CollectionField(
             title=_("Branches associated with this spec, usually "
@@ -411,6 +406,16 @@ class ISpecificationView(IHasOwner, IHasLinkedBranches):
             value_type=Reference(schema=Interface),  # ISpecificationBranch
             readonly=True),
         as_of="devel")
+    
+    @call_with(user=REQUEST_USER)
+    @operation_returns_collection_of(Interface) # Really ISpecification
+    @export_read_operation()
+    @operation_for_version('devel')
+    def dependencies(user):
+        """Specs on which this one depends."""
+
+    def blocked_specs(user):
+        """Specs for which this spec is a dependency."""
 
     # emergent properties
     informational = Attribute('Is True if this spec is purely informational '

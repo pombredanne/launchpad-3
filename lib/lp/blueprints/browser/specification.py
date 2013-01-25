@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Specification views."""
@@ -604,8 +604,8 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
 
     def dependencytree(self):
         text = 'Show dependencies'
-        enabled = (bool(self.context.dependencies) or
-                   bool(self.context.blocked_specs))
+        enabled = (bool(self.context.dependencies(self.user)) or
+                   bool(self.context.blocked_specs(self.user)))
         return Link('+deptree', text, icon='info', enabled=enabled)
 
     @enabled_with_permission('launchpad.AnyPerson')
@@ -643,7 +643,8 @@ class SpecificationSimpleView(InformationTypePortletMixin, LaunchpadView):
 
     @cachedproperty
     def has_dep_tree(self):
-        return self.context.dependencies or self.context.blocked_specs
+        return (self.context.dependencies(self.user) or
+            self.context.blocked_specs(self.user))
 
     @cachedproperty
     def linked_branches(self):
@@ -1168,7 +1169,7 @@ class SpecGraph:
         transitively.
         """
         def get_related_specs_fn(spec):
-            return spec.all_deps(user=self.user)
+            return spec.dependencies(self.user)
 
         def link_nodes_fn(node, dependency):
             self.link(dependency, node)
@@ -1177,7 +1178,7 @@ class SpecGraph:
     def addBlockedNodes(self, spec):
         """Add nodes for specs that the given spec blocks, transitively."""
         def get_related_specs_fn(spec):
-            return spec.all_blocked(user=self.user)
+            return spec.blocked_specs(self.user)
 
         def link_nodes_fn(node, blocked_spec):
             self.link(node, blocked_spec)

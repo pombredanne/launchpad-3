@@ -257,14 +257,31 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
     spec_dependency_links = SQLMultipleJoin('SpecificationDependency',
         joinColumn='specification', orderBy='id')
 
-    dependencies = SQLRelatedJoin('Specification', joinColumn='specification',
+    _dependencies = SQLRelatedJoin('Specification', joinColumn='specification',
         otherColumn='dependency', orderBy='title',
-        intermediateTable='SpecificationDependency')
-    blocked_specs = SQLRelatedJoin('Specification', joinColumn='dependency',
-        otherColumn='specification', orderBy='title',
         intermediateTable='SpecificationDependency')
     information_type = EnumCol(
         enum=InformationType, notNull=True, default=InformationType.PUBLIC)
+
+    def _fetch_children_or_parents(self, join_cond, cond, user):
+        from lp.blueprints.model.specificationsearch import (
+            get_specification_privacy_filter)
+        return list(Store.of(self).using(
+            Specification,
+            Join(SpecificationDependency, join_cond == self.id)).find(
+            Specification,
+            cond == Specification.id, *get_specification_privacy_filter(user)
+            ).order_by(Specification.title))
+
+    def dependencies(self, user):
+        return self._fetch_children_or_parents(
+            SpecificationDependency.specificationID,
+            SpecificationDependency.dependencyID, user)
+
+    def blocked_specs(self, user):
+        return self._fetch_children_or_parents(
+            SpecificationDependency.dependencyID,
+            SpecificationDependency.specificationID, user)
 
     def set_assignee(self, person):
         self.subscribeIfAccessGrantNeeded(person)
@@ -644,7 +661,7 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
     @property
     def is_blocked(self):
         """See ISpecification."""
-        for spec in self.dependencies:
+        for spec in self._dependencies:
             if spec.is_incomplete:
                 return True
         return False

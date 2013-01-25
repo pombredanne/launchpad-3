@@ -203,6 +203,7 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
     _orderBy = 'title'
 
     def __iter__(self):
+        user = getattr(getUtility(ILaunchBag), 'user', None)
         for spec in sorted(
-            self.context.dependencies, key=attrgetter('title')):
+            self.context.dependencies(user), key=attrgetter('title')):
             yield SimpleTerm(spec, spec.name, spec.title)

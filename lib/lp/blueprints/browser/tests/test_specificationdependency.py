@@ -40,7 +40,7 @@ class TestAddDependency(BrowserTestCase):
         # We need a new interaction for the permission checks
         # on ISpecification objects.
         with person_logged_in(None):
-            self.assertIn(dependency, spec.dependencies)
+            self.assertIn(dependency, spec.dependencies(None))
 
 
 class TestDepTree(TestCaseWithFactory):
@@ -64,21 +64,17 @@ class TestDepTree(TestCaseWithFactory):
         # Anonymous can see only the public
         with anonymous_logged_in():
             view = create_view(root, name="+deptree")
-            self.assertEqual([public_dep], view.all_deps)
             self.assertEqual([public_dep], view.dependencies)
 
         # The owner can see everything.
         with person_logged_in(owner):
             view = create_view(root, name="+deptree")
             self.assertEqual(
-                [proprietary_dep, public_dep], view.all_deps)
-            self.assertEqual(
                 [proprietary_dep, public_dep], view.dependencies)
 
         # A random person cannot see the propriety dep.
         with person_logged_in(self.factory.makePerson()):
             view = create_view(root, name="+deptree")
-            self.assertEqual([public_dep], view.all_deps)
             self.assertEqual([public_dep], view.dependencies)
 
     def test_deptree_filters_blocked(self):
@@ -98,19 +94,15 @@ class TestDepTree(TestCaseWithFactory):
         # Anonymous can see only the public
         with anonymous_logged_in():
             view = create_view(root, name="+deptree")
-            self.assertEqual([public_blocked], view.all_blocked)
             self.assertEqual([public_blocked], view.blocked_specs)
 
         # The owner can see everything.
         with person_logged_in(owner):
             view = create_view(root, name="+deptree")
             self.assertEqual(
-                [proprietary_blocked, public_blocked], view.all_blocked)
-            self.assertEqual(
                 [proprietary_blocked, public_blocked], view.blocked_specs)
 
         # A random person cannot see the propriety dep.
         with person_logged_in(self.factory.makePerson()):
             view = create_view(root, name="+deptree")
-            self.assertEqual([public_blocked], view.all_blocked)
             self.assertEqual([public_blocked], view.blocked_specs)
