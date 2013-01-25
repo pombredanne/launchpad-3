@@ -1740,9 +1740,13 @@ class EditProductRelease(EditByOwnersOrAdmins):
             self, user)
 
 
-class ViewProductRelease(AnonymousAuthorization):
-
+class ViewProductRelease(DelegatedAuthorization):
+    permission = 'launchpad.View'
     usedfor = IProductRelease
+
+    def __init__(self, obj):
+        super(ViewProductRelease, self).__init__(
+            obj, obj.milestone, 'launchpad.View')
 
 
 class AdminTranslationImportQueueEntry(AuthorizationBase):

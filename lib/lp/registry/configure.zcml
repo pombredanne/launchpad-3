@@ -1875,10 +1875,13 @@
         <allow
             interface="lp.registry.interfaces.productrelease.IProductReleasePublic"/>
         <require
+            permission="launchpad.View"
+            interface="lp.registry.interfaces.productrelease.IProductReleaseView"/>
+        <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.productrelease.IProductReleaseEditRestricted"/>
         <require
-            permission="zope.Public"
+            permission="launchpad.Edit"
             set_schema="lp.registry.interfaces.productrelease.IProductRelease"/>
     </class>
     <adapter
