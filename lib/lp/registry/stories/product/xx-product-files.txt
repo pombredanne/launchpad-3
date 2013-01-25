@@ -47,6 +47,18 @@ release to add download files.
     File                            Description   Downloads
     firefox_0.9.2.orig.tar.gz (md5)               -
 
+Only public projects can have download files, so the portlet is omitted
+otherwise.
+
+    >>> from lp.app.enums import InformationType
+    >>> login('admin@canonical.com')
+    >>> prop_prod = factory.makeProduct(
+    ...     name='prop-prod', information_type=InformationType.PROPRIETARY)
+    >>> logout()
+    >>> admin_browser.open('http://launchpad.dev/prop-prod')
+    >>> print find_tag_by_id(admin_browser.contents, 'downloads')
+    None
+
 
 Deletion is only for the privileged
 ===================================
