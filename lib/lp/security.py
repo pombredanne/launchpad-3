@@ -529,11 +529,6 @@ class ViewDistributionMirror(AnonymousAuthorization):
     usedfor = IDistributionMirror
 
 
-class ViewAbstractMilestone(AnonymousAuthorization):
-    """Anyone can view an IMilestone or an IProjectGroupMilestone."""
-    usedfor = IAbstractMilestone
-
-
 class EditSpecificationBranch(AuthorizationBase):
 
     usedfor = ISpecificationBranch
