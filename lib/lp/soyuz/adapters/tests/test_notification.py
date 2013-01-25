@@ -417,10 +417,10 @@ class TestNotification(TestCaseWithFactory):
         self.assertRecipientsEqual(
             [blamer, maintainer], changes, blamer, maintainer, changer)
 
-    def test_get_upload_notification_recipients_copy_archive(self):
-        # Notifications for uploads to copy archives only go to the archive
-        # owner.
-        blamer, maintainer, changer = self._setup_recipients()
+    def test_get_upload_notification_recipients_unsigned_copy_archive(self):
+        # Notifications for unsigned build uploads to copy archives only go
+        # to the archive owner.
+        _, maintainer, changer = self._setup_recipients()
         changes = {
             'Date': '2001-01-01',
             'Changed-By': 'Changer <changer@example.com>',
@@ -428,7 +428,7 @@ class TestNotification(TestCaseWithFactory):
             'Changes': ' * Foo!',
             }
         self.assertRecipientsEqual(
-            [blamer], changes, blamer, maintainer, changer,
+            [], changes, None, maintainer, changer,
             purpose=ArchivePurpose.COPY)
 
     def test_assemble_body_handles_no_preferred_email_for_changer(self):

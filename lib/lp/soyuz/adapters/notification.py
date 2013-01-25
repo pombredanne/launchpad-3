@@ -477,7 +477,7 @@ def get_upload_notification_recipients(blamer, archive, distroseries,
     changer = email_to_person(info['changedby'])
     maintainer = email_to_person(info['maintainer'])
 
-    if blamer is None:
+    if blamer is None and not archive.is_copy:
         debug(logger, "Changes file is unsigned; adding changer as recipient.")
         candidate_recipients.append(changer)
 
