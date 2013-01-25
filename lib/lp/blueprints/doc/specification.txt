@@ -262,20 +262,20 @@ block-them-too.
     >>> from lp.registry.interfaces.product import IProductSet
     >>> efourx = getUtility(IProductSet).getByName(
     ...     'firefox').getSpecification('e4x')
-    >>> for spec in efourx.dependencies: print spec.name
+    >>> for spec in efourx.getDependencies(): print spec.name
     svg-support
 
     >>> for spec in efourx.all_deps(): print spec.name
     svg-support
 
-    >>> for spec in efourx.blocked_specs: print spec.name
+    >>> for spec in efourx.getBlockedSpecs(): print spec.name
     canvas
 
     >>> for spec in efourx.all_blocked(): print spec.name
     canvas
 
-    >>> canvas = efourx.blocked_specs[0]
-    >>> svg = efourx.dependencies[0]
+    >>> canvas = efourx.getBlockedSpecs()[0]
+    >>> svg = efourx.getDependencies()[0]
     >>> for spec in svg.all_blocked(): print spec.name
     canvas
     e4x

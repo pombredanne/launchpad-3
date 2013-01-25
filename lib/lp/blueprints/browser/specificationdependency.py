@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for SpecificationDependency."""
@@ -12,7 +12,6 @@ __all__ = [
     ]
 
 from lazr.restful.interface import copy_field
-from zope.component import getUtility
 from zope.interface import Interface
 
 from lp import _
@@ -20,8 +19,6 @@ from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
-from lp.app.enums import InformationType
-from lp.app.interfaces.services import IService
 from lp.blueprints.interfaces.specificationdependency import (
     ISpecificationDependency,
     ISpecificationDependencyRemoval,
@@ -99,10 +96,6 @@ class SpecificationDependencyTreeView(LaunchpadView):
 
     label = "Blueprint dependency tree"
 
-    def __init__(self, *args, **kwargs):
-        super(SpecificationDependencyTreeView, self).__init__(*args, **kwargs)
-        self.service = getUtility(IService, 'sharing')
-
     @property
     def page_title(self):
         return self.label
@@ -117,22 +110,8 @@ class SpecificationDependencyTreeView(LaunchpadView):
 
     @cachedproperty
     def dependencies(self):
-        deps = list(self.context.dependencies)
-        if self.user:
-            (ignore, ignore, deps) = self.service.getVisibleArtifacts(
-                self.user, specifications=deps)
-        else:
-            deps = [d for d in deps if
-                d.information_type == InformationType.PUBLIC]
-        return deps
+        return self.context.getDependencies(self.user)
 
     @cachedproperty
     def blocked_specs(self):
-        blocked = list(self.context.blocked_specs)
-        if self.user:
-            (ignore, ignore, blocked) = self.service.getVisibleArtifacts(
-                self.user, specifications=blocked)
-        else:
-            blocked = [b for b in blocked if
-                b.information_type == InformationType.PUBLIC]
-        return blocked
+        return self.context.getBlockedSpecs(self.user)
