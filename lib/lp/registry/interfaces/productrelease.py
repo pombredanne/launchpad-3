@@ -274,6 +274,10 @@ class IProductReleasePublic(Interface):
 
     id = Int(title=_('ID'), required=True, readonly=True)
 
+
+class IProductReleaseView(Interface):
+    """launchpad.View-restricted `IProductRelease` properties."""
+
     datereleased = exported(
         Datetime(
             title=_('Date released'), required=True,
@@ -334,6 +338,8 @@ class IProductReleasePublic(Interface):
         Text(title=u'Constructed title for a project release.', readonly=True)
         )
 
+    can_have_release_files = Attribute("Whether release files can be added.")
+
     product = exported(
         Reference(title=u'The project that made this release.',
                   schema=Interface, readonly=True),
@@ -371,7 +377,7 @@ class IProductReleasePublic(Interface):
         """Does the release have a file that matches the name?"""
 
 
-class IProductRelease(IProductReleaseEditRestricted,
+class IProductRelease(IProductReleaseEditRestricted, IProductReleaseView,
                       IProductReleasePublic):
     """A specific release (i.e. version) of a product.
 

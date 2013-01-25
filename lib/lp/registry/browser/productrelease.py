@@ -39,7 +39,6 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
-from lp.app.enums import InformationType
 from lp.app.widgets.date import DateTimeWidget
 from lp.registry.browser import (
     BaseRdfView,
@@ -136,11 +135,6 @@ class ProductReleaseAddViewBase(LaunchpadFormView):
         notify(ObjectCreatedEvent(newrelease))
 
     @property
-    def releases_allowed(self):
-        return (self.context.product.information_type !=
-                InformationType.PROPRIETARY)
-
-    @property
     def label(self):
         """The form label."""
         return smartquote('Create a new release for %s' %
@@ -166,11 +160,6 @@ class ProductReleaseAddView(ProductReleaseAddViewBase):
         ]
 
     def initialize(self):
-        if (self.context.product.information_type ==
-            InformationType.EMBARGOED):
-            self.request.response.addWarningNotification(
-                _("Any releases added for %s will be PUBLIC." %
-                  self.context.product.displayname))
         if self.context.product_release is not None:
             self.request.response.addErrorNotification(
                 _("A project release already exists for this milestone."))
@@ -201,14 +190,6 @@ class ProductReleaseFromSeriesAddView(ProductReleaseAddViewBase,
         'release_notes',
         'changelog',
         ]
-
-    def initialize(self):
-        if (self.context.product.information_type ==
-            InformationType.EMBARGOED):
-            self.request.response.addWarningNotification(
-                _("Any releases added for %s will be PUBLIC." %
-                  self.context.displayname))
-        super(ProductReleaseFromSeriesAddView, self).initialize()
 
     def setUpFields(self):
         super(ProductReleaseFromSeriesAddView, self).setUpFields()
@@ -294,6 +275,8 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
+        if not self.context.can_have_release_files:
+            self.addError('Only public projects can have download files.')
         file_name = None
         filecontent = self.request.form.get(self.widgets['filecontent'].name)
         if filecontent:

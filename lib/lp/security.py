@@ -529,11 +529,6 @@ class ViewDistributionMirror(AnonymousAuthorization):
     usedfor = IDistributionMirror
 
 
-class ViewAbstractMilestone(AnonymousAuthorization):
-    """Anyone can view an IMilestone or an IProjectGroupMilestone."""
-    usedfor = IAbstractMilestone
-
-
 class EditSpecificationBranch(AuthorizationBase):
 
     usedfor = ISpecificationBranch
@@ -1740,9 +1735,13 @@ class EditProductRelease(EditByOwnersOrAdmins):
             self, user)
 
 
-class ViewProductRelease(AnonymousAuthorization):
-
+class ViewProductRelease(DelegatedAuthorization):
+    permission = 'launchpad.View'
     usedfor = IProductRelease
+
+    def __init__(self, obj):
+        super(ViewProductRelease, self).__init__(
+            obj, obj.milestone, 'launchpad.View')
 
 
 class AdminTranslationImportQueueEntry(AuthorizationBase):

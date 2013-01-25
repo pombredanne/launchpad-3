@@ -6,8 +6,10 @@
 
   <div class="portlet"
     tal:define="has_edit view/release/required:launchpad.Edit;">
-    <form method="POST" tal:attributes="action request/URL">
-      <h2>Download files for this release</h2>
+    <h2>Download files for this release</h2>
+    <form
+      tal:condition="view/release/can_have_release_files"
+      method="POST" tal:attributes="action request/URL">
 
       <p id="how-to-verify" tal:condition="view/download_files">
         After you've downloaded a file, you can verify its authenticity
@@ -64,7 +66,11 @@
         </ul>
       </div>
     </form>
+    <tal:nofiles tal:condition="not:view/release/can_have_release_files">
+      <em>Only public projects can have download files.</em>
+    </tal:nofiles>
   </div>
+
 
   <div class="top-portlet">
     <h2>Release notes&nbsp;<a tal:replace="structure view/release/menu:context/edit/fmt:icon" /></h2>
