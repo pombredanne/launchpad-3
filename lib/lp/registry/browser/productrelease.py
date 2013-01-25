@@ -275,6 +275,8 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
+        if not self.context.can_have_release_files:
+            self.addError('Only public projects can have download files.')
         file_name = None
         filecontent = self.request.form.get(self.widgets['filecontent'].name)
         if filecontent:
