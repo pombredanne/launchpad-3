@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The vocabularies relating to dependencies of specifications."""
@@ -24,7 +24,7 @@ from lp.blueprints.model.specification import (
     Specification,
     )
 from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.services.database.sqlbase import quote
+from lp.services.database.stormexpr import fti_search
 from lp.services.webapp import (
     canonical_url,
     urlparse,
@@ -118,8 +118,10 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
 
     def _exclude_blocked_query(self):
         """Return the select statement to exclude already blocked specs."""
-        return SQL("Specification.id not in (WITH %s select id from blocked)"
-                   % recursive_blocked_query(self.context))
+        user = getattr(getUtility(ILaunchBag), 'user', None)
+        return SQL(
+            "Specification.id not in (WITH %s select id from blocked)" % (
+                recursive_blocked_query(user)), params=(self.context.id,))
 
     def toTerm(self, obj):
         if obj.target == self.context.target:
@@ -182,7 +184,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
 
         return Store.of(self.context).find(
             Specification,
-            SQL('Specification.fti @@ ftq(%s)' % quote(query)),
+            fti_search(Specification, query),
             self._exclude_blocked_query(),
             ).order_by(self._order_by())
 
@@ -201,6 +203,7 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
     _orderBy = 'title'
 
     def __iter__(self):
+        user = getattr(getUtility(ILaunchBag), 'user', None)
         for spec in sorted(
-            self.context.dependencies, key=attrgetter('title')):
+            self.context.getDependencies(user), key=attrgetter('title')):
             yield SimpleTerm(spec, spec.name, spec.title)
