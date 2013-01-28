@@ -3,12 +3,6 @@
 
 """Test implementations of the IHasBuildRecords interface."""
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
-
-import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -53,7 +47,7 @@ class TestHasBuildRecordsInterface(BaseTestCaseWithThreeBuilds):
     def setUp(self):
         """Use `SoyuzTestPublisher` to publish some sources in archives."""
         super(TestHasBuildRecordsInterface, self).setUp()
-        self.context = self.publisher.distroseries.distribution
+        self.context = self.ds.distribution
 
     def testProvidesHasBuildRecords(self):
         # Ensure that the context does in fact provide IHasBuildRecords
@@ -69,12 +63,7 @@ class TestHasBuildRecordsInterface(BaseTestCaseWithThreeBuilds):
 
         # Target one of the builds to hppa so that we have three builds
         # in total, two of which are i386 and one hppa.
-        i386_builds = self.builds[:]
-        hppa_build = i386_builds.pop()
-        removeSecurityProxy(
-            hppa_build).distro_arch_series = self.publisher.distroseries[
-                'hppa']
-
+        i386_builds = self.builds[:2]
         builds = self.context.getBuildRecords(arch_tag="i386")
         self.assertContentEqual(i386_builds, builds)
 
@@ -126,13 +115,12 @@ class TestDistributionHasBuildRecords(TestCaseWithFactory):
                 distroseries=self.distroseries, architecturehintlist='any')
             builds = spph.createMissingBuilds()
             for b in builds:
+                b.updateStatus(BuildStatus.BUILDING)
                 if i == 4:
-                    b.status = BuildStatus.FAILEDTOBUILD
+                    b.updateStatus(BuildStatus.FAILEDTOBUILD)
                 else:
-                    b.status = BuildStatus.FULLYBUILT
+                    b.updateStatus(BuildStatus.FULLYBUILT)
                 b.buildqueue_record.destroySelf()
-                b.date_started = datetime.now(pytz.UTC)
-                b.date_finished = b.date_started + timedelta(minutes=5)
             self.builds += builds
 
     def test_get_build_records(self):
@@ -140,13 +128,13 @@ class TestDistributionHasBuildRecords(TestCaseWithFactory):
         builds = self.distribution.getBuildRecords().count()
         self.assertEquals(10, builds)
 
+
 class TestDistroSeriesHasBuildRecords(TestHasBuildRecordsInterface):
     """Test the DistroSeries implementation of IHasBuildRecords."""
 
     def setUp(self):
         super(TestDistroSeriesHasBuildRecords, self).setUp()
-
-        self.context = self.publisher.distroseries
+        self.context = self.ds
 
 
 class TestDistroArchSeriesHasBuildRecords(TestDistributionHasBuildRecords):
@@ -181,7 +169,7 @@ class TestArchiveHasBuildRecords(TestHasBuildRecordsInterface):
     def setUp(self):
         super(TestArchiveHasBuildRecords, self).setUp()
 
-        self.context = self.publisher.distroseries.main_archive
+        self.context = self.ds.main_archive
 
     def test_binary_only_false(self):
         # An archive can optionally return the more general
@@ -226,7 +214,7 @@ class TestBuilderHasBuildRecords(TestHasBuildRecordsInterface):
 
         # Ensure that our builds were all built by the test builder.
         for build in self.builds:
-            build.builder = self.context
+            build.updateStatus(BuildStatus.FULLYBUILT, builder=self.context)
 
     def test_binary_only_false(self):
         # A builder can optionally return the more general
@@ -236,10 +224,9 @@ class TestBuilderHasBuildRecords(TestHasBuildRecordsInterface):
         # can only test this by creating a lone IBuildFarmJob of a
         # different type.
         from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
-        build_farm_job = getUtility(IBuildFarmJobSource).new(
+        getUtility(IBuildFarmJobSource).new(
             job_type=BuildFarmJobType.RECIPEBRANCHBUILD, virtualized=True,
-            status=BuildStatus.BUILDING)
-        removeSecurityProxy(build_farm_job).builder = self.context
+            status=BuildStatus.BUILDING, builder=self.context)
 
         builds = self.context.getBuildRecords(binary_only=True)
         binary_only_count = builds.count()
@@ -287,12 +274,8 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
 
         # Set them as sucessfully built
         for build in self.builds:
-            build.status = BuildStatus.FULLYBUILT
-            build.buildqueue_record.destroySelf()
-            removeSecurityProxy(build).date_created = (
-                self.factory.getUniqueDate())
-            build.date_started = datetime.now(pytz.UTC)
-            build.date_finished = build.date_started + timedelta(minutes=5)
+            build.updateStatus(BuildStatus.BUILDING)
+            build.updateStatus(BuildStatus.FULLYBUILT)
 
     def test_get_build_records(self):
         # We can fetch builds records from a SourcePackage.

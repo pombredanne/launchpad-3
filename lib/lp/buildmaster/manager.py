@@ -92,7 +92,7 @@ def assessFailureCounts(builder, fail_notes):
         # on the build record so don't worry about that here.
         builder.resetFailureCount()
         build_job = current_job.specific_job.build
-        build_job.status = BuildStatus.FAILEDTOBUILD
+        build_job.updateStatus(BuildStatus.FAILEDTOBUILD)
         builder.currentjob.destroySelf()
 
         # N.B. We could try and call _handleStatus_PACKAGEFAIL here

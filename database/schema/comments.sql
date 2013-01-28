@@ -1235,6 +1235,7 @@ COMMENT ON COLUMN BinaryPackagePublishingHistory.pocket IS 'The pocket into whic
 COMMENT ON COLUMN BinaryPackagePublishingHistory.archive IS 'Target archive for this publishing record.';
 COMMENT ON COLUMN BinaryPackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
 COMMENT ON COLUMN BinaryPackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.phased_update_percentage IS 'Percentage of users for whom this package should be recommended. NULL indicates no phasing, i.e. publish the update for everyone.';
 
 -- ProcessorFamily
 
@@ -1681,7 +1682,6 @@ COMMENT ON COLUMN LibraryFileAlias.content IS 'The libraryfilecontent which is t
 COMMENT ON COLUMN LibraryFileAlias.filename IS 'The name of the file. E.g. "foo_1.0-1_i386.deb"';
 COMMENT ON COLUMN LibraryFileAlias.mimetype IS 'The mime type of the file. E.g. "application/x-debian-package"';
 COMMENT ON COLUMN LibraryFileAlias.expires IS 'The expiry date of this file. If NULL, this item may be removed as soon as it is no longer referenced. If set, the item will not be removed until this date. Once the date is passed, the file may be removed from disk even if this item is still being referenced (in which case content.deleted will be true)';
-COMMENT ON COLUMN LibraryFileAlias.last_accessed IS 'Roughly when this file was last retrieved from the Librarian. Initially set to this item''s creation date.';
 COMMENT ON COLUMN LibraryFileAlias.date_created IS 'The timestamp when this alias was created.';
 COMMENT ON COLUMN LibraryFileAlias.restricted IS 'Is this file available only from the restricted librarian?';
 COMMENT ON COLUMN LibraryFileAlias.hits IS 'The number of times this file has been downloaded.';

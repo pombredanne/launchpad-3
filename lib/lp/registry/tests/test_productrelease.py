@@ -7,7 +7,11 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from lp.registry.errors import InvalidFilename
+from lp.app.enums import InformationType
+from lp.registry.errors import (
+    InvalidFilename,
+    ProprietaryProduct,
+    )
 from lp.registry.interfaces.productrelease import (
     IProductReleaseSet,
     UpstreamFileType,
@@ -70,6 +74,7 @@ class ProductReleaseFileTestcase(TestCaseWithFactory):
 
     def test_addReleaseFile(self):
         release = self.factory.makeProductRelease()
+        self.assertTrue(release.can_have_release_files)
         maintainer = release.milestone.product.owner
         with person_logged_in(maintainer):
             release_file = release.addReleaseFile(
@@ -89,3 +94,14 @@ class ProductReleaseFileTestcase(TestCaseWithFactory):
             self.assertRaises(
                 InvalidFilename, release.addReleaseFile,
                 library_file.filename, 'test', 'text/plain', maintainer)
+
+    def test_addReleaseFile_only_works_on_public_products(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY, owner=owner)
+        with person_logged_in(owner):
+            release = self.factory.makeProductRelease(product=product)
+            self.assertFalse(release.can_have_release_files)
+            self.assertRaises(
+                ProprietaryProduct, release.addReleaseFile,
+                'README', 'test', 'text/plain', owner)

@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for Specification."""
@@ -41,9 +41,9 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import ISpecificationSet
-from lp.blueprints.model.specification import (
-    Specification,
-    visible_specification_query,
+from lp.blueprints.model.specification import Specification
+from lp.blueprints.model.specificationsearch import (
+    get_specification_privacy_filter,
     )
 from lp.registry.enums import (
     SharingPermission,
@@ -155,19 +155,19 @@ class SpecificationTests(TestCaseWithFactory):
                 'id', 'information_type', 'private', 'userCanView')),
             'launchpad.LimitedView': set((
                 'acceptBy', 'all_blocked', 'all_deps', 'approver',
-                'approverID', 'assignee', 'assigneeID', 'blocked_specs',
-                'bug_links', 'bugs', 'completer', 'createDependency',
-                'date_completed', 'date_goal_decided', 'date_goal_proposed',
-                'date_started', 'datecreated', 'declineBy',
-                'definition_status', 'dependencies', 'direction_approved',
-                'distribution', 'distroseries', 'drafter', 'drafterID',
-                'getBranchLink', 'getDelta', 'getAllowedInformationTypes',
-                'getLinkedBugTasks', 'getSprintSpecification',
-                'getSubscriptionByName', 'goal', 'goal_decider',
-                'goal_proposer', 'goalstatus', 'has_accepted_goal',
-                'implementation_status', 'informational', 'isSubscribed',
-                'is_blocked', 'is_complete', 'is_incomplete', 'is_started',
-                'lifecycle_status', 'linkBranch', 'linkSprint',
+                'approverID', 'assignee', 'assigneeID', 'bug_links', 'bugs',
+                'completer', 'createDependency', 'date_completed',
+                'date_goal_decided', 'date_goal_proposed', 'date_started',
+                'datecreated', 'declineBy', 'definition_status',
+                'dependencies', 'direction_approved', 'distribution',
+                'distroseries', 'drafter', 'drafterID', 'getBranchLink',
+                'getDelta', 'getAllowedInformationTypes', 'getDependencies',
+                'getBlockedSpecs', 'getLinkedBugTasks',
+                'getSprintSpecification', 'getSubscriptionByName', 'goal',
+                'goal_decider', 'goal_proposer', 'goalstatus',
+                'has_accepted_goal', 'implementation_status', 'informational',
+                'isSubscribed', 'is_blocked', 'is_complete', 'is_incomplete',
+                'is_started', 'lifecycle_status', 'linkBranch', 'linkSprint',
                 'linked_branches', 'man_days', 'milestone', 'name',
                 'notificationRecipientAddresses', 'owner', 'priority',
                 'product', 'productseries', 'proposeGoal', 'removeDependency',
@@ -407,48 +407,44 @@ class SpecificationTests(TestCaseWithFactory):
                 specification.target.owner, specification,
                 error_expected=False, attribute='name', value='foo')
 
-    def test_visible_specification_query(self):
-        # visible_specification_query returns a Storm expression
-        # that can be used to filter specifications by their visibility-
+    def _fetch_specs_visible_for_user(self, user):
+        return Store.of(self.product).find(
+            Specification,
+            Specification.productID == self.product.id,
+            *get_specification_privacy_filter(user))
+
+    def test_get_specification_privacy_filter(self):
+        # get_specification_privacy_filter returns a Storm expression
+        # that can be used to filter specifications by their visibility.
         owner = self.factory.makePerson()
-        product = self.factory.makeProduct(
+        self.product = self.factory.makeProduct(
             owner=owner,
             specification_sharing_policy=(
                 SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY))
-        public_spec = self.factory.makeSpecification(product=product)
+        public_spec = self.factory.makeSpecification(product=self.product)
         proprietary_spec_1 = self.factory.makeSpecification(
-            product=product, information_type=InformationType.PROPRIETARY)
+            product=self.product, information_type=InformationType.PROPRIETARY)
         proprietary_spec_2 = self.factory.makeSpecification(
-            product=product, information_type=InformationType.PROPRIETARY)
+            product=self.product, information_type=InformationType.PROPRIETARY)
         all_specs = [
             public_spec, proprietary_spec_1, proprietary_spec_2]
-        store = Store.of(product)
-        tables, query = visible_specification_query(None)
-        specs_for_anon = store.using(*tables).find(
-            Specification,
-            Specification.productID == product.id, *query)
-        self.assertContentEqual([public_spec],
-                                specs_for_anon.config(distinct=True))
+        specs_for_anon = self._fetch_specs_visible_for_user(None)
+        self.assertContentEqual(
+            [public_spec], specs_for_anon.config(distinct=True))
         # Product owners havae grants on the product, the privacy
         # filter returns thus all specifications for them.
-        tables, query = visible_specification_query(owner.id)
-        specs_for_owner = store.using(*tables).find(
-            Specification, Specification.productID == product.id, *query)
+        specs_for_owner = self._fetch_specs_visible_for_user(owner)
         self.assertContentEqual(all_specs, specs_for_owner)
         # The filter returns only public specs for ordinary users.
         user = self.factory.makePerson()
-        tables, query = visible_specification_query(user.id)
-        specs_for_other_user = store.using(*tables).find(
-            Specification, Specification.productID == product.id, *query)
+        specs_for_other_user = self._fetch_specs_visible_for_user(user)
         self.assertContentEqual([public_spec], specs_for_other_user)
         # If the user has a grant for a specification, the filter returns
         # this specification too.
         with person_logged_in(owner):
             getUtility(IService, 'sharing').ensureAccessGrants(
                 [user], owner, specifications=[proprietary_spec_1])
-        tables, query = visible_specification_query(user.id)
-        specs_for_other_user = store.using(*tables).find(
-            Specification, Specification.productID == product.id, *query)
+        specs_for_other_user = self._fetch_specs_visible_for_user(user)
         self.assertContentEqual(
             [public_spec, proprietary_spec_1], specs_for_other_user)
 

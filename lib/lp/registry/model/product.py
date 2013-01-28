@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes including and related to Product."""
@@ -91,13 +91,12 @@ from lp.app.interfaces.services import IService
 from lp.app.model.launchpad import InformationTypeMixin
 from lp.blueprints.enums import SpecificationFilter
 from lp.blueprints.model.specification import (
-    get_specification_filters,
     HasSpecificationsMixin,
     Specification,
     SPECIFICATION_POLICY_ALLOWED_TYPES,
     SPECIFICATION_POLICY_DEFAULT_TYPES,
-    visible_specification_query,
     )
+from lp.blueprints.model.specificationsearch import search_specifications
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
@@ -730,9 +729,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             if InformationType.PUBLIC in allowed_types[var]:
                 raise ProprietaryProduct(
                     "The project is %s." % self.information_type.title)
-        required_policies = set(allowed_types[var]).intersection(
-            set(PRIVATE_INFORMATION_TYPES))
-        self._ensurePolicies(required_policies)
+        self._ensurePolicies(allowed_types[var])
 
     def setBranchSharingPolicy(self, branch_sharing_policy):
         """See `IProductEditRestricted`."""
@@ -768,17 +765,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getAllowedSpecificationInformationTypes(self):
         """See `ISpecificationTarget`."""
-        if self.specification_sharing_policy is not None:
-            return SPECIFICATION_POLICY_ALLOWED_TYPES[
-                self.specification_sharing_policy]
-        return [InformationType.PUBLIC]
+        return SPECIFICATION_POLICY_ALLOWED_TYPES[
+            self.specification_sharing_policy]
 
     def getDefaultSpecificationInformationType(self):
         """See `ISpecificationTarget`."""
-        if self.specification_sharing_policy is not None:
-            return SPECIFICATION_POLICY_DEFAULT_TYPES[
-                self.specification_sharing_policy]
-        return InformationType.PUBLIC
+        return SPECIFICATION_POLICY_DEFAULT_TYPES[
+            self.specification_sharing_policy]
 
     def _ensurePolicies(self, information_types):
         # Ensure that the product has access policies for the specified
@@ -788,7 +781,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         existing_types = set([
             access_policy.type for access_policy in existing_policies])
         # Create the missing policies.
-        required_types = set(information_types).difference(existing_types)
+        required_types = set(information_types).difference(
+            existing_types).intersection(PRIVATE_INFORMATION_TYPES)
         policies = itertools.product((self,), required_types)
         policies = getUtility(IAccessPolicySource).create(policies)
 
@@ -805,12 +799,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         allowed_branch_types = set(
             BRANCH_POLICY_ALLOWED_TYPES.get(
                 self.branch_sharing_policy, FREE_INFORMATION_TYPES))
-        allowed_specification_types = set(
+        allowed_spec_types = set(
             SPECIFICATION_POLICY_ALLOWED_TYPES.get(
-                self.specification_sharing_policy, [InformationType.PUBLIC])
-        )
-        allowed_types = allowed_bug_types.union(allowed_branch_types)
-        allowed_types = allowed_types.union(allowed_specification_types)
+                self.specification_sharing_policy, [InformationType.PUBLIC]))
+        allowed_types = (
+            allowed_bug_types | allowed_branch_types | allowed_spec_types)
         allowed_types.add(self.information_type)
         # Fetch all APs, and after filtering out ones that are forbidden
         # by the bug, branch, and specification policies, the APs that have no
@@ -859,10 +852,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             # of that month, e.g. 20080131 + 1 month = 20080229.
             weekday, days_in_month = calendar.monthrange(new_year, new_month)
             new_day = min(days_in_month, start.day)
-            new_date = start.replace(year=new_year,
-                                     month=new_month,
-                                     day=new_day)
-            return new_date
+            return start.replace(
+                year=new_year, month=new_month, day=new_day)
 
         # The voucher may already have been redeemed or marked as redeemed
         # pending notification being sent to Salesforce.
@@ -1227,8 +1218,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @cachedproperty
     def distrosourcepackages(self):
         from lp.registry.model.distributionsourcepackage import (
-            DistributionSourcePackage,
-            )
+            DistributionSourcePackage)
         dsp_info = get_distro_sourcepackages([self])
         return [
             DistributionSourcePackage(
@@ -1267,11 +1257,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getMilestone(self, name):
         """See `IProduct`."""
-        results = Milestone.selectOne("""
-            product = %s AND
-            name = %s
-            """ % sqlvalues(self.id, name))
-        return results
+        return Milestone.selectOne("""
+            product = %s AND name = %s""" % sqlvalues(self.id, name))
 
     def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
@@ -1447,52 +1434,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                        prejoin_people=True):
         """See `IHasSpecifications`."""
 
-        # Make a new list of the filter, so that we do not mutate what we
-        # were passed as a filter
-        if not filter:
-            # filter could be None or [] then we decide the default
-            # which for a product is to show incomplete specs
-            filter = [SpecificationFilter.INCOMPLETE]
-
-        # now look at the filter and fill in the unsaid bits
-
-        # defaults for completeness: if nothing is said about completeness
-        # then we want to show INCOMPLETE
-        completeness = False
-        for option in [
-            SpecificationFilter.COMPLETE,
-            SpecificationFilter.INCOMPLETE]:
-            if option in filter:
-                completeness = True
-        if completeness is False:
-            filter.append(SpecificationFilter.INCOMPLETE)
-
-        # defaults for acceptance: in this case we have nothing to do
-        # because specs are not accepted/declined against a distro
-
-        # defaults for informationalness: we don't have to do anything
-        # because the default if nothing is said is ANY
-
-        order = self._specification_sort(sort)
-
-        # figure out what set of specifications we are interested in. for
-        # products, we need to be able to filter on the basis of:
-        #
-        #  - completeness.
-        #  - informational.
-        #
-        tables, clauses = visible_specification_query(user)
-        clauses.append(Specification.product == self)
-        clauses.extend(get_specification_filters(filter))
-        if prejoin_people:
-            results = self._preload_specifications_people(tables, clauses)
-        else:
-            tableset = Store.of(self).using(*tables)
-            results = tableset.find(Specification, *clauses)
-        results.order_by(order).config(distinct=True)
-        if quantity is not None:
-            results = results[:quantity]
-        return results
+        base_clauses = [Specification.productID == self.id]
+        return search_specifications(
+            self, base_clauses, user, sort, quantity, filter, prejoin_people)
 
     def getSpecification(self, name):
         """See `ISpecificationTarget`."""
@@ -1518,13 +1462,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getRelease(self, version):
         """See `IProduct`."""
-        store = Store.of(self)
         origin = [
             ProductRelease,
             Join(Milestone, ProductRelease.milestone == Milestone.id),
             ]
-        result = store.using(*origin)
-        return result.find(
+        return Store.of(self).using(*origin).find(
             ProductRelease,
             And(Milestone.product == self,
                 Milestone.name == version)).one()
@@ -1563,13 +1505,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         celebs = getUtility(ILaunchpadCelebrities)
         return (
             user.inTeam(celebs.registry_experts) or
-            user.inTeam(celebs.admin) or
-            user.inTeam(self.owner))
+            user.inTeam(celebs.admin) or user.inTeam(self.owner))
 
     def getLinkedBugWatches(self):
         """See `IProduct`."""
-        store = Store.of(self)
-        return store.find(
+        return Store.of(self).find(
             BugWatch,
             And(BugTask.product == self.id,
                 BugTask.bugwatch == BugWatch.id,
@@ -1590,8 +1530,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def recipes(self):
         """See `IHasRecipes`."""
-        store = Store.of(self)
-        return store.find(
+        return Store.of(self).find(
             SourcePackageRecipe,
             SourcePackageRecipe.id ==
                 SourcePackageRecipeData.sourcepackage_recipe_id,

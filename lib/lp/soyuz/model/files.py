@@ -1,12 +1,9 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
     'BinaryPackageFile',
-    'BinaryPackageFileSet',
     'SourceFileMixin',
     'SourcePackageReleaseFile',
     ]
@@ -15,22 +12,12 @@ from sqlobject import ForeignKey
 from zope.interface import implements
 
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.services.database.bulk import load_related
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
-from lp.services.librarian.model import (
-    LibraryFileAlias,
-    LibraryFileContent,
-    )
+from lp.services.database.sqlbase import SQLBase
 from lp.soyuz.enums import BinaryPackageFileType
 from lp.soyuz.interfaces.files import (
     IBinaryPackageFile,
-    IBinaryPackageFileSet,
     ISourcePackageReleaseFile,
-    ISourcePackageReleaseFileSet,
     )
 
 
@@ -46,33 +33,6 @@ class BinaryPackageFile(SQLBase):
                              foreignKey='LibraryFileAlias', notNull=True)
     filetype = EnumCol(dbName='filetype',
                        schema=BinaryPackageFileType)
-
-
-class BinaryPackageFileSet:
-    """See `IBinaryPackageFileSet`."""
-    implements(IBinaryPackageFileSet)
-
-    def getByPackageUploadIDs(self, package_upload_ids):
-        """See `IBinaryPackageFileSet`."""
-        if package_upload_ids is None or len(package_upload_ids) == 0:
-            return []
-        return BinaryPackageFile.select("""
-            PackageUploadBuild.packageupload = PackageUpload.id AND
-            PackageUpload.id IN %s AND
-            BinaryPackageBuild.id = PackageUploadBuild.build AND
-            BinaryPackageRelease.build = BinaryPackageBuild.id AND
-            BinaryPackageFile.binarypackagerelease = BinaryPackageRelease.id
-            """ % sqlvalues(package_upload_ids),
-            clauseTables=["PackageUpload", "PackageUploadBuild",
-                          "BinaryPackageBuild", "BinaryPackageRelease"],
-            prejoins=["binarypackagerelease", "binarypackagerelease.build",
-                      "binarypackagerelease.binarypackagename"])
-
-    def loadLibraryFiles(self, binary_files):
-        """See `IBinaryPackageFileSet`."""
-        lfas = load_related(LibraryFileAlias, binary_files, ['libraryfileID'])
-        load_related(LibraryFileContent, lfas, ['contentID'])
-        return lfas
 
 
 class SourceFileMixin:
@@ -96,23 +56,3 @@ class SourcePackageReleaseFile(SourceFileMixin, SQLBase):
     libraryfile = ForeignKey(foreignKey='LibraryFileAlias',
                              dbName='libraryfile')
     filetype = EnumCol(schema=SourcePackageFileType)
-
-
-class SourcePackageReleaseFileSet:
-    """See `ISourcePackageReleaseFileSet`."""
-    implements(ISourcePackageReleaseFileSet)
-
-    def getByPackageUploadIDs(self, package_upload_ids):
-        """See `ISourcePackageReleaseFileSet`."""
-        if package_upload_ids is None or len(package_upload_ids) == 0:
-            return []
-        return SourcePackageReleaseFile.select("""
-            PackageUploadSource.packageupload = PackageUpload.id AND
-            PackageUpload.id IN %s AND
-            SourcePackageReleaseFile.sourcepackagerelease =
-                PackageUploadSource.sourcepackagerelease
-            """ % sqlvalues(package_upload_ids),
-            clauseTables=["PackageUpload", "PackageUploadSource"],
-            prejoins=["libraryfile", "libraryfile.content",
-                      "sourcepackagerelease",
-                      "sourcepackagerelease.sourcepackagename"])

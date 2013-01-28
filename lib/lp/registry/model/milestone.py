@@ -1,7 +1,6 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
 """Milestone model classes."""
 
 __metaclass__ = type
@@ -37,11 +36,11 @@ from storm.zope import IResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
-from lp.blueprints.model.specification import (
-    Specification,
-    visible_specification_query,
+from lp.blueprints.model.specification import Specification
+from lp.blueprints.model.specificationsearch import (
+    get_specification_active_product_filter,
+    get_specification_privacy_filter,
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
@@ -56,7 +55,6 @@ from lp.bugs.model.bugtask import BugTaskSet
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
-from lp.registry.errors import ProprietaryProduct
 from lp.registry.interfaces.milestone import (
     IHasMilestones,
     IMilestone,
@@ -156,14 +154,15 @@ class MilestoneData:
     def getSpecifications(self, user):
         """See `IMilestoneData`"""
         from lp.registry.model.person import Person
-        store = Store.of(self.target)
-        origin, clauses = visible_specification_query(user)
-        origin.extend([
-            LeftJoin(Person, Specification._assigneeID == Person.id),
-            ])
+        origin = [Specification]
+        product_origin, clauses = get_specification_active_product_filter(
+            self)
+        origin.extend(product_origin)
+        clauses.extend(get_specification_privacy_filter(user))
+        origin.append(LeftJoin(Person, Specification._assigneeID == Person.id))
         milestones = self._milestone_ids_expr(user)
 
-        results = store.using(*origin).find(
+        results = Store.of(self.target).using(*origin).find(
             (Specification, Person),
             Specification.id.is_in(
                 Union(
@@ -276,10 +275,6 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
     def createProductRelease(self, owner, datereleased,
                              changelog=None, release_notes=None):
         """See `IMilestone`."""
-        info_type = self.product.information_type
-        if info_type == InformationType.PROPRIETARY:
-            raise ProprietaryProduct(
-                "Proprietary products cannot have releases.")
         if self.product_release is not None:
             raise MultipleProductReleases()
         release = ProductRelease(

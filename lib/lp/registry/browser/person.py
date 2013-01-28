@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213,C0322
-
 """Person-related view classes."""
 
 __metaclass__ = type
@@ -1135,22 +1133,11 @@ class PersonAdministerView(PersonRenameFormMixin):
     """Administer an `IPerson`."""
     schema = IPerson
     label = "Review person"
-    default_field_names = [
+    field_names = [
         'name', 'displayname',
         'personal_standing', 'personal_standing_reason']
     custom_widget(
         'personal_standing_reason', TextAreaWidget, height=5, width=60)
-
-    def setUpFields(self):
-        """Setup the normal fields from the schema, as appropriate.
-
-        If not an admin (e.g. registry expert), remove the displayname field.
-        """
-        self.field_names = self.default_field_names[:]
-        admin = check_permission('launchpad.Admin', self.context)
-        if not admin:
-            self.field_names.remove('displayname')
-        super(PersonAdministerView, self).setUpFields()
 
     @property
     def is_viewing_person(self):
@@ -1181,6 +1168,7 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
     """Administer an `IAccount` belonging to an `IPerson`."""
     schema = IAccount
     label = "Review person's account"
+    field_names = ['displayname', 'status', 'status_comment']
     custom_widget(
         'status_comment', TextAreaWidget, height=5, width=60)
 
@@ -1191,10 +1179,6 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         # It also means that permissions are checked on IAccount, not IPerson.
         self.person = self.context
         self.context = self.person.account
-        # Set fields to be displayed.
-        self.field_names = ['status', 'status_comment']
-        if self.viewed_by_admin:
-            self.field_names = ['displayname'] + self.field_names
 
     @property
     def is_viewing_person(self):
@@ -1206,11 +1190,6 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         return False
 
     @property
-    def viewed_by_admin(self):
-        """Is the user a Launchpad admin?"""
-        return check_permission('launchpad.Admin', self.context)
-
-    @property
     def email_addresses(self):
         """A list of the user's preferred and validated email addresses."""
         emails = sorted(
@@ -1220,12 +1199,17 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         return emails
 
     @property
+    def guessed_email_addresses(self):
+        """A list of the user's new email addresses.
+
+        This is just EmailAddressStatus.NEW addresses, not unvalidated ones
+        created through the web UI. They only have LoginTokens.
+        """
+        return sorted(email.email for email in self.person.guessedemails)
+
+    @property
     def next_url(self):
         """See `LaunchpadEditFormView`."""
-        is_suspended = self.context.status == AccountStatus.SUSPENDED
-        if is_suspended and not self.viewed_by_admin:
-            # Non-admins cannot see suspended persons.
-            return canonical_url(getUtility(IPersonSet))
         return canonical_url(self.person)
 
     @property
@@ -2576,9 +2560,7 @@ class PersonGPGView(LaunchpadView):
         self.info_message = structured('\n<br />\n'.join(comments))
 
     def _validateGPG(self, key):
-        logintokenset = getUtility(ILoginTokenSet)
         bag = getUtility(ILaunchBag)
-
         preferredemail = bag.user.preferredemail.email
         login = bag.login
 
@@ -2587,10 +2569,9 @@ class PersonGPGView(LaunchpadView):
         else:
             tokentype = LoginTokenType.VALIDATESIGNONLYGPG
 
-        token = logintokenset.new(self.context, login,
-                                  preferredemail,
-                                  tokentype,
-                                  fingerprint=key.fingerprint)
+        token = getUtility(ILoginTokenSet).new(
+            self.context, login, preferredemail, tokentype,
+            fingerprint=key.fingerprint)
 
         token.sendGPGValidationRequest(key)
 
@@ -2990,8 +2971,8 @@ class PersonEditEmailsView(LaunchpadFormView):
         if IEmailAddress.providedBy(email):
             email = email.email
         token = getUtility(ILoginTokenSet).new(
-                    self.context, getUtility(ILaunchBag).login, email,
-                    LoginTokenType.VALIDATEEMAIL)
+            self.context, getUtility(ILaunchBag).login, email,
+            LoginTokenType.VALIDATEEMAIL)
         token.sendEmailValidationRequest()
         self.request.response.addInfoNotification(
             "An e-mail message was sent to '%s' with "
@@ -3075,9 +3056,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                     '<a href="%s">%s</a>. If you think that is a '
                     'duplicated account, you can <a href="%s">merge it'
                     "</a> into your account.",
-                    newemail,
-                    canonical_url(owner),
-                    owner.displayname,
+                    newemail, canonical_url(owner), owner.displayname,
                     merge_url))
         return self.errors
 
@@ -3085,10 +3064,9 @@ class PersonEditEmailsView(LaunchpadFormView):
     def action_add_email(self, action, data):
         """Register a new email for the person in context."""
         newemail = data['newemail']
-        logintokenset = getUtility(ILoginTokenSet)
-        token = logintokenset.new(
-                    self.context, getUtility(ILaunchBag).login, newemail,
-                    LoginTokenType.VALIDATEEMAIL)
+        token = getUtility(ILoginTokenSet).new(
+            self.context, getUtility(ILaunchBag).login, newemail,
+            LoginTokenType.VALIDATEEMAIL)
         token.sendEmailValidationRequest()
 
         self.request.response.addInfoNotification(

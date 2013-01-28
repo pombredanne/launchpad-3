@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """BinaryPackageBuild interfaces."""
 
 __metaclass__ = type
@@ -80,12 +78,16 @@ class IBinaryPackageBuildView(IPackageBuild):
         required=True, readonly=True,
         description=_("The SourcePackageRelease requested to build."))
 
+    source_package_release_id = Int()
+
     distro_arch_series = Reference(
         title=_("Architecture"),
         # Really IDistroArchSeries
         schema=Interface,
         required=True, readonly=True,
         description=_("The DistroArchSeries context for this build."))
+
+    distro_arch_series_id = Int()
 
     # Properties
     current_source_publication = exported(
@@ -299,7 +301,7 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
 
     def new(distro_arch_series, source_package_release, processor,
             archive, pocket, status=BuildStatus.NEEDSBUILD,
-            date_created=None):
+            date_created=None, builder=None):
         """Create a new `IBinaryPackageBuild`.
 
         :param distro_arch_series: An `IDistroArchSeries`.
@@ -310,6 +312,7 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
         :param status: A `BuildStatus` item indicating the builds status.
         :param date_created: An optional datetime to ensure multiple builds
             in the same transaction don't all get the same UTC_NOW.
+        :param builder: An optional `IBuilder`.
         """
 
     def getBuildBySRAndArchtag(sourcepackagereleaseID, archtag):

@@ -35,7 +35,7 @@ the profile. Sample Person cannot claim it.
     >>> matsubara.account.reactivate(comment="test")
     Traceback (most recent call last):
     ...
-    Unauthorized: ...'launchpad.Special')
+    Unauthorized: ...'launchpad.View')
 
 Matsubara can.
 

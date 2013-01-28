@@ -3,12 +3,6 @@
 
 __metaclass__ = type
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
-
-import pytz
 import soupmatchers
 from testtools.matchers import (
     MatchesException,
@@ -297,7 +291,7 @@ class TestBuildViews(TestCaseWithFactory):
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         pending_build = self.factory.makeBinaryPackageBuild(archive=ppa)
         pending_build.queueBuild()
-        removeSecurityProxy(pending_build).status = BuildStatus.BUILDING
+        pending_build.updateStatus(BuildStatus.BUILDING)
         with person_logged_in(ppa.owner):
             view = create_initialized_view(
                 pending_build, name="+cancel", form={
@@ -312,7 +306,7 @@ class TestBuildViews(TestCaseWithFactory):
         removeSecurityProxy(archive).require_virtualized = False
         pending_build = self.factory.makeBinaryPackageBuild(archive=archive)
         pending_build.queueBuild()
-        removeSecurityProxy(pending_build).status = BuildStatus.BUILDING
+        pending_build.updateStatus(BuildStatus.BUILDING)
         with person_logged_in(archive.owner):
             view = create_initialized_view(
                 pending_build, name="+cancel", form={
@@ -331,11 +325,9 @@ class TestBuildViews(TestCaseWithFactory):
             arch_list.append(das.architecturetag)
             build = self.factory.makeBinaryPackageBuild(
                 distroarchseries=das, archive=distroseries.main_archive,
-                status=BuildStatus.FULLYBUILT)
-            with person_logged_in(self.admin):
-                build.date_started = (
-                    datetime.now(pytz.UTC) - timedelta(hours=1))
-                build.date_finished = datetime.now(pytz.UTC)
+                status=BuildStatus.NEEDSBUILD)
+            build.updateStatus(BuildStatus.BUILDING)
+            build.updateStatus(BuildStatus.FULLYBUILT)
         view = create_initialized_view(
             distroseries, name="+builds", form={'build_state': 'all'})
         view.setupBuildList()
@@ -403,10 +395,8 @@ class TestBuildViews(TestCaseWithFactory):
             # BPBs in certain states need a bit tweaking to appear in
             # the result of getBuildRecords().
             if status == BuildStatus.FULLYBUILT:
-                with person_logged_in(self.admin):
-                    build.date_started = (
-                        datetime.now(pytz.UTC) - timedelta(hours=1))
-                    build.date_finished = datetime.now(pytz.UTC)
+                build.updateStatus(BuildStatus.BUILDING)
+                build.updateStatus(BuildStatus.FULLYBUILT)
             elif status in (BuildStatus.NEEDSBUILD, BuildStatus.BUILDING):
                 build.queueBuild()
         for status in ('built', 'failed', 'depwait', 'chrootwait',

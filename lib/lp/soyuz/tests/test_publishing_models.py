@@ -35,7 +35,7 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
 
         # Ensure all the builds have been built.
         for build in self.builds:
-            removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
+            build.updateStatus(BuildStatus.FULLYBUILT)
         self.publishing_set = getUtility(IPublishingSet)
 
     def _getBuildsForResults(self, results):
@@ -52,9 +52,11 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
 
     def test_getUnpublishedBuildsForSources_one_published(self):
         # If we publish a binary for a build, it is no longer returned.
-        bpr = self.publisher.uploadBinaryForBuild(self.builds[0], 'gedit')
-        self.publisher.publishBinaryInArchive(
-            bpr, self.sources[0].archive,
+        bpr = self.factory.makeBinaryPackageRelease(build=self.builds[0])
+        self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr, archive=self.sources[0].archive,
+            distroarchseries=self.builds[0].distro_arch_series,
+            pocket=self.sources[0].pocket,
             status=PackagePublishingStatus.PUBLISHED)
 
         results = self.publishing_set.getUnpublishedBuildsForSources(
@@ -69,12 +71,13 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
 
         # Publish the binaries for gedit as superseded, explicitly setting
         # the date published.
-        bpr = self.publisher.uploadBinaryForBuild(self.builds[0], 'gedit')
-        bpphs = self.publisher.publishBinaryInArchive(
-            bpr, self.sources[0].archive,
-            status=PackagePublishingStatus.SUPERSEDED)
-        for bpph in bpphs:
-            bpph.datepublished = UTC_NOW
+        bpr = self.factory.makeBinaryPackageRelease(build=self.builds[0])
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr, archive=self.sources[0].archive,
+            distroarchseries=self.builds[0].distro_arch_series,
+            pocket=self.sources[0].pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+        bpph.supersede()
 
         results = self.publishing_set.getUnpublishedBuildsForSources(
             self.sources)
@@ -86,14 +89,21 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
 
     def test_getChangesFileLFA(self):
         # The getChangesFileLFA() method finds the right LFAs.
+        for spph, name in zip(self.sources, ('foo', 'bar', 'baz')):
+            pu = self.factory.makePackageUpload(
+                archive=spph.sourcepackagerelease.upload_archive,
+                distroseries=spph.sourcepackagerelease.upload_distroseries,
+                changes_filename='%s_666_source.changes' % name)
+            pu.addSource(spph.sourcepackagerelease)
+            pu.setDone()
+
         lfas = (
             self.publishing_set.getChangesFileLFA(hist.sourcepackagerelease)
             for hist in self.sources)
         urls = [lfa.http_url for lfa in lfas]
-        self.assert_(urls[0].endswith('/94/gedit_666_source.changes'))
-        self.assert_(urls[1].endswith('/96/firefox_666_source.changes'))
-        self.assert_(urls[2].endswith(
-            '/98/getting-things-gnome_666_source.changes'))
+        self.assert_(urls[0].endswith('/foo_666_source.changes'))
+        self.assert_(urls[1].endswith('/bar_666_source.changes'))
+        self.assert_(urls[2].endswith('/baz_666_source.changes'))
 
 
 class TestSourcePackagePublishingHistory(TestCaseWithFactory):

@@ -211,7 +211,6 @@ def start_as_process():
 
 def kill_running_process():
     """Find and kill any running web service processes."""
-    # pylint: disable-msg=W0602
     global service_name
     try:
         pid = get_pid(service_name)
@@ -254,7 +253,6 @@ def safe_unlink(filepath):
 def main():
     """Run the HTTP server."""
     # Redirect our service output to a log file.
-    # pylint: disable-msg=W0602
     global log
     ensure_directory_exists(os.path.dirname(config.google_test_service.log))
     filelog = logging.FileHandler(config.google_test_service.log)

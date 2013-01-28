@@ -14,6 +14,7 @@ from storm.store import Store
 from testtools.deferredruntest import AsynchronousDeferredRunTest
 import transaction
 from twisted.internet import defer
+from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -25,6 +26,10 @@ from lp.buildmaster.tests.mock_slaves import (
     BuildingSlave,
     OkSlave,
     WaitingSlave,
+    )
+from lp.buildmaster.tests.test_buildfarmjobbehavior import (
+    TestGetUploadMethodsMixin,
+    TestHandleStatusMixin,
     )
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
@@ -259,6 +264,16 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
             'Attempt to build virtual item on a non-virtual builder.',
             str(e))
 
+    def test_getBuildCookie(self):
+        # A build cookie is made up of the job type and record id.
+        # The uploadprocessor relies on this format.
+        build = self.factory.makeBinaryPackageBuild()
+        candidate = build.queueBuild()
+        behavior = candidate.required_build_behavior
+        cookie = removeSecurityProxy(behavior).getBuildCookie()
+        expected_cookie = "PACKAGEBUILD-%d" % build.id
+        self.assertEqual(expected_cookie, cookie)
+
 
 class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
     """Tests for the BinaryPackageBuildBehavior.
@@ -454,7 +469,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
     def test_log_file_collection(self):
         self.patch(BuilderSlave, 'makeBuilderSlave',
                    FakeMethod(WaitingSlave('BuildStatus.OK')))
-        self.build.status = BuildStatus.FULLYBUILT
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
         old_tmps = sorted(os.listdir('/tmp'))
 
         def got_log(logfile_lfa_id):
@@ -495,7 +510,8 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
                 'buildlog', tmp_orig_file_name)
             return d.addCallback(got_orig_log)
 
-        d = self.build.getLogFromSlave(self.build)
+        d = removeSecurityProxy(self.behavior).getLogFromSlave(
+            self.build, self.build.buildqueue_record)
         return d.addCallback(got_log)
 
     def test_private_build_log_storage(self):
@@ -519,3 +535,24 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
 
         d = self.builder.updateBuild(self.candidate)
         return d.addCallback(got_update)
+
+
+class MakeBinaryPackageBuildMixin:
+    """Provide the makeBuild method returning a queud build."""
+
+    def makeBuild(self):
+        build = self.factory.makeBinaryPackageBuild()
+        build.updateStatus(BuildStatus.BUILDING)
+        build.queueBuild()
+        return build
+
+
+class TestGetUploadMethodsForBinaryPackageBuild(
+    MakeBinaryPackageBuildMixin, TestGetUploadMethodsMixin,
+    TestCaseWithFactory):
+    """IPackageBuild.getUpload-related methods work with binary builds."""
+
+
+class TestHandleStatusForBinaryPackageBuild(
+    MakeBinaryPackageBuildMixin, TestHandleStatusMixin, TrialTestCase):
+    """IPackageBuild.handleStatus works with binary builds."""

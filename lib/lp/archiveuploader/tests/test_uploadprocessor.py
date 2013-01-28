@@ -48,6 +48,9 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    IBuildFarmJobBehavior,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -2088,10 +2091,8 @@ class TestUploadHandler(TestUploadProcessorBase):
 
         builder = self.factory.makeBuilder()
         build.buildqueue_record.markAsBuilding(builder)
-        build.builder = build.buildqueue_record.builder
-
-        build.status = BuildStatus.UPLOADING
-        build.date_finished = UTC_NOW
+        build.updateStatus(
+            BuildStatus.UPLOADING, builder=build.buildqueue_record.builder)
         self.switchToUploader()
 
         # Upload and accept a binary for the primary archive source.
@@ -2099,7 +2100,8 @@ class TestUploadHandler(TestUploadProcessorBase):
 
         # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
-        leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
+        behavior = IBuildFarmJobBehavior(build.buildqueue_record.specific_job)
+        leaf_name = behavior.getUploadDirLeaf(behavior.getBuildCookie())
         os.mkdir(os.path.join(self.incoming_folder, leaf_name))
         self.options.context = 'buildd'
         self.options.builds = True
@@ -2133,7 +2135,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         queue_item.setDone()
 
         build.buildqueue_record.markAsBuilding(self.factory.makeBuilder())
-        build.status = BuildStatus.UPLOADING
+        build.updateStatus(BuildStatus.UPLOADING)
         self.switchToUploader()
 
         # Upload and accept a binary for the primary archive source.
@@ -2141,7 +2143,8 @@ class TestUploadHandler(TestUploadProcessorBase):
 
         # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
-        leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
+        behavior = IBuildFarmJobBehavior(build.buildqueue_record.specific_job)
+        leaf_name = behavior.getUploadDirLeaf(behavior.getBuildCookie())
         upload_dir = self.queueUpload("bar_1.0-1_binary",
                 queue_entry=leaf_name)
         self.options.context = 'buildd'
@@ -2165,11 +2168,12 @@ class TestUploadHandler(TestUploadProcessorBase):
             distroseries=self.breezy, archive=archive,
             requester=archive.owner)
         self.assertEquals(archive.owner, build.requester)
-        self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
+        bq = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         self.switchToUploader()
         # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
-        leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
+        behavior = IBuildFarmJobBehavior(bq.specific_job)
+        leaf_name = behavior.getUploadDirLeaf(behavior.getBuildCookie())
         relative_path = "~%s/%s/%s/%s" % (
             archive.owner.name, archive.name, self.breezy.distribution.name,
             self.breezy.name)
@@ -2177,12 +2181,9 @@ class TestUploadHandler(TestUploadProcessorBase):
             "bar_1.0-1", queue_entry=leaf_name, relative_path=relative_path)
         self.options.context = 'buildd'
         self.options.builds = True
-        build.jobStarted()
-        # Commit so date_started is recorded and doesn't cause constraint
-        # violations later.
-        build.status = BuildStatus.UPLOADING
-        build.date_finished = UTC_NOW
-        Store.of(build).flush()
+        build.updateStatus(BuildStatus.BUILDING)
+        build.updateStatus(BuildStatus.UPLOADING)
+        self.switchToUploader()
         BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
             leaf_name).process()
         self.layer.txn.commit()
@@ -2215,20 +2216,17 @@ class TestUploadHandler(TestUploadProcessorBase):
         archive.require_virtualized = False
         build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
             distroseries=self.breezy, archive=archive)
-        self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
+        bq = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         # Commit so the build cookie has the right ids.
         Store.of(build).flush()
-        leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
+        behavior = IBuildFarmJobBehavior(bq.specific_job)
+        leaf_name = behavior.getUploadDirLeaf(behavior.getBuildCookie())
         os.mkdir(os.path.join(self.incoming_folder, leaf_name))
         self.options.context = 'buildd'
         self.options.builds = True
-        build.jobStarted()
+        build.updateStatus(BuildStatus.BUILDING)
+        build.updateStatus(BuildStatus.UPLOADING)
         self.switchToUploader()
-        # Commit so date_started is recorded and doesn't cause constraint
-        # violations later.
-        Store.of(build).flush()
-        build.status = BuildStatus.UPLOADING
-        build.date_finished = UTC_NOW
         BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
             leaf_name).process()
         self.layer.txn.commit()
@@ -2262,23 +2260,23 @@ class TestUploadHandler(TestUploadProcessorBase):
         archive.require_virtualized = False
         build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
             distroseries=self.breezy, archive=archive)
-        self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
+        bq = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         self.switchToUploader()
         # Commit so the build cookie has the right ids.
         Store.of(build).flush()
-        leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
+        behavior = IBuildFarmJobBehavior(bq.specific_job)
+        leaf_name = behavior.getUploadDirLeaf(behavior.getBuildCookie())
         os.mkdir(os.path.join(self.incoming_folder, leaf_name))
         self.options.context = 'buildd'
         self.options.builds = True
-        build.jobStarted()
+        build.updateStatus(BuildStatus.BUILDING)
         self.switchToAdmin()
         build.recipe.destroySelf()
         self.switchToUploader()
         # Commit so date_started is recorded and doesn't cause constraint
         # violations later.
         Store.of(build).flush()
-        build.status = BuildStatus.UPLOADING
-        build.date_finished = UTC_NOW
+        build.updateStatus(BuildStatus.UPLOADING)
         BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
             leaf_name).process()
         self.layer.txn.commit()
@@ -2307,14 +2305,15 @@ class TestUploadHandler(TestUploadProcessorBase):
         queue_item.setDone()
 
         build.buildqueue_record.markAsBuilding(self.factory.makeBuilder())
-        build.status = BuildStatus.BUILDING
+        build.updateStatus(BuildStatus.BUILDING)
         self.switchToUploader()
 
         shutil.rmtree(upload_dir)
 
         # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
-        leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
+        behavior = IBuildFarmJobBehavior(build.buildqueue_record.specific_job)
+        leaf_name = behavior.getUploadDirLeaf(behavior.getBuildCookie())
         upload_dir = self.queueUpload(
             "bar_1.0-1_binary", queue_entry=leaf_name)
         self.options.context = 'buildd'

@@ -1,14 +1,15 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
     'BuildFarmJob',
     'BuildFarmJobDerived',
+    'BuildFarmJobMixin',
     'BuildFarmJobOld',
-    'BuildFarmJobOldDerived',
     ]
 
+import datetime
 import hashlib
 
 from lazr.delegates import delegates
@@ -26,18 +27,13 @@ from storm.locals import (
     Storm,
     )
 from storm.store import Store
-from zope.component import (
-    ComponentLookupError,
-    getUtility,
-    )
+from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
     )
-from zope.proxy import isProxy
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -47,11 +43,8 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJobOld,
     IBuildFarmJobSet,
     IBuildFarmJobSource,
-    InconsistentBuildFarmJobError,
-    ISpecificBuildFarmJobSource,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.services.database.constants import UTC_NOW
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
@@ -65,98 +58,12 @@ from lp.services.database.lpstorm import (
 
 
 class BuildFarmJobOld:
-    """See `IBuildFarmJobOld`."""
+    """Some common implementation for IBuildFarmJobOld."""
+
     implements(IBuildFarmJobOld)
+
     processor = None
     virtualized = None
-
-    def score(self):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-    def getLogFileName(self):
-        """See `IBuildFarmJobOld`."""
-        return 'buildlog.txt'
-
-    def getName(self):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-    def getTitle(self):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-    def makeJob(self):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-    def getByJob(self, job):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-    def getByJobs(self, job):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-    def jobStarted(self):
-        """See `IBuildFarmJobOld`."""
-        pass
-
-    def jobReset(self):
-        """See `IBuildFarmJobOld`."""
-        pass
-
-    def jobAborted(self):
-        """See `IBuildFarmJobOld`."""
-        pass
-
-    def jobCancel(self):
-        """See `IBuildFarmJobOld`."""
-        pass
-
-    @staticmethod
-    def addCandidateSelectionCriteria(processor, virtualized):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-    @staticmethod
-    def postprocessCandidate(job, logger):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-    def cleanUp(self):
-        """See `IBuildFarmJob`."""
-        pass
-
-    def generateSlaveBuildCookie(self):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-
-class BuildFarmJobOldDerived:
-    """Setup the delegation and provide some common implementation."""
-    delegates(IBuildFarmJobOld, context='build_farm_job')
-
-    def __init__(self, *args, **kwargs):
-        """Ensure the instance to which we delegate is set on creation."""
-        self._set_build_farm_job()
-        super(BuildFarmJobOldDerived, self).__init__(*args, **kwargs)
-
-    def __storm_loaded__(self):
-        """Set the attribute for our IBuildFarmJob delegation.
-
-        This is needed here as __init__() is not called when a storm object
-        is loaded from the database.
-        """
-        self._set_build_farm_job()
-
-    def _set_build_farm_job(self):
-        """Set the build farm job to which we will delegate.
-
-        Deriving classes must set the build_farm_job attribute for the
-        delegation.
-        """
-        raise NotImplementedError
 
     @staticmethod
     def preloadBuildFarmJobs(jobs):
@@ -179,6 +86,22 @@ class BuildFarmJobOldDerived:
         job_ids = [job.id for job in jobs]
         return store.find(
             cls, cls.job_id.is_in(job_ids))
+
+    def score(self):
+        """See `IBuildFarmJobOld`."""
+        raise NotImplementedError
+
+    def getLogFileName(self):
+        """See `IBuildFarmJobOld`."""
+        return 'buildlog.txt'
+
+    def getName(self):
+        """See `IBuildFarmJobOld`."""
+        raise NotImplementedError
+
+    def getTitle(self):
+        """See `IBuildFarmJob`."""
+        return self.build.title
 
     def generateSlaveBuildCookie(self):
         """See `IBuildFarmJobOld`."""
@@ -218,8 +141,25 @@ class BuildFarmJobOldDerived:
         """See `IBuildFarmJobOld`."""
         return True
 
+    def jobStarted(self):
+        """See `IBuildFarmJobOld`."""
+        # XXX wgrant: builder should be set here.
+        self.build.updateStatus(BuildStatus.BUILDING)
 
-class BuildFarmJob(BuildFarmJobOld, Storm):
+    def jobReset(self):
+        """See `IBuildFarmJob`."""
+        self.build.updateStatus(BuildStatus.NEEDSBUILD)
+
+    def jobAborted(self):
+        """See `IBuildFarmJob`."""
+        self.build.updateStatus(BuildStatus.NEEDSBUILD)
+
+    def jobCancel(self):
+        """See `IBuildFarmJob`."""
+        self.build.updateStatus(BuildStatus.CANCELLED)
+
+
+class BuildFarmJob(Storm):
     """A base implementation for `IBuildFarmJob` classes."""
     __storm_table__ = 'BuildFarmJob'
 
@@ -261,27 +201,26 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
     dependencies = None
 
     def __init__(self, job_type, status=BuildStatus.NEEDSBUILD,
-                 processor=None, virtualized=None, date_created=None):
+                 processor=None, virtualized=None, date_created=None,
+                 builder=None):
         super(BuildFarmJob, self).__init__()
-        self.job_type, self.status, self.processor, self.virtualized = (
-            job_type,
-            status,
-            processor,
-            virtualized,
-            )
+        (self.job_type, self.status, self.processor, self.virtualized,
+         self.builder) = (job_type, status, processor, virtualized, builder)
         if date_created is not None:
             self.date_created = date_created
 
     @classmethod
     def new(cls, job_type, status=BuildStatus.NEEDSBUILD, processor=None,
-            virtualized=None, date_created=None):
+            virtualized=None, date_created=None, builder=None):
         """See `IBuildFarmJobSource`."""
         build_farm_job = BuildFarmJob(
-            job_type, status, processor, virtualized, date_created)
-
+            job_type, status, processor, virtualized, date_created, builder)
         store = IMasterStore(BuildFarmJob)
         store.add(build_farm_job)
         return build_farm_job
+
+
+class BuildFarmJobMixin:
 
     @property
     def title(self):
@@ -298,37 +237,6 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
     def makeJob(self):
         """See `IBuildFarmJobOld`."""
         raise NotImplementedError
-
-    def jobStarted(self):
-        """See `IBuildFarmJob`."""
-        self.status = BuildStatus.BUILDING
-        # The build started, set the start time if not set already.
-        self.date_started = UTC_NOW
-        if self.date_first_dispatched is None:
-            self.date_first_dispatched = UTC_NOW
-
-    def jobReset(self):
-        """See `IBuildFarmJob`."""
-        self.status = BuildStatus.NEEDSBUILD
-        self.date_started = None
-
-    # The implementation of aborting a job is the same as resetting
-    # a job.
-    jobAborted = jobReset
-
-    def jobCancel(self):
-        """See `IBuildFarmJob`."""
-        self.status = BuildStatus.CANCELLED
-
-    @staticmethod
-    def addCandidateSelectionCriteria(processor, virtualized):
-        """See `IBuildFarmJob`."""
-        return ('')
-
-    @staticmethod
-    def postprocessCandidate(job, logger):
-        """See `IBuildFarmJob`."""
-        return True
 
     @property
     def buildqueue_record(self):
@@ -353,15 +261,6 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
         """
         return None
 
-    def cleanUp(self):
-        """See `IBuildFarmJobOld`.
-
-        XXX 2010-05-04 michael.nelson bug=570939
-        This can be removed once IBuildFarmJobOld is no longer used
-        and services jobs are linked directly to IBuildFarmJob.
-        """
-        pass
-
     @property
     def was_built(self):
         """See `IBuild`"""
@@ -372,30 +271,42 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
                                    BuildStatus.UPLOADING,
                                    BuildStatus.SUPERSEDED]
 
-    def getSpecificJob(self):
-        """See `IBuild`"""
-        # Adapt ourselves based on our job type.
-        try:
-            source = getUtility(
-                ISpecificBuildFarmJobSource, self.job_type.name)
-        except ComponentLookupError:
-            raise InconsistentBuildFarmJobError(
-                "No source was found for the build farm job type %s." % (
-                    self.job_type.name))
+    def setLog(self, log):
+        """See `IBuildFarmJob`."""
+        self.log = log
 
-        build = source.getByBuildFarmJob(self)
+    def updateStatus(self, status, builder=None, slave_status=None,
+                     date_started=None, date_finished=None):
+        """See `IBuildFarmJob`."""
+        self.status = status
 
-        if build is None:
-            raise InconsistentBuildFarmJobError(
-                "There is no related specific job for the build farm "
-                "job with id %d." % self.id)
+        # If there's a builder provided, set it if we don't already have
+        # one, or otherwise crash if it's different from the one we
+        # expected.
+        if builder is not None:
+            if self.builder is None:
+                self.builder = builder
+            else:
+                assert self.builder == builder
 
-        # Just to be on the safe side, make sure the build is still
-        # proxied before returning it.
-        assert isProxy(build), (
-            "Unproxied result returned from ISpecificBuildFarmJobSource.")
+        # If we're starting to build, set date_started and
+        # date_first_dispatched if required.
+        if self.date_started is None and status == BuildStatus.BUILDING:
+            self.date_started = date_started or datetime.datetime.now(pytz.UTC)
+            if self.date_first_dispatched is None:
+                self.date_first_dispatched = self.date_started
 
-        return build
+        # If we're in a final build state (or UPLOADING, which sort of
+        # is), set date_finished if date_started is.
+        if (self.date_started is not None and self.date_finished is None
+            and status not in (
+                BuildStatus.NEEDSBUILD, BuildStatus.BUILDING,
+                BuildStatus.CANCELLING)):
+            # XXX cprov 20060615 bug=120584: Currently buildduration includes
+            # the scanner latency, it should really be asking the slave for
+            # the duration spent building locally.
+            self.date_finished = (
+                date_finished or datetime.datetime.now(pytz.UTC))
 
     def gotFailure(self):
         """See `IBuildFarmJob`."""
@@ -438,11 +349,3 @@ class BuildFarmJobSet:
         return IStore(BuildFarmJob).using(*origin).find(
             BuildFarmJob, *clauses).order_by(
                 Desc(BuildFarmJob.date_finished), BuildFarmJob.id)
-
-    def getByID(self, job_id):
-        """See `IBuildfarmJobSet`."""
-        job = IStore(BuildFarmJob).find(BuildFarmJob,
-                BuildFarmJob.id == job_id).one()
-        if job is None:
-            raise NotFoundError(job_id)
-        return job

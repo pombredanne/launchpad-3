@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Builder interfaces."""
 
 __metaclass__ = type
@@ -51,7 +49,6 @@ from lp.app.validators.name import name_validator
 from lp.app.validators.url import builder_url_validator
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import (
-    Description,
     PersonChoice,
     Title,
     )

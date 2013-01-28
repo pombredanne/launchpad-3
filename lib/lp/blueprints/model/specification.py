@@ -1,18 +1,14 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
-    'get_specification_filters',
     'HasSpecificationsMixin',
     'recursive_blocked_query',
-    'recursive_dependent_query',
     'Specification',
     'SPECIFICATION_POLICY_ALLOWED_TYPES',
     'SPECIFICATION_POLICY_DEFAULT_TYPES',
     'SpecificationSet',
-    'spec_started_clause',
-    'visible_specification_query',
     ]
 
 from lazr.lifecycle.event import (
@@ -32,8 +28,6 @@ from storm.expr import (
     And,
     In,
     Join,
-    LeftJoin,
-    Not,
     Or,
     Select,
     )
@@ -103,15 +97,14 @@ from lp.services.database.constants import (
     UTC_NOW,
     )
 from lp.services.database.datetimecol import UtcDateTimeCol
-from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
+    convert_storm_clause_to_string,
     cursor,
     SQLBase,
     sqlvalues,
     )
-from lp.services.database.stormexpr import fti_search
 from lp.services.mail.helpers import get_contact_email_addresses
 from lp.services.propertycache import (
     cachedproperty,
@@ -120,26 +113,34 @@ from lp.services.propertycache import (
 from lp.services.webapp.interfaces import ILaunchBag
 
 
-def recursive_blocked_query(spec):
+def recursive_blocked_query(user):
+    from lp.blueprints.model.specificationsearch import (
+        get_specification_privacy_filter)
     return """
         RECURSIVE blocked(id) AS (
-            SELECT %s
+            SELECT ?
         UNION
             SELECT sd.specification
-            FROM specificationdependency sd, blocked b
-            WHERE sd.dependency = b.id
-        )""" % spec.id
+            FROM blocked b, specificationdependency sd
+            JOIN specification ON sd.specification = specification.id
+            WHERE sd.dependency = b.id AND (%s))""" % (
+                convert_storm_clause_to_string(
+                    *get_specification_privacy_filter(user)))
 
 
-def recursive_dependent_query(spec):
+def recursive_dependent_query(user):
+    from lp.blueprints.model.specificationsearch import (
+        get_specification_privacy_filter)
     return """
         RECURSIVE dependencies(id) AS (
-            SELECT %s
+            SELECT ?
         UNION
             SELECT sd.dependency
-            FROM specificationdependency sd, dependencies d
-            WHERE sd.specification = d.id
-        )""" % spec.id
+            FROM dependencies d, specificationdependency sd
+            JOIN specification ON sd.dependency = specification.id
+            WHERE sd.specification = d.id AND (%s))""" % (
+                convert_storm_clause_to_string(
+                    *get_specification_privacy_filter(user)))
 
 
 SPECIFICATION_POLICY_ALLOWED_TYPES = {
@@ -259,11 +260,28 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
     dependencies = SQLRelatedJoin('Specification', joinColumn='specification',
         otherColumn='dependency', orderBy='title',
         intermediateTable='SpecificationDependency')
-    blocked_specs = SQLRelatedJoin('Specification', joinColumn='dependency',
-        otherColumn='specification', orderBy='title',
-        intermediateTable='SpecificationDependency')
     information_type = EnumCol(
         enum=InformationType, notNull=True, default=InformationType.PUBLIC)
+
+    def _fetch_children_or_parents(self, join_cond, cond, user):
+        from lp.blueprints.model.specificationsearch import (
+            get_specification_privacy_filter)
+        return list(Store.of(self).using(
+            Specification,
+            Join(SpecificationDependency, join_cond == self.id)).find(
+            Specification,
+            cond == Specification.id, *get_specification_privacy_filter(user)
+            ).order_by(Specification.title))
+
+    def getDependencies(self, user=None):
+        return self._fetch_children_or_parents(
+            SpecificationDependency.specificationID,
+            SpecificationDependency.dependencyID, user)
+
+    def getBlockedSpecs(self, user=None):
+        return self._fetch_children_or_parents(
+            SpecificationDependency.dependencyID,
+            SpecificationDependency.specificationID, user)
 
     def set_assignee(self, person):
         self.subscribeIfAccessGrantNeeded(person)
@@ -556,46 +574,6 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
         """See ISpecification."""
         return not self.is_complete
 
-    # Several other classes need to generate lists of specifications, and
-    # one thing they often have to filter for is completeness. We maintain
-    # this single canonical query string here so that it does not have to be
-    # cargo culted into Product, Distribution, ProductSeries etc
-
-    # Also note that there is a constraint in the database which ensures
-    # that date_completed is set if the spec is complete, and that db
-    # constraint parrots this definition exactly.
-
-    # NB NB NB if you change this definition PLEASE update the db constraint
-    # Specification.specification_completion_recorded_chk !!!
-    completeness_clause = ("""
-        Specification.implementation_status = %s OR
-        Specification.definition_status IN ( %s, %s ) OR
-        (Specification.implementation_status = %s AND
-         Specification.definition_status = %s)
-        """ % sqlvalues(SpecificationImplementationStatus.IMPLEMENTED.value,
-                        SpecificationDefinitionStatus.OBSOLETE.value,
-                        SpecificationDefinitionStatus.SUPERSEDED.value,
-                        SpecificationImplementationStatus.INFORMATIONAL.value,
-                        SpecificationDefinitionStatus.APPROVED.value))
-
-    @classmethod
-    def storm_completeness(cls):
-        """Storm version of the above."""
-        return Or(
-            cls.implementation_status ==
-                SpecificationImplementationStatus.IMPLEMENTED,
-            cls.definition_status.is_in([
-                SpecificationDefinitionStatus.OBSOLETE,
-                SpecificationDefinitionStatus.SUPERSEDED,
-                ]),
-            And(
-                cls.implementation_status ==
-                    SpecificationImplementationStatus.INFORMATIONAL,
-                cls.definition_status ==
-                    SpecificationDefinitionStatus.APPROVED
-                ),
-            )
-
     @property
     def is_complete(self):
         """See `ISpecification`."""
@@ -859,51 +837,21 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
                 return deplink
 
     def all_deps(self, user=None):
-        public_clause = True
-        if user is None:
-            public_clause = (
-                Specification.information_type == InformationType.PUBLIC,
-                )
-
-        results = Store.of(self).with_(
-            SQL(recursive_dependent_query(self))).find(
+        return list(Store.of(self).with_(
+            SQL(recursive_dependent_query(user), params=(self.id,))).find(
             Specification,
             Specification.id != self.id,
-            SQL('Specification.id in (select id from dependencies)'),
-            public_clause,
-            ).order_by(Specification.name, Specification.id)
-
-        results = list(results)
-
-        if user:
-            service = getUtility(IService, 'sharing')
-            (ignore, ignore, results) = service.getVisibleArtifacts(
-                user, specifications=results)
-        return results
+            Specification.id.is_in(SQL('select id from dependencies')),
+            ).order_by(Specification.name, Specification.id))
 
     def all_blocked(self, user=None):
         """See `ISpecification`."""
-        public_clause = True
-        if user is None:
-            public_clause = (
-                Specification.information_type == InformationType.PUBLIC,
-                )
-
-        results = Store.of(self).with_(
-            SQL(recursive_blocked_query(self))).find(
+        return list(Store.of(self).with_(
+            SQL(recursive_blocked_query(user), params=(self.id,))).find(
             Specification,
             Specification.id != self.id,
-            SQL('Specification.id in (select id from blocked)'),
-            public_clause,
-            ).order_by(Specification.name, Specification.id)
-
-        results = list(results)
-
-        if user:
-            service = getUtility(IService, 'sharing')
-            (ignore, ignore, results) = service.getVisibleArtifacts(
-                user, specifications=results)
-        return results
+            Specification.id.is_in(SQL('select id from blocked')),
+            ).order_by(Specification.name, Specification.id))
 
     # branches
     def getBranchLink(self, branch):
@@ -1051,54 +999,6 @@ class HasSpecificationsMixin:
         elif sort == SpecificationSort.DATE:
             return (Desc(Specification.datecreated), Specification.id)
 
-    def _preload_specifications_people(self, tables, clauses):
-        """Perform eager loading of people and their validity for query.
-
-        :param query: a string query generated in the 'specifications'
-            method.
-        :return: A DecoratedResultSet with Person precaching setup.
-        """
-        # Circular import.
-        if isinstance(clauses, basestring):
-            clauses = [SQL(clauses)]
-
-        def cache_people(rows):
-            """DecoratedResultSet pre_iter_hook to eager load Person
-             attributes.
-            """
-            from lp.registry.model.person import Person
-            # Find the people we need:
-            person_ids = set()
-            for spec in rows:
-                person_ids.add(spec._assigneeID)
-                person_ids.add(spec._approverID)
-                person_ids.add(spec._drafterID)
-            person_ids.discard(None)
-            if not person_ids:
-                return
-            # Query those people
-            origin = [Person]
-            columns = [Person]
-            validity_info = Person._validity_queries()
-            origin.extend(validity_info["joins"])
-            columns.extend(validity_info["tables"])
-            decorators = validity_info["decorators"]
-            personset = IStore(Specification).using(*origin).find(
-                tuple(columns),
-                Person.id.is_in(person_ids),
-                )
-            for row in personset:
-                person = row[0]
-                index = 1
-                for decorator in decorators:
-                    column = row[index]
-                    index += 1
-                    decorator(person, column)
-
-        results = IStore(Specification).using(*tables).find(
-            Specification, *clauses)
-        return DecoratedResultSet(results, pre_iter_hook=cache_people)
-
     @property
     def _all_specifications(self):
         """See IHasSpecifications."""
@@ -1155,41 +1055,10 @@ class SpecificationSet(HasSpecificationsMixin):
 
     def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
-        store = IStore(Specification)
-
-        # Take the visibility due to privacy into account.
-        privacy_tables, clauses = visible_specification_query(user)
-
-        if not filter:
-            # Default to showing incomplete specs
-            filter = [SpecificationFilter.INCOMPLETE]
-
-        spec_clauses = get_specification_filters(filter)
-        clauses.extend(spec_clauses)
-
-        # sort by priority descending, by default
-        if sort is None or sort == SpecificationSort.PRIORITY:
-            order = [Desc(Specification.priority),
-                     Specification.definition_status,
-                     Specification.name]
-
-        elif sort == SpecificationSort.DATE:
-            if SpecificationFilter.COMPLETE in filter:
-                # if we are showing completed, we care about date completed
-                order = [Desc(Specification.date_completed),
-                         Specification.id]
-            else:
-                # if not specially looking for complete, we care about date
-                # registered
-                order = [Desc(Specification.datecreated), Specification.id]
-
-        if prejoin_people:
-            results = self._preload_specifications_people(
-                privacy_tables, clauses)
-        else:
-            results = store.using(*privacy_tables).find(
-                Specification, *clauses)
-        return results.order_by(*order)[:quantity]
+        from lp.blueprints.model.specificationsearch import (
+            search_specifications)
+        return search_specifications(
+            self, [], user, sort, quantity, filter, prejoin_people)
 
     def getByURL(self, url):
         """See ISpecificationSet."""
@@ -1264,101 +1133,3 @@ class SpecificationSet(HasSpecificationsMixin):
     def get(self, spec_id):
         """See lp.blueprints.interfaces.specification.ISpecificationSet."""
         return Specification.get(spec_id)
-
-
-def visible_specification_query(user):
-    """Return a Storm expression and list of tables for filtering
-    specifications by privacy.
-
-    :param user: A Person ID or a column reference.
-    :return: A tuple of tables, clauses to filter out specifications that the
-        user cannot see.
-    """
-    from lp.registry.model.product import Product
-    from lp.registry.model.accesspolicy import (
-        AccessArtifact,
-        AccessPolicy,
-        AccessPolicyGrantFlat,
-        )
-    tables = [
-        Specification,
-        LeftJoin(Product, Specification.productID == Product.id),
-        LeftJoin(AccessPolicy, And(
-            Or(Specification.productID == AccessPolicy.product_id,
-               Specification.distributionID ==
-               AccessPolicy.distribution_id),
-            Specification.information_type == AccessPolicy.type)),
-        LeftJoin(AccessPolicyGrantFlat,
-                 AccessPolicy.id == AccessPolicyGrantFlat.policy_id),
-        LeftJoin(
-            TeamParticipation,
-            And(AccessPolicyGrantFlat.grantee == TeamParticipation.teamID,
-                TeamParticipation.person == user)),
-        LeftJoin(AccessArtifact,
-                 AccessPolicyGrantFlat.abstract_artifact_id ==
-                 AccessArtifact.id)
-        ]
-    clauses = [
-        Or(Specification.information_type.is_in(PUBLIC_INFORMATION_TYPES),
-           And(AccessPolicyGrantFlat.id != None,
-               TeamParticipation.personID != None,
-               Or(AccessPolicyGrantFlat.abstract_artifact == None,
-                  AccessArtifact.specification_id == Specification.id))),
-        Or(Specification.product == None, Product.active == True)]
-    return tables, clauses
-
-
-def get_specification_filters(filter):
-    """Return a list of Storm expressions for filtering Specifications.
-
-    :param filters: A collection of SpecificationFilter and/or strings.
-        Strings are used for text searches.
-    """
-    clauses = []
-    # ALL is the trump card.
-    if SpecificationFilter.ALL in filter:
-        return clauses
-    # Look for informational specs.
-    if SpecificationFilter.INFORMATIONAL in filter:
-        clauses.append(Specification.implementation_status ==
-                       SpecificationImplementationStatus.INFORMATIONAL)
-    # Filter based on completion.  See the implementation of
-    # Specification.is_complete() for more details.
-    if SpecificationFilter.COMPLETE in filter:
-        clauses.append(Specification.storm_completeness())
-    if SpecificationFilter.INCOMPLETE in filter:
-        clauses.append(Not(Specification.storm_completeness()))
-
-    # Filter for validity. If we want valid specs only, then we should exclude
-    # all OBSOLETE or SUPERSEDED specs.
-    if SpecificationFilter.VALID in filter:
-        clauses.append(Not(Specification.definition_status.is_in([
-            SpecificationDefinitionStatus.OBSOLETE,
-            SpecificationDefinitionStatus.SUPERSEDED,
-        ])))
-    # Filter for specification text.
-    for constraint in filter:
-        if isinstance(constraint, basestring):
-            # A string in the filter is a text search filter.
-            clauses.append(fti_search(Specification, constraint))
-    return clauses
-
-
-# NB NB If you change this definition, please update the equivalent
-# DB constraint Specification.specification_start_recorded_chk
-# We choose to define "started" as the set of delivery states NOT
-# in the values we select. Another option would be to say "anything less
-# than a threshold" and to comment the dbschema that "anything not
-# started should be less than the threshold". We'll see how maintainable
-# this is.
-spec_started_clause = Or(Not(Specification.implementation_status.is_in([
-    SpecificationImplementationStatus.UNKNOWN,
-    SpecificationImplementationStatus.NOTSTARTED,
-    SpecificationImplementationStatus.DEFERRED,
-    SpecificationImplementationStatus.INFORMATIONAL,
-    ])),
-    And(Specification.implementation_status ==
-            SpecificationImplementationStatus.INFORMATIONAL,
-        Specification.definition_status ==
-            SpecificationDefinitionStatus.APPROVED
-    ))

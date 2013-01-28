@@ -1,8 +1,6 @@
 # Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=F0401,E1002
-
 """Implementation code for source package builds."""
 
 __metaclass__ = type
@@ -38,11 +36,12 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
-from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
     PackageBuild,
     PackageBuildDerived,
+    PackageBuildMixin,
     )
 from lp.code.errors import (
     BuildAlreadyPending,
@@ -72,11 +71,10 @@ from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.soyuz.interfaces.archive import CannotUploadToArchive
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
-class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
+class SourcePackageRecipeBuild(PackageBuildMixin, PackageBuildDerived, Storm):
 
     __storm_table__ = 'SourcePackageRecipeBuild'
 
@@ -89,13 +87,6 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
     build_farm_job_type = BuildFarmJobType.RECIPEBRANCHBUILD
 
     id = Int(primary=True)
-
-    # The list of build status values for which email notifications are
-    # allowed to be sent. It is up to each callback as to whether it will
-    # consider sending a notification but it won't do so if the status is not
-    # in this list.
-    ALLOWED_STATUS_NOTIFICATIONS = [
-        'OK', 'PACKAGEFAIL', 'DEPFAIL', 'CHROOTFAIL']
 
     @property
     def binary_builds(self):
@@ -257,7 +248,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
     def cancelBuild(self):
         """See `ISourcePackageRecipeBuild.`"""
         self._unqueueBuild()
-        self.status = BuildStatus.SUPERSEDED
+        self.updateStatus(BuildStatus.SUPERSEDED)
 
     def destroySelf(self):
         self._unqueueBuild()
@@ -400,7 +391,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         return self.requester
 
 
-class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
+class SourcePackageRecipeBuildJob(BuildFarmJobOld, Storm):
     classProvides(ISourcePackageRecipeBuildJobSource)
     implements(ISourcePackageRecipeBuildJob)
 
@@ -428,12 +419,6 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOldDerived, Storm):
         self.build = build
         self.job = job
         super(SourcePackageRecipeBuildJob, self).__init__()
-
-    def _set_build_farm_job(self):
-        """Setup the IBuildFarmJob delegate.
-
-        We override this to provide a delegate specific to package builds."""
-        self.build_farm_job = BuildFarmBuildJob(self.build)
 
     @staticmethod
     def preloadBuildFarmJobs(jobs):

@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -497,27 +497,6 @@
         <require
             permission="launchpad.Admin"
             interface="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildAdmin"/>
-
-        <!-- XXX cprov 2005-10-27
-
-    bug=3580: We need a autobuild celebrity. -->
-
-        <require
-            permission="launchpad.Edit"
-            set_attributes="log date_finished date_started builder
-                            status dependencies upload_log"/>
-
-        <!-- XXX bigjools 2010-07-27 bug=570939
-             Work around the fact that not all BuildFarmJobs are concrete
-             objects.
-
-             This should not be required once the old BuildFarmJob stuff is
-             removed when the Translation Template jobs and Recipe jobs
-             use the new infrastructure -->
-        <require
-            permission="launchpad.Admin"
-            set_attributes="failure_count"/>
-
     </class>
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"
@@ -779,18 +758,6 @@
             permission="launchpad.Edit"
             set_schema="lp.soyuz.interfaces.files.IBinaryPackageFile"/>
     </class>
-    <securedutility
-        class="lp.soyuz.model.files.BinaryPackageFileSet"
-        provides="lp.soyuz.interfaces.files.IBinaryPackageFileSet">
-        <allow
-            interface="lp.soyuz.interfaces.files.IBinaryPackageFileSet"/>
-    </securedutility>
-    <securedutility
-        class="lp.soyuz.model.files.SourcePackageReleaseFileSet"
-        provides="lp.soyuz.interfaces.files.ISourcePackageReleaseFileSet">
-        <allow
-            interface="lp.soyuz.interfaces.files.ISourcePackageReleaseFileSet"/>
-    </securedutility>
 
     <!-- Packageset -->
 

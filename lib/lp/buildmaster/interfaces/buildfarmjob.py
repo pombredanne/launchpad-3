@@ -1,7 +1,5 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 """Interface for Soyuz build farm jobs."""
 
@@ -60,6 +58,7 @@ class IBuildFarmJobOld(Interface):
     IBuildFarmJob) once all the corresponding *Build classes and the
     BuildQueue have been transitioned to the new database schema.
     """
+
     processor = Reference(
         IProcessor, title=_("Processor"), required=False, readonly=True,
         description=_(
@@ -157,23 +156,41 @@ class IBuildFarmJobOld(Interface):
             accurately based on this job's properties.
         """
 
-    def makeJob():
-        """Create the specific job relating this with an lp.services.job.
-
-        XXX 2010-04-26 michael.nelson bug=567922
-        Once all *Build classes are using BuildFarmJob we can lose the
-        'specific_job' attributes and simply have a reference to the
-        services job directly on the BuildFarmJob.
-        """
-
     def cleanUp():
         """Job's finished.  Delete its supporting data."""
 
 
-class IBuildFarmJob(IBuildFarmJobOld):
+class IBuildFarmJobDB(Interface):
+    """Operations on a `BuildFarmJob` DB row.
+
+    This is deprecated while it's flattened into the concrete implementations.
+    """
+
+    id = Attribute('The build farm job ID.')
+
+    job_type = Choice(
+        title=_("Job type"), required=True, readonly=True,
+        vocabulary=BuildFarmJobType,
+        description=_("The specific type of job."))
+
+
+class IBuildFarmJob(Interface):
     """Operations that jobs for the build farm must implement."""
 
     id = Attribute('The build farm job ID.')
+
+    processor = Reference(
+        IProcessor, title=_("Processor"), required=False, readonly=True,
+        description=_(
+            "The Processor required by this build farm job. "
+            "This should be None for processor-independent job types."))
+
+    virtualized = Bool(
+        title=_('Virtualized'), required=False, readonly=True,
+        description=_(
+            "The virtualization setting required by this build farm job. "
+            "This should be None for job types that do not care whether "
+            "they run virtualized."))
 
     date_created = exported(
         Datetime(
@@ -259,11 +276,26 @@ class IBuildFarmJob(IBuildFarmJobOld):
         default=0,
         description=_("Number of consecutive failures for this job."))
 
-    def getSpecificJob():
-        """Return the specific build job associated with this record.
+    def makeJob():
+        """Create the specific job relating this with an lp.services.job.
 
-        :raises InconsistentBuildFarmJobError: if a specific job could not be
-            returned.
+        XXX 2010-04-26 michael.nelson bug=567922
+        Once all *Build classes are using BuildFarmJob we can lose the
+        'specific_job' attributes and simply have a reference to the
+        services job directly on the BuildFarmJob.
+        """
+
+    def setLog(log):
+        """Set the `LibraryFileAlias` that contains the job log."""
+
+    def updateStatus(status, builder=None, slave_status=None,
+                     date_started=None, date_finished=None):
+        """Update job metadata when the build status changes.
+
+        This automatically handles setting status, date_finished, builder,
+        dependencies. Later it will manage the denormalised search schema.
+
+        date_started and date_finished override the default (now).
         """
 
     def gotFailure():
@@ -315,8 +347,8 @@ class ISpecificBuildFarmJobSource(Interface):
 class IBuildFarmJobSource(Interface):
     """A utility of BuildFarmJob used to create _things_."""
 
-    def new(job_type, status=None, processor=None,
-            virtualized=None):
+    def new(job_type, status=None, processor=None, virtualized=None,
+            builder=None):
         """Create a new `IBuildFarmJob`.
 
         :param job_type: A `BuildFarmJobType` item.
@@ -324,6 +356,7 @@ class IBuildFarmJobSource(Interface):
         :param processor: An optional processor for this job.
         :param virtualized: An optional boolean indicating whether
             this job should be run virtualized.
+        :param builder: An optional `IBuilder`.
         """
 
 
@@ -338,8 +371,4 @@ class IBuildFarmJobSet(Interface):
         :param user: If given, this will be used to determine private builds
             that should be included.
         :return: a `ResultSet` representing the requested builds.
-        """
-
-    def getByID(job_id):
-        """Look up a `IBuildFarmJob` record by id.
         """

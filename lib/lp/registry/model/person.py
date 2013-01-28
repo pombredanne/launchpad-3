@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation classes for a Person."""
@@ -125,16 +125,15 @@ from lp.app.validators.name import (
     sanitize_name,
     valid_name,
     )
-from lp.blueprints.enums import (
-    SpecificationFilter,
-    SpecificationSort,
-    )
+from lp.blueprints.enums import SpecificationFilter
 from lp.blueprints.model.specification import (
-    get_specification_filters,
     HasSpecificationsMixin,
-    spec_started_clause,
     Specification,
-    visible_specification_query,
+    )
+from lp.blueprints.model.specificationsearch import (
+    get_specification_active_product_filter,
+    get_specification_privacy_filter,
+    search_specifications,
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugtarget import IBugTarget
@@ -610,9 +609,9 @@ class Person(
     account_status_comment = property(
             _get_account_status_comment, _set_account_status_comment)
 
-    teamowner = ForeignKey(dbName='teamowner', foreignKey='Person',
-                           default=None,
-                           storm_validator=validate_public_person)
+    teamowner = ForeignKey(
+        dbName='teamowner', foreignKey='Person', default=None,
+        storm_validator=validate_public_person)
 
     sshkeys = SQLMultipleJoin('SSHKey', joinColumn='person')
 
@@ -620,13 +619,12 @@ class Person(
         enum=TeamMembershipRenewalPolicy,
         default=TeamMembershipRenewalPolicy.NONE)
     membership_policy = EnumCol(
-        dbName='subscriptionpolicy',
-        enum=TeamMembershipPolicy,
+        dbName='subscriptionpolicy', enum=TeamMembershipPolicy,
         default=TeamMembershipPolicy.RESTRICTED,
         storm_validator=validate_membership_policy)
     defaultrenewalperiod = IntCol(dbName='defaultrenewalperiod', default=None)
-    defaultmembershipperiod = IntCol(dbName='defaultmembershipperiod',
-                                     default=None)
+    defaultmembershipperiod = IntCol(
+        dbName='defaultmembershipperiod', default=None)
     mailing_list_auto_subscribe_policy = EnumCol(
         enum=MailingListAutoSubscribePolicy,
         default=MailingListAutoSubscribePolicy.ON_REGISTRATION)
@@ -647,13 +645,11 @@ class Person(
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
 
     visibility = EnumCol(
-        enum=PersonVisibility,
-        default=PersonVisibility.PUBLIC,
+        enum=PersonVisibility, default=PersonVisibility.PUBLIC,
         storm_validator=validate_person_visibility)
 
     personal_standing = EnumCol(
-        enum=PersonalStanding, default=PersonalStanding.UNKNOWN,
-        notNull=True)
+        enum=PersonalStanding, default=PersonalStanding.UNKNOWN, notNull=True)
 
     personal_standing_reason = StringCol(default=None)
 
@@ -859,10 +855,8 @@ class Person(
         # because the default if nothing is said is ANY.
 
         roles = set([
-            SpecificationFilter.CREATOR,
-            SpecificationFilter.ASSIGNEE,
-            SpecificationFilter.DRAFTER,
-            SpecificationFilter.APPROVER,
+            SpecificationFilter.CREATOR, SpecificationFilter.ASSIGNEE,
+            SpecificationFilter.DRAFTER, SpecificationFilter.APPROVER,
             SpecificationFilter.SUBSCRIBER])
         # If no roles are given, then we want everything.
         if filter.intersection(roles) == set():
@@ -880,32 +874,18 @@ class Person(
             role_clauses.append(
                 Specification.id.is_in(
                     Select(SpecificationSubscription.specificationID,
-                        [SpecificationSubscription.person == self]
-                    )))
-        tables, clauses = visible_specification_query(user)
-        clauses.append(Or(*role_clauses))
-        # Defaults for completeness: if nothing is said about completeness
-        # then we want to show INCOMPLETE.
+                        [SpecificationSubscription.person == self])))
+
+        clauses = [Or(*role_clauses)]
         if SpecificationFilter.COMPLETE not in filter:
             if (in_progress and SpecificationFilter.INCOMPLETE not in filter
                 and SpecificationFilter.ALL not in filter):
-                clauses.append(spec_started_clause)
-            filter.add(SpecificationFilter.INCOMPLETE)
+                filter.update(
+                    [SpecificationFilter.INCOMPLETE,
+                    SpecificationFilter.STARTED])
 
-        clauses.extend(get_specification_filters(filter))
-        results = Store.of(self).using(*tables).find(Specification, *clauses)
-        # The default sort is priority descending, so only explictly sort for
-        # DATE.
-        if sort == SpecificationSort.DATE:
-            sort = Desc(Specification.datecreated)
-        elif getattr(sort, 'enum', None) is SpecificationSort:
-            sort = None
-        if sort is not None:
-            results = results.order_by(sort)
-        results.config(distinct=True)
-        if quantity is not None:
-            results = results[:quantity]
-        return results
+        return search_specifications(
+            self, clauses, user, sort, quantity, list(filter), prejoin_people)
 
     # XXX: Tom Berger 2008-04-14 bug=191799:
     # The implementation of these functions
@@ -1485,20 +1465,22 @@ class Person(
         from lp.registry.model.distribution import Distribution
         store = Store.of(self)
         WorkItem = SpecificationWorkItem
-        origin, query = visible_specification_query(user)
+        origin = [Specification]
+        productjoin, query = get_specification_active_product_filter(self)
+        origin.extend(productjoin)
+        query.extend(get_specification_privacy_filter(user))
         origin.extend([
             Join(WorkItem, WorkItem.specification == Specification.id),
             # WorkItems may not have a milestone and in that case they inherit
             # the one from the spec.
             Join(Milestone,
                  Coalesce(WorkItem.milestone_id,
-                          Specification.milestoneID) == Milestone.id),
-            ])
+                          Specification.milestoneID) == Milestone.id)])
         today = datetime.today().date()
         query.extend([
             Milestone.dateexpected <= date, Milestone.dateexpected >= today,
             WorkItem.deleted == False,
-            OR(WorkItem.assignee_id.is_in(self.participant_ids),
+            Or(WorkItem.assignee_id.is_in(self.participant_ids),
                Specification._assigneeID.is_in(self.participant_ids))])
         result = store.using(*origin).find(WorkItem, *query)
         result.config(distinct=True)
@@ -1683,6 +1665,12 @@ class Person(
                                               requester=reviewer)
         return (status_changed, tm.status)
 
+    def _accept_or_decline_membership(self, team, status, comment):
+        tm = TeamMembership.selectOneBy(person=self, team=team)
+        assert tm is not None
+        assert tm.status == TeamMembershipStatus.INVITED
+        tm.setStatus(status, getUtility(ILaunchBag).user, comment=comment)
+
     # The three methods below are not in the IPerson interface because we want
     # to protect them with a launchpad.Edit permission. We could do that by
     # defining explicit permissions for all IPerson methods/attributes in
@@ -1694,12 +1682,8 @@ class Person(
         the INVITED status. The status of this TeamMembership will be changed
         to APPROVED.
         """
-        tm = TeamMembership.selectOneBy(person=self, team=team)
-        assert tm is not None
-        assert tm.status == TeamMembershipStatus.INVITED
-        tm.setStatus(
-            TeamMembershipStatus.APPROVED, getUtility(ILaunchBag).user,
-            comment=comment)
+        self._accept_or_decline_membership(
+            team, TeamMembershipStatus.APPROVED, comment)
 
     def declineInvitationToBeMemberOf(self, team, comment):
         """Decline an invitation to become a member of the given team.
@@ -1708,12 +1692,8 @@ class Person(
         the INVITED status. The status of this TeamMembership will be changed
         to INVITATION_DECLINED.
         """
-        tm = TeamMembership.selectOneBy(person=self, team=team)
-        assert tm is not None
-        assert tm.status == TeamMembershipStatus.INVITED
-        tm.setStatus(
-            TeamMembershipStatus.INVITATION_DECLINED,
-            getUtility(ILaunchBag).user, comment=comment)
+        self._accept_or_decline_membership(
+            team, TeamMembershipStatus.INVITATION_DECLINED, comment)
 
     def retractTeamMembership(self, team, user, comment=None):
         """See `IPerson`"""
@@ -1768,14 +1748,11 @@ class Person(
     def getOwnedTeams(self, user=None):
         """See `IPerson`."""
         query = And(
-            get_person_visibility_terms(user),
-            Person.teamowner == self.id,
+            get_person_visibility_terms(user), Person.teamowner == self.id,
             Person.merged == None)
-        store = IStore(Person)
-        results = store.find(
+        return IStore(Person).find(
             Person, query).order_by(
                 Upper(Person.displayname), Upper(Person.name))
-        return results
 
     @cachedproperty
     def administrated_teams(self):
@@ -3337,89 +3314,62 @@ class PersonSet:
             return None
         return IPerson(account)
 
-    def getOrCreateByOpenIDIdentifier(
-        self, openid_identifier, email_address, full_name,
-        creation_rationale, comment):
+    def getOrCreateByOpenIDIdentifier(self, openid_identifier, email_address,
+                                      full_name, creation_rationale, comment):
         """See `IPersonSet`."""
         assert email_address is not None and full_name is not None, (
-                "Both email address and full name are required to "
-                "create an account.")
+            "Both email address and full name are required to create an "
+            "account.")
         db_updated = False
 
         assert isinstance(openid_identifier, unicode)
+        assert openid_identifier != u'', (
+            "OpenID identifier must not be empty.")
 
         # Load the EmailAddress, Account and OpenIdIdentifier records
         # from the master (if they exist). We use the master to avoid
         # possible replication lag issues but this might actually be
         # unnecessary.
         with MasterDatabasePolicy():
-            email, person = (
-                getUtility(IPersonSet).getByEmails(
-                    [email_address],
-                    filter_status=False).one()
-                or (None, None))
             identifier = IStore(OpenIdIdentifier).find(
                 OpenIdIdentifier, identifier=openid_identifier).one()
+            email = getUtility(IEmailAddressSet).getByEmail(email_address)
 
-            # XXX wgrant 2012-01-20 bug=556680: This is awful, as it can
-            # lock people out of their account until they change their
-            # SSO address. But stealing addresses from other accounts is
-            # probably worse.
-            if email is not None and email.person.is_team:
-                raise TeamEmailAddressError()
-
-            if email is None:
-                if identifier is None:
-                    # Neither the Email Address not the OpenId Identifier
-                    # exist in the database. Create the email address,
-                    # account, and associated info. OpenIdIdentifier is
-                    # created later.
+            if identifier is None:
+                # We don't know about the OpenID identifier yet, so try
+                # to match a person by email address, or as a last
+                # resort create a new one.
+                if email is not None:
+                    person = email.person
+                else:
                     person_set = getUtility(IPersonSet)
                     person, email = person_set.createPersonAndEmail(
                         email_address, creation_rationale, comment=comment,
                         displayname=full_name)
-                    db_updated = True
-                else:
-                    # The Email Address does not exist in the database,
-                    # but the OpenId Identifier does. Create the Email
-                    # Address and link it to the person.
-                    person = IPerson(identifier.account, None)
-                    assert person is not None, (
-                        'Received a personless account.')
-                    emailaddress_set = getUtility(IEmailAddressSet)
-                    email = emailaddress_set.new(email_address, person=person)
-                    db_updated = True
-            elif email.person.account is None:
-                # Email address and person exist, but there is no
-                # account. Create and link it.
-                account_set = getUtility(IAccountSet)
-                account = account_set.new(
-                    AccountCreationRationale.OWNER_CREATED_LAUNCHPAD,
-                    full_name)
-                removeSecurityProxy(email.person).account = account
-                db_updated = True
 
-            person = email.person
-            assert person.account is not None
+                # It's possible that the email address is owned by a
+                # team. Reject the login attempt, and wait for the user
+                # to change their address.
+                if person.is_team:
+                    raise TeamEmailAddressError()
 
-            if identifier is None:
-                # This is the first time we have seen that
-                # OpenIdIdentifier. Link it.
+                # Some autocreated Persons won't have a corresponding
+                # Account yet.
+                if not person.account:
+                    removeSecurityProxy(email.person).account = (
+                        getUtility(IAccountSet).new(
+                            AccountCreationRationale.OWNER_CREATED_LAUNCHPAD,
+                            full_name))
+
+                # Create the identifier, and link it.
                 identifier = OpenIdIdentifier()
                 identifier.account = person.account
                 identifier.identifier = openid_identifier
                 IStore(OpenIdIdentifier).add(identifier)
                 db_updated = True
-            elif identifier.account != person.account:
-                # The ISD OpenId server may have linked this OpenId
-                # identifier to a new email address, or the user may
-                # have transfered their email address to a different
-                # Launchpad Account. If that happened, repair the
-                # link - we trust the ISD OpenId server.
-                identifier.account = person.account
-                db_updated = True
 
-            # We now have an account, email address, and openid identifier.
+            person = IPerson(identifier.account, None)
+            assert person is not None, ('Received a personless account.')
 
             if person.account.status == AccountStatus.SUSPENDED:
                 raise AccountSuspendedError(
@@ -3434,7 +3384,7 @@ class PersonSet:
                 # Account is active, so nothing to do.
                 pass
 
-            return email.person, db_updated
+            return person, db_updated
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 membership_policy=TeamMembershipPolicy.MODERATED,
@@ -3461,9 +3411,9 @@ class PersonSet:
             teamowner, team, TeamMembershipStatus.ADMIN, teamowner)
         return team
 
-    def createPersonAndEmail(
-            self, email, rationale, comment=None, name=None, displayname=None,
-            hide_email_addresses=False, registrant=None):
+    def createPersonAndEmail(self, email, rationale, comment=None, name=None,
+                             displayname=None, hide_email_addresses=False,
+                             registrant=None):
         """See `IPersonSet`."""
 
         # This check is also done in EmailAddressSet.new() and also
@@ -3492,9 +3442,8 @@ class PersonSet:
 
         return person, email
 
-    def createPersonWithoutEmail(
-        self, name, rationale, comment=None, displayname=None,
-        registrant=None):
+    def createPersonWithoutEmail(self, name, rationale, comment=None,
+                                 displayname=None, registrant=None):
         """Create and return a new Person without using an email address.
 
         See `IPersonSet`.
@@ -4939,8 +4888,8 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
     email_addr = email_addr.strip().lower()
 
     if not valid_email(email_addr):
-        raise NicknameGenerationError("%s is not a valid email address"
-                                      % email_addr)
+        raise NicknameGenerationError(
+            "%s is not a valid email address" % email_addr)
 
     user = re.match("^(\S+)@(?:\S+)$", email_addr).groups()[0]
     user = user.replace(".", "-").replace("_", "-")
@@ -4964,7 +4913,7 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
     # We seed the random number generator so we get consistent results,
     # making the algorithm repeatable and thus testable.
     random_state = random.getstate()
-    random.seed(sum(ord(letter) for letter in generated_nick))
+    random.seed(sum(ord(letter) for letter in email_addr))
     try:
         attempts = 0
         prefix = ''

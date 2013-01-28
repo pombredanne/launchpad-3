@@ -1,22 +1,17 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `IPackageBuild`."""
 
 __metaclass__ = type
 
-from datetime import datetime
 import hashlib
-import os
-import shutil
-import tempfile
 
 from storm.store import Store
 from zope.component import getUtility
-from zope.security.interfaces import Unauthorized
+from zope.security.management import checkPermission
 from zope.security.proxy import removeSecurityProxy
 
-from lp.archiveuploader.uploadprocessor import parse_build_upload_leaf_name
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -26,25 +21,15 @@ from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuildSet,
     IPackageBuildSource,
     )
-from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
-from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.config import config
-from lp.services.database.constants import UTC_NOW
 from lp.testing import (
     login,
     login_person,
     TestCaseWithFactory,
     )
-from lp.testing.factory import LaunchpadObjectFactory
-from lp.testing.fakemethod import FakeMethod
-from lp.testing.layers import (
-    LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer,
-    )
-from lp.testing.mail_helpers import pop_notifications
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 class TestPackageBuildBase(TestCaseWithFactory):
@@ -78,10 +63,6 @@ class TestPackageBuild(TestPackageBuildBase):
         joes_ppa = self.factory.makeArchive(owner=joe, name="ppa")
         self.package_build = self.makePackageBuild(archive=joes_ppa)
 
-    def test_providesInterface(self):
-        # PackageBuild provides IPackageBuild
-        self.assertProvides(self.package_build, IPackageBuild)
-
     def test_saves_record(self):
         # A package build can be stored in the database.
         store = Store.of(self.package_build)
@@ -91,34 +72,72 @@ class TestPackageBuild(TestPackageBuildBase):
             PackageBuild.id == self.package_build.id).one()
         self.assertEqual(self.package_build, retrieved_build)
 
-    def test_unimplemented_methods(self):
-        # Classes deriving from PackageBuild must provide getTitle.
-        self.assertRaises(NotImplementedError, self.package_build.getTitle)
-        self.assertRaises(
-            NotImplementedError, self.package_build.estimateDuration)
-        self.assertRaises(
-            NotImplementedError, self.package_build.verifySuccessfulUpload)
-        self.assertRaises(NotImplementedError, self.package_build.notify)
-        self.assertRaises(
-            NotImplementedError, self.package_build.handleStatus,
-            None, None, None)
-
     def test_default_values(self):
         # PackageBuild has a number of default values.
-        self.failUnlessEqual(
-            'multiverse', self.package_build.current_component.name)
-        self.failUnlessEqual(None, self.package_build.distribution)
-        self.failUnlessEqual(None, self.package_build.distro_series)
+        pb = removeSecurityProxy(self.package_build)
+        self.failUnlessEqual(None, pb.distribution)
+        self.failUnlessEqual(None, pb.distro_series)
+
+    def test_destroySelf_removes_BuildFarmJob(self):
+        # Destroying a packagebuild also destroys the BuildFarmJob it
+        # references.
+        naked_build = removeSecurityProxy(self.package_build)
+        store = Store.of(self.package_build)
+        # Ensure build_farm_job_id is set.
+        store.flush()
+        build_farm_job_id = naked_build.build_farm_job_id
+        naked_build.destroySelf()
+        result = store.find(
+            BuildFarmJob, BuildFarmJob.id == build_farm_job_id)
+        self.assertIs(None, result.one())
+
+
+class TestPackageBuildMixin(TestCaseWithFactory):
+    """Test methods provided by PackageBuildMixin."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestPackageBuildMixin, self).setUp()
+        # BuildFarmJobMixin only operates as part of a concrete
+        # IBuildFarmJob implementation. Here we use
+        # SourcePackageRecipeBuild.
+        joe = self.factory.makePerson(name="joe")
+        joes_ppa = self.factory.makeArchive(owner=joe, name="ppa")
+        self.package_build = self.factory.makeSourcePackageRecipeBuild(
+            archive=joes_ppa)
+
+    def test_providesInterface(self):
+        # PackageBuild provides IPackageBuild
+        self.assertProvides(self.package_build, IPackageBuild)
+
+    def test_updateStatus_MANUALDEPWAIT_sets_dependencies(self):
+        # updateStatus sets dependencies for a MANUALDEPWAIT build.
+        self.package_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT, slave_status={'dependencies': u'deps'})
+        self.assertEqual(u'deps', self.package_build.dependencies)
+        self.package_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT, slave_status={})
+        self.assertEqual(None, self.package_build.dependencies)
+
+    def test_updateStatus_unsets_dependencies_for_other_statuses(self):
+        # updateStatus unsets existing dependencies when transitioning
+        # to another state.
+        self.package_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT, slave_status={'dependencies': u'deps'})
+        self.assertEqual(u'deps', self.package_build.dependencies)
+        self.package_build.updateStatus(BuildStatus.FULLYBUILT)
+        self.assertEqual(None, self.package_build.dependencies)
 
     def test_log_url(self):
         # The url of the build log file is determined by the PackageBuild.
         lfa = self.factory.makeLibraryFileAlias('mybuildlog.txt')
-        removeSecurityProxy(self.package_build).log = lfa
+        self.package_build.setLog(lfa)
         log_url = self.package_build.log_url
         self.failUnlessEqual(
             'http://launchpad.dev/~joe/'
-            '+archive/ppa/+build/%d/+files/mybuildlog.txt' % (
-                self.package_build.build_farm_job.id),
+            '+archive/ppa/+recipebuild/%d/+files/mybuildlog.txt' % (
+                self.package_build.id),
             log_url)
 
     def test_storeUploadLog(self):
@@ -152,68 +171,37 @@ class TestPackageBuild(TestPackageBuildBase):
     def test_upload_log_url(self):
         # The url of the upload log file is determined by the PackageBuild.
         Store.of(self.package_build).flush()
-        build_id = self.package_build.build_farm_job.id
         self.package_build.storeUploadLog("Some content")
         log_url = self.package_build.upload_log_url
         self.failUnlessEqual(
             'http://launchpad.dev/~joe/'
-            '+archive/ppa/+build/%d/+files/upload_%d_log.txt' % (
-                build_id, build_id),
+            '+archive/ppa/+recipebuild/%d/+files/upload_%d_log.txt' % (
+                self.package_build.id, self.package_build.build_farm_job.id),
             log_url)
 
     def test_view_package_build(self):
         # Anonymous access can read public builds, but not edit.
-        self.failUnlessEqual(
-            None, self.package_build.dependencies)
-        self.assertRaises(
-            Unauthorized, setattr, self.package_build,
-            'dependencies', u'my deps')
+        self.assertTrue(checkPermission('launchpad.View', self.package_build))
+        self.assertFalse(checkPermission('launchpad.Edit', self.package_build))
 
     def test_edit_package_build(self):
         # An authenticated user who belongs to the owning archive team
         # can edit the build.
         login_person(self.package_build.archive.owner)
-        self.package_build.dependencies = u'My deps'
-        self.failUnlessEqual(
-            u'My deps', self.package_build.dependencies)
+        self.assertTrue(checkPermission('launchpad.View', self.package_build))
+        self.assertTrue(checkPermission('launchpad.Edit', self.package_build))
 
         # But other users cannot.
         other_person = self.factory.makePerson()
         login_person(other_person)
-        self.assertRaises(
-            Unauthorized, setattr, self.package_build,
-            'dependencies', u'my deps')
+        self.assertTrue(checkPermission('launchpad.View', self.package_build))
+        self.assertFalse(checkPermission('launchpad.Edit', self.package_build))
 
     def test_admin_package_build(self):
         # Users with edit access can update attributes.
         login('admin@canonical.com')
-        self.package_build.dependencies = u'My deps'
-        self.failUnlessEqual(
-            u'My deps', self.package_build.dependencies)
-
-    def test_getUploadDirLeaf(self):
-        # getUploadDirLeaf returns the current time, followed by the build
-        # cookie.
-        now = datetime.now()
-        build_cookie = self.factory.getUniqueString()
-        upload_leaf = self.package_build.getUploadDirLeaf(
-            build_cookie, now=now)
-        self.assertEqual(
-            '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_cookie),
-            upload_leaf)
-
-    def test_destroySelf_removes_BuildFarmJob(self):
-        # Destroying a packagebuild also destroys the BuildFarmJob it
-        # references.
-        naked_build = removeSecurityProxy(self.package_build)
-        store = Store.of(self.package_build)
-        # Ensure build_farm_job_id is set.
-        store.flush()
-        build_farm_job_id = naked_build.build_farm_job_id
-        naked_build.destroySelf()
-        result = store.find(
-            BuildFarmJob, BuildFarmJob.id == build_farm_job_id)
-        self.assertIs(None, result.one())
+        self.assertTrue(checkPermission('launchpad.View', self.package_build))
+        self.assertTrue(checkPermission('launchpad.Edit', self.package_build))
 
 
 class TestPackageBuildSet(TestPackageBuildBase):
@@ -255,167 +243,3 @@ class TestPackageBuildSet(TestPackageBuildBase):
             self.package_builds[:1],
             self.package_build_set.getBuildsForArchive(
                 self.archive, pocket=PackagePublishingPocket.UPDATES))
-
-
-class TestGetUploadMethodsMixin:
-    """Tests for `IPackageBuild` that need objects from the rest of LP."""
-
-    layer = LaunchpadZopelessLayer
-
-    def makeBuild(self):
-        """Allow classes to override the build with which the test runs."""
-        raise NotImplemented
-
-    def setUp(self):
-        super(TestGetUploadMethodsMixin, self).setUp()
-        self.build = self.makeBuild()
-
-    def test_getUploadDirLeafCookie_parseable(self):
-        # getUploadDirLeaf should return a directory name
-        # that is parseable by the upload processor.
-        upload_leaf = self.build.getUploadDirLeaf(
-            self.build.getBuildCookie())
-        (job_type, job_id) = parse_build_upload_leaf_name(upload_leaf)
-        self.assertEqual(
-            (self.build.build_farm_job.job_type.name, self.build.id),
-            (job_type, job_id))
-
-
-class TestHandleStatusMixin:
-    """Tests for `IPackageBuild`s handleStatus method.
-
-    This should be run with a Trial TestCase.
-    """
-
-    layer = LaunchpadZopelessLayer
-
-    def makeBuild(self):
-        """Allow classes to override the build with which the test runs."""
-        raise NotImplementedError
-
-    def setUp(self):
-        super(TestHandleStatusMixin, self).setUp()
-        self.factory = LaunchpadObjectFactory()
-        self.build = self.makeBuild()
-        # For the moment, we require a builder for the build so that
-        # handleStatus_OK can get a reference to the slave.
-        builder = self.factory.makeBuilder()
-        self.build.buildqueue_record.builder = builder
-        self.build.buildqueue_record.setDateStarted(UTC_NOW)
-        self.slave = WaitingSlave('BuildStatus.OK')
-        self.slave.valid_file_hashes.append('test_file_hash')
-        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(self.slave))
-
-        # We overwrite the buildmaster root to use a temp directory.
-        tempdir = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, tempdir)
-        self.upload_root = tempdir
-        tmp_builddmaster_root = """
-        [builddmaster]
-        root: %s
-        """ % self.upload_root
-        config.push('tmp_builddmaster_root', tmp_builddmaster_root)
-
-        # We stub out our builds getUploaderCommand() method so
-        # we can check whether it was called as well as
-        # verifySuccessfulUpload().
-        removeSecurityProxy(self.build).verifySuccessfulUpload = FakeMethod(
-            result=True)
-
-    def assertResultCount(self, count, result):
-        self.assertEquals(
-            1, len(os.listdir(os.path.join(self.upload_root, result))))
-
-    def test_handleStatus_OK_normal_file(self):
-        # A filemap with plain filenames should not cause a problem.
-        # The call to handleStatus will attempt to get the file from
-        # the slave resulting in a URL error in this test case.
-        def got_status(ignored):
-            self.assertEqual(BuildStatus.UPLOADING, self.build.status)
-            self.assertResultCount(1, "incoming")
-
-        d = self.build.handleStatus('OK', None, {
-                'filemap': {'myfile.py': 'test_file_hash'},
-                })
-        return d.addCallback(got_status)
-
-    def test_handleStatus_OK_absolute_filepath(self):
-        # A filemap that tries to write to files outside of
-        # the upload directory will result in a failed upload.
-        def got_status(ignored):
-            self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
-            self.assertResultCount(0, "failed")
-            self.assertIdentical(None, self.build.buildqueue_record)
-
-        d = self.build.handleStatus('OK', None, {
-            'filemap': {'/tmp/myfile.py': 'test_file_hash'},
-            })
-        return d.addCallback(got_status)
-
-    def test_handleStatus_OK_relative_filepath(self):
-        # A filemap that tries to write to files outside of
-        # the upload directory will result in a failed upload.
-        def got_status(ignored):
-            self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
-            self.assertResultCount(0, "failed")
-
-        d = self.build.handleStatus('OK', None, {
-            'filemap': {'../myfile.py': 'test_file_hash'},
-            })
-        return d.addCallback(got_status)
-
-    def test_handleStatus_OK_sets_build_log(self):
-        # The build log is set during handleStatus.
-        removeSecurityProxy(self.build).log = None
-        self.assertEqual(None, self.build.log)
-        d = self.build.handleStatus('OK', None, {
-                'filemap': {'myfile.py': 'test_file_hash'},
-                })
-
-        def got_status(ignored):
-            self.assertNotEqual(None, self.build.log)
-
-        return d.addCallback(got_status)
-
-    def _test_handleStatus_notifies(self, status):
-        # An email notification is sent for a given build status if
-        # notifications are allowed for that status.
-
-        naked_build = removeSecurityProxy(self.build)
-        expected_notification = (
-            status in naked_build.ALLOWED_STATUS_NOTIFICATIONS)
-
-        def got_status(ignored):
-            if expected_notification:
-                self.failIf(
-                    len(pop_notifications()) == 0,
-                    "No notifications received")
-            else:
-                self.failIf(
-                    len(pop_notifications()) > 0,
-                    "Notifications received")
-
-        d = self.build.handleStatus(status, None, {})
-        return d.addCallback(got_status)
-
-    def test_handleStatus_DEPFAIL_notifies(self):
-        return self._test_handleStatus_notifies("DEPFAIL")
-
-    def test_handleStatus_CHROOTFAIL_notifies(self):
-        return self._test_handleStatus_notifies("CHROOTFAIL")
-
-    def test_handleStatus_PACKAGEFAIL_notifies(self):
-        return self._test_handleStatus_notifies("PACKAGEFAIL")
-
-    def test_date_finished_set(self):
-        # The date finished is updated during handleStatus_OK.
-        removeSecurityProxy(self.build).date_finished = None
-        self.assertEqual(None, self.build.date_finished)
-        d = self.build.handleStatus('OK', None, {
-                'filemap': {'myfile.py': 'test_file_hash'},
-                })
-
-        def got_status(ignored):
-            self.assertNotEqual(None, self.build.date_finished)
-
-        return d.addCallback(got_status)

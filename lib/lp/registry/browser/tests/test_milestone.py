@@ -117,6 +117,39 @@ class TestMilestoneViews(BrowserTestCase):
         with person_logged_in(None):
             browser = self.getViewBrowser(milestone, '+index')
 
+    def test_downloads_listed(self):
+        # When a release exists a list of download files and a link to
+        # add more are shown.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        release = self.factory.makeProductRelease(product=product)
+        with person_logged_in(owner):
+            owner_browser = self.getViewBrowser(
+                release.milestone, '+index', user=owner)
+            html = owner_browser.contents
+            self.assertIn('Download files for this release', html)
+            self.assertIn('Add download file', html)
+        with person_logged_in(None):
+            owner_browser = self.getViewBrowser(release.milestone, '+index')
+            html = owner_browser.contents
+            self.assertIn('Download files for this release', html)
+            self.assertNotIn('Add download file', html)
+
+    def test_downloads_section_hidden_for_proprietary_product(self):
+        # Only public projects can have download files, so the downloads
+        # section is replaced with a message indicating this.
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner, information_type=InformationType.PROPRIETARY)
+        with person_logged_in(owner):
+            release = self.factory.makeProductRelease(product=product)
+            owner_browser = self.getViewBrowser(
+                release.milestone, '+index', user=owner)
+            html = owner_browser.contents
+            self.assertIn(
+                'Only public projects can have download files.', html)
+            self.assertNotIn('Add download file', html)
+
 
 class TestAddMilestoneViews(TestCaseWithFactory):
 

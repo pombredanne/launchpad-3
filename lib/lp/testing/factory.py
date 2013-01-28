@@ -2097,7 +2097,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if distribution is None and product is None:
             if proprietary:
                 specification_sharing_policy = (
-                SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
+                    SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
             else:
                 specification_sharing_policy = None
             product = self.makeProduct(
@@ -2877,12 +2877,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             requester=requester,
             pocket=pocket,
             date_created=date_created)
-        removeSecurityProxy(spr_build).status = status
         if duration is not None:
-            naked_sprb = removeSecurityProxy(spr_build)
-            if naked_sprb.date_started is None:
-                naked_sprb.date_started = spr_build.date_created
-            naked_sprb.date_finished = naked_sprb.date_started + duration
+            removeSecurityProxy(spr_build).updateStatus(
+                BuildStatus.BUILDING, date_started=spr_build.date_created)
+            removeSecurityProxy(spr_build).updateStatus(
+                status, date_finished=spr_build.date_started + duration)
+        else:
+            removeSecurityProxy(spr_build).updateStatus(status)
         IStore(spr_build).flush()
         return spr_build
 
@@ -3650,9 +3651,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 status=status,
                 archive=archive,
                 pocket=pocket,
-                date_created=date_created)
-        naked_build = removeSecurityProxy(binary_package_build)
-        naked_build.builder = builder
+                date_created=date_created,
+                builder=builder)
         IStore(binary_package_build).flush()
         return binary_package_build
 

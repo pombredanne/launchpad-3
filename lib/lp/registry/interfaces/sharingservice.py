@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces for sharing service."""
@@ -117,7 +117,7 @@ class ISharingService(IService):
         :return: a (bugtasks, branches, specifications) tuple
         """
 
-    def userHasGrantsOnPillar(pillar, user):
+    def checkPillarArtifactAccess(pillar, user):
         """Return True if user has any grants on pillar else return False."""
 
     @export_read_operation()

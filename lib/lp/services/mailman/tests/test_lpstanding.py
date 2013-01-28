@@ -9,7 +9,7 @@ from Mailman import Errors
 from Mailman.Handlers import LPStanding
 
 from lp.registry.interfaces.person import PersonalStanding
-from lp.services.mailman.testing import MailmanTestCase
+from lp.services.mailman.tests import MailmanTestCase
 from lp.testing import celebrity_logged_in
 from lp.testing.layers import DatabaseFunctionalLayer
 

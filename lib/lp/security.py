@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Security policies for using content objects."""
@@ -59,7 +59,6 @@ from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
     )
-from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob,
     IBuildFarmJobOld,
@@ -202,7 +201,6 @@ from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageReleaseDownloadCount,
     )
-from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJob
 from lp.soyuz.interfaces.packageset import (
@@ -236,6 +234,9 @@ from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueueEntry,
     )
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
+from lp.translations.interfaces.translationtemplatesbuild import (
+    ITranslationTemplatesBuild,
+    )
 from lp.translations.interfaces.translator import (
     IEditTranslator,
     ITranslator,
@@ -381,22 +382,10 @@ class EditAccountBySelfOrAdmin(AuthorizationBase):
 class ViewAccount(EditAccountBySelfOrAdmin):
     permission = 'launchpad.View'
 
-
-class ViewOpenIdIdentifierBySelfOrAdmin(AuthorizationBase):
-    permission = 'launchpad.View'
-    usedfor = IOpenIdIdentifier
-
-    def checkAuthenticated(self, user):
-        return user.in_admin or user.person.accountID == self.obj.accountID
-
-
-class SpecialAccount(EditAccountBySelfOrAdmin):
-    permission = 'launchpad.Special'
-
     def checkAuthenticated(self, user):
         """Extend permission to registry experts."""
         return (
-            super(SpecialAccount, self).checkAuthenticated(user)
+            super(ViewAccount, self).checkAuthenticated(user)
             or user.in_registry_experts)
 
 
@@ -406,6 +395,14 @@ class ModerateAccountByRegistryExpert(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return user.in_admin or user.in_registry_experts
+
+
+class ViewOpenIdIdentifierBySelfOrAdmin(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IOpenIdIdentifier
+
+    def checkAuthenticated(self, user):
+        return user.in_admin or user.person.accountID == self.obj.accountID
 
 
 class EditOAuthAccessToken(AuthorizationBase):
@@ -447,7 +444,7 @@ class LimitedViewProduct(ViewProduct):
     def checkAuthenticated(self, user):
         return (
             super(LimitedViewProduct, self).checkAuthenticated(user) or
-            getUtility(IService, 'sharing').userHasGrantsOnPillar(
+            getUtility(IService, 'sharing').checkPillarArtifactAccess(
                 self.obj, user))
 
 
@@ -530,11 +527,6 @@ class EditDistributionMirrorByOwnerOrDistroOwnerOrMirrorAdminsOrAdmins(
 class ViewDistributionMirror(AnonymousAuthorization):
     """Anyone can view an IDistributionMirror."""
     usedfor = IDistributionMirror
-
-
-class ViewAbstractMilestone(AnonymousAuthorization):
-    """Anyone can view an IMilestone or an IProjectGroupMilestone."""
-    usedfor = IAbstractMilestone
 
 
 class EditSpecificationBranch(AuthorizationBase):
@@ -1743,9 +1735,13 @@ class EditProductRelease(EditByOwnersOrAdmins):
             self, user)
 
 
-class ViewProductRelease(AnonymousAuthorization):
-
+class ViewProductRelease(DelegatedAuthorization):
+    permission = 'launchpad.View'
     usedfor = IProductRelease
+
+    def __init__(self, obj):
+        super(ViewProductRelease, self).__init__(
+            obj, obj.milestone, 'launchpad.View')
 
 
 class AdminTranslationImportQueueEntry(AuthorizationBase):
@@ -1982,38 +1978,29 @@ class ViewBinaryPackageBuild(EditBinaryPackageBuild):
         return auth_spr.checkUnauthenticated()
 
 
+class ViewTranslationTemplatesBuild(DelegatedAuthorization):
+    """Permission to view an `ITranslationTemplatesBuild`.
+
+    Delegated to the build's branch.
+    """
+    permission = 'launchpad.View'
+    usedfor = ITranslationTemplatesBuild
+
+    def __init__(self, obj):
+        super(ViewTranslationTemplatesBuild, self).__init__(obj, obj.branch)
+
+
 class ViewBuildFarmJobOld(DelegatedAuthorization):
     """Permission to view an `IBuildFarmJobOld`.
 
     This permission is based entirely on permission to view the
-    associated `IBinaryPackageBuild` and/or `IBranch`.
+    associated `IBuildFarmJob`.
     """
     permission = 'launchpad.View'
     usedfor = IBuildFarmJobOld
 
-    def _getBranch(self):
-        """Get `IBranch` associated with this job, if any."""
-        if IBuildFarmBranchJob.providedBy(self.obj):
-            return self.obj.branch
-        else:
-            return None
-
-    def _getBuild(self):
-        """Get `IPackageBuild` associated with this job, if any."""
-        if IBuildFarmBuildJob.providedBy(self.obj):
-            return self.obj.build
-        else:
-            return None
-
-    def iter_objects(self):
-        branch = self._getBranch()
-        build = self._getBuild()
-        objects = []
-        if branch:
-            objects.append(branch)
-        if build:
-            objects.append(build)
-        return objects
+    def __init__(self, obj):
+        super(ViewBuildFarmJobOld, self).__init__(obj, obj.build)
 
 
 class AdminQuestion(AdminByAdminsTeam):

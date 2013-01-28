@@ -162,13 +162,11 @@ class TestgetSpecificJobs(TestCaseWithFactory):
 
 class BuildCreationMixin(object):
 
-    def markAsBuilt(self, build):
+    def markAsBuilt(self, build, builder):
         lfa = self.factory.makeLibraryFileAlias()
-        naked_build = removeSecurityProxy(build)
-        naked_build.log = lfa
-        naked_build.date_started = self.factory.getUniqueDate()
-        naked_build.date_finished = self.factory.getUniqueDate()
-        naked_build.status = BuildStatus.FULLYBUILT
+        build.updateStatus(BuildStatus.BUILDING, builder=builder)
+        build.updateStatus(BuildStatus.FULLYBUILT)
+        build.setLog(lfa)
         transaction.commit()
 
     def createTranslationTemplateBuildWithBuilder(self, builder=None):
@@ -180,8 +178,7 @@ class BuildCreationMixin(object):
         source = getUtility(ITranslationTemplatesBuildSource)
         branch = self.factory.makeBranch()
         build = source.create(build_farm_job, branch)
-        removeSecurityProxy(build).builder = builder
-        self.markAsBuilt(build)
+        self.markAsBuilt(build, builder)
         return build
 
     def createRecipeBuildWithBuilder(self, private_branch=False,
@@ -198,8 +195,7 @@ class BuildCreationMixin(object):
                 branch1.setPrivate(
                     True, getUtility(IPersonSet).getByEmail(ADMIN_EMAIL))
         Store.of(build).flush()
-        removeSecurityProxy(build).builder = builder
-        self.markAsBuilt(build)
+        self.markAsBuilt(build, builder)
         return build
 
     def createBinaryPackageBuild(self, in_ppa=False, builder=None):
@@ -209,11 +205,7 @@ class BuildCreationMixin(object):
         if in_ppa:
             archive = self.factory.makeArchive()
         build = self.factory.makeBinaryPackageBuild(archive=archive)
-        naked_build = removeSecurityProxy(build)
-        naked_build.builder = builder
-        naked_build.date_started = self.factory.getUniqueDate()
-        naked_build.date_finished = self.factory.getUniqueDate()
-        self.markAsBuilt(build)
+        self.markAsBuilt(build, builder)
         return build
 
 

@@ -1,7 +1,5 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 """Archive interfaces."""
 
@@ -1975,18 +1973,6 @@ class IArchiveSet(Interface):
     """Interface for ArchiveSet"""
 
     title = Attribute('Title')
-
-    def getNumberOfPPASourcesForDistribution(distribution):
-        """Return the number of sources for PPAs in a given distribution.
-
-        Only public and published sources are considered.
-        """
-
-    def getNumberOfPPABinariesForDistribution(distribution):
-        """Return the number of binaries for PPAs in a given distribution.
-
-        Only public and published sources are considered.
-        """
 
     def new(purpose, owner, name=None, displayname=None, distribution=None,
             description=None, enabled=True, require_virtualized=True,

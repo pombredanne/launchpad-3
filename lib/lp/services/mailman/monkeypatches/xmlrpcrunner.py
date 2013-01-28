@@ -24,7 +24,6 @@ import tarfile
 import traceback
 import xmlrpclib
 
-# pylint: disable-msg=F0401
 from Mailman import (
     Errors,
     mm_cfg,
@@ -138,10 +137,15 @@ class XMLRPCRunner(Runner):
         This method always returns 0 to indicate to the base class's main loop
         that it should sleep for a while after calling this method.
         """
+        methods = (
+            self._check_list_actions, self._get_subscriptions,
+            self._check_held_messages)
         try:
-            self._check_list_actions()
-            self._get_subscriptions()
-            self._check_held_messages()
+            for method in methods:
+                if self._shortcircuit():
+                    # The runner was  shutdown during the long network call.
+                    break
+                method()
         except:
             # Log the exception and report an OOPS.
             log_exception('Unexpected XMLRPCRunner exception')
@@ -345,6 +349,9 @@ class XMLRPCRunner(Runner):
         # different.
         shuffle(lists)
         while lists:
+            if self._shortcircuit():
+                # Stop was called during a long network call.
+                return
             batch = lists[:mm_cfg.XMLRPC_SUBSCRIPTION_BATCH_SIZE]
             lists = lists[mm_cfg.XMLRPC_SUBSCRIPTION_BATCH_SIZE:]
             ## syslog('xmlrpc', 'batch: %s', batch)
@@ -488,7 +495,6 @@ class XMLRPCRunner(Runner):
                 os.makedirs(path)
             # We have to use a bare except here because of the legacy string
             # exceptions that Mailman can raise.
-            # pylint: disable-msg=W0702
             except:
                 log_exception('List creation error for team: %s', team_name)
                 return False
@@ -529,7 +535,6 @@ class XMLRPCRunner(Runner):
                     mlist.Unlock()
             # We have to use a bare except here because of the legacy string
             # exceptions that Mailman can raise.
-            # pylint: disable-msg=W0702
             except:
                 log_exception(
                     'List modification error for team: %s', team_name)
@@ -580,7 +585,6 @@ class XMLRPCRunner(Runner):
                     os.chdir(old_cwd)
             # We have to use a bare except here because of the legacy string
             # exceptions that Mailman can raise.
-            # pylint: disable-msg=W0702
             except:
                 log_exception('List deletion error for team: %s', team_name)
                 statuses[team_name] = ('deactivate', 'failure')
@@ -675,7 +679,6 @@ class XMLRPCRunner(Runner):
             # succeeded or not, however, it's unlikely that an action would
             # fail leaving the mailing list in a usable state.  Therefore, if
             # the list is loadable and lockable, we'll say it succeeded.
-            # pylint: disable-msg=W0702
             try:
                 mlist = MailList(name)
             except Errors.MMUnknownListError:

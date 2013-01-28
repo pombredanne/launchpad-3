@@ -60,7 +60,6 @@ from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
     login,
-    login_celebrity,
     login_person,
     monkey_patch,
     person_logged_in,
@@ -657,34 +656,6 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         self.assertEqual(expected_url, response.getHeader('location'))
 
 
-class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
-                                   TestCaseWithFactory):
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(PersonAdministerViewTestCase, self).setUp()
-        self.person = self.factory.makePerson()
-        login_celebrity('admin')
-        self.ppa = self.factory.makeArchive(owner=self.person)
-        self.view = create_initialized_view(self.person, '+review')
-
-    def test_init_admin(self):
-        # An admin sees all the fields.
-        self.assertEqual('Review person', self.view.label)
-        self.assertEqual(
-            ['name', 'displayname', 'personal_standing',
-             'personal_standing_reason'],
-            self.view.field_names)
-
-    def test_init_registry_expert(self):
-        # Registry experts do not see the displayname field.
-        login_celebrity('registry_experts')
-        self.view.setUpFields()
-        self.assertEqual(
-            ['name', 'personal_standing', 'personal_standing_reason'],
-            self.view.field_names)
-
-
 class TestPersonParticipationView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -1082,13 +1053,16 @@ class TestPersonRelatedPackagesFailedBuild(TestCaseWithFactory):
         publisher = SoyuzTestPublisher()
         publisher.prepareBreezyAutotest()
         ppa = self.factory.makeArchive(owner=self.user)
-        src_pub = publisher.getPubSource(
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename='foo', version='666',
             creator=self.user, maintainer=self.user, archive=ppa)
-        binaries = publisher.getPubBinaries(
-            pub_source=src_pub)
-        self.build = binaries[0].binarypackagerelease.build
-        self.build.status = BuildStatus.FAILEDTOBUILD
-        self.build.archive = publisher.distroseries.main_archive
+        das = self.factory.makeDistroArchSeries(
+            distroseries=spph.distroseries, architecturetag='cyr128')
+        self.build = self.factory.makeBinaryPackageBuild(
+            source_package_release=spph.sourcepackagerelease,
+            archive=spph.distroseries.distribution.main_archive,
+            distroarchseries=das)
+        self.build.updateStatus(BuildStatus.FAILEDTOBUILD)
         # Update the releases cache table.
         switch_dbuser('garbo_frequently')
         job = PopulateLatestPersonSourcePackageReleaseCache(FakeLogger())
@@ -1102,7 +1076,7 @@ class TestPersonRelatedPackagesFailedBuild(TestCaseWithFactory):
         self.view = create_view(self.user, name='+related-packages')
         html = self.view()
         self.assertIn(
-            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
+            '<a href="/ubuntu/+source/foo/666/+build/%d">cyr128</a>' % (
                 self.build.id), html)
 
     def test_related_ppa_packages_with_failed_build(self):
@@ -1110,7 +1084,7 @@ class TestPersonRelatedPackagesFailedBuild(TestCaseWithFactory):
         self.view = create_view(self.user, name='+ppa-packages')
         html = self.view()
         self.assertIn(
-            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
+            '<a href="/ubuntu/+source/foo/666/+build/%d">cyr128</a>' % (
                 self.build.id), html)
 
 

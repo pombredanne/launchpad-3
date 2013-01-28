@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Librarian interfaces."""
 
 __metaclass__ = type
@@ -55,8 +53,6 @@ class ILibraryFileAlias(Interface):
         title=_('Filename'), required=True, readonly=True)
     mimetype = TextLine(
         title=_('MIME type'), required=True, readonly=True)
-    last_accessed = Datetime(
-        title=_('Date last accessed'), required=False, readonly=True)
     expires = Datetime(
         title=_('Expiry time'), required=False, readonly=True,
         description=_('''

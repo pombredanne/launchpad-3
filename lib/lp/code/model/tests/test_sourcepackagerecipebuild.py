@@ -10,13 +10,10 @@ from datetime import (
     timedelta,
     )
 import re
-import shutil
-import tempfile
 
 from pytz import utc
 from storm.locals import Store
 import transaction
-from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -24,14 +21,8 @@ from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
-from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
-from lp.buildmaster.tests.mock_slaves import WaitingSlave
-from lp.buildmaster.tests.test_packagebuild import (
-    TestGetUploadMethodsMixin,
-    TestHandleStatusMixin,
-    )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildJob,
@@ -43,12 +34,10 @@ from lp.code.mail.sourcepackagerecipebuild import (
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.config import config
 from lp.services.database.lpstorm import IStore
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.sendmail import format_address
 from lp.services.webapp.authorization import check_permission
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
     ANONYMOUS,
@@ -57,7 +46,6 @@ from lp.testing import (
     TestCaseWithFactory,
     verifyObject,
     )
-from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -126,15 +114,6 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             spb.distroseries.nominatedarchindep.default_processor,
             bq.processor)
         self.assertEqual(bq, spb.buildqueue_record)
-
-    def test_getBuildCookie(self):
-        # A build cookie is made up of the job type and record id.
-        # The uploadprocessor relies on this format.
-        sprb = self.makeSourcePackageRecipeBuild()
-        Store.of(sprb).flush()
-        cookie = sprb.getBuildCookie()
-        expected_cookie = "RECIPEBRANCHBUILD-%d" % sprb.id
-        self.assertEquals(expected_cookie, cookie)
 
     def test_title(self):
         # A recipe build's title currently consists of the base
@@ -211,26 +190,27 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         cur_date = self.factory.getUniqueDate()
         self.assertEqual(timedelta(minutes=10), spb.estimateDuration())
         for minutes in [20, 5, 1]:
-            build = removeSecurityProxy(
-                self.factory.makeSourcePackageRecipeBuild(recipe=spb.recipe))
-            build.date_started = cur_date
-            build.date_finished = cur_date + timedelta(minutes=minutes)
+            build = self.factory.makeSourcePackageRecipeBuild(
+                recipe=spb.recipe)
+            build.updateStatus(BuildStatus.BUILDING, date_started=cur_date)
+            build.updateStatus(
+                BuildStatus.FULLYBUILT,
+                date_finished=cur_date + timedelta(minutes=minutes))
         self.assertEqual(timedelta(minutes=5), spb.estimateDuration())
 
     def test_getFileByName(self):
         """getFileByName returns the logs when requested by name."""
         spb = self.factory.makeSourcePackageRecipeBuild()
-        removeSecurityProxy(spb).log = (
+        spb.setLog(
             self.factory.makeLibraryFileAlias(filename='buildlog.txt.gz'))
         self.assertEqual(spb.log, spb.getFileByName('buildlog.txt.gz'))
         self.assertRaises(NotFoundError, spb.getFileByName, 'foo')
-        removeSecurityProxy(spb).log = (
-            self.factory.makeLibraryFileAlias(filename='foo'))
+        spb.setLog(self.factory.makeLibraryFileAlias(filename='foo'))
         self.assertEqual(spb.log, spb.getFileByName('foo'))
         self.assertRaises(NotFoundError, spb.getFileByName, 'buildlog.txt.gz')
-        removeSecurityProxy(spb).upload_log = (
-            self.factory.makeLibraryFileAlias(filename='upload.txt.gz'))
-        self.assertEqual(spb.upload_log, spb.getFileByName('upload.txt.gz'))
+        spb.storeUploadLog('uploaded')
+        self.assertEqual(
+            spb.upload_log, spb.getFileByName(spb.upload_log.filename))
 
     def test_binary_builds(self):
         """The binary_builds property should be populated automatically."""
@@ -324,11 +304,11 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             owner=owner, name=u'funky-recipe', build_daily=True,
             is_stale=True)
         series = list(recipe.distroseries)[0]
-        existing_build = recipe.requestBuild(
-            recipe.daily_build_archive, recipe.owner, series,
-            PackagePublishingPocket.RELEASE)
-        removeSecurityProxy(existing_build).date_created = (
-            datetime.now(utc) - timedelta(hours=24, seconds=1))
+        self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, archive=recipe.daily_build_archive,
+            requester=recipe.owner, distroseries=series,
+            pocket=PackagePublishingPocket.RELEASE,
+            date_created=datetime.now(utc) - timedelta(hours=24, seconds=1))
         removeSecurityProxy(recipe).is_stale = True
 
         logger = BufferLogger()
@@ -384,13 +364,12 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # stale, we'll fire another off.
         recipe = self.factory.makeSourcePackageRecipe(
             build_daily=True, is_stale=True)
-        build = recipe.requestBuild(
-            recipe.daily_build_archive, recipe.owner,
-            list(recipe.distroseries)[0], PackagePublishingPocket.RELEASE)
-        nb = removeSecurityProxy(build)
-        nb.date_created = datetime.now(utc) - timedelta(hours=24, seconds=1)
-        # The build also needs to be completed
-        nb.status = BuildStatus.FULLYBUILT
+        build = self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, archive=recipe.daily_build_archive,
+            requester=recipe.owner, distroseries=list(recipe.distroseries)[0],
+            pocket=PackagePublishingPocket.RELEASE,
+            date_created=datetime.now(utc) - timedelta(hours=24, seconds=1),
+            status=BuildStatus.FULLYBUILT)
         daily_builds = SourcePackageRecipeBuild.makeDailyBuilds()
         self.assertEquals(1, len(daily_builds))
         actual_title = [b.title for b in daily_builds]
@@ -402,14 +381,13 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         recipe = self.factory.makeSourcePackageRecipe(
             build_daily=True, is_stale=True)
         for timediff in (timedelta(hours=24, seconds=1), timedelta(hours=8)):
-            build = recipe.requestBuild(
-                recipe.daily_build_archive, recipe.owner,
-                list(recipe.distroseries)[0],
-                PackagePublishingPocket.RELEASE)
-            nb = removeSecurityProxy(build)
-            nb.date_created = datetime.now(utc) - timediff
-            # The build also needs to be completed
-            nb.status = BuildStatus.FULLYBUILT
+            self.factory.makeSourcePackageRecipeBuild(
+                recipe=recipe, archive=recipe.daily_build_archive,
+                requester=recipe.owner,
+                distroseries=list(recipe.distroseries)[0],
+                pocket=PackagePublishingPocket.RELEASE,
+                date_created=datetime.now(utc) - timediff,
+                status=BuildStatus.FULLYBUILT)
         daily_builds = SourcePackageRecipeBuild.makeDailyBuilds()
         self.assertEquals([], list(daily_builds))
 
@@ -419,13 +397,12 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         recipe = self.factory.makeSourcePackageRecipe(
             build_daily=True, is_stale=True)
         archive = self.factory.makeArchive(owner=recipe.owner)
-        build = recipe.requestBuild(
-            archive, recipe.owner, list(recipe.distroseries)[0],
-            PackagePublishingPocket.RELEASE)
-        nb = removeSecurityProxy(build)
-        nb.date_created = datetime.now(utc) - timedelta(hours=8)
-        # The build also needs to be completed
-        nb.status = BuildStatus.FULLYBUILT
+        build = self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, archive=archive, requester=recipe.owner,
+            distroseries=list(recipe.distroseries)[0],
+            pocket=PackagePublishingPocket.RELEASE,
+            date_created=datetime.now(utc) - timedelta(hours=8),
+            status=BuildStatus.FULLYBUILT)
         daily_builds = SourcePackageRecipeBuild.makeDailyBuilds()
         actual_title = [b.title for b in daily_builds]
         self.assertEquals([build.title], actual_title)
@@ -468,13 +445,14 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
                 requester, recipe, series, _now=now)
         self.assertContentEqual([], get_recent())
         yesterday = now - timedelta(days=1)
-        recent_build = self.factory.makeSourcePackageRecipeBuild(
+        self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe, distroseries=series, requester=requester,
             date_created=yesterday)
         self.assertContentEqual([], get_recent())
-        a_second = timedelta(seconds=1)
-        removeSecurityProxy(recent_build).date_created += a_second
-        self.assertContentEqual([recent_build], get_recent())
+        more_recent_build = self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, distroseries=series, requester=requester,
+            date_created=yesterday + timedelta(seconds=1))
+        self.assertContentEqual([more_recent_build], get_recent())
 
     def test_destroySelf(self):
         # ISourcePackageRecipeBuild should make sure to remove jobs and build
@@ -520,13 +498,6 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             BuildStatus.SUPERSEDED,
             build.status)
 
-    def test_getSpecificJob(self):
-        # getSpecificJob returns the SourcePackageRecipeBuild
-        sprb = self.makeSourcePackageRecipeBuild()
-        Store.of(sprb).flush()
-        job = sprb.build_farm_job.getSpecificJob()
-        self.assertEqual(sprb, job)
-
     def test_getUploader(self):
         # For ACL purposes the uploader is the build requester.
         build = self.makeSourcePackageRecipeBuild()
@@ -570,7 +541,7 @@ class TestAsBuildmaster(TestCaseWithFactory):
         secret = self.factory.makeDistroSeries(name=u'distroseries')
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=cake, distroseries=secret, archive=pantry)
-        removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
+        build.updateStatus(BuildStatus.FULLYBUILT)
         IStore(build).flush()
         build.notify()
         self.assertEquals(0, len(pop_notifications()))
@@ -600,98 +571,9 @@ class TestAsBuildmaster(TestCaseWithFactory):
         secret = self.factory.makeDistroSeries(name=u'distroseries')
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=cake, distroseries=secret, archive=pantry)
-        removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
+        build.updateStatus(BuildStatus.FULLYBUILT)
         cake.destroySelf()
         IStore(build).flush()
         build.notify()
         notifications = pop_notifications()
         self.assertEquals(0, len(notifications))
-
-
-class TestBuildNotifications(TrialTestCase):
-
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        super(TestBuildNotifications, self).setUp()
-        from lp.testing.factory import LaunchpadObjectFactory
-        self.factory = LaunchpadObjectFactory()
-
-    def prepare_build(self, fake_successful_upload=False):
-        queue_record = self.factory.makeSourcePackageRecipeBuildJob()
-        build = queue_record.specific_job.build
-        naked_build = removeSecurityProxy(build)
-        naked_build.status = BuildStatus.FULLYBUILT
-        naked_build.date_started = self.factory.getUniqueDate()
-        if fake_successful_upload:
-            naked_build.verifySuccessfulUpload = FakeMethod(
-                result=True)
-            # We overwrite the buildmaster root to use a temp directory.
-            tempdir = tempfile.mkdtemp()
-            self.addCleanup(shutil.rmtree, tempdir)
-            self.upload_root = tempdir
-            tmp_builddmaster_root = """
-            [builddmaster]
-            root: %s
-            """ % self.upload_root
-            config.push('tmp_builddmaster_root', tmp_builddmaster_root)
-            self.addCleanup(config.pop, 'tmp_builddmaster_root')
-        queue_record.builder = self.factory.makeBuilder()
-        slave = WaitingSlave('BuildStatus.OK')
-        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
-        return build
-
-    def assertDeferredNotifyCount(self, status, build, expected_count):
-        d = build.handleStatus(status, None, {'filemap': {}})
-
-        def cb(result):
-            self.assertEqual(expected_count, len(pop_notifications()))
-
-        d.addCallback(cb)
-        return d
-
-    def test_handleStatus_PACKAGEFAIL(self):
-        """Failing to build the package immediately sends a notification."""
-        return self.assertDeferredNotifyCount(
-            "PACKAGEFAIL", self.prepare_build(), 1)
-
-    def test_handleStatus_OK(self):
-        """Building the source package does _not_ immediately send mail.
-
-        (The archive uploader mail send one later.
-        """
-        return self.assertDeferredNotifyCount(
-            "OK", self.prepare_build(), 0)
-
-    def test_handleStatus_OK_successful_upload(self):
-        return self.assertDeferredNotifyCount(
-            "OK", self.prepare_build(True), 0)
-
-
-class MakeSPRecipeBuildMixin:
-    """Provide the common makeBuild method returning a queued build."""
-
-    def makeBuild(self):
-        person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroSeries()
-        processor_fam = getUtility(IProcessorFamilySet).getByName('x86')
-        distroseries_i386 = distroseries.newArch(
-            'i386', processor_fam, False, person,
-            supports_virtualized=True)
-        distroseries.nominatedarchindep = distroseries_i386
-        build = self.factory.makeSourcePackageRecipeBuild(
-            distroseries=distroseries,
-            status=BuildStatus.FULLYBUILT,
-            duration=timedelta(minutes=5))
-        build.queueBuild(build)
-        return build
-
-
-class TestGetUploadMethodsForSPRecipeBuild(
-    MakeSPRecipeBuildMixin, TestGetUploadMethodsMixin, TestCaseWithFactory):
-    """IPackageBuild.getUpload-related methods work with SPRecipe builds."""
-
-
-class TestHandleStatusForSPRBuild(
-    MakeSPRecipeBuildMixin, TestHandleStatusMixin, TrialTestCase):
-    """IPackageBuild.handleStatus works with SPRecipe builds."""

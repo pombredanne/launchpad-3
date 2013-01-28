@@ -3,12 +3,6 @@
 
 __metaclass__ = type
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
-
-import pytz
 from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -76,13 +70,12 @@ class TestBuildSet(TestCaseWithFactory):
             builds = spph.createMissingBuilds()
             with person_logged_in(self.admin):
                 for b in builds:
+                    b.updateStatus(BuildStatus.BUILDING)
                     if i == 4:
-                        b.status = BuildStatus.FAILEDTOBUILD
+                        b.updateStatus(BuildStatus.FAILEDTOBUILD)
                     else:
-                        b.status = BuildStatus.FULLYBUILT
+                        b.updateStatus(BuildStatus.FULLYBUILT)
                     b.buildqueue_record.destroySelf()
-                    b.date_started = datetime.now(pytz.UTC)
-                    b.date_finished = b.date_started + timedelta(minutes=5)
             self.builds += builds
 
     def test_get_by_spr(self):

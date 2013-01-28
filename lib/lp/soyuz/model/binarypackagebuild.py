@@ -45,6 +45,7 @@ from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
     PackageBuild,
     PackageBuildDerived,
+    PackageBuildMixin,
     )
 from lp.services.config import config
 from lp.services.database.bulk import load_related
@@ -92,7 +93,7 @@ from lp.soyuz.model.queue import (
     )
 
 
-class BinaryPackageBuild(PackageBuildDerived, SQLBase):
+class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
     implements(IBinaryPackageBuild)
     _table = 'BinaryPackageBuild'
     _defaultOrder = 'id'
@@ -390,7 +391,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
         # If the build is currently building we need to tell the
         # buildd-manager to terminate it.
         if self.status == BuildStatus.BUILDING:
-            self.status = BuildStatus.CANCELLING
+            self.updateStatus(BuildStatus.CANCELLING)
             return
 
         # Otherwise we can cancel it here.
@@ -800,12 +801,6 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
             LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
             LibraryFileAlias.filename == filename).one()
 
-    def getSpecificJob(self):
-        """See `IBuildFarmJob`."""
-        # If we are asked to adapt an object that is already a binary
-        # package build, then don't hit the db.
-        return self
-
     def getUploader(self, changes):
         """See `IBinaryPackageBuild`."""
         return changes.signer
@@ -816,14 +811,14 @@ class BinaryPackageBuildSet:
 
     def new(self, distro_arch_series, source_package_release, processor,
             archive, pocket, status=BuildStatus.NEEDSBUILD,
-            date_created=None):
+            date_created=None, builder=None):
         """See `IBinaryPackageBuildSet`."""
         # Create the PackageBuild to which the new BinaryPackageBuild
         # will delegate.
         package_build = getUtility(IPackageBuildSource).new(
             BinaryPackageBuild.build_farm_job_type,
             archive.require_virtualized, archive, pocket, processor,
-            status, date_created=date_created)
+            status, date_created=date_created, builder=builder)
 
         binary_package_build = BinaryPackageBuild(
             package_build=package_build,
