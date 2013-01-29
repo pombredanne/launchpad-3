@@ -15,8 +15,10 @@ from datetime import (
 import logging
 
 from psycopg2 import ProgrammingError
-from pytz import utc
+import pytz
 from storm.locals import (
+    Bool,
+    DateTime,
     Int,
     Reference,
     Storm,
@@ -62,6 +64,7 @@ from lp.registry.model.person import Person
 from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import DBEnum
 from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
@@ -141,6 +144,34 @@ class SourcePackageRecipeBuild(PackageBuildMixin, PackageBuildDerived, Storm):
     requester_id = Int(name='requester', allow_none=False)
     requester = Reference(requester_id, 'Person.id')
 
+    # Migrating from BuildFarmJob.
+    _new_processor_id = Int(name='processor', allow_none=True)
+    _new_processor = Reference(_new_processor_id, 'Processor.id')
+
+    _new_virtualized = Bool(name='virtualized')
+
+    _new_date_created = DateTime(
+        name='date_created', allow_none=False, tzinfo=pytz.UTC)
+
+    _new_date_started = DateTime(
+        name='date_started', allow_none=True, tzinfo=pytz.UTC)
+
+    _new_date_finished = DateTime(
+        name='date_finished', allow_none=True, tzinfo=pytz.UTC)
+
+    _new_date_first_dispatched = DateTime(
+        name='date_first_dispatched', allow_none=True, tzinfo=pytz.UTC)
+
+    _new_builder_id = Int(name='builder', allow_none=True)
+    _new_builder = Reference(_new_builder_id, 'Builder.id')
+
+    _new_status = DBEnum(name='status', allow_none=False, enum=BuildStatus)
+
+    _new_log_id = Int(name='log', allow_none=True)
+    _new_log = Reference(_new_log_id, 'LibraryFileAlias.id')
+
+    _new_failure_count = Int(name='failure_count', allow_none=False)
+
     @property
     def buildqueue_record(self):
         """See `IBuildFarmJob`."""
@@ -172,6 +203,8 @@ class SourcePackageRecipeBuild(PackageBuildMixin, PackageBuildDerived, Storm):
         self.distroseries = distroseries
         self.recipe = recipe
         self.requester = requester
+        self._new_status = BuildStatus.NEEDSBUILD
+        self._new_virtualized = True
 
     @classmethod
     def new(cls, distroseries, recipe, requester, archive, pocket=None,
@@ -311,7 +344,7 @@ class SourcePackageRecipeBuild(PackageBuildMixin, PackageBuildDerived, Storm):
     def getRecentBuilds(cls, requester, recipe, distroseries, _now=None):
         from lp.buildmaster.model.buildfarmjob import BuildFarmJob
         if _now is None:
-            _now = datetime.now(utc)
+            _now = datetime.now(pytz.UTC)
         store = IMasterStore(SourcePackageRecipeBuild)
         old_threshold = _now - timedelta(days=1)
         return store.find(cls, cls.distroseries_id == distroseries.id,
