@@ -18,9 +18,6 @@ from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuild,
     ITranslationTemplatesBuildSource,
     )
-from lp.translations.interfaces.translationtemplatesbuildjob import (
-    ITranslationTemplatesBuildJobSource,
-    )
 from lp.translations.model.translationtemplatesbuild import (
     TranslationTemplatesBuild,
     )
