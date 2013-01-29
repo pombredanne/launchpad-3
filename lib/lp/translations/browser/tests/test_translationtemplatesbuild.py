@@ -11,11 +11,7 @@ from pytz import utc
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.buildmaster.enums import (
-    BuildFarmJobType,
-    BuildStatus,
-    )
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
+from lp.buildmaster.enums import BuildStatus
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -43,10 +39,7 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         """Create a `TranslationTemplatesBuild`."""
         if branch is None:
             branch = self.factory.makeBranch()
-        job = getUtility(IBuildFarmJobSource).new(
-            BuildFarmJobType.TRANSLATIONTEMPLATESBUILD)
-        return getUtility(ITranslationTemplatesBuildSource).create(
-            job, branch)
+        return getUtility(ITranslationTemplatesBuildSource).create(branch)
 
     def _makeView(self, build=None):
         """Create a view for testing."""
