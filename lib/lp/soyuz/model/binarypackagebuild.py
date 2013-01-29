@@ -11,6 +11,7 @@ import datetime
 import operator
 
 import apt_pkg
+import pytz
 from sqlobject import SQLObjectNotFound
 from storm.expr import (
     Desc,
@@ -19,6 +20,8 @@ from storm.expr import (
     SQL,
     )
 from storm.locals import (
+    Bool,
+    DateTime,
     Int,
     Reference,
     )
@@ -50,6 +53,7 @@ from lp.buildmaster.model.packagebuild import (
 from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import DBEnum
 from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -110,6 +114,34 @@ class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
         name='source_package_release', allow_none=False)
     source_package_release = Reference(
         source_package_release_id, 'SourcePackageRelease.id')
+
+    # Migrating from BuildFarmJob.
+    _new_processor_id = Int(name='processor', allow_none=True)
+    _new_processor = Reference(_new_processor_id, 'Processor.id')
+
+    _new_virtualized = Bool(name='virtualized')
+
+    _new_date_created = DateTime(
+        name='date_created', allow_none=False, tzinfo=pytz.UTC)
+
+    _new_date_started = DateTime(
+        name='date_started', allow_none=True, tzinfo=pytz.UTC)
+
+    _new_date_finished = DateTime(
+        name='date_finished', allow_none=True, tzinfo=pytz.UTC)
+
+    _new_date_first_dispatched = DateTime(
+        name='date_first_dispatched', allow_none=True, tzinfo=pytz.UTC)
+
+    _new_builder_id = Int(name='builder', allow_none=True)
+    _new_builder = Reference(_new_builder_id, 'Builder.id')
+
+    _new_status = DBEnum(name='status', allow_none=False, enum=BuildStatus)
+
+    _new_log_id = Int(name='log', allow_none=True)
+    _new_log = Reference(_new_log_id, 'LibraryFileAlias.id')
+
+    _new_failure_count = Int(name='failure_count', allow_none=False)
 
     @property
     def buildqueue_record(self):
@@ -358,11 +390,11 @@ class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
     def retry(self):
         """See `IBuild`."""
         assert self.can_be_retried, "Build %s cannot be retried" % self.id
-        self.status = BuildStatus.NEEDSBUILD
-        self.date_finished = None
-        self.date_started = None
-        self.builder = None
-        self.log = None
+        self.status = self._new_status = BuildStatus.NEEDSBUILD
+        self.date_finished = self._new_date_finished = None
+        self.date_started = self._new_date_finished = None
+        self.builder = self._new_builder = None
+        self.log = self._new_log = None
         self.upload_log = None
         self.dependencies = None
         self.queueBuild()
@@ -823,7 +855,12 @@ class BinaryPackageBuildSet:
         binary_package_build = BinaryPackageBuild(
             package_build=package_build,
             distro_arch_series=distro_arch_series,
-            source_package_release=source_package_release)
+            source_package_release=source_package_release,
+            _new_status=status, _new_processor=processor,
+            _new_virtualized=archive.require_virtualized,
+            _new_builder=builder)
+        if date_created is not None:
+            binary_package_build._new_date_created = date_created
         return binary_package_build
 
     def getBuildBySRAndArchtag(self, sourcepackagereleaseID, archtag):
