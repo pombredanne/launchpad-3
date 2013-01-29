@@ -24,6 +24,7 @@ from storm.locals import (
     DateTime,
     Int,
     Reference,
+    Unicode,
     )
 from storm.store import (
     EmptyResultSet,
@@ -50,6 +51,7 @@ from lp.buildmaster.model.packagebuild import (
     PackageBuildDerived,
     PackageBuildMixin,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -114,6 +116,19 @@ class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
         name='source_package_release', allow_none=False)
     source_package_release = Reference(
         source_package_release_id, 'SourcePackageRelease.id')
+
+    # Migrating from PackageBuild
+    _new_archive_id = Int(name='archive', allow_none=False)
+    _new_archive = Reference(_new_archive_id, 'Archive.id')
+
+    _new_pocket = DBEnum(
+        name='pocket', allow_none=False,
+        enum=PackagePublishingPocket)
+
+    _new_upload_log_id = Int(name='upload_log', allow_none=True)
+    _new_upload_log = Reference(_new_upload_log_id, 'LibraryFileAlias.id')
+
+    _new_dependencies = Unicode(name='dependencies', allow_none=True)
 
     # Migrating from BuildFarmJob.
     _new_processor_id = Int(name='processor', allow_none=True)
@@ -856,6 +871,7 @@ class BinaryPackageBuildSet:
             package_build=package_build,
             distro_arch_series=distro_arch_series,
             source_package_release=source_package_release,
+            _new_archive=archive, _new_pocket=pocket,
             _new_status=status, _new_processor=processor,
             _new_virtualized=archive.require_virtualized,
             _new_builder=builder)

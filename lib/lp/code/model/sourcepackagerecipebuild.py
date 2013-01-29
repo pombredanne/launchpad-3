@@ -22,6 +22,7 @@ from storm.locals import (
     Int,
     Reference,
     Storm,
+    Unicode,
     )
 from storm.store import (
     EmptyResultSet,
@@ -144,6 +145,19 @@ class SourcePackageRecipeBuild(PackageBuildMixin, PackageBuildDerived, Storm):
     requester_id = Int(name='requester', allow_none=False)
     requester = Reference(requester_id, 'Person.id')
 
+    # Migrating from PackageBuild
+    _new_archive_id = Int(name='archive', allow_none=False)
+    _new_archive = Reference(_new_archive_id, 'Archive.id')
+
+    _new_pocket = DBEnum(
+        name='pocket', allow_none=False,
+        enum=PackagePublishingPocket)
+
+    _new_upload_log_id = Int(name='upload_log', allow_none=True)
+    _new_upload_log = Reference(_new_upload_log_id, 'LibraryFileAlias.id')
+
+    _new_dependencies = Unicode(name='dependencies', allow_none=True)
+
     # Migrating from BuildFarmJob.
     _new_processor_id = Int(name='processor', allow_none=True)
     _new_processor = Reference(_new_processor_id, 'Processor.id')
@@ -196,13 +210,16 @@ class SourcePackageRecipeBuild(PackageBuildMixin, PackageBuildDerived, Storm):
             branch_name = self.recipe.base_branch.unique_name
             return '%s recipe build' % branch_name
 
-    def __init__(self, package_build, distroseries, recipe, requester):
+    def __init__(self, package_build, distroseries, recipe, requester,
+                 archive, pocket):
         """Construct a SourcePackageRecipeBuild."""
         super(SourcePackageRecipeBuild, self).__init__()
         self.package_build = package_build
         self.distroseries = distroseries
         self.recipe = recipe
         self.requester = requester
+        self._new_archive = archive
+        self._new_pocket = pocket
         self._new_status = BuildStatus.NEEDSBUILD
         self._new_virtualized = True
 
@@ -218,10 +235,7 @@ class SourcePackageRecipeBuild(PackageBuildMixin, PackageBuildDerived, Storm):
         packagebuild = PackageBuild.new(cls.build_farm_job_type,
             True, archive, pocket, date_created=date_created)
         spbuild = cls(
-            packagebuild,
-            distroseries,
-            recipe,
-            requester)
+            packagebuild, distroseries, recipe, requester, archive, pocket)
         store.add(spbuild)
         return spbuild
 
