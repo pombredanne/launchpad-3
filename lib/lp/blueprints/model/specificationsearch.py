@@ -105,15 +105,17 @@ def search_specifications(context, base_clauses, user, sort=None,
     # Set the _known_viewers property for each specification, as well as
     # preloading the people involved, if asked.
     decorators = []
+    preload_hook = None
     if user is not None and not IPersonRoles(user).in_admin:
         decorators.append(_make_cache_user_can_view_spec(user))
     if prejoin_people:
-        decorators.append(_preload_specification_related_people)
+        preload_hook = _preload_specifications_related_people
     results = store.using(*tables).find(
         Specification, *clauses).order_by(*order).config(limit=quantity)
     return DecoratedResultSet(
         results,
-        lambda row: reduce(lambda task, dec: dec(task), decorators, row))
+        lambda row: reduce(lambda task, dec: dec(task), decorators, row),
+        pre_iter_hook=preload_hook)
 
 
 def get_specification_active_product_filter(context):
@@ -223,11 +225,14 @@ def _make_cache_user_can_view_spec(user):
     return cache_user_can_view_spec
 
 
-def _preload_specification_related_people(spec):
+def _preload_specifications_related_people(rows):
+    person_ids = set()
+    for spec in rows:
+        person_ids |= set(
+            [spec._assigneeID, spec._approverID, spec._drafterID])
+    person_ids -= set([None])
     list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-        [spec._assigneeID, spec._approverID, spec._drafterID],
-        need_validity=True))
-    return spec
+        person_ids, need_validity=True))
 
 
 def get_specification_started_clause():
