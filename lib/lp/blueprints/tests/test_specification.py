@@ -716,36 +716,33 @@ class TestSpecifications(TestCaseWithFactory):
             information_type=InformationType.PROPRIETARY)
         self.assertNotIn(private_spec, list(context.specifications(None)))
 
+    def _assertInSpecifications(self, spec, grant):
+        self.assertIn(
+            spec,
+            list(getUtility(ISpecificationSet).specifications(grant.grantee)))
+        self.assertIn(
+            grant.grantee.id, removeSecurityProxy(spec)._known_viewers)
+       
     def test_proprietary_listed_for_artifact_grant(self):
         # Proprietary blueprints are listed for users with an artifact grant.
-        context = getUtility(ISpecificationSet)
-        blueprint1 = self.makeSpec(
-            information_type=InformationType.PROPRIETARY)
-        grant = self.factory.makeAccessArtifactGrant(
-            concrete_artifact=blueprint1)
-        self.assertIn(
-            blueprint1,
-            list(context.specifications(grant.grantee)))
+        spec = self.makeSpec(information_type=InformationType.PROPRIETARY)
+        grant = self.factory.makeAccessArtifactGrant(concrete_artifact=spec)
+        self._assertInSpecifications(spec, grant)
 
     def test_proprietary_listed_for_policy_grant(self):
         # Proprietary blueprints are listed for users with a policy grant.
-        context = getUtility(ISpecificationSet)
-        blueprint1 = self.makeSpec(
-            information_type=InformationType.PROPRIETARY)
-        policy_source = getUtility(IAccessPolicySource)
-        (policy,) = policy_source.find(
-            [(blueprint1.product, InformationType.PROPRIETARY)])
+        spec = self.makeSpec(information_type=InformationType.PROPRIETARY)
+        (policy,) = getUtility(IAccessPolicySource).find(
+            [(spec.product, InformationType.PROPRIETARY)])
         grant = self.factory.makeAccessPolicyGrant(policy)
-        self.assertIn(
-            blueprint1,
-            list(context.specifications(user=grant.grantee)))
+        self._assertInSpecifications(spec, grant)
 
     def run_test_setting_special_role_subscribes(self, role_name):
         # If a user becomes the assignee, drafter or approver of a
         # proprietary specification, they are automatically subscribed,
         # if they do not have yet been granted access to the specification.
         specification_sharing_policy = (
-                SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC)
+            SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC)
         product = self.factory.makeProduct(
             specification_sharing_policy=specification_sharing_policy)
         blueprint = self.makeSpec(
