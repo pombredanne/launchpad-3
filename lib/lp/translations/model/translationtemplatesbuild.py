@@ -94,16 +94,15 @@ class TranslationTemplatesBuild(BuildFarmJobMixin, BuildFarmJobDerived, Storm):
     @classmethod
     def _getBuildArch(cls):
         """Returns an `IProcessor` to queue a translation build for."""
+        # XXX Danilo Segan bug=580429: we hard-code processor to the Ubuntu
+        # default processor architecture.  This stops the buildfarm from
+        # accidentally dispatching the jobs to private builders.
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        # A round-about way of hard-coding i386.
         return ubuntu.currentseries.nominatedarchindep.default_processor
 
     @classmethod
     def create(cls, branch):
         """See `ITranslationTemplatesBuildSource`."""
-        # XXX Danilo Segan bug=580429: we hard-code processor to the Ubuntu
-        # default processor architecture.  This stops the buildfarm from
-        # accidentally dispatching the jobs to private builders.
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             BuildFarmJobType.TRANSLATIONTEMPLATESBUILD,
             processor=cls._getBuildArch())
