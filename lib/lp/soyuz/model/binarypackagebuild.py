@@ -561,7 +561,7 @@ class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
             if not self._isDependencySatisfied(token)]
 
         # Update dependencies line
-        self.dependencies = u", ".join(remaining_deps)
+        self.dependencies = self._new_dependencies = u", ".join(remaining_deps)
 
     def __getitem__(self, name):
         return self.getBinaryPackageRelease(name)
