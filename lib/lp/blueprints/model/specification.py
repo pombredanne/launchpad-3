@@ -24,13 +24,7 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
-from storm.expr import (
-    And,
-    In,
-    Join,
-    Or,
-    Select,
-    )
+from storm.expr import Join
 from storm.locals import (
     Desc,
     SQL,
@@ -91,7 +85,6 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -925,11 +918,8 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
     def userCanView(self, user):
         """See `ISpecification`."""
         # Avoid circular imports.
-        from lp.registry.model.accesspolicy import (
-            AccessArtifact,
-            AccessPolicy,
-            AccessPolicyGrantFlat,
-            )
+        from lp.blueprints.model.specificationsearch import (
+            get_specification_privacy_filter)
         if self.information_type in PUBLIC_INFORMATION_TYPES:
             return True
         if user is None:
@@ -937,42 +927,12 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
         if user.id in self._known_viewers:
             return True
 
-        # Check if access has been granted to the user for either
-        # the pillar of this specification or the specification
-        # itself.
-        #
-        # A DB constraint ensures that either Specification.product or
-        # Specification.distribution is not null.
-        if self.product is not None:
-            pillar_clause = AccessPolicy.product == self.productID
-        else:
-            pillar_clause = AccessPolicy.distribution == self.distributionID
-        tables = (
-            AccessPolicyGrantFlat,
-            Join(
-                AccessPolicy,
-                AccessPolicyGrantFlat.policy_id == AccessPolicy.id),
-            Join(
-                TeamParticipation,
-                AccessPolicyGrantFlat.grantee == TeamParticipation.teamID)
-            )
-        grants = Store.of(self).using(*tables).find(
-            AccessPolicyGrantFlat,
-            pillar_clause,
-            Or(
-                And(
-                    AccessPolicyGrantFlat.abstract_artifact == None,
-                    AccessPolicy.type == self.information_type),
-                In(
-                    AccessPolicyGrantFlat.abstract_artifact_id,
-                    Select(
-                        AccessArtifact.id,
-                        AccessArtifact.specification_id == self.id))),
-            TeamParticipation.personID == user.id)
-        if grants.is_empty():
-            return False
-        self._known_viewers.add(user.id)
-        return True
+        if not Store.of(self).find(
+            Specification, Specification.id == self.id,
+            *get_specification_privacy_filter(user)).is_empty():
+            self._known_viewers.add(user.id)
+            return True
+        return False
 
 
 class HasSpecificationsMixin:
