@@ -31,6 +31,7 @@ from storm.store import Store
 from testtools.matchers import (
     Equals,
     GreaterThan,
+    MatchesStructure,
     )
 import transaction
 from zope.component import getUtility
@@ -42,6 +43,7 @@ from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
     )
+from lp.buildmaster.enums import BuildStatus
 from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
@@ -58,6 +60,7 @@ from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
     )
+from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
@@ -114,6 +117,7 @@ from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.model.logintoken import LoginToken
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.testing import (
     FakeAdapterMixin,
@@ -121,7 +125,10 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.dbuser import switch_dbuser
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
+    )
 from lp.testing.layers import (
     DatabaseLayer,
     LaunchpadScriptLayer,
@@ -132,6 +139,9 @@ from lp.translations.model.pofile import POFile
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
+    )
+from lp.translations.model.translationtemplatesbuild import (
+    TranslationTemplatesBuild,
     )
 
 
@@ -1272,6 +1282,122 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         job_data = load_garbo_job_state(
             'PopulateLatestPersonSourcePackageReleaseCache')
         self.assertEqual(spph_2.id, job_data['last_spph_id'])
+
+    def test_BinaryPackageBuildFlattener(self):
+        store = IMasterStore(BinaryPackageBuild)
+        # Sampledata builds start off with the new columns set to None,
+        # and garbo won't run without a feature flag set.
+        self.runHourly()
+        self.assertNotEqual(
+            0, store.find(BinaryPackageBuild, _new_archive=None).count())
+
+        # But after a garbo run they're all set properly.
+        with dbuser('testadmin'):
+            IMasterStore(FeatureFlag).add(FeatureFlag(
+                u'default', 0, u'soyuz.flatten_bfj.garbo.enabled', u'true'))
+        self.runHourly()
+        self.assertEqual(
+            0, store.find(BinaryPackageBuild, _new_archive=None).count())
+
+        with dbuser('testadmin'):
+            # Create a build with lots of attributes set.
+            build = self.factory.makeBinaryPackageBuild()
+            build.gotFailure()
+            build.updateStatus(
+                BuildStatus.BUILDING, builder=self.factory.makeBuilder())
+            build.updateStatus(BuildStatus.FULLYBUILT)
+            build.setLog(self.factory.makeLibraryFileAlias())
+            build.storeUploadLog('uploaded')
+
+            # Manually unset the build's denormed columns.
+            attrs = (
+                'archive', 'pocket', 'processor', 'virtualized',
+                'date_created', 'date_started', 'date_finished',
+                'date_first_dispatched', 'builder', 'status', 'log',
+                'upload_log', 'dependencies', 'failure_count')
+            for attr in attrs:
+                setattr(removeSecurityProxy(build), '_new_' + attr, None)
+        self.assertEqual(
+            1, store.find(BinaryPackageBuild, _new_archive=None).count())
+        self.runHourly()
+        self.assertEqual(
+            0, store.find(BinaryPackageBuild, _new_archive=None).count())
+
+        self.assertThat(
+            removeSecurityProxy(build),
+            MatchesStructure.byEquality(
+                **dict(
+                    ('_new_' + attr, getattr(build, attr)) for attr in attrs)))
+
+    def test_SourcePackageRecipeBuildFlattener(self):
+        store = IMasterStore(BinaryPackageBuild)
+        with dbuser('testadmin'):
+            IMasterStore(FeatureFlag).add(FeatureFlag(
+                u'default', 0, u'soyuz.flatten_bfj.garbo.enabled', u'true'))
+
+        with dbuser('testadmin'):
+            # Create a build with lots of attributes set.
+            build = self.factory.makeSourcePackageRecipeBuild()
+            build.gotFailure()
+            build.updateStatus(
+                BuildStatus.BUILDING, builder=self.factory.makeBuilder())
+            build.updateStatus(BuildStatus.FULLYBUILT)
+            build.setLog(self.factory.makeLibraryFileAlias())
+            build.storeUploadLog('uploaded')
+
+            # Manually unset the build's denormed columns.
+            attrs = (
+                'archive', 'pocket', 'processor', 'virtualized',
+                'date_created', 'date_started', 'date_finished',
+                'date_first_dispatched', 'builder', 'status', 'log',
+                'upload_log', 'dependencies', 'failure_count')
+            for attr in attrs:
+                setattr(removeSecurityProxy(build), '_new_' + attr, None)
+        self.assertEqual(
+            1, store.find(SourcePackageRecipeBuild, _new_archive=None).count())
+        self.runHourly()
+        self.assertEqual(
+            0, store.find(SourcePackageRecipeBuild, _new_archive=None).count())
+
+        self.assertThat(
+            removeSecurityProxy(build),
+            MatchesStructure.byEquality(
+                **dict(
+                    ('_new_' + attr, getattr(build, attr)) for attr in attrs)))
+
+    def test_TranslationTemplatesBuildFlattener(self):
+        store = IMasterStore(BinaryPackageBuild)
+        with dbuser('testadmin'):
+            IMasterStore(FeatureFlag).add(FeatureFlag(
+                u'default', 0, u'soyuz.flatten_bfj.garbo.enabled', u'true'))
+
+        with dbuser('testadmin'):
+            # Create a build with lots of attributes set.
+            build = self.factory.makeTranslationTemplatesBuildJob().build
+            build.gotFailure()
+            build.updateStatus(
+                BuildStatus.BUILDING, builder=self.factory.makeBuilder())
+            build.updateStatus(BuildStatus.FULLYBUILT)
+            build.setLog(self.factory.makeLibraryFileAlias())
+
+            # Manually unset the build's denormed columns.
+            attrs = (
+                'processor', 'virtualized', 'date_created', 'date_started',
+                'date_finished', 'date_first_dispatched', 'builder', 'status',
+                'log', 'failure_count')
+            for attr in attrs:
+                setattr(removeSecurityProxy(build), '_new_' + attr, None)
+        self.assertEqual(
+            1, store.find(TranslationTemplatesBuild, _new_status=None).count())
+        self.runHourly()
+        self.assertEqual(
+            0, store.find(TranslationTemplatesBuild, _new_status=None).count())
+
+        self.assertThat(
+            removeSecurityProxy(build),
+            MatchesStructure.byEquality(
+                **dict(
+                    ('_new_' + attr, getattr(build, attr)) for attr in attrs)))
 
 
 class TestGarboTasks(TestCaseWithFactory):
