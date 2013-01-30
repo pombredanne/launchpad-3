@@ -56,10 +56,10 @@ We can also look up a branch link with the getBranchLink() method:
     >>> branchlink.branch == branch
     True
 
-Finally, the branch link can be removed using its destroySelf()
+Finally, the branch link can be removed using the unlinkBranch()
 method:
 
-    >>> branchlink.destroySelf()
+    >>> spec.unlinkBranch(branch, user)
     >>> for branchlink in spec.linked_branches:
     ...     print branchlink.branch.unique_name
     ~name12/+junk/junk.dev
