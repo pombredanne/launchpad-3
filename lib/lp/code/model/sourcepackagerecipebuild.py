@@ -40,7 +40,6 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
     PackageBuild,
-    PackageBuildDerived,
     PackageBuildMixin,
     )
 from lp.code.errors import (
@@ -74,7 +73,7 @@ from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
-class SourcePackageRecipeBuild(PackageBuildMixin, PackageBuildDerived, Storm):
+class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
 
     __storm_table__ = 'SourcePackageRecipeBuild'
 
