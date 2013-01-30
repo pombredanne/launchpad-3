@@ -193,7 +193,7 @@ class PackageBuildMixin(BuildFarmJobMixin):
 
     def storeUploadLog(self, content):
         """See `IPackageBuild`."""
-        filename = "upload_%s_log.txt" % self.build_farm_job.id
+        filename = "upload_%s_log.txt" % self.id
         library_file = self.createUploadLog(content, filename=filename)
         self.upload_log = library_file
 
