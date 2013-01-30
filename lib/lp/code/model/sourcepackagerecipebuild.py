@@ -353,16 +353,13 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
 
     @classmethod
     def getRecentBuilds(cls, requester, recipe, distroseries, _now=None):
-        from lp.buildmaster.model.buildfarmjob import BuildFarmJob
         if _now is None:
             _now = datetime.now(pytz.UTC)
         store = IMasterStore(SourcePackageRecipeBuild)
         old_threshold = _now - timedelta(days=1)
         return store.find(cls, cls.distroseries_id == distroseries.id,
             cls.requester_id == requester.id, cls.recipe_id == recipe.id,
-            BuildFarmJob.date_created > old_threshold,
-            BuildFarmJob.id == PackageBuild.build_farm_job_id,
-            PackageBuild.id == cls.package_build_id)
+            cls._new_date_created > old_threshold)
 
     def makeJob(self):
         """See `ISourcePackageRecipeBuildJob`."""
