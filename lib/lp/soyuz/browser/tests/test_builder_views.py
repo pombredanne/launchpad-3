@@ -87,12 +87,8 @@ class TestgetSpecificJobs(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def createTranslationTemplateBuild(self):
-        build_farm_job_source = getUtility(IBuildFarmJobSource)
-        build_farm_job = build_farm_job_source.new(
-            BuildFarmJobType.TRANSLATIONTEMPLATESBUILD)
-        source = getUtility(ITranslationTemplatesBuildSource)
         branch = self.factory.makeBranch()
-        return source.create(build_farm_job, branch)
+        return getUtility(ITranslationTemplatesBuildSource).create(branch)
 
     def createSourcePackageRecipeBuild(self):
         sprb = self.factory.makeSourcePackageRecipeBuild()
@@ -172,12 +168,8 @@ class BuildCreationMixin(object):
     def createTranslationTemplateBuildWithBuilder(self, builder=None):
         if builder is None:
             builder = self.factory.makeBuilder()
-        build_farm_job_source = getUtility(IBuildFarmJobSource)
-        build_farm_job = build_farm_job_source.new(
-            BuildFarmJobType.TRANSLATIONTEMPLATESBUILD)
-        source = getUtility(ITranslationTemplatesBuildSource)
         branch = self.factory.makeBranch()
-        build = source.create(build_farm_job, branch)
+        build = getUtility(ITranslationTemplatesBuildSource).create(branch)
         self.markAsBuilt(build, builder)
         return build
 

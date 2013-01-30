@@ -13,11 +13,15 @@ from storm.locals import (
     Reference,
     Storm,
     )
+from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
     )
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.buildmaster.enums import BuildFarmJobType
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.model.buildfarmjob import (
     BuildFarmJobDerived,
     BuildFarmJobMixin,
@@ -88,8 +92,20 @@ class TranslationTemplatesBuild(BuildFarmJobMixin, BuildFarmJobDerived, Storm):
             return store
 
     @classmethod
-    def create(cls, build_farm_job, branch):
+    def _getBuildArch(cls):
+        """Returns an `IProcessor` to queue a translation build for."""
+        # XXX Danilo Segan bug=580429: we hard-code processor to the Ubuntu
+        # default processor architecture.  This stops the buildfarm from
+        # accidentally dispatching the jobs to private builders.
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        return ubuntu.currentseries.nominatedarchindep.default_processor
+
+    @classmethod
+    def create(cls, branch):
         """See `ITranslationTemplatesBuildSource`."""
+        build_farm_job = getUtility(IBuildFarmJobSource).new(
+            BuildFarmJobType.TRANSLATIONTEMPLATESBUILD,
+            processor=cls._getBuildArch())
         build = TranslationTemplatesBuild(build_farm_job, branch)
         store = cls._getStore()
         store.add(build)
