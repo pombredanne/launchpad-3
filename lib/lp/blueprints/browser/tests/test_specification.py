@@ -254,14 +254,13 @@ class TestSpecificationSet(BrowserTestCase):
     def test_query_count(self):
         product = self.factory.makeProduct()
         removeSecurityProxy(product).official_blueprints = True
-        specs = [self.factory.makeSpecification(product=product)]
+        self.factory.makeSpecification(product=product)
         limit = BrowsesWithQueryLimit(37, product.owner, rootsite='blueprints')
-        Store.of(specs[0]).invalidate()
+        Store.of(product).invalidate()
         self.assertThat(product, limit)
         login_celebrity('admin')
-        specs.extend([
-            self.factory.makeSpecification(product=product) for i in range(4)])
-        Store.of(specs[0]).invalidate()
+        [self.factory.makeSpecification(product=product) for i in range(4)]
+        Store.of(product).invalidate()
         self.assertThat(product, limit)
         
 
