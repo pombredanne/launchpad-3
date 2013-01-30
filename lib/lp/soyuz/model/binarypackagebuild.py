@@ -1079,7 +1079,7 @@ class BinaryPackageBuildSet:
 
         # Ordering according status
         # * NEEDSBUILD, BUILDING & UPLOADING by -lastscore
-        # * SUPERSEDED & All by -PackageBuild.build_farm_job
+        # * SUPERSEDED & All by -BinaryPackageBuild.id
         #   (nearly equivalent to -datecreated, but much more
         #   efficient.)
         # * FULLYBUILT & FAILURES by -datebuilt
