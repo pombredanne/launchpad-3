@@ -49,13 +49,12 @@ from lp.testing import (
     login_person,
     logout,
     person_logged_in,
-    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import (
+    BrowsesWithQueryLimit,
     DocTestMatches,
-    HasQueryCount,
     )
 from lp.testing.pages import (
     extract_text,
@@ -252,21 +251,18 @@ class TestSpecificationSet(BrowserTestCase):
         self.assertNotIn('Not allowed', browser.contents)
         self.assertNotIn(spec_name, browser.contents)
 
-    def _assert_constant_query_count(self, product, spec, count):
-        Store.of(spec).invalidate()
-        with StormStatementRecorder() as recorder:
-            self.getViewBrowser(product, rootsite='blueprints')
-        self.assertThat(recorder, HasQueryCount(Equals(count)))
-
     def test_query_count(self):
         product = self.factory.makeProduct()
         removeSecurityProxy(product).official_blueprints = True
         specs = [self.factory.makeSpecification(product=product)]
-        self._assert_constant_query_count(product, specs[0], 35)
+        limit = BrowsesWithQueryLimit(37, product.owner, rootsite='blueprints')
+        Store.of(specs[0]).invalidate()
+        self.assertThat(product, limit)
         login_celebrity('admin')
         specs.extend([
             self.factory.makeSpecification(product=product) for i in range(4)])
-        self._assert_constant_query_count(product, specs[0], 35)
+        Store.of(specs[0]).invalidate()
+        self.assertThat(product, limit)
         
 
 class TestSpecificationInformationType(BrowserTestCase):
