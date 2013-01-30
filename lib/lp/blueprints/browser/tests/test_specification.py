@@ -45,6 +45,7 @@ from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     BrowserTestCase,
     FakeLaunchpadRequest,
+    login_celebrity,
     login_person,
     logout,
     person_logged_in,
@@ -251,15 +252,21 @@ class TestSpecificationSet(BrowserTestCase):
         self.assertNotIn('Not allowed', browser.contents)
         self.assertNotIn(spec_name, browser.contents)
 
+    def _assert_constant_query_count(self, product, spec, count):
+        Store.of(spec).invalidate()
+        with StormStatementRecorder() as recorder:
+            self.getViewBrowser(product, rootsite='blueprints')
+        self.assertThat(recorder, HasQueryCount(Equals(count)))
+
     def test_query_count(self):
         product = self.factory.makeProduct()
         removeSecurityProxy(product).official_blueprints = True
-        specs = [
-            self.factory.makeSpecification(product=product) for i in range(5)]
-        Store.of(specs[0]).invalidate()
-        with StormStatementRecorder() as recorder:
-            self.getViewBrowser(product, rootsite='blueprints')
-        self.assertThat(recorder, HasQueryCount(Equals(35)))
+        specs = [self.factory.makeSpecification(product=product)]
+        self._assert_constant_query_count(product, specs[0], 35)
+        login_celebrity('admin')
+        specs.extend([
+            self.factory.makeSpecification(product=product) for i in range(4)])
+        self._assert_constant_query_count(product, specs[0], 35)
         
 
 class TestSpecificationInformationType(BrowserTestCase):
