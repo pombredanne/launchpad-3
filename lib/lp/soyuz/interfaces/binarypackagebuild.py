@@ -315,9 +315,6 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
         :param builder: An optional `IBuilder`.
         """
 
-    def getBuildBySRAndArchtag(sourcepackagereleaseID, archtag):
-        """Return a build for a SourcePackageRelease and an ArchTag"""
-
     def getBuildsForBuilder(builder_id, status=None, name=None,
                             arch_tag=None):
         """Return build records touched by a builder.

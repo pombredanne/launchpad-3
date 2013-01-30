@@ -78,15 +78,6 @@ class TestBuildSet(TestCaseWithFactory):
                     b.buildqueue_record.destroySelf()
             self.builds += builds
 
-    def test_get_by_spr(self):
-        # Test fetching build records via the SPR
-        self.setUpBuilds()
-        spr = self.builds[0].source_package_release.id
-        set = getUtility(IBinaryPackageBuildSet).getBuildBySRAndArchtag(
-            spr, self.das_one.architecturetag)
-        self.assertEquals(set.count(), 1)
-        self.assertEquals(set[0], self.builds[0])
-
     def test_get_by_arch_ids(self):
         # Test fetching builds via the arch tag
         self.setUpBuilds()
