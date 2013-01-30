@@ -28,10 +28,7 @@ from lp.buildmaster.enums import (
     BuildStatus,
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
-from lp.buildmaster.model.buildfarmjob import (
-    BuildFarmJobDerived,
-    BuildFarmJobMixin,
-    )
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobMixin
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
 from lp.code.model.branchjob import (
@@ -52,7 +49,7 @@ from lp.translations.model.translationtemplatesbuildjob import (
     )
 
 
-class TranslationTemplatesBuild(BuildFarmJobMixin, BuildFarmJobDerived, Storm):
+class TranslationTemplatesBuild(BuildFarmJobMixin, Storm):
     """A `BuildFarmJob` extension for translation templates builds."""
 
     implements(ITranslationTemplatesBuild)
@@ -67,32 +64,29 @@ class TranslationTemplatesBuild(BuildFarmJobMixin, BuildFarmJobDerived, Storm):
     branch = Reference(branch_id, 'Branch.id')
 
     # Migrating from BuildFarmJob.
-    _new_processor_id = Int(name='processor', allow_none=True)
+    _new_processor_id = Int(name='processor')
     _new_processor = Reference(_new_processor_id, 'Processor.id')
 
     _new_virtualized = Bool(name='virtualized')
 
-    _new_date_created = DateTime(
-        name='date_created', allow_none=False, tzinfo=pytz.UTC)
+    _new_date_created = DateTime(name='date_created', tzinfo=pytz.UTC)
 
-    _new_date_started = DateTime(
-        name='date_started', allow_none=True, tzinfo=pytz.UTC)
+    _new_date_started = DateTime(name='date_started', tzinfo=pytz.UTC)
 
-    _new_date_finished = DateTime(
-        name='date_finished', allow_none=True, tzinfo=pytz.UTC)
+    _new_date_finished = DateTime(name='date_finished', tzinfo=pytz.UTC)
 
     _new_date_first_dispatched = DateTime(
-        name='date_first_dispatched', allow_none=True, tzinfo=pytz.UTC)
+        name='date_first_dispatched', tzinfo=pytz.UTC)
 
-    _new_builder_id = Int(name='builder', allow_none=True)
+    _new_builder_id = Int(name='builder')
     _new_builder = Reference(_new_builder_id, 'Builder.id')
 
-    _new_status = DBEnum(name='status', allow_none=False, enum=BuildStatus)
+    _new_status = DBEnum(name='status', enum=BuildStatus)
 
-    _new_log_id = Int(name='log', allow_none=True)
+    _new_log_id = Int(name='log')
     _new_log = Reference(_new_log_id, 'LibraryFileAlias.id')
 
-    _new_failure_count = Int(name='failure_count', allow_none=False)
+    _new_failure_count = Int(name='failure_count')
 
     @property
     def title(self):

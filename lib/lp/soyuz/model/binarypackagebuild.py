@@ -48,7 +48,6 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
     PackageBuild,
-    PackageBuildDerived,
     PackageBuildMixin,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -99,7 +98,7 @@ from lp.soyuz.model.queue import (
     )
 
 
-class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
+class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     implements(IBinaryPackageBuild)
     _table = 'BinaryPackageBuild'
     _defaultOrder = 'id'
@@ -118,45 +117,40 @@ class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
         source_package_release_id, 'SourcePackageRelease.id')
 
     # Migrating from PackageBuild
-    _new_archive_id = Int(name='archive', allow_none=False)
+    _new_archive_id = Int(name='archive')
     _new_archive = Reference(_new_archive_id, 'Archive.id')
 
-    _new_pocket = DBEnum(
-        name='pocket', allow_none=False,
-        enum=PackagePublishingPocket)
+    _new_pocket = DBEnum(name='pocket', enum=PackagePublishingPocket)
 
-    _new_upload_log_id = Int(name='upload_log', allow_none=True)
+    _new_upload_log_id = Int(name='upload_log')
     _new_upload_log = Reference(_new_upload_log_id, 'LibraryFileAlias.id')
 
-    _new_dependencies = Unicode(name='dependencies', allow_none=True)
+    _new_dependencies = Unicode(name='dependencies')
 
     # Migrating from BuildFarmJob.
-    _new_processor_id = Int(name='processor', allow_none=True)
+    _new_processor_id = Int(name='processor')
     _new_processor = Reference(_new_processor_id, 'Processor.id')
 
     _new_virtualized = Bool(name='virtualized')
 
-    _new_date_created = DateTime(
-        name='date_created', allow_none=False, tzinfo=pytz.UTC)
+    _new_date_created = DateTime(name='date_created', tzinfo=pytz.UTC)
 
-    _new_date_started = DateTime(
-        name='date_started', allow_none=True, tzinfo=pytz.UTC)
+    _new_date_started = DateTime(name='date_started', tzinfo=pytz.UTC)
 
-    _new_date_finished = DateTime(
-        name='date_finished', allow_none=True, tzinfo=pytz.UTC)
+    _new_date_finished = DateTime(name='date_finished', tzinfo=pytz.UTC)
 
     _new_date_first_dispatched = DateTime(
-        name='date_first_dispatched', allow_none=True, tzinfo=pytz.UTC)
+        name='date_first_dispatched', tzinfo=pytz.UTC)
 
-    _new_builder_id = Int(name='builder', allow_none=True)
+    _new_builder_id = Int(name='builder')
     _new_builder = Reference(_new_builder_id, 'Builder.id')
 
-    _new_status = DBEnum(name='status', allow_none=False, enum=BuildStatus)
+    _new_status = DBEnum(name='status', enum=BuildStatus)
 
-    _new_log_id = Int(name='log', allow_none=True)
+    _new_log_id = Int(name='log')
     _new_log = Reference(_new_log_id, 'LibraryFileAlias.id')
 
-    _new_failure_count = Int(name='failure_count', allow_none=False)
+    _new_failure_count = Int(name='failure_count')
 
     @property
     def buildqueue_record(self):
@@ -405,13 +399,13 @@ class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
     def retry(self):
         """See `IBuild`."""
         assert self.can_be_retried, "Build %s cannot be retried" % self.id
-        self.status = self._new_status = BuildStatus.NEEDSBUILD
-        self.date_finished = self._new_date_finished = None
-        self.date_started = self._new_date_finished = None
-        self.builder = self._new_builder = None
-        self.log = self._new_log = None
-        self.upload_log = None
-        self.dependencies = None
+        self.build_farm_job.status = self._new_status = BuildStatus.NEEDSBUILD
+        self.build_farm_job.date_finished = self._new_date_finished = None
+        self.build_farm_job.date_started = self._new_date_finished = None
+        self.build_farm_job.builder = self._new_builder = None
+        self.build_farm_job.log = self._new_log = None
+        self.package_build.upload_log = None
+        self.package_build.dependencies = None
         self.queueBuild()
 
     def rescore(self, score):
@@ -561,7 +555,8 @@ class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
             if not self._isDependencySatisfied(token)]
 
         # Update dependencies line
-        self.dependencies = self._new_dependencies = u", ".join(remaining_deps)
+        self.package_build.dependencies = self._new_dependencies = (
+            u", ".join(remaining_deps))
 
     def __getitem__(self, name):
         return self.getBinaryPackageRelease(name)

@@ -24,6 +24,7 @@ from storm.locals import (
     Desc,
     SQL,
     )
+from zope.component import getUtility
 
 from lp.app.enums import PUBLIC_INFORMATION_TYPES
 from lp.blueprints.enums import (
@@ -36,8 +37,10 @@ from lp.blueprints.enums import (
 from lp.blueprints.model.specification import Specification
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
@@ -47,6 +50,7 @@ from lp.services.database.stormexpr import (
     ArrayIntersects,
     fti_search,
     )
+from lp.services.propertycache import get_property_cache
 
 
 def search_specifications(context, base_clauses, user, sort=None,
@@ -98,11 +102,20 @@ def search_specifications(context, base_clauses, user, sort=None,
             order.extend([Desc(Specification.datecreated), Specification.id])
     else:
         order = [sort]
+    # Set the _known_viewers property for each specification, as well as
+    # preloading the people involved, if asked.
+    decorators = []
+    preload_hook = None
+    if user is not None and not IPersonRoles(user).in_admin:
+        decorators.append(_make_cache_user_can_view_spec(user))
     if prejoin_people:
-        results = _preload_specifications_people(tables, clauses)
-    else:
-        results = store.using(*tables).find(Specification, *clauses)
-    return results.order_by(*order).config(limit=quantity)
+        preload_hook = _preload_specifications_related_people
+    results = store.using(*tables).find(
+        Specification, *clauses).order_by(*order).config(limit=quantity)
+    return DecoratedResultSet(
+        results,
+        lambda row: reduce(lambda task, dec: dec(task), decorators, row),
+        pre_iter_hook=preload_hook)
 
 
 def get_specification_active_product_filter(context):
@@ -125,6 +138,8 @@ def get_specification_privacy_filter(user):
 
     if user is None:
         return [public_spec_filter]
+    elif IPersonRoles.providedBy(user):
+        user = user.person
 
     artifact_grant_query = Coalesce(
         ArrayIntersects(
@@ -201,52 +216,23 @@ def get_specification_filters(filter, goalstatus=True):
     return clauses
 
 
-def _preload_specifications_people(tables, clauses):
-    """Perform eager loading of people and their validity for query.
+def _make_cache_user_can_view_spec(user):
+    userid = user.id
 
-    :param query: a string query generated in the 'specifications'
-        method.
-    :return: A DecoratedResultSet with Person precaching setup.
-    """
-    if isinstance(clauses, basestring):
-        clauses = [SQL(clauses)]
+    def cache_user_can_view_spec(spec):
+        get_property_cache(spec)._known_viewers = set([userid])
+        return spec
+    return cache_user_can_view_spec
 
-    def cache_people(rows):
-        """DecoratedResultSet pre_iter_hook to eager load Person
-         attributes.
-        """
-        from lp.registry.model.person import Person
-        # Find the people we need:
-        person_ids = set()
-        for spec in rows:
-            person_ids.add(spec._assigneeID)
-            person_ids.add(spec._approverID)
-            person_ids.add(spec._drafterID)
-        person_ids.discard(None)
-        if not person_ids:
-            return
-        # Query those people
-        origin = [Person]
-        columns = [Person]
-        validity_info = Person._validity_queries()
-        origin.extend(validity_info["joins"])
-        columns.extend(validity_info["tables"])
-        decorators = validity_info["decorators"]
-        personset = IStore(Specification).using(*origin).find(
-            tuple(columns),
-            Person.id.is_in(person_ids),
-            )
-        for row in personset:
-            person = row[0]
-            index = 1
-            for decorator in decorators:
-                column = row[index]
-                index += 1
-                decorator(person, column)
 
-    results = IStore(Specification).using(*tables).find(
-        Specification, *clauses)
-    return DecoratedResultSet(results, pre_iter_hook=cache_people)
+def _preload_specifications_related_people(rows):
+    person_ids = set()
+    for spec in rows:
+        person_ids |= set(
+            [spec._assigneeID, spec._approverID, spec._drafterID])
+    person_ids -= set([None])
+    list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+        person_ids, need_validity=True))
 
 
 def get_specification_started_clause():

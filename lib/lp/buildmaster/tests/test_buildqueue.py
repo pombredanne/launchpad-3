@@ -26,7 +26,7 @@ from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.builder import specific_job_classes
-from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobMixin
 from lp.buildmaster.model.buildqueue import (
     BuildQueue,
     get_builder_data,
@@ -957,7 +957,7 @@ class TestJobClasses(TestCaseWithFactory):
     def test_OtherTypeClasses(self):
         """Other job type classes are picked up as well."""
 
-        class FakeBranchBuild(BuildFarmJobDerived):
+        class FakeBranchBuild(BuildFarmJobMixin):
             pass
 
         _build, bq = find_job(self, 'gedit')
