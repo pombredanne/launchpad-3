@@ -916,15 +916,6 @@ class IArchiveView(IHasBuildRecords):
     num_pkgs_building = Attribute(
         "Tuple of packages building and waiting to build")
 
-    def getSourcePackageReleases(build_status=None):
-        """Return the releases for this archive.
-
-        :param build_status: If specified, only the distinct releases with
-            builds in the specified build status will be returned.
-        :return: A `ResultSet` of distinct `SourcePackageReleases` for this
-            archive.
-        """
-
     def updatePackageDownloadCount(bpr, day, country, count):
         """Update the daily download count for a given package.
 

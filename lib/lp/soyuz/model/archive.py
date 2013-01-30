@@ -1918,28 +1918,6 @@ class Archive(SQLBase):
 
         return pkgs_building_count, pkgs_waiting_count
 
-    def getSourcePackageReleases(self, build_status=None):
-        """See `IArchive`."""
-        store = Store.of(self)
-
-        extra_exprs = []
-        if build_status is not None:
-            extra_exprs = [
-                PackageBuild.build_farm_job == BuildFarmJob.id,
-                BuildFarmJob.status == build_status,
-                ]
-
-        result_set = store.find(
-            SourcePackageRelease,
-            (BinaryPackageBuild.source_package_release_id ==
-                SourcePackageRelease.id),
-            BinaryPackageBuild.package_build == PackageBuild.id,
-            PackageBuild.archive == self,
-            *extra_exprs)
-
-        result_set.config(distinct=True).order_by(SourcePackageRelease.id)
-        return result_set
-
     def updatePackageDownloadCount(self, bpr, day, country, count):
         """See `IArchive`."""
         store = Store.of(self)

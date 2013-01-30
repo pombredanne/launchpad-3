@@ -285,38 +285,6 @@ class TestSeriesWithSources(TestCaseWithFactory):
         self.assertEqual([series1, series2], archive.series_with_sources)
 
 
-class TestGetSourcePackageReleases(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def createArchiveWithBuilds(self, statuses):
-        archive = self.factory.makeArchive()
-        sprs = []
-        for status in statuses:
-            sourcepackagerelease = self.factory.makeSourcePackageRelease()
-            self.factory.makeBinaryPackageBuild(
-                source_package_release=sourcepackagerelease,
-                archive=archive, status=status)
-            sprs.append(sourcepackagerelease)
-        self.factory.makeSourcePackageRelease()
-        return archive, sprs
-
-    def test_getSourcePackageReleases_with_no_params(self):
-        # With no params all source package releases are returned.
-        archive, sprs = self.createArchiveWithBuilds(
-            [BuildStatus.NEEDSBUILD, BuildStatus.FULLYBUILT])
-        self.assertContentEqual(
-            sprs, archive.getSourcePackageReleases())
-
-    def test_getSourcePackageReleases_with_buildstatus(self):
-        # Results are filtered by the specified buildstatus.
-        archive, sprs = self.createArchiveWithBuilds(
-            [BuildStatus.NEEDSBUILD, BuildStatus.FULLYBUILT])
-        self.assertContentEqual(
-            [sprs[0]], archive.getSourcePackageReleases(
-                build_status=BuildStatus.NEEDSBUILD))
-
-
 class TestCorrespondingDebugArchive(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
