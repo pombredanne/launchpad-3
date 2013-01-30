@@ -44,7 +44,6 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
     PackageBuild,
-    PackageBuildDerived,
     PackageBuildMixin,
     )
 from lp.services.config import config
@@ -93,7 +92,7 @@ from lp.soyuz.model.queue import (
     )
 
 
-class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
+class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     implements(IBinaryPackageBuild)
     _table = 'BinaryPackageBuild'
     _defaultOrder = 'id'
@@ -358,13 +357,13 @@ class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
     def retry(self):
         """See `IBuild`."""
         assert self.can_be_retried, "Build %s cannot be retried" % self.id
-        self.status = BuildStatus.NEEDSBUILD
-        self.date_finished = None
-        self.date_started = None
-        self.builder = None
-        self.log = None
-        self.upload_log = None
-        self.dependencies = None
+        self.build_farm_job.status = BuildStatus.NEEDSBUILD
+        self.build_farm_job.date_finished = None
+        self.build_farm_job.date_started = None
+        self.build_farm_job.builder = None
+        self.build_farm_job.log = None
+        self.package_build.upload_log = None
+        self.package_build.dependencies = None
         self.queueBuild()
 
     def rescore(self, score):
@@ -514,7 +513,7 @@ class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
             if not self._isDependencySatisfied(token)]
 
         # Update dependencies line
-        self.dependencies = u", ".join(remaining_deps)
+        self.package_build.dependencies = u", ".join(remaining_deps)
 
     def __getitem__(self, name):
         return self.getBinaryPackageRelease(name)
