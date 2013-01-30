@@ -4,7 +4,6 @@
 __metaclass__ = type
 __all__ = [
     'BuildFarmJob',
-    'BuildFarmJobDerived',
     'BuildFarmJobMixin',
     'BuildFarmJobOld',
     ]
@@ -12,7 +11,6 @@ __all__ = [
 import datetime
 import hashlib
 
-from lazr.delegates import delegates
 import pytz
 from storm.expr import (
     Desc,
@@ -223,6 +221,54 @@ class BuildFarmJob(Storm):
 class BuildFarmJobMixin:
 
     @property
+    def processor(self):
+        return self.build_farm_job.processor
+
+    @property
+    def virtualized(self):
+        return self.build_farm_job.virtualized
+
+    @property
+    def date_created(self):
+        return self.build_farm_job.date_created
+
+    @property
+    def date_started(self):
+        return self.build_farm_job.date_started
+
+    @property
+    def date_finished(self):
+        return self.build_farm_job.date_finished
+
+    @property
+    def date_first_dispatched(self):
+        return self.build_farm_job.date_first_dispatched
+
+    @property
+    def builder(self):
+        return self.build_farm_job.builder
+
+    @property
+    def status(self):
+        return self.build_farm_job.status
+
+    @property
+    def log(self):
+        return self.build_farm_job.log
+
+    @property
+    def job_type(self):
+        return self.build_farm_job.job_type
+
+    @property
+    def failure_count(self):
+        return self.build_farm_job.failure_count
+
+    @property
+    def dependencies(self):
+        return self.build_farm_job.dependencies
+
+    @property
     def title(self):
         """See `IBuildFarmJob`."""
         return self.job_type.title
@@ -273,28 +319,29 @@ class BuildFarmJobMixin:
 
     def setLog(self, log):
         """See `IBuildFarmJob`."""
-        self.log = log
+        self.build_farm_job.log = log
 
     def updateStatus(self, status, builder=None, slave_status=None,
                      date_started=None, date_finished=None):
         """See `IBuildFarmJob`."""
-        self.status = status
+        self.build_farm_job.status = status
 
         # If there's a builder provided, set it if we don't already have
         # one, or otherwise crash if it's different from the one we
         # expected.
         if builder is not None:
             if self.builder is None:
-                self.builder = builder
+                self.build_farm_job.builder = builder
             else:
                 assert self.builder == builder
 
         # If we're starting to build, set date_started and
         # date_first_dispatched if required.
         if self.date_started is None and status == BuildStatus.BUILDING:
-            self.date_started = date_started or datetime.datetime.now(pytz.UTC)
+            self.build_farm_job.date_started = (
+                date_started or datetime.datetime.now(pytz.UTC))
             if self.date_first_dispatched is None:
-                self.date_first_dispatched = self.date_started
+                self.build_farm_job.date_first_dispatched = self.date_started
 
         # If we're in a final build state (or UPLOADING, which sort of
         # is), set date_finished if date_started is.
@@ -305,17 +352,12 @@ class BuildFarmJobMixin:
             # XXX cprov 20060615 bug=120584: Currently buildduration includes
             # the scanner latency, it should really be asking the slave for
             # the duration spent building locally.
-            self.date_finished = (
+            self.build_farm_job.date_finished = (
                 date_finished or datetime.datetime.now(pytz.UTC))
 
     def gotFailure(self):
         """See `IBuildFarmJob`."""
-        self.failure_count += 1
-
-
-class BuildFarmJobDerived:
-    implements(IBuildFarmJob)
-    delegates(IBuildFarmJob, context='build_farm_job')
+        self.build_farm_job.failure_count += 1
 
 
 class BuildFarmJobSet:
