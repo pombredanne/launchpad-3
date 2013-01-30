@@ -4,7 +4,6 @@
 __metaclass__ = type
 __all__ = [
     'PackageBuild',
-    'PackageBuildDerived',
     'PackageBuildMixin',
     'PackageBuildSet',
     ]
@@ -12,7 +11,6 @@ __all__ = [
 
 from cStringIO import StringIO
 
-from lazr.delegates import delegates
 from storm.expr import Desc
 from storm.locals import (
     Int,
@@ -36,7 +34,6 @@ from lp.buildmaster.interfaces.packagebuild import (
     )
 from lp.buildmaster.model.buildfarmjob import (
     BuildFarmJob,
-    BuildFarmJobDerived,
     BuildFarmJobMixin,
     )
 from lp.buildmaster.model.buildqueue import BuildQueue
@@ -57,7 +54,7 @@ from lp.soyuz.adapters.archivedependencies import (
 from lp.soyuz.interfaces.component import IComponentSet
 
 
-class PackageBuild(BuildFarmJobDerived, Storm):
+class PackageBuild(Storm):
     """An implementation of `IBuildFarmJob` for package builds."""
 
     __storm_table__ = 'PackageBuild'
@@ -122,6 +119,26 @@ class PackageBuild(BuildFarmJobDerived, Storm):
 class PackageBuildMixin(BuildFarmJobMixin):
 
     @property
+    def build_farm_job(self):
+        return self.package_build.build_farm_job
+
+    @property
+    def archive(self):
+        return self.package_build.archive
+
+    @property
+    def pocket(self):
+        return self.package_build.pocket
+
+    @property
+    def upload_log(self):
+        return self.package_build.upload_log
+
+    @property
+    def dependencies(self):
+        return self.package_build.dependencies
+
+    @property
     def current_component(self):
         """See `IPackageBuild`."""
         return getUtility(IComponentSet)[default_component_dependency_name]
@@ -157,9 +174,10 @@ class PackageBuildMixin(BuildFarmJobMixin):
 
         if (status == BuildStatus.MANUALDEPWAIT and slave_status is not None
             and slave_status.get('dependencies') is not None):
-            self.dependencies = unicode(slave_status.get('dependencies'))
+            self.package_build.dependencies = (
+                unicode(slave_status.get('dependencies')))
         else:
-            self.dependencies = None
+            self.package_build.dependencies = None
 
     def verifySuccessfulUpload(self):
         """See `IPackageBuild`."""
@@ -193,9 +211,9 @@ class PackageBuildMixin(BuildFarmJobMixin):
 
     def storeUploadLog(self, content):
         """See `IPackageBuild`."""
-        filename = "upload_%s_log.txt" % self.build_farm_job.id
+        filename = "upload_%s_log.txt" % self.id
         library_file = self.createUploadLog(content, filename=filename)
-        self.upload_log = library_file
+        self.package_build.upload_log = library_file
 
     def notify(self, extra_info=None):
         """See `IPackageBuild`."""
@@ -223,15 +241,6 @@ class PackageBuildMixin(BuildFarmJobMixin):
             virtualized=specific_job.virtualized)
         Store.of(self).add(queue_entry)
         return queue_entry
-
-
-class PackageBuildDerived:
-    """Setup the delegation for package build.
-
-    This class also provides some common implementation for handling
-    build status.
-    """
-    delegates(IPackageBuild, context="package_build")
 
 
 class PackageBuildSet:
