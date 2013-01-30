@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -85,18 +85,15 @@ class TestAssignments(TestCaseWithFactory):
         logout()
         self.invalidate_and_render(browser, target, url)
         self.assertThat(
-            collector,
-            HasQueryCount(LessThan(no_assignees_count + 5)))
+            collector, HasQueryCount(LessThan(no_assignees_count + 5)))
 
     def test_product_query_counts_scale_below_unique_people(self):
         self.check_query_counts_scaling_with_unique_people(
-            self.factory.makeProduct(),
-            'product')
+            self.factory.makeProduct(), 'product')
 
     def test_distro_query_counts_scale_below_unique_people(self):
         self.check_query_counts_scaling_with_unique_people(
-            self.factory.makeDistribution(),
-            'distribution')
+            self.factory.makeDistribution(), 'distribution')
 
 
 def test_suite():
@@ -115,8 +112,7 @@ def test_suite():
         one_test = LayeredDocFileSuite(
             path, setUp=setUp, tearDown=tearDown,
             layer=DatabaseFunctionalLayer,
-            stdout_logging_level=logging.WARNING
-            )
+            stdout_logging_level=logging.WARNING)
         suite.addTest(one_test)
 
     return suite
