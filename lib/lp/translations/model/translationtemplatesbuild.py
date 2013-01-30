@@ -28,10 +28,7 @@ from lp.buildmaster.enums import (
     BuildStatus,
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
-from lp.buildmaster.model.buildfarmjob import (
-    BuildFarmJobDerived,
-    BuildFarmJobMixin,
-    )
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobMixin
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
 from lp.code.model.branchjob import (
@@ -52,7 +49,7 @@ from lp.translations.model.translationtemplatesbuildjob import (
     )
 
 
-class TranslationTemplatesBuild(BuildFarmJobMixin, BuildFarmJobDerived, Storm):
+class TranslationTemplatesBuild(BuildFarmJobMixin, Storm):
     """A `BuildFarmJob` extension for translation templates builds."""
 
     implements(ITranslationTemplatesBuild)

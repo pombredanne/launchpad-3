@@ -4,7 +4,6 @@
 __metaclass__ = type
 __all__ = [
     'BuildFarmJob',
-    'BuildFarmJobDerived',
     'BuildFarmJobMixin',
     'BuildFarmJobOld',
     ]
@@ -12,7 +11,6 @@ __all__ = [
 import datetime
 import hashlib
 
-from lazr.delegates import delegates
 import pytz
 from storm.expr import (
     Desc,
@@ -223,6 +221,54 @@ class BuildFarmJob(Storm):
 class BuildFarmJobMixin:
 
     @property
+    def processor(self):
+        return self.build_farm_job.processor
+
+    @property
+    def virtualized(self):
+        return self.build_farm_job.virtualized
+
+    @property
+    def date_created(self):
+        return self.build_farm_job.date_created
+
+    @property
+    def date_started(self):
+        return self.build_farm_job.date_started
+
+    @property
+    def date_finished(self):
+        return self.build_farm_job.date_finished
+
+    @property
+    def date_first_dispatched(self):
+        return self.build_farm_job.date_first_dispatched
+
+    @property
+    def builder(self):
+        return self.build_farm_job.builder
+
+    @property
+    def status(self):
+        return self.build_farm_job.status
+
+    @property
+    def log(self):
+        return self.build_farm_job.log
+
+    @property
+    def job_type(self):
+        return self.build_farm_job.job_type
+
+    @property
+    def failure_count(self):
+        return self.build_farm_job.failure_count
+
+    @property
+    def dependencies(self):
+        return self.build_farm_job.dependencies
+
+    @property
     def title(self):
         """See `IBuildFarmJob`."""
         return self.job_type.title
@@ -314,11 +360,6 @@ class BuildFarmJobMixin:
         """See `IBuildFarmJob`."""
         self.build_farm_job.failure_count += 1
         self._new_failure_count += 1
-
-
-class BuildFarmJobDerived:
-    implements(IBuildFarmJob)
-    delegates(IBuildFarmJob, context='build_farm_job')
 
 
 class BuildFarmJobSet:

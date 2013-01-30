@@ -44,10 +44,7 @@ from lp.buildmaster.enums import (
     )
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
 from lp.buildmaster.model.builder import Builder
-from lp.buildmaster.model.buildfarmjob import (
-    BuildFarmJobDerived,
-    BuildFarmJob,
-    )
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
     PackageBuild,
@@ -101,7 +98,7 @@ from lp.soyuz.model.queue import (
     )
 
 
-class BinaryPackageBuild(PackageBuildMixin, BuildFarmJobDerived, SQLBase):
+class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     implements(IBinaryPackageBuild)
     _table = 'BinaryPackageBuild'
     _defaultOrder = 'id'
