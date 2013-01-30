@@ -404,8 +404,8 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         self.build_farm_job.date_started = self._new_date_started = None
         self.build_farm_job.builder = self._new_builder = None
         self.build_farm_job.log = self._new_log = None
-        self.package_build.upload_log = None
-        self.package_build.dependencies = None
+        self.package_build.upload_log = self._new_upload_log = None
+        self.package_build.dependencies = self._new_upload_log = None
         self.queueBuild()
 
     def rescore(self, score):
