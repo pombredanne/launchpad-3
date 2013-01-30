@@ -176,7 +176,7 @@ class TestPackageBuildMixin(TestCaseWithFactory):
         self.failUnlessEqual(
             'http://launchpad.dev/~joe/'
             '+archive/ppa/+recipebuild/%d/+files/upload_%d_log.txt' % (
-                self.package_build.id, self.package_build.build_farm_job.id),
+                self.package_build.id, self.package_build.id),
             log_url)
 
     def test_view_package_build(self):

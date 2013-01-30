@@ -205,7 +205,7 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
             return '%s recipe build' % branch_name
 
     def __init__(self, package_build, distroseries, recipe, requester,
-                 archive, pocket):
+                 archive, pocket, date_created):
         """Construct a SourcePackageRecipeBuild."""
         super(SourcePackageRecipeBuild, self).__init__()
         self.package_build = package_build
@@ -216,6 +216,8 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
         self._new_pocket = pocket
         self._new_status = BuildStatus.NEEDSBUILD
         self._new_virtualized = True
+        if date_created is not None:
+            self._new_date_created = date_created
 
     @classmethod
     def new(cls, distroseries, recipe, requester, archive, pocket=None,
@@ -229,7 +231,8 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
         packagebuild = PackageBuild.new(cls.build_farm_job_type,
             True, archive, pocket, date_created=date_created)
         spbuild = cls(
-            packagebuild, distroseries, recipe, requester, archive, pocket)
+            packagebuild, distroseries, recipe, requester, archive, pocket,
+            date_created)
         store.add(spbuild)
         return spbuild
 
