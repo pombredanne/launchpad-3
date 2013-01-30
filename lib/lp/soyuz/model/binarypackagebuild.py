@@ -44,11 +44,13 @@ from lp.buildmaster.enums import (
     )
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
 from lp.buildmaster.model.builder import Builder
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.model.buildfarmjob import (
+    BuildFarmJobDerived,
+    BuildFarmJob,
+    )
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
     PackageBuild,
-    PackageBuildDerived,
     PackageBuildMixin,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -99,7 +101,7 @@ from lp.soyuz.model.queue import (
     )
 
 
-class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
+class BinaryPackageBuild(PackageBuildMixin, BuildFarmJobDerived, SQLBase):
     implements(IBinaryPackageBuild)
     _table = 'BinaryPackageBuild'
     _defaultOrder = 'id'
@@ -400,13 +402,13 @@ class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
     def retry(self):
         """See `IBuild`."""
         assert self.can_be_retried, "Build %s cannot be retried" % self.id
-        self.status = self._new_status = BuildStatus.NEEDSBUILD
-        self.date_finished = self._new_date_finished = None
-        self.date_started = self._new_date_finished = None
-        self.builder = self._new_builder = None
-        self.log = self._new_log = None
-        self.upload_log = None
-        self.dependencies = None
+        self.build_farm_job.status = self._new_status = BuildStatus.NEEDSBUILD
+        self.build_farm_job.date_finished = self._new_date_finished = None
+        self.build_farm_job.date_started = self._new_date_finished = None
+        self.build_farm_job.builder = self._new_builder = None
+        self.build_farm_job.log = self._new_log = None
+        self.package_build.upload_log = None
+        self.package_build.dependencies = None
         self.queueBuild()
 
     def rescore(self, score):
@@ -556,7 +558,8 @@ class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
             if not self._isDependencySatisfied(token)]
 
         # Update dependencies line
-        self.dependencies = self._new_dependencies = u", ".join(remaining_deps)
+        self.package_build.dependencies = self._new_dependencies = (
+            u", ".join(remaining_deps))
 
     def __getitem__(self, name):
         return self.getBinaryPackageRelease(name)
