@@ -157,14 +157,13 @@ class BuildPackageJob(BuildFarmJobOld, Storm):
             )
         sub_query = """
             SELECT TRUE FROM Archive, BinaryPackageBuild, BuildPackageJob,
-                             PackageBuild, BuildFarmJob, DistroArchSeries
+                             DistroArchSeries
             WHERE
             BuildPackageJob.job = Job.id AND
             BuildPackageJob.build = BinaryPackageBuild.id AND
             BinaryPackageBuild.distro_arch_series =
                 DistroArchSeries.id AND
-            BinaryPackageBuild.package_build = PackageBuild.id AND
-            PackageBuild.archive = Archive.id AND
+            BinaryPackageBuild.archive = Archive.id AND
             ((Archive.private IS TRUE AND
               EXISTS (
                   SELECT SourcePackagePublishingHistory.id
@@ -178,8 +177,7 @@ class BuildPackageJob(BuildFarmJobOld, Storm):
                       SourcePackagePublishingHistory.status IN %s))
               OR
               archive.private IS FALSE) AND
-            PackageBuild.build_farm_job = BuildFarmJob.id AND
-            BuildFarmJob.status = %s
+            BinaryPackageBuild.status = %s
         """ % sqlvalues(private_statuses, BuildStatus.NEEDSBUILD)
 
         # Ensure that if BUILDING builds exist for the same
@@ -201,16 +199,12 @@ class BuildPackageJob(BuildFarmJobOld, Storm):
             sub_query += """
             AND Archive.id NOT IN (
                 SELECT Archive.id
-                FROM PackageBuild, BuildFarmJob, Archive,
-                    BinaryPackageBuild, DistroArchSeries
+                FROM Archive, BinaryPackageBuild, DistroArchSeries
                 WHERE
-                    PackageBuild.build_farm_job = BuildFarmJob.id
-                    AND BinaryPackageBuild.package_build = PackageBuild.id
-                    AND BinaryPackageBuild.distro_arch_series
-                        = DistroArchSeries.id
+                    BinaryPackageBuild.distro_arch_series = DistroArchSeries.id
                     AND DistroArchSeries.processorfamily = %s
-                    AND BuildFarmJob.status = %s
-                    AND PackageBuild.archive = Archive.id
+                    AND BinaryPackageBuild.status = %s
+                    AND BinaryPackageBuild.archive = Archive.id
                     AND Archive.purpose = %s
                     AND Archive.private IS FALSE
                 GROUP BY Archive.id
