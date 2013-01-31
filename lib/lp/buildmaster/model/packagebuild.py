@@ -84,8 +84,7 @@ class PackageBuild(Storm):
     distribution = None
     distro_series = None
 
-    def __init__(self, build_farm_job, archive, pocket,
-                 dependencies=None):
+    def __init__(self, build_farm_job, archive, pocket, dependencies=None):
         """Construct a PackageBuild."""
         super(PackageBuild, self).__init__()
         self.build_farm_job = build_farm_job
@@ -94,18 +93,10 @@ class PackageBuild(Storm):
         self.dependencies = dependencies
 
     @classmethod
-    def new(cls, job_type, virtualized, archive, pocket, processor=None,
-            status=BuildStatus.NEEDSBUILD, dependencies=None,
-            date_created=None, builder=None):
+    def new(cls, build_farm_job, archive, pocket):
         """See `IPackageBuildSource`."""
         store = IMasterStore(PackageBuild)
-
-        # Create the BuildFarmJob to which the new PackageBuild
-        # will delegate.
-        build_farm_job = getUtility(IBuildFarmJobSource).new(
-            job_type, status, processor, virtualized, date_created, builder)
-
-        package_build = cls(build_farm_job, archive, pocket, dependencies)
+        package_build = cls(build_farm_job, archive, pocket)
         store.add(package_build)
         return package_build
 

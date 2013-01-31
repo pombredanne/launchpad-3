@@ -196,21 +196,26 @@ class BuildFarmJob(Storm):
 
     failure_count = Int(name='failure_count', allow_none=False)
 
+    archive_id = Int(name='archive')
+    archive = Reference(archive_id, 'Archive.id')
+
     def __init__(self, job_type, status=BuildStatus.NEEDSBUILD,
                  processor=None, virtualized=None, date_created=None,
-                 builder=None):
+                 builder=None, archive=None):
         super(BuildFarmJob, self).__init__()
         (self.job_type, self.status, self.processor, self.virtualized,
-         self.builder) = (job_type, status, processor, virtualized, builder)
+         self.builder, self.archive) = (
+             job_type, status, processor, virtualized, builder, archive)
         if date_created is not None:
             self.date_created = date_created
 
     @classmethod
     def new(cls, job_type, status=BuildStatus.NEEDSBUILD, processor=None,
-            virtualized=None, date_created=None, builder=None):
+            virtualized=None, date_created=None, builder=None, archive=None):
         """See `IBuildFarmJobSource`."""
         build_farm_job = BuildFarmJob(
-            job_type, status, processor, virtualized, date_created, builder)
+            job_type, status, processor, virtualized, date_created, builder,
+            archive)
         store = IMasterStore(BuildFarmJob)
         store.add(build_farm_job)
         return build_farm_job
