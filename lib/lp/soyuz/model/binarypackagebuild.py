@@ -911,9 +911,7 @@ class BinaryPackageBuildSet:
         self._prefetchBuildData(builds)
         distro_arch_series = load_related(
             DistroArchSeries, builds, ['distro_arch_series_id'])
-        package_builds = load_related(
-            PackageBuild, builds, ['package_build_id'])
-        archives = load_related(Archive, package_builds, ['archive_id'])
+        archives = load_related(Archive, builds, ['_new_archive_id'])
         load_related(Person, archives, ['ownerID'])
         distroseries = load_related(
             DistroSeries, distro_arch_series, ['distroseriesID'])
@@ -1141,10 +1139,8 @@ class BinaryPackageBuildSet:
 
         query = """
             source_package_release IN %s AND
-            package_build = packagebuild.id AND
             archive.id = binarypackagebuild.archive AND
-            archive.purpose != %s AND
-            packagebuild.build_farm_job = buildfarmjob.id
+            archive.purpose != %s
             """ % sqlvalues(sourcepackagerelease_ids, ArchivePurpose.PPA)
 
         if buildstate is not None:
@@ -1152,12 +1148,12 @@ class BinaryPackageBuildSet:
                 "AND binarypackagebuild.status = %s" % sqlvalues(buildstate))
 
         resultset = IStore(BinaryPackageBuild).using(
-            BinaryPackageBuild, PackageBuild, BuildFarmJob, Archive).find(
-            (BinaryPackageBuild, PackageBuild, BuildFarmJob),
+            BinaryPackageBuild, Archive).find(
+            BinaryPackageBuild,
             SQL(query))
         resultset.order_by(
             Desc(BinaryPackageBuild._new_date_created), BinaryPackageBuild.id)
-        return DecoratedResultSet(resultset, operator.itemgetter(0))
+        return resultset
 
     def getStatusSummaryForBuilds(self, builds):
         """See `IBinaryPackageBuildSet`."""
@@ -1230,31 +1226,24 @@ class BinaryPackageBuildSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = (
             BinaryPackageBuild,
-            LeftJoin(
-                PackageBuild,
-                BinaryPackageBuild.package_build == PackageBuild.id),
-            LeftJoin(
-                BuildFarmJob,
-                PackageBuild.build_farm_job == BuildFarmJob.id),
-            LeftJoin(
+            Join(
                 SourcePackageRelease,
                 (SourcePackageRelease.id ==
                     BinaryPackageBuild.source_package_release_id)),
-            LeftJoin(
+            Join(
                 SourcePackageName,
                 SourcePackageName.id
                     == SourcePackageRelease.sourcepackagenameID),
             LeftJoin(LibraryFileAlias,
-                     LibraryFileAlias.id == BuildFarmJob.log_id),
+                     LibraryFileAlias.id == BinaryPackageBuild._new_log_id),
             LeftJoin(LibraryFileContent,
                      LibraryFileContent.id == LibraryFileAlias.contentID),
             LeftJoin(
-                Builder,
-                Builder.id == BuildFarmJob.builder_id),
+                Builder, Builder.id == BinaryPackageBuild._new_builder_id),
             )
         result_set = store.using(*origin).find(
             (SourcePackageRelease, LibraryFileAlias, SourcePackageName,
-             LibraryFileContent, Builder, PackageBuild, BuildFarmJob),
+             LibraryFileContent, Builder),
             BinaryPackageBuild.id.is_in(build_ids))
 
         # Force query execution so that the ancillary data gets fetched

@@ -324,17 +324,10 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
         # Circular imports.
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         from lp.services.librarian.model import LibraryFileAlias
-        from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-        package_builds = load_related(
-            PackageBuild, builds, ['package_build_id'])
-        build_farm_jobs = load_related(
-            BuildFarmJob, [build.package_build for build in builds],
-            ['build_farm_job_id'])
-        load_related(LibraryFileAlias, build_farm_jobs, ['log_id'])
-        archives = load_related(Archive, package_builds, ['archive_id'])
+        load_related(LibraryFileAlias, builds, ['_new_log_id'])
+        archives = load_related(Archive, builds, ['_new_archive_id'])
         load_related(Person, archives, ['ownerID'])
-        sprs = load_related(
-            SourcePackageRecipe, builds, ['recipe_id'])
+        sprs = load_related(SourcePackageRecipe, builds, ['recipe_id'])
         SourcePackageRecipe.preLoadDataForSourcePackageRecipes(sprs)
 
     @classmethod
