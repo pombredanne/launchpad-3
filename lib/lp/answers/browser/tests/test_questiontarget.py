@@ -14,7 +14,6 @@ from lazr.restful.interfaces import (
     IWebServiceClientRequest,
     )
 from simplejson import dumps
-from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL

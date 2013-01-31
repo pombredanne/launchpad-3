@@ -43,6 +43,7 @@ from zope.security.proxy import (
     Proxy,
     )
 
+from lp.services.database.sqlbase import flush_database_caches
 from lp.services.webapp import canonical_url
 from lp.services.webapp.batching import BatchNavigator
 from lp.testing import normalize_whitespace
@@ -80,7 +81,7 @@ class BrowsesWithQueryLimit(Matcher):
         browser = setupBrowserForUser(self.user)
         collector = QueryCollector()
         collector.register()
-        Store.of(context).invalidate()
+        flush_database_caches()
         try:
             browser.open(context_url)
             counter = HasQueryCount(LessThan(self.query_limit))

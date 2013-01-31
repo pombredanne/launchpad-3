@@ -12,7 +12,6 @@ from BeautifulSoup import BeautifulSoup
 from lazr.restful.interfaces import IJSONRequestCache
 import pytz
 import soupmatchers
-from storm.store import Store
 from testtools.matchers import (
     Equals,
     Not,
