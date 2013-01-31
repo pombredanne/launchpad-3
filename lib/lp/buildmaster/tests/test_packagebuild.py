@@ -16,6 +16,7 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuild,
     IPackageBuildSet,
@@ -46,9 +47,9 @@ class TestPackageBuildBase(TestCaseWithFactory):
         if archive is None:
             archive = self.factory.makeArchive()
 
-        return getUtility(IPackageBuildSource).new(
-            job_type=job_type, virtualized=True, archive=archive,
-            status=status, pocket=pocket)
+        bfj = getUtility(IBuildFarmJobSource).new(
+            job_type, virtualized=True, status=status)
+        return getUtility(IPackageBuildSource).new(bfj, archive, pocket)
 
 
 class TestPackageBuild(TestPackageBuildBase):
