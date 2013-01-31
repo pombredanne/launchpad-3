@@ -31,7 +31,6 @@ class TestSprintIndex(BrowserTestCase):
                 sprint.time_ends,
                 True)
         Store.of(sprint).flush()
-        Store.of(sprint).invalidate()
         self.assertThat(sprint, BrowsesWithQueryLimit(18, sprint.owner))
 
     def test_blueprint_listing_query_count(self):

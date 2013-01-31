@@ -80,6 +80,7 @@ class BrowsesWithQueryLimit(Matcher):
         browser = setupBrowserForUser(self.user)
         collector = QueryCollector()
         collector.register()
+        Store.of(context).invalidate()
         try:
             browser.open(context_url)
             counter = HasQueryCount(LessThan(self.query_limit))

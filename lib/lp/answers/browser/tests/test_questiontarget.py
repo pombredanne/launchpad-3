@@ -77,8 +77,6 @@ class TestSearchQuestionsView(TestCaseWithFactory):
         for i in range(0, 5):
             questions.append(self.factory.makeQuestion(
                 target=dsp, owner=owner))
-        # Empty the cache.
-        Store.of(questions[0]).invalidate()
         browses_under_limit = BrowsesWithQueryLimit(
             31, owner, view_name="+questions")
         self.assertThat(dsp, browses_under_limit)
