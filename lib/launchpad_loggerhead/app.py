@@ -138,7 +138,11 @@ class RootApp:
         if response.status == SUCCESS:
             self.log.error('open id response: SUCCESS')
             sreg_info = SRegResponse.fromSuccessResponse(response)
-            print sreg_info
+            if not sreg_info:
+                self.log.error('sreg_info is None.')
+                exc = HTTPUnauthorized()
+                exc.explanation = "Can not link OpenID to Launchpad account."
+                raise exc
             environ[self.session_var]['user'] = sreg_info['nickname']
             raise HTTPMovedPermanently(query['back_to'])
         elif response.status == FAILURE:
