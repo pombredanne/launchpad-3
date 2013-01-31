@@ -387,12 +387,40 @@ class BuildFarmJobSet:
         # related package build - hence the left join.
         origin = [
             BuildFarmJob,
-            LeftJoin(
-                PackageBuild,
-                PackageBuild.build_farm_job == BuildFarmJob.id),
-            LeftJoin(Archive, Archive.id == PackageBuild.archive_id),
+            LeftJoin(Archive, Archive.id == BuildFarmJob.archive_id),
             ]
 
         return IStore(BuildFarmJob).using(*origin).find(
             BuildFarmJob, *clauses).order_by(
                 Desc(BuildFarmJob.date_finished), BuildFarmJob.id)
+
+    def getBuildsForArchive(self, archive, status=None):
+        """See `IPackageBuildSet`."""
+
+        extra_exprs = []
+
+        if status is not None:
+            extra_exprs.append(BuildFarmJob.status == status)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.find(
+            BuildFarmJob, BuildFarmJob.archive == archive, *extra_exprs)
+
+        # When we have a set of builds that may include pending or
+        # superseded builds, we order by -date_created (as we won't
+        # always have a date_finished). Otherwise we can order by
+        # -date_finished.
+        unfinished_states = [
+            BuildStatus.NEEDSBUILD,
+            BuildStatus.BUILDING,
+            BuildStatus.UPLOADING,
+            BuildStatus.SUPERSEDED,
+            ]
+        if status is None or status in unfinished_states:
+            result_set.order_by(
+                Desc(BuildFarmJob.date_created), BuildFarmJob.id)
+        else:
+            result_set.order_by(
+                Desc(BuildFarmJob.date_finished), BuildFarmJob.id)
+
+        return result_set
