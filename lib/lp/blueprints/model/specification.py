@@ -244,9 +244,6 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
     bugs = SQLRelatedJoin('Bug',
         joinColumn='specification', otherColumn='bug',
         intermediateTable='SpecificationBug', orderBy='id')
-    linked_branches = SQLMultipleJoin('SpecificationBranch',
-        joinColumn='specification',
-        orderBy='id')
     spec_dependency_links = SQLMultipleJoin('SpecificationDependency',
         joinColumn='specification', orderBy='id')
 
@@ -255,6 +252,13 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
         intermediateTable='SpecificationDependency')
     information_type = EnumCol(
         enum=InformationType, notNull=True, default=InformationType.PUBLIC)
+
+    @cachedproperty
+    def linked_branches(self):
+        return list(Store.of(self).find(
+            SpecificationBranch,
+            SpecificationBranch.specificationID == self.id).order_by(
+                SpecificationBranch.id))
 
     def _fetch_children_or_parents(self, join_cond, cond, user):
         from lp.blueprints.model.specificationsearch import (
@@ -857,12 +861,16 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
             return branch_link
         branch_link = SpecificationBranch(
             specification=self, branch=branch, registrant=registrant)
+        Store.of(self).flush()
+        del get_property_cache(self).linked_branches
         notify(ObjectCreatedEvent(branch_link))
         return branch_link
 
     def unlinkBranch(self, branch, user):
         spec_branch = self.getBranchLink(branch)
         spec_branch.destroySelf()
+        Store.of(self).flush()
+        del get_property_cache(self).linked_branches
 
     def getLinkedBugTasks(self, user):
         """See `ISpecification`."""
