@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from storm.locals import Store
 from testtools.matchers import Equals
 
 from lp.app.enums import InformationType
@@ -27,10 +26,7 @@ class TestSprintIndex(BrowserTestCase):
         for x in range(30):
             sprint.attend(
                 self.factory.makePerson(),
-                sprint.time_starts,
-                sprint.time_ends,
-                True)
-        Store.of(sprint).flush()
+                sprint.time_starts, sprint.time_ends, True)
         self.assertThat(sprint, BrowsesWithQueryLimit(18, sprint.owner))
 
     def test_blueprint_listing_query_count(self):

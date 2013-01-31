@@ -79,9 +79,9 @@ class BrowsesWithQueryLimit(Matcher):
             context_url = canonical_url(
                 context, view_name=self.view_name, **self.options)
         browser = setupBrowserForUser(self.user)
+        flush_database_caches()
         collector = QueryCollector()
         collector.register()
-        flush_database_caches()
         try:
             browser.open(context_url)
             counter = HasQueryCount(LessThan(self.query_limit))
