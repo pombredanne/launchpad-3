@@ -133,20 +133,12 @@ class IPackageBuild(IBuildFarmJob):
 class IPackageBuildSource(Interface):
     """A utility of this interface used to create _things_."""
 
-    def new(job_type, virtualized, archive, pocket, processor=None,
-            status=BuildStatus.NEEDSBUILD, dependencies=None, builder=None):
+    def new(build_farm_job, archive, pocket):
         """Create a new `IPackageBuild`.
 
-        :param job_type: A `BuildFarmJobType` item.
-        :param virtualized: A boolean indicating whether this build was
-            virtualized.
+        :param build_farm_job: An `IBuildFarmJob`.
         :param archive: An `IArchive`.
         :param pocket: An item of `PackagePublishingPocket`.
-        :param processor: An `IProcessor` required to run this build farm
-            job. Default is None (processor-independent).
-        :param status: A `BuildStatus` item defaulting to NEEDSBUILD.
-        :param dependencies: An optional debian-like dependency line.
-        :parma builder: An optional `IBuilder`.
         """
 
 
