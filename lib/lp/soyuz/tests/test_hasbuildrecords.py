@@ -182,7 +182,8 @@ class TestArchiveHasBuildRecords(TestHasBuildRecordsInterface):
         # can only test this by creating a lone PackageBuild of a
         # different type.
         bfj = getUtility(IBuildFarmJobSource).new(
-            BuildFarmJobType.RECIPEBRANCHBUILD, virtualized=True)
+            BuildFarmJobType.RECIPEBRANCHBUILD, virtualized=True,
+            archive=self.context)
         getUtility(IPackageBuildSource).new(
             bfj, archive=self.context, pocket=PackagePublishingPocket.RELEASE)
 
