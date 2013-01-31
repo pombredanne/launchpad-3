@@ -105,6 +105,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     _defaultOrder = 'id'
 
     build_farm_job_type = BuildFarmJobType.PACKAGEBUILD
+    job_type = build_farm_job_type
 
     package_build_id = Int(name='package_build', allow_none=False)
     package_build = Reference(package_build_id, 'PackageBuild.id')

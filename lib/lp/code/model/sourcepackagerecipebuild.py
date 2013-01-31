@@ -93,6 +93,7 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
     package_build = Reference(package_build_id, 'PackageBuild.id')
 
     build_farm_job_type = BuildFarmJobType.RECIPEBRANCHBUILD
+    job_type = build_farm_job_type
 
     id = Int(primary=True)
 
