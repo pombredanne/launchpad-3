@@ -105,6 +105,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     _defaultOrder = 'id'
 
     build_farm_job_type = BuildFarmJobType.PACKAGEBUILD
+    job_type = build_farm_job_type
 
     package_build_id = Int(name='package_build', allow_none=False)
     package_build = Reference(package_build_id, 'PackageBuild.id')
@@ -118,8 +119,8 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         source_package_release_id, 'SourcePackageRelease.id')
 
     # Migrating from PackageBuild
-    _new_build_farm_job_id = Int(name='build_farm_job')
-    _new_build_farm_job = Reference(_new_build_farm_job_id, BuildFarmJob.id)
+    build_farm_job_id = Int(name='build_farm_job')
+    build_farm_job = Reference(build_farm_job_id, BuildFarmJob.id)
 
     _new_archive_id = Int(name='archive')
     _new_archive = Reference(_new_archive_id, 'Archive.id')
@@ -865,7 +866,7 @@ class BinaryPackageBuildSet:
             build_farm_job, archive, pocket)
 
         binary_package_build = BinaryPackageBuild(
-            _new_build_farm_job=build_farm_job,
+            build_farm_job=build_farm_job,
             package_build=package_build,
             distro_arch_series=distro_arch_series,
             source_package_release=source_package_release,

@@ -93,6 +93,7 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
     package_build = Reference(package_build_id, 'PackageBuild.id')
 
     build_farm_job_type = BuildFarmJobType.RECIPEBRANCHBUILD
+    job_type = build_farm_job_type
 
     id = Int(primary=True)
 
@@ -150,8 +151,8 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
     requester = Reference(requester_id, 'Person.id')
 
     # Migrating from PackageBuild
-    _new_build_farm_job_id = Int(name='build_farm_job')
-    _new_build_farm_job = Reference(_new_build_farm_job_id, BuildFarmJob.id)
+    build_farm_job_id = Int(name='build_farm_job')
+    build_farm_job = Reference(build_farm_job_id, BuildFarmJob.id)
 
     _new_archive_id = Int(name='archive')
     _new_archive = Reference(_new_archive_id, 'Archive.id')
@@ -216,7 +217,7 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
                  requester, archive, pocket, date_created):
         """Construct a SourcePackageRecipeBuild."""
         super(SourcePackageRecipeBuild, self).__init__()
-        self._new_build_farm_job = build_farm_job
+        self.build_farm_job = build_farm_job
         self.package_build = package_build
         self.distroseries = distroseries
         self.recipe = recipe

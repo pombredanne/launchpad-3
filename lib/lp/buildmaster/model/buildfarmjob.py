@@ -260,10 +260,6 @@ class BuildFarmJobMixin:
         return self._new_log
 
     @property
-    def job_type(self):
-        return self.build_farm_job.job_type
-
-    @property
     def failure_count(self):
         return self._new_failure_count
 

@@ -57,6 +57,8 @@ class TranslationTemplatesBuild(BuildFarmJobMixin, Storm):
 
     __storm_table__ = 'TranslationTemplatesBuild'
 
+    job_type = BuildFarmJobType.TRANSLATIONTEMPLATESBUILD
+
     id = Int(name='id', primary=True)
     build_farm_job_id = Int(name='build_farm_job', allow_none=False)
     build_farm_job = Reference(build_farm_job_id, 'BuildFarmJob.id')

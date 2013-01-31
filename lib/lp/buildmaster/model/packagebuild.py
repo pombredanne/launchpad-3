@@ -110,10 +110,6 @@ class PackageBuild(Storm):
 class PackageBuildMixin(BuildFarmJobMixin):
 
     @property
-    def build_farm_job(self):
-        return self.package_build.build_farm_job
-
-    @property
     def archive(self):
         return self._new_archive
 

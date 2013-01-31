@@ -179,6 +179,8 @@ class IBuildFarmJob(Interface):
 
     id = Attribute('The build farm job ID.')
 
+    build_farm_job = Attribute('Generic build farm job record')
+
     processor = Reference(
         IProcessor, title=_("Processor"), required=False, readonly=True,
         description=_(
