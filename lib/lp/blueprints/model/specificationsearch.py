@@ -35,6 +35,7 @@ from lp.blueprints.enums import (
     SpecificationSort,
     )
 from lp.blueprints.model.specification import Specification
+from lp.blueprints.model.specificationbranch import SpecificationBranch
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
@@ -42,6 +43,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.bulk import load_referencing
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
 from lp.services.database.stormexpr import (
@@ -103,13 +105,13 @@ def search_specifications(context, base_clauses, user, sort=None,
     else:
         order = [sort]
     # Set the _known_viewers property for each specification, as well as
-    # preloading the people involved, if asked.
+    # preloading the objects involved, if asked.
     decorators = []
     preload_hook = None
     if user is not None and not IPersonRoles(user).in_admin:
         decorators.append(_make_cache_user_can_view_spec(user))
     if prejoin_people:
-        preload_hook = _preload_specifications_related_people
+        preload_hook = _preload_specifications_related_objects
     results = store.using(*tables).find(
         Specification, *clauses).order_by(*order).config(limit=quantity)
     return DecoratedResultSet(
@@ -225,14 +227,20 @@ def _make_cache_user_can_view_spec(user):
     return cache_user_can_view_spec
 
 
-def _preload_specifications_related_people(rows):
+def _preload_specifications_related_objects(rows):
     person_ids = set()
     for spec in rows:
         person_ids |= set(
             [spec._assigneeID, spec._approverID, spec._drafterID])
+        get_property_cache(spec).linked_branches = []
     person_ids -= set([None])
     list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
         person_ids, need_validity=True))
+    spec_branches = load_referencing(
+        SpecificationBranch, rows, ['specificationID'])
+    for sbranch in spec_branches:
+        get_property_cache(sbranch.specification).linked_branches.append(
+            sbranch)
 
 
 def get_specification_started_clause():

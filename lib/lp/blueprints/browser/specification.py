@@ -625,7 +625,7 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
 
     @enabled_with_permission('launchpad.AnyPerson')
     def linkbranch(self):
-        if self.context.linked_branches.count() > 0:
+        if len(self.context.linked_branches) > 0:
             text = 'Link to another branch'
         else:
             text = 'Link a related branch'
