@@ -47,10 +47,7 @@ from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
 from lp.buildmaster.model.builder import Builder
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.buildmaster.model.packagebuild import (
-    PackageBuild,
-    PackageBuildMixin,
-    )
+from lp.buildmaster.model.packagebuild import PackageBuildMixin
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
 from lp.services.database.bulk import load_related
@@ -898,15 +895,8 @@ class BinaryPackageBuildSet:
 
     def getByBuildFarmJob(self, build_farm_job):
         """See `ISpecificBuildFarmJobSource`."""
-        find_spec = (BinaryPackageBuild, PackageBuild, BuildFarmJob)
-        resulting_tuple = Store.of(build_farm_job).find(
-            find_spec,
-            BinaryPackageBuild.package_build == PackageBuild.id,
-            PackageBuild.build_farm_job == BuildFarmJob.id,
-            BuildFarmJob.id == build_farm_job.id).one()
-        if resulting_tuple is None:
-            return None
-        return resulting_tuple[0]
+        return Store.of(build_farm_job).find(
+            BinaryPackageBuild, _new_build_farm_job_id=build_farm_job.id).one()
 
     def preloadBuildsData(self, builds):
         # Circular imports.
@@ -929,17 +919,11 @@ class BinaryPackageBuildSet:
         """See `ISpecificBuildFarmJobSource`."""
         if len(build_farm_jobs) == 0:
             return EmptyResultSet()
-        clause_tables = (BinaryPackageBuild, PackageBuild, BuildFarmJob)
-        build_farm_job_ids = [
-            build_farm_job.id for build_farm_job in build_farm_jobs]
-
-        resultset = Store.of(build_farm_jobs[0]).using(*clause_tables).find(
+        rows = Store.of(build_farm_jobs[0]).find(
             BinaryPackageBuild,
-            BinaryPackageBuild.package_build == PackageBuild.id,
-            PackageBuild.build_farm_job == BuildFarmJob.id,
-            BuildFarmJob.id.is_in(build_farm_job_ids))
-        return DecoratedResultSet(
-            resultset, pre_iter_hook=self.preloadBuildsData)
+            BinaryPackageBuild._new_build_farm_job_id.is_in(
+                bfj.id for bfj in build_farm_jobs))
+        return DecoratedResultSet(rows, pre_iter_hook=self.preloadBuildsData)
 
     def handleOptionalParamsForBuildQueries(
         self, clauses, origin, status=None, name=None, pocket=None,

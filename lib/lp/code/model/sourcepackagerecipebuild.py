@@ -328,9 +328,8 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
     @classmethod
     def getByBuildFarmJob(cls, build_farm_job):
         """See `ISpecificBuildFarmJobSource`."""
-        return Store.of(build_farm_job).find(cls,
-            cls.package_build_id == PackageBuild.id,
-            PackageBuild.build_farm_job_id == build_farm_job.id).one()
+        return Store.of(build_farm_job).find(
+            cls, _new_build_farm_job_id=build_farm_job.id).one()
 
     @classmethod
     def preloadBuildsData(cls, builds):
@@ -348,14 +347,10 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
         """See `ISpecificBuildFarmJobSource`."""
         if len(build_farm_jobs) == 0:
             return EmptyResultSet()
-        build_farm_job_ids = [
-            build_farm_job.id for build_farm_job in build_farm_jobs]
-
-        resultset = Store.of(build_farm_jobs[0]).find(cls,
-            cls.package_build_id == PackageBuild.id,
-            PackageBuild.build_farm_job_id.is_in(build_farm_job_ids))
-        return DecoratedResultSet(
-            resultset, pre_iter_hook=cls.preloadBuildsData)
+        rows = Store.of(build_farm_jobs[0]).find(
+            cls, cls._new_build_farm_job_id.is_in(
+                bfj.id for bfj in build_farm_jobs))
+        return DecoratedResultSet(rows, pre_iter_hook=cls.preloadBuildsData)
 
     @classmethod
     def getRecentBuilds(cls, requester, recipe, distroseries, _now=None):
