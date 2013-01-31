@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import logging
@@ -141,7 +141,10 @@ class RootApp:
             if not sreg_info:
                 self.log.error('sreg_info is None.')
                 exc = HTTPUnauthorized()
-                exc.explanation = "Can not link OpenID to Launchpad account."
+                exc.explanation = (
+                  "You don't have a Launchpad account. Check that you're "
+                  "logged in as the right user, or log into Launchpad and try "
+                  "again.")
                 raise exc
             environ[self.session_var]['user'] = sreg_info['nickname']
             raise HTTPMovedPermanently(query['back_to'])
