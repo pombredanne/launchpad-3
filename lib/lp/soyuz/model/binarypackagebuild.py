@@ -43,7 +43,6 @@ from lp.buildmaster.enums import (
     BuildStatus,
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
-from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
 from lp.buildmaster.model.builder import Builder
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
@@ -103,9 +102,6 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
 
     build_farm_job_type = BuildFarmJobType.PACKAGEBUILD
     job_type = build_farm_job_type
-
-    package_build_id = Int(name='package_build', allow_none=False)
-    package_build = Reference(package_build_id, 'PackageBuild.id')
 
     distro_arch_series_id = Int(name='distro_arch_series', allow_none=False)
     distro_arch_series = Reference(
@@ -403,11 +399,11 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         assert self.can_be_retried, "Build %s cannot be retried" % self.id
         self.build_farm_job.status = self._new_status = BuildStatus.NEEDSBUILD
         self.build_farm_job.date_finished = self._new_date_finished = None
-        self.build_farm_job.date_started = self._new_date_started = None
+        self._new_date_started = None
         self.build_farm_job.builder = self._new_builder = None
-        self.build_farm_job.log = self._new_log = None
-        self.package_build.upload_log = self._new_upload_log = None
-        self.package_build.dependencies = self._new_upload_log = None
+        self._new_log = None
+        self._new_upload_log = None
+        self._new_dependencies = None
         self.queueBuild()
 
     def rescore(self, score):
@@ -557,8 +553,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
             if not self._isDependencySatisfied(token)]
 
         # Update dependencies line
-        self.package_build.dependencies = self._new_dependencies = (
-            u", ".join(remaining_deps))
+        self._new_dependencies = u", ".join(remaining_deps)
 
     def __getitem__(self, name):
         return self.getBinaryPackageRelease(name)
@@ -854,17 +849,12 @@ class BinaryPackageBuildSet:
             archive, pocket, status=BuildStatus.NEEDSBUILD,
             date_created=None, builder=None):
         """See `IBinaryPackageBuildSet`."""
-        # Create the PackageBuild to which the new BinaryPackageBuild
-        # will delegate.
+        # Create the BuildFarmJob for the new BinaryPackageBuild.
         build_farm_job = getUtility(IBuildFarmJobSource).new(
-            BinaryPackageBuild.build_farm_job_type, status, processor,
-            archive.require_virtualized, date_created, builder, archive)
-        package_build = getUtility(IPackageBuildSource).new(
-            build_farm_job, archive, pocket)
-
+            BinaryPackageBuild.build_farm_job_type, status, date_created,
+            builder, archive)
         binary_package_build = BinaryPackageBuild(
             build_farm_job=build_farm_job,
-            package_build=package_build,
             distro_arch_series=distro_arch_series,
             source_package_release=source_package_release,
             _new_archive=archive, _new_pocket=pocket,

@@ -46,8 +46,7 @@ class TestPackageBuildBase(TestCaseWithFactory):
         if archive is None:
             archive = self.factory.makeArchive()
 
-        bfj = getUtility(IBuildFarmJobSource).new(
-            job_type, virtualized=True, status=status)
+        bfj = getUtility(IBuildFarmJobSource).new(job_type, status=status)
         return getUtility(IPackageBuildSource).new(bfj, archive, pocket)
 
 
