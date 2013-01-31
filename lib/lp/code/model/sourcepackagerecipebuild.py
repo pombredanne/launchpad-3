@@ -239,7 +239,7 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
             date_created = UTC_NOW
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             cls.build_farm_job_type, BuildStatus.NEEDSBUILD, None, True,
-            date_created, None)
+            date_created, None, archive)
         packagebuild = getUtility(IPackageBuildSource).new(
             build_farm_job, archive, pocket)
         spbuild = cls(

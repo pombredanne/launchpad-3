@@ -863,7 +863,7 @@ class BinaryPackageBuildSet:
         # will delegate.
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             BinaryPackageBuild.build_farm_job_type, status, processor,
-            archive.require_virtualized, date_created, builder)
+            archive.require_virtualized, date_created, builder, archive)
         package_build = getUtility(IPackageBuildSource).new(
             build_farm_job, archive, pocket)
 
