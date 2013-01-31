@@ -59,7 +59,8 @@ ALTER TABLE translationtemplatesbuild
 -- access checks.
 ALTER TABLE buildfarmjob
     ADD COLUMN archive integer REFERENCES archive,
-    ALTER COLUMN failure_count DROP NOT NULL;
+    ALTER COLUMN failure_count DROP NOT NULL,
+    DROP CONSTRAINT started_if_finished;
 
 -- TODO: Indices
 
