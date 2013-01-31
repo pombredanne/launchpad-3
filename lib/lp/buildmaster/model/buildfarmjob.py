@@ -367,13 +367,12 @@ class BuildFarmJobSet:
     def getBuildsForBuilder(self, builder_id, status=None, user=None):
         """See `IBuildFarmJobSet`."""
         # Imported here to avoid circular imports.
-        from lp.buildmaster.model.packagebuild import PackageBuild
         from lp.soyuz.model.archive import (
             Archive, get_archive_privacy_filter)
 
         clauses = [
             BuildFarmJob.builder == builder_id,
-            Or(PackageBuild.id == None, get_archive_privacy_filter(user))]
+            Or(Archive.id == None, get_archive_privacy_filter(user))]
         if status is not None:
             clauses.append(BuildFarmJob.status == status)
 
