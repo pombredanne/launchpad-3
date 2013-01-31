@@ -1314,9 +1314,11 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
                 'archive', 'pocket', 'processor', 'virtualized',
                 'date_created', 'date_started', 'date_finished',
                 'date_first_dispatched', 'builder', 'status', 'log',
-                'upload_log', 'dependencies', 'failure_count')
+                'upload_log', 'dependencies', 'failure_count',
+                'build_farm_job')
             for attr in attrs:
                 setattr(removeSecurityProxy(build), '_new_' + attr, None)
+            removeSecurityProxy(build.build_farm_job).archive = None
         self.assertEqual(
             1, store.find(BinaryPackageBuild, _new_archive=None).count())
         self.runHourly()
@@ -1328,6 +1330,8 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             MatchesStructure.byEquality(
                 **dict(
                     ('_new_' + attr, getattr(build, attr)) for attr in attrs)))
+        self.assertEqual(
+            build.archive, removeSecurityProxy(build.build_farm_job).archive)
 
     def test_SourcePackageRecipeBuildFlattener(self):
         store = IMasterStore(BinaryPackageBuild)
@@ -1350,9 +1354,11 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
                 'archive', 'pocket', 'processor', 'virtualized',
                 'date_created', 'date_started', 'date_finished',
                 'date_first_dispatched', 'builder', 'status', 'log',
-                'upload_log', 'dependencies', 'failure_count')
+                'upload_log', 'dependencies', 'failure_count',
+                'build_farm_job')
             for attr in attrs:
                 setattr(removeSecurityProxy(build), '_new_' + attr, None)
+            removeSecurityProxy(build).build_farm_job.archive = None
         self.assertEqual(
             1, store.find(SourcePackageRecipeBuild, _new_archive=None).count())
         self.runHourly()
@@ -1364,6 +1370,8 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             MatchesStructure.byEquality(
                 **dict(
                     ('_new_' + attr, getattr(build, attr)) for attr in attrs)))
+        self.assertEqual(
+            build.archive, removeSecurityProxy(build.build_farm_job).archive)
 
     def test_TranslationTemplatesBuildFlattener(self):
         store = IMasterStore(BinaryPackageBuild)

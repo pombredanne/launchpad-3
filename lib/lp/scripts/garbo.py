@@ -1386,15 +1386,21 @@ class BinaryPackageBuildFlattener(TunableLoop):
             BinaryPackageBuild._new_upload_log_id: PackageBuild.upload_log_id,
             BinaryPackageBuild._new_dependencies: PackageBuild.dependencies,
             BinaryPackageBuild._new_failure_count: BuildFarmJob.failure_count,
+            BinaryPackageBuild._new_build_farm_job_id: BuildFarmJob.id,
             }
+        condition = And(
+            BinaryPackageBuild.id.is_in(ids),
+            PackageBuild.id == BinaryPackageBuild.package_build_id,
+            BuildFarmJob.id == PackageBuild.build_farm_job_id)
         self.store.execute(
             BulkUpdate(
                 updated_columns, table=BinaryPackageBuild,
-                values=(PackageBuild, BuildFarmJob),
-                where=And(
-                    BinaryPackageBuild.id.is_in(ids),
-                    PackageBuild.id == BinaryPackageBuild.package_build_id,
-                    BuildFarmJob.id == PackageBuild.build_farm_job_id)))
+                values=(PackageBuild, BuildFarmJob), where=condition))
+        self.store.execute(
+            BulkUpdate(
+                {BuildFarmJob.archive_id: PackageBuild.archive_id},
+                table=BuildFarmJob, values=(PackageBuild, BinaryPackageBuild),
+                where=condition))
         transaction.commit()
         self.start_at = ids[-1] + 1
         getUtility(IMemcacheClient).set(self.memcache_key, self.start_at)
@@ -1452,16 +1458,22 @@ class SourcePackageRecipeBuildFlattener(TunableLoop):
                 PackageBuild.dependencies,
             SourcePackageRecipeBuild._new_failure_count:
                 BuildFarmJob.failure_count,
+            SourcePackageRecipeBuild._new_build_farm_job_id: BuildFarmJob.id,
             }
+        condition = And(
+            SourcePackageRecipeBuild.id.is_in(ids),
+            PackageBuild.id == SourcePackageRecipeBuild.package_build_id,
+            BuildFarmJob.id == PackageBuild.build_farm_job_id)
         self.store.execute(
             BulkUpdate(
                 updated_columns, table=SourcePackageRecipeBuild,
-                values=(PackageBuild, BuildFarmJob),
-                where=And(
-                    SourcePackageRecipeBuild.id.is_in(ids),
-                    PackageBuild.id ==
-                        SourcePackageRecipeBuild.package_build_id,
-                    BuildFarmJob.id == PackageBuild.build_farm_job_id)))
+                values=(PackageBuild, BuildFarmJob), where=condition))
+        self.store.execute(
+            BulkUpdate(
+                {BuildFarmJob.archive_id: PackageBuild.archive_id},
+                table=BuildFarmJob,
+                values=(PackageBuild, SourcePackageRecipeBuild),
+                where=condition))
         transaction.commit()
         self.start_at = ids[-1] + 1
         getUtility(IMemcacheClient).set(self.memcache_key, self.start_at)

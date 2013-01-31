@@ -18,7 +18,9 @@ ALTER TABLE binarypackagebuild
     ADD COLUMN log integer REFERENCES libraryfilealias,
     ADD COLUMN upload_log integer REFERENCES libraryfilealias,
     ADD COLUMN dependencies text,
-    ADD COLUMN failure_count integer DEFAULT 0;
+    ADD COLUMN failure_count integer DEFAULT 0,
+    ADD COLUMN build_farm_job integer REFERENCES buildfarmjob,
+    ALTER COLUMN package_build DROP NOT NULL;
 
 ALTER TABLE sourcepackagerecipebuild
     ADD COLUMN archive integer REFERENCES archive,
@@ -35,7 +37,9 @@ ALTER TABLE sourcepackagerecipebuild
     ADD COLUMN log integer REFERENCES libraryfilealias,
     ADD COLUMN upload_log integer REFERENCES libraryfilealias,
     ADD COLUMN dependencies text,
-    ADD COLUMN failure_count integer DEFAULT 0;
+    ADD COLUMN failure_count integer DEFAULT 0,
+    ADD COLUMN build_farm_job integer REFERENCES buildfarmjob,
+    ALTER COLUMN package_build DROP NOT NULL;
 
 ALTER TABLE translationtemplatesbuild
     ADD COLUMN processor integer REFERENCES processor,
@@ -49,6 +53,13 @@ ALTER TABLE translationtemplatesbuild
     ADD COLUMN status integer,
     ADD COLUMN log integer REFERENCES libraryfilealias,
     ADD COLUMN failure_count integer DEFAULT 0;
+
+-- BuildFarmJob is becoming a shadow of its former self, so more columns
+-- have to be nullable, but it also grows an archive column to hasten
+-- access checks.
+ALTER TABLE buildfarmjob
+    ADD COLUMN archive integer REFERENCES archive,
+    ALTER COLUMN failure_count DROP NOT NULL;
 
 -- TODO: Indices
 

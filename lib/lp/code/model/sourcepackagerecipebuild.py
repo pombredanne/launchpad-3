@@ -39,7 +39,12 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
-from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
+from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
+from lp.buildmaster.model.buildfarmjob import (
+    BuildFarmJob,
+    BuildFarmJobOld,
+    )
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
     PackageBuild,
@@ -145,6 +150,9 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
     requester = Reference(requester_id, 'Person.id')
 
     # Migrating from PackageBuild
+    _new_build_farm_job_id = Int(name='build_farm_job')
+    _new_build_farm_job = Reference(_new_build_farm_job_id, BuildFarmJob.id)
+
     _new_archive_id = Int(name='archive')
     _new_archive = Reference(_new_archive_id, 'Archive.id')
 
@@ -204,10 +212,11 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
             branch_name = self.recipe.base_branch.unique_name
             return '%s recipe build' % branch_name
 
-    def __init__(self, package_build, distroseries, recipe, requester,
-                 archive, pocket, date_created):
+    def __init__(self, build_farm_job, package_build, distroseries, recipe,
+                 requester, archive, pocket, date_created):
         """Construct a SourcePackageRecipeBuild."""
         super(SourcePackageRecipeBuild, self).__init__()
+        self._new_build_farm_job = build_farm_job
         self.package_build = package_build
         self.distroseries = distroseries
         self.recipe = recipe
@@ -228,11 +237,14 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
             pocket = PackagePublishingPocket.RELEASE
         if date_created is None:
             date_created = UTC_NOW
-        packagebuild = PackageBuild.new(cls.build_farm_job_type,
-            True, archive, pocket, date_created=date_created)
+        build_farm_job = getUtility(IBuildFarmJobSource).new(
+            cls.build_farm_job_type, BuildStatus.NEEDSBUILD, None, True,
+            date_created, None, archive)
+        packagebuild = getUtility(IPackageBuildSource).new(
+            build_farm_job, archive, pocket)
         spbuild = cls(
-            packagebuild, distroseries, recipe, requester, archive, pocket,
-            date_created)
+            build_farm_job, packagebuild, distroseries, recipe, requester,
+            archive, pocket, date_created)
         store.add(spbuild)
         return spbuild
 

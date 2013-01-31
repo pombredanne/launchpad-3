@@ -42,6 +42,7 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
 from lp.buildmaster.model.builder import Builder
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
@@ -117,6 +118,9 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         source_package_release_id, 'SourcePackageRelease.id')
 
     # Migrating from PackageBuild
+    _new_build_farm_job_id = Int(name='build_farm_job')
+    _new_build_farm_job = Reference(_new_build_farm_job_id, BuildFarmJob.id)
+
     _new_archive_id = Int(name='archive')
     _new_archive = Reference(_new_archive_id, 'Archive.id')
 
@@ -854,12 +858,14 @@ class BinaryPackageBuildSet:
         """See `IBinaryPackageBuildSet`."""
         # Create the PackageBuild to which the new BinaryPackageBuild
         # will delegate.
+        build_farm_job = getUtility(IBuildFarmJobSource).new(
+            BinaryPackageBuild.build_farm_job_type, status, processor,
+            archive.require_virtualized, date_created, builder, archive)
         package_build = getUtility(IPackageBuildSource).new(
-            BinaryPackageBuild.build_farm_job_type,
-            archive.require_virtualized, archive, pocket, processor,
-            status, date_created=date_created, builder=builder)
+            build_farm_job, archive, pocket)
 
         binary_package_build = BinaryPackageBuild(
+            _new_build_farm_job=build_farm_job,
             package_build=package_build,
             distro_arch_series=distro_arch_series,
             source_package_release=source_package_release,
