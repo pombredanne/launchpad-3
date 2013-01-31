@@ -329,7 +329,7 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
     def getByBuildFarmJob(cls, build_farm_job):
         """See `ISpecificBuildFarmJobSource`."""
         return Store.of(build_farm_job).find(
-            cls, _new_build_farm_job_id=build_farm_job.id).one()
+            cls, build_farm_job_id=build_farm_job.id).one()
 
     @classmethod
     def preloadBuildsData(cls, builds):
@@ -348,7 +348,7 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
         if len(build_farm_jobs) == 0:
             return EmptyResultSet()
         rows = Store.of(build_farm_jobs[0]).find(
-            cls, cls._new_build_farm_job_id.is_in(
+            cls, cls.build_farm_job_id.is_in(
                 bfj.id for bfj in build_farm_jobs))
         return DecoratedResultSet(rows, pre_iter_hook=cls.preloadBuildsData)
 

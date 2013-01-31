@@ -896,7 +896,7 @@ class BinaryPackageBuildSet:
     def getByBuildFarmJob(self, build_farm_job):
         """See `ISpecificBuildFarmJobSource`."""
         return Store.of(build_farm_job).find(
-            BinaryPackageBuild, _new_build_farm_job_id=build_farm_job.id).one()
+            BinaryPackageBuild, build_farm_job_id=build_farm_job.id).one()
 
     def preloadBuildsData(self, builds):
         # Circular imports.
@@ -921,7 +921,7 @@ class BinaryPackageBuildSet:
             return EmptyResultSet()
         rows = Store.of(build_farm_jobs[0]).find(
             BinaryPackageBuild,
-            BinaryPackageBuild._new_build_farm_job_id.is_in(
+            BinaryPackageBuild.build_farm_job_id.is_in(
                 bfj.id for bfj in build_farm_jobs))
         return DecoratedResultSet(rows, pre_iter_hook=self.preloadBuildsData)
 
