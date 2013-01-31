@@ -19,7 +19,6 @@ from lp.buildmaster.enums import (
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuild,
-    IPackageBuildSet,
     IPackageBuildSource,
     )
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
@@ -203,44 +202,3 @@ class TestPackageBuildMixin(TestCaseWithFactory):
         login('admin@canonical.com')
         self.assertTrue(checkPermission('launchpad.View', self.package_build))
         self.assertTrue(checkPermission('launchpad.Edit', self.package_build))
-
-
-class TestPackageBuildSet(TestPackageBuildBase):
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(TestPackageBuildSet, self).setUp()
-        person = self.factory.makePerson()
-        self.archive = self.factory.makeArchive(owner=person)
-        self.package_builds = []
-        self.package_builds.append(
-            self.makePackageBuild(archive=self.archive,
-                                  pocket=PackagePublishingPocket.UPDATES))
-        self.package_builds.append(
-            self.makePackageBuild(archive=self.archive,
-                                  status=BuildStatus.BUILDING))
-        self.package_build_set = getUtility(IPackageBuildSet)
-
-    def test_getBuildsForArchive_all(self):
-        # The default call without arguments returns all builds for the
-        # archive.
-        self.assertContentEqual(
-            self.package_builds, self.package_build_set.getBuildsForArchive(
-                self.archive))
-
-    def test_getBuildsForArchive_by_status(self):
-        # If the status arg is used, the results will be filtered by
-        # status.
-        self.assertContentEqual(
-            self.package_builds[1:],
-            self.package_build_set.getBuildsForArchive(
-                self.archive, status=BuildStatus.BUILDING))
-
-    def test_getBuildsForArchive_by_pocket(self):
-        # If the pocket arg is used, the results will be filtered by
-        # pocket.
-        self.assertContentEqual(
-            self.package_builds[:1],
-            self.package_build_set.getBuildsForArchive(
-                self.archive, pocket=PackagePublishingPocket.UPDATES))

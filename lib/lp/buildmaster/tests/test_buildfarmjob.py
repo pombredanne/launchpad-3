@@ -52,7 +52,7 @@ class TestBuildFarmJobBase:
     def makeBuildFarmJob(self, builder=None,
                          job_type=BuildFarmJobType.PACKAGEBUILD,
                          status=BuildStatus.NEEDSBUILD,
-                         date_finished=None):
+                         date_finished=None, archive=None):
         """A factory method for creating PackageBuilds.
 
         This is not included in the launchpad test factory because
@@ -61,7 +61,7 @@ class TestBuildFarmJobBase:
         or eventually a SPRecipeBuild).
         """
         build_farm_job = getUtility(IBuildFarmJobSource).new(
-            job_type=job_type, status=status)
+            job_type=job_type, status=status, archive=archive)
         removeSecurityProxy(build_farm_job).builder = builder
         removeSecurityProxy(build_farm_job).date_started = date_finished
         removeSecurityProxy(build_farm_job).date_finished = date_finished
@@ -327,3 +327,28 @@ class TestBuildFarmJobSet(TestBuildFarmJobBase, TestCaseWithFactory):
 
         result = self.build_farm_job_set.getBuildsForBuilder(self.builder)
         self.assertEqual([build_2, build_1, build_3], list(result))
+
+    def makeBuildsForArchive(self):
+        archive = self.factory.makeArchive()
+        builds = [
+            self.makeBuildFarmJob(archive=archive),
+            self.makeBuildFarmJob(
+                archive=archive, status=BuildStatus.BUILDING),
+            ]
+        return (archive, builds)
+
+    def test_getBuildsForArchive_all(self):
+        # The default call without arguments returns all builds for the
+        # archive.
+        archive, builds = self.makeBuildsForArchive()
+        self.assertContentEqual(
+            builds, self.build_farm_job_set.getBuildsForArchive(archive))
+
+    def test_getBuildsForArchive_by_status(self):
+        # If the status arg is used, the results will be filtered by
+        # status.
+        archive, builds = self.makeBuildsForArchive()
+        self.assertContentEqual(
+            builds[1:],
+            self.build_farm_job_set.getBuildsForArchive(
+                archive, status=BuildStatus.BUILDING))

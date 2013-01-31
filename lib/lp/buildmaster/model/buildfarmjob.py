@@ -390,7 +390,7 @@ class BuildFarmJobSet:
                 Desc(BuildFarmJob.date_finished), BuildFarmJob.id)
 
     def getBuildsForArchive(self, archive, status=None):
-        """See `IPackageBuildSet`."""
+        """See `IBuildFarmJobSet`."""
 
         extra_exprs = []
 
