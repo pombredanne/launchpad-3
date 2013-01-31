@@ -12,7 +12,6 @@ from BeautifulSoup import BeautifulSoup
 from lazr.restful.interfaces import IJSONRequestCache
 import pytz
 import soupmatchers
-from storm.store import Store
 from testtools.matchers import (
     Equals,
     Not,
@@ -256,11 +255,9 @@ class TestSpecificationSet(BrowserTestCase):
         removeSecurityProxy(product).official_blueprints = True
         self.factory.makeSpecification(product=product)
         limit = BrowsesWithQueryLimit(37, product.owner, rootsite='blueprints')
-        Store.of(product).invalidate()
         self.assertThat(product, limit)
         login_celebrity('admin')
         [self.factory.makeSpecification(product=product) for i in range(4)]
-        Store.of(product).invalidate()
         self.assertThat(product, limit)
         
 
