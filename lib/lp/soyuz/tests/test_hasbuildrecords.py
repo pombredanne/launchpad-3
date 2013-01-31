@@ -10,7 +10,10 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJob,
+    IBuildFarmJobSource,
+    )
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -178,9 +181,10 @@ class TestArchiveHasBuildRecords(TestHasBuildRecordsInterface):
         # Until we have different IBuildFarmJob types implemented, we
         # can only test this by creating a lone PackageBuild of a
         # different type.
+        bfj = getUtility(IBuildFarmJobSource).new(
+            BuildFarmJobType.RECIPEBRANCHBUILD, virtualized=True)
         getUtility(IPackageBuildSource).new(
-            job_type=BuildFarmJobType.RECIPEBRANCHBUILD, virtualized=True,
-            archive=self.context, pocket=PackagePublishingPocket.RELEASE)
+            bfj, archive=self.context, pocket=PackagePublishingPocket.RELEASE)
 
         builds = self.context.getBuildRecords(binary_only=True)
         self.failUnlessEqual(3, builds.count())
