@@ -266,16 +266,6 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         return self.distro_series.distribution
 
     @property
-    def source_package_name(self):
-        """See `IBinaryPackageBuild`."""
-        return self.source_package_release.sourcepackagename
-
-    @property
-    def is_distro_archive(self):
-        """See `IBinaryPackageBuild`."""
-        return self.archive.is_main
-
-    @property
     def is_virtualized(self):
         """See `IBuild`"""
         return self.archive.require_virtualized
@@ -879,8 +869,8 @@ class BinaryPackageBuildSet:
             archive, pocket, status=BuildStatus.NEEDSBUILD,
             date_created=None, builder=None):
         """See `IBinaryPackageBuildSet`."""
-        # Create the PackageBuild to which the new BinaryPackageBuild
-        # will delegate.
+        # Create the BuildFarmJob and PackageBuild to which the new
+        # BinaryPackageBuild will delegate.
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             BinaryPackageBuild.build_farm_job_type, status, processor,
             archive.require_virtualized, date_created, builder, archive)
