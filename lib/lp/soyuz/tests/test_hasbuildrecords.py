@@ -176,10 +176,6 @@ class TestArchiveHasBuildRecords(TestHasBuildRecordsInterface):
     def test_binary_only_false(self):
         # An archive can optionally return the more general
         # package build objects.
-
-        # Until we have different IBuildFarmJob types implemented, we
-        # can only test this by creating a lone PackageBuild of a
-        # different type.
         getUtility(IBuildFarmJobSource).new(
             BuildFarmJobType.RECIPEBRANCHBUILD, archive=self.context)
 
@@ -220,10 +216,6 @@ class TestBuilderHasBuildRecords(TestHasBuildRecordsInterface):
     def test_binary_only_false(self):
         # A builder can optionally return the more general
         # build farm job objects.
-
-        # Until we have different IBuildFarmJob types implemented, we
-        # can only test this by creating a lone IBuildFarmJob of a
-        # different type.
         from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
         getUtility(IBuildFarmJobSource).new(
             job_type=BuildFarmJobType.RECIPEBRANCHBUILD,

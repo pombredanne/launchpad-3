@@ -43,11 +43,6 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.services.database.enumcol import DBEnum
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
@@ -72,17 +67,13 @@ class BuildFarmJobOld:
     @classmethod
     def getByJob(cls, job):
         """See `IBuildFarmJobOld`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(cls, cls.job == job).one()
+        return IStore(cls).find(cls, cls.job == job).one()
 
     @classmethod
     def getByJobs(cls, jobs):
-        """See `IBuildFarmJobOld`.
-        """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        """See `IBuildFarmJobOld`."""
         job_ids = [job.id for job in jobs]
-        return store.find(
-            cls, cls.job_id.is_in(job_ids))
+        return IStore(cls).find(cls, cls.job_id.is_in(job_ids))
 
     def score(self):
         """See `IBuildFarmJobOld`."""
@@ -375,8 +366,7 @@ class BuildFarmJobSet:
         if status is not None:
             extra_exprs.append(BuildFarmJob.status == status)
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result_set = store.find(
+        result_set = IStore(BuildFarmJob).find(
             BuildFarmJob, BuildFarmJob.archive == archive, *extra_exprs)
 
         # When we have a set of builds that may include pending or
