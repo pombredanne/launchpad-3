@@ -57,8 +57,6 @@ from lp.bugs.scripts.checkwatches.scheduler import (
     BugWatchScheduler,
     MAX_SAMPLE_SIZE,
     )
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
@@ -66,7 +64,6 @@ from lp.code.model.revision import (
     RevisionAuthor,
     RevisionCache,
     )
-from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.person import Person
@@ -107,7 +104,6 @@ from lp.services.job.model.job import Job
 from lp.services.librarian.model import TimeLimitedToken
 from lp.services.log.logger import PrefixFilter
 from lp.services.looptuner import TunableLoop
-from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.oauth.model import OAuthNonce
 from lp.services.openid.model.openidconsumer import OpenIDConsumerNonce
 from lp.services.propertycache import cachedproperty
@@ -123,7 +119,6 @@ from lp.services.scripts.base import (
 from lp.services.session.model import SessionData
 from lp.services.verification.model.logintoken import LoginToken
 from lp.soyuz.model.archive import Archive
-from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
@@ -133,9 +128,6 @@ from lp.translations.model.potranslation import POTranslation
 from lp.translations.model.translationmessage import TranslationMessage
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
-    )
-from lp.translations.model.translationtemplatesbuild import (
-    TranslationTemplatesBuild,
     )
 from lp.translations.scripts.scrub_pofiletranslator import (
     ScrubPOFileTranslator,
@@ -1343,202 +1335,6 @@ class UnusedAccessPolicyPruner(TunableLoop):
         transaction.commit()
 
 
-class BinaryPackageBuildFlattener(TunableLoop):
-    """Populates the new denormalised columns on BinaryPackageBuild."""
-
-    maximum_chunk_size = 5000
-
-    def __init__(self, log, abort_time=None):
-        super(BinaryPackageBuildFlattener, self).__init__(log, abort_time)
-
-        self.memcache_key = '%s:bpb-flattener' % config.instance_name
-        watermark = getUtility(IMemcacheClient).get(self.memcache_key)
-        self.start_at = watermark or 0
-        self.store = IMasterStore(BinaryPackageBuild)
-
-    def findIDs(self):
-        return self.store.find(
-            BinaryPackageBuild.id,
-            BinaryPackageBuild.id >= self.start_at,
-            ).order_by(BinaryPackageBuild.id)
-
-    def isDone(self):
-        return (
-            not getFeatureFlag('soyuz.flatten_bfj.garbo.enabled')
-            or self.findIDs().is_empty())
-
-    def __call__(self, chunk_size):
-        """See `ITunableLoop`."""
-        ids = list(self.findIDs()[:chunk_size])
-        updated_columns = {
-            BinaryPackageBuild._new_archive_id: PackageBuild.archive_id,
-            BinaryPackageBuild._new_pocket: PackageBuild.pocket,
-            BinaryPackageBuild._new_processor_id: BuildFarmJob.processor_id,
-            BinaryPackageBuild._new_virtualized: BuildFarmJob.virtualized,
-            BinaryPackageBuild._new_date_created: BuildFarmJob.date_created,
-            BinaryPackageBuild._new_date_started: BuildFarmJob.date_started,
-            BinaryPackageBuild._new_date_finished: BuildFarmJob.date_finished,
-            BinaryPackageBuild._new_date_first_dispatched:
-                BuildFarmJob.date_first_dispatched,
-            BinaryPackageBuild._new_builder_id: BuildFarmJob.builder_id,
-            BinaryPackageBuild._new_status: BuildFarmJob.status,
-            BinaryPackageBuild._new_log_id: BuildFarmJob.log_id,
-            BinaryPackageBuild._new_upload_log_id: PackageBuild.upload_log_id,
-            BinaryPackageBuild._new_dependencies: PackageBuild.dependencies,
-            BinaryPackageBuild._new_failure_count: BuildFarmJob.failure_count,
-            BinaryPackageBuild._new_build_farm_job_id: BuildFarmJob.id,
-            }
-        condition = And(
-            BinaryPackageBuild.id.is_in(ids),
-            PackageBuild.id == BinaryPackageBuild.package_build_id,
-            BuildFarmJob.id == PackageBuild.build_farm_job_id)
-        self.store.execute(
-            BulkUpdate(
-                updated_columns, table=BinaryPackageBuild,
-                values=(PackageBuild, BuildFarmJob), where=condition))
-        self.store.execute(
-            BulkUpdate(
-                {BuildFarmJob.archive_id: PackageBuild.archive_id},
-                table=BuildFarmJob, values=(PackageBuild, BinaryPackageBuild),
-                where=condition))
-        transaction.commit()
-        self.start_at = ids[-1] + 1
-        getUtility(IMemcacheClient).set(self.memcache_key, self.start_at)
-
-
-class SourcePackageRecipeBuildFlattener(TunableLoop):
-    """Populates the new denormalised columns on SourcePackageRecipeBuild."""
-
-    maximum_chunk_size = 5000
-
-    def __init__(self, log, abort_time=None):
-        super(SourcePackageRecipeBuildFlattener, self).__init__(
-            log, abort_time)
-
-        self.memcache_key = '%s:sprb-flattener' % config.instance_name
-        watermark = getUtility(IMemcacheClient).get(self.memcache_key)
-        self.start_at = watermark or 0
-        self.store = IMasterStore(SourcePackageRecipeBuild)
-
-    def findIDs(self):
-        return self.store.find(
-            SourcePackageRecipeBuild.id,
-            SourcePackageRecipeBuild.id >= self.start_at,
-            ).order_by(SourcePackageRecipeBuild.id)
-
-    def isDone(self):
-        return (
-            not getFeatureFlag('soyuz.flatten_bfj.garbo.enabled')
-            or self.findIDs().is_empty())
-
-    def __call__(self, chunk_size):
-        """See `ITunableLoop`."""
-        ids = list(self.findIDs()[:chunk_size])
-        updated_columns = {
-            SourcePackageRecipeBuild._new_archive_id: PackageBuild.archive_id,
-            SourcePackageRecipeBuild._new_pocket: PackageBuild.pocket,
-            SourcePackageRecipeBuild._new_processor_id:
-                BuildFarmJob.processor_id,
-            SourcePackageRecipeBuild._new_virtualized:
-                BuildFarmJob.virtualized,
-            SourcePackageRecipeBuild._new_date_created:
-                BuildFarmJob.date_created,
-            SourcePackageRecipeBuild._new_date_started:
-                BuildFarmJob.date_started,
-            SourcePackageRecipeBuild._new_date_finished:
-                BuildFarmJob.date_finished,
-            SourcePackageRecipeBuild._new_date_first_dispatched:
-                BuildFarmJob.date_first_dispatched,
-            SourcePackageRecipeBuild._new_builder_id: BuildFarmJob.builder_id,
-            SourcePackageRecipeBuild._new_status: BuildFarmJob.status,
-            SourcePackageRecipeBuild._new_log_id: BuildFarmJob.log_id,
-            SourcePackageRecipeBuild._new_upload_log_id:
-                PackageBuild.upload_log_id,
-            SourcePackageRecipeBuild._new_dependencies:
-                PackageBuild.dependencies,
-            SourcePackageRecipeBuild._new_failure_count:
-                BuildFarmJob.failure_count,
-            SourcePackageRecipeBuild._new_build_farm_job_id: BuildFarmJob.id,
-            }
-        condition = And(
-            SourcePackageRecipeBuild.id.is_in(ids),
-            PackageBuild.id == SourcePackageRecipeBuild.package_build_id,
-            BuildFarmJob.id == PackageBuild.build_farm_job_id)
-        self.store.execute(
-            BulkUpdate(
-                updated_columns, table=SourcePackageRecipeBuild,
-                values=(PackageBuild, BuildFarmJob), where=condition))
-        self.store.execute(
-            BulkUpdate(
-                {BuildFarmJob.archive_id: PackageBuild.archive_id},
-                table=BuildFarmJob,
-                values=(PackageBuild, SourcePackageRecipeBuild),
-                where=condition))
-        transaction.commit()
-        self.start_at = ids[-1] + 1
-        getUtility(IMemcacheClient).set(self.memcache_key, self.start_at)
-
-
-class TranslationTemplatesBuildFlattener(TunableLoop):
-    """Populates the new denormalised columns on TranslationTemplatesBuild."""
-
-    maximum_chunk_size = 5000
-
-    def __init__(self, log, abort_time=None):
-        super(TranslationTemplatesBuildFlattener, self).__init__(
-            log, abort_time)
-
-        self.memcache_key = '%s:ttb-flattener' % config.instance_name
-        watermark = getUtility(IMemcacheClient).get(self.memcache_key)
-        self.start_at = watermark or 0
-        self.store = IMasterStore(TranslationTemplatesBuild)
-
-    def findIDs(self):
-        return self.store.find(
-            TranslationTemplatesBuild.id,
-            TranslationTemplatesBuild.id >= self.start_at,
-            ).order_by(TranslationTemplatesBuild.id)
-
-    def isDone(self):
-        return (
-            not getFeatureFlag('soyuz.flatten_bfj.garbo.enabled')
-            or self.findIDs().is_empty())
-
-    def __call__(self, chunk_size):
-        """See `ITunableLoop`."""
-        ids = list(self.findIDs()[:chunk_size])
-        updated_columns = {
-            TranslationTemplatesBuild._new_processor_id:
-                BuildFarmJob.processor_id,
-            TranslationTemplatesBuild._new_virtualized:
-                BuildFarmJob.virtualized,
-            TranslationTemplatesBuild._new_date_created:
-                BuildFarmJob.date_created,
-            TranslationTemplatesBuild._new_date_started:
-                BuildFarmJob.date_started,
-            TranslationTemplatesBuild._new_date_finished:
-                BuildFarmJob.date_finished,
-            TranslationTemplatesBuild._new_date_first_dispatched:
-                BuildFarmJob.date_first_dispatched,
-            TranslationTemplatesBuild._new_builder_id: BuildFarmJob.builder_id,
-            TranslationTemplatesBuild._new_status: BuildFarmJob.status,
-            TranslationTemplatesBuild._new_log_id: BuildFarmJob.log_id,
-            TranslationTemplatesBuild._new_failure_count:
-                BuildFarmJob.failure_count,
-            }
-        self.store.execute(
-            BulkUpdate(
-                updated_columns, table=TranslationTemplatesBuild,
-                values=(PackageBuild, BuildFarmJob),
-                where=And(
-                    TranslationTemplatesBuild.id.is_in(ids),
-                    BuildFarmJob.id ==
-                        TranslationTemplatesBuild.build_farm_job_id)))
-        transaction.commit()
-        self.start_at = ids[-1] + 1
-        getUtility(IMemcacheClient).set(self.memcache_key, self.start_at)
-
-
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1794,9 +1590,6 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
-        BinaryPackageBuildFlattener,
-        SourcePackageRecipeBuildFlattener,
-        TranslationTemplatesBuildFlattener,
         ]
     experimental_tunable_loops = []
 
