@@ -156,6 +156,18 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
 
     _new_failure_count = Int(name='failure_count')
 
+    _new_distribution_id = Int(name='distribution')
+    _new_distribution = Reference(_new_distribution_id, 'Distribution.id')
+
+    _new_distro_series_id = Int(name='distro_series')
+    _new_distro_series = Reference(_new_distro_series_id, 'DistroSeries.id')
+
+    _new_is_distro_archive = Bool(name='is_distro_archive')
+
+    _new_source_package_name_id = Int(name='source_package_name')
+    _new_source_package_name = Reference(
+        _new_source_package_name_id, 'SourcePackageName.id')
+
     @property
     def buildqueue_record(self):
         """See `IBuild`."""
@@ -875,7 +887,10 @@ class BinaryPackageBuildSet:
             _new_archive=archive, _new_pocket=pocket,
             _new_status=status, _new_processor=processor,
             _new_virtualized=archive.require_virtualized,
-            _new_builder=builder)
+            _new_builder=builder, _new_is_distro_archive=archive.is_main,
+            _new_distribution=distro_arch_series.distroseries.distribution,
+            _new_distro_series=distro_arch_series.distroseries,
+            _new_source_package_name=source_package_release.sourcepackagename)
         if date_created is not None:
             binary_package_build._new_date_created = date_created
         return binary_package_build

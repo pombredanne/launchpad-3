@@ -20,6 +20,10 @@ ALTER TABLE binarypackagebuild
     ADD COLUMN dependencies text,
     ADD COLUMN failure_count integer DEFAULT 0,
     ADD COLUMN build_farm_job integer REFERENCES buildfarmjob,
+    ADD COLUMN distribution integer REFERENCES distribution,
+    ADD COLUMN distro_series integer REFERENCES distroseries,
+    ADD COLUMN is_distro_archive boolean,
+    ADD COLUMN source_package_name integer REFERENCES sourcepackagename,
     ALTER COLUMN package_build DROP NOT NULL;
 
 ALTER TABLE sourcepackagerecipebuild
