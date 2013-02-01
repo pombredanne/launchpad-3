@@ -265,16 +265,6 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         return self.distro_series.distribution
 
     @property
-    def source_package_name(self):
-        """See `IBinaryPackageBuild`."""
-        return self.source_package_release.sourcepackagename
-
-    @property
-    def is_distro_archive(self):
-        """See `IBinaryPackageBuild`."""
-        return self.archive.is_main
-
-    @property
     def is_virtualized(self):
         """See `IBuild`"""
         return self.archive.require_virtualized
