@@ -1315,7 +1315,8 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
                 'date_created', 'date_started', 'date_finished',
                 'date_first_dispatched', 'builder', 'status', 'log',
                 'upload_log', 'dependencies', 'failure_count',
-                'build_farm_job')
+                'build_farm_job', 'distribution', 'distro_series',
+                'source_package_name', 'is_distro_archive')
             for attr in attrs:
                 setattr(removeSecurityProxy(build), '_new_' + attr, None)
             removeSecurityProxy(build.build_farm_job).archive = None
