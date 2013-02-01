@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Definition of the internet servers that Launchpad uses."""
@@ -656,6 +656,15 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadBrowserResponse()
+
+    def _decode(self, text):
+        text = super(LaunchpadBrowserRequest, self)._decode(text)
+        if isinstance(text, str):
+            # BrowserRequest._decode failed to do so with the user-specified
+            # charsets, so decode as UTF-8 with replacements, since we always
+            # want unicode.
+            text = unicode(text, 'utf-8', 'replace')
+        return text
 
     @cachedproperty
     def form_ng(self):
