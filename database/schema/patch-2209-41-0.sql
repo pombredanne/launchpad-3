@@ -66,6 +66,4 @@ ALTER TABLE buildfarmjob
     ALTER COLUMN failure_count DROP NOT NULL,
     DROP CONSTRAINT started_if_finished;
 
--- TODO: Indices
-
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 41, 0);
