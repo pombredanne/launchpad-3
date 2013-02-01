@@ -69,6 +69,7 @@ from lp.code.model.revision import (
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.commercialsubscription import CommercialSubscription
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.teammembership import TeamMembership
@@ -122,8 +123,10 @@ from lp.services.scripts.base import (
     )
 from lp.services.session.model import SessionData
 from lp.services.verification.model.logintoken import LoginToken
+from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
@@ -1387,15 +1390,32 @@ class BinaryPackageBuildFlattener(TunableLoop):
             BinaryPackageBuild._new_dependencies: PackageBuild.dependencies,
             BinaryPackageBuild._new_failure_count: BuildFarmJob.failure_count,
             BinaryPackageBuild._new_build_farm_job_id: BuildFarmJob.id,
+            BinaryPackageBuild._new_distribution_id:
+                DistroSeries.distributionID,
+            BinaryPackageBuild._new_distro_series_id: DistroSeries.id,
+            BinaryPackageBuild._new_source_package_name_id:
+                SourcePackageRelease.sourcepackagenameID,
+            BinaryPackageBuild._new_is_distro_archive:
+                Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES),
             }
         condition = And(
             BinaryPackageBuild.id.is_in(ids),
             PackageBuild.id == BinaryPackageBuild.package_build_id,
             BuildFarmJob.id == PackageBuild.build_farm_job_id)
+        extra_condition = And(
+            condition,
+            SourcePackageRelease.id ==
+                BinaryPackageBuild.source_package_release_id,
+            Archive.id == PackageBuild.archive_id,
+            DistroArchSeries.id == BinaryPackageBuild.distro_arch_series_id,
+            DistroSeries.id == DistroArchSeries.distroseriesID)
         self.store.execute(
             BulkUpdate(
                 updated_columns, table=BinaryPackageBuild,
-                values=(PackageBuild, BuildFarmJob), where=condition))
+                values=(
+                    PackageBuild, BuildFarmJob, Archive, DistroArchSeries,
+                    DistroSeries, SourcePackageRelease),
+                where=And(condition, extra_condition)))
         self.store.execute(
             BulkUpdate(
                 {BuildFarmJob.archive_id: PackageBuild.archive_id},
