@@ -394,8 +394,10 @@ class TestBasicLaunchpadRequest(TestCase):
         # replacement.
         env = {'QUERY_STRING': 'field.title=subproc\xe9s '}
         request = LaunchpadBrowserRequest(StringIO.StringIO(''), env)
-        self.assertEquals(
-            [u'subproc\ufffds '], request.query_string_params['field.title'])
+        # XXX: Python 2.6 and 2.7 handle unicode replacement differently.
+        self.assertIn(
+            request.query_string_params['field.title'],
+            ([u'subproc\ufffd'], [u'subproc\ufffds ']))
 
 
 class TestFeedsBrowserRequest(TestCase):
