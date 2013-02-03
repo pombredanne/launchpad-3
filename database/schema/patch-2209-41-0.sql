@@ -17,7 +17,7 @@ ALTER TABLE binarypackagebuild
     ADD COLUMN log integer REFERENCES libraryfilealias,
     ADD COLUMN upload_log integer REFERENCES libraryfilealias,
     ADD COLUMN dependencies text,
-    ADD COLUMN failure_count integer DEFAULT 0,
+    ADD COLUMN failure_count integer,
     ADD COLUMN build_farm_job integer REFERENCES buildfarmjob,
     ADD COLUMN distribution integer REFERENCES distribution,
     ADD COLUMN distro_series integer REFERENCES distroseries,
@@ -43,7 +43,7 @@ ALTER TABLE sourcepackagerecipebuild
     ADD COLUMN log integer REFERENCES libraryfilealias,
     ADD COLUMN upload_log integer REFERENCES libraryfilealias,
     ADD COLUMN dependencies text,
-    ADD COLUMN failure_count integer DEFAULT 0,
+    ADD COLUMN failure_count integer,
     ADD COLUMN build_farm_job integer REFERENCES buildfarmjob,
     ALTER COLUMN package_build DROP NOT NULL;
 ALTER TABLE sourcepackagerecipebuild
@@ -61,7 +61,7 @@ ALTER TABLE translationtemplatesbuild
     ADD COLUMN builder integer REFERENCES builder,
     ADD COLUMN status integer,
     ADD COLUMN log integer REFERENCES libraryfilealias,
-    ADD COLUMN failure_count integer DEFAULT 0;
+    ADD COLUMN failure_count integer;
 ALTER TABLE sourcepackagerecipebuild
     ALTER COLUMN date_created
         SET DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
