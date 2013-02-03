@@ -364,7 +364,7 @@ class BuildFarmJobMixin:
     def gotFailure(self):
         """See `IBuildFarmJob`."""
         self.build_farm_job.failure_count += 1
-        self._new_failure_count += 1
+        self._new_failure_count = self.build_farm_job.failure_count
 
 
 class BuildFarmJobSet:
