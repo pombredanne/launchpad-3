@@ -3,36 +3,18 @@
 
 __metaclass__ = type
 __all__ = [
-    'PackageBuild',
     'PackageBuildMixin',
     ]
 
 
 from cStringIO import StringIO
 
-from storm.locals import (
-    Int,
-    Reference,
-    Store,
-    Storm,
-    Unicode,
-    )
+from storm.locals import Store
 from zope.component import getUtility
-from zope.interface import (
-    classProvides,
-    implements,
-    )
 
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuild,
-    IPackageBuildSource,
-    )
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobMixin
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.database.enumcol import DBEnum
-from lp.services.database.lpstorm import IMasterStore
 from lp.services.helpers import filenameToContentType
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
@@ -40,59 +22,6 @@ from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,
     )
 from lp.soyuz.interfaces.component import IComponentSet
-
-
-class PackageBuild(Storm):
-    """An implementation of `IBuildFarmJob` for package builds."""
-
-    __storm_table__ = 'PackageBuild'
-
-    implements(IPackageBuild)
-    classProvides(IPackageBuildSource)
-
-    id = Int(primary=True)
-
-    archive_id = Int(name='archive', allow_none=False)
-    archive = Reference(archive_id, 'Archive.id')
-
-    pocket = DBEnum(
-        name='pocket', allow_none=False,
-        enum=PackagePublishingPocket)
-
-    upload_log_id = Int(name='upload_log', allow_none=True)
-    upload_log = Reference(upload_log_id, 'LibraryFileAlias.id')
-
-    dependencies = Unicode(name='dependencies', allow_none=True)
-
-    build_farm_job_id = Int(name='build_farm_job', allow_none=False)
-    build_farm_job = Reference(build_farm_job_id, 'BuildFarmJob.id')
-
-    # The following two properties are part of the IPackageBuild
-    # interface, but need to be provided by derived classes.
-    distribution = None
-    distro_series = None
-
-    def __init__(self, build_farm_job, archive, pocket, dependencies=None):
-        """Construct a PackageBuild."""
-        super(PackageBuild, self).__init__()
-        self.build_farm_job = build_farm_job
-        self.archive = archive
-        self.pocket = pocket
-        self.dependencies = dependencies
-
-    @classmethod
-    def new(cls, build_farm_job, archive, pocket):
-        """See `IPackageBuildSource`."""
-        store = IMasterStore(PackageBuild)
-        package_build = cls(build_farm_job, archive, pocket)
-        store.add(package_build)
-        return package_build
-
-    def destroySelf(self):
-        build_farm_job = self.build_farm_job
-        store = Store.of(self)
-        store.remove(self)
-        store.remove(build_farm_job)
 
 
 class PackageBuildMixin(BuildFarmJobMixin):

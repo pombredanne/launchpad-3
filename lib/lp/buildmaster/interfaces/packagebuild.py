@@ -5,16 +5,12 @@
 __metaclass__ = type
 __all__ = [
     'IPackageBuild',
-    'IPackageBuildSource',
     ]
 
 
 from lazr.restful.declarations import exported
 from lazr.restful.fields import Reference
-from zope.interface import (
-    Attribute,
-    Interface,
-    )
+from zope.interface import Attribute
 from zope.schema import (
     Choice,
     Object,
@@ -28,19 +24,6 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.soyuz.interfaces.archive import IArchive
-
-
-class IPackageBuildDB(Interface):
-    """Operations on a `PackageBuild` DB row.
-
-    This is deprecated while it's flattened into the concrete implementations.
-    """
-
-    id = Attribute('The package build ID.')
-
-    build_farm_job = Reference(
-        title=_('Build farm job'), schema=IBuildFarmJob, required=True,
-        readonly=True, description=_('The base build farm job.'))
 
 
 class IPackageBuild(IBuildFarmJob):
@@ -121,16 +104,4 @@ class IPackageBuild(IBuildFarmJob):
         This is used to when checking permissions.
 
         :param changes: Changes file from the upload.
-        """
-
-
-class IPackageBuildSource(Interface):
-    """A utility of this interface used to create _things_."""
-
-    def new(build_farm_job, archive, pocket):
-        """Create a new `IPackageBuild`.
-
-        :param build_farm_job: An `IBuildFarmJob`.
-        :param archive: An `IArchive`.
-        :param pocket: An item of `PackagePublishingPocket`.
         """
