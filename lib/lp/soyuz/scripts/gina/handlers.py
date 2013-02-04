@@ -890,10 +890,10 @@ class BinaryPackageHandler:
         else:
             processor = distroarchinfo['processor']
             build = getUtility(IBinaryPackageBuildSet).new(
-                        processor=processor.id,
-                        distro_arch_series=distroarchseries.id,
+                        processor=processor,
+                        distro_arch_series=distroarchseries,
                         status=BuildStatus.FULLYBUILT,
-                        source_package_release=srcpkg.id,
+                        source_package_release=srcpkg,
                         pocket=self.pocket,
                         archive=distroarchseries.main_archive)
         return build
