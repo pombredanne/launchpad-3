@@ -421,7 +421,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         self.build_farm_job.builder = self._new_builder = None
         self.build_farm_job.log = self._new_log = None
         self.package_build.upload_log = self._new_upload_log = None
-        self.package_build.dependencies = self._new_upload_log = None
+        self.package_build.dependencies = self._new_dependencies = None
         self.queueBuild()
 
     def rescore(self, score):
