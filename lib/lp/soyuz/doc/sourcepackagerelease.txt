@@ -67,7 +67,7 @@ property only returns the non-PPA builds.
    >>> ff_ppa_build = Store.of(cprov_ppa).find(
    ...     BinaryPackageBuild,
    ...     BinaryPackageBuild.source_package_release == spr,
-   ...     BinaryPackageBuild._new_archive == cprov_ppa)
+   ...     BinaryPackageBuild.archive == cprov_ppa)
    >>> ff_ppa_build.count()
    1
    >>> ff_ppa_build[0].archive.purpose.name

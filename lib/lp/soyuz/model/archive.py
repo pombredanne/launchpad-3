@@ -1118,17 +1118,13 @@ class Archive(SQLBase):
         extra_exprs = []
         if not include_needsbuild:
             extra_exprs.append(
-                BinaryPackageBuild._new_status != BuildStatus.NEEDSBUILD)
+                BinaryPackageBuild.status != BuildStatus.NEEDSBUILD)
 
-        find_spec = (
-            BinaryPackageBuild._new_status,
-            Count(BinaryPackageBuild.id),
-            )
         result = store.find(
-            find_spec,
-            BinaryPackageBuild._new_archive == self,
-            *extra_exprs).group_by(BinaryPackageBuild._new_status).order_by(
-                BinaryPackageBuild._new_status)
+            (BinaryPackageBuild.status, Count(BinaryPackageBuild.id)),
+            BinaryPackageBuild.archive == self,
+            *extra_exprs).group_by(BinaryPackageBuild.status).order_by(
+                BinaryPackageBuild.status)
 
         # Create a map for each count summary to a number of buildstates:
         count_map = {
@@ -1898,12 +1894,12 @@ class Archive(SQLBase):
 
         sprs_building = store.find(
             BinaryPackageBuild.source_package_release_id,
-            BinaryPackageBuild._new_archive == self,
-            BinaryPackageBuild._new_status == BuildStatus.BUILDING)
+            BinaryPackageBuild.archive == self,
+            BinaryPackageBuild.status == BuildStatus.BUILDING)
         sprs_waiting = store.find(
             BinaryPackageBuild.source_package_release_id,
-            BinaryPackageBuild._new_archive == self,
-            BinaryPackageBuild._new_status == BuildStatus.NEEDSBUILD)
+            BinaryPackageBuild.archive == self,
+            BinaryPackageBuild.status == BuildStatus.NEEDSBUILD)
 
         # A package is not counted as waiting if it already has at least
         # one build building.
@@ -1918,13 +1914,13 @@ class Archive(SQLBase):
 
         extra_exprs = []
         if build_status is not None:
-            extra_exprs = [BinaryPackageBuild._new_status == build_status]
+            extra_exprs = [BinaryPackageBuild.status == build_status]
 
         result_set = store.find(
             SourcePackageRelease,
             (BinaryPackageBuild.source_package_release_id ==
                 SourcePackageRelease.id),
-            BinaryPackageBuild._new_archive == self,
+            BinaryPackageBuild.archive == self,
             *extra_exprs)
 
         result_set.config(distinct=True).order_by(SourcePackageRelease.id)
@@ -2399,12 +2395,12 @@ class ArchiveSet:
     def getBuildCountersForArchitecture(self, archive, distroarchseries):
         """See `IArchiveSet`."""
         result = IStore(BinaryPackageBuild).find(
-            (BinaryPackageBuild._new_status, Count(BinaryPackageBuild.id)),
-            BinaryPackageBuild._new_archive == archive,
+            (BinaryPackageBuild.status, Count(BinaryPackageBuild.id)),
+            BinaryPackageBuild.archive == archive,
             BinaryPackageBuild.distro_arch_series == distroarchseries,
             ).group_by(
-                BinaryPackageBuild._new_status
-            ).order_by(BinaryPackageBuild._new_status)
+                BinaryPackageBuild.status
+            ).order_by(BinaryPackageBuild.status)
 
         status_map = {
             'failed': (

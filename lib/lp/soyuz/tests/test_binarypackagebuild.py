@@ -10,7 +10,6 @@ from datetime import (
 
 import pytz
 from storm.store import Store
-from testtools.matchers import MatchesStructure
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -62,25 +61,6 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         # Build provides IPackageBuild and IBuild.
         self.assertProvides(self.build, IPackageBuild)
         self.assertProvides(self.build, IBinaryPackageBuild)
-
-    def test_denormed_attributes(self):
-        primary_build = self.factory.makeBinaryPackageBuild(
-            archive=self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY))
-        partner_build = self.factory.makeBinaryPackageBuild(
-            archive=self.factory.makeArchive(purpose=ArchivePurpose.PARTNER))
-        ppa_build = self.factory.makeBinaryPackageBuild(
-            archive=self.factory.makeArchive(purpose=ArchivePurpose.PPA))
-        scenarios = [
-            (primary_build, True), (partner_build, True), (ppa_build, False)]
-        for build, is_distro_archive in scenarios:
-            self.assertThat(
-                removeSecurityProxy(build),
-                MatchesStructure.byEquality(
-                    _new_is_distro_archive=is_distro_archive,
-                    _new_distro_series=build.distro_arch_series.distroseries,
-                    _new_distribution=build.distro_series.distribution,
-                    _new_source_package_name=
-                        build.source_package_release.sourcepackagename))
 
     def test_queueBuild(self):
         # BinaryPackageBuild can create the queue entry for itself.

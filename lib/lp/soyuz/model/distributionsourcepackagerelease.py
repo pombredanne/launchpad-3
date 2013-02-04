@@ -109,8 +109,7 @@ class DistributionSourcePackageRelease:
         # include new and failed builds.)
         builds_built_in_main_archives = Store.of(self.distribution).find(
             BinaryPackageBuild,
-            builds_for_distro_exprs,
-            BinaryPackageBuild._new_archive == Archive.id,
+            builds_for_distro_exprs, BinaryPackageBuild.archive == Archive.id,
             Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES))
 
         # Next get all the builds that have a binary published in the

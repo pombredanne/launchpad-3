@@ -1579,8 +1579,7 @@ class PublishingSet:
         # If an optional list of build states was passed in as a parameter,
         # ensure that the result is limited to builds in those states.
         if build_states is not None:
-            extra_exprs.append(
-                BinaryPackageBuild._new_status.is_in(build_states))
+            extra_exprs.append(BinaryPackageBuild.status.is_in(build_states))
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
@@ -1600,7 +1599,7 @@ class PublishingSet:
             BinaryPackageBuild,
             builds_for_distroseries_expr,
             (SourcePackagePublishingHistory.archiveID ==
-                BinaryPackageBuild._new_archive_id),
+                BinaryPackageBuild.archive_id),
             *extra_exprs)
 
         # Next get all the builds that have a binary published in the
@@ -1610,7 +1609,7 @@ class PublishingSet:
             BinaryPackageBuild,
             builds_for_distroseries_expr,
             (SourcePackagePublishingHistory.archiveID !=
-                BinaryPackageBuild._new_archive_id),
+                BinaryPackageBuild.archive_id),
             BinaryPackagePublishingHistory.archive ==
                 SourcePackagePublishingHistory.archiveID,
             BinaryPackagePublishingHistory.binarypackagerelease ==
@@ -1728,7 +1727,7 @@ class PublishingSet:
             self._getSourceBinaryJoinForSources(
                 source_publication_ids, active_binaries_only=False),
             BinaryPackagePublishingHistory.datepublished != None,
-            BinaryPackageBuild._new_status.is_in(build_states))
+            BinaryPackageBuild.status.is_in(build_states))
 
         published_builds.order_by(
             SourcePackagePublishingHistory.id,

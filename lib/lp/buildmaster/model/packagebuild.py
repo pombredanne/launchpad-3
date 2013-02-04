@@ -10,7 +10,6 @@ __all__ = [
 
 from cStringIO import StringIO
 
-from storm.expr import Desc
 from storm.locals import (
     Int,
     Reference,
@@ -29,18 +28,10 @@ from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuild,
     IPackageBuildSource,
     )
-from lp.buildmaster.model.buildfarmjob import (
-    BuildFarmJob,
-    BuildFarmJobMixin,
-    )
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobMixin
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.enumcol import DBEnum
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.services.database.lpstorm import IMasterStore
 from lp.services.helpers import filenameToContentType
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
@@ -107,22 +98,6 @@ class PackageBuild(Storm):
 class PackageBuildMixin(BuildFarmJobMixin):
 
     @property
-    def archive(self):
-        return self._new_archive
-
-    @property
-    def pocket(self):
-        return self._new_pocket
-
-    @property
-    def upload_log(self):
-        return self._new_upload_log
-
-    @property
-    def dependencies(self):
-        return self._new_dependencies
-
-    @property
     def current_component(self):
         """See `IPackageBuild`."""
         return getUtility(IComponentSet)[default_component_dependency_name]
@@ -158,9 +133,9 @@ class PackageBuildMixin(BuildFarmJobMixin):
 
         if (status == BuildStatus.MANUALDEPWAIT and slave_status is not None
             and slave_status.get('dependencies') is not None):
-            self._new_dependencies = unicode(slave_status.get('dependencies'))
+            self.dependencies = unicode(slave_status.get('dependencies'))
         else:
-            self._new_dependencies = None
+            self.dependencies = None
 
     def verifySuccessfulUpload(self):
         """See `IPackageBuild`."""
@@ -196,7 +171,7 @@ class PackageBuildMixin(BuildFarmJobMixin):
         """See `IPackageBuild`."""
         filename = "upload_%s_log.txt" % self.id
         library_file = self.createUploadLog(content, filename=filename)
-        self._new_upload_log = library_file
+        self.upload_log = library_file
 
     def notify(self, extra_info=None):
         """See `IPackageBuild`."""
