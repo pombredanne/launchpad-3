@@ -1549,7 +1549,7 @@ class TranslationTemplatesBuildFlattener(TunableLoop):
         self.store.execute(
             BulkUpdate(
                 updated_columns, table=TranslationTemplatesBuild,
-                values=(PackageBuild, BuildFarmJob),
+                values=BuildFarmJob,
                 where=And(
                     TranslationTemplatesBuild.id.is_in(ids),
                     BuildFarmJob.id ==
