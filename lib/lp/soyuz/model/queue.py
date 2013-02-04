@@ -48,7 +48,6 @@ from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUploadError
 from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.tagfiles import parse_tagfile_content
-from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.auditor.client import AuditorClient

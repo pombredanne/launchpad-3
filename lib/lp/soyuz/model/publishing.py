@@ -43,8 +43,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database import bulk
