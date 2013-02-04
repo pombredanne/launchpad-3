@@ -15,11 +15,14 @@ from datetime import (
 import logging
 
 from psycopg2 import ProgrammingError
-from pytz import utc
+import pytz
 from storm.locals import (
+    Bool,
+    DateTime,
     Int,
     Reference,
     Storm,
+    Unicode,
     )
 from storm.store import (
     EmptyResultSet,
@@ -36,7 +39,12 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
-from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
+from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
+from lp.buildmaster.model.buildfarmjob import (
+    BuildFarmJob,
+    BuildFarmJobOld,
+    )
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import (
     PackageBuild,
@@ -61,6 +69,7 @@ from lp.registry.model.person import Person
 from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import DBEnum
 from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
@@ -140,6 +149,45 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
     requester_id = Int(name='requester', allow_none=False)
     requester = Reference(requester_id, 'Person.id')
 
+    # Migrating from PackageBuild
+    _new_build_farm_job_id = Int(name='build_farm_job')
+    _new_build_farm_job = Reference(_new_build_farm_job_id, BuildFarmJob.id)
+
+    _new_archive_id = Int(name='archive')
+    _new_archive = Reference(_new_archive_id, 'Archive.id')
+
+    _new_pocket = DBEnum(name='pocket', enum=PackagePublishingPocket)
+
+    _new_upload_log_id = Int(name='upload_log')
+    _new_upload_log = Reference(_new_upload_log_id, 'LibraryFileAlias.id')
+
+    _new_dependencies = Unicode(name='dependencies')
+
+    # Migrating from BuildFarmJob.
+    _new_processor_id = Int(name='processor')
+    _new_processor = Reference(_new_processor_id, 'Processor.id')
+
+    _new_virtualized = Bool(name='virtualized')
+
+    _new_date_created = DateTime(name='date_created', tzinfo=pytz.UTC)
+
+    _new_date_started = DateTime(name='date_started', tzinfo=pytz.UTC)
+
+    _new_date_finished = DateTime(name='date_finished', tzinfo=pytz.UTC)
+
+    _new_date_first_dispatched = DateTime(
+        name='date_first_dispatched', tzinfo=pytz.UTC)
+
+    _new_builder_id = Int(name='builder')
+    _new_builder = Reference(_new_builder_id, 'Builder.id')
+
+    _new_status = DBEnum(name='status', enum=BuildStatus)
+
+    _new_log_id = Int(name='log')
+    _new_log = Reference(_new_log_id, 'LibraryFileAlias.id')
+
+    _new_failure_count = Int(name='failure_count')
+
     @property
     def buildqueue_record(self):
         """See `IBuildFarmJob`."""
@@ -164,13 +212,21 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
             branch_name = self.recipe.base_branch.unique_name
             return '%s recipe build' % branch_name
 
-    def __init__(self, package_build, distroseries, recipe, requester):
+    def __init__(self, build_farm_job, package_build, distroseries, recipe,
+                 requester, archive, pocket, date_created):
         """Construct a SourcePackageRecipeBuild."""
         super(SourcePackageRecipeBuild, self).__init__()
+        self._new_build_farm_job = build_farm_job
         self.package_build = package_build
         self.distroseries = distroseries
         self.recipe = recipe
         self.requester = requester
+        self._new_archive = archive
+        self._new_pocket = pocket
+        self._new_status = BuildStatus.NEEDSBUILD
+        self._new_virtualized = True
+        if date_created is not None:
+            self._new_date_created = date_created
 
     @classmethod
     def new(cls, distroseries, recipe, requester, archive, pocket=None,
@@ -181,13 +237,14 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
             pocket = PackagePublishingPocket.RELEASE
         if date_created is None:
             date_created = UTC_NOW
-        packagebuild = PackageBuild.new(cls.build_farm_job_type,
-            True, archive, pocket, date_created=date_created)
+        build_farm_job = getUtility(IBuildFarmJobSource).new(
+            cls.build_farm_job_type, BuildStatus.NEEDSBUILD, None, True,
+            date_created, None, archive)
+        packagebuild = getUtility(IPackageBuildSource).new(
+            build_farm_job, archive, pocket)
         spbuild = cls(
-            packagebuild,
-            distroseries,
-            recipe,
-            requester)
+            build_farm_job, packagebuild, distroseries, recipe, requester,
+            archive, pocket, date_created)
         store.add(spbuild)
         return spbuild
 
@@ -310,7 +367,7 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
     def getRecentBuilds(cls, requester, recipe, distroseries, _now=None):
         from lp.buildmaster.model.buildfarmjob import BuildFarmJob
         if _now is None:
-            _now = datetime.now(utc)
+            _now = datetime.now(pytz.UTC)
         store = IMasterStore(SourcePackageRecipeBuild)
         old_threshold = _now - timedelta(days=1)
         return store.find(cls, cls.distroseries_id == distroseries.id,

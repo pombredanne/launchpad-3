@@ -11,6 +11,7 @@ import datetime
 import operator
 
 import apt_pkg
+import pytz
 from sqlobject import SQLObjectNotFound
 from storm.expr import (
     Desc,
@@ -19,8 +20,11 @@ from storm.expr import (
     SQL,
     )
 from storm.locals import (
+    Bool,
+    DateTime,
     Int,
     Reference,
+    Unicode,
     )
 from storm.store import (
     EmptyResultSet,
@@ -38,6 +42,7 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
 from lp.buildmaster.model.builder import Builder
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
@@ -46,9 +51,11 @@ from lp.buildmaster.model.packagebuild import (
     PackageBuild,
     PackageBuildMixin,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import DBEnum
 from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -109,6 +116,57 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         name='source_package_release', allow_none=False)
     source_package_release = Reference(
         source_package_release_id, 'SourcePackageRelease.id')
+
+    # Migrating from PackageBuild
+    _new_build_farm_job_id = Int(name='build_farm_job')
+    _new_build_farm_job = Reference(_new_build_farm_job_id, BuildFarmJob.id)
+
+    _new_archive_id = Int(name='archive')
+    _new_archive = Reference(_new_archive_id, 'Archive.id')
+
+    _new_pocket = DBEnum(name='pocket', enum=PackagePublishingPocket)
+
+    _new_upload_log_id = Int(name='upload_log')
+    _new_upload_log = Reference(_new_upload_log_id, 'LibraryFileAlias.id')
+
+    _new_dependencies = Unicode(name='dependencies')
+
+    # Migrating from BuildFarmJob.
+    _new_processor_id = Int(name='processor')
+    _new_processor = Reference(_new_processor_id, 'Processor.id')
+
+    _new_virtualized = Bool(name='virtualized')
+
+    _new_date_created = DateTime(name='date_created', tzinfo=pytz.UTC)
+
+    _new_date_started = DateTime(name='date_started', tzinfo=pytz.UTC)
+
+    _new_date_finished = DateTime(name='date_finished', tzinfo=pytz.UTC)
+
+    _new_date_first_dispatched = DateTime(
+        name='date_first_dispatched', tzinfo=pytz.UTC)
+
+    _new_builder_id = Int(name='builder')
+    _new_builder = Reference(_new_builder_id, 'Builder.id')
+
+    _new_status = DBEnum(name='status', enum=BuildStatus)
+
+    _new_log_id = Int(name='log')
+    _new_log = Reference(_new_log_id, 'LibraryFileAlias.id')
+
+    _new_failure_count = Int(name='failure_count')
+
+    _new_distribution_id = Int(name='distribution')
+    _new_distribution = Reference(_new_distribution_id, 'Distribution.id')
+
+    _new_distro_series_id = Int(name='distro_series')
+    _new_distro_series = Reference(_new_distro_series_id, 'DistroSeries.id')
+
+    _new_is_distro_archive = Bool(name='is_distro_archive')
+
+    _new_source_package_name_id = Int(name='source_package_name')
+    _new_source_package_name = Reference(
+        _new_source_package_name_id, 'SourcePackageName.id')
 
     @property
     def buildqueue_record(self):
@@ -357,13 +415,13 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     def retry(self):
         """See `IBuild`."""
         assert self.can_be_retried, "Build %s cannot be retried" % self.id
-        self.build_farm_job.status = BuildStatus.NEEDSBUILD
-        self.build_farm_job.date_finished = None
-        self.build_farm_job.date_started = None
-        self.build_farm_job.builder = None
-        self.build_farm_job.log = None
-        self.package_build.upload_log = None
-        self.package_build.dependencies = None
+        self.build_farm_job.status = self._new_status = BuildStatus.NEEDSBUILD
+        self.build_farm_job.date_finished = self._new_date_finished = None
+        self.build_farm_job.date_started = self._new_date_started = None
+        self.build_farm_job.builder = self._new_builder = None
+        self.build_farm_job.log = self._new_log = None
+        self.package_build.upload_log = self._new_upload_log = None
+        self.package_build.dependencies = self._new_dependencies = None
         self.queueBuild()
 
     def rescore(self, score):
@@ -513,7 +571,8 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
             if not self._isDependencySatisfied(token)]
 
         # Update dependencies line
-        self.package_build.dependencies = u", ".join(remaining_deps)
+        self.package_build.dependencies = self._new_dependencies = (
+            u", ".join(remaining_deps))
 
     def __getitem__(self, name):
         return self.getBinaryPackageRelease(name)
@@ -812,17 +871,28 @@ class BinaryPackageBuildSet:
             archive, pocket, status=BuildStatus.NEEDSBUILD,
             date_created=None, builder=None):
         """See `IBinaryPackageBuildSet`."""
-        # Create the PackageBuild to which the new BinaryPackageBuild
-        # will delegate.
+        # Create the BuildFarmJob and PackageBuild to which the new
+        # BinaryPackageBuild will delegate.
+        build_farm_job = getUtility(IBuildFarmJobSource).new(
+            BinaryPackageBuild.build_farm_job_type, status, processor,
+            archive.require_virtualized, date_created, builder, archive)
         package_build = getUtility(IPackageBuildSource).new(
-            BinaryPackageBuild.build_farm_job_type,
-            archive.require_virtualized, archive, pocket, processor,
-            status, date_created=date_created, builder=builder)
+            build_farm_job, archive, pocket)
 
         binary_package_build = BinaryPackageBuild(
+            _new_build_farm_job=build_farm_job,
             package_build=package_build,
             distro_arch_series=distro_arch_series,
-            source_package_release=source_package_release)
+            source_package_release=source_package_release,
+            _new_archive=archive, _new_pocket=pocket,
+            _new_status=status, _new_processor=processor,
+            _new_virtualized=archive.require_virtualized,
+            _new_builder=builder, _new_is_distro_archive=archive.is_main,
+            _new_distribution=distro_arch_series.distroseries.distribution,
+            _new_distro_series=distro_arch_series.distroseries,
+            _new_source_package_name=source_package_release.sourcepackagename)
+        if date_created is not None:
+            binary_package_build._new_date_created = date_created
         return binary_package_build
 
     def getBuildBySRAndArchtag(self, sourcepackagereleaseID, archtag):

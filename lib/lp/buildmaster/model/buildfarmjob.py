@@ -196,23 +196,28 @@ class BuildFarmJob(Storm):
 
     failure_count = Int(name='failure_count', allow_none=False)
 
+    archive_id = Int(name='archive')
+    archive = Reference(archive_id, 'Archive.id')
+
     dependencies = None
 
     def __init__(self, job_type, status=BuildStatus.NEEDSBUILD,
                  processor=None, virtualized=None, date_created=None,
-                 builder=None):
+                 builder=None, archive=None):
         super(BuildFarmJob, self).__init__()
         (self.job_type, self.status, self.processor, self.virtualized,
-         self.builder) = (job_type, status, processor, virtualized, builder)
+         self.builder, self.archive) = (
+             job_type, status, processor, virtualized, builder, archive)
         if date_created is not None:
             self.date_created = date_created
 
     @classmethod
     def new(cls, job_type, status=BuildStatus.NEEDSBUILD, processor=None,
-            virtualized=None, date_created=None, builder=None):
+            virtualized=None, date_created=None, builder=None, archive=None):
         """See `IBuildFarmJobSource`."""
         build_farm_job = BuildFarmJob(
-            job_type, status, processor, virtualized, date_created, builder)
+            job_type, status, processor, virtualized, date_created, builder,
+            archive)
         store = IMasterStore(BuildFarmJob)
         store.add(build_farm_job)
         return build_farm_job
@@ -319,29 +324,30 @@ class BuildFarmJobMixin:
 
     def setLog(self, log):
         """See `IBuildFarmJob`."""
-        self.build_farm_job.log = log
+        self.build_farm_job.log = self._new_log = log
 
     def updateStatus(self, status, builder=None, slave_status=None,
                      date_started=None, date_finished=None):
         """See `IBuildFarmJob`."""
-        self.build_farm_job.status = status
+        self.build_farm_job.status = self._new_status = status
 
         # If there's a builder provided, set it if we don't already have
         # one, or otherwise crash if it's different from the one we
         # expected.
         if builder is not None:
             if self.builder is None:
-                self.build_farm_job.builder = builder
+                self.build_farm_job.builder = self._new_builder = builder
             else:
                 assert self.builder == builder
 
         # If we're starting to build, set date_started and
         # date_first_dispatched if required.
         if self.date_started is None and status == BuildStatus.BUILDING:
-            self.build_farm_job.date_started = (
+            self.build_farm_job.date_started = self._new_date_started = (
                 date_started or datetime.datetime.now(pytz.UTC))
             if self.date_first_dispatched is None:
                 self.build_farm_job.date_first_dispatched = self.date_started
+                self._new_date_first_dispatched = self.date_started
 
         # If we're in a final build state (or UPLOADING, which sort of
         # is), set date_finished if date_started is.
@@ -352,12 +358,13 @@ class BuildFarmJobMixin:
             # XXX cprov 20060615 bug=120584: Currently buildduration includes
             # the scanner latency, it should really be asking the slave for
             # the duration spent building locally.
-            self.build_farm_job.date_finished = (
+            self.build_farm_job.date_finished = self._new_date_finished = (
                 date_finished or datetime.datetime.now(pytz.UTC))
 
     def gotFailure(self):
         """See `IBuildFarmJob`."""
         self.build_farm_job.failure_count += 1
+        self._new_failure_count = self.build_farm_job.failure_count
 
 
 class BuildFarmJobSet:

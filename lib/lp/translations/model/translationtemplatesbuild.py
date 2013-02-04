@@ -8,7 +8,10 @@ __all__ = [
     'TranslationTemplatesBuild',
     ]
 
+import pytz
 from storm.locals import (
+    Bool,
+    DateTime,
     Int,
     Reference,
     Storm,
@@ -20,7 +23,10 @@ from zope.interface import (
     )
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.buildmaster.enums import BuildFarmJobType
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobMixin
 from lp.code.model.branch import Branch
@@ -32,6 +38,7 @@ from lp.code.model.branchjob import (
 from lp.registry.model.product import Product
 from lp.services.database.bulk import load_related
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import DBEnum
 from lp.services.database.lpstorm import IStore
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuild,
@@ -56,15 +63,42 @@ class TranslationTemplatesBuild(BuildFarmJobMixin, Storm):
     branch_id = Int(name='branch', allow_none=False)
     branch = Reference(branch_id, 'Branch.id')
 
+    # Migrating from BuildFarmJob.
+    _new_processor_id = Int(name='processor')
+    _new_processor = Reference(_new_processor_id, 'Processor.id')
+
+    _new_virtualized = Bool(name='virtualized')
+
+    _new_date_created = DateTime(name='date_created', tzinfo=pytz.UTC)
+
+    _new_date_started = DateTime(name='date_started', tzinfo=pytz.UTC)
+
+    _new_date_finished = DateTime(name='date_finished', tzinfo=pytz.UTC)
+
+    _new_date_first_dispatched = DateTime(
+        name='date_first_dispatched', tzinfo=pytz.UTC)
+
+    _new_builder_id = Int(name='builder')
+    _new_builder = Reference(_new_builder_id, 'Builder.id')
+
+    _new_status = DBEnum(name='status', enum=BuildStatus)
+
+    _new_log_id = Int(name='log')
+    _new_log = Reference(_new_log_id, 'LibraryFileAlias.id')
+
+    _new_failure_count = Int(name='failure_count')
+
     @property
     def title(self):
         return u'Translation template build for %s' % (
             self.branch.displayname)
 
-    def __init__(self, build_farm_job, branch):
+    def __init__(self, build_farm_job, branch, processor):
         super(TranslationTemplatesBuild, self).__init__()
         self.build_farm_job = build_farm_job
         self.branch = branch
+        self._new_status = BuildStatus.NEEDSBUILD
+        self._new_processor = processor
 
     def makeJob(self):
         """See `IBuildFarmJobOld`."""
@@ -100,10 +134,10 @@ class TranslationTemplatesBuild(BuildFarmJobMixin, Storm):
     @classmethod
     def create(cls, branch):
         """See `ITranslationTemplatesBuildSource`."""
+        processor = cls._getBuildArch()
         build_farm_job = getUtility(IBuildFarmJobSource).new(
-            BuildFarmJobType.TRANSLATIONTEMPLATESBUILD,
-            processor=cls._getBuildArch())
-        build = TranslationTemplatesBuild(build_farm_job, branch)
+            BuildFarmJobType.TRANSLATIONTEMPLATESBUILD, processor=processor)
+        build = TranslationTemplatesBuild(build_farm_job, branch, processor)
         store = cls._getStore()
         store.add(build)
         store.flush()
