@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
@@ -1052,7 +1052,7 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
 
         badges = ''
 
-        if self._context.linked_branches.count() > 0:
+        if len(self._context.linked_branches) > 0:
             badges += self.icon_template % (
                 "branch", "Branch is available", "sprite branch")
 
