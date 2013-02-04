@@ -84,8 +84,7 @@ class PackageBuild(Storm):
     distribution = None
     distro_series = None
 
-    def __init__(self, build_farm_job, archive, pocket,
-                 dependencies=None):
+    def __init__(self, build_farm_job, archive, pocket, dependencies=None):
         """Construct a PackageBuild."""
         super(PackageBuild, self).__init__()
         self.build_farm_job = build_farm_job
@@ -94,18 +93,10 @@ class PackageBuild(Storm):
         self.dependencies = dependencies
 
     @classmethod
-    def new(cls, job_type, virtualized, archive, pocket, processor=None,
-            status=BuildStatus.NEEDSBUILD, dependencies=None,
-            date_created=None, builder=None):
+    def new(cls, build_farm_job, archive, pocket):
         """See `IPackageBuildSource`."""
         store = IMasterStore(PackageBuild)
-
-        # Create the BuildFarmJob to which the new PackageBuild
-        # will delegate.
-        build_farm_job = getUtility(IBuildFarmJobSource).new(
-            job_type, status, processor, virtualized, date_created, builder)
-
-        package_build = cls(build_farm_job, archive, pocket, dependencies)
+        package_build = cls(build_farm_job, archive, pocket)
         store.add(package_build)
         return package_build
 
@@ -174,10 +165,10 @@ class PackageBuildMixin(BuildFarmJobMixin):
 
         if (status == BuildStatus.MANUALDEPWAIT and slave_status is not None
             and slave_status.get('dependencies') is not None):
-            self.package_build.dependencies = (
+            self.package_build.dependencies = self._new_dependencies = (
                 unicode(slave_status.get('dependencies')))
         else:
-            self.package_build.dependencies = None
+            self.package_build.dependencies = self._new_dependencies = None
 
     def verifySuccessfulUpload(self):
         """See `IPackageBuild`."""
@@ -213,7 +204,7 @@ class PackageBuildMixin(BuildFarmJobMixin):
         """See `IPackageBuild`."""
         filename = "upload_%s_log.txt" % self.id
         library_file = self.createUploadLog(content, filename=filename)
-        self.package_build.upload_log = library_file
+        self.package_build.upload_log = self._new_upload_log = library_file
 
     def notify(self, extra_info=None):
         """See `IPackageBuild`."""
