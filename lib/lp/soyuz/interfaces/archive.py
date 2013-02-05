@@ -915,15 +915,6 @@ class IArchiveView(IHasBuildRecords):
     num_pkgs_building = Attribute(
         "Tuple of packages building and waiting to build")
 
-    def getSourcePackageReleases(build_status=None):
-        """Return the releases for this archive.
-
-        :param build_status: If specified, only the distinct releases with
-            builds in the specified build status will be returned.
-        :return: A `ResultSet` of distinct `SourcePackageReleases` for this
-            archive.
-        """
-
     def updatePackageDownloadCount(bpr, day, country, count):
         """Update the daily download count for a given package.
 
@@ -2075,25 +2066,6 @@ class IArchiveSet(Interface):
 
         :return A list with up to 5 dictionaries containing the ppa 'title'
             and the number of 'uploads' keys and corresponding values.
-        """
-
-    def getBuildCountersForArchitecture(archive, distroarchseries):
-        """Return a dictionary containing the build counters per status.
-
-        The result is restricted to the given archive and distroarchseries.
-
-        The returned dictionary contains the follwoing keys and values:
-
-         * 'total': total number of builds (includes SUPERSEDED);
-         * 'pending': number of builds in NEEDSBUILD or BUILDING state;
-         * 'failed': number of builds in FAILEDTOBUILD, MANUALDEPWAIT,
-           CHROOTWAIT and FAILEDTOUPLOAD state;
-         * 'succeeded': number of SUCCESSFULLYBUILT builds.
-
-        :param archive: target `IArchive`;
-        :param distroarchseries: target `IDistroArchSeries`.
-
-        :return a dictionary with the 4 keys specified above.
         """
 
     def getArchivesForDistribution(distribution, name=None, purposes=None,
