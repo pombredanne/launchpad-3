@@ -54,7 +54,7 @@ from lp.archiveuploader.utils import (
     re_issource,
     )
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.packagebuild import IPackageBuildSet
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.registry.enums import (
     INCLUSIVE_TEAM_POLICY,
     PersonVisibility,
@@ -486,12 +486,12 @@ class Archive(SQLBase):
             return getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
                 self, build_state, name, pocket, arch_tag)
         else:
-            if arch_tag is not None or name is not None:
+            if arch_tag is not None or name is not None or pocket is not None:
                 raise IncompatibleArguments(
                     "The 'arch_tag' and 'name' parameters can be used only "
                     "with binary_only=True.")
-            return getUtility(IPackageBuildSet).getBuildsForArchive(
-                self, status=build_state, pocket=pocket)
+            return getUtility(IBuildFarmJobSet).getBuildsForArchive(
+                self, status=build_state)
 
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,

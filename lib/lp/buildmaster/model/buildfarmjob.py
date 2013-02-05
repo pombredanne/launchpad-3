@@ -44,11 +44,6 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.services.database.enumcol import DBEnum
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
@@ -73,17 +68,13 @@ class BuildFarmJobOld:
     @classmethod
     def getByJob(cls, job):
         """See `IBuildFarmJobOld`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(cls, cls.job == job).one()
+        return IStore(cls).find(cls, cls.job == job).one()
 
     @classmethod
     def getByJobs(cls, jobs):
-        """See `IBuildFarmJobOld`.
-        """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        """See `IBuildFarmJobOld`."""
         job_ids = [job.id for job in jobs]
-        return store.find(
-            cls, cls.job_id.is_in(job_ids))
+        return IStore(cls).find(cls, cls.job_id.is_in(job_ids))
 
     def score(self):
         """See `IBuildFarmJobOld`."""
@@ -367,13 +358,12 @@ class BuildFarmJobSet:
     def getBuildsForBuilder(self, builder_id, status=None, user=None):
         """See `IBuildFarmJobSet`."""
         # Imported here to avoid circular imports.
-        from lp.buildmaster.model.packagebuild import PackageBuild
         from lp.soyuz.model.archive import (
             Archive, get_archive_privacy_filter)
 
         clauses = [
             BuildFarmJob.builder == builder_id,
-            Or(PackageBuild.id == None, get_archive_privacy_filter(user))]
+            Or(Archive.id == None, get_archive_privacy_filter(user))]
         if status is not None:
             clauses.append(BuildFarmJob.status == status)
 
@@ -383,12 +373,39 @@ class BuildFarmJobSet:
         # related package build - hence the left join.
         origin = [
             BuildFarmJob,
-            LeftJoin(
-                PackageBuild,
-                PackageBuild.build_farm_job == BuildFarmJob.id),
-            LeftJoin(Archive, Archive.id == PackageBuild.archive_id),
+            LeftJoin(Archive, Archive.id == BuildFarmJob.archive_id),
             ]
 
         return IStore(BuildFarmJob).using(*origin).find(
             BuildFarmJob, *clauses).order_by(
                 Desc(BuildFarmJob.date_finished), BuildFarmJob.id)
+
+    def getBuildsForArchive(self, archive, status=None):
+        """See `IBuildFarmJobSet`."""
+
+        extra_exprs = []
+
+        if status is not None:
+            extra_exprs.append(BuildFarmJob.status == status)
+
+        result_set = IStore(BuildFarmJob).find(
+            BuildFarmJob, BuildFarmJob.archive == archive, *extra_exprs)
+
+        # When we have a set of builds that may include pending or
+        # superseded builds, we order by -date_created (as we won't
+        # always have a date_finished). Otherwise we can order by
+        # -date_finished.
+        unfinished_states = [
+            BuildStatus.NEEDSBUILD,
+            BuildStatus.BUILDING,
+            BuildStatus.UPLOADING,
+            BuildStatus.SUPERSEDED,
+            ]
+        if status is None or status in unfinished_states:
+            result_set.order_by(
+                Desc(BuildFarmJob.date_created), BuildFarmJob.id)
+        else:
+            result_set.order_by(
+                Desc(BuildFarmJob.date_finished), BuildFarmJob.id)
+
+        return result_set

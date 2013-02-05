@@ -328,26 +328,18 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
     @classmethod
     def getByBuildFarmJob(cls, build_farm_job):
         """See `ISpecificBuildFarmJobSource`."""
-        return Store.of(build_farm_job).find(cls,
-            cls.package_build_id == PackageBuild.id,
-            PackageBuild.build_farm_job_id == build_farm_job.id).one()
+        return Store.of(build_farm_job).find(
+            cls, build_farm_job_id=build_farm_job.id).one()
 
     @classmethod
     def preloadBuildsData(cls, builds):
         # Circular imports.
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         from lp.services.librarian.model import LibraryFileAlias
-        from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-        package_builds = load_related(
-            PackageBuild, builds, ['package_build_id'])
-        build_farm_jobs = load_related(
-            BuildFarmJob, [build.package_build for build in builds],
-            ['build_farm_job_id'])
-        load_related(LibraryFileAlias, build_farm_jobs, ['log_id'])
-        archives = load_related(Archive, package_builds, ['archive_id'])
+        load_related(LibraryFileAlias, builds, ['_new_log_id'])
+        archives = load_related(Archive, builds, ['_new_archive_id'])
         load_related(Person, archives, ['ownerID'])
-        sprs = load_related(
-            SourcePackageRecipe, builds, ['recipe_id'])
+        sprs = load_related(SourcePackageRecipe, builds, ['recipe_id'])
         SourcePackageRecipe.preLoadDataForSourcePackageRecipes(sprs)
 
     @classmethod
@@ -355,14 +347,10 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
         """See `ISpecificBuildFarmJobSource`."""
         if len(build_farm_jobs) == 0:
             return EmptyResultSet()
-        build_farm_job_ids = [
-            build_farm_job.id for build_farm_job in build_farm_jobs]
-
-        resultset = Store.of(build_farm_jobs[0]).find(cls,
-            cls.package_build_id == PackageBuild.id,
-            PackageBuild.build_farm_job_id.is_in(build_farm_job_ids))
-        return DecoratedResultSet(
-            resultset, pre_iter_hook=cls.preloadBuildsData)
+        rows = Store.of(build_farm_jobs[0]).find(
+            cls, cls.build_farm_job_id.is_in(
+                bfj.id for bfj in build_farm_jobs))
+        return DecoratedResultSet(rows, pre_iter_hook=cls.preloadBuildsData)
 
     @classmethod
     def getRecentBuilds(cls, requester, recipe, distroseries, _now=None):

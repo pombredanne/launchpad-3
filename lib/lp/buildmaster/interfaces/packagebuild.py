@@ -6,7 +6,6 @@ __metaclass__ = type
 __all__ = [
     'IPackageBuild',
     'IPackageBuildSource',
-    'IPackageBuildSet',
     ]
 
 
@@ -23,7 +22,6 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -135,19 +133,4 @@ class IPackageBuildSource(Interface):
         :param build_farm_job: An `IBuildFarmJob`.
         :param archive: An `IArchive`.
         :param pocket: An item of `PackagePublishingPocket`.
-        """
-
-
-class IPackageBuildSet(Interface):
-    """A utility representing a set of package builds."""
-
-    def getBuildsForArchive(archive, status=None, pocket=None):
-        """Return package build records targeted to a given IArchive.
-
-        :param archive: The archive for which builds will be returned.
-        :param status: If status is provided, only builders with that
-            status will be returned.
-        :param pocket: If pocket is provided only builds for that pocket
-            will be returned.
-        :return: a `ResultSet` representing the requested package builds.
         """
