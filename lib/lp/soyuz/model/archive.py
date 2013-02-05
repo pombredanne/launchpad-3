@@ -84,10 +84,7 @@ from lp.services.database.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from lp.services.database.lpstorm import (
-    ISlaveStore,
-    IStore,
-    )
+from lp.services.database.lpstorm import ISlaveStore
 from lp.services.database.sqlbase import (
     cursor,
     quote,
@@ -1912,24 +1909,6 @@ class Archive(SQLBase):
 
         return pkgs_building_count, pkgs_waiting_count
 
-    def getSourcePackageReleases(self, build_status=None):
-        """See `IArchive`."""
-        store = Store.of(self)
-
-        extra_exprs = []
-        if build_status is not None:
-            extra_exprs = [BinaryPackageBuild._new_status == build_status]
-
-        result_set = store.find(
-            SourcePackageRelease,
-            (BinaryPackageBuild.source_package_release_id ==
-                SourcePackageRelease.id),
-            BinaryPackageBuild._new_archive == self,
-            *extra_exprs)
-
-        result_set.config(distinct=True).order_by(SourcePackageRelease.id)
-        return result_set
-
     def updatePackageDownloadCount(self, bpr, day, country, count):
         """See `IArchive`."""
         store = Store.of(self)
@@ -2395,48 +2374,6 @@ class ArchiveSet:
             most_active.append(the_dict)
 
         return most_active
-
-    def getBuildCountersForArchitecture(self, archive, distroarchseries):
-        """See `IArchiveSet`."""
-        result = IStore(BinaryPackageBuild).find(
-            (BinaryPackageBuild._new_status, Count(BinaryPackageBuild.id)),
-            BinaryPackageBuild._new_archive == archive,
-            BinaryPackageBuild.distro_arch_series == distroarchseries,
-            ).group_by(
-                BinaryPackageBuild._new_status
-            ).order_by(BinaryPackageBuild._new_status)
-
-        status_map = {
-            'failed': (
-                BuildStatus.CHROOTWAIT,
-                BuildStatus.FAILEDTOBUILD,
-                BuildStatus.FAILEDTOUPLOAD,
-                BuildStatus.MANUALDEPWAIT,
-                ),
-            'pending': (
-                BuildStatus.BUILDING,
-                BuildStatus.UPLOADING,
-                BuildStatus.NEEDSBUILD,
-                ),
-            'succeeded': (
-                BuildStatus.FULLYBUILT,
-                ),
-            }
-
-        status_and_counters = {}
-
-        # Set 'total' counter
-        status_and_counters['total'] = sum(
-            [counter for status, counter in result])
-
-        # Set each counter according 'status_map'
-        for key, status in status_map.iteritems():
-            status_and_counters[key] = 0
-            for status_value, status_counter in result:
-                if status_value in status:
-                    status_and_counters[key] += status_counter
-
-        return status_and_counters
 
     def getPrivatePPAs(self):
         """See `IArchiveSet`."""
