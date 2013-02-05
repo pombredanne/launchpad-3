@@ -110,24 +110,20 @@ class PackageBuild(Storm):
 class PackageBuildMixin(BuildFarmJobMixin):
 
     @property
-    def build_farm_job(self):
-        return self.package_build.build_farm_job
-
-    @property
     def archive(self):
-        return self.package_build.archive
+        return self._new_archive
 
     @property
     def pocket(self):
-        return self.package_build.pocket
+        return self._new_pocket
 
     @property
     def upload_log(self):
-        return self.package_build.upload_log
+        return self._new_upload_log
 
     @property
     def dependencies(self):
-        return self.package_build.dependencies
+        return self._new_dependencies
 
     @property
     def current_component(self):

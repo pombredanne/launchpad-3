@@ -199,8 +199,6 @@ class BuildFarmJob(Storm):
     archive_id = Int(name='archive')
     archive = Reference(archive_id, 'Archive.id')
 
-    dependencies = None
-
     def __init__(self, job_type, status=BuildStatus.NEEDSBUILD,
                  processor=None, virtualized=None, date_created=None,
                  builder=None, archive=None):
@@ -227,51 +225,47 @@ class BuildFarmJobMixin:
 
     @property
     def processor(self):
-        return self.build_farm_job.processor
+        return self._new_processor
 
     @property
     def virtualized(self):
-        return self.build_farm_job.virtualized
+        return self._new_virtualized
 
     @property
     def date_created(self):
-        return self.build_farm_job.date_created
+        return self._new_date_created
 
     @property
     def date_started(self):
-        return self.build_farm_job.date_started
+        return self._new_date_started
 
     @property
     def date_finished(self):
-        return self.build_farm_job.date_finished
+        return self._new_date_finished
 
     @property
     def date_first_dispatched(self):
-        return self.build_farm_job.date_first_dispatched
+        return self._new_date_first_dispatched
 
     @property
     def builder(self):
-        return self.build_farm_job.builder
+        return self._new_builder
 
     @property
     def status(self):
-        return self.build_farm_job.status
+        return self._new_status
 
     @property
     def log(self):
-        return self.build_farm_job.log
-
-    @property
-    def job_type(self):
-        return self.build_farm_job.job_type
+        return self._new_log
 
     @property
     def failure_count(self):
-        return self.build_farm_job.failure_count
+        return self._new_failure_count
 
     @property
     def dependencies(self):
-        return self.build_farm_job.dependencies
+        return None
 
     @property
     def title(self):

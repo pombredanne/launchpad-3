@@ -20,8 +20,6 @@ from storm.expr import (
 from storm.store import Store
 from zope.interface import implements
 
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.sqlbase import sqlvalues
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
@@ -105,8 +103,6 @@ class DistributionSourcePackageRelease:
             BinaryPackageBuild.distro_arch_series == DistroArchSeries.id,
             DistroArchSeries.distroseries == DistroSeries.id,
             DistroSeries.distribution == self.distribution,
-            BinaryPackageBuild.package_build == PackageBuild.id,
-            PackageBuild.build_farm_job == BuildFarmJob.id
             )
 
         # First, get all the builds built in a main archive (this will
@@ -114,7 +110,7 @@ class DistributionSourcePackageRelease:
         builds_built_in_main_archives = Store.of(self.distribution).find(
             BinaryPackageBuild,
             builds_for_distro_exprs,
-            PackageBuild.archive == Archive.id,
+            BinaryPackageBuild._new_archive == Archive.id,
             Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES))
 
         # Next get all the builds that have a binary published in the

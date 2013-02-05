@@ -1579,17 +1579,14 @@ class PublishingSet:
         # If an optional list of build states was passed in as a parameter,
         # ensure that the result is limited to builds in those states.
         if build_states is not None:
-            extra_exprs.extend((
-                BinaryPackageBuild.package_build == PackageBuild.id,
-                PackageBuild.build_farm_job == BuildFarmJob.id,
-                BuildFarmJob.status.is_in(build_states)))
+            extra_exprs.append(
+                BinaryPackageBuild._new_status.is_in(build_states))
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         # We'll be looking for builds in the same distroseries as the
         # SPPH for the same release.
         builds_for_distroseries_expr = (
-            BinaryPackageBuild.package_build == PackageBuild.id,
             BinaryPackageBuild.distro_arch_series_id == DistroArchSeries.id,
             SourcePackagePublishingHistory.distroseriesID ==
                 DistroArchSeries.distroseriesID,
@@ -1603,7 +1600,7 @@ class PublishingSet:
             BinaryPackageBuild,
             builds_for_distroseries_expr,
             (SourcePackagePublishingHistory.archiveID ==
-                PackageBuild.archive_id),
+                BinaryPackageBuild._new_archive_id),
             *extra_exprs)
 
         # Next get all the builds that have a binary published in the
@@ -1613,7 +1610,7 @@ class PublishingSet:
             BinaryPackageBuild,
             builds_for_distroseries_expr,
             (SourcePackagePublishingHistory.archiveID !=
-                PackageBuild.archive_id),
+                BinaryPackageBuild._new_archive_id),
             BinaryPackagePublishingHistory.archive ==
                 SourcePackagePublishingHistory.archiveID,
             BinaryPackagePublishingHistory.binarypackagerelease ==
@@ -1737,9 +1734,7 @@ class PublishingSet:
             self._getSourceBinaryJoinForSources(
                 source_publication_ids, active_binaries_only=False),
             BinaryPackagePublishingHistory.datepublished != None,
-            BinaryPackageBuild.package_build == PackageBuild.id,
-            PackageBuild.build_farm_job == BuildFarmJob.id,
-            BuildFarmJob.status.is_in(build_states))
+            BinaryPackageBuild._new_status.is_in(build_states))
 
         published_builds.order_by(
             SourcePackagePublishingHistory.id,
