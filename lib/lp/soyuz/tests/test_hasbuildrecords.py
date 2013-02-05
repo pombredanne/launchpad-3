@@ -10,8 +10,10 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
-from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJob,
+    IBuildFarmJobSource,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
@@ -174,13 +176,8 @@ class TestArchiveHasBuildRecords(TestHasBuildRecordsInterface):
     def test_binary_only_false(self):
         # An archive can optionally return the more general
         # package build objects.
-
-        # Until we have different IBuildFarmJob types implemented, we
-        # can only test this by creating a lone PackageBuild of a
-        # different type.
-        getUtility(IPackageBuildSource).new(
-            job_type=BuildFarmJobType.RECIPEBRANCHBUILD, virtualized=True,
-            archive=self.context, pocket=PackagePublishingPocket.RELEASE)
+        getUtility(IBuildFarmJobSource).new(
+            BuildFarmJobType.RECIPEBRANCHBUILD, archive=self.context)
 
         builds = self.context.getBuildRecords(binary_only=True)
         self.failUnlessEqual(3, builds.count())
@@ -219,13 +216,9 @@ class TestBuilderHasBuildRecords(TestHasBuildRecordsInterface):
     def test_binary_only_false(self):
         # A builder can optionally return the more general
         # build farm job objects.
-
-        # Until we have different IBuildFarmJob types implemented, we
-        # can only test this by creating a lone IBuildFarmJob of a
-        # different type.
         from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
         getUtility(IBuildFarmJobSource).new(
-            job_type=BuildFarmJobType.RECIPEBRANCHBUILD, virtualized=True,
+            job_type=BuildFarmJobType.RECIPEBRANCHBUILD,
             status=BuildStatus.BUILDING, builder=self.context)
 
         builds = self.context.getBuildRecords(binary_only=True)

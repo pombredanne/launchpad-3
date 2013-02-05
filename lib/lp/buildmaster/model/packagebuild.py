@@ -4,15 +4,12 @@
 __metaclass__ = type
 __all__ = [
     'PackageBuild',
-    'PackageBuildDerived',
     'PackageBuildMixin',
-    'PackageBuildSet',
     ]
 
 
 from cStringIO import StringIO
 
-from lazr.delegates import delegates
 from storm.expr import Desc
 from storm.locals import (
     Int,
@@ -28,15 +25,12 @@ from zope.interface import (
     )
 
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuild,
-    IPackageBuildSet,
     IPackageBuildSource,
     )
 from lp.buildmaster.model.buildfarmjob import (
     BuildFarmJob,
-    BuildFarmJobDerived,
     BuildFarmJobMixin,
     )
 from lp.buildmaster.model.buildqueue import BuildQueue
@@ -57,7 +51,7 @@ from lp.soyuz.adapters.archivedependencies import (
 from lp.soyuz.interfaces.component import IComponentSet
 
 
-class PackageBuild(BuildFarmJobDerived, Storm):
+class PackageBuild(Storm):
     """An implementation of `IBuildFarmJob` for package builds."""
 
     __storm_table__ = 'PackageBuild'
@@ -87,8 +81,7 @@ class PackageBuild(BuildFarmJobDerived, Storm):
     distribution = None
     distro_series = None
 
-    def __init__(self, build_farm_job, archive, pocket,
-                 dependencies=None):
+    def __init__(self, build_farm_job, archive, pocket, dependencies=None):
         """Construct a PackageBuild."""
         super(PackageBuild, self).__init__()
         self.build_farm_job = build_farm_job
@@ -97,18 +90,10 @@ class PackageBuild(BuildFarmJobDerived, Storm):
         self.dependencies = dependencies
 
     @classmethod
-    def new(cls, job_type, virtualized, archive, pocket, processor=None,
-            status=BuildStatus.NEEDSBUILD, dependencies=None,
-            date_created=None, builder=None):
+    def new(cls, build_farm_job, archive, pocket):
         """See `IPackageBuildSource`."""
         store = IMasterStore(PackageBuild)
-
-        # Create the BuildFarmJob to which the new PackageBuild
-        # will delegate.
-        build_farm_job = getUtility(IBuildFarmJobSource).new(
-            job_type, status, processor, virtualized, date_created, builder)
-
-        package_build = cls(build_farm_job, archive, pocket, dependencies)
+        package_build = cls(build_farm_job, archive, pocket)
         store.add(package_build)
         return package_build
 
@@ -120,6 +105,22 @@ class PackageBuild(BuildFarmJobDerived, Storm):
 
 
 class PackageBuildMixin(BuildFarmJobMixin):
+
+    @property
+    def archive(self):
+        return self._new_archive
+
+    @property
+    def pocket(self):
+        return self._new_pocket
+
+    @property
+    def upload_log(self):
+        return self._new_upload_log
+
+    @property
+    def dependencies(self):
+        return self._new_dependencies
 
     @property
     def current_component(self):
@@ -157,9 +158,10 @@ class PackageBuildMixin(BuildFarmJobMixin):
 
         if (status == BuildStatus.MANUALDEPWAIT and slave_status is not None
             and slave_status.get('dependencies') is not None):
-            self.dependencies = unicode(slave_status.get('dependencies'))
+            self.package_build.dependencies = self._new_dependencies = (
+                unicode(slave_status.get('dependencies')))
         else:
-            self.dependencies = None
+            self.package_build.dependencies = self._new_dependencies = None
 
     def verifySuccessfulUpload(self):
         """See `IPackageBuild`."""
@@ -193,9 +195,9 @@ class PackageBuildMixin(BuildFarmJobMixin):
 
     def storeUploadLog(self, content):
         """See `IPackageBuild`."""
-        filename = "upload_%s_log.txt" % self.build_farm_job.id
+        filename = "upload_%s_log.txt" % self.id
         library_file = self.createUploadLog(content, filename=filename)
-        self.upload_log = library_file
+        self.package_build.upload_log = self._new_upload_log = library_file
 
     def notify(self, extra_info=None):
         """See `IPackageBuild`."""
@@ -223,52 +225,3 @@ class PackageBuildMixin(BuildFarmJobMixin):
             virtualized=specific_job.virtualized)
         Store.of(self).add(queue_entry)
         return queue_entry
-
-
-class PackageBuildDerived:
-    """Setup the delegation for package build.
-
-    This class also provides some common implementation for handling
-    build status.
-    """
-    delegates(IPackageBuild, context="package_build")
-
-
-class PackageBuildSet:
-    implements(IPackageBuildSet)
-
-    def getBuildsForArchive(self, archive, status=None, pocket=None):
-        """See `IPackageBuildSet`."""
-
-        extra_exprs = []
-
-        if status is not None:
-            extra_exprs.append(BuildFarmJob.status == status)
-
-        if pocket:
-            extra_exprs.append(PackageBuild.pocket == pocket)
-
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result_set = store.find(PackageBuild,
-            PackageBuild.archive == archive,
-            PackageBuild.build_farm_job == BuildFarmJob.id,
-            *extra_exprs)
-
-        # When we have a set of builds that may include pending or
-        # superseded builds, we order by -date_created (as we won't
-        # always have a date_finished). Otherwise we can order by
-        # -date_finished.
-        unfinished_states = [
-            BuildStatus.NEEDSBUILD,
-            BuildStatus.BUILDING,
-            BuildStatus.UPLOADING,
-            BuildStatus.SUPERSEDED,
-            ]
-        if status is None or status in unfinished_states:
-            result_set.order_by(
-                Desc(BuildFarmJob.date_created), BuildFarmJob.id)
-        else:
-            result_set.order_by(
-                Desc(BuildFarmJob.date_finished), BuildFarmJob.id)
-
-        return result_set

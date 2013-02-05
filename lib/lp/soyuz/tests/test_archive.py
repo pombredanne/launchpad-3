@@ -327,16 +327,13 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         # Return the count for archive build jobs with the given status.
         query = """
             SELECT COUNT(Job.id)
-            FROM BinaryPackageBuild, BuildPackageJob, BuildQueue, Job,
-                 PackageBuild, BuildFarmJob
+            FROM BinaryPackageBuild, BuildPackageJob, BuildQueue, Job
             WHERE
                 BuildPackageJob.build = BinaryPackageBuild.id
                 AND BuildPackageJob.job = BuildQueue.job
                 AND Job.id = BuildQueue.job
-                AND BinaryPackageBuild.package_build = PackageBuild.id
-                AND PackageBuild.archive = %s
-                AND PackageBuild.build_farm_job = BuildFarmJob.id
-                AND BuildFarmJob.status = %s
+                AND BinaryPackageBuild.archive = %s
+                AND BinaryPackageBuild.status = %s
                 AND Job.status = %s;
         """ % sqlvalues(archive, BuildStatus.NEEDSBUILD, status)
 

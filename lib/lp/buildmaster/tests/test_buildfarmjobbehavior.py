@@ -193,8 +193,7 @@ class TestGetUploadMethodsMixin:
             self.behavior.getBuildCookie())
         (job_type, job_id) = parse_build_upload_leaf_name(upload_leaf)
         self.assertEqual(
-            (self.build.build_farm_job.job_type.name, self.build.id),
-            (job_type, job_id))
+            (self.build.job_type.name, self.build.id), (job_type, job_id))
 
 
 class TestHandleStatusMixin:

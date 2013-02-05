@@ -76,12 +76,6 @@
         <allow
             interface="lp.buildmaster.interfaces.packagebuild.IPackageBuildSource" />
     </securedutility>
-    <securedutility
-        class="lp.buildmaster.model.packagebuild.PackageBuildSet"
-        provides="lp.buildmaster.interfaces.packagebuild.IPackageBuildSet">
-        <allow
-            interface="lp.buildmaster.interfaces.packagebuild.IPackageBuildSet" />
-    </securedutility>
 
     <!-- BuildQueue -->
     <class

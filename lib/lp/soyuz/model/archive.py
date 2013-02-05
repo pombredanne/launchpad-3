@@ -54,9 +54,7 @@ from lp.archiveuploader.utils import (
     re_issource,
     )
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.packagebuild import IPackageBuildSet
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.buildmaster.model.packagebuild import PackageBuild
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.registry.enums import (
     INCLUSIVE_TEAM_POLICY,
     PersonVisibility,
@@ -86,7 +84,10 @@ from lp.services.database.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from lp.services.database.lpstorm import ISlaveStore
+from lp.services.database.lpstorm import (
+    ISlaveStore,
+    IStore,
+    )
 from lp.services.database.sqlbase import (
     cursor,
     quote,
@@ -485,12 +486,12 @@ class Archive(SQLBase):
             return getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
                 self, build_state, name, pocket, arch_tag)
         else:
-            if arch_tag is not None or name is not None:
+            if arch_tag is not None or name is not None or pocket is not None:
                 raise IncompatibleArguments(
                     "The 'arch_tag' and 'name' parameters can be used only "
                     "with binary_only=True.")
-            return getUtility(IPackageBuildSet).getBuildsForArchive(
-                self, status=build_state, pocket=pocket)
+            return getUtility(IBuildFarmJobSet).getBuildsForArchive(
+                self, status=build_state)
 
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,
@@ -1117,20 +1118,17 @@ class Archive(SQLBase):
         extra_exprs = []
         if not include_needsbuild:
             extra_exprs.append(
-                BuildFarmJob.status != BuildStatus.NEEDSBUILD)
+                BinaryPackageBuild._new_status != BuildStatus.NEEDSBUILD)
 
         find_spec = (
-            BuildFarmJob.status,
+            BinaryPackageBuild._new_status,
             Count(BinaryPackageBuild.id),
             )
-        result = store.using(
-            BinaryPackageBuild, PackageBuild, BuildFarmJob).find(
+        result = store.find(
             find_spec,
-            BinaryPackageBuild.package_build == PackageBuild.id,
-            PackageBuild.archive == self,
-            PackageBuild.build_farm_job == BuildFarmJob.id,
-            *extra_exprs).group_by(BuildFarmJob.status).order_by(
-                BuildFarmJob.status)
+            BinaryPackageBuild._new_archive == self,
+            *extra_exprs).group_by(BinaryPackageBuild._new_status).order_by(
+                BinaryPackageBuild._new_status)
 
         # Create a map for each count summary to a number of buildstates:
         count_map = {
@@ -1898,18 +1896,14 @@ class Archive(SQLBase):
         """See `IArchive`."""
         store = Store.of(self)
 
-        base_query = (
-            BinaryPackageBuild.package_build == PackageBuild.id,
-            PackageBuild.archive == self,
-            PackageBuild.build_farm_job == BuildFarmJob.id)
         sprs_building = store.find(
             BinaryPackageBuild.source_package_release_id,
-            BuildFarmJob.status == BuildStatus.BUILDING,
-            *base_query)
+            BinaryPackageBuild._new_archive == self,
+            BinaryPackageBuild._new_status == BuildStatus.BUILDING)
         sprs_waiting = store.find(
             BinaryPackageBuild.source_package_release_id,
-            BuildFarmJob.status == BuildStatus.NEEDSBUILD,
-            *base_query)
+            BinaryPackageBuild._new_archive == self,
+            BinaryPackageBuild._new_status == BuildStatus.NEEDSBUILD)
 
         # A package is not counted as waiting if it already has at least
         # one build building.
@@ -1952,18 +1946,15 @@ class Archive(SQLBase):
 
         query = """
             UPDATE Job SET status = %s
-            FROM BinaryPackageBuild, PackageBuild, BuildFarmJob,
-                 BuildPackageJob, BuildQueue
+            FROM BinaryPackageBuild, BuildPackageJob, BuildQueue
             WHERE
-                BinaryPackageBuild.package_build = PackageBuild.id
                 -- insert self.id here
-                AND PackageBuild.archive = %s
+                BinaryPackageBuild.archive = %s
                 AND BuildPackageJob.build = BinaryPackageBuild.id
                 AND BuildPackageJob.job = BuildQueue.job
                 AND Job.id = BuildQueue.job
                 -- Build is in state BuildStatus.NEEDSBUILD (0)
-                AND PackageBuild.build_farm_job = BuildFarmJob.id
-                AND BuildFarmJob.status = %s;
+                AND BinaryPackageBuild.status = %s;
         """ % sqlvalues(status, self, BuildStatus.NEEDSBUILD)
 
         store = Store.of(self)
@@ -2389,19 +2380,13 @@ class ArchiveSet:
 
     def getBuildCountersForArchitecture(self, archive, distroarchseries):
         """See `IArchiveSet`."""
-        cur = cursor()
-        query = """
-            SELECT BuildFarmJob.status, count(BuildFarmJob.id) FROM
-            BinaryPackageBuild, PackageBuild, BuildFarmJob
-            WHERE
-                BinaryPackageBuild.package_build = PackageBuild.id AND
-                PackageBuild.build_farm_job = BuildFarmJob.id AND
-                PackageBuild.archive = %s AND
-                BinaryPackageBuild.distro_arch_series = %s
-            GROUP BY BuildFarmJob.status ORDER BY BuildFarmJob.status;
-        """ % sqlvalues(archive, distroarchseries)
-        cur.execute(query)
-        result = cur.fetchall()
+        result = IStore(BinaryPackageBuild).find(
+            (BinaryPackageBuild._new_status, Count(BinaryPackageBuild.id)),
+            BinaryPackageBuild._new_archive == archive,
+            BinaryPackageBuild.distro_arch_series == distroarchseries,
+            ).group_by(
+                BinaryPackageBuild._new_status
+            ).order_by(BinaryPackageBuild._new_status)
 
         status_map = {
             'failed': (
@@ -2430,8 +2415,7 @@ class ArchiveSet:
         for key, status in status_map.iteritems():
             status_and_counters[key] = 0
             for status_value, status_counter in result:
-                status_values = [item.value for item in status]
-                if status_value in status_values:
+                if status_value in status:
                     status_and_counters[key] += status_counter
 
         return status_and_counters

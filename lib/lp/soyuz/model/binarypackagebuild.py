@@ -11,6 +11,7 @@ import datetime
 import operator
 
 import apt_pkg
+import pytz
 from sqlobject import SQLObjectNotFound
 from storm.expr import (
     Desc,
@@ -19,8 +20,11 @@ from storm.expr import (
     SQL,
     )
 from storm.locals import (
+    Bool,
+    DateTime,
     Int,
     Reference,
+    Unicode,
     )
 from storm.store import (
     EmptyResultSet,
@@ -38,18 +42,17 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
 from lp.buildmaster.model.builder import Builder
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.buildmaster.model.packagebuild import (
-    PackageBuild,
-    PackageBuildDerived,
-    PackageBuildMixin,
-    )
+from lp.buildmaster.model.packagebuild import PackageBuildMixin
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import DBEnum
 from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -93,12 +96,13 @@ from lp.soyuz.model.queue import (
     )
 
 
-class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
+class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     implements(IBinaryPackageBuild)
     _table = 'BinaryPackageBuild'
     _defaultOrder = 'id'
 
     build_farm_job_type = BuildFarmJobType.PACKAGEBUILD
+    job_type = build_farm_job_type
 
     package_build_id = Int(name='package_build', allow_none=False)
     package_build = Reference(package_build_id, 'PackageBuild.id')
@@ -110,6 +114,57 @@ class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
         name='source_package_release', allow_none=False)
     source_package_release = Reference(
         source_package_release_id, 'SourcePackageRelease.id')
+
+    # Migrating from PackageBuild
+    build_farm_job_id = Int(name='build_farm_job')
+    build_farm_job = Reference(build_farm_job_id, BuildFarmJob.id)
+
+    _new_archive_id = Int(name='archive')
+    _new_archive = Reference(_new_archive_id, 'Archive.id')
+
+    _new_pocket = DBEnum(name='pocket', enum=PackagePublishingPocket)
+
+    _new_upload_log_id = Int(name='upload_log')
+    _new_upload_log = Reference(_new_upload_log_id, 'LibraryFileAlias.id')
+
+    _new_dependencies = Unicode(name='dependencies')
+
+    # Migrating from BuildFarmJob.
+    _new_processor_id = Int(name='processor')
+    _new_processor = Reference(_new_processor_id, 'Processor.id')
+
+    _new_virtualized = Bool(name='virtualized')
+
+    _new_date_created = DateTime(name='date_created', tzinfo=pytz.UTC)
+
+    _new_date_started = DateTime(name='date_started', tzinfo=pytz.UTC)
+
+    _new_date_finished = DateTime(name='date_finished', tzinfo=pytz.UTC)
+
+    _new_date_first_dispatched = DateTime(
+        name='date_first_dispatched', tzinfo=pytz.UTC)
+
+    _new_builder_id = Int(name='builder')
+    _new_builder = Reference(_new_builder_id, 'Builder.id')
+
+    _new_status = DBEnum(name='status', enum=BuildStatus)
+
+    _new_log_id = Int(name='log')
+    _new_log = Reference(_new_log_id, 'LibraryFileAlias.id')
+
+    _new_failure_count = Int(name='failure_count')
+
+    _new_distribution_id = Int(name='distribution')
+    _new_distribution = Reference(_new_distribution_id, 'Distribution.id')
+
+    _new_distro_series_id = Int(name='distro_series')
+    _new_distro_series = Reference(_new_distro_series_id, 'DistroSeries.id')
+
+    _new_is_distro_archive = Bool(name='is_distro_archive')
+
+    _new_source_package_name_id = Int(name='source_package_name')
+    _new_source_package_name = Reference(
+        _new_source_package_name_id, 'SourcePackageName.id')
 
     @property
     def buildqueue_record(self):
@@ -358,13 +413,13 @@ class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
     def retry(self):
         """See `IBuild`."""
         assert self.can_be_retried, "Build %s cannot be retried" % self.id
-        self.status = BuildStatus.NEEDSBUILD
-        self.date_finished = None
-        self.date_started = None
-        self.builder = None
-        self.log = None
-        self.upload_log = None
-        self.dependencies = None
+        self.build_farm_job.status = self._new_status = BuildStatus.NEEDSBUILD
+        self.build_farm_job.date_finished = self._new_date_finished = None
+        self.build_farm_job.date_started = self._new_date_started = None
+        self.build_farm_job.builder = self._new_builder = None
+        self.build_farm_job.log = self._new_log = None
+        self.package_build.upload_log = self._new_upload_log = None
+        self.package_build.dependencies = self._new_dependencies = None
         self.queueBuild()
 
     def rescore(self, score):
@@ -514,7 +569,8 @@ class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
             if not self._isDependencySatisfied(token)]
 
         # Update dependencies line
-        self.dependencies = u", ".join(remaining_deps)
+        self.package_build.dependencies = self._new_dependencies = (
+            u", ".join(remaining_deps))
 
     def __getitem__(self, name):
         return self.getBinaryPackageRelease(name)
@@ -566,17 +622,14 @@ class BinaryPackageBuild(PackageBuildMixin, PackageBuildDerived, SQLBase):
             BinaryPackageBuild.distro_arch_series = %s AND
             SourcePackageRelease.sourcepackagename = SourcePackageName.id AND
             SourcePackageName.name = %s AND
-            BinaryPackageBuild.package_build = PackageBuild.id AND
-            PackageBuild.archive IN %s AND
-            PackageBuild.build_farm_job = BuildFarmJob.id AND
-            BuildFarmJob.date_finished IS NOT NULL AND
-            BuildFarmJob.status = %s
+            BinaryPackageBuild.archive IN %s AND
+            BinaryPackageBuild.date_finished IS NOT NULL AND
+            BinaryPackageBuild.status = %s
             """ % sqlvalues(self, self.distro_arch_series,
                             self.source_package_release.name, archives,
                             BuildStatus.FULLYBUILT),
-            orderBy=['-BuildFarmJob.date_finished', '-id'],
-            clauseTables=['PackageBuild', 'BuildFarmJob', 'SourcePackageName',
-                          'SourcePackageRelease'])
+            orderBy=['-date_finished', '-id'],
+            clauseTables=['SourcePackageName', 'SourcePackageRelease'])
 
         estimated_duration = None
         if bool(completed_builds):
@@ -813,17 +866,28 @@ class BinaryPackageBuildSet:
             archive, pocket, status=BuildStatus.NEEDSBUILD,
             date_created=None, builder=None):
         """See `IBinaryPackageBuildSet`."""
-        # Create the PackageBuild to which the new BinaryPackageBuild
-        # will delegate.
+        # Create the BuildFarmJob and PackageBuild to which the new
+        # BinaryPackageBuild will delegate.
+        build_farm_job = getUtility(IBuildFarmJobSource).new(
+            BinaryPackageBuild.build_farm_job_type, status, processor,
+            archive.require_virtualized, date_created, builder, archive)
         package_build = getUtility(IPackageBuildSource).new(
-            BinaryPackageBuild.build_farm_job_type,
-            archive.require_virtualized, archive, pocket, processor,
-            status, date_created=date_created, builder=builder)
+            build_farm_job, archive, pocket)
 
         binary_package_build = BinaryPackageBuild(
+            build_farm_job=build_farm_job,
             package_build=package_build,
             distro_arch_series=distro_arch_series,
-            source_package_release=source_package_release)
+            source_package_release=source_package_release,
+            _new_archive=archive, _new_pocket=pocket,
+            _new_status=status, _new_processor=processor,
+            _new_virtualized=archive.require_virtualized,
+            _new_builder=builder, _new_is_distro_archive=archive.is_main,
+            _new_distribution=distro_arch_series.distroseries.distribution,
+            _new_distro_series=distro_arch_series.distroseries,
+            _new_source_package_name=source_package_release.sourcepackagename)
+        if date_created is not None:
+            binary_package_build._new_date_created = date_created
         return binary_package_build
 
     def getByID(self, id):
@@ -835,15 +899,8 @@ class BinaryPackageBuildSet:
 
     def getByBuildFarmJob(self, build_farm_job):
         """See `ISpecificBuildFarmJobSource`."""
-        find_spec = (BinaryPackageBuild, PackageBuild, BuildFarmJob)
-        resulting_tuple = Store.of(build_farm_job).find(
-            find_spec,
-            BinaryPackageBuild.package_build == PackageBuild.id,
-            PackageBuild.build_farm_job == BuildFarmJob.id,
-            BuildFarmJob.id == build_farm_job.id).one()
-        if resulting_tuple is None:
-            return None
-        return resulting_tuple[0]
+        return Store.of(build_farm_job).find(
+            BinaryPackageBuild, build_farm_job_id=build_farm_job.id).one()
 
     def preloadBuildsData(self, builds):
         # Circular imports.
@@ -855,9 +912,7 @@ class BinaryPackageBuildSet:
         self._prefetchBuildData(builds)
         distro_arch_series = load_related(
             DistroArchSeries, builds, ['distro_arch_series_id'])
-        package_builds = load_related(
-            PackageBuild, builds, ['package_build_id'])
-        archives = load_related(Archive, package_builds, ['archive_id'])
+        archives = load_related(Archive, builds, ['_new_archive_id'])
         load_related(Person, archives, ['ownerID'])
         distroseries = load_related(
             DistroSeries, distro_arch_series, ['distroseriesID'])
@@ -868,17 +923,11 @@ class BinaryPackageBuildSet:
         """See `ISpecificBuildFarmJobSource`."""
         if len(build_farm_jobs) == 0:
             return EmptyResultSet()
-        clause_tables = (BinaryPackageBuild, PackageBuild, BuildFarmJob)
-        build_farm_job_ids = [
-            build_farm_job.id for build_farm_job in build_farm_jobs]
-
-        resultset = Store.of(build_farm_jobs[0]).using(*clause_tables).find(
+        rows = Store.of(build_farm_jobs[0]).find(
             BinaryPackageBuild,
-            BinaryPackageBuild.package_build == PackageBuild.id,
-            PackageBuild.build_farm_job == BuildFarmJob.id,
-            BuildFarmJob.id.is_in(build_farm_job_ids))
-        return DecoratedResultSet(
-            resultset, pre_iter_hook=self.preloadBuildsData)
+            BinaryPackageBuild.build_farm_job_id.is_in(
+                bfj.id for bfj in build_farm_jobs))
+        return DecoratedResultSet(rows, pre_iter_hook=self.preloadBuildsData)
 
     def handleOptionalParamsForBuildQueries(
         self, clauses, origin, status=None, name=None, pocket=None,
@@ -905,23 +954,18 @@ class BinaryPackageBuildSet:
         from lp.soyuz.model.distroarchseries import DistroArchSeries
         from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
-        # Ensure the underlying buildfarmjob and package build tables
-        # are included.
-        clauses.extend([
-            BinaryPackageBuild.package_build == PackageBuild.id,
-            PackageBuild.build_farm_job == BuildFarmJob.id])
-        origin.extend([BinaryPackageBuild, BuildFarmJob])
+        origin.append(BinaryPackageBuild)
 
         # Add query clause that filters on build state if the latter is
         # provided.
         if status is not None:
-            clauses.append(BuildFarmJob.status == status)
+            clauses.append(BinaryPackageBuild._new_status == status)
 
         # Add query clause that filters on pocket if the latter is provided.
         if pocket:
             if not isinstance(pocket, (list, tuple)):
                 pocket = (pocket,)
-            clauses.append(PackageBuild.pocket.is_in(pocket))
+            clauses.append(BinaryPackageBuild._new_pocket.is_in(pocket))
 
         # Add query clause that filters on architecture tag if provided.
         if arch_tag is not None:
@@ -954,23 +998,24 @@ class BinaryPackageBuildSet:
             Archive, get_archive_privacy_filter)
 
         clauses = [
-            PackageBuild.archive_id == Archive.id,
-            BuildFarmJob.builder_id == builder_id,
+            BinaryPackageBuild._new_archive_id == Archive.id,
+            BinaryPackageBuild._new_builder_id == builder_id,
             get_archive_privacy_filter(user)]
-        origin = [PackageBuild, Archive]
+        origin = [Archive]
 
         self.handleOptionalParamsForBuildQueries(
             clauses, origin, status, name, pocket=None, arch_tag=arch_tag)
 
         return IStore(BinaryPackageBuild).using(*origin).find(
             BinaryPackageBuild, *clauses).order_by(
-                Desc(BuildFarmJob.date_finished), BinaryPackageBuild.id)
+                Desc(BinaryPackageBuild._new_date_finished),
+                BinaryPackageBuild.id)
 
     def getBuildsForArchive(self, archive, status=None, name=None,
                             pocket=None, arch_tag=None):
         """See `IBinaryPackageBuildSet`."""
-        clauses = [PackageBuild.archive_id == archive.id]
-        origin = [PackageBuild]
+        clauses = [BinaryPackageBuild._new_archive_id == archive.id]
+        origin = []
 
         self.handleOptionalParamsForBuildQueries(
             clauses, origin, status, name, pocket, arch_tag)
@@ -980,9 +1025,9 @@ class BinaryPackageBuildSet:
         # * FULLYBUILT & FAILURES by -datebuilt
         # It should present the builds in a more natural order.
         if status == BuildStatus.SUPERSEDED or status is None:
-            orderBy = [Desc(BuildFarmJob.date_created)]
+            orderBy = [Desc(BinaryPackageBuild._new_date_created)]
         else:
-            orderBy = [Desc(BuildFarmJob.date_finished)]
+            orderBy = [Desc(BinaryPackageBuild._new_date_finished)]
         # All orders fallback to id if the primary order doesn't succeed
         orderBy.append(BinaryPackageBuild.id)
 
@@ -997,8 +1042,6 @@ class BinaryPackageBuildSet:
         if not arch_ids:
             return EmptyResultSet()
 
-        clauseTables = [PackageBuild]
-
         # format clause according single/multiple architecture(s) form
         if len(arch_ids) == 1:
             condition_clauses = [('distro_arch_series=%s'
@@ -1007,10 +1050,6 @@ class BinaryPackageBuildSet:
             condition_clauses = [('distro_arch_series IN %s'
                                   % sqlvalues(arch_ids))]
 
-        condition_clauses.extend([
-            "BinaryPackageBuild.package_build = PackageBuild.id",
-            "PackageBuild.build_farm_job = BuildFarmJob.id"])
-
         # XXX cprov 2006-09-25: It would be nice if we could encapsulate
         # the chunk of code below (which deals with the optional paramenters)
         # and share it with ISourcePackage.getBuildRecords()
@@ -1018,20 +1057,23 @@ class BinaryPackageBuildSet:
         # exclude gina-generated and security (dak-made) builds
         # status == FULLYBUILT && datebuilt == null
         if status == BuildStatus.FULLYBUILT:
-            condition_clauses.append("BuildFarmJob.date_finished IS NOT NULL")
+            condition_clauses.append(
+                "BinaryPackageBuild.date_finished IS NOT NULL")
         else:
             condition_clauses.append(
-                "(BuildFarmJob.status <> %s OR "
-                " BuildFarmJob.date_finished IS NOT NULL)"
+                "(BinaryPackageBuild.status <> %s OR "
+                " BinaryPackageBuild.date_finished IS NOT NULL)"
                 % sqlvalues(BuildStatus.FULLYBUILT))
 
         # Ordering according status
         # * NEEDSBUILD, BUILDING & UPLOADING by -lastscore
-        # * SUPERSEDED & All by -PackageBuild.build_farm_job
+        # * SUPERSEDED & All by -BinaryPackageBuild.id
         #   (nearly equivalent to -datecreated, but much more
         #   efficient.)
         # * FULLYBUILT & FAILURES by -datebuilt
         # It should present the builds in a more natural order.
+        clauseTables = []
+        order_by_table = None
         if status in [
             BuildStatus.NEEDSBUILD,
             BuildStatus.BUILDING,
@@ -1044,12 +1086,10 @@ class BinaryPackageBuildSet:
                 'BuildPackageJob.build = BinaryPackageBuild.id')
             condition_clauses.append('BuildPackageJob.job = BuildQueue.job')
         elif status == BuildStatus.SUPERSEDED or status is None:
-            order_by = [Desc(PackageBuild.build_farm_job_id)]
-            order_by_table = PackageBuild
+            order_by = [Desc(BinaryPackageBuild.id)]
         else:
-            order_by = [Desc(BuildFarmJob.date_finished),
+            order_by = [Desc(BinaryPackageBuild._new_date_finished),
                         BinaryPackageBuild.id]
-            order_by_table = BuildFarmJob
 
         # End of duplication (see XXX cprov 2006-09-25 above).
 
@@ -1059,11 +1099,14 @@ class BinaryPackageBuildSet:
         # Only pick builds from the distribution's main archive to
         # exclude PPA builds
         condition_clauses.append(
-            "PackageBuild.archive IN %s" %
+            "BinaryPackageBuild.archive IN %s" %
             sqlvalues(list(distribution.all_distro_archive_ids)))
 
+        find_spec = (BinaryPackageBuild,)
+        if order_by_table:
+            find_spec = find_spec + (order_by_table,)
         result_set = Store.of(distribution).using(*clauseTables).find(
-            (BinaryPackageBuild, order_by_table), *condition_clauses)
+            find_spec, *condition_clauses)
         result_set.order_by(*order_by)
 
         def get_bpp(result_row):
@@ -1091,22 +1134,21 @@ class BinaryPackageBuildSet:
 
         query = """
             source_package_release IN %s AND
-            package_build = packagebuild.id AND
-            archive.id = packagebuild.archive AND
-            archive.purpose != %s AND
-            packagebuild.build_farm_job = buildfarmjob.id
+            archive.id = binarypackagebuild.archive AND
+            archive.purpose != %s
             """ % sqlvalues(sourcepackagerelease_ids, ArchivePurpose.PPA)
 
         if buildstate is not None:
-            query += "AND buildfarmjob.status = %s" % sqlvalues(buildstate)
+            query += (
+                "AND binarypackagebuild.status = %s" % sqlvalues(buildstate))
 
         resultset = IStore(BinaryPackageBuild).using(
-            BinaryPackageBuild, PackageBuild, BuildFarmJob, Archive).find(
-            (BinaryPackageBuild, PackageBuild, BuildFarmJob),
+            BinaryPackageBuild, Archive).find(
+            BinaryPackageBuild,
             SQL(query))
         resultset.order_by(
-            Desc(BuildFarmJob.date_created), BinaryPackageBuild.id)
-        return DecoratedResultSet(resultset, operator.itemgetter(0))
+            Desc(BinaryPackageBuild._new_date_created), BinaryPackageBuild.id)
+        return resultset
 
     def getStatusSummaryForBuilds(self, builds):
         """See `IBinaryPackageBuildSet`."""
@@ -1179,31 +1221,24 @@ class BinaryPackageBuildSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = (
             BinaryPackageBuild,
-            LeftJoin(
-                PackageBuild,
-                BinaryPackageBuild.package_build == PackageBuild.id),
-            LeftJoin(
-                BuildFarmJob,
-                PackageBuild.build_farm_job == BuildFarmJob.id),
-            LeftJoin(
+            Join(
                 SourcePackageRelease,
                 (SourcePackageRelease.id ==
                     BinaryPackageBuild.source_package_release_id)),
-            LeftJoin(
+            Join(
                 SourcePackageName,
                 SourcePackageName.id
                     == SourcePackageRelease.sourcepackagenameID),
             LeftJoin(LibraryFileAlias,
-                     LibraryFileAlias.id == BuildFarmJob.log_id),
+                     LibraryFileAlias.id == BinaryPackageBuild._new_log_id),
             LeftJoin(LibraryFileContent,
                      LibraryFileContent.id == LibraryFileAlias.contentID),
             LeftJoin(
-                Builder,
-                Builder.id == BuildFarmJob.builder_id),
+                Builder, Builder.id == BinaryPackageBuild._new_builder_id),
             )
         result_set = store.using(*origin).find(
             (SourcePackageRelease, LibraryFileAlias, SourcePackageName,
-             LibraryFileContent, Builder, PackageBuild, BuildFarmJob),
+             LibraryFileContent, Builder),
             BinaryPackageBuild.id.is_in(build_ids))
 
         # Force query execution so that the ancillary data gets fetched

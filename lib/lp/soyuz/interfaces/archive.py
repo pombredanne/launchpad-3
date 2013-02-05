@@ -384,12 +384,11 @@ class IArchiveView(IHasBuildRecords):
             description=_("Maximum size, in MiB, allowed for the archive.")))
 
     purpose = Int(
-        title=_("Purpose of archive."), required=True, readonly=True,
-        )
+        title=_("Purpose of archive."), required=True, readonly=True)
 
-    status = Int(
-        title=_("Status of archive."), required=True, readonly=True,
-        )
+    status = exported(
+        Int(title=_("Status of archive."), required=True, readonly=True),
+        as_of='devel')
 
     sources_cached = Int(
         title=_("Number of sources cached"), required=False,

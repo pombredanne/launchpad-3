@@ -54,6 +54,7 @@ For "devel" additional attributes are available.
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/ppa'
     signing_key_fingerprint: None
+    status: u'Active'
     suppress_subscription_notifications: False
     web_link: u'http://launchpad.../~cprov/+archive/ppa'
 

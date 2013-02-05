@@ -63,10 +63,6 @@ class IBinaryPackageBuildView(IPackageBuild):
     """A Build interface for items requiring launchpad.View."""
     id = Int(title=_('ID'), required=True, readonly=True)
 
-    package_build = Reference(
-        title=_('Package build'), schema=IPackageBuild, required=True,
-        readonly=True, description=_('The base package build'))
-
     # Overridden from IBuildFarmJob to ensure required is True.
     processor = Reference(
         title=_("Processor"), schema=IProcessor,
