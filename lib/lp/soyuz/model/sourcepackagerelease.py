@@ -226,13 +226,11 @@ class SourcePackageRelease(SQLBase):
         # sourcepackagerelease.
         return BinaryPackageBuild.select("""
             source_package_release = %s AND
-            package_build = packagebuild.id AND
-            archive.id = packagebuild.archive AND
-            packagebuild.build_farm_job = buildfarmjob.id AND
+            archive.id = binarypackagebuild.archive AND
             archive.purpose IN %s
             """ % sqlvalues(self.id, MAIN_ARCHIVE_PURPOSES),
-            orderBy=['-buildfarmjob.date_created', 'id'],
-            clauseTables=['Archive', 'PackageBuild', 'BuildFarmJob'])
+            orderBy=['-date_created', 'id'],
+            clauseTables=['Archive'])
 
     @property
     def age(self):
@@ -447,16 +445,10 @@ class SourcePackageRelease(SQLBase):
         # If there was no published binary we have to try to find a
         # suitable build in all possible location across the distroseries
         # inheritance tree. See below.
-        clause_tables = [
-            'BuildFarmJob',
-            'PackageBuild',
-            'DistroArchSeries',
-            ]
+        clause_tables = ['DistroArchSeries']
         queries = [
-            "BinaryPackageBuild.package_build = PackageBuild.id AND "
-            "PackageBuild.build_farm_job = BuildFarmJob.id AND "
             "DistroArchSeries.id = BinaryPackageBuild.distro_arch_series AND "
-            "PackageBuild.archive = %s AND "
+            "BinaryPackageBuild.archive = %s AND "
             "DistroArchSeries.architecturetag = %s AND "
             "BinaryPackageBuild.source_package_release = %s" % (
             sqlvalues(archive.id, distroarchseries.architecturetag, self))]
@@ -467,7 +459,7 @@ class SourcePackageRelease(SQLBase):
 
         return BinaryPackageBuild.selectFirst(
             query, clauseTables=clause_tables,
-            orderBy=['-BuildFarmJob.date_created'])
+            orderBy=['-date_created'])
 
     def override(self, component=None, section=None, urgency=None):
         """See ISourcePackageRelease."""

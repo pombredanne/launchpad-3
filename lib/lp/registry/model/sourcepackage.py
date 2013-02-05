@@ -601,8 +601,8 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
         # binary_only parameter as a source package can only have
         # binary builds.
 
-        clauseTables = ['SourcePackageRelease', 'PackageBuild',
-                        'SourcePackagePublishingHistory']
+        clauseTables = [
+            'SourcePackageRelease', 'SourcePackagePublishingHistory']
 
         condition_clauses = ["""
         BinaryPackageBuild.source_package_release =
@@ -612,7 +612,7 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
         SourcePackagePublishingHistory.archive IN %s AND
         SourcePackagePublishingHistory.sourcepackagerelease =
             SourcePackageRelease.id AND
-        SourcePackagePublishingHistory.archive = PackageBuild.archive
+        SourcePackagePublishingHistory.archive = BinaryPackageBuild.archive
         """ % sqlvalues(self.sourcepackagename,
                         self.distroseries,
                         list(self.distribution.all_distro_archive_ids))]
@@ -627,8 +627,8 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
         # exclude gina-generated and security (dak-made) builds
         # buildstate == FULLYBUILT && datebuilt == null
         condition_clauses.append(
-            "NOT (BuildFarmJob.status=%s AND "
-            "     BuildFarmJob.date_finished is NULL)"
+            "NOT (BinaryPackageBuild.status=%s AND "
+            "     BinaryPackageBuild.date_finished is NULL)"
             % sqlvalues(BuildStatus.FULLYBUILT))
 
         # Ordering according status
@@ -648,9 +648,9 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.job = BuildPackageJob.job')
         elif build_state == BuildStatus.SUPERSEDED or build_state is None:
-            orderBy = [Desc("BuildFarmJob.date_created")]
+            orderBy = [Desc("BinaryPackageBuild.date_created")]
         else:
-            orderBy = [Desc("BuildFarmJob.date_finished")]
+            orderBy = [Desc("BinaryPackageBuild.date_finished")]
 
         # Fallback to ordering by -id as a tie-breaker.
         orderBy.append(Desc("id"))

@@ -60,7 +60,6 @@ if the 'age' result looks sane:
 Mozilla-firefox 0.9 has got some builds. including a PPA build.  The 'builds'
 property only returns the non-PPA builds.
 
-   >>> from lp.buildmaster.model.packagebuild import PackageBuild
    >>> from lp.registry.interfaces.person import IPersonSet
    >>> from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
    >>> from storm.store import Store
@@ -68,8 +67,7 @@ property only returns the non-PPA builds.
    >>> ff_ppa_build = Store.of(cprov_ppa).find(
    ...     BinaryPackageBuild,
    ...     BinaryPackageBuild.source_package_release == spr,
-   ...     BinaryPackageBuild.package_build == PackageBuild.id,
-   ...     PackageBuild.archive == cprov_ppa)
+   ...     BinaryPackageBuild._new_archive == cprov_ppa)
    >>> ff_ppa_build.count()
    1
    >>> ff_ppa_build[0].archive.purpose.name

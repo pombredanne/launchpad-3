@@ -93,6 +93,7 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
     package_build = Reference(package_build_id, 'PackageBuild.id')
 
     build_farm_job_type = BuildFarmJobType.RECIPEBRANCHBUILD
+    job_type = build_farm_job_type
 
     id = Int(primary=True)
 
@@ -150,8 +151,8 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
     requester = Reference(requester_id, 'Person.id')
 
     # Migrating from PackageBuild
-    _new_build_farm_job_id = Int(name='build_farm_job')
-    _new_build_farm_job = Reference(_new_build_farm_job_id, BuildFarmJob.id)
+    build_farm_job_id = Int(name='build_farm_job')
+    build_farm_job = Reference(build_farm_job_id, BuildFarmJob.id)
 
     _new_archive_id = Int(name='archive')
     _new_archive = Reference(_new_archive_id, 'Archive.id')
@@ -216,7 +217,7 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
                  requester, archive, pocket, date_created):
         """Construct a SourcePackageRecipeBuild."""
         super(SourcePackageRecipeBuild, self).__init__()
-        self._new_build_farm_job = build_farm_job
+        self.build_farm_job = build_farm_job
         self.package_build = package_build
         self.distroseries = distroseries
         self.recipe = recipe
@@ -365,16 +366,13 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
 
     @classmethod
     def getRecentBuilds(cls, requester, recipe, distroseries, _now=None):
-        from lp.buildmaster.model.buildfarmjob import BuildFarmJob
         if _now is None:
             _now = datetime.now(pytz.UTC)
         store = IMasterStore(SourcePackageRecipeBuild)
         old_threshold = _now - timedelta(days=1)
         return store.find(cls, cls.distroseries_id == distroseries.id,
             cls.requester_id == requester.id, cls.recipe_id == recipe.id,
-            BuildFarmJob.date_created > old_threshold,
-            BuildFarmJob.id == PackageBuild.build_farm_job_id,
-            PackageBuild.id == cls.package_build_id)
+            cls._new_date_created > old_threshold)
 
     def makeJob(self):
         """See `ISourcePackageRecipeBuildJob`."""

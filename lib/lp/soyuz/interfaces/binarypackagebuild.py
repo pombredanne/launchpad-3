@@ -63,10 +63,6 @@ class IBinaryPackageBuildView(IPackageBuild):
     """A Build interface for items requiring launchpad.View."""
     id = Int(title=_('ID'), required=True, readonly=True)
 
-    package_build = Reference(
-        title=_('Package build'), schema=IPackageBuild, required=True,
-        readonly=True, description=_('The base package build'))
-
     # Overridden from IBuildFarmJob to ensure required is True.
     processor = Reference(
         title=_("Processor"), schema=IProcessor,
@@ -100,9 +96,6 @@ class IBinaryPackageBuildView(IPackageBuild):
     distro_series = Attribute("Direct parent needed by CanonicalURL")
     arch_tag = exported(
         Text(title=_("Architecture tag"), required=False))
-    source_package_name = Attribute("Source package name")
-    is_distro_archive = Attribute(
-        "Whether the target archive belongs to the distro")
     distributionsourcepackagerelease = Attribute("The page showing the "
         "details for this sourcepackagerelease in this distribution.")
     binarypackages = Attribute(

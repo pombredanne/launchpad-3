@@ -17,8 +17,7 @@ from lazr.delegates import delegates
 from pytz import utc
 from storm.expr import (
     And,
-    Join,
-    RightJoin,
+    LeftJoin,
     )
 from storm.locals import (
     Bool,
@@ -37,8 +36,6 @@ from zope.interface import (
     )
 
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.code.errors import (
     BuildAlreadyPending,
     BuildNotAllowedForDistro,
@@ -215,24 +212,25 @@ class SourcePackageRecipe(Storm):
         store.add(sprecipe)
         return sprecipe
 
-    @classmethod
-    def findStaleDailyBuilds(cls):
+    @staticmethod
+    def findStaleDailyBuilds():
         one_day_ago = datetime.now(utc) - timedelta(hours=23, minutes=50)
-        joins = RightJoin(
-            Join(
-                Join(SourcePackageRecipeBuild, PackageBuild,
-                    PackageBuild.id ==
-                    SourcePackageRecipeBuild.package_build_id),
-                BuildFarmJob,
-                And(BuildFarmJob.id == PackageBuild.build_farm_job_id,
-                    BuildFarmJob.date_created > one_day_ago)),
+        joins = (
             SourcePackageRecipe,
-            And(SourcePackageRecipeBuild.recipe == SourcePackageRecipe.id,
-                SourcePackageRecipe.daily_build_archive_id ==
-                    PackageBuild.archive_id))
-        return IStore(cls).using(joins).find(
-            cls, cls.is_stale == True, cls.build_daily == True,
-            BuildFarmJob.date_created == None).config(distinct=True)
+            LeftJoin(
+                SourcePackageRecipeBuild,
+                And(SourcePackageRecipeBuild.recipe_id ==
+                        SourcePackageRecipe.id,
+                    SourcePackageRecipeBuild._new_archive_id ==
+                        SourcePackageRecipe.daily_build_archive_id,
+                    SourcePackageRecipeBuild._new_date_created > one_day_ago)),
+            )
+        return IStore(SourcePackageRecipe).using(*joins).find(
+            SourcePackageRecipe,
+            SourcePackageRecipe.is_stale == True,
+            SourcePackageRecipe.build_daily == True,
+            SourcePackageRecipeBuild._new_date_created == None,
+            ).config(distinct=True)
 
     @staticmethod
     def exists(owner, name):
@@ -288,10 +286,8 @@ class SourcePackageRecipe(Storm):
         pending = IStore(self).find(SourcePackageRecipeBuild,
             SourcePackageRecipeBuild.recipe_id == self.id,
             SourcePackageRecipeBuild.distroseries_id == distroseries.id,
-            PackageBuild.archive_id == archive.id,
-            PackageBuild.id == SourcePackageRecipeBuild.package_build_id,
-            BuildFarmJob.id == PackageBuild.build_farm_job_id,
-            BuildFarmJob.status == BuildStatus.NEEDSBUILD)
+            SourcePackageRecipeBuild._new_archive_id == archive.id,
+            SourcePackageRecipeBuild._new_status == BuildStatus.NEEDSBUILD)
         if pending.any() is not None:
             raise BuildAlreadyPending(self, distroseries)
 
@@ -323,39 +319,42 @@ class SourcePackageRecipe(Storm):
     @property
     def builds(self):
         """See `ISourcePackageRecipe`."""
-        order_by = (Desc(Greatest(
-                            BuildFarmJob.date_started,
-                            BuildFarmJob.date_finished)),
-                   Desc(BuildFarmJob.date_created), Desc(BuildFarmJob.id))
+        order_by = (
+            Desc(Greatest(
+                SourcePackageRecipeBuild._new_date_started,
+                SourcePackageRecipeBuild._new_date_finished)),
+            Desc(SourcePackageRecipeBuild._new_date_created),
+            Desc(SourcePackageRecipeBuild.id))
         return self._getBuilds(None, order_by)
 
     @property
     def completed_builds(self):
         """See `ISourcePackageRecipe`."""
-        filter_term = BuildFarmJob.status != BuildStatus.NEEDSBUILD
-        order_by = (Desc(Greatest(
-                            BuildFarmJob.date_started,
-                            BuildFarmJob.date_finished)),
-                   Desc(BuildFarmJob.id))
+        filter_term = (
+            SourcePackageRecipeBuild._new_status != BuildStatus.NEEDSBUILD)
+        order_by = (
+            Desc(Greatest(
+                SourcePackageRecipeBuild._new_date_started,
+                SourcePackageRecipeBuild._new_date_finished)),
+            Desc(SourcePackageRecipeBuild.id))
         return self._getBuilds(filter_term, order_by)
 
     @property
     def pending_builds(self):
         """See `ISourcePackageRecipe`."""
-        filter_term = BuildFarmJob.status == BuildStatus.NEEDSBUILD
+        filter_term = (
+            SourcePackageRecipeBuild._new_status == BuildStatus.NEEDSBUILD)
         # We want to order by date_created but this is the same as ordering
         # by id (since id increases monotonically) and is less expensive.
-        order_by = Desc(BuildFarmJob.id)
+        order_by = Desc(SourcePackageRecipeBuild.id)
         return self._getBuilds(filter_term, order_by)
 
     def _getBuilds(self, filter_term, order_by):
         """The actual query to get the builds."""
         query_args = [
             SourcePackageRecipeBuild.recipe == self,
-            SourcePackageRecipeBuild.package_build_id == PackageBuild.id,
-            PackageBuild.build_farm_job_id == BuildFarmJob.id,
-            And(PackageBuild.archive_id == Archive.id,
-                Archive._enabled == True),
+            SourcePackageRecipeBuild._new_archive_id == Archive.id,
+            Archive._enabled == True,
             ]
         if filter_term is not None:
             query_args.append(filter_term)
@@ -378,19 +377,17 @@ class SourcePackageRecipe(Storm):
     def last_build(self):
         """See `ISourcePackageRecipeBuild`."""
         return self._getBuilds(
-            True, Desc(BuildFarmJob.date_finished)).first()
+            True, Desc(SourcePackageRecipeBuild._new_date_finished)).first()
 
     def getMedianBuildDuration(self):
         """Return the median duration of builds of this recipe."""
         store = IStore(self)
         result = store.find(
-            BuildFarmJob,
+            SourcePackageRecipeBuild,
             SourcePackageRecipeBuild.recipe == self.id,
-            BuildFarmJob.date_finished != None,
-            BuildFarmJob.id == PackageBuild.build_farm_job_id,
-            SourcePackageRecipeBuild.package_build_id == PackageBuild.id)
-        durations = [build.date_finished - build.date_started for build in
-                     result]
+            SourcePackageRecipeBuild._new_date_finished != None)
+        durations = [
+            build.date_finished - build.date_started for build in result]
         if len(durations) == 0:
             return None
         durations.sort(reverse=True)
