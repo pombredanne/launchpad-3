@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -50,6 +50,7 @@ from lp.testing import (
     EventRecorder,
     TestCase,
     )
+from lp.testing.layers import FunctionalLayer
 
 
 class SetInWSGIEnvironmentTestCase(TestCase):
@@ -230,8 +231,7 @@ class TestVhostWebserviceFactory(WebServiceTestCase):
 
         for method in denied_methods:
             env = self.wsgi_env(self.non_api_path, method)
-            self.assert_(self.factory.canHandle(env),
-                "Sanity check")
+            self.assert_(self.factory.canHandle(env), "Sanity check")
             # Returns a tuple of (request_factory, publication_factory).
             rfactory, pfactory = self.factory.checkRequest(env)
             self.assert_(rfactory is not None,
@@ -352,6 +352,8 @@ class TestWebServiceRequest(WebServiceTestCase):
 class TestBasicLaunchpadRequest(TestCase):
     """Tests for the base request class"""
 
+    layer = FunctionalLayer
+
     def test_baserequest_response_should_vary(self):
         """Test that our base response has a proper vary header."""
         request = LaunchpadBrowserRequest(StringIO.StringIO(''), {})
@@ -386,6 +388,16 @@ class TestBasicLaunchpadRequest(TestCase):
         env = {'PATH_INFO': bad_path}
         request = LaunchpadBrowserRequest(StringIO.StringIO(''), env)
         self.assertEquals(u'fnord/trunk\ufffd', request.getHeader('PATH_INFO'))
+
+    def test_request_with_invalid_query_string_recovers(self):
+        # When the query string has invalid utf-8, it is decoded with
+        # replacement.
+        env = {'QUERY_STRING': 'field.title=subproc\xe9s '}
+        request = LaunchpadBrowserRequest(StringIO.StringIO(''), env)
+        # XXX: Python 2.6 and 2.7 handle unicode replacement differently.
+        self.assertIn(
+            request.query_string_params['field.title'],
+            ([u'subproc\ufffd'], [u'subproc\ufffds ']))
 
 
 class TestFeedsBrowserRequest(TestCase):
