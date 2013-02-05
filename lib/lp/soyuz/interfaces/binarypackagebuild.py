@@ -100,9 +100,6 @@ class IBinaryPackageBuildView(IPackageBuild):
     distro_series = Attribute("Direct parent needed by CanonicalURL")
     arch_tag = exported(
         Text(title=_("Architecture tag"), required=False))
-    source_package_name = Attribute("Source package name")
-    is_distro_archive = Attribute(
-        "Whether the target archive belongs to the distro")
     distributionsourcepackagerelease = Attribute("The page showing the "
         "details for this sourcepackagerelease in this distribution.")
     binarypackages = Attribute(
