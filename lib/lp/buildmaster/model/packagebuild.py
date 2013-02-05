@@ -5,7 +5,6 @@ __metaclass__ = type
 __all__ = [
     'PackageBuild',
     'PackageBuildMixin',
-    'PackageBuildSet',
     ]
 
 
@@ -26,10 +25,8 @@ from zope.interface import (
     )
 
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import (
     IPackageBuild,
-    IPackageBuildSet,
     IPackageBuildSource,
     )
 from lp.buildmaster.model.buildfarmjob import (
@@ -228,43 +225,3 @@ class PackageBuildMixin(BuildFarmJobMixin):
             virtualized=specific_job.virtualized)
         Store.of(self).add(queue_entry)
         return queue_entry
-
-
-class PackageBuildSet:
-    implements(IPackageBuildSet)
-
-    def getBuildsForArchive(self, archive, status=None, pocket=None):
-        """See `IPackageBuildSet`."""
-
-        extra_exprs = []
-
-        if status is not None:
-            extra_exprs.append(BuildFarmJob.status == status)
-
-        if pocket:
-            extra_exprs.append(PackageBuild.pocket == pocket)
-
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result_set = store.find(PackageBuild,
-            PackageBuild.archive == archive,
-            PackageBuild.build_farm_job == BuildFarmJob.id,
-            *extra_exprs)
-
-        # When we have a set of builds that may include pending or
-        # superseded builds, we order by -date_created (as we won't
-        # always have a date_finished). Otherwise we can order by
-        # -date_finished.
-        unfinished_states = [
-            BuildStatus.NEEDSBUILD,
-            BuildStatus.BUILDING,
-            BuildStatus.UPLOADING,
-            BuildStatus.SUPERSEDED,
-            ]
-        if status is None or status in unfinished_states:
-            result_set.order_by(
-                Desc(BuildFarmJob.date_created), BuildFarmJob.id)
-        else:
-            result_set.order_by(
-                Desc(BuildFarmJob.date_finished), BuildFarmJob.id)
-
-        return result_set

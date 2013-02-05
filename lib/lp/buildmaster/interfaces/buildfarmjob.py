@@ -374,3 +374,12 @@ class IBuildFarmJobSet(Interface):
             that should be included.
         :return: a `ResultSet` representing the requested builds.
         """
+
+    def getBuildsForArchive(archive, status=None):
+        """Return `IBuildFarmJob` records targeted to a given `IArchive`.
+
+        :param archive: The archive for which builds will be returned.
+        :param status: If status is provided, only builders with that
+            status will be returned.
+        :return: a `ResultSet` representing the requested `IBuildFarmJobs`.
+        """

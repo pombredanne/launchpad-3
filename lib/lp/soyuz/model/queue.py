@@ -1728,7 +1728,6 @@ def prefill_packageupload_caches(uploads, puses, pubs, pucs):
     source_sprs = load_related(
         SourcePackageRelease, puses, ['sourcepackagereleaseID'])
     bpbs = load_related(BinaryPackageBuild, pubs, ['buildID'])
-    load_related(PackageBuild, bpbs, ['package_build_id'])
     load_related(DistroArchSeries, bpbs, ['distro_arch_series_id'])
     binary_sprs = load_related(
         SourcePackageRelease, bpbs, ['source_package_release_id'])

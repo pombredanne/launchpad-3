@@ -159,22 +159,18 @@ class TranslationTemplatesBuild(BuildFarmJobMixin, Storm):
         """See `ITranslationTemplatesBuildSource`."""
         store = cls._getStore(store)
         match = store.find(
-            TranslationTemplatesBuild,
-            TranslationTemplatesBuild.build_farm_job_id == buildfarmjob.id)
+            TranslationTemplatesBuild, build_farm_job_id=buildfarmjob.id)
         return match.one()
 
     @classmethod
     def getByBuildFarmJobs(cls, buildfarmjobs, store=None):
-        buildfarmjob_ids = [buildfarmjob.id for buildfarmjob in buildfarmjobs]
         """See `ITranslationTemplatesBuildSource`."""
         store = cls._getStore(store)
-
-        resultset = store.find(
+        rows = store.find(
             TranslationTemplatesBuild,
             TranslationTemplatesBuild.build_farm_job_id.is_in(
-                buildfarmjob_ids))
-        return DecoratedResultSet(
-            resultset, pre_iter_hook=cls.preloadBuildsData)
+                bfj.id for bfj in buildfarmjobs))
+        return DecoratedResultSet(rows, pre_iter_hook=cls.preloadBuildsData)
 
     @classmethod
     def preloadBuildsData(cls, builds):
@@ -188,9 +184,7 @@ class TranslationTemplatesBuild(BuildFarmJobMixin, Storm):
         # Preload branches cached associated product series and
         # suite source packages for all the related branches.
         GenericBranchCollection.preloadDataForBranches(branches)
-        build_farm_jobs = [
-            build.build_farm_job for build in builds]
-        load_related(LibraryFileAlias, build_farm_jobs, ['log_id'])
+        load_related(LibraryFileAlias, builds, ['_new_log_id'])
 
     @classmethod
     def findByBranch(cls, branch, store=None):

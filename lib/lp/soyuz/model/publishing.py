@@ -1567,7 +1567,7 @@ class PublishingSet:
         return pub
 
     def getBuildsForSourceIds(self, source_publication_ids, archive=None,
-                              build_states=None, need_build_farm_job=False):
+                              build_states=None):
         """See `IPublishingSet`."""
         # If an archive was passed in as a parameter, add an extra expression
         # to filter by archive:
@@ -1630,22 +1630,16 @@ class PublishingSet:
             SourcePackagePublishingHistory,
             BinaryPackageBuild,
             DistroArchSeries,
-            ) + ((PackageBuild, BuildFarmJob) if need_build_farm_job else ())
+            )
 
         # Storm doesn't let us do builds_union.values('id') -
         # ('Union' object has no attribute 'columns'). So instead
         # we have to instantiate the objects just to get the id.
         build_ids = [build.id for build in builds_union]
 
-        prejoin_exprs = (
-            BinaryPackageBuild.package_build == PackageBuild.id,
-            PackageBuild.build_farm_job == BuildFarmJob.id,
-            ) if need_build_farm_job else ()
-
         result_set = store.find(
             find_spec, builds_for_distroseries_expr,
-            BinaryPackageBuild.id.is_in(build_ids),
-            *prejoin_exprs)
+            BinaryPackageBuild.id.is_in(build_ids))
 
         return result_set.order_by(
             SourcePackagePublishingHistory.id,
@@ -1896,8 +1890,7 @@ class PublishingSet:
         # Find relevant builds while also getting PackageBuilds and
         # BuildFarmJobs into the cache. They're used later.
         build_info = list(
-            self.getBuildsForSourceIds(
-                source_ids, archive=archive, need_build_farm_job=True))
+            self.getBuildsForSourceIds(source_ids, archive=archive))
         source_pubs = set()
         found_source_ids = set()
         for row in build_info:
