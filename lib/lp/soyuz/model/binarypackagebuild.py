@@ -47,6 +47,8 @@ from lp.buildmaster.model.builder import Builder
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import PackageBuildMixin
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
 from lp.services.database.bulk import load_related
@@ -85,6 +87,7 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuildSet,
     UnparsableDependencies,
     )
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
@@ -597,20 +600,16 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         # and get the (successfully built) build records for this
         # package.
         completed_builds = BinaryPackageBuild.select("""
-            BinaryPackageBuild.source_package_release =
-                SourcePackageRelease.id AND
+            BinaryPackageBuild.source_package_name = %s AND
             BinaryPackageBuild.id != %s AND
             BinaryPackageBuild.distro_arch_series = %s AND
-            SourcePackageRelease.sourcepackagename = SourcePackageName.id AND
-            SourcePackageName.name = %s AND
             BinaryPackageBuild.archive IN %s AND
             BinaryPackageBuild.date_finished IS NOT NULL AND
             BinaryPackageBuild.status = %s
-            """ % sqlvalues(self, self.distro_arch_series,
-                            self.source_package_release.name, archives,
+            """ % sqlvalues(self.source_package_name, self,
+                            self.distro_arch_series, archives,
                             BuildStatus.FULLYBUILT),
-            orderBy=['-date_finished', '-id'],
-            clauseTables=['SourcePackageName', 'SourcePackageRelease'])
+            orderBy=['-date_finished', '-id'])
 
         estimated_duration = None
         if bool(completed_builds):
@@ -927,7 +926,6 @@ class BinaryPackageBuildSet:
         # Circular. :(
         from lp.registry.model.sourcepackagename import SourcePackageName
         from lp.soyuz.model.distroarchseries import DistroArchSeries
-        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
         origin.append(BinaryPackageBuild)
 
@@ -944,21 +942,23 @@ class BinaryPackageBuildSet:
 
         # Add query clause that filters on architecture tag if provided.
         if arch_tag is not None:
-            clauses.extend([
+            clauses.append(
                 BinaryPackageBuild.distro_arch_series_id ==
-                    DistroArchSeries.id,
-                DistroArchSeries.architecturetag == arch_tag])
+                    DistroArchSeries.id)
+            if isinstance(arch_tag, (list, tuple)):
+                clauses.append(
+                    DistroArchSeries.architecturetag.is_in(arch_tag))
+            else:
+                clauses.append(DistroArchSeries.architecturetag == arch_tag)
             origin.append(DistroArchSeries)
 
         # Add query clause that filters on source package release name if the
         # latter is provided.
         if name is not None:
-            clauses.extend(
-                [BinaryPackageBuild.source_package_release_id ==
-                    SourcePackageRelease.id,
-                SourcePackageRelease.sourcepackagenameID ==
-                    SourcePackageName.id])
-            origin.extend([SourcePackageRelease, SourcePackageName])
+            clauses.append(
+                BinaryPackageBuild.source_package_name_id ==
+                    SourcePackageName.id)
+            origin.extend([SourcePackageName])
             if not isinstance(name, (list, tuple)):
                 clauses.append(
                     SourcePackageName.name.contains_string(name))
@@ -1010,20 +1010,18 @@ class BinaryPackageBuildSet:
             IStore(BinaryPackageBuild).using(*origin).find(
                 BinaryPackageBuild, *clauses).order_by(*orderBy))
 
-    def getBuildsByArchIds(self, distribution, arch_ids, status=None,
-                           name=None, pocket=None):
+    def getBuildsForDistro(self, context, status=None, name=None,
+                           pocket=None, arch_tag=None):
         """See `IBinaryPackageBuildSet`."""
-        # If no distroarchseries were passed in, return an empty list
-        if not arch_ids:
-            return EmptyResultSet()
-
-        # format clause according single/multiple architecture(s) form
-        if len(arch_ids) == 1:
-            condition_clauses = [('distro_arch_series=%s'
-                                  % sqlvalues(arch_ids[0]))]
+        if IDistribution.providedBy(context):
+            col = BinaryPackageBuild.distribution_id
+        elif IDistroSeries.providedBy(context):
+            col = BinaryPackageBuild.distro_series_id
+        elif IDistroArchSeries.providedBy(context):
+            col = BinaryPackageBuild.distro_arch_series_id
         else:
-            condition_clauses = [('distro_arch_series IN %s'
-                                  % sqlvalues(arch_ids))]
+            raise AssertionError("Unsupported context: %r" % context)
+        condition_clauses = [col == context.id]
 
         # XXX cprov 2006-09-25: It would be nice if we could encapsulate
         # the chunk of code below (which deals with the optional paramenters)
@@ -1069,18 +1067,16 @@ class BinaryPackageBuildSet:
         # End of duplication (see XXX cprov 2006-09-25 above).
 
         self.handleOptionalParamsForBuildQueries(
-            condition_clauses, clauseTables, status, name, pocket)
+            condition_clauses, clauseTables, status, name, pocket, arch_tag)
 
         # Only pick builds from the distribution's main archive to
         # exclude PPA builds
-        condition_clauses.append(
-            "BinaryPackageBuild.archive IN %s" %
-            sqlvalues(list(distribution.all_distro_archive_ids)))
+        condition_clauses.append("BinaryPackageBuild.is_distro_archive")
 
         find_spec = (BinaryPackageBuild,)
         if order_by_table:
             find_spec = find_spec + (order_by_table,)
-        result_set = Store.of(distribution).using(*clauseTables).find(
+        result_set = IStore(BinaryPackageBuild).using(*clauseTables).find(
             find_spec, *condition_clauses)
         result_set.order_by(*order_by)
 
@@ -1104,21 +1100,16 @@ class BinaryPackageBuildSet:
         if (sourcepackagerelease_ids is None or
             len(sourcepackagerelease_ids) == 0):
             return []
-        # Circular.
-        from lp.soyuz.model.archive import Archive
-
         query = """
             source_package_release IN %s AND
-            archive.id = binarypackagebuild.archive AND
-            archive.purpose != %s
-            """ % sqlvalues(sourcepackagerelease_ids, ArchivePurpose.PPA)
+            binarypackagebuild.is_distro_archive
+            """ % sqlvalues(sourcepackagerelease_ids)
 
         if buildstate is not None:
             query += (
                 "AND binarypackagebuild.status = %s" % sqlvalues(buildstate))
 
-        resultset = IStore(BinaryPackageBuild).using(
-            BinaryPackageBuild, Archive).find(
+        resultset = IStore(BinaryPackageBuild).find(
             BinaryPackageBuild,
             SQL(query))
         resultset.order_by(

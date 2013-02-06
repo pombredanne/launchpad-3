@@ -1580,7 +1580,6 @@ class PackageUploadSet:
         """See `IPackageUploadSet`."""
         # Avoiding circular imports.
         from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
         archives = distroseries.distribution.getArchiveIDList()
         clauses = [
@@ -1596,9 +1595,7 @@ class PackageUploadSet:
         if names is not None:
             clauses.extend([
                 BinaryPackageBuild.id == PackageUploadBuild.buildID,
-                BinaryPackageBuild.source_package_release ==
-                    SourcePackageRelease.id,
-                SourcePackageRelease.sourcepackagename ==
+                BinaryPackageBuild.source_package_name ==
                     SourcePackageName.id,
                 SourcePackageName.name.is_in(names),
                 ])

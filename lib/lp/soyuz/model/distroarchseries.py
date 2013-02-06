@@ -2,10 +2,10 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-__all__ = ['DistroArchSeries',
-           'DistroArchSeriesSet',
-           'PocketChroot'
-           ]
+__all__ = [
+    'DistroArchSeries',
+    'PocketChroot'
+    ]
 
 from sqlobject import (
     BoolCol,
@@ -45,7 +45,6 @@ from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.distroarchseries import (
     IDistroArchSeries,
-    IDistroArchSeriesSet,
     IPocketChroot,
     )
 from lp.soyuz.interfaces.publishing import ICanPublishPackages
@@ -263,9 +262,8 @@ class DistroArchSeries(SQLBase):
 
         # Use the facility provided by IBinaryPackageBuildSet to
         # retrieve the records.
-        return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
-            self.distroseries.distribution, [self.id], build_state, name,
-            pocket)
+        return getUtility(IBinaryPackageBuildSet).getBuildsForDistro(
+            self, build_state, name, pocket)
 
     def getReleasedPackages(self, binary_name, pocket=None,
                             include_pending=False, archive=None):
@@ -352,43 +350,6 @@ class DistroArchSeries(SQLBase):
     @property
     def main_archive(self):
         return self.distroseries.distribution.main_archive
-
-
-class DistroArchSeriesSet:
-    """This class is to deal with DistroArchSeries related stuff"""
-
-    implements(IDistroArchSeriesSet)
-
-    def __iter__(self):
-        return iter(DistroArchSeries.select())
-
-    def get(self, dar_id):
-        """See `IDistributionSet`."""
-        return DistroArchSeries.get(dar_id)
-
-    def count(self):
-        return DistroArchSeries.select().count()
-
-    def getIdsForArchitectures(self, architectures, arch_tag=None):
-        """Filter architectures and return the ids.
-
-        This method is not exposed via the public interface as it is
-        used simply to keep trusted code DRY.
-
-        :param architectures: an iterable of architectures to process.
-        :param arch_tag: an optional architecture tag or a tag list with
-            which to filter the results.
-        :return: a list of the ids of the architectures matching arch_tag.
-        """
-        # If arch_tag was not provided, just return the ids without
-        # filtering.
-        if arch_tag is None:
-            return [arch.id for arch in architectures]
-        else:
-            if not isinstance(arch_tag, (list, tuple)):
-                arch_tag = (arch_tag, )
-            return [arch.id for arch in architectures
-                        if arch.architecturetag in arch_tag]
 
 
 class PocketChroot(SQLBase):
