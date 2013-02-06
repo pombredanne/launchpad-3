@@ -597,12 +597,11 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         # and get the (successfully built) build records for this
         # package.
         completed_builds = BinaryPackageBuild.select("""
-            BinaryPackageBuild.source_package_release =
+            SourcePackageName.name = %s AND
+            BinaryPackageBuild.source_package_name = SourcePackageName.id AND
                 SourcePackageRelease.id AND
             BinaryPackageBuild.id != %s AND
             BinaryPackageBuild.distro_arch_series = %s AND
-            SourcePackageRelease.sourcepackagename = SourcePackageName.id AND
-            SourcePackageName.name = %s AND
             BinaryPackageBuild.archive IN %s AND
             BinaryPackageBuild.date_finished IS NOT NULL AND
             BinaryPackageBuild.status = %s
@@ -964,11 +963,9 @@ class BinaryPackageBuildSet:
         # Add query clause that filters on source package release name if the
         # latter is provided.
         if name is not None:
-            clauses.extend(
-                [BinaryPackageBuild.source_package_release_id ==
-                    SourcePackageRelease.id,
-                SourcePackageRelease.sourcepackagenameID ==
-                    SourcePackageName.id])
+            clauses.append(
+                BinaryPackageBuild.source_package_name_id ==
+                    SourcePackageName.id)
             origin.extend([SourcePackageRelease, SourcePackageName])
             if not isinstance(name, (list, tuple)):
                 clauses.append(
