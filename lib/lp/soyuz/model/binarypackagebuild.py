@@ -600,18 +600,16 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         # and get the (successfully built) build records for this
         # package.
         completed_builds = BinaryPackageBuild.select("""
-            SourcePackageName.name = %s AND
-            BinaryPackageBuild.source_package_name = SourcePackageName.id AND
+            BinaryPackageBuild.source_package_name = %s AND
             BinaryPackageBuild.id != %s AND
             BinaryPackageBuild.distro_arch_series = %s AND
             BinaryPackageBuild.archive IN %s AND
             BinaryPackageBuild.date_finished IS NOT NULL AND
             BinaryPackageBuild.status = %s
-            """ % sqlvalues(self.source_package_release.name, self,
+            """ % sqlvalues(self.source_package_name, self,
                             self.distro_arch_series, archives,
                             BuildStatus.FULLYBUILT),
-            orderBy=['-date_finished', '-id'],
-            clauseTables=['SourcePackageName'])
+            orderBy=['-date_finished', '-id'])
 
         estimated_duration = None
         if bool(completed_builds):
