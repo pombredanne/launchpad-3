@@ -599,14 +599,13 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         completed_builds = BinaryPackageBuild.select("""
             SourcePackageName.name = %s AND
             BinaryPackageBuild.source_package_name = SourcePackageName.id AND
-                SourcePackageRelease.id AND
             BinaryPackageBuild.id != %s AND
             BinaryPackageBuild.distro_arch_series = %s AND
             BinaryPackageBuild.archive IN %s AND
             BinaryPackageBuild.date_finished IS NOT NULL AND
             BinaryPackageBuild.status = %s
-            """ % sqlvalues(self, self.distro_arch_series,
-                            self.source_package_release.name, archives,
+            """ % sqlvalues(self.source_package_release.name, self,
+                            self.distro_arch_series, archives,
                             BuildStatus.FULLYBUILT),
             orderBy=['-date_finished', '-id'],
             clauseTables=['SourcePackageName'])
