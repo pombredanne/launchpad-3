@@ -52,4 +52,4 @@ DROP INDEX binarypackagebuild__source_package_release_idx;
 
 DROP INDEX sourcepackagerecipebuild__recipe__idx;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 41, 4);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 41, 5);
