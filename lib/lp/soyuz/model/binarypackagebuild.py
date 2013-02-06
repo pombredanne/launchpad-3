@@ -1084,9 +1084,7 @@ class BinaryPackageBuildSet:
 
         # Only pick builds from the distribution's main archive to
         # exclude PPA builds
-        condition_clauses.append(
-            "BinaryPackageBuild.archive IN %s" %
-            sqlvalues(list(distribution.all_distro_archive_ids)))
+        condition_clauses.append("BinaryPackageBuild.is_distro_archive")
 
         find_spec = (BinaryPackageBuild,)
         if order_by_table:
@@ -1115,21 +1113,16 @@ class BinaryPackageBuildSet:
         if (sourcepackagerelease_ids is None or
             len(sourcepackagerelease_ids) == 0):
             return []
-        # Circular.
-        from lp.soyuz.model.archive import Archive
-
         query = """
             source_package_release IN %s AND
-            archive.id = binarypackagebuild.archive AND
-            archive.purpose != %s
-            """ % sqlvalues(sourcepackagerelease_ids, ArchivePurpose.PPA)
+            binarypackagebuild.is_distro_archive
+            """ % sqlvalues(sourcepackagerelease_ids)
 
         if buildstate is not None:
             query += (
                 "AND binarypackagebuild.status = %s" % sqlvalues(buildstate))
 
-        resultset = IStore(BinaryPackageBuild).using(
-            BinaryPackageBuild, Archive).find(
+        resultset = IStore(BinaryPackageBuild).find(
             BinaryPackageBuild,
             SQL(query))
         resultset.order_by(
