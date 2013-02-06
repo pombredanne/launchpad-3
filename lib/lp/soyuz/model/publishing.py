@@ -1584,12 +1584,13 @@ class PublishingSet:
         # We'll be looking for builds in the same distroseries as the
         # SPPH for the same release.
         builds_for_distroseries_expr = (
-            BinaryPackageBuild.distro_arch_series_id == DistroArchSeries.id,
             SourcePackagePublishingHistory.distroseriesID ==
-                DistroArchSeries.distroseriesID,
+                BinaryPackageBuild.distro_series_id,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 BinaryPackageBuild.source_package_release_id,
-            SourcePackagePublishingHistory.id.is_in(source_publication_ids))
+            SourcePackagePublishingHistory.id.is_in(source_publication_ids),
+            DistroArchSeries.id == BinaryPackageBuild.distro_arch_series_id,
+            )
 
         # First, we'll find the builds that were built in the same
         # archive context as the published sources.
