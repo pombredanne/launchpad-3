@@ -609,7 +609,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
                             self.source_package_release.name, archives,
                             BuildStatus.FULLYBUILT),
             orderBy=['-date_finished', '-id'],
-            clauseTables=['SourcePackageName', 'SourcePackageRelease'])
+            clauseTables=['SourcePackageName'])
 
         estimated_duration = None
         if bool(completed_builds):
@@ -937,7 +937,6 @@ class BinaryPackageBuildSet:
         # Circular. :(
         from lp.registry.model.sourcepackagename import SourcePackageName
         from lp.soyuz.model.distroarchseries import DistroArchSeries
-        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
         origin.append(BinaryPackageBuild)
 
@@ -966,7 +965,7 @@ class BinaryPackageBuildSet:
             clauses.append(
                 BinaryPackageBuild.source_package_name_id ==
                     SourcePackageName.id)
-            origin.extend([SourcePackageRelease, SourcePackageName])
+            origin.extend([SourcePackageName])
             if not isinstance(name, (list, tuple)):
                 clauses.append(
                     SourcePackageName.name.contains_string(name))
