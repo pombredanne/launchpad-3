@@ -532,9 +532,9 @@ class MergePeopleView(BaseTokenView, LaunchpadView):
         self._doMerge()
         if self.mergeCompleted:
             self.success(_(
-                'The accounts have been merged successfully. Everything that '
-                'belonged to the duplicated account should now belong to '
-                'your own account.'))
+                'The accounts are being merged. This can take up to an hour '
+                'to complete, after which everything that belonged to the '
+                'duplicate account will belong to your own account.'))
         else:
             self.success(_(
                 'The e-mail address %s has been assigned to you, but the '
