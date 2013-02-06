@@ -19,6 +19,7 @@ from textwrap import dedent
 import urllib
 
 from lazr.enum import enumerated_type_registry
+from lazr.restful.utils import get_current_browser_request
 from lazr.uri import URI
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
@@ -94,7 +95,6 @@ from lp.services.webapp.menu import (
     get_facet,
     )
 from lp.services.webapp.publisher import (
-    get_current_browser_request,
     LaunchpadView,
     nearest,
     )

@@ -9,6 +9,7 @@ import cPickle as pickle
 import time
 from UserDict import DictMixin
 
+from lazr.restful.utils import get_current_browser_request
 from storm.zope.interfaces import IZStorm
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
@@ -21,7 +22,6 @@ from zope.session.interfaces import (
     )
 
 from lp.services.helpers import ensure_unicode
-from lp.services.webapp.publisher import get_current_browser_request
 
 
 SECONDS = 1

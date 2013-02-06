@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad bug-related database table classes."""
@@ -226,6 +226,7 @@ from lp.services.propertycache import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.publisher import get_raw_form_value_from_current_request
 
 
 def snapshot_bug_params(bug_params):
@@ -1250,8 +1251,10 @@ class Bug(SQLBase, InformationTypeMixin):
         bug_watch.destroySelf()
 
     def addAttachment(self, owner, data, comment, filename, is_patch=False,
-                      content_type=None, description=None):
+                      content_type=None, description=None, from_api=False):
         """See `IBug`."""
+        if from_api:
+            data = get_raw_form_value_from_current_request('data')
         if isinstance(data, str):
             filecontent = data
         else:

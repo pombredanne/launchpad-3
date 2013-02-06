@@ -224,7 +224,7 @@ class IProductReleaseFile(IProductReleaseFileEditRestricted,
 class IProductReleaseEditRestricted(Interface):
     """`IProductRelease` properties which require `launchpad.Edit`."""
 
-    @call_with(uploader=REQUEST_USER)
+    @call_with(uploader=REQUEST_USER, from_api=True)
     @operation_parameters(
         filename=TextLine(),
         signature_filename=TextLine(),
@@ -232,16 +232,14 @@ class IProductReleaseEditRestricted(Interface):
         file_content=Bytes(constraint=productrelease_file_size_constraint),
         signature_content=Bytes(
             constraint=productrelease_signature_size_constraint),
-        file_type=copy_field(IProductReleaseFile['filetype'], required=False)
-        )
-    @export_factory_operation(
-        IProductReleaseFile, ['description'])
+        file_type=copy_field(IProductReleaseFile['filetype'], required=False))
+    @export_factory_operation(IProductReleaseFile, ['description'])
     @export_operation_as('add_file')
     def addReleaseFile(filename, file_content, content_type,
                        uploader, signature_filename=None,
                        signature_content=None,
                        file_type=UpstreamFileType.CODETARBALL,
-                       description=None):
+                       description=None, from_api=False):
         """Add file to the library and link to this `IProductRelease`.
 
         The signature file will also be added if available.

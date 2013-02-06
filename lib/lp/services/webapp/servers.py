@@ -18,6 +18,7 @@ from lazr.restful.publisher import (
     WebServicePublicationMixin,
     WebServiceRequestTraversal,
     )
+from lazr.restful.utils import get_current_browser_request
 from lazr.uri import URI
 import transaction
 from transaction.interfaces import ISynchronizer
@@ -100,10 +101,7 @@ from lp.services.webapp.notifications import (
     )
 from lp.services.webapp.opstats import OpStats
 from lp.services.webapp.publication import LaunchpadBrowserPublication
-from lp.services.webapp.publisher import (
-    get_current_browser_request,
-    RedirectionView,
-    )
+from lp.services.webapp.publisher import RedirectionView
 from lp.services.webapp.vhosts import allvhosts
 from lp.services.webservice.interfaces import IWebServiceApplication
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
