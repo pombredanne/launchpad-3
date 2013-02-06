@@ -344,7 +344,8 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
         :return: a `ResultSet` representing the requested builds.
         """
 
-    def getBuildsByArchIds(arch_ids, status=None, name=None, pocket=None):
+    def getBuildsForDistro(arch_ids, status=None, name=None, pocket=None,
+                           arch_tag=None):
         """Retrieve Build Records for a given arch_ids list.
 
         Optionally, for a given status and/or pocket, if ommited return all

@@ -1016,7 +1016,7 @@ class BinaryPackageBuildSet:
             IStore(BinaryPackageBuild).using(*origin).find(
                 BinaryPackageBuild, *clauses).order_by(*orderBy))
 
-    def getBuildsByArchIds(self, arch_ids, status=None, name=None,
+    def getBuildsForDistro(self, arch_ids, status=None, name=None,
                            pocket=None, arch_tag=None):
         """See `IBinaryPackageBuildSet`."""
         # If no distroarchseries were passed in, return an empty list

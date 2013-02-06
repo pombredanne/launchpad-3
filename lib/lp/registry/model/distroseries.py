@@ -1029,7 +1029,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # Use the facility provided by IBinaryPackageBuildSet to
         # retrieve the records.
-        return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
+        return getUtility(IBinaryPackageBuildSet).getBuildsForDistro(
             arch_ids, build_state, name, pocket, arch_tag)
 
     def createUploadedSourcePackageRelease(
