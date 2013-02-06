@@ -1416,57 +1416,6 @@ limited to 5 items.
     PPA for No Privileges Person 4
     PPA for Sample Person 4
 
-'getBuildCountersForArchitecture' allows callsites to quickly present
-the number of builds in pre-defined status for a given `IArchive` and
-`IDistroArchSeries` context.
-
-    >>> def print_build_counters_for(archive, distroarchseries):
-    ...     build_counters = archive_set.getBuildCountersForArchitecture(
-    ...         archive, distroarchseries)
-    ...     sorted_keys = sorted(build_counters.keys())
-    ...     for key in sorted_keys:
-    ...         print key, build_counters[key]
-
-
-Build counters for hoary/i386 in Celso's PPA.
-
-    >>> hoary_i386 = hoary['i386']
-    >>> print_build_counters_for(cprov_archive, hoary_i386)
-    failed     0
-    pending    0
-    succeeded  0
-    total      0
-
-Build counters for hoary/i386 in ubuntu primary archive.
-
-    >>> print_build_counters_for(ubuntu.main_archive, hoary_i386)
-    failed     1
-    pending    2
-    succeeded  1
-    total      4
-
-warty/i386 which has 3 SUPERSEDED builds computed in 'total', but not
-in any other predefined counter.
-
-    >>> warty_i386 = warty['i386']
-    >>> print_build_counters_for(ubuntu.main_archive, warty_i386)
-    failed     3
-    pending    0
-    succeeded  3
-    total      9
-
-Finally, build counters for breezy-autotest/i386 in ubuntu partner
-archive.
-
-    >>> ubuntu_partner = archive_set.getByDistroPurpose(
-    ...      ubuntu, ArchivePurpose.PARTNER)
-    >>> breezy_autotest_i386 = breezy_autotest['i386']
-    >>> print_build_counters_for(ubuntu_partner, breezy_autotest_i386)
-    failed     0
-    pending    0
-    succeeded  1
-    total      1
-
 
 A general way to get specific archives for a distribution
 ---------------------------------------------------------
