@@ -138,7 +138,7 @@ class TranslationTemplatesBuild(BuildFarmJobMixin, Storm):
         """See `ITranslationTemplatesBuildSource`."""
         processor = cls._getBuildArch()
         build_farm_job = getUtility(IBuildFarmJobSource).new(
-            BuildFarmJobType.TRANSLATIONTEMPLATESBUILD, processor=processor)
+            BuildFarmJobType.TRANSLATIONTEMPLATESBUILD)
         build = TranslationTemplatesBuild(build_farm_job, branch, processor)
         store = cls._getStore()
         store.add(build)

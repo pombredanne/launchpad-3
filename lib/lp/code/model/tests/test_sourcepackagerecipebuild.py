@@ -22,7 +22,6 @@ from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildJob,
@@ -479,14 +478,9 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         naked_build = removeSecurityProxy(build)
         # Ensure database ids are set.
         store.flush()
-        package_build_id = naked_build.package_build_id
-        build_farm_job_id = naked_build.package_build.build_farm_job_id
+        build_farm_job_id = naked_build.build_farm_job_id
         build.destroySelf()
-        result = store.find(PackageBuild, PackageBuild.id == package_build_id)
-        self.assertIs(None, result.one())
-        result = store.find(
-            BuildFarmJob, BuildFarmJob.id == build_farm_job_id)
-        self.assertIs(None, result.one())
+        self.assertIs(None, store.get(BuildFarmJob, build_farm_job_id))
 
     def test_cancelBuild(self):
         # ISourcePackageRecipeBuild should make sure to remove jobs and build

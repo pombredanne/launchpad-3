@@ -158,10 +158,9 @@ class PackageBuildMixin(BuildFarmJobMixin):
 
         if (status == BuildStatus.MANUALDEPWAIT and slave_status is not None
             and slave_status.get('dependencies') is not None):
-            self.package_build.dependencies = self._new_dependencies = (
-                unicode(slave_status.get('dependencies')))
+            self._new_dependencies = unicode(slave_status.get('dependencies'))
         else:
-            self.package_build.dependencies = self._new_dependencies = None
+            self._new_dependencies = None
 
     def verifySuccessfulUpload(self):
         """See `IPackageBuild`."""
@@ -197,7 +196,7 @@ class PackageBuildMixin(BuildFarmJobMixin):
         """See `IPackageBuild`."""
         filename = "upload_%s_log.txt" % self.id
         library_file = self.createUploadLog(content, filename=filename)
-        self.package_build.upload_log = self._new_upload_log = library_file
+        self._new_upload_log = library_file
 
     def notify(self, extra_info=None):
         """See `IPackageBuild`."""

@@ -40,16 +40,12 @@ from lp.buildmaster.enums import (
     BuildStatus,
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
-from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
 from lp.buildmaster.model.buildfarmjob import (
     BuildFarmJob,
     BuildFarmJobOld,
     )
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.buildmaster.model.packagebuild import (
-    PackageBuild,
-    PackageBuildMixin,
-    )
+from lp.buildmaster.model.packagebuild import PackageBuildMixin
 from lp.code.errors import (
     BuildAlreadyPending,
     BuildNotAllowedForDistro,
@@ -88,9 +84,6 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
 
     implements(ISourcePackageRecipeBuild)
     classProvides(ISourcePackageRecipeBuildSource)
-
-    package_build_id = Int(name='package_build', allow_none=False)
-    package_build = Reference(package_build_id, 'PackageBuild.id')
 
     build_farm_job_type = BuildFarmJobType.RECIPEBRANCHBUILD
     job_type = build_farm_job_type
@@ -213,12 +206,11 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
             branch_name = self.recipe.base_branch.unique_name
             return '%s recipe build' % branch_name
 
-    def __init__(self, build_farm_job, package_build, distroseries, recipe,
-                 requester, archive, pocket, date_created):
+    def __init__(self, build_farm_job, distroseries, recipe, requester,
+                 archive, pocket, date_created):
         """Construct a SourcePackageRecipeBuild."""
         super(SourcePackageRecipeBuild, self).__init__()
         self.build_farm_job = build_farm_job
-        self.package_build = package_build
         self.distroseries = distroseries
         self.recipe = recipe
         self.requester = requester
@@ -239,13 +231,11 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
         if date_created is None:
             date_created = UTC_NOW
         build_farm_job = getUtility(IBuildFarmJobSource).new(
-            cls.build_farm_job_type, BuildStatus.NEEDSBUILD, None, True,
-            date_created, None, archive)
-        packagebuild = getUtility(IPackageBuildSource).new(
-            build_farm_job, archive, pocket)
+            cls.build_farm_job_type, BuildStatus.NEEDSBUILD, date_created,
+            None, archive)
         spbuild = cls(
-            build_farm_job, packagebuild, distroseries, recipe, requester,
-            archive, pocket, date_created)
+            build_farm_job, distroseries, recipe, requester, archive, pocket,
+            date_created)
         store.add(spbuild)
         return spbuild
 
@@ -315,9 +305,8 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
             SourcePackageRelease.source_package_recipe_build == self.id)
         for release in releases:
             release.source_package_recipe_build = None
-        package_build = self.package_build
         store.remove(self)
-        package_build.destroySelf()
+        store.remove(self.build_farm_job)
 
     @classmethod
     def getByID(cls, build_id):
