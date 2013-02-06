@@ -990,12 +990,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         # Find out the distroarchseries in question.
         arch_ids = DistroArchSeriesSet().getIdsForArchitectures(
-            self.architectures, arch_tag)
+            self.architectures)
 
         # Use the facility provided by IBinaryPackageBuildSet to
         # retrieve the records.
         return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
-            arch_ids, build_state, name, pocket)
+            arch_ids, build_state, name, pocket, arch_tag)
 
     def searchSourcePackageCaches(
         self, text, has_packaging=None, publishing_distroseries=None):

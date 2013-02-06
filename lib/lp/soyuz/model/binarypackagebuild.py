@@ -1017,7 +1017,7 @@ class BinaryPackageBuildSet:
                 BinaryPackageBuild, *clauses).order_by(*orderBy))
 
     def getBuildsByArchIds(self, arch_ids, status=None, name=None,
-                           pocket=None):
+                           pocket=None, arch_tag=None):
         """See `IBinaryPackageBuildSet`."""
         # If no distroarchseries were passed in, return an empty list
         if not arch_ids:
@@ -1075,7 +1075,7 @@ class BinaryPackageBuildSet:
         # End of duplication (see XXX cprov 2006-09-25 above).
 
         self.handleOptionalParamsForBuildQueries(
-            condition_clauses, clauseTables, status, name, pocket)
+            condition_clauses, clauseTables, status, name, pocket, arch_tag)
 
         # Only pick builds from the distribution's main archive to
         # exclude PPA builds

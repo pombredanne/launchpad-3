@@ -127,6 +127,13 @@ class TestBuildSet(TestCaseWithFactory):
             self.arch_ids, pocket=PackagePublishingPocket.UPDATES)
         self.assertEquals(set.count(), 0)
 
+    def test_get_by_arch_ids_filter_arch_tag(self):
+        # The result can be filtered based on the archtag of the build
+        self.setUpBuilds()
+        set = getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
+            self.arch_ids, arch_tag=self.das_one.architecturetag)
+        self.assertEquals(set.count(), 5)
+
     def test_get_status_summary_for_builds(self):
         # We can query for the status summary of a number of builds
         self.setUpBuilds()

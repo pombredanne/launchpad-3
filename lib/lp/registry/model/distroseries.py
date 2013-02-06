@@ -1025,12 +1025,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # Find out the distroarchseries in question.
         arch_ids = DistroArchSeriesSet().getIdsForArchitectures(
-            self.architectures, arch_tag)
+            self.architectures)
 
         # Use the facility provided by IBinaryPackageBuildSet to
         # retrieve the records.
         return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
-            arch_ids, build_state, name, pocket)
+            arch_ids, build_state, name, pocket, arch_tag)
 
     def createUploadedSourcePackageRelease(
         self, sourcepackagename, version, maintainer, builddepends,
