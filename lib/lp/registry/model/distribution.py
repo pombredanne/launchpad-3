@@ -173,10 +173,7 @@ from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease,
     )
-from lp.soyuz.model.distroarchseries import (
-    DistroArchSeries,
-    DistroArchSeriesSet,
-    )
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     get_current_source_releases,
@@ -987,15 +984,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # now).
         # The "binary_only" option is not yet supported for
         # IDistribution.
-
-        # Find out the distroarchseries in question.
-        arch_ids = DistroArchSeriesSet().getIdsForArchitectures(
-            self.architectures)
-
-        # Use the facility provided by IBinaryPackageBuildSet to
-        # retrieve the records.
         return getUtility(IBinaryPackageBuildSet).getBuildsForDistro(
-            arch_ids, build_state, name, pocket, arch_tag)
+            self, build_state, name, pocket, arch_tag)
 
     def searchSourcePackageCaches(
         self, text, has_packaging=None, publishing_distroseries=None):

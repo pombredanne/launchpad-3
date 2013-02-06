@@ -47,6 +47,8 @@ from lp.buildmaster.model.builder import Builder
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import PackageBuildMixin
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
 from lp.services.database.bulk import load_related
@@ -85,6 +87,7 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuildSet,
     UnparsableDependencies,
     )
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
@@ -1016,20 +1019,18 @@ class BinaryPackageBuildSet:
             IStore(BinaryPackageBuild).using(*origin).find(
                 BinaryPackageBuild, *clauses).order_by(*orderBy))
 
-    def getBuildsForDistro(self, arch_ids, status=None, name=None,
+    def getBuildsForDistro(self, context, status=None, name=None,
                            pocket=None, arch_tag=None):
         """See `IBinaryPackageBuildSet`."""
-        # If no distroarchseries were passed in, return an empty list
-        if not arch_ids:
-            return EmptyResultSet()
-
-        # format clause according single/multiple architecture(s) form
-        if len(arch_ids) == 1:
-            condition_clauses = [('distro_arch_series=%s'
-                                  % sqlvalues(arch_ids[0]))]
+        if IDistribution.providedBy(context):
+            col = BinaryPackageBuild.distribution_id
+        elif IDistroSeries.providedBy(context):
+            col = BinaryPackageBuild.distro_series_id
+        elif IDistroArchSeries.providedBy(context):
+            col = BinaryPackageBuild.distro_arch_series_id
         else:
-            condition_clauses = [('distro_arch_series IN %s'
-                                  % sqlvalues(arch_ids))]
+            raise AssertionError("Unsupported context: %r" % context)
+        condition_clauses = [col == context.id]
 
         # XXX cprov 2006-09-25: It would be nice if we could encapsulate
         # the chunk of code below (which deals with the optional paramenters)

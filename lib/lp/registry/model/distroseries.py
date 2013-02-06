@@ -142,7 +142,6 @@ from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import (
     DistroArchSeries,
-    DistroArchSeriesSet,
     PocketChroot,
     )
 from lp.soyuz.model.distroseriesbinarypackage import DistroSeriesBinaryPackage
@@ -1022,15 +1021,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Ignore "user", since it would not make any difference to the
         # records returned here (private builds are only in PPA right
         # now). We also ignore binary_only and always return binaries.
-
-        # Find out the distroarchseries in question.
-        arch_ids = DistroArchSeriesSet().getIdsForArchitectures(
-            self.architectures)
-
-        # Use the facility provided by IBinaryPackageBuildSet to
-        # retrieve the records.
         return getUtility(IBinaryPackageBuildSet).getBuildsForDistro(
-            arch_ids, build_state, name, pocket, arch_tag)
+            self, build_state, name, pocket, arch_tag)
 
     def createUploadedSourcePackageRelease(
         self, sourcepackagename, version, maintainer, builddepends,
