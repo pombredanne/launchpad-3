@@ -158,6 +158,9 @@ class ProductRelease(SQLBase):
             raise InvalidFilename
         # Create the alias for the file.
         filename = self.normalizeFilename(filename)
+        # XXX: StevenK 2013-02-06 bug=1116954: We should not need to refetch
+        # the file content from the request, since the passed in one has been
+        # wrongly encoded.
         if from_api:
             file_content = StringIO(get_raw_form_value_from_current_request(
                 'file_content'))

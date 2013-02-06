@@ -1253,6 +1253,9 @@ class Bug(SQLBase, InformationTypeMixin):
     def addAttachment(self, owner, data, comment, filename, is_patch=False,
                       content_type=None, description=None, from_api=False):
         """See `IBug`."""
+        # XXX: StevenK 2013-02-06 bug=1116954: We should not need to refetch
+        # the file content from the request, since the passed in one has been
+        # wrongly encoded.
         if from_api:
             data = get_raw_form_value_from_current_request('data')
         if isinstance(data, str):
