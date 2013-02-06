@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'IDistroArchSeries',
-    'IDistroArchSeriesSet',
     'IPocketChroot',
     ]
 
@@ -183,19 +182,6 @@ class IDistroArchSeries(IHasOwner):
         """Return the DistroArchSeriesBinaryPackage with the given name in
         this distro arch series.
         """
-
-
-class IDistroArchSeriesSet(Interface):
-    """Interface for DistroArchSeriesSet"""
-
-    def __iter__():
-        """Iterate over distroarchseriess."""
-
-    def count():
-        """Return the number of distroarchseriess in the system."""
-
-    def get(distroarchseries_id):
-        """Return the IDistroArchSeries to the given distroarchseries_id."""
 
 
 class IPocketChroot(Interface):
