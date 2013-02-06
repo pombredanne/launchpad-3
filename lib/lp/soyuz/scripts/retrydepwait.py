@@ -43,7 +43,7 @@ class RetryDepwaitTunableLoop(TunableLoop):
         return self.store.find(
             BinaryPackageBuild,
             BinaryPackageBuild.id >= self.start_at,
-            BinaryPackageBuild._new_status == BuildStatus.MANUALDEPWAIT,
+            BinaryPackageBuild.status == BuildStatus.MANUALDEPWAIT,
             ).order_by(BinaryPackageBuild.id)
 
     def isDone(self):

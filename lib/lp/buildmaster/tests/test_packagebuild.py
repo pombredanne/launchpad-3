@@ -8,87 +8,16 @@ __metaclass__ = type
 import hashlib
 
 from storm.store import Store
-from zope.component import getUtility
 from zope.security.management import checkPermission
-from zope.security.proxy import removeSecurityProxy
 
-from lp.buildmaster.enums import (
-    BuildFarmJobType,
-    BuildStatus,
-    )
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
-from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuild,
-    IPackageBuildSource,
-    )
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.buildmaster.model.packagebuild import PackageBuild
-from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.testing import (
     login,
     login_person,
     TestCaseWithFactory,
     )
 from lp.testing.layers import LaunchpadFunctionalLayer
-
-
-class TestPackageBuildBase(TestCaseWithFactory):
-    """Provide a factory method for creating PackageBuilds.
-
-    This is not included in the launchpad test factory because
-    only classes deriving from PackageBuild should be used.
-    """
-
-    def makePackageBuild(
-        self, archive=None, job_type=BuildFarmJobType.PACKAGEBUILD,
-        status=BuildStatus.NEEDSBUILD,
-        pocket=PackagePublishingPocket.RELEASE):
-        if archive is None:
-            archive = self.factory.makeArchive()
-
-        bfj = getUtility(IBuildFarmJobSource).new(job_type, status=status)
-        return getUtility(IPackageBuildSource).new(bfj, archive, pocket)
-
-
-class TestPackageBuild(TestPackageBuildBase):
-    """Tests for the package build object."""
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        """Create a package build with which to test."""
-        super(TestPackageBuild, self).setUp()
-        joe = self.factory.makePerson(name="joe")
-        joes_ppa = self.factory.makeArchive(owner=joe, name="ppa")
-        self.package_build = self.makePackageBuild(archive=joes_ppa)
-
-    def test_saves_record(self):
-        # A package build can be stored in the database.
-        store = Store.of(self.package_build)
-        store.flush()
-        retrieved_build = store.find(
-            PackageBuild,
-            PackageBuild.id == self.package_build.id).one()
-        self.assertEqual(self.package_build, retrieved_build)
-
-    def test_default_values(self):
-        # PackageBuild has a number of default values.
-        pb = removeSecurityProxy(self.package_build)
-        self.failUnlessEqual(None, pb.distribution)
-        self.failUnlessEqual(None, pb.distro_series)
-
-    def test_destroySelf_removes_BuildFarmJob(self):
-        # Destroying a packagebuild also destroys the BuildFarmJob it
-        # references.
-        naked_build = removeSecurityProxy(self.package_build)
-        store = Store.of(self.package_build)
-        # Ensure build_farm_job_id is set.
-        store.flush()
-        build_farm_job_id = naked_build.build_farm_job_id
-        naked_build.destroySelf()
-        result = store.find(
-            BuildFarmJob, BuildFarmJob.id == build_farm_job_id)
-        self.assertIs(None, result.one())
 
 
 class TestPackageBuildMixin(TestCaseWithFactory):

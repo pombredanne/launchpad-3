@@ -221,15 +221,15 @@ class SourcePackageRecipe(Storm):
                 SourcePackageRecipeBuild,
                 And(SourcePackageRecipeBuild.recipe_id ==
                         SourcePackageRecipe.id,
-                    SourcePackageRecipeBuild._new_archive_id ==
+                    SourcePackageRecipeBuild.archive_id ==
                         SourcePackageRecipe.daily_build_archive_id,
-                    SourcePackageRecipeBuild._new_date_created > one_day_ago)),
+                    SourcePackageRecipeBuild.date_created > one_day_ago)),
             )
         return IStore(SourcePackageRecipe).using(*joins).find(
             SourcePackageRecipe,
             SourcePackageRecipe.is_stale == True,
             SourcePackageRecipe.build_daily == True,
-            SourcePackageRecipeBuild._new_date_created == None,
+            SourcePackageRecipeBuild.date_created == None,
             ).config(distinct=True)
 
     @staticmethod
@@ -286,8 +286,8 @@ class SourcePackageRecipe(Storm):
         pending = IStore(self).find(SourcePackageRecipeBuild,
             SourcePackageRecipeBuild.recipe_id == self.id,
             SourcePackageRecipeBuild.distroseries_id == distroseries.id,
-            SourcePackageRecipeBuild._new_archive_id == archive.id,
-            SourcePackageRecipeBuild._new_status == BuildStatus.NEEDSBUILD)
+            SourcePackageRecipeBuild.archive_id == archive.id,
+            SourcePackageRecipeBuild.status == BuildStatus.NEEDSBUILD)
         if pending.any() is not None:
             raise BuildAlreadyPending(self, distroseries)
 
@@ -321,9 +321,9 @@ class SourcePackageRecipe(Storm):
         """See `ISourcePackageRecipe`."""
         order_by = (
             Desc(Greatest(
-                SourcePackageRecipeBuild._new_date_started,
-                SourcePackageRecipeBuild._new_date_finished)),
-            Desc(SourcePackageRecipeBuild._new_date_created),
+                SourcePackageRecipeBuild.date_started,
+                SourcePackageRecipeBuild.date_finished)),
+            Desc(SourcePackageRecipeBuild.date_created),
             Desc(SourcePackageRecipeBuild.id))
         return self._getBuilds(None, order_by)
 
@@ -331,11 +331,11 @@ class SourcePackageRecipe(Storm):
     def completed_builds(self):
         """See `ISourcePackageRecipe`."""
         filter_term = (
-            SourcePackageRecipeBuild._new_status != BuildStatus.NEEDSBUILD)
+            SourcePackageRecipeBuild.status != BuildStatus.NEEDSBUILD)
         order_by = (
             Desc(Greatest(
-                SourcePackageRecipeBuild._new_date_started,
-                SourcePackageRecipeBuild._new_date_finished)),
+                SourcePackageRecipeBuild.date_started,
+                SourcePackageRecipeBuild.date_finished)),
             Desc(SourcePackageRecipeBuild.id))
         return self._getBuilds(filter_term, order_by)
 
@@ -343,7 +343,7 @@ class SourcePackageRecipe(Storm):
     def pending_builds(self):
         """See `ISourcePackageRecipe`."""
         filter_term = (
-            SourcePackageRecipeBuild._new_status == BuildStatus.NEEDSBUILD)
+            SourcePackageRecipeBuild.status == BuildStatus.NEEDSBUILD)
         # We want to order by date_created but this is the same as ordering
         # by id (since id increases monotonically) and is less expensive.
         order_by = Desc(SourcePackageRecipeBuild.id)
@@ -353,7 +353,7 @@ class SourcePackageRecipe(Storm):
         """The actual query to get the builds."""
         query_args = [
             SourcePackageRecipeBuild.recipe == self,
-            SourcePackageRecipeBuild._new_archive_id == Archive.id,
+            SourcePackageRecipeBuild.archive_id == Archive.id,
             Archive._enabled == True,
             ]
         if filter_term is not None:
@@ -377,7 +377,7 @@ class SourcePackageRecipe(Storm):
     def last_build(self):
         """See `ISourcePackageRecipeBuild`."""
         return self._getBuilds(
-            True, Desc(SourcePackageRecipeBuild._new_date_finished)).first()
+            True, Desc(SourcePackageRecipeBuild.date_finished)).first()
 
     def getMedianBuildDuration(self):
         """Return the median duration of builds of this recipe."""
@@ -385,7 +385,7 @@ class SourcePackageRecipe(Storm):
         result = store.find(
             SourcePackageRecipeBuild,
             SourcePackageRecipeBuild.recipe == self.id,
-            SourcePackageRecipeBuild._new_date_finished != None)
+            SourcePackageRecipeBuild.date_finished != None)
         durations = [
             build.date_finished - build.date_started for build in result]
         if len(durations) == 0:
