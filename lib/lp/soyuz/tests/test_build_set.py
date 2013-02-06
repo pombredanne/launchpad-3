@@ -91,23 +91,21 @@ class TestBuildSet(TestCaseWithFactory):
         # Test fetching builds via the arch tag
         self.setUpBuilds()
         set = getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
-            self.distribution, self.arch_ids)
+            self.arch_ids)
         self.assertEquals(set.count(), 10)
 
     def test_get_by_no_arch_ids(self):
         # .getBuildsByArchIds still works if the list given is empty, or none
-        set = getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
-            self.distribution, [])
+        set = getUtility(IBinaryPackageBuildSet).getBuildsByArchIds([])
         self.assertIsInstance(set, EmptyResultSet)
-        set = getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
-            self.distribution, None)
+        set = getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(None)
         self.assertIsInstance(set, EmptyResultSet)
 
     def test_get_by_arch_ids_filter_build_status(self):
         # The result can be filtered based on the build status
         self.setUpBuilds()
         set = getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
-            self.distribution, self.arch_ids, status=BuildStatus.FULLYBUILT)
+            self.arch_ids, status=BuildStatus.FULLYBUILT)
         self.assertEquals(set.count(), 8)
 
     def test_get_by_arch_ids_filter_name(self):
@@ -115,19 +113,18 @@ class TestBuildSet(TestCaseWithFactory):
         self.setUpBuilds()
         spn = self.builds[2].source_package_release.sourcepackagename.name
         set = getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
-            self.distribution, self.arch_ids, name=spn)
+            self.arch_ids, name=spn)
         self.assertEquals(set.count(), 2)
 
     def test_get_by_arch_ids_filter_pocket(self):
         # The result can be filtered based on the pocket of the build
         self.setUpBuilds()
         set = getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
-            self.distribution, self.arch_ids,
+            self.arch_ids,
             pocket=PackagePublishingPocket.RELEASE)
         self.assertEquals(set.count(), 10)
         set = getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
-            self.distribution, self.arch_ids,
-            pocket=PackagePublishingPocket.UPDATES)
+            self.arch_ids, pocket=PackagePublishingPocket.UPDATES)
         self.assertEquals(set.count(), 0)
 
     def test_get_status_summary_for_builds(self):

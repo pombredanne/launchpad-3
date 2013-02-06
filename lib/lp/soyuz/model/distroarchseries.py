@@ -264,8 +264,7 @@ class DistroArchSeries(SQLBase):
         # Use the facility provided by IBinaryPackageBuildSet to
         # retrieve the records.
         return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
-            self.distroseries.distribution, [self.id], build_state, name,
-            pocket)
+            [self.id], build_state, name, pocket)
 
     def getReleasedPackages(self, binary_name, pocket=None,
                             include_pending=False, archive=None):
