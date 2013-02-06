@@ -142,7 +142,7 @@ class TestRequestPeopleMergeMultipleEmails(RequestPeopleMergeMixin):
             'trying to merge the Launchpad account', browser.contents)
         browser.getControl('Confirm').click()
         self.assertIn(
-            'The accounts have been merged successfully', browser.contents)
+            'The accounts are being merged', browser.contents)
 
 
 class TestRequestPeopleMergeSingleEmail(RequestPeopleMergeMixin):
