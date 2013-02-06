@@ -942,10 +942,14 @@ class BinaryPackageBuildSet:
 
         # Add query clause that filters on architecture tag if provided.
         if arch_tag is not None:
-            clauses.extend([
+            clauses.append(
                 BinaryPackageBuild.distro_arch_series_id ==
-                    DistroArchSeries.id,
-                DistroArchSeries.architecturetag == arch_tag])
+                    DistroArchSeries.id)
+            if isinstance(arch_tag, (list, tuple)):
+                clauses.append(
+                    DistroArchSeries.architecturetag.is_in(arch_tag))
+            else:
+                clauses.append(DistroArchSeries.architecturetag == arch_tag)
             origin.append(DistroArchSeries)
 
         # Add query clause that filters on source package release name if the
