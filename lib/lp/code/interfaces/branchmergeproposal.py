@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The interface for branch merge proposals."""
@@ -54,7 +54,6 @@ from zope.interface import (
     )
 from zope.schema import (
     Bool,
-    Bytes,
     Choice,
     Datetime,
     Int,
@@ -521,11 +520,6 @@ class IBranchMergeProposal(IPrivacy):
     def deleteProposal():
         """Delete the proposal to merge."""
 
-    @operation_parameters(
-        diff_content=Bytes(), source_revision_id=TextLine(),
-        target_revision_id=TextLine(), prerequisite_revision_id=TextLine(),
-        conflicts=Text())
-    @export_write_operation()
     def updatePreviewDiff(diff_content, source_revision_id,
                           target_revision_id, prerequisite_revision_id=None,
                           conflicts=None):

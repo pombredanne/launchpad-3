@@ -866,17 +866,6 @@ class BinaryPackageBuildSet:
             binary_package_build.date_created = date_created
         return binary_package_build
 
-    def getBuildBySRAndArchtag(self, sourcepackagereleaseID, archtag):
-        """See `IBinaryPackageBuildSet`"""
-        clauseTables = ['DistroArchSeries']
-        query = ('BinaryPackageBuild.source_package_release = %s '
-                 'AND BinaryPackageBuild.distro_arch_series = '
-                     'DistroArchSeries.id '
-                 'AND DistroArchSeries.architecturetag = %s'
-                 % sqlvalues(sourcepackagereleaseID, archtag))
-
-        return BinaryPackageBuild.select(query, clauseTables=clauseTables)
-
     def getByID(self, id):
         """See `IBinaryPackageBuildSet`."""
         try:
