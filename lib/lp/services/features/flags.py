@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -57,12 +57,6 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('blueprints.information_type.enabled',
-     'boolean',
-     'Enable UI for information_type on Blueprints.',
-     'Disable UI',
-     'Blueprint information_type UI',
-     'https://dev.launchpad.net/LEP/PrivateProjects'),
     ('bugs.affected_count_includes_dupes.disabled',
      'boolean',
      ("Disable adding up affected users across all duplicate bugs."),
@@ -226,18 +220,6 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('disclosure.private_projects.enabled',
-     'boolean',
-     'If true, enabled access to private project registration features.',
-     'disabled',
-     'Allow registering a non-public project.',
-     'http://blog.launchpad.net/general/private-projects-beta'),
-    ('disclosure.private_project.traversal_override',
-     'boolean',
-     'If set, allow all users to traverse to private projects.',
-     'Traversal to private projects requires special access.',
-     'Override traveral checks.',
-     'https://dev.launchpad.net/LEP/PrivateProjects'),
     ])
 
 # The set of all flag names that are documented.
