@@ -36,14 +36,12 @@ ALTER TABLE buildfarmjob
 
 DROP TABLE packagebuild;
 
--- TODO: Recheck these... and (status, id) can probably go too.
 DROP INDEX buildfarmjob__builder_and_status__idx;
 DROP INDEX buildfarmjob__date_created__idx;
 DROP INDEX buildfarmjob__date_finished__idx;
+DROP INDEX buildfarmjob__status__id__idx;
 DROP INDEX buildfarmjob__status__idx;
 
--- Not sure about the DAS ones. What about things that want
--- (archive, das), could they use the duration index?
 DROP INDEX binarypackagebuild__distro_arch_series__idx;
 DROP INDEX binarypackagebuild__das__id__idx;
 DROP INDEX binarypackagebuild__das__status__date_finished__id__idx;
