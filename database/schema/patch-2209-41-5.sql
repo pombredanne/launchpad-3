@@ -50,6 +50,13 @@ DROP INDEX binarypackagebuild__das__status__date_finished__id__idx;
 DROP INDEX binarypackagebuild__das__status__id__idx;
 DROP INDEX binarypackagebuild__source_package_release_idx;
 
+ALTER INDEX binarypackagebuild__das__id__2__idx
+    RENAME TO binarypackagebuild__das__id__idx;
+ALTER INDEX binarypackagebuild__das__status__date_finished__id__2__idx
+    RENAME TO binarypackagebuild__das__status__date_finished__id__idx;
+ALTER INDEX binarypackagebuild__das__status__id__2__idx
+    RENAME TO binarypackagebuild__das__status__id__idx;
+
 DROP INDEX sourcepackagerecipebuild__recipe__idx;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 41, 5);
