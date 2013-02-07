@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for SourcePackage view code."""
@@ -30,7 +30,6 @@ from lp.registry.interfaces.distroseries import (
     IDistroSeriesSet,
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.services.features.testing import FeatureFixture
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     BrowserTestCase,
@@ -165,8 +164,6 @@ class TestSourcePackageView(BrowserTestCase):
 
     def test_register_upstream_forbids_proprietary(self):
         # Cannot specify information_type if registering for sourcepackage.
-        self.useFixture(FeatureFixture({'disclosure.private_projects.enabled':
-            'on'}))
         sourcepackage = self.factory.makeSourcePackage()
         browser = self.getViewBrowser(sourcepackage)
         browser.getControl("Register the upstream project").click()
