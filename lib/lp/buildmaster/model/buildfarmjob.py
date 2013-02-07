@@ -18,7 +18,6 @@ from storm.expr import (
     Or,
     )
 from storm.locals import (
-    Bool,
     DateTime,
     Int,
     Reference,
@@ -157,102 +156,43 @@ class BuildFarmJob(Storm):
 
     id = Int(primary=True)
 
-    processor_id = Int(name='processor', allow_none=True)
-    processor = Reference(processor_id, 'Processor.id')
-
-    virtualized = Bool()
-
     date_created = DateTime(
         name='date_created', allow_none=False, tzinfo=pytz.UTC)
 
-    date_started = DateTime(
-        name='date_started', allow_none=True, tzinfo=pytz.UTC)
-
     date_finished = DateTime(
         name='date_finished', allow_none=True, tzinfo=pytz.UTC)
-
-    date_first_dispatched = DateTime(
-        name='date_first_dispatched', allow_none=True, tzinfo=pytz.UTC)
 
     builder_id = Int(name='builder', allow_none=True)
     builder = Reference(builder_id, 'Builder.id')
 
     status = DBEnum(name='status', allow_none=False, enum=BuildStatus)
 
-    log_id = Int(name='log', allow_none=True)
-    log = Reference(log_id, 'LibraryFileAlias.id')
-
     job_type = DBEnum(
         name='job_type', allow_none=False, enum=BuildFarmJobType)
-
-    failure_count = Int(name='failure_count', allow_none=False)
 
     archive_id = Int(name='archive')
     archive = Reference(archive_id, 'Archive.id')
 
     def __init__(self, job_type, status=BuildStatus.NEEDSBUILD,
-                 processor=None, virtualized=None, date_created=None,
-                 builder=None, archive=None):
+                 date_created=None, builder=None, archive=None):
         super(BuildFarmJob, self).__init__()
-        (self.job_type, self.status, self.processor, self.virtualized,
-         self.builder, self.archive) = (
-             job_type, status, processor, virtualized, builder, archive)
+        (self.job_type, self.status, self.builder, self.archive) = (
+             job_type, status, builder, archive)
         if date_created is not None:
             self.date_created = date_created
 
     @classmethod
-    def new(cls, job_type, status=BuildStatus.NEEDSBUILD, processor=None,
-            virtualized=None, date_created=None, builder=None, archive=None):
+    def new(cls, job_type, status=BuildStatus.NEEDSBUILD, date_created=None,
+            builder=None, archive=None):
         """See `IBuildFarmJobSource`."""
         build_farm_job = BuildFarmJob(
-            job_type, status, processor, virtualized, date_created, builder,
-            archive)
+            job_type, status, date_created, builder, archive)
         store = IMasterStore(BuildFarmJob)
         store.add(build_farm_job)
         return build_farm_job
 
 
 class BuildFarmJobMixin:
-
-    @property
-    def processor(self):
-        return self._new_processor
-
-    @property
-    def virtualized(self):
-        return self._new_virtualized
-
-    @property
-    def date_created(self):
-        return self._new_date_created
-
-    @property
-    def date_started(self):
-        return self._new_date_started
-
-    @property
-    def date_finished(self):
-        return self._new_date_finished
-
-    @property
-    def date_first_dispatched(self):
-        return self._new_date_first_dispatched
-
-    @property
-    def builder(self):
-        return self._new_builder
-
-    @property
-    def status(self):
-        return self._new_status
-
-    @property
-    def log(self):
-        return self._new_log
-
-    @property
-    def failure_count(self):
-        return self._new_failure_count
 
     @property
     def dependencies(self):
@@ -309,30 +249,28 @@ class BuildFarmJobMixin:
 
     def setLog(self, log):
         """See `IBuildFarmJob`."""
-        self.build_farm_job.log = self._new_log = log
+        self.log = log
 
     def updateStatus(self, status, builder=None, slave_status=None,
                      date_started=None, date_finished=None):
         """See `IBuildFarmJob`."""
-        self.build_farm_job.status = self._new_status = status
+        self.build_farm_job.status = self.status = status
 
         # If there's a builder provided, set it if we don't already have
         # one, or otherwise crash if it's different from the one we
         # expected.
         if builder is not None:
             if self.builder is None:
-                self.build_farm_job.builder = self._new_builder = builder
+                self.build_farm_job.builder = self.builder = builder
             else:
                 assert self.builder == builder
 
         # If we're starting to build, set date_started and
         # date_first_dispatched if required.
         if self.date_started is None and status == BuildStatus.BUILDING:
-            self.build_farm_job.date_started = self._new_date_started = (
-                date_started or datetime.datetime.now(pytz.UTC))
+            self.date_started = date_started or datetime.datetime.now(pytz.UTC)
             if self.date_first_dispatched is None:
-                self.build_farm_job.date_first_dispatched = self.date_started
-                self._new_date_first_dispatched = self.date_started
+                self.date_first_dispatched = self.date_started
 
         # If we're in a final build state (or UPLOADING, which sort of
         # is), set date_finished if date_started is.
@@ -343,13 +281,12 @@ class BuildFarmJobMixin:
             # XXX cprov 20060615 bug=120584: Currently buildduration includes
             # the scanner latency, it should really be asking the slave for
             # the duration spent building locally.
-            self.build_farm_job.date_finished = self._new_date_finished = (
+            self.build_farm_job.date_finished = self.date_finished = (
                 date_finished or datetime.datetime.now(pytz.UTC))
 
     def gotFailure(self):
         """See `IBuildFarmJob`."""
-        self.build_farm_job.failure_count += 1
-        self._new_failure_count = self.build_farm_job.failure_count
+        self.failure_count += 1
 
 
 class BuildFarmJobSet:

@@ -40,16 +40,12 @@ from lp.buildmaster.enums import (
     BuildStatus,
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
-from lp.buildmaster.interfaces.packagebuild import IPackageBuildSource
 from lp.buildmaster.model.buildfarmjob import (
     BuildFarmJob,
     BuildFarmJobOld,
     )
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.buildmaster.model.packagebuild import (
-    PackageBuild,
-    PackageBuildMixin,
-    )
+from lp.buildmaster.model.packagebuild import PackageBuildMixin
 from lp.code.errors import (
     BuildAlreadyPending,
     BuildNotAllowedForDistro,
@@ -89,13 +85,13 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
     implements(ISourcePackageRecipeBuild)
     classProvides(ISourcePackageRecipeBuildSource)
 
-    package_build_id = Int(name='package_build', allow_none=False)
-    package_build = Reference(package_build_id, 'PackageBuild.id')
-
     build_farm_job_type = BuildFarmJobType.RECIPEBRANCHBUILD
     job_type = build_farm_job_type
 
     id = Int(primary=True)
+
+    build_farm_job_id = Int(name='build_farm_job', allow_none=False)
+    build_farm_job = Reference(build_farm_job_id, BuildFarmJob.id)
 
     @property
     def binary_builds(self):
@@ -114,9 +110,15 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
         assert component is not None
         return component
 
+    archive_id = Int(name='archive', allow_none=False)
+    archive = Reference(archive_id, 'Archive.id')
+
     distroseries_id = Int(name='distroseries', allow_none=True)
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
     distro_series = distroseries
+
+    pocket = DBEnum(
+        name='pocket', enum=PackagePublishingPocket, allow_none=False)
 
     @property
     def distribution(self):
@@ -127,6 +129,35 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
 
     recipe_id = Int(name='recipe')
     recipe = Reference(recipe_id, 'SourcePackageRecipe.id')
+
+    requester_id = Int(name='requester', allow_none=False)
+    requester = Reference(requester_id, 'Person.id')
+
+    upload_log_id = Int(name='upload_log')
+    upload_log = Reference(upload_log_id, 'LibraryFileAlias.id')
+
+    dependencies = Unicode(name='dependencies')
+
+    processor_id = Int(name='processor')
+    processor = Reference(processor_id, 'Processor.id')
+    virtualized = Bool(name='virtualized')
+
+    date_created = DateTime(
+        name='date_created', tzinfo=pytz.UTC, allow_none=False)
+    date_started = DateTime(name='date_started', tzinfo=pytz.UTC)
+    date_finished = DateTime(name='date_finished', tzinfo=pytz.UTC)
+    date_first_dispatched = DateTime(
+        name='date_first_dispatched', tzinfo=pytz.UTC)
+
+    builder_id = Int(name='builder')
+    builder = Reference(builder_id, 'Builder.id')
+
+    status = DBEnum(name='status', enum=BuildStatus, allow_none=False)
+
+    log_id = Int(name='log')
+    log = Reference(log_id, 'LibraryFileAlias.id')
+
+    failure_count = Int(name='failure_count', allow_none=False)
 
     manifest = Reference(
         id, 'SourcePackageRecipeData.sourcepackage_recipe_build_id',
@@ -146,48 +177,6 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
         if self.manifest is None:
             return None
         return str(self.manifest.getRecipe())
-
-    requester_id = Int(name='requester', allow_none=False)
-    requester = Reference(requester_id, 'Person.id')
-
-    # Migrating from PackageBuild
-    build_farm_job_id = Int(name='build_farm_job')
-    build_farm_job = Reference(build_farm_job_id, BuildFarmJob.id)
-
-    _new_archive_id = Int(name='archive')
-    _new_archive = Reference(_new_archive_id, 'Archive.id')
-
-    _new_pocket = DBEnum(name='pocket', enum=PackagePublishingPocket)
-
-    _new_upload_log_id = Int(name='upload_log')
-    _new_upload_log = Reference(_new_upload_log_id, 'LibraryFileAlias.id')
-
-    _new_dependencies = Unicode(name='dependencies')
-
-    # Migrating from BuildFarmJob.
-    _new_processor_id = Int(name='processor')
-    _new_processor = Reference(_new_processor_id, 'Processor.id')
-
-    _new_virtualized = Bool(name='virtualized')
-
-    _new_date_created = DateTime(name='date_created', tzinfo=pytz.UTC)
-
-    _new_date_started = DateTime(name='date_started', tzinfo=pytz.UTC)
-
-    _new_date_finished = DateTime(name='date_finished', tzinfo=pytz.UTC)
-
-    _new_date_first_dispatched = DateTime(
-        name='date_first_dispatched', tzinfo=pytz.UTC)
-
-    _new_builder_id = Int(name='builder')
-    _new_builder = Reference(_new_builder_id, 'Builder.id')
-
-    _new_status = DBEnum(name='status', enum=BuildStatus)
-
-    _new_log_id = Int(name='log')
-    _new_log = Reference(_new_log_id, 'LibraryFileAlias.id')
-
-    _new_failure_count = Int(name='failure_count')
 
     @property
     def buildqueue_record(self):
@@ -213,21 +202,20 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
             branch_name = self.recipe.base_branch.unique_name
             return '%s recipe build' % branch_name
 
-    def __init__(self, build_farm_job, package_build, distroseries, recipe,
-                 requester, archive, pocket, date_created):
+    def __init__(self, build_farm_job, distroseries, recipe, requester,
+                 archive, pocket, date_created):
         """Construct a SourcePackageRecipeBuild."""
         super(SourcePackageRecipeBuild, self).__init__()
         self.build_farm_job = build_farm_job
-        self.package_build = package_build
         self.distroseries = distroseries
         self.recipe = recipe
         self.requester = requester
-        self._new_archive = archive
-        self._new_pocket = pocket
-        self._new_status = BuildStatus.NEEDSBUILD
-        self._new_virtualized = True
+        self.archive = archive
+        self.pocket = pocket
+        self.status = BuildStatus.NEEDSBUILD
+        self.virtualized = True
         if date_created is not None:
-            self._new_date_created = date_created
+            self.date_created = date_created
 
     @classmethod
     def new(cls, distroseries, recipe, requester, archive, pocket=None,
@@ -239,13 +227,11 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
         if date_created is None:
             date_created = UTC_NOW
         build_farm_job = getUtility(IBuildFarmJobSource).new(
-            cls.build_farm_job_type, BuildStatus.NEEDSBUILD, None, True,
-            date_created, None, archive)
-        packagebuild = getUtility(IPackageBuildSource).new(
-            build_farm_job, archive, pocket)
+            cls.build_farm_job_type, BuildStatus.NEEDSBUILD, date_created,
+            None, archive)
         spbuild = cls(
-            build_farm_job, packagebuild, distroseries, recipe, requester,
-            archive, pocket, date_created)
+            build_farm_job, distroseries, recipe, requester, archive, pocket,
+            date_created)
         store.add(spbuild)
         return spbuild
 
@@ -315,9 +301,8 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
             SourcePackageRelease.source_package_recipe_build == self.id)
         for release in releases:
             release.source_package_recipe_build = None
-        package_build = self.package_build
         store.remove(self)
-        package_build.destroySelf()
+        store.remove(self.build_farm_job)
 
     @classmethod
     def getByID(cls, build_id):
@@ -336,8 +321,8 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
         # Circular imports.
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         from lp.services.librarian.model import LibraryFileAlias
-        load_related(LibraryFileAlias, builds, ['_new_log_id'])
-        archives = load_related(Archive, builds, ['_new_archive_id'])
+        load_related(LibraryFileAlias, builds, ['log_id'])
+        archives = load_related(Archive, builds, ['archive_id'])
         load_related(Person, archives, ['ownerID'])
         sprs = load_related(SourcePackageRecipe, builds, ['recipe_id'])
         SourcePackageRecipe.preLoadDataForSourcePackageRecipes(sprs)
@@ -360,7 +345,7 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
         old_threshold = _now - timedelta(days=1)
         return store.find(cls, cls.distroseries_id == distroseries.id,
             cls.requester_id == requester.id, cls.recipe_id == recipe.id,
-            cls._new_date_created > old_threshold)
+            cls.date_created > old_threshold)
 
     def makeJob(self):
         """See `ISourcePackageRecipeBuildJob`."""

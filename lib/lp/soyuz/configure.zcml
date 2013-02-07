@@ -626,20 +626,6 @@
             factory="lp.soyuz.browser.distroarchseries.DistroArchSeriesBreadcrumb"
             permission="zope.Public" />
 
-    <!-- DistroArchSeriesSet -->
-
-    <class
-        class="lp.soyuz.model.distroarchseries.DistroArchSeriesSet">
-        <allow
-            interface="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesSet"/>
-    </class>
-    <securedutility
-        class="lp.soyuz.model.distroarchseries.DistroArchSeriesSet"
-        provides="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesSet">
-        <allow
-            interface="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesSet"/>
-    </securedutility>
-
     <!-- PocketChroot -->
 
     <class

@@ -92,16 +92,9 @@ class TestBuildFarmJob(TestBuildFarmJobBase, TestCaseWithFactory):
         # The job type is required to create a build farm job.
         self.assertEqual(
             BuildFarmJobType.PACKAGEBUILD, bfj.job_type)
-        # Failure count defaults to zero.
-        self.assertEqual(0, bfj.failure_count)
         # Other attributes are unset by default.
-        self.assertEqual(None, bfj.processor)
-        self.assertEqual(None, bfj.virtualized)
-        self.assertEqual(None, bfj.date_started)
         self.assertEqual(None, bfj.date_finished)
-        self.assertEqual(None, bfj.date_first_dispatched)
         self.assertEqual(None, bfj.builder)
-        self.assertEqual(None, bfj.log)
 
     def test_date_created(self):
         # date_created can be passed optionally when creating a

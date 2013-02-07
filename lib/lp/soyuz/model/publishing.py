@@ -43,8 +43,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database import bulk
@@ -1579,20 +1577,20 @@ class PublishingSet:
         # If an optional list of build states was passed in as a parameter,
         # ensure that the result is limited to builds in those states.
         if build_states is not None:
-            extra_exprs.append(
-                BinaryPackageBuild._new_status.is_in(build_states))
+            extra_exprs.append(BinaryPackageBuild.status.is_in(build_states))
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         # We'll be looking for builds in the same distroseries as the
         # SPPH for the same release.
         builds_for_distroseries_expr = (
-            BinaryPackageBuild.distro_arch_series_id == DistroArchSeries.id,
             SourcePackagePublishingHistory.distroseriesID ==
-                DistroArchSeries.distroseriesID,
+                BinaryPackageBuild.distro_series_id,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 BinaryPackageBuild.source_package_release_id,
-            SourcePackagePublishingHistory.id.is_in(source_publication_ids))
+            SourcePackagePublishingHistory.id.is_in(source_publication_ids),
+            DistroArchSeries.id == BinaryPackageBuild.distro_arch_series_id,
+            )
 
         # First, we'll find the builds that were built in the same
         # archive context as the published sources.
@@ -1600,7 +1598,7 @@ class PublishingSet:
             BinaryPackageBuild,
             builds_for_distroseries_expr,
             (SourcePackagePublishingHistory.archiveID ==
-                BinaryPackageBuild._new_archive_id),
+                BinaryPackageBuild.archive_id),
             *extra_exprs)
 
         # Next get all the builds that have a binary published in the
@@ -1610,7 +1608,7 @@ class PublishingSet:
             BinaryPackageBuild,
             builds_for_distroseries_expr,
             (SourcePackagePublishingHistory.archiveID !=
-                BinaryPackageBuild._new_archive_id),
+                BinaryPackageBuild.archive_id),
             BinaryPackagePublishingHistory.archive ==
                 SourcePackagePublishingHistory.archiveID,
             BinaryPackagePublishingHistory.binarypackagerelease ==
@@ -1728,7 +1726,7 @@ class PublishingSet:
             self._getSourceBinaryJoinForSources(
                 source_publication_ids, active_binaries_only=False),
             BinaryPackagePublishingHistory.datepublished != None,
-            BinaryPackageBuild._new_status.is_in(build_states))
+            BinaryPackageBuild.status.is_in(build_states))
 
         published_builds.order_by(
             SourcePackagePublishingHistory.id,

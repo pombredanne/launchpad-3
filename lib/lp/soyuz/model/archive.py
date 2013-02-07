@@ -1115,17 +1115,13 @@ class Archive(SQLBase):
         extra_exprs = []
         if not include_needsbuild:
             extra_exprs.append(
-                BinaryPackageBuild._new_status != BuildStatus.NEEDSBUILD)
+                BinaryPackageBuild.status != BuildStatus.NEEDSBUILD)
 
-        find_spec = (
-            BinaryPackageBuild._new_status,
-            Count(BinaryPackageBuild.id),
-            )
         result = store.find(
-            find_spec,
-            BinaryPackageBuild._new_archive == self,
-            *extra_exprs).group_by(BinaryPackageBuild._new_status).order_by(
-                BinaryPackageBuild._new_status)
+            (BinaryPackageBuild.status, Count(BinaryPackageBuild.id)),
+            BinaryPackageBuild.archive == self,
+            *extra_exprs).group_by(BinaryPackageBuild.status).order_by(
+                BinaryPackageBuild.status)
 
         # Create a map for each count summary to a number of buildstates:
         count_map = {
@@ -1895,12 +1891,12 @@ class Archive(SQLBase):
 
         sprs_building = store.find(
             BinaryPackageBuild.source_package_release_id,
-            BinaryPackageBuild._new_archive == self,
-            BinaryPackageBuild._new_status == BuildStatus.BUILDING)
+            BinaryPackageBuild.archive == self,
+            BinaryPackageBuild.status == BuildStatus.BUILDING)
         sprs_waiting = store.find(
             BinaryPackageBuild.source_package_release_id,
-            BinaryPackageBuild._new_archive == self,
-            BinaryPackageBuild._new_status == BuildStatus.NEEDSBUILD)
+            BinaryPackageBuild.archive == self,
+            BinaryPackageBuild.status == BuildStatus.NEEDSBUILD)
 
         # A package is not counted as waiting if it already has at least
         # one build building.

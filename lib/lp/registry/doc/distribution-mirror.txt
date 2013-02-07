@@ -18,7 +18,7 @@ to create a new mirror you should use the Distribution.newMirror method.
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> from lp.registry.interfaces.series import SeriesStatus
     >>> from lp.services.worlddata.interfaces.country import ICountrySet
-    >>> from lp.soyuz.interfaces.distroarchseries import IDistroArchSeriesSet
+    >>> from lp.soyuz.model.distroarchseries import DistroArchSeries
     >>> mirrorset = getUtility(IDistributionMirrorSet)
     >>> distroset = getUtility(IDistributionSet)
     >>> ubuntu = distroset.get(1)
@@ -72,7 +72,7 @@ associated with a given mirror, we use the ensureMirrorDistroArchSeries
 (or ensureMirrorDistroSeriesSource) method.
 
     >>> warty = getUtility(IDistroSeriesSet).get(1)
-    >>> warty_i386 = getUtility(IDistroArchSeriesSet).get(1)
+    >>> warty_i386 = DistroArchSeries.get(1)
     >>> pocket = PackagePublishingPocket.RELEASE
     >>> warty_component = warty.components[0]
     >>> warty_i386_mirror = new_mirror.ensureMirrorDistroArchSeries(

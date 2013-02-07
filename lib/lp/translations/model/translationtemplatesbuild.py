@@ -65,30 +65,26 @@ class TranslationTemplatesBuild(BuildFarmJobMixin, Storm):
     branch_id = Int(name='branch', allow_none=False)
     branch = Reference(branch_id, 'Branch.id')
 
-    # Migrating from BuildFarmJob.
-    _new_processor_id = Int(name='processor')
-    _new_processor = Reference(_new_processor_id, 'Processor.id')
+    processor_id = Int(name='processor')
+    processor = Reference(processor_id, 'Processor.id')
+    virtualized = Bool(name='virtualized')
 
-    _new_virtualized = Bool(name='virtualized')
-
-    _new_date_created = DateTime(name='date_created', tzinfo=pytz.UTC)
-
-    _new_date_started = DateTime(name='date_started', tzinfo=pytz.UTC)
-
-    _new_date_finished = DateTime(name='date_finished', tzinfo=pytz.UTC)
-
-    _new_date_first_dispatched = DateTime(
+    date_created = DateTime(
+        name='date_created', tzinfo=pytz.UTC, allow_none=False)
+    date_started = DateTime(name='date_started', tzinfo=pytz.UTC)
+    date_finished = DateTime(name='date_finished', tzinfo=pytz.UTC)
+    date_first_dispatched = DateTime(
         name='date_first_dispatched', tzinfo=pytz.UTC)
 
-    _new_builder_id = Int(name='builder')
-    _new_builder = Reference(_new_builder_id, 'Builder.id')
+    builder_id = Int(name='builder')
+    builder = Reference(builder_id, 'Builder.id')
 
-    _new_status = DBEnum(name='status', enum=BuildStatus)
+    status = DBEnum(name='status', enum=BuildStatus, allow_none=False)
 
-    _new_log_id = Int(name='log')
-    _new_log = Reference(_new_log_id, 'LibraryFileAlias.id')
+    log_id = Int(name='log')
+    log = Reference(log_id, 'LibraryFileAlias.id')
 
-    _new_failure_count = Int(name='failure_count')
+    failure_count = Int(name='failure_count', allow_none=False)
 
     @property
     def title(self):
@@ -99,8 +95,8 @@ class TranslationTemplatesBuild(BuildFarmJobMixin, Storm):
         super(TranslationTemplatesBuild, self).__init__()
         self.build_farm_job = build_farm_job
         self.branch = branch
-        self._new_status = BuildStatus.NEEDSBUILD
-        self._new_processor = processor
+        self.status = BuildStatus.NEEDSBUILD
+        self.processor = processor
 
     def makeJob(self):
         """See `IBuildFarmJobOld`."""
@@ -138,7 +134,7 @@ class TranslationTemplatesBuild(BuildFarmJobMixin, Storm):
         """See `ITranslationTemplatesBuildSource`."""
         processor = cls._getBuildArch()
         build_farm_job = getUtility(IBuildFarmJobSource).new(
-            BuildFarmJobType.TRANSLATIONTEMPLATESBUILD, processor=processor)
+            BuildFarmJobType.TRANSLATIONTEMPLATESBUILD)
         build = TranslationTemplatesBuild(build_farm_job, branch, processor)
         store = cls._getStore()
         store.add(build)
@@ -184,7 +180,7 @@ class TranslationTemplatesBuild(BuildFarmJobMixin, Storm):
         # Preload branches cached associated product series and
         # suite source packages for all the related branches.
         GenericBranchCollection.preloadDataForBranches(branches)
-        load_related(LibraryFileAlias, builds, ['_new_log_id'])
+        load_related(LibraryFileAlias, builds, ['log_id'])
 
     @classmethod
     def findByBranch(cls, branch, store=None):

@@ -88,11 +88,6 @@ class DistributionSourcePackageRelease:
     @property
     def builds(self):
         """See IDistributionSourcePackageRelease."""
-        # Import DistroArchSeries here to avoid circular imports.
-        from lp.soyuz.model.distroarchseries import (
-            DistroArchSeries)
-        from lp.registry.model.distroseries import DistroSeries
-
         # We want to return all the builds for this distribution that
         # were built for a main archive together with the builds for this
         # distribution that were built for a PPA but have been published
@@ -100,17 +95,14 @@ class DistributionSourcePackageRelease:
         builds_for_distro_exprs = (
             (BinaryPackageBuild.source_package_release ==
                 self.sourcepackagerelease),
-            BinaryPackageBuild.distro_arch_series == DistroArchSeries.id,
-            DistroArchSeries.distroseries == DistroSeries.id,
-            DistroSeries.distribution == self.distribution,
+            BinaryPackageBuild.distribution == self.distribution,
             )
 
         # First, get all the builds built in a main archive (this will
         # include new and failed builds.)
         builds_built_in_main_archives = Store.of(self.distribution).find(
             BinaryPackageBuild,
-            builds_for_distro_exprs,
-            BinaryPackageBuild._new_archive == Archive.id,
+            builds_for_distro_exprs, BinaryPackageBuild.archive == Archive.id,
             Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES))
 
         # Next get all the builds that have a binary published in the
