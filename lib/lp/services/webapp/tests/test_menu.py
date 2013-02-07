@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 
+from lazr.restful.utils import get_current_browser_request
 from zope.security.management import newInteraction
 
 from lp.services.webapp.menu import (
@@ -10,7 +11,6 @@ from lp.services.webapp.menu import (
     MENU_ANNOTATION_KEY,
     MenuBase,
     )
-from lp.services.webapp.publisher import get_current_browser_request
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -77,7 +77,7 @@ class TestMenuBaseLinkCaching(TestCase):
         login(ANONYMOUS)
         context = object()
         menu = TestMenu(context)
-        link = menu._get_link('test_link')
+        menu._get_link('test_link')
         cache = get_current_browser_request().annotations.get(
             MENU_ANNOTATION_KEY)
         self.assertEquals(len(cache.keys()), 1)
