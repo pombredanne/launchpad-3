@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -56,6 +56,7 @@ from lp.services.database.sqlbase import (
     )
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.publisher import get_raw_form_value_from_current_request
 
 
 class ProductRelease(SQLBase):
@@ -148,7 +149,7 @@ class ProductRelease(SQLBase):
                        uploader, signature_filename=None,
                        signature_content=None,
                        file_type=UpstreamFileType.CODETARBALL,
-                       description=None):
+                       description=None, from_api=False):
         """See `IProductRelease`."""
         if not self.can_have_release_files:
             raise ProprietaryProduct(
@@ -157,31 +158,35 @@ class ProductRelease(SQLBase):
             raise InvalidFilename
         # Create the alias for the file.
         filename = self.normalizeFilename(filename)
+        # XXX: StevenK 2013-02-06 bug=1116954: We should not need to refetch
+        # the file content from the request, since the passed in one has been
+        # wrongly encoded.
+        if from_api:
+            file_content = get_raw_form_value_from_current_request(
+                'file_content')
         file_obj, file_size = self._getFileObjectAndSize(file_content)
 
         alias = getUtility(ILibraryFileAliasSet).create(
-            name=filename,
-            size=file_size,
-            file=file_obj,
+            name=filename, size=file_size, file=file_obj,
             contentType=content_type)
         if signature_filename is not None and signature_content is not None:
+            # XXX: StevenK 2013-02-06 bug=1116954: We should not need to 
+            # refetch the file content from the request, since the passed in
+            # one has been wrongly encoded.
+            if from_api:
+                signature_content = get_raw_form_value_from_current_request(
+                    'signature_content')
             signature_obj, signature_size = self._getFileObjectAndSize(
                 signature_content)
-            signature_filename = self.normalizeFilename(
-                signature_filename)
+            signature_filename = self.normalizeFilename(signature_filename)
             signature_alias = getUtility(ILibraryFileAliasSet).create(
-                name=signature_filename,
-                size=signature_size,
-                file=signature_obj,
-                contentType='application/pgp-signature')
+                name=signature_filename, size=signature_size,
+                file=signature_obj, contentType='application/pgp-signature')
         else:
             signature_alias = None
-        return ProductReleaseFile(productrelease=self,
-                                  libraryfile=alias,
-                                  signature=signature_alias,
-                                  filetype=file_type,
-                                  description=description,
-                                  uploader=uploader)
+        return ProductReleaseFile(
+            productrelease=self, libraryfile=alias, signature=signature_alias,
+            filetype=file_type, description=description, uploader=uploader)
 
     def getFileAliasByName(self, name):
         """See `IProductRelease`."""

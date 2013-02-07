@@ -11,6 +11,7 @@ __all__ = [
 from datetime import datetime
 import textwrap
 
+from lazr.restful.utils import get_current_browser_request
 import pytz
 from zope.security.proxy import removeSecurityProxy
 
@@ -23,10 +24,7 @@ from lp.services.mail.sendmail import (
     simple_sendmail,
     )
 from lp.services.webapp.escaping import structured
-from lp.services.webapp.publisher import (
-    canonical_url,
-    get_current_browser_request,
-    )
+from lp.services.webapp.publisher import canonical_url
 
 
 def product_licenses_modified(product, event):
