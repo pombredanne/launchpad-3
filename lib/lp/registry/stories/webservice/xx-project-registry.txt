@@ -1021,7 +1021,7 @@ Project release files can be added to a project release using the API
     >>> pr_url = '/firefox/1.0/1.0.0'
     >>> ff_100 = webservice.get(pr_url).jsonBody()
     >>> file_content="first attachment file content \xff"
-    >>> sig_file_content="hash hash hash"
+    >>> sig_file_content="hash hash hash \xff"
     >>> response = webservice.named_post(ff_100['self_link'], 'add_file',
     ...     filename='filename.txt',
     ...     file_content=file_content,
@@ -1052,6 +1052,8 @@ And it has been uploaded correctly.
     >>> concrete_one_zero = getUtility(IProductSet)['firefox'].getRelease(
     ...     '1.0.0')
     >>> concrete_one_zero.files[0].libraryfile.read() == file_content
+    True
+    >>> concrete_one_zero.files[0].signature.read() == sig_file_content
     True
     >>> logout()
 

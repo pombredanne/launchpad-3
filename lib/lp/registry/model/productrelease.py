@@ -170,6 +170,12 @@ class ProductRelease(SQLBase):
             name=filename, size=file_size, file=file_obj,
             contentType=content_type)
         if signature_filename is not None and signature_content is not None:
+            # XXX: StevenK 2013-02-06 bug=1116954: We should not need to 
+            # refetch the file content from the request, since the passed in
+            # one has been wrongly encoded.
+            if from_api:
+                signature_content = get_raw_form_value_from_current_request(
+                    'signature_content')
             signature_obj, signature_size = self._getFileObjectAndSize(
                 signature_content)
             signature_filename = self.normalizeFilename(signature_filename)
