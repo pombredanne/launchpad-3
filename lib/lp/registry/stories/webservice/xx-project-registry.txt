@@ -1020,7 +1020,7 @@ Project release files can be added to a project release using the API
 
     >>> pr_url = '/firefox/1.0/1.0.0'
     >>> ff_100 = webservice.get(pr_url).jsonBody()
-    >>> file_content="first attachment file content"
+    >>> file_content="first attachment file content \xff"
     >>> sig_file_content="hash hash hash"
     >>> response = webservice.named_post(ff_100['self_link'], 'add_file',
     ...     filename='filename.txt',
@@ -1042,6 +1042,18 @@ Firefox 1.0/1.0.0 now has one file.
     >>> ff_100_files = webservice.get(files_url).jsonBody()
     >>> print_self_link_of_entries(ff_100_files)
     http://.../firefox/1.0/1.0.0/+file/filename.txt
+
+And it has been uploaded correctly.
+
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.testing import login, logout
+    >>> login('bac@canonical.com')
+    >>> concrete_one_zero = getUtility(IProductSet)['firefox'].getRelease(
+    ...     '1.0.0')
+    >>> concrete_one_zero.files[0].libraryfile.read() == file_content
+    True
+    >>> logout()
 
 The file type and description are optional.  If no signature is
 available then it must be explicitly set to None.
@@ -1106,12 +1118,8 @@ Commercial subscriptions
 If a project has a commercial-use subscription then it can be retrieved
 through the API.
 
-    >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.product import IProductSet
-    >>> from lp.testing import login, logout
     >>> login('bac@canonical.com')
-    >>> product_set = getUtility(IProductSet)
-    >>> mmm = product_set.getByName('mega-money-maker')
+    >>> mmm = getUtility(IProductSet)['mega-money-maker']
     >>> print mmm.commercial_subscription
     None
 

@@ -162,8 +162,8 @@ class ProductRelease(SQLBase):
         # the file content from the request, since the passed in one has been
         # wrongly encoded.
         if from_api:
-            file_content = StringIO(get_raw_form_value_from_current_request(
-                'file_content'))
+            file_content = get_raw_form_value_from_current_request(
+                'file_content')
         file_obj, file_size = self._getFileObjectAndSize(file_content)
 
         alias = getUtility(ILibraryFileAliasSet).create(

@@ -802,7 +802,10 @@ def nearest(obj, *interfaces):
 
 
 def get_raw_form_value_from_current_request(field_name):
-    # Circular imports?
+    # XXX: StevenK 2013-02-06 bug=1116954: We should not need to refetch
+    # the file content from the request, since the passed in one has been
+    # wrongly encoded.
+    # Circular imports.
     from lp.services.webapp.servers import WebServiceClientRequest
     request = get_current_browser_request()
     assert isinstance(request, WebServiceClientRequest)
@@ -812,8 +815,7 @@ def get_raw_form_value_from_current_request(field_name):
         request.form[field_name], unicode):
         request._environ['wsgi.input'].seek(0)
         fs = FieldStorage(fp=request._body_instream, environ=request._environ)
-        # cgi.FieldStorage handily gives us StringIO, so use that.
-        return fs[field_name].file
+        return fs[field_name].value
 
 
 class RootObject:
