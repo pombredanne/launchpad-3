@@ -45,4 +45,10 @@ CREATE INDEX binarypackagebuild__archive__das__spn__status__finished__idx
 CREATE INDEX binarypackagebuild__source_package_name__idx
     ON binarypackagebuild (source_package_name);
 
+-- And grabbing BPRs/SPRs by (name, version).
+CREATE INDEX binarypackagerelease__binarypackagename__version__idx
+    ON binarypackagerelease (binarypackagename, version);
+CREATE INDEX sourcepackagerelease__sourcepackagename__version__idx
+    ON sourcepackagerelease (sourcepackagename, version);
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 41, 4);
