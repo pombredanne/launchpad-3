@@ -130,6 +130,7 @@ result in an error, since the licence is required.
     ...     print error
     You must select at least one licence.  If you select Other/Proprietary
     or Other/OpenSource you must include a description of the licence.
+    ...
 
 When an open source licence is selected, the project is created.
 
@@ -144,6 +145,8 @@ When an open source licence is selected, the project is created.
     ...     'field.licenses': ['PYTHON'],
     ...     'field.license_info': '',
     ...     'field.owner': registrant.name,
+    ...     'field.driver': registrant.name,
+    ...     'field.bug_supervisor': registrant.name,
     ...     'field.__visited_steps__': '%s|%s' % (
     ...         ProjectAddStepOne.step_name, ProjectAddStepTwo.step_name),
     ...     'field.actions.continue': 'Continue',

@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Common views for objects that implement `IPillar`."""
@@ -56,7 +56,6 @@ from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
-from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import (
@@ -294,10 +293,8 @@ class PillarSharingView(LaunchpadView):
 
     @property
     def specification_sharing_policies(self):
-        if getFeatureFlag('blueprints.information_type.enabled'):
-            return self._getSharingService().getSpecificationSharingPolicies(
-                self.context)
-        return None
+        return self._getSharingService().getSpecificationSharingPolicies(
+            self.context)
 
     @property
     def sharing_permissions(self):
