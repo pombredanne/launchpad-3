@@ -599,44 +599,36 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         # Look for all sourcepackagerelease instances that match the name
         # and get the (successfully built) build records for this
         # package.
-        completed_builds = BinaryPackageBuild.select("""
-            BinaryPackageBuild.source_package_name = %s AND
-            BinaryPackageBuild.id != %s AND
-            BinaryPackageBuild.distro_arch_series = %s AND
-            BinaryPackageBuild.archive IN %s AND
-            BinaryPackageBuild.date_finished IS NOT NULL AND
-            BinaryPackageBuild.status = %s
-            """ % sqlvalues(self.source_package_name, self,
-                            self.distro_arch_series, archives,
-                            BuildStatus.FULLYBUILT),
-            orderBy=['-date_finished', '-id'])
-
-        estimated_duration = None
-        if bool(completed_builds):
+        completed_builds = Store.of(self).find(
+            BinaryPackageBuild,
+            BinaryPackageBuild.archive_id.is_in(archives),
+            BinaryPackageBuild.distro_arch_series == self.distro_arch_series,
+            BinaryPackageBuild.source_package_name == self.source_package_name,
+            BinaryPackageBuild.date_finished != None,
+            BinaryPackageBuild.status == BuildStatus.FULLYBUILT,
+            BinaryPackageBuild.id != self.id)
+        most_recent_build = completed_builds.order_by(
+            Desc(BinaryPackageBuild.date_finished),
+            Desc(BinaryPackageBuild.id)).first()
+        if most_recent_build is not None and most_recent_build.duration:
             # Historic build data exists, use the most recent value -
             # assuming it has valid data.
-            most_recent_build = completed_builds[0]
-            estimated_duration = most_recent_build.duration
+            return most_recent_build.duration
 
-        if estimated_duration is None:
-            # Estimate the build duration based on package size if no
-            # historic build data exists.
-
-            # Get the package size in KB.
-            package_size = self.source_package_release.getPackageSize()
-
-            if package_size > 0:
-                # Analysis of previous build data shows that a build rate
-                # of 6 KB/second is realistic. Furthermore we have to add
-                # another minute for generic build overhead.
-                estimate = int(package_size / 6.0 / 60 + 1)
-            else:
-                # No historic build times and no package size available,
-                # assume a build time of 5 minutes.
-                estimate = 5
-            estimated_duration = datetime.timedelta(minutes=estimate)
-
-        return estimated_duration
+        # Estimate the build duration based on package size if no
+        # historic build data exists.
+        # Get the package size in KB.
+        package_size = self.source_package_release.getPackageSize()
+        if package_size > 0:
+            # Analysis of previous build data shows that a build rate
+            # of 6 KB/second is realistic. Furthermore we have to add
+            # another minute for generic build overhead.
+            estimate = int(package_size / 6.0 / 60 + 1)
+        else:
+            # No historic build times and no package size available,
+            # assume a build time of 5 minutes.
+            estimate = 5
+        return datetime.timedelta(minutes=estimate)
 
     def verifySuccessfulUpload(self):
         return bool(self.binarypackages)
