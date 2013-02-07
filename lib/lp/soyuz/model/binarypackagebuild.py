@@ -50,6 +50,7 @@ from lp.buildmaster.model.packagebuild import PackageBuildMixin
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -876,14 +877,11 @@ class BinaryPackageBuildSet:
         from lp.soyuz.model.archive import Archive
         from lp.registry.model.person import Person
         self._prefetchBuildData(builds)
-        distro_arch_series = load_related(
-            DistroArchSeries, builds, ['distro_arch_series_id'])
+        das = load_related(DistroArchSeries, builds, ['distro_arch_series_id'])
         archives = load_related(Archive, builds, ['archive_id'])
         load_related(Person, archives, ['ownerID'])
-        distroseries = load_related(
-            DistroSeries, distro_arch_series, ['distroseriesID'])
-        load_related(
-            Distribution, distroseries, ['distributionID'])
+        distroseries = load_related(DistroSeries, das, ['distroseriesID'])
+        load_related(Distribution, distroseries, ['distributionID'])
 
     def getByBuildFarmJobs(self, build_farm_jobs):
         """See `ISpecificBuildFarmJobSource`."""
@@ -916,7 +914,6 @@ class BinaryPackageBuildSet:
             query clause if present.
         """
         # Circular. :(
-        from lp.registry.model.sourcepackagename import SourcePackageName
         from lp.soyuz.model.distroarchseries import DistroArchSeries
 
         origin.append(BinaryPackageBuild)
@@ -937,11 +934,9 @@ class BinaryPackageBuildSet:
             clauses.append(
                 BinaryPackageBuild.distro_arch_series_id ==
                     DistroArchSeries.id)
-            if isinstance(arch_tag, (list, tuple)):
-                clauses.append(
-                    DistroArchSeries.architecturetag.is_in(arch_tag))
-            else:
-                clauses.append(DistroArchSeries.architecturetag == arch_tag)
+            if not isinstance(arch_tag, (list, tuple)):
+                arch_tag = (arch_tag,)
+            clauses.append(DistroArchSeries.architecturetag.is_in(arch_tag))
             origin.append(DistroArchSeries)
 
         # Add query clause that filters on source package release name if the
