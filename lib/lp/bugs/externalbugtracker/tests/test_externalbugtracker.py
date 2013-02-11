@@ -158,7 +158,7 @@ class TestExternalBugTracker(TestCase):
         # When posting, a 404 is converted to a BugTrackerConnectError.
         base_url = "http://example.com/"
         bugtracker = ExternalBugTracker(base_url)
-        def raise404(request, data):
+        def raise404(request, data, timeout=None):
             raise urllib2.HTTPError('url', 404, 'Not Found', None, None)
         with monkey_patch(urllib2, urlopen=raise404):
             self.assertRaises(
