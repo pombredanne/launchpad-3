@@ -8,7 +8,7 @@ __all__ = [
     ]
 
 import datetime
-import operator
+from operator import itemgetter
 
 import apt_pkg
 import pytz
@@ -246,7 +246,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         # upload of the result of this `Build`, load the `LibraryFileAlias`
         # and the `LibraryFileContent` in cache because it's most likely
         # they will be needed.
-        return DecoratedResultSet(results, operator.itemgetter(0)).one()
+        return DecoratedResultSet(results, itemgetter(0)).one()
 
     @property
     def is_virtualized(self):
@@ -1008,7 +1008,8 @@ class BinaryPackageBuildSet:
             col = BinaryPackageBuild.distro_arch_series_id
         else:
             raise AssertionError("Unsupported context: %r" % context)
-        condition_clauses = [col == context.id]
+        condition_clauses = [
+            col == context.id, BinaryPackageBuild.is_distro_archive]
 
         # XXX cprov 2006-09-25: It would be nice if we could encapsulate
         # the chunk of code below (which deals with the optional paramenters)
@@ -1053,10 +1054,6 @@ class BinaryPackageBuildSet:
         self.handleOptionalParamsForBuildQueries(
             condition_clauses, clauseTables, status, name, pocket, arch_tag)
 
-        # Only pick builds from the distribution's main archive to
-        # exclude PPA builds
-        condition_clauses.append(BinaryPackageBuild.is_distro_archive)
-
         find_spec = (BinaryPackageBuild,)
         if order_by_table:
             find_spec = find_spec + (order_by_table,)
@@ -1064,11 +1061,8 @@ class BinaryPackageBuildSet:
             find_spec, *condition_clauses)
         result_set.order_by(*order_by)
 
-        def get_bpp(result_row):
-            return result_row[0]
-
         return self._decorate_with_prejoins(
-            DecoratedResultSet(result_set, result_decorator=get_bpp))
+            DecoratedResultSet(result_set, result_decorator=itemgetter(0)))
 
     def _decorate_with_prejoins(self, result_set):
         """Decorate build records with related data prefetch functionality."""
