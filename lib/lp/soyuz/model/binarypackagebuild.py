@@ -17,7 +17,7 @@ from storm.expr import (
     Desc,
     Join,
     LeftJoin,
-    SQL,
+    Or,
     )
 from storm.locals import (
     Bool,
@@ -1017,13 +1017,11 @@ class BinaryPackageBuildSet:
         # exclude gina-generated and security (dak-made) builds
         # status == FULLYBUILT && datebuilt == null
         if status == BuildStatus.FULLYBUILT:
-            condition_clauses.append(
-                "BinaryPackageBuild.date_finished IS NOT NULL")
+            condition_clauses.append(BinaryPackageBuild.date_finished != None)
         else:
-            condition_clauses.append(
-                "(BinaryPackageBuild.status <> %s OR "
-                " BinaryPackageBuild.date_finished IS NOT NULL)"
-                % sqlvalues(BuildStatus.FULLYBUILT))
+            condition_clauses.append(Or(
+                BinaryPackageBuild.status != BuildStatus.FULLYBUILT,
+                BinaryPackageBuild.date_finished != None))
 
         # Ordering according status
         # * NEEDSBUILD, BUILDING & UPLOADING by -lastscore
@@ -1040,11 +1038,10 @@ class BinaryPackageBuildSet:
             BuildStatus.UPLOADING]:
             order_by = [Desc(BuildQueue.lastscore), BinaryPackageBuild.id]
             order_by_table = BuildQueue
-            clauseTables.append('BuildQueue')
-            clauseTables.append('BuildPackageJob')
-            condition_clauses.append(
-                'BuildPackageJob.build = BinaryPackageBuild.id')
-            condition_clauses.append('BuildPackageJob.job = BuildQueue.job')
+            clauseTables.extend([BuildQueue, BuildPackageJob])
+            condition_clauses.extend([
+                BuildPackageJob.build_id == BinaryPackageBuild.id,
+                BuildPackageJob.job_id == BuildQueue.jobID])
         elif status == BuildStatus.SUPERSEDED or status is None:
             order_by = [Desc(BinaryPackageBuild.id)]
         else:
@@ -1058,7 +1055,7 @@ class BinaryPackageBuildSet:
 
         # Only pick builds from the distribution's main archive to
         # exclude PPA builds
-        condition_clauses.append("BinaryPackageBuild.is_distro_archive")
+        condition_clauses.append(BinaryPackageBuild.is_distro_archive)
 
         find_spec = (BinaryPackageBuild,)
         if order_by_table:
@@ -1087,18 +1084,16 @@ class BinaryPackageBuildSet:
         if (sourcepackagerelease_ids is None or
             len(sourcepackagerelease_ids) == 0):
             return []
-        query = """
-            source_package_release IN %s AND
-            binarypackagebuild.is_distro_archive
-            """ % sqlvalues(sourcepackagerelease_ids)
+        query = [
+            BinaryPackageBuild.source_package_release_id.is_in(
+                sourcepackagerelease_ids),
+            BinaryPackageBuild.is_distro_archive,
+            ]
 
         if buildstate is not None:
-            query += (
-                "AND binarypackagebuild.status = %s" % sqlvalues(buildstate))
+            query.append(BinaryPackageBuild.status == buildstate)
 
-        resultset = IStore(BinaryPackageBuild).find(
-            BinaryPackageBuild,
-            SQL(query))
+        resultset = IStore(BinaryPackageBuild).find(BinaryPackageBuild, *query)
         resultset.order_by(
             Desc(BinaryPackageBuild.date_created), BinaryPackageBuild.id)
         return resultset
