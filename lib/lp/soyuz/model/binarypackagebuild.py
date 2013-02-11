@@ -8,7 +8,7 @@ __all__ = [
     ]
 
 import datetime
-import operator
+from operator import itemgetter
 
 import apt_pkg
 import pytz
@@ -17,7 +17,7 @@ from storm.expr import (
     Desc,
     Join,
     LeftJoin,
-    SQL,
+    Or,
     )
 from storm.locals import (
     Bool,
@@ -50,6 +50,7 @@ from lp.buildmaster.model.packagebuild import PackageBuildMixin
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -245,7 +246,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         # upload of the result of this `Build`, load the `LibraryFileAlias`
         # and the `LibraryFileContent` in cache because it's most likely
         # they will be needed.
-        return DecoratedResultSet(results, operator.itemgetter(0)).one()
+        return DecoratedResultSet(results, itemgetter(0)).one()
 
     @property
     def is_virtualized(self):
@@ -599,44 +600,36 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         # Look for all sourcepackagerelease instances that match the name
         # and get the (successfully built) build records for this
         # package.
-        completed_builds = BinaryPackageBuild.select("""
-            BinaryPackageBuild.source_package_name = %s AND
-            BinaryPackageBuild.id != %s AND
-            BinaryPackageBuild.distro_arch_series = %s AND
-            BinaryPackageBuild.archive IN %s AND
-            BinaryPackageBuild.date_finished IS NOT NULL AND
-            BinaryPackageBuild.status = %s
-            """ % sqlvalues(self.source_package_name, self,
-                            self.distro_arch_series, archives,
-                            BuildStatus.FULLYBUILT),
-            orderBy=['-date_finished', '-id'])
-
-        estimated_duration = None
-        if bool(completed_builds):
+        completed_builds = Store.of(self).find(
+            BinaryPackageBuild,
+            BinaryPackageBuild.archive_id.is_in(archives),
+            BinaryPackageBuild.distro_arch_series == self.distro_arch_series,
+            BinaryPackageBuild.source_package_name == self.source_package_name,
+            BinaryPackageBuild.date_finished != None,
+            BinaryPackageBuild.status == BuildStatus.FULLYBUILT,
+            BinaryPackageBuild.id != self.id)
+        most_recent_build = completed_builds.order_by(
+            Desc(BinaryPackageBuild.date_finished),
+            Desc(BinaryPackageBuild.id)).first()
+        if most_recent_build is not None and most_recent_build.duration:
             # Historic build data exists, use the most recent value -
             # assuming it has valid data.
-            most_recent_build = completed_builds[0]
-            estimated_duration = most_recent_build.duration
+            return most_recent_build.duration
 
-        if estimated_duration is None:
-            # Estimate the build duration based on package size if no
-            # historic build data exists.
-
-            # Get the package size in KB.
-            package_size = self.source_package_release.getPackageSize()
-
-            if package_size > 0:
-                # Analysis of previous build data shows that a build rate
-                # of 6 KB/second is realistic. Furthermore we have to add
-                # another minute for generic build overhead.
-                estimate = int(package_size / 6.0 / 60 + 1)
-            else:
-                # No historic build times and no package size available,
-                # assume a build time of 5 minutes.
-                estimate = 5
-            estimated_duration = datetime.timedelta(minutes=estimate)
-
-        return estimated_duration
+        # Estimate the build duration based on package size if no
+        # historic build data exists.
+        # Get the package size in KB.
+        package_size = self.source_package_release.getPackageSize()
+        if package_size > 0:
+            # Analysis of previous build data shows that a build rate
+            # of 6 KB/second is realistic. Furthermore we have to add
+            # another minute for generic build overhead.
+            estimate = int(package_size / 6.0 / 60 + 1)
+        else:
+            # No historic build times and no package size available,
+            # assume a build time of 5 minutes.
+            estimate = 5
+        return datetime.timedelta(minutes=estimate)
 
     def verifySuccessfulUpload(self):
         return bool(self.binarypackages)
@@ -884,14 +877,11 @@ class BinaryPackageBuildSet:
         from lp.soyuz.model.archive import Archive
         from lp.registry.model.person import Person
         self._prefetchBuildData(builds)
-        distro_arch_series = load_related(
-            DistroArchSeries, builds, ['distro_arch_series_id'])
+        das = load_related(DistroArchSeries, builds, ['distro_arch_series_id'])
         archives = load_related(Archive, builds, ['archive_id'])
         load_related(Person, archives, ['ownerID'])
-        distroseries = load_related(
-            DistroSeries, distro_arch_series, ['distroseriesID'])
-        load_related(
-            Distribution, distroseries, ['distributionID'])
+        distroseries = load_related(DistroSeries, das, ['distroseriesID'])
+        load_related(Distribution, distroseries, ['distributionID'])
 
     def getByBuildFarmJobs(self, build_farm_jobs):
         """See `ISpecificBuildFarmJobSource`."""
@@ -924,7 +914,6 @@ class BinaryPackageBuildSet:
             query clause if present.
         """
         # Circular. :(
-        from lp.registry.model.sourcepackagename import SourcePackageName
         from lp.soyuz.model.distroarchseries import DistroArchSeries
 
         origin.append(BinaryPackageBuild)
@@ -945,11 +934,9 @@ class BinaryPackageBuildSet:
             clauses.append(
                 BinaryPackageBuild.distro_arch_series_id ==
                     DistroArchSeries.id)
-            if isinstance(arch_tag, (list, tuple)):
-                clauses.append(
-                    DistroArchSeries.architecturetag.is_in(arch_tag))
-            else:
-                clauses.append(DistroArchSeries.architecturetag == arch_tag)
+            if not isinstance(arch_tag, (list, tuple)):
+                arch_tag = (arch_tag,)
+            clauses.append(DistroArchSeries.architecturetag.is_in(arch_tag))
             origin.append(DistroArchSeries)
 
         # Add query clause that filters on source package release name if the
@@ -1021,7 +1008,8 @@ class BinaryPackageBuildSet:
             col = BinaryPackageBuild.distro_arch_series_id
         else:
             raise AssertionError("Unsupported context: %r" % context)
-        condition_clauses = [col == context.id]
+        condition_clauses = [
+            col == context.id, BinaryPackageBuild.is_distro_archive]
 
         # XXX cprov 2006-09-25: It would be nice if we could encapsulate
         # the chunk of code below (which deals with the optional paramenters)
@@ -1030,13 +1018,11 @@ class BinaryPackageBuildSet:
         # exclude gina-generated and security (dak-made) builds
         # status == FULLYBUILT && datebuilt == null
         if status == BuildStatus.FULLYBUILT:
-            condition_clauses.append(
-                "BinaryPackageBuild.date_finished IS NOT NULL")
+            condition_clauses.append(BinaryPackageBuild.date_finished != None)
         else:
-            condition_clauses.append(
-                "(BinaryPackageBuild.status <> %s OR "
-                " BinaryPackageBuild.date_finished IS NOT NULL)"
-                % sqlvalues(BuildStatus.FULLYBUILT))
+            condition_clauses.append(Or(
+                BinaryPackageBuild.status != BuildStatus.FULLYBUILT,
+                BinaryPackageBuild.date_finished != None))
 
         # Ordering according status
         # * NEEDSBUILD, BUILDING & UPLOADING by -lastscore
@@ -1053,11 +1039,10 @@ class BinaryPackageBuildSet:
             BuildStatus.UPLOADING]:
             order_by = [Desc(BuildQueue.lastscore), BinaryPackageBuild.id]
             order_by_table = BuildQueue
-            clauseTables.append('BuildQueue')
-            clauseTables.append('BuildPackageJob')
-            condition_clauses.append(
-                'BuildPackageJob.build = BinaryPackageBuild.id')
-            condition_clauses.append('BuildPackageJob.job = BuildQueue.job')
+            clauseTables.extend([BuildQueue, BuildPackageJob])
+            condition_clauses.extend([
+                BuildPackageJob.build_id == BinaryPackageBuild.id,
+                BuildPackageJob.job_id == BuildQueue.jobID])
         elif status == BuildStatus.SUPERSEDED or status is None:
             order_by = [Desc(BinaryPackageBuild.id)]
         else:
@@ -1069,10 +1054,6 @@ class BinaryPackageBuildSet:
         self.handleOptionalParamsForBuildQueries(
             condition_clauses, clauseTables, status, name, pocket, arch_tag)
 
-        # Only pick builds from the distribution's main archive to
-        # exclude PPA builds
-        condition_clauses.append("BinaryPackageBuild.is_distro_archive")
-
         find_spec = (BinaryPackageBuild,)
         if order_by_table:
             find_spec = find_spec + (order_by_table,)
@@ -1080,11 +1061,8 @@ class BinaryPackageBuildSet:
             find_spec, *condition_clauses)
         result_set.order_by(*order_by)
 
-        def get_bpp(result_row):
-            return result_row[0]
-
         return self._decorate_with_prejoins(
-            DecoratedResultSet(result_set, result_decorator=get_bpp))
+            DecoratedResultSet(result_set, result_decorator=itemgetter(0)))
 
     def _decorate_with_prejoins(self, result_set):
         """Decorate build records with related data prefetch functionality."""
@@ -1100,18 +1078,16 @@ class BinaryPackageBuildSet:
         if (sourcepackagerelease_ids is None or
             len(sourcepackagerelease_ids) == 0):
             return []
-        query = """
-            source_package_release IN %s AND
-            binarypackagebuild.is_distro_archive
-            """ % sqlvalues(sourcepackagerelease_ids)
+        query = [
+            BinaryPackageBuild.source_package_release_id.is_in(
+                sourcepackagerelease_ids),
+            BinaryPackageBuild.is_distro_archive,
+            ]
 
         if buildstate is not None:
-            query += (
-                "AND binarypackagebuild.status = %s" % sqlvalues(buildstate))
+            query.append(BinaryPackageBuild.status == buildstate)
 
-        resultset = IStore(BinaryPackageBuild).find(
-            BinaryPackageBuild,
-            SQL(query))
+        resultset = IStore(BinaryPackageBuild).find(BinaryPackageBuild, *query)
         resultset.order_by(
             Desc(BinaryPackageBuild.date_created), BinaryPackageBuild.id)
         return resultset
