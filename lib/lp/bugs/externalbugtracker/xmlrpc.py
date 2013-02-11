@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An XMLRPC transport which uses urllib2."""
@@ -28,6 +28,7 @@ from xmlrpclib import (
     Transport,
     )
 
+from lp.services.config import config
 from lp.services.utils import traceback_info
 
 
@@ -85,6 +86,7 @@ class UrlLib2Transport(Transport):
         self.redirect_handler = XMLRPCRedirectHandler()
         self.opener = build_opener(
             self.cookie_processor, self.redirect_handler)
+        self.timeout = config.checkwatches.default_socket_timeout
 
     def setCookie(self, cookie_str):
         """Set a cookie for the transport to use in future connections."""
@@ -108,7 +110,7 @@ class UrlLib2Transport(Transport):
         headers = {'Content-type': 'text/xml'}
         request = Request(url, request_body, headers)
         try:
-            response = self.opener.open(request).read()
+            response = self.opener.open(request, timeout=self.timeout).read()
         except HTTPError as he:
             raise ProtocolError(
                 request.get_full_url(), he.code, he.msg, he.hdrs)
