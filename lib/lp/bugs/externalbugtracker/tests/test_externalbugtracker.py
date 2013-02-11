@@ -170,7 +170,7 @@ class TestExternalBugTracker(TestCase):
         base_host = 'example.com'
         base_url = 'http://%s/' % base_host
         bugtracker = ExternalBugTracker(base_url)
-        def assert_headers(request, data):
+        def assert_headers(request, data, timeout=None):
             self.assertContentEqual(
                 [('User-agent', LP_USER_AGENT), ('Host', base_host)],
                 request.header_items())
