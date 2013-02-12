@@ -211,7 +211,7 @@ class TestBranchPopupWidget(unittest.TestCase):
 
         # Make a popup restricted to a particular product.
         vocab = BranchRestrictedOnProductVocabulary(self.launch_bag.product)
-        self.assertEqual(vocab.context, self.launch_bag.product)
+        self.assertEqual(vocab.product, self.launch_bag.product)
         popup = self.makeBranchPopup(vocab)
 
         # Make a branch on a different product.

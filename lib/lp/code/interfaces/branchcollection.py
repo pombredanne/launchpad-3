@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A collection of branches.
@@ -161,14 +161,29 @@ class IBranchCollection(Interface):
     def isPrivate():
         """Restrict the collection to private branches."""
 
+    def isExclusive():
+        """Restrict the collection to branches owned by exclusive people."""
+
     def isSeries():
         """Restrict the collection to branches those linked to series."""
 
     def ownedBy(person):
         """Restrict the collection to branches owned by 'person'."""
 
+    def ownedByTeamMember(person):
+        """Restrict the collection to branches owned by 'person' or a team
+        of which person is a member.
+        """
+
     def registeredBy(person):
         """Restrict the collection to branches registered by 'person'."""
+
+    def search(term):
+        """Search the collection for branches matching 'term'.
+
+        :param term: A string.
+        :return: A `ResultSet` of branches that matched.
+        """
 
     def scanned():
         """Restrict the collection to branches that have been scanned."""

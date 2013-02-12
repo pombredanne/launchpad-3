@@ -11,20 +11,17 @@ __all__ = [
     'HostedBranchRestrictedOnOwnerVocabulary',
     ]
 
-from storm.locals import Join
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.model.branch import Branch
-from lp.code.model.branchcollection import search_branches
-from lp.registry.enums import EXCLUSIVE_TEAM_POLICY
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.model.person import Person
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.vocabulary import (
     CountableIterator,
@@ -54,18 +51,22 @@ class BranchVocabulary(SQLObjectVocabularyBase):
             return iter(search_results).next()
         raise LookupError(token)
 
-    def searchForTerms(self, query=None, vocab_filter=None, extra_joins=[],
-                       extra_clauses=[]):
+    def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
         user = getUtility(ILaunchBag).user
-        branches = search_branches(
-            self.context, user, query, extra_joins=extra_joins,
-            extra_clauses=extra_clauses)
-        return CountableIterator(len(branches), branches, self.toTerm)
+        collection = self._getCollection().visibleByUser(user)
+        if query is None:
+            branches = collection.getBranches(eager_load=False)
+        else:
+            branches = collection.search(query)
+        return CountableIterator(branches.count(), branches, self.toTerm)
 
     def __len__(self):
         """See `IVocabulary`."""
         return self.search().count()
+
+    def _getCollection(self):
+        return getUtility(IAllBranches)
 
 
 class BranchRestrictedOnProductVocabulary(BranchVocabulary):
@@ -74,22 +75,17 @@ class BranchRestrictedOnProductVocabulary(BranchVocabulary):
     def __init__(self, context=None):
         super(BranchRestrictedOnProductVocabulary, self).__init__(context)
         if IProduct.providedBy(self.context):
-            self.context = context
+            self.product = self.context
         elif IProductSeries.providedBy(self.context):
-            self.context = context.product
+            self.product = self.context.product
         elif IBranch.providedBy(self.context):
-            self.context = context.product
+            self.product = self.context.product
         else:
             # An unexpected type.
             raise AssertionError('Unexpected context type')
 
-    def searchForTerms(self, query=None, vocab_filter=None):
-        extra_joins = [Join(Person, Person.id == Branch.ownerID)]
-        extra_clauses = [
-            Person.membership_policy.is_in(EXCLUSIVE_TEAM_POLICY)]
-        return super(BranchRestrictedOnProductVocabulary, self).searchForTerms(
-            query, vocab_filter, extra_joins=extra_joins,
-            extra_clauses=extra_clauses)
+    def _getCollection(self):
+        return getUtility(IAllBranches).inProduct(self.product).isExclusive()
 
 
 class HostedBranchRestrictedOnOwnerVocabulary(BranchVocabulary):
@@ -102,12 +98,11 @@ class HostedBranchRestrictedOnOwnerVocabulary(BranchVocabulary):
     def __init__(self, context=None):
         """Pass a Person as context, or anything else for the current user."""
         super(HostedBranchRestrictedOnOwnerVocabulary, self).__init__(context)
-        if not IPerson.providedBy(self.context):
-            self.context = getUtility(ILaunchBag).user
+        if IPerson.providedBy(self.context):
+            self.user = self.context
+        else:
+            self.user = getUtility(ILaunchBag).user
 
-    def searchForTerms(self, query=None, vocab_filter=None):
-        extra_clauses = [Branch.branch_type == BranchType.HOSTED]
-        return super(
-            HostedBranchRestrictedOnOwnerVocabulary, self).searchForTerms(
-                query, vocab_filter, extra_joins=[],
-                extra_clauses=extra_clauses)
+    def _getCollection(self):
+        owned_branches = getUtility(IAllBranches).ownedByTeamMember(self.user)
+        return owned_branches.withBranchType(BranchType.HOSTED)

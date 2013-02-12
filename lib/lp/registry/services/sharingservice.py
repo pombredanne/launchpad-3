@@ -35,8 +35,7 @@ from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
-from lp.code.model.branch import Branch
-from lp.code.model.branchcollection import search_branches
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
@@ -218,9 +217,10 @@ class SharingService:
         # Load the branches.
         branches = []
         if branch_ids:
-            clauses = [Branch.id.is_in(branch_ids)]
-            branches = search_branches(
-                None, user, '', extra_clauses=clauses)
+            all_branches = getUtility(IAllBranches)
+            wanted_branches = all_branches.visibleByUser(user).withIds(
+                *branch_ids)
+            branches = list(wanted_branches.getBranches())
         specifications = []
         if specification_ids:
             specifications = load(Specification, specification_ids)
@@ -331,9 +331,10 @@ class SharingService:
         # Load the branches.
         visible_branches = []
         if branches_by_id:
-            clauses = [Branch.id.is_in(branches_by_id.keys())]
-            visible_branches = search_branches(
-                None, person, '', extra_clauses=clauses)
+            all_branches = getUtility(IAllBranches)
+            wanted_branches = all_branches.visibleByUser(person).withIds(
+                *branches_by_id.keys())
+            visible_branches = list(wanted_branches.getBranches())
 
         visible_specs = []
         if specifications:
@@ -366,9 +367,9 @@ class SharingService:
         # Load the branches.
         invisible_branches = []
         if branches_by_id:
-            clauses = [Branch.id.is_in(branches_by_id.keys())]
-            visible_branch_ids = [branch.id for branch in search_branches(
-                None, person, '', extra_clauses=clauses)]
+            all_branches = getUtility(IAllBranches)
+            visible_branch_ids = all_branches.visibleByUser(person).withIds(
+                *branches_by_id.keys()).getBranchIds()
             invisible_branch_ids = (
                 set(branches_by_id.keys()).difference(visible_branch_ids))
             invisible_branches = [

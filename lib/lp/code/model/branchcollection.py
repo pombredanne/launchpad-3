@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'GenericBranchCollection',
-    'search_branches',
     ]
 
 from collections import defaultdict
@@ -31,10 +30,7 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.app.enums import (
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    )
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
@@ -63,10 +59,7 @@ from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import CodeReviewVoteReference
 from lp.code.model.revision import Revision
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.sourcepackagename import ISourcePackageName
+from lp.registry.enums import EXCLUSIVE_TEAM_POLICY
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person
@@ -612,6 +605,13 @@ class GenericBranchCollection:
         return self._filterBy([
             Branch.information_type.is_in(PRIVATE_INFORMATION_TYPES)])
 
+    def isExclusive(self):
+        """See `IBranchCollection`."""
+        return self._filterBy(
+            [Person.membership_policy.is_in(EXCLUSIVE_TEAM_POLICY)],
+            table=Person,
+            join=Join(Person, Branch.ownerID == Person.id))
+
     def isSeries(self):
         """See `IBranchCollection`."""
         # ProductSeries import's this module.
@@ -625,9 +625,45 @@ class GenericBranchCollection:
         """See `IBranchCollection`."""
         return self._filterBy([Branch.owner == person], symmetric=False)
 
+    def ownedByTeamMember(self, person):
+        """See `IBranchCollection`."""
+        subquery = Select(
+            TeamParticipation.teamID,
+            where=TeamParticipation.personID == person.id)
+        filter = [In(Branch.ownerID, subquery)]
+
+        return self._filterBy(filter, symmetric=False)
+
     def registeredBy(self, person):
         """See `IBranchCollection`."""
         return self._filterBy([Branch.registrant == person], symmetric=False)
+
+    def _getExactMatch(self, term):
+        # If the search_term is a full URL, grab the branch and return it.
+        if term and term.startswith('lp:'):
+            return getUtility(IBranchLookup).getByUrl(term)
+        if term and term.startswith('http'):
+            # Look up the branch by its URL.
+            branch_url = getUtility(IBranchLookup).getByUrl(term)
+            if branch_url:
+                return branch_url
+            # If that fails, strip off the path and search by its unique name.
+            path = urlparse(term)[2][1:]
+            return getUtility(IBranchLookup).getByUniqueName(path)
+        if term and term.startswith('~'):
+            return getUtility(IBranchLookup).getByUniqueName(term)
+
+    def search(self, term):
+        """See `IBranchCollection`."""
+        branch = self._getExactMatch(term)
+        if branch:
+            collection = self._filterBy([Branch.id == branch.id])
+        else:
+            # Filter by name.
+            collection = self._filterBy(
+                [Branch.name.contains_string(unicode(term))])
+        return collection.getBranches(eager_load=False).order_by(
+            Branch.name, Branch.id)
 
     def scanned(self):
         """See `IBranchCollection`."""
@@ -706,8 +742,7 @@ class AnonymousBranchCollection(GenericBranchCollection):
 
     def _getBranchVisibilityExpression(self, branch_class=Branch):
         """Return the where clauses for visibility."""
-        return [
-            branch_class.information_type.is_in(PUBLIC_INFORMATION_TYPES)]
+        return get_branch_privacy_filter(None, branch_class=branch_class)
 
 
 class VisibleBranchCollection(GenericBranchCollection):
@@ -755,13 +790,9 @@ class VisibleBranchCollection(GenericBranchCollection):
         if exclude_from_search is None:
             exclude_from_search = []
         return self.__class__(
-            self._user,
-            self.store,
-            symmetric_expr,
-            tables,
+            self._user, self.store, symmetric_expr, tables,
             self._exclude_from_search + exclude_from_search,
-            asymmetric_expr,
-            asymmetric_tables)
+            asymmetric_expr, asymmetric_tables)
 
     def _getBranchVisibilityExpression(self, branch_class=Branch):
         """Return the where clauses for visibility.
@@ -769,8 +800,7 @@ class VisibleBranchCollection(GenericBranchCollection):
         :param branch_class: The Branch class to use - permits using
             ClassAliases.
         """
-        return get_branch_privacy_filter(
-            self._user, branch_class=branch_class)
+        return get_branch_privacy_filter(self._user, branch_class=branch_class)
 
     def visibleByUser(self, person):
         """See `IBranchCollection`."""
@@ -779,67 +809,3 @@ class VisibleBranchCollection(GenericBranchCollection):
         raise InvalidFilter(
             "Cannot filter for branches visible by user %r, already "
             "filtering for %r" % (person, self._user))
-
-
-def search_branches(context, user, search_term, extra_joins=[],
-                    extra_clauses=[]):
-    store = IStore(Branch)
-
-    # If the search_term is a full URL, grab the branch and return it.
-    if search_term and search_term.startswith('lp:'):
-        return _known_visible_branch(
-            getUtility(IBranchLookup).getByUrl(search_term), context, user) 
-    if search_term and search_term.startswith('http'):
-        # Look up the branch by its URL.
-        branch_url = getUtility(IBranchLookup).getByUrl(search_term)
-        if branch_url:
-            return _known_visible_branch(branch_url, context, user)
-        # If that fails, strip off the path and search by its unique name.
-        path = urlparse(search_term)[2][1:]
-        return _known_visible_branch(
-            getUtility(IBranchLookup).getByUniqueName(path), context, user)
-    if search_term and search_term.startswith('~'):
-        return _known_visible_branch(
-            getUtility(IBranchLookup).getByUniqueName(search_term), context,
-            user)
-
-    clauses = get_branch_privacy_filter(user)
-    if IProduct.providedBy(context):
-        col = Branch.productID
-    elif IDistroSeries.providedBy(context):
-        col = Branch.distroseries_id
-    elif ISourcePackageName.providedBy(context):
-        col = Branch.sourcepackagename_id
-    elif IPerson.providedBy(context):
-        extra_joins.extend([
-            Join(Person, Person.id == Branch.ownerID),
-            Join(
-                TeamParticipation, TeamParticipation.personID == context.id)])
-        clauses.append(Branch.ownerID == TeamParticipation.teamID)
-        col = None
-    else:
-        col = None
-    if col:
-        clauses.append(col == context.id)
-    if search_term:
-        clauses.append(Branch.name.like(search_term))
-    origin = [Branch]
-    if extra_joins:
-        origin.extend(extra_joins)
-    if extra_clauses:
-        clauses.extend(extra_clauses)
-
-    return list(store.using(*origin).find(Branch, *clauses))
-
-
-def _known_visible_branch(branch, context, user):
-    if branch is None:
-        return []
-    elif branch.visibleByUser(user):
-        if (context and IProduct.providedBy(context)
-            and branch.product != context):
-            return []
-        if user:
-            get_property_cache(branch)._known_viewers = [user.id]
-        return [branch]
-    return []
