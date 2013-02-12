@@ -1673,9 +1673,14 @@ class TestChangeOverride(TestNativePublishingBase):
 
     def setUpOverride(self, status=SeriesStatus.DEVELOPMENT,
                       pocket=PackagePublishingPocket.RELEASE, binary=False,
-                      **kwargs):
+                      ddeb=False, **kwargs):
         self.distroseries.status = status
-        if binary:
+        if ddeb:
+            pub = self.getPubBinaries(pocket=pocket, with_debug=True)[2]
+            self.assertEqual(
+                BinaryPackageFormat.DDEB,
+                pub.binarypackagerelease.binpackageformat)
+        elif binary:
             pub = self.getPubBinaries(pocket=pocket)[0]
         else:
             pub = self.getPubSource(pocket=pocket)
@@ -1710,6 +1715,16 @@ class TestChangeOverride(TestNativePublishingBase):
         # BPPH.changeOverride changes the properties of binary publications.
         self.assertCanOverride(
             binary=True,
+            new_component="universe", new_section="misc", new_priority="extra",
+            new_phased_update_percentage=90)
+
+    def test_changes_ddeb(self):
+        # BPPH.changeOverride changes the properties of DDEB publications.
+        getUtility(IArchiveSet).new(
+            purpose=ArchivePurpose.DEBUG, owner=self.ubuntutest.owner,
+            distribution=self.ubuntutest)
+        self.assertCanOverride(
+            ddeb=True,
             new_component="universe", new_section="misc", new_priority="extra",
             new_phased_update_percentage=90)
 

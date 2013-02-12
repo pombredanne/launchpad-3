@@ -1251,16 +1251,21 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             new_phased_update_percentage == self.phased_update_percentage):
             return
 
+        bpr = self.binarypackagerelease
+
         if new_component != self.component:
             # See if the archive has changed by virtue of the component
             # changing:
             distribution = self.distroarchseries.distroseries.distribution
-            new_archive = distribution.getArchiveByComponent(
-                new_component.name)
-            if new_archive != None and new_archive != self.archive:
-                raise OverrideError(
-                    "Overriding component to '%s' failed because it would "
-                    "require a new archive." % new_component.name)
+            # DDEBs always live in a DEBUG archive, which supports all
+            # components.
+            if bpr.binpackageformat != BinaryPackageFormat.DDEB:
+                new_archive = distribution.getArchiveByComponent(
+                    new_component.name)
+                if new_archive != None and new_archive != self.archive:
+                    raise OverrideError(
+                        "Overriding component to '%s' failed because it would "
+                        "require a new archive." % new_component.name)
 
         # Refuse to create new publication records that will never be
         # published.
@@ -1271,8 +1276,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         # Append the modified package publishing entry
         return BinaryPackagePublishingHistory(
-            binarypackagename=self.binarypackagerelease.binarypackagename,
-            binarypackagerelease=self.binarypackagerelease,
+            binarypackagename=bpr.binarypackagename,
+            binarypackagerelease=bpr,
             distroarchseries=self.distroarchseries,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
