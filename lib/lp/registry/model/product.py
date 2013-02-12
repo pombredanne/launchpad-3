@@ -585,8 +585,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def official_codehosting(self):
-        # XXX Need to remove official_codehosting column from Product
-        # table.
         return self.development_focus.branch is not None
 
     @property

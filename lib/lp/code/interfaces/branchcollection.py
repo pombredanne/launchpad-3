@@ -161,35 +161,14 @@ class IBranchCollection(Interface):
     def isPrivate():
         """Restrict the collection to private branches."""
 
-    def isExclusive():
-        """Restrict the collection to branches owned by exclusive people."""
-
     def isSeries():
         """Restrict the collection to branches those linked to series."""
 
     def ownedBy(person):
         """Restrict the collection to branches owned by 'person'."""
 
-    def ownedByTeamMember(person):
-        """Restrict the collection to branches owned by 'person' or a team
-        of which person is a member.
-        """
-
     def registeredBy(person):
         """Restrict the collection to branches registered by 'person'."""
-
-    def relatedTo(person):
-        """Restrict the collection to branches related to 'person'.
-
-        That is, branches that 'person' owns, registered or is subscribed to.
-        """
-
-    def search(search_term):
-        """Search the collection for branches matching 'search_term'.
-
-        :param search_term: A string.
-        :return: An `ICountableIterator`.
-        """
 
     def scanned():
         """Restrict the collection to branches that have been scanned."""
