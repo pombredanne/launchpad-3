@@ -50,3 +50,10 @@ class DistroArchSeriesBinaryPackageReleaseView(LaunchpadView):
     @property
     def page_title(self):
         return smartquote(self.context.title)
+
+    @property
+    def phased_update_percentage(self):
+        """Return the formatted phased update percentage, or empty."""
+        if self.context.phased_update_percentage is not None:
+            return u"%d%% of users" % self.context.phased_update_percentage
+        return u""
