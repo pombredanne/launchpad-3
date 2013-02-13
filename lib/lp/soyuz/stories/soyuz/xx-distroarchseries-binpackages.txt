@@ -1,4 +1,6 @@
-= DistroArchSeries Binary Package Pages =
+=====================================
+DistroArchSeries Binary Package Pages
+=====================================
 
 In Launchpad, BinaryPackageReleases are directly attached to a
 DistroArchSeries by a publication record (see
@@ -160,7 +162,8 @@ intead of a empty section.
     i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
     produced no files for this binary package.
 
-== DistroArchSeries Partner Binary Package Pages ==
+DistroArchSeries Partner Binary Package Pages
+=============================================
 
 Binary partner packages in Launchpad differ from regular packages by
 two things:
@@ -236,7 +239,8 @@ librarian URL and size:
     commercialpackage_1.0-1_i386.deb (652 bytes)
 
 
-== Tracing copied binary ==
+Tracing copied binary
+=====================
 
 Any user can view the publishing history details for a binary in the
 distribution PRIMARY archive, specifically in the
