@@ -384,7 +384,9 @@ class FTPArchiveHandler:
             if archtag:
                 priority = priority.title.lower()
                 # We pick up debian-installer packages here, although they
-                # do not need phased updates.
+                # do not need phased updates (and adding the
+                # phased_update_percentage would complicate
+                # generateOverrideForComponent).
                 if section.endswith("debian-installer"):
                     override['d-i'].add((packagename, priority, section))
                 else:
