@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -1640,9 +1640,6 @@
         <browser:page
             name="+timeline-graph"
             template="../templates/object-timeline-graph.pt"/>
-        <browser:page
-            name="+macros"
-            template="../templates/productseries-macros.pt"/>
         <browser:page
             name="+portlet-packages"
             template="../templates/productseries-portlet-packages.pt"/>
