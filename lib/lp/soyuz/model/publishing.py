@@ -1553,6 +1553,10 @@ class PublishingSet:
                 archive, distroarchseries.distroseries, component),
             section=section,
             priority=priority,
+            # We do not set the phased_update_percentage here, as in general
+            # it requires feedback on error statistics.  In any case,
+            # pockets that benefit from phased updates should not normally
+            # also be direct upload targets.
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             pocket=pocket)
