@@ -180,6 +180,9 @@ class PackageCloner:
                 SourcePackageRelease AS spr,
                 SourcePackageName AS spn
                 """
+        # We do not need to set phased_update_percentage; that is heavily
+        # context-dependent and should be set afresh for the new location if
+        # required.
         query = """
             INSERT INTO BinaryPackagePublishingHistory (
                 binarypackagerelease, distroarchseries, status,
