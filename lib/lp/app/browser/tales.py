@@ -778,7 +778,6 @@ class ObjectImageDisplayAPI:
 
             return "sprite %s" % sprite_string
 
-
     def default_logo_resource(self, context):
         # XXX: mars 2008-08-22 bug=260468
         # This should be refactored.  We shouldn't have to do type-checking
@@ -1041,7 +1040,7 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
 
         if self._context.priority:
             priority = self._context.priority.title.lower()
-            sprite_str = sprite_str +  "-%s" % priority
+            sprite_str = sprite_str + "-%s" % priority
 
         if self._context.private:
             sprite_str = sprite_str + ' private'
