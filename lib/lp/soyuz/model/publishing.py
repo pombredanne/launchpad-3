@@ -1114,9 +1114,9 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """Return remaining publications with the same overrides.
 
         Only considers binary publications in the same archive, distroseries,
-        pocket, component, section and priority context. These publications
-        are candidates for domination if this is an architecture-independent
-        package.
+        pocket, component, section, priority and phased-update-percentage
+        context. These publications are candidates for domination if this is
+        an architecture-independent package.
 
         The override match is critical -- it prevents a publication created
         by new overrides from superseding itself.
@@ -1135,14 +1135,15 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 pocket=self.pocket,
                 component=self.component,
                 section=self.section,
-                priority=self.priority)
+                priority=self.priority,
+                phased_update_percentage=self.phased_update_percentage)
 
     def _getCorrespondingDDEBPublications(self):
         """Return remaining publications of the corresponding DDEB.
 
         Only considers binary publications in the corresponding debug
-        archive with the same distroarchseries, pocket, component, section
-        and priority.
+        archive with the same distroarchseries, pocket, component, section,
+        priority and phased-update-percentage.
         """
         return IMasterStore(BinaryPackagePublishingHistory).find(
                 BinaryPackagePublishingHistory,
@@ -1155,7 +1156,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 pocket=self.pocket,
                 component=self.component,
                 section=self.section,
-                priority=self.priority)
+                priority=self.priority,
+                phased_update_percentage=self.phased_update_percentage)
 
     def supersede(self, dominant=None, logger=None):
         """See `IBinaryPackagePublishingHistory`."""

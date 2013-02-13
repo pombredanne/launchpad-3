@@ -1302,18 +1302,30 @@ class TestBinaryDomination(TestNativePublishingBase):
         """Check that atomic domination only covers identical overrides.
 
         This is important, as otherwise newly-overridden arch-indep binaries
-        will supersede themselves, and vanish entirely (bug #178102).
+        will supersede themselves, and vanish entirely (bug #178102).  We
+        check both DEBs and DDEBs.
         """
-        bins = self.getPubBinaries(architecturespecific=False)
-
+        getUtility(IArchiveSet).new(
+            purpose=ArchivePurpose.DEBUG, owner=self.ubuntutest.owner,
+            distribution=self.ubuntutest)
         universe = getUtility(IComponentSet)['universe']
-        super_bins = []
-        for bin in bins:
-            super_bins.append(bin.changeOverride(new_component=universe))
+        games = getUtility(ISectionSet)['games']
+        for name, override in (
+            ("component", {"new_component": universe}),
+            ("section", {"new_section": games}),
+            ("priority", {"new_priority": PackagePublishingPriority.EXTRA}),
+            ("phase", {"new_phased_update_percentage": 50}),
+            ):
+            bins = self.getPubBinaries(
+                binaryname=name, architecturespecific=False, with_debug=True)
 
-        bins[0].supersede(super_bins[0])
-        self.checkSuperseded(bins, super_bins[0])
-        self.checkPublications(super_bins, PackagePublishingStatus.PENDING)
+            super_bins = []
+            for bin in bins:
+                super_bins.append(bin.changeOverride(**override))
+
+            bins[0].supersede(super_bins[0])
+            self.checkSuperseded(bins, super_bins[0])
+            self.checkPublications(super_bins, PackagePublishingStatus.PENDING)
 
     def testSupersedingSupersededArchSpecificBinaryFails(self):
         """Check that supersede() fails with a superseded arch-dep binary.
