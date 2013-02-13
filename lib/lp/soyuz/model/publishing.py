@@ -1519,6 +1519,11 @@ class PublishingSet:
             return []
 
         BPPH = BinaryPackagePublishingHistory
+        # XXX cjwatson 2013-02-13: We do not currently set the
+        # phased_update_percentage here.  However, it might be useful in
+        # future to be able to copy a package from PROPOSED to UPDATES and
+        # immediately set its phased_update_percentage to zero; this should
+        # perhaps be an option.
         return bulk.create(
             (BPPH.archive, BPPH.distroarchseries, BPPH.pocket,
              BPPH.binarypackagerelease, BPPH.binarypackagename,
