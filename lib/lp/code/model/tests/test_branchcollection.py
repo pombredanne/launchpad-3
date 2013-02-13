@@ -1198,6 +1198,12 @@ class TestSearch(TestCaseWithFactory):
         search_results = self.collection.search('foo')
         self.assertEqual(sorted([branch1, branch2]), sorted(search_results))
 
+    def test_match_against_unique_name(self):
+        branch = self.factory.makeAnyBranch(name='fooa')
+        search_term = branch.product.name + '/foo'
+        search_results = self.collection.search(search_term)
+        self.assertEqual([branch], list(search_results))
+
     def test_match_sub_branch_name(self):
         # search returns all branches which have a name of which the search
         # term is a substring.

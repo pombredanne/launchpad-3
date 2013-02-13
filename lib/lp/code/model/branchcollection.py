@@ -659,9 +659,13 @@ class GenericBranchCollection:
         if branch:
             collection = self._filterBy([Branch.id == branch.id])
         else:
+            term = unicode(term)
             # Filter by name.
-            collection = self._filterBy(
-                [Branch.name.contains_string(unicode(term))])
+            field = Branch.name
+            # Except if the term contains /, when we use unique_name.
+            if '/' in term:
+                field = Branch.unique_name
+            collection = self._filterBy([field.contains_string(term)])
         return collection.getBranches(eager_load=False).order_by(
             Branch.name, Branch.id)
 

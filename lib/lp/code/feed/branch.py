@@ -31,6 +31,7 @@ from lp.code.interfaces.branch import (
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.revisioncache import IRevisionCache
+from lp.code.model.branch import Branch
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
@@ -165,11 +166,10 @@ class BranchListingFeed(BranchFeedBase):
         collection = self._getCollection().visibleByUser(
             None).withLifecycleStatus(*DEFAULT_BRANCH_STATUS_IN_LISTING)
         branches = collection.getBranches(eager_load=False)
-        branches.order_by(
-            Desc('Branch.date_last_modified'), Asc('Branch.target_suffix'),
-            Desc('Branch.lifecycle_status'), Asc('Branch.name'))
-        branches.config(limit=self.quantity)
-        return list(branches)
+        return list(branches.order_by(
+            Desc(Branch.date_last_modified), Asc(Branch.target_suffix),
+            Desc(Branch.lifecycle_status), Asc(Branch.name)).config(
+                limit=self.quantity))
 
 
 class ProductBranchFeed(BranchListingFeed):
