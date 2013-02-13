@@ -22,13 +22,15 @@ URL:
 This page provides the publishing history of this BinaryPackage within
 this architecture:
 
-    >>> print extract_text(
-    ...    find_tag_by_id(browser.contents, 'publishing-summary'))
-    Date                  Status    Target     Pocket  Component Section Version
-    2006-04-11 13:00:01 UTC Published...Warty i386 release main      base    1.0
+    >>> table = find_tag_by_id(browser.contents, 'publishing-summary')
+    >>> print extract_text(table)
+    Date                  Status    Target     Pocket  Component Section  Priority  Phased updates  Version
+    2006-04-11 13:00:01 UTC Published...Warty i386 release main     base Important                      1.0
     Published on 2006-04-11
-    2005-06-18 00:00:00 UTC Published...Warty i386 release main      base    0.9
+    2005-06-18 00:00:00 UTC Published...Warty i386 release main     base     Extra                      0.9
     Published on 2005-06-18
+    >>> print table.findAll("tr")[2].td["colspan"]
+    10
 
 It also provides a link to the currently published version:
 
@@ -177,8 +179,8 @@ this architecture:
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'publishing-summary'))
-    Date                  Status    Target     Pocket  Component Section Version
-    2007-08-09 21:56:39 UTC Published...B...t i386 release partner   devel 1.0-1
+    Date                  Status    Target     Pocket  Component Section Priority  Phased updates  Version
+    2007-08-09 21:56:39 UTC Published...B...t i386 release partner devel Optional                  1.0-1
     Published on 2007-08-09
 
 It also provides a link to the currently published version:
@@ -249,13 +251,13 @@ distroseries and archive are shown.
 
     >>> print extract_text(
     ...    find_tag_by_id(anon_browser.contents, 'publishing-summary'))
-    Date           Status      Target     Pocket  Component Section Version
-    2007-09-13 ... Superseded...Warty i386 release universe  editors  0.1-1
+    Date           Status      Target     Pocket  Component Section  Priority  Phased updates  Version
+    2007-09-13 ... Superseded...Warty i386 release universe editors Important                    0.1-1
       Published on 2006-01-26
       Copied from ubuntu hoary-release i386 in Primary Archive for Ubuntu Linux
-    2005-06-24 ... Published...Warty i386 release  main     base     0.1-1
+    2005-06-24 ... Published...Warty i386  release main        base     Extra                    0.1-1
       Published on 2005-06-24
       Copied from ubuntu hoary-release i386 in Primary Archive for Ubuntu Linux
-    2005-06-20 ... Published...Warty i386   release  main     base     2:1.9-1
+    2005-06-20 ... Published...Warty i386  release main        base     Extra                  2:1.9-1
       Published on 2005-06-20
       Copied from  ubuntu hoary-release hppa in Primary Archive for Ubuntu Linux

@@ -17,11 +17,13 @@ shows the complete history of a package in all series.
     ...     'http://launchpad.dev/ubuntutest/+source/test-history/'
     ...     '+publishinghistory')
 
-    >>> print extract_text(
-    ...    find_tag_by_id(anon_browser.contents, 'publishing-summary'))
+    >>> table = find_tag_by_id(anon_browser.contents, 'publishing-summary')
+    >>> print extract_text(table)
     Date    Status    Target     Pocket   Component Section Version
     ... UTC Published Breezy ... release  main      base    666
     Published ... ago
+    >>> print table.findAll("tr")[2].td["colspan"]
+    8
 
 A publishing record will be shown as deleted in the publishing history after a 
 request for deletion by a user.
