@@ -670,10 +670,6 @@ class IProductView(
                 'series branch.')))
     development_focusID = Attribute("The development focus ID.")
 
-    name_with_project = Attribute(_("Returns the product name prefixed "
-        "by the project name, if a project is associated with this "
-        "product; otherwise, simply returns the product name."))
-
     releases = exported(
         doNotSnapshot(
             CollectionField(
