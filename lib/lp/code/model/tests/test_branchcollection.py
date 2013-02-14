@@ -1145,6 +1145,10 @@ class TestSearch(TestCaseWithFactory):
         url = canonical_url(branch)
         self.assertEqual([branch], list(self.collection.search(url)))
 
+    def test_exact_match_bad_url(self):
+        search_results = self.collection.search('http:hahafail')
+        self.assertEqual([], list(search_results))
+
     def test_exact_match_bzr_identity(self):
         # If you search for the bzr identity of a branch, then you get a
         # single result with that branch.

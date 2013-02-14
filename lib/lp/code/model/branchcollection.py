@@ -11,9 +11,12 @@ __all__ = [
 from collections import defaultdict
 from functools import partial
 from operator import attrgetter
-from urlparse import urlparse
 
 from lazr.restful.utils import safe_hasattr
+from lazr.uri import (
+    InvalidURIError,
+    URI,
+    )
 from storm.expr import (
     And,
     Count,
@@ -639,19 +642,17 @@ class GenericBranchCollection:
         return self._filterBy([Branch.registrant == person], symmetric=False)
 
     def _getExactMatch(self, term):
-        # If the search_term is a full URL, grab the branch and return it.
-        if term and term.startswith('lp:'):
-            return getUtility(IBranchLookup).getByUrl(term)
-        if term and term.startswith('http'):
-            # Look up the branch by its URL.
-            branch_url = getUtility(IBranchLookup).getByUrl(term)
-            if branch_url:
-                return branch_url
-            # If that fails, strip off the path and search by its unique name.
-            path = urlparse(term)[2][1:]
-            return getUtility(IBranchLookup).getByUniqueName(path)
-        if term and term.startswith('~'):
-            return getUtility(IBranchLookup).getByUniqueName(term)
+        # Try and look up the branch by its URL, which handles lp: shortfom.
+        branch_url = getUtility(IBranchLookup).getByUrl(term)
+        if branch_url:
+            return branch_url
+        # Fall back to searching by unique_name, stripping out the path if it's
+        # a URI.
+        try:
+            path = URI(term).path.strip('/')
+        except InvalidURIError:
+            path = term
+        return getUtility(IBranchLookup).getByUniqueName(path)
 
     def search(self, term):
         """See `IBranchCollection`."""
@@ -665,7 +666,8 @@ class GenericBranchCollection:
             # Except if the term contains /, when we use unique_name.
             if '/' in term:
                 field = Branch.unique_name
-            collection = self._filterBy([field.contains_string(term.lower())])
+            collection = self._filterBy(
+                [field.lower().contains_string(term.lower())])
         return collection.getBranches(eager_load=False).order_by(
             Branch.name, Branch.id)
 
