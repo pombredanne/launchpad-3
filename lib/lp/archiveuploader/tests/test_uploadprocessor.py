@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for uploadprocessor.py."""
@@ -60,7 +60,6 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
-from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import (
     BufferLogger,
@@ -89,9 +88,6 @@ from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
-from lp.soyuz.model.distroseriesdifferencejob import (
-    FEATURE_FLAG_ENABLE_MODULE,
-    )
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
@@ -169,9 +165,6 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         self.log = BufferLogger()
 
         self.switchToAdmin()
-        self.useFixture(FeatureFixture({
-            FEATURE_FLAG_ENABLE_MODULE: u'on',
-        }))
         self.switchToUploader()
 
     def tearDown(self):

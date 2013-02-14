@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `lp.registry.browser.distroseries`."""
@@ -86,7 +86,6 @@ from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
-from lp.soyuz.model import distroseriesdifferencejob
 from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model.packagecopyjob import PlainPackageCopyJob
 from lp.soyuz.scripts.initialize_distroseries import InitializationError
@@ -100,7 +99,6 @@ from lp.testing import (
     normalize_whitespace,
     person_logged_in,
     StormStatementRecorder,
-    TestCase,
     TestCaseWithFactory,
     with_celebrity_logged_in,
     )
@@ -126,12 +124,6 @@ from lp.testing.views import create_initialized_view
 def set_derived_series_sync_feature_flag(test_case):
     test_case.useFixture(FeatureFixture({
         u'soyuz.derived_series_sync.enabled': u'on',
-        }))
-
-
-def set_derived_series_difference_jobs_feature_flag(test_case):
-    test_case.useFixture(FeatureFixture({
-        distroseriesdifferencejob.FEATURE_FLAG_ENABLE_MODULE: u'on',
         }))
 
 
@@ -1811,7 +1803,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self.assertFalse(view.hasPendingDSDUpdate(dsd))
 
     def test_hasPendingDSDUpdate_returns_True_if_pending_update(self):
-        set_derived_series_difference_jobs_feature_flag(self)
         dsd = self.factory.makeDistroSeriesDifference()
         self.makeDSDJob(dsd)
         view = create_initialized_view(
