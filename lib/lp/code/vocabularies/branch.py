@@ -1,8 +1,7 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Vocabularies that contain branches."""
-
 
 __metaclass__ = type
 
@@ -31,12 +30,8 @@ from lp.services.webapp.vocabulary import (
     )
 
 
-class BranchVocabularyBase(SQLObjectVocabularyBase):
-    """A base class for Branch vocabularies.
-
-    Override `BranchVocabularyBase._getCollection` to provide the collection
-    of branches which make up the vocabulary.
-    """
+class BranchVocabulary(SQLObjectVocabularyBase):
+    """A vocabulary for searching branches."""
 
     implements(IHugeVocabulary)
 
@@ -56,17 +51,10 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
             return iter(search_results).next()
         raise LookupError(token)
 
-    def _getCollection(self):
-        """Return the collection of branches the vocabulary searches.
-
-        Subclasses MUST override and implement this.
-        """
-        raise NotImplementedError(self._getCollection)
-
     def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
-        logged_in_user = getUtility(ILaunchBag).user
-        collection = self._getCollection().visibleByUser(logged_in_user)
+        user = getUtility(ILaunchBag).user
+        collection = self._getCollection().visibleByUser(user)
         if query is None:
             branches = collection.getBranches(eager_load=False)
         else:
@@ -77,28 +65,15 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
         """See `IVocabulary`."""
         return self.search().count()
 
-
-class BranchVocabulary(BranchVocabularyBase):
-    """A vocabulary for searching branches.
-
-    The name and URL of the branch, the name of the product, and the
-    name of the registrant of the branches is checked for the entered
-    value.
-    """
-
     def _getCollection(self):
         return getUtility(IAllBranches)
 
 
-class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
-    """A vocabulary for searching branches restricted on product.
-
-    The query entered checks the name or URL of the branch, or the
-    name of the registrant of the branch.
-    """
+class BranchRestrictedOnProductVocabulary(BranchVocabulary):
+    """A vocabulary for searching branches restricted on product."""
 
     def __init__(self, context=None):
-        BranchVocabularyBase.__init__(self, context)
+        super(BranchRestrictedOnProductVocabulary, self).__init__(context)
         if IProduct.providedBy(self.context):
             self.product = self.context
         elif IProductSeries.providedBy(self.context):
@@ -113,7 +88,7 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
         return getUtility(IAllBranches).inProduct(self.product).isExclusive()
 
 
-class HostedBranchRestrictedOnOwnerVocabulary(BranchVocabularyBase):
+class HostedBranchRestrictedOnOwnerVocabulary(BranchVocabulary):
     """A vocabulary for hosted branches owned by the current user.
 
     These are branches that the user either owns themselves or which are
@@ -124,7 +99,7 @@ class HostedBranchRestrictedOnOwnerVocabulary(BranchVocabularyBase):
         """Pass a Person as context, or anything else for the current user."""
         super(HostedBranchRestrictedOnOwnerVocabulary, self).__init__(context)
         if IPerson.providedBy(self.context):
-            self.user = context
+            self.user = self.context
         else:
             self.user = getUtility(ILaunchBag).user
 

@@ -99,16 +99,17 @@ still be hidden:
 
 If a branch is marked private it will not be displayed.  The Landscape
 developers team has two branches which are both private.
+
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.code.model.branch import Branch
     >>> from lp.code.interfaces.branchcollection import IAllBranches
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> login(ANONYMOUS)
-    >>> person_set = getUtility(IPersonSet)
-    >>> landscape_team = person_set.getByName('landscape-developers')
-    >>> test_user = person_set.getByEmail('test@canonical.com')
-    >>> branches = getUtility(IAllBranches).relatedTo(landscape_team)
+    >>> test_user = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> landscape = getUtility(IProductSet)['landscape']
+    >>> branches = getUtility(IAllBranches).inProduct(landscape)
     >>> branches = branches.visibleByUser(
     ...     test_user).getBranches().order_by(Branch.id)
     >>> for branch in branches:
