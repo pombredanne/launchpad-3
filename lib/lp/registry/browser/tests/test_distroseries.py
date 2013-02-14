@@ -60,7 +60,6 @@ from lp.services.database.interfaces import (
     MASTER_FLAVOR,
     )
 from lp.services.database.sqlbase import flush_database_caches
-from lp.services.features import getFeatureFlag
 from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
 from lp.services.utils import utc_now
@@ -119,12 +118,6 @@ from lp.testing.pages import (
     find_tag_by_id,
     )
 from lp.testing.views import create_initialized_view
-
-
-def set_derived_series_sync_feature_flag(test_case):
-    test_case.useFixture(FeatureFixture({
-        u'soyuz.derived_series_sync.enabled': u'on',
-        }))
 
 
 class TestDistroSeriesView(TestCaseWithFactory):
@@ -1407,12 +1400,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         view = self.makeView(dsd.derived_series)
         self.assertContentEqual([dsd], view.getUpgrades())
 
-    def enableDerivedSeriesSyncFeature(self):
-        """Enable the feature flag for derived-series sync."""
-        self.useFixture(
-            FeatureFixture(
-                {u'soyuz.derived_series_sync.enabled': u'on'}))
-
     def enableDerivedSeriesUpgradeFeature(self):
         """Enable the feature flag for derived-series upgrade."""
         self.useFixture(
@@ -1775,26 +1762,11 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         # synced package.
         derived_series = self._setUpDSD()[0]
         person = self._setUpPersonWithPerm(derived_series)
-        set_derived_series_sync_feature_flag(self)
         with person_logged_in(person):
             view = create_initialized_view(
                 derived_series, '+localpackagediffs')
 
             self.assertTrue(view.canPerformSync())
-
-    def test_canPerformSync_non_anon_feature_disabled(self):
-        # Logged-in users with a permission on the destination archive
-        # are not presented with options to perform syncs when the
-        # feature flag is not enabled.
-        self.assertIs(
-            None, getFeatureFlag('soyuz.derived_series_sync.enabled'))
-        derived_series = self._setUpDSD()[0]
-        person = self._setUpPersonWithPerm(derived_series)
-        with person_logged_in(person):
-            view = create_initialized_view(
-                derived_series, '+localpackagediffs')
-
-            self.assertFalse(view.canPerformSync())
 
     def test_hasPendingDSDUpdate_returns_False_if_no_pending_update(self):
         dsd = self.factory.makeDistroSeriesDifference()
@@ -1985,7 +1957,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         # An error is raised when a sync is requested without any selection.
         derived_series = self._setUpDSD()[0]
         person = self._setUpPersonWithPerm(derived_series)
-        set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(derived_series, person, [])
 
         self.assertEqual(1, len(view.errors))
@@ -1998,7 +1969,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             'my-src-name')
         person = self._setUpPersonWithPerm(derived_series)
         another_id = str(int(diff_id) + 1)
-        set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
             derived_series, person, [another_id])
 
@@ -2014,7 +1984,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         derived_series, unused, unused2, diff_id = self._setUpDSD(
             'my-src-name')
         person = self._setUpPersonWithPerm(derived_series)
-        set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
             derived_series, person, [diff_id])
 
@@ -2053,7 +2022,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             'my-src-name')
         person, another_component = self.makePersonWithComponentPermission(
             derived_series.main_archive)
-        set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
             derived_series, person, [diff_id])
 
@@ -2068,7 +2036,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         # metadata.
         derived_series, parent_series, sp_name, diff_id = self._setUpDSD(
             'my-src-name')
-        set_derived_series_sync_feature_flag(self)
         person, _ = self.makePersonWithComponentPermission(
             derived_series.main_archive,
             derived_series.getSourcePackage(
@@ -2121,7 +2088,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self.assertIs(None, pubs)
 
         # Now, sync the source from the parent using the form.
-        set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
             derived_series, person, [diff_id], query_string=(
                 "batch=12&start=24&my-old-man=dustman"))
@@ -2149,7 +2115,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             'my-src-name', difference_type=missing, versions=versions)
         person, another_component = self.makePersonWithComponentPermission(
             derived_series.main_archive)
-        set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
             derived_series, person, [diff_id],
             view_name='+missingpackages')
@@ -2171,7 +2136,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             derived_series.status = SeriesStatus.CURRENT
             derived_series.datereleased = UTC_NOW
 
-        set_derived_series_sync_feature_flag(self)
         person = self.factory.makePerson()
         removeSecurityProxy(derived_series.main_archive).newPackageUploader(
             person, sp_name)
@@ -2192,7 +2156,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         derived_series, parent_series, unused, diff_id = self._setUpDSD(
             'my-src-name')
         person = self.factory.makePerson()
-        set_derived_series_sync_feature_flag(self)
         with person_logged_in(person):
             view = create_initialized_view(
                 derived_series, '+localpackagediffs', method='GET',
