@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the initialize_distroseries script machinery."""
@@ -16,7 +16,6 @@ from lp.registry.interfaces.distroseriesdifference import (
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.lpstorm import IStore
-from lp.services.features.testing import FeatureFixture
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadStatus,
@@ -35,10 +34,7 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     )
 from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.model.distroarchseries import DistroArchSeries
-from lp.soyuz.model.distroseriesdifferencejob import (
-    FEATURE_FLAG_ENABLE_MODULE,
-    find_waiting_jobs,
-    )
+from lp.soyuz.model.distroseriesdifferencejob import find_waiting_jobs
 from lp.soyuz.model.section import SectionSelection
 from lp.soyuz.scripts.initialize_distroseries import (
     InitializationError,
@@ -1388,7 +1384,6 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         # of the DSDJs with all the parents.
         parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
         parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
-        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: 'on'}))
         child = self._fullInitialize([parent1, parent2])
 
         self.assertNotEqual([], self.getWaitingJobs(child, 'p1', parent1))
@@ -1404,7 +1399,6 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             previous_parents=[prev_parent1, prev_parent2])
         parent3, unused = self.setupParent(
             packages={u'p2': u'2.5', u'p3': u'1.1'})
-        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: 'on'}))
         self._fullInitialize(
             [prev_parent1, prev_parent2, parent3], child=child)
 
@@ -1430,7 +1424,6 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         test1.addSources('p1')
         parent3, unused = self.setupParent(
             packages={u'p1': u'2.5', u'p3': u'4.4'})
-        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: 'on'}))
         self._fullInitialize(
             [prev_parent1, prev_parent2, parent3], child=child,
             packagesets=(str(test1.id),))

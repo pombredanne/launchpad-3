@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Job class to request generation or update of `DistroSeriesDifference`s."""
@@ -27,7 +27,6 @@ from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.distributionjob import (
     DistributionJobType,
@@ -41,9 +40,6 @@ from lp.soyuz.model.distributionjob import (
     DistributionJobDerived,
     )
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-
-
-FEATURE_FLAG_ENABLE_MODULE = u"soyuz.derived_series_jobs.enabled"
 
 
 def make_metadata(sourcepackagename_id, parent_series_id):
@@ -169,9 +165,6 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
     def createForPackagePublication(cls, derived_series, sourcepackagename,
                                     pocket):
         """See `IDistroSeriesDifferenceJobSource`."""
-        if not getFeatureFlag(FEATURE_FLAG_ENABLE_MODULE):
-            return
-
         # -backports and -proposed are not really part of a standard
         # distribution's packages so we're ignoring them here.  They can
         # always be manually synced by the users if necessary, in the
@@ -214,8 +207,6 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
     @classmethod
     def massCreateForSeries(cls, derived_series):
         """See `IDistroSeriesDifferenceJobSource`."""
-        if not getFeatureFlag(FEATURE_FLAG_ENABLE_MODULE):
-            return
         for parent_series in derived_series.getParentSeries():
             create_multiple_jobs(derived_series, parent_series)
 
