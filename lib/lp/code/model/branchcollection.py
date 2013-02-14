@@ -665,7 +665,7 @@ class GenericBranchCollection:
             # Except if the term contains /, when we use unique_name.
             if '/' in term:
                 field = Branch.unique_name
-            collection = self._filterBy([field.contains_string(term)])
+            collection = self._filterBy([field.contains_string(term.lower())])
         return collection.getBranches(eager_load=False).order_by(
             Branch.name, Branch.id)
 

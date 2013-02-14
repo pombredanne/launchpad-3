@@ -1213,6 +1213,11 @@ class TestSearch(TestCaseWithFactory):
         search_results = self.collection.search('foo')
         self.assertEqual(sorted([branch1, branch2]), sorted(search_results))
 
+    def test_match_ignores_case(self):
+        branch = self.factory.makeAnyBranch(name='foobar')
+        search_results = self.collection.search('FOOBAR')
+        self.assertEqual([branch], list(search_results))
+
     def test_dont_match_product_if_in_product(self):
         # If the container is restricted to the product, then we don't match
         # the product name.
