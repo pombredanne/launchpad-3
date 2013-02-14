@@ -147,7 +147,6 @@ from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
-from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.sharingjob import (
     IRemoveArtifactSubscriptionsJobSource,
     )
@@ -1630,9 +1629,6 @@ def get_branch_privacy_filter(user, branch_class=Branch):
 
     if user is None:
         return [public_branch_filter]
-
-    if IPersonRoles(user).in_admin:
-        return []
 
     artifact_grant_query = Coalesce(
         ArrayIntersects(
