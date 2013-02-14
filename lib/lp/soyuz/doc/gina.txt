@@ -50,13 +50,6 @@ Create a distribution release and an arch release for breezy:
     ...     hoary, celebs.launchpad_developers)
     >>> login(ANONYMOUS)
 
-    # Enable the Derived Series feature flag, to make sure gina likes it.
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> from lp.soyuz.model.distroseriesdifferencejob import (
-    ...     FEATURE_FLAG_ENABLE_MODULE,
-    ...     )
-    >>> fixture = FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'})
-    >>> fixture.setUp()
     >>> pf = ProcessorFamily.selectOneBy(name="x86")
     >>> breezy_i386 = DistroArchSeries(distroseries=breezy,
     ...                         processorfamily=pf,
@@ -196,7 +189,6 @@ The exit status must be 0, for success:
     >>> proc.wait()
     0
     >>> transaction.commit()
-    >>> fixture.cleanUp()
 
 
 Testing Source Package Results

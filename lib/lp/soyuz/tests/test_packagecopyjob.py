@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for sync package jobs."""
@@ -54,9 +54,6 @@ from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
-    )
-from lp.soyuz.model.distroseriesdifferencejob import (
-    FEATURE_FLAG_ENABLE_MODULE,
     )
 from lp.soyuz.model.packagecopyjob import PackageCopyJob
 from lp.soyuz.model.queue import PackageUpload
@@ -484,9 +481,6 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
     def test_run(self):
         # A proper test run synchronizes packages.
-
-        # Turn on DSD jobs.
-        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: 'on'}))
 
         job = create_proper_job(self.factory)
         self.assertEqual("libc", job.package_name)
@@ -1609,9 +1603,8 @@ class TestViaCelery(TestCaseWithFactory):
 
     def test_run(self):
         # A proper test run synchronizes packages.
-        # Turn on DSD jobs.
+        # Turn on Celery handling of PCJs.
         self.useFixture(FeatureFixture({
-            FEATURE_FLAG_ENABLE_MODULE: 'on',
             'jobs.celery.enabled_classes': 'PlainPackageCopyJob',
         }))
 
