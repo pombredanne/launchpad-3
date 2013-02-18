@@ -8,9 +8,6 @@ This status tells the publisher to then set the publications to DELETED
 and delete the repository area. Once it completes that task the status
 of the archive itself is set to DELETED.
 
-    >>> from lp.soyuz.enums import ArchiveStatus
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     IArchiveSet, IArchive)
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> login("admin@canonical.com")
     >>> stp = SoyuzTestPublisher()
