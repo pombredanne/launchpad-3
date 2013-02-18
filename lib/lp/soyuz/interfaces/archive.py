@@ -380,6 +380,13 @@ class IArchiveSubscriberView(Interface):
     signing_key = Object(
         title=_('Repository sigining key.'), required=False, schema=IGPGKey)
 
+    def getAuthToken(person):
+        """Returns an IArchiveAuthToken for the archive in question for
+        IPerson provided.
+
+        :return: A IArchiveAuthToken, or None if the user has none.
+        """
+
     @rename_parameters_as(name="source_name", distroseries="distro_series")
     @operation_parameters(
         name=TextLine(title=_("Source package name"), required=False),
@@ -1306,13 +1313,6 @@ class IArchiveView(IHasBuildRecords):
 
         :param source_files: A list of filenames to return SHA1s of
         :return: A dictionary of filenames and SHA1s.
-        """
-
-    def getAuthToken(person):
-        """Returns an IArchiveAuthToken for the archive in question for
-        IPerson provided.
-
-        :return: A IArchiveAuthToken, or None if the user has none.
         """
 
     @call_with(person=REQUEST_USER)

@@ -444,4 +444,4 @@ Please note also that disabled archives are not viewable by anonymous users.
     >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
     Traceback (most recent call last):
     ...
-    Unauthorized: (..., 'browserDefault', 'launchpad.View')
+    Unauthorized: (..., 'browserDefault', 'launchpad.SubscriberView')
