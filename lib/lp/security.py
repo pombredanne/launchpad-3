@@ -2472,20 +2472,6 @@ class ViewHWDeviceClass(ViewHWDBBase):
     usedfor = IHWDeviceClass
 
 
-class SubscriberViewArchive(AuthorizationBase):
-    """Restrict viewing of private archives."""
-    permission = 'launchpad.SubscriberView'
-    usedfor = IArchive
-
-    def checkAuthenticated(self, user):
-        if ViewArchive.checkAuthenticated(self, user):
-            return True
-        filter = get_enabled_archive_filter(
-            user.person, include_subscribed=True)
-        return not IStore(self.obj).find(
-            Archive.id, And(Archive.id == self.obj.id, filter)).is_empty()
-
-
 class ViewArchive(AuthorizationBase):
     """Restrict viewing of private archives.
 
@@ -2522,6 +2508,20 @@ class ViewArchive(AuthorizationBase):
     def checkUnauthenticated(self):
         """Unauthenticated users can see the PPA if it's not private."""
         return not self.obj.private and self.obj.enabled
+
+
+class SubscriberViewArchive(ViewArchive):
+    """Restrict viewing of private archives."""
+    permission = 'launchpad.SubscriberView'
+    usedfor = IArchive
+
+    def checkAuthenticated(self, user):
+        if super(SubscriberViewArchive, self).checkAuthenticated(user):
+            return True
+        filter = get_enabled_archive_filter(
+            user.person, include_subscribed=True)
+        return not IStore(self.obj).find(
+            Archive.id, And(Archive.id == self.obj.id, filter)).is_empty()
 
 
 class EditArchive(AuthorizationBase):
