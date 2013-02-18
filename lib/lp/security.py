@@ -268,7 +268,7 @@ class LimitedViewDeferredToView(AuthorizationBase):
     in cases where a user may know something about a private object. The
     default behaviour is to check if the user has launchpad.View permission;
     private objects must define their own launchpad.LimitedView checker to
-    trully check the permission.
+    truly check the permission.
     """
     permission = 'launchpad.LimitedView'
     usedfor = Interface
@@ -278,11 +278,15 @@ class LimitedViewDeferredToView(AuthorizationBase):
         # might not define a permission checker for launchpad.View.
         # eg. IHasMilestones is implicitly public to anonymous users,
         #     there is no nearest adapter to call checkUnauthenticated.
-        return check_permission('launchpad.View', self.obj)
+        return (
+            check_permission('launchpad.View', self.obj) or
+            check_permission('launchpad.SubscriberView', self.obj))
 
     def checkAuthenticated(self, user):
-        return self.forwardCheckAuthenticated(
-            user, self.obj, 'launchpad.View')
+        return (
+            self.forwardCheckAuthenticated(user, self.obj, 'launchpad.View') or
+            self.forwardCheckAuthenticated(
+                user, self.obj, 'launchpad.SubscriberView'))
 
 
 class AdminByAdminsTeam(AuthorizationBase):
@@ -2474,6 +2478,8 @@ class SubscriberViewArchive(AuthorizationBase):
     usedfor = IArchive
 
     def checkAuthenticated(self, user):
+        if ViewArchive.checkAuthenticated(self, user):
+            return True
         filter = get_enabled_archive_filter(
             user.person, include_subscribed=True)
         return not IStore(self.obj).find(

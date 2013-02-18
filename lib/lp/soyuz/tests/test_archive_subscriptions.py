@@ -8,6 +8,7 @@ from urlparse import urljoin
 from zope.security.interfaces import Unauthorized
 
 from lp.registry.interfaces.person import PersonVisibility
+from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     BrowserTestCase,
@@ -110,6 +111,14 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
             self.subscriber, registrant=self.archive.owner)
 
         self.assertEqual(0, len(pop_notifications()))
+
+    def test_permission_for_subscriber(self):
+        self.archive.newSubscription(
+            self.subscriber, registrant=self.archive.owner)
+        with person_logged_in(self.subscriber):
+            self.assertTrue(
+                check_permission('launchpad.SubscriberView', self.archive))
+            self.assertFalse(check_permission('launchpad.View', self.archive))
 
 
 class PrivateArtifactsViewTestCase(BrowserTestCase):
