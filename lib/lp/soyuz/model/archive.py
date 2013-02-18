@@ -1971,12 +1971,6 @@ class Archive(SQLBase):
             ArchiveStatus.DELETING, ArchiveStatus.DELETED,
             "This archive is already deleted.")
 
-        # Set all the publications to DELETED.
-        sources = self.getPublishedSources(status=active_publishing_status)
-        getUtility(IPublishingSet).requestDeletion(
-            sources, removed_by=deleted_by,
-            removal_comment="Removed when deleting archive")
-
         # Mark the archive's status as DELETING so the repository can be
         # removed by the publisher.
         self.status = ArchiveStatus.DELETING

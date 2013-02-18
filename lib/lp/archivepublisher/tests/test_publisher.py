@@ -148,6 +148,10 @@ class TestPublisher(TestPublisherBase):
         test_archive = getUtility(IArchiveSet).new(
             distribution=self.ubuntutest, owner=ubuntu_team,
             purpose=ArchivePurpose.PPA)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=test_archive)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            archive=test_archive)
         publisher = getPublisher(test_archive, None, self.logger)
 
         self.assertTrue(os.path.exists(publisher._config.archiveroot))
@@ -167,6 +171,11 @@ class TestPublisher(TestPublisherBase):
         self.assertFalse(os.path.exists(publisher._config.metaroot))
         self.assertEqual(ArchiveStatus.DELETED, test_archive.status)
         self.assertEqual(False, test_archive.publish)
+
+        # All of the archive's publications have been marked DELETED.
+        for pub in (spph, bpph):
+            self.assertEqual(PackagePublishingStatus.DELETED, pub.status)
+            self.assertEqual(u'janitor', pub.removed_by.name)
 
         # Trying to delete it again won't fail, in the corner case where
         # some admin manually deleted the repo.
