@@ -760,6 +760,14 @@ class Publisher(object):
             sources, removed_by=getUtility(ILaunchpadCelebrities).janitor,
             removal_comment="Removed when deleting archive")
 
+        # Deleting the sources will have killed the corresponding
+        # binaries too, but there may be orphaned leftovers (eg. NBS).
+        binaries = self.archive.getAllPublishedBinaries(
+            status=active_publishing_status)
+        getUtility(IPublishingSet).requestDeletion(
+            binaries, removed_by=getUtility(ILaunchpadCelebrities).janitor,
+            removal_comment="Removed when deleting archive")
+
         for directory in (root_dir, self._config.metaroot):
             if not os.path.exists(directory):
                 continue

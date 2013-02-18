@@ -1994,6 +1994,7 @@ class PublishingSet:
 
     def requestDeletion(self, pubs, removed_by, removal_comment=None):
         """See `IPublishingSet`."""
+        pubs = list(pubs)
         sources = [
             pub for pub in pubs
             if ISourcePackagePublishingHistory.providedBy(pub)]

@@ -148,10 +148,18 @@ class TestPublisher(TestPublisherBase):
         test_archive = getUtility(IArchiveSet).new(
             distribution=self.ubuntutest, owner=ubuntu_team,
             purpose=ArchivePurpose.PPA)
+
+        # Create some source and binary publications, including an
+        # orphaned NBS binary.
         spph = self.factory.makeSourcePackagePublishingHistory(
             archive=test_archive)
         bpph = self.factory.makeBinaryPackagePublishingHistory(
             archive=test_archive)
+        orphaned_bpph = self.factory.makeBinaryPackagePublishingHistory(
+            archive=test_archive)
+        bpb = orphaned_bpph.binarypackagerelease.build
+        bpb.current_source_publication.supersede()
+
         publisher = getPublisher(test_archive, None, self.logger)
 
         self.assertTrue(os.path.exists(publisher._config.archiveroot))
@@ -173,7 +181,7 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(False, test_archive.publish)
 
         # All of the archive's publications have been marked DELETED.
-        for pub in (spph, bpph):
+        for pub in (spph, bpph, orphaned_bpph):
             self.assertEqual(PackagePublishingStatus.DELETED, pub.status)
             self.assertEqual(u'janitor', pub.removed_by.name)
 
