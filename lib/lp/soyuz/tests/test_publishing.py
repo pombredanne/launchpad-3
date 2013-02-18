@@ -1184,6 +1184,12 @@ class TestPublishingSetLite(TestCaseWithFactory):
             [other_spph], self.factory.makePerson())
         self.assertEqual(PackagePublishingStatus.PENDING, spph.status)
 
+    def test_requestDeletion_marks_BPPHs_deleted(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        getUtility(IPublishingSet).requestDeletion(
+            [bpph], self.factory.makePerson())
+        self.assertEqual(PackagePublishingStatus.DELETED, bpph.status)
+
     def test_requestDeletion_marks_attached_BPPHs_deleted(self):
         bpph = self.factory.makeBinaryPackagePublishingHistory()
         spph = self.factory.makeSPPHForBPPH(bpph)
