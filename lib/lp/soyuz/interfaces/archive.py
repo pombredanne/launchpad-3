@@ -22,10 +22,11 @@ __all__ = [
     'IArchiveAppend',
     'IArchiveCommercial',
     'IArchiveEdit',
-    'IArchiveView',
     'IArchiveEditDependenciesForm',
+    'IArchiveSubscriberView',
     'IArchivePublic',
     'IArchiveSet',
+    'IArchiveView',
     'IDistributionArchive',
     'InsufficientUploadRights',
     'InvalidComponent',
@@ -355,16 +356,109 @@ class IArchivePublic(IPrivacy, IHasOwner):
         """
 
 
-class IArchiveView(IHasBuildRecords):
-    """Archive interface for operations restricted by view privilege."""
+class IArchiveSubscriberView(Interface):
 
-    title = TextLine(title=_("Name"), required=False, readonly=True)
-
+    description = exported(
+        Text(
+            title=_("Description"), required=False,
+            description=_(
+                "A short description of the archive. URLs are allowed and "
+                "will be rendered as links.")))
+    is_active = Bool(
+        title=_("True if the archive is in the active state"),
+        required=False, readonly=True)
+    is_copy = Attribute("True if this archive is a copy archive.")
+    num_pkgs_building = Attribute(
+        "Tuple of packages building and waiting to build")
     publish = Bool(
         title=_("Publish"), required=False,
         description=_("Whether or not to update the APT repository.  If "
             "disabled, nothing will be published.  If the archive is "
             "private then additionally no builds will be dispatched."))
+    series_with_sources = Attribute(
+        "DistroSeries to which this archive has published sources")
+    signing_key = Object(
+        title=_('Repository sigining key.'), required=False, schema=IGPGKey)
+
+    @rename_parameters_as(name="source_name", distroseries="distro_series")
+    @operation_parameters(
+        name=TextLine(title=_("Source package name"), required=False),
+        version=TextLine(title=_("Version"), required=False),
+        status=Choice(
+            title=_('Package Publishing Status'),
+            description=_('The status of this publishing record'),
+            # Really PackagePublishingStatus, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=False),
+        distroseries=Reference(
+            # Really IDistroSeries, fixed below to avoid circular import.
+            Interface,
+            title=_("Distroseries name"), required=False),
+        pocket=Choice(
+            title=_("Pocket"),
+            description=_("The pocket into which this entry is published"),
+            # Really PackagePublishingPocket, circular import fixed below.
+            vocabulary=DBEnumeratedType,
+            required=False, readonly=True),
+        exact_match=Bool(
+            title=_("Exact Match"),
+            description=_("Whether or not to filter source names by exact"
+                          " matching."),
+            required=False),
+        created_since_date=Datetime(
+            title=_("Created Since Date"),
+            description=_("Return entries whose `date_created` is greater "
+                          "than or equal to this date."),
+            required=False),
+        component_name=TextLine(title=_("Component name"), required=False),
+        )
+    # Really returns ISourcePackagePublishingHistory, see below for
+    # patch to avoid circular import.
+    @call_with(eager_load=True)
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getPublishedSources(name=None, version=None, status=None,
+                            distroseries=None, pocket=None,
+                            exact_match=False, created_since_date=None,
+                            eager_load=False, component_name=None):
+        """All `ISourcePackagePublishingHistory` target to this archive.
+
+        :param name: source name filter (exact match or SQL LIKE controlled
+                     by 'exact_match' argument).
+                     Name can be a single string or a list of strings.
+        :param version: source version filter (always exact match).
+        :param status: `PackagePublishingStatus` filter, can be a sequence.
+        :param distroseries: `IDistroSeries` filter.
+        :param pocket: `PackagePublishingPocket` filter.  This may be an
+            iterable of more than one pocket or a single pocket.
+        :param exact_match: either or not filter source names by exact
+                             matching.
+        :param created_since_date: Only return results whose `date_created`
+            is greater than or equal to this date.
+        :param component_name: component filter. Only return source packages
+            that are in this component.
+
+        :return: SelectResults containing `ISourcePackagePublishingHistory`,
+            ordered by name. If there are multiple results for the same
+            name then they are sub-ordered newest first.
+        """
+
+    def newAuthToken(person, token=None, date_created=None):
+        """Create a new authorisation token.
+
+        :param person: An IPerson whom this token is for
+        :param token: Optional unicode text to use as the token. One will be
+            generated if not given
+        :param date_created: Optional, defaults to now
+
+        :return: A new IArchiveAuthToken
+        """
+
+
+class IArchiveView(IHasBuildRecords):
+    """Archive interface for operations restricted by view privilege."""
+
+    title = TextLine(title=_("Name"), required=False, readonly=True)
 
     require_virtualized = exported(
         Bool(
@@ -402,9 +496,6 @@ class IArchiveView(IHasBuildRecords):
         "Concatenation of the source and binary packages published in this "
         "archive. Its content is used for indexed searches across archives.")
 
-    signing_key = Object(
-        title=_('Repository sigining key.'), required=False, schema=IGPGKey)
-
     debug_archive = Attribute(
         "The archive into which debug binaries should be uploaded.")
 
@@ -418,14 +509,6 @@ class IArchiveView(IHasBuildRecords):
 
     is_partner = Attribute("True if this archive is a partner archive.")
 
-    is_copy = Attribute("True if this archive is a copy archive.")
-
-    is_active = Bool(
-        title=_("True if the archive is in the active state"),
-        required=False, readonly=True)
-
-    series_with_sources = Attribute(
-        "DistroSeries to which this archive has published sources")
     number_of_sources = Attribute(
         'The number of sources published in the context archive.')
     number_of_binaries = Attribute(
@@ -912,9 +995,6 @@ class IArchiveView(IHasBuildRecords):
         :return: True if the person is allowed to upload the source package.
         """
 
-    num_pkgs_building = Attribute(
-        "Tuple of packages building and waiting to build")
-
     def updatePackageDownloadCount(bpr, day, country, count):
         """Update the daily download count for a given package.
 
@@ -949,82 +1029,12 @@ class IArchiveView(IHasBuildRecords):
             # Really IArchiveDependency
             readonly=True))
 
-    description = exported(
-        Text(
-            title=_("Description"), required=False,
-            description=_(
-                "A short description of the archive. URLs are allowed and "
-                "will be rendered as links.")))
-
     signing_key_fingerprint = exported(
         Text(
             title=_("Archive signing key fingerprint"), required=False,
             description=_("A OpenPGP signing key fingerprint (40 chars) "
                           "for this PPA or None if there is no signing "
                           "key available.")))
-
-    @rename_parameters_as(name="source_name", distroseries="distro_series")
-    @operation_parameters(
-        name=TextLine(title=_("Source package name"), required=False),
-        version=TextLine(title=_("Version"), required=False),
-        status=Choice(
-            title=_('Package Publishing Status'),
-            description=_('The status of this publishing record'),
-            # Really PackagePublishingStatus, circular import fixed below.
-            vocabulary=DBEnumeratedType,
-            required=False),
-        distroseries=Reference(
-            # Really IDistroSeries, fixed below to avoid circular import.
-            Interface,
-            title=_("Distroseries name"), required=False),
-        pocket=Choice(
-            title=_("Pocket"),
-            description=_("The pocket into which this entry is published"),
-            # Really PackagePublishingPocket, circular import fixed below.
-            vocabulary=DBEnumeratedType,
-            required=False, readonly=True),
-        exact_match=Bool(
-            title=_("Exact Match"),
-            description=_("Whether or not to filter source names by exact"
-                          " matching."),
-            required=False),
-        created_since_date=Datetime(
-            title=_("Created Since Date"),
-            description=_("Return entries whose `date_created` is greater "
-                          "than or equal to this date."),
-            required=False),
-        component_name=TextLine(title=_("Component name"), required=False),
-        )
-    # Really returns ISourcePackagePublishingHistory, see below for
-    # patch to avoid circular import.
-    @call_with(eager_load=True)
-    @operation_returns_collection_of(Interface)
-    @export_read_operation()
-    def getPublishedSources(name=None, version=None, status=None,
-                            distroseries=None, pocket=None,
-                            exact_match=False, created_since_date=None,
-                            eager_load=False, component_name=None):
-        """All `ISourcePackagePublishingHistory` target to this archive.
-
-        :param name: source name filter (exact match or SQL LIKE controlled
-                     by 'exact_match' argument).
-                     Name can be a single string or a list of strings.
-        :param version: source version filter (always exact match).
-        :param status: `PackagePublishingStatus` filter, can be a sequence.
-        :param distroseries: `IDistroSeries` filter.
-        :param pocket: `PackagePublishingPocket` filter.  This may be an
-            iterable of more than one pocket or a single pocket.
-        :param exact_match: either or not filter source names by exact
-                             matching.
-        :param created_since_date: Only return results whose `date_created`
-            is greater than or equal to this date.
-        :param component_name: component filter. Only return source packages
-            that are in this component.
-
-        :return: SelectResults containing `ISourcePackagePublishingHistory`,
-            ordered by name. If there are multiple results for the same
-            name then they are sub-ordered newest first.
-        """
 
     @rename_parameters_as(
         name="binary_name", distroarchseries="distro_arch_series")
@@ -1303,17 +1313,6 @@ class IArchiveView(IHasBuildRecords):
         IPerson provided.
 
         :return: A IArchiveAuthToken, or None if the user has none.
-        """
-
-    def newAuthToken(person, token=None, date_created=None):
-        """Create a new authorisation token.
-
-        :param person: An IPerson whom this token is for
-        :param token: Optional unicode text to use as the token. One will be
-            generated if not given
-        :param date_created: Optional, defaults to now
-
-        :return: A new IArchiveAuthToken
         """
 
     @call_with(person=REQUEST_USER)
@@ -1938,8 +1937,9 @@ class IArchiveRestricted(Interface):
             "with a higher score will build sooner.")))
 
 
-class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView,
-               IArchiveCommercial, IArchiveRestricted):
+class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit,
+               IArchiveSubscriberView, IArchiveView, IArchiveCommercial,
+               IArchiveRestricted):
     """Main Archive interface."""
     export_as_webservice_entry()
 

@@ -118,7 +118,6 @@ from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.location import IPersonLocation
 from lp.registry.interfaces.milestone import (
-    IAbstractMilestone,
     IMilestone,
     IProjectGroupMilestone,
     )
@@ -2469,6 +2468,18 @@ class ViewHWDeviceClass(ViewHWDBBase):
     usedfor = IHWDeviceClass
 
 
+class SubscriberViewArchive(AuthorizationBase):
+    """Restrict viewing of private archives."""
+    permission = 'launchpad.SubscriberView'
+    usedfor = IArchive
+
+    def checkAuthenticated(self, user):
+        filter = get_enabled_archive_filter(
+            user.person, include_subscribed=True)
+        return not IStore(self.obj).find(
+            Archive.id, And(Archive.id == self.obj.id, filter)).is_empty()
+
+
 class ViewArchive(AuthorizationBase):
     """Restrict viewing of private archives.
 
@@ -2498,8 +2509,7 @@ class ViewArchive(AuthorizationBase):
         if user.inTeam(self.obj.owner):
             return True
 
-        filter = get_enabled_archive_filter(
-            user.person, include_subscribed=True)
+        filter = get_enabled_archive_filter(user.person)
         return not IStore(self.obj).find(
             Archive.id, And(Archive.id == self.obj.id, filter)).is_empty()
 
