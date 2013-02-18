@@ -403,6 +403,9 @@
         <allow
             interface="lp.soyuz.interfaces.archive.IArchiveRestricted"/>
         <require
+            permission="launchpad.SubscriberView"
+            interface="lp.soyuz.interfaces.archive.IArchiveSubscriberView"/>
+        <require
             permission="launchpad.View"
             interface="lp.soyuz.interfaces.archive.IArchiveView"/>
         <require

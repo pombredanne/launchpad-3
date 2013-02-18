@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archive."""
@@ -56,7 +56,6 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
-from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp import _
@@ -1004,16 +1003,6 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
 class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     """Detailed packages view for an archive."""
     implements(IArchivePackagesActionMenu)
-
-    def initialize(self):
-        super(ArchivePackagesView, self).initialize()
-        if self.context.private:
-            # To see the +packages page, you must be an uploader, or a
-            # commercial admin.
-            if not check_permission('launchpad.Append', self.context):
-                admins = getUtility(ILaunchpadCelebrities).commercial_admin
-                if not self.user.inTeam(admins):
-                    raise Unauthorized
 
     @property
     def page_title(self):

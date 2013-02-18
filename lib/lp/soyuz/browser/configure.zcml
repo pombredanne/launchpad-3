@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -251,7 +251,7 @@
         class="lp.app.browser.launchpad.Macro"/>
     <browser:page
         for="lp.soyuz.interfaces.archive.IArchive"
-        permission="launchpad.View"
+        permission="launchpad.SubscriberView"
         name="+index"
         template="../templates/archive-index.pt"
         class="lp.soyuz.browser.archive.ArchiveView"/>
