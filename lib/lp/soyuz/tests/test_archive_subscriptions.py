@@ -1,11 +1,14 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Archive features."""
 
+from urlparse import urljoin
+
 from zope.security.interfaces import Unauthorized
 
 from lp.registry.interfaces.person import PersonVisibility
+from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     BrowserTestCase,
@@ -85,12 +88,6 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
             self.archive, '+index', principal=self.subscriber)
         self.assertIn(self.archive.displayname, view.render())
 
-        # Just to double check, by default, the subscriber still can't see the
-        # +packages view which requires extra permissions.
-        self.assertRaises(
-            Unauthorized, create_initialized_view,
-            self.archive, '+packages', principal=self.subscriber)
-
     def test_new_subscription_sends_email(self):
         # Creating a new subscription sends an email to all members
         # of the person or team subscribed.
@@ -114,6 +111,14 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
             self.subscriber, registrant=self.archive.owner)
 
         self.assertEqual(0, len(pop_notifications()))
+
+    def test_permission_for_subscriber(self):
+        self.archive.newSubscription(
+            self.subscriber, registrant=self.archive.owner)
+        with person_logged_in(self.subscriber):
+            self.assertTrue(
+                check_permission('launchpad.SubscriberView', self.archive))
+            self.assertFalse(check_permission('launchpad.View', self.archive))
 
 
 class PrivateArtifactsViewTestCase(BrowserTestCase):
@@ -146,3 +151,12 @@ class PrivateArtifactsViewTestCase(BrowserTestCase):
         self.assertIsNotNone(find_tag_by_id(content, 'ppa-install'))
         self.assertIsNotNone(
             find_tag_by_id(content, 'portlet-latest-updates'))
+
+    def test_unauthorized_subscriber_for_plus_packages(self):
+        with person_logged_in(self.owner):
+            self.archive.newSubscription(
+                self.subscriber, registrant=self.archive.owner)
+        with person_logged_in(self.subscriber):
+            url = urljoin(canonical_url(self.archive), '+packages')
+        browser = setupBrowserForUser(self.subscriber)
+        self.assertRaises(Unauthorized, browser.open, url)
