@@ -2601,9 +2601,9 @@ class PageMacroDispatcher:
         privacy = IPrivacy(view_context, None)
         if privacy is None or not privacy.private:
             return False
-        if check_permission('launchpad.SubscriberView', view_context):
-            return False
-        return not check_permission('launchpad.View', view_context)
+        return not (
+            check_permission('launchpad.SubscriberView', view_context) or
+            check_permission('launchpad.View', view_context))
 
     def pagetype(self):
         return getattr(self.context, '__pagetype__', 'unset')
