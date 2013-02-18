@@ -164,7 +164,7 @@ when it's accessed anonymously.
     ...     "http://launchpad.dev/ubuntu/+archive/disabled-security-rebuild")
     Traceback (most recent call last):
     ...
-    Unauthorized: ... 'launchpad.View')
+    Unauthorized: ... 'launchpad.SubscriberView')
 
 Disabled copy archives have the title rendered in gray colour
 (class="disabled") and a warning message stating that the archive
