@@ -42,6 +42,7 @@ from lp.archivepublisher.utils import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.constants import UTC_NOW
 from lp.services.database.sqlbase import sqlvalues
 from lp.services.librarian.client import LibrarianClient
 from lp.services.utils import file_exists
@@ -767,6 +768,13 @@ class Publisher(object):
         getUtility(IPublishingSet).requestDeletion(
             binaries, removed_by=getUtility(ILaunchpadCelebrities).janitor,
             removal_comment="Removed when deleting archive")
+
+        # Now set dateremoved on any publication that doesn't already
+        # have it set, so things can expire from the librarian.
+        for pub in self.archive.getPublishedSources(include_removed=False):
+            pub.dateremoved = UTC_NOW
+        for pub in self.archive.getAllPublishedBinaries(include_removed=False):
+            pub.dateremoved = UTC_NOW
 
         for directory in (root_dir, self._config.metaroot):
             if not os.path.exists(directory):
