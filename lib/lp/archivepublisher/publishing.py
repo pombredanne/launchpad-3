@@ -52,6 +52,7 @@ from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingStatus,
     )
+from lp.soyuz.interfaces.archive import NoSuchPPA
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     IPublishingSet,
@@ -745,7 +746,7 @@ class Publisher(object):
         Any errors encountered while removing the archive from disk will
         be caught and an OOPS report generated.
         """
-
+        assert self.archive.is_ppa
         root_dir = os.path.join(
             self._config.distroroot, self.archive.owner.name,
             self.archive.name)
@@ -790,3 +791,19 @@ class Publisher(object):
 
         self.archive.status = ArchiveStatus.DELETED
         self.archive.publish = False
+
+        # Now that it's gone from disk we can rename the archive to free
+        # up the namespace.
+        new_name = base_name = '%s-deletedppa' % self.archive.name
+        count = 1
+        while True:
+            try:
+                self.archive.owner.getPPAByName(new_name)
+            except NoSuchPPA:
+                break
+            new_name = '%s%d' % (base_name, count)
+            count += 1
+        self.archive.name = new_name
+        self.log.info(
+            "Renamed deleted archive '%s/%s'.", self.archive.owner.name,
+            self.archive.name)
