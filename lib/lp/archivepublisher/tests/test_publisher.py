@@ -147,7 +147,7 @@ class TestPublisher(TestPublisherBase):
         ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
         test_archive = getUtility(IArchiveSet).new(
             distribution=self.ubuntutest, owner=ubuntu_team,
-            purpose=ArchivePurpose.PPA)
+            purpose=ArchivePurpose.PPA, name='testing')
 
         # Create some source and binary publications, including an
         # orphaned NBS binary.
@@ -185,6 +185,7 @@ class TestPublisher(TestPublisherBase):
         self.assertFalse(os.path.exists(publisher._config.metaroot))
         self.assertEqual(ArchiveStatus.DELETED, test_archive.status)
         self.assertEqual(False, test_archive.publish)
+        self.assertEqual(u'testing-deletedppa', test_archive.name)
 
         # All of the archive's active publications have been marked
         # DELETED, and dateremoved has been set early because they've
@@ -225,6 +226,15 @@ class TestPublisher(TestPublisherBase):
         self.assertFalse(os.path.exists(root_dir))
         self.assertNotIn('WARNING', logger.getLogBuffer())
         self.assertNotIn('ERROR', logger.getLogBuffer())
+
+    def testDeletingPPARename(self):
+        a1 = self.factory.makeArchive(purpose=ArchivePurpose.PPA, name='test')
+        getPublisher(a1, None, self.logger).deleteArchive()
+        self.assertEqual('test-deletedppa', a1.name)
+        a2 = self.factory.makeArchive(
+            purpose=ArchivePurpose.PPA, name='test', owner=a1.owner)
+        getPublisher(a2, None, self.logger).deleteArchive()
+        self.assertEqual('test-deletedppa1', a2.name)
 
     def testPublishPartner(self):
         """Test that a partner package is published to the right place."""

@@ -224,7 +224,11 @@ class Archive(SQLBase):
         Also assert the name is valid when set via an unproxied object.
         """
         if not self._SO_creating:
-            assert self.is_copy, "Only COPY archives can be renamed."
+            renamable = (
+                self.is_copy or
+                (self.is_ppa and self.status == ArchiveStatus.DELETED))
+            assert renamable, (
+                "Only COPY archives and deleted PPAs can be renamed.")
         assert valid_name(value), "Invalid name given to unproxied object."
         return value
 
@@ -1965,6 +1969,7 @@ class Archive(SQLBase):
     def enable(self):
         """See `IArchive`."""
         assert self._enabled == False, "This archive is already enabled."
+        assert self.is_active, "Deleted archives can't be enabled."
         self._enabled = True
         self._setBuildStatuses(JobStatus.WAITING)
 

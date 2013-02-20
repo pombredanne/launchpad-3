@@ -818,3 +818,22 @@ no longer "Delete packages", "Edit PPA dependencies", or "Change details".
     ...
     LinkNotFoundError
 
+Even if someone URL-hacks to the edit form, it's not possible to
+reenable the PPA or turn on publishing.
+
+    >>> no_priv_browser.open(
+    ...     "http://launchpad.dev/~no-priv/+archive/ppa/+edit")
+    >>> no_priv_browser.getControl(name='field.enabled').value = True
+    >>> no_priv_browser.getControl('Save').click()
+    >>> "Deleted PPAs can&#x27;t be enabled." in no_priv_browser.contents
+    True
+    >>> no_priv_browser.open(
+    ...     "http://launchpad.dev/~no-priv/+archive/ppa/+edit")
+    >>> no_priv_browser.getControl(name='field.publish').value = True
+    >>> no_priv_browser.getControl('Save').click()
+    >>> "Deleted PPAs can&#x27;t be enabled." in no_priv_browser.contents
+    True
+    >>> no_priv_browser.getLink('Cancel').click()
+    >>> print extract_text(
+    ...     first_tag_by_class(no_priv_browser.contents, 'warning message'))
+    This PPA has been deleted.
