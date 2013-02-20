@@ -73,14 +73,6 @@ class TestP3APackages(TestCaseWithFactory):
             Unauthorized, create_initialized_view, self.private_ppa,
             "+packages")
 
-    def test_packages_unauthorized_subscriber(self):
-        """A person with a subscription will not be able to view +packages
-        """
-        login_person(self.joe)
-        self.assertRaises(
-            Unauthorized, create_initialized_view, self.private_ppa,
-            "+packages")
-
     def test_packages_authorized_for_commercial_admin_with_subscription(self):
         # A commercial admin should always be able to see +packages even
         # if they have a subscription.
@@ -432,14 +424,13 @@ class TestP3APackagesQueryCount(TestCaseWithFactory):
 
     def test_ppa_index_queries_count(self):
         def ppa_index_render():
-            with person_logged_in(self.person):
+            with person_logged_in(self.team.teamowner):
                 view = create_initialized_view(
-                    self.private_ppa, '+index',
-                    principal=self.person)
+                    self.private_ppa, '+index', principal=self.team.teamowner)
                 view.page_title = "title"
                 view.render()
         recorder1, recorder2 = record_two_runs(
             ppa_index_render, self.createPackage, 2, 3)
 
         self.assertThat(
-            recorder2, HasQueryCount(LessThan(recorder1.count + 1)))
+            recorder2, HasQueryCount(LessThan(recorder1.count + 2)))

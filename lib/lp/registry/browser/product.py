@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for products."""
@@ -174,7 +174,6 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.config import config
 from lp.services.database.decoratedresultset import DecoratedResultSet
-from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.fields import (
     PillarAliases,
@@ -209,7 +208,6 @@ from lp.translations.browser.customlanguagecode import (
 
 OR = ' OR '
 SPACE = ' '
-PRIVATE_PROJECTS_FLAG = 'disclosure.private_projects.enabled'
 
 
 class ProductNavigation(
@@ -1397,8 +1395,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     custom_widget('licenses', LicenseWidget)
     custom_widget('license_info', GhostWidget)
     custom_widget(
-        'information_type',
-        LaunchpadRadioWidgetWithDescription,
+        'information_type', LaunchpadRadioWidgetWithDescription,
         vocabulary=InformationTypeVocabulary(
             types=PUBLIC_PROPRIETARY_INFORMATION_TYPES))
 
@@ -1424,18 +1421,9 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         # the form is rendered during LaunchpadFormView's initialize()
         # when an action is invoked.
         cache = IJSONRequestCache(self.request)
-        json_dump_information_types(cache,
-                                    PUBLIC_PROPRIETARY_INFORMATION_TYPES)
+        json_dump_information_types(
+            cache, PUBLIC_PROPRIETARY_INFORMATION_TYPES)
         super(ProductEditView, self).initialize()
-
-    def setUpFields(self):
-        """See `LaunchpadFormView`."""
-        super(ProductEditView, self).setUpFields()
-
-        private_projects_flag = 'disclosure.private_projects.enabled'
-        private_projects = bool(getFeatureFlag(private_projects_flag))
-        if not private_projects:
-            self.form_fields = self.form_fields.omit('information_type')
 
     def validate(self, data):
         """Validate 'licenses' and 'license_info'.
@@ -1447,10 +1435,11 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         or "Other/Open Source" is checked.
         """
         super(ProductEditView, self).validate(data)
-        info_type = data.get('information_type')
-        if info_type is not None:
-            errors = [str(e) for e in
-                      self.context.checkInformationType(info_type)]
+        information_type = data.get('information_type')
+        if information_type:
+            errors = [
+                str(e) for e in self.context.checkInformationType(
+                    information_type)]
             if len(errors) > 0:
                 self.setFieldError('information_type', ' '.join(errors))
 
@@ -1881,9 +1870,7 @@ class ProjectAddStepOne(StepView):
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(ProjectAddStepOne, self).setUpFields()
-        self.form_fields = (
-            self.form_fields +
-            create_source_package_fields())
+        self.form_fields = (self.form_fields + create_source_package_fields())
 
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
@@ -1925,8 +1912,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
 
     _field_names = ['displayname', 'name', 'title', 'summary', 'description',
                     'homepageurl', 'information_type', 'licenses',
-                    'license_info', 'driver', 'bug_supervisor', 'owner',
-                    ]
+                    'license_info', 'driver', 'bug_supervisor', 'owner']
     schema = IProduct
     step_name = 'projectaddstep2'
     template = ViewPageTemplateFile('../templates/product-new.pt')
@@ -1962,8 +1948,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         # the form is rendered during LaunchpadFormView's initialize()
         # when an action is invoked.
         cache = IJSONRequestCache(self.request)
-        json_dump_information_types(cache,
-                                    PUBLIC_PROPRIETARY_INFORMATION_TYPES)
+        json_dump_information_types(
+            cache, PUBLIC_PROPRIETARY_INFORMATION_TYPES)
         super(ProjectAddStepTwo, self).initialize()
 
     @property
@@ -1972,8 +1958,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             return u'Complete Registration'
         else:
             return u'Complete registration and link to %s package' % (
-                self.source_package_name.name,
-                )
+                self.source_package_name.name)
 
     @property
     def _return_url(self):
@@ -2003,8 +1988,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
 
     @property
     def enable_information_type(self):
-        private_projects = bool(getFeatureFlag(PRIVATE_PROJECTS_FLAG))
-        return private_projects and not self.source_package_name
+        return not self.source_package_name
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""
@@ -2013,14 +1997,13 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         hidden_fields = self.form_fields.select(*hidden_names)
 
         if not self.enable_information_type:
-            hidden_names.extend([
-                'information_type', 'bug_supervisor', 'driver'])
+            hidden_names.extend(
+                ['information_type', 'bug_supervisor', 'driver'])
 
         visible_fields = self.form_fields.omit(*hidden_names)
-        self.form_fields = (visible_fields +
-                            self._createDisclaimMaintainerField() +
-                            create_source_package_fields() +
-                            hidden_fields)
+        self.form_fields = (
+            visible_fields + self._createDisclaimMaintainerField() +
+            create_source_package_fields() + hidden_fields)
 
     def _createDisclaimMaintainerField(self):
         """Return a Bool field for disclaiming maintainer.
@@ -2048,8 +2031,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         self.widgets['name'].read_only = True
         # The "hint" is really more of an explanation at this point, but the
         # phrasing is different.
-        self.widgets['name'].hint = ('When published, '
-                                     "this will be the project's URL.")
+        self.widgets['name'].hint = (
+            "When published, this will be the project's URL.")
         self.widgets['displayname'].visible = False
         self.widgets['source_package_name'].visible = False
         self.widgets['distroseries'].visible = False
@@ -2100,14 +2083,13 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         """
         # XXX BarryWarsaw 16-Apr-2009 do we need batching and should we return
         # more than 7 hits?
-        pillar_set = getUtility(IPillarNameSet)
-        return pillar_set.search(self._search_string, 7)
+        return getUtility(IPillarNameSet).search(self._search_string, 7)
 
     @cachedproperty
     def search_results_count(self):
         """Return the count of matching `IPillar`s."""
-        pillar_set = getUtility(IPillarNameSet)
-        return pillar_set.count_search_matches(self._search_string)
+        return getUtility(IPillarNameSet).count_search_matches(
+            self._search_string)
 
     # StepView requires that its validate() method not be overridden, so make
     # sure this calls the right method.  validateStep() will call the licence
@@ -2130,8 +2112,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
                 for required_field in ('bug_supervisor', 'driver'):
                     if data.get(required_field) is None:
                         self.setFieldError(
-                            required_field,
-                            'Select a user or team.')
+                            required_field, 'Select a user or team.')
 
     @property
     def label(self):
@@ -2194,7 +2175,6 @@ class ProductAddView(PillarViewMixin, MultiStepView):
     """The controlling view for product/+new."""
 
     page_title = ProjectAddStepOne.page_title
-    related_features = (PRIVATE_PROJECTS_FLAG,)
     total_steps = 2
 
     @property

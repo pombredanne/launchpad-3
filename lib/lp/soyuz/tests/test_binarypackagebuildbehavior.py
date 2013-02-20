@@ -37,7 +37,6 @@ from lp.registry.interfaces.pocket import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
-from lp.services.database.constants import UTC_NOW
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import BufferLogger
@@ -470,7 +469,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
     def test_log_file_collection(self):
         self.patch(BuilderSlave, 'makeBuilderSlave',
                    FakeMethod(WaitingSlave('BuildStatus.OK')))
-        self.build.status = BuildStatus.FULLYBUILT
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
         old_tmps = sorted(os.listdir('/tmp'))
 
         def got_log(logfile_lfa_id):
@@ -542,9 +541,8 @@ class MakeBinaryPackageBuildMixin:
     """Provide the makeBuild method returning a queud build."""
 
     def makeBuild(self):
-        build = self.factory.makeBinaryPackageBuild(
-            status=BuildStatus.FULLYBUILT)
-        build.date_started = UTC_NOW
+        build = self.factory.makeBinaryPackageBuild()
+        build.updateStatus(BuildStatus.BUILDING)
         build.queueBuild()
         return build
 

@@ -44,8 +44,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database import bulk
@@ -1600,7 +1598,7 @@ class PublishingSet:
         return pub
 
     def getBuildsForSourceIds(self, source_publication_ids, archive=None,
-                              build_states=None, need_build_farm_job=False):
+                              build_states=None):
         """See `IPublishingSet`."""
         # If an archive was passed in as a parameter, add an extra expression
         # to filter by archive:
@@ -1612,23 +1610,20 @@ class PublishingSet:
         # If an optional list of build states was passed in as a parameter,
         # ensure that the result is limited to builds in those states.
         if build_states is not None:
-            extra_exprs.extend((
-                BinaryPackageBuild.package_build == PackageBuild.id,
-                PackageBuild.build_farm_job == BuildFarmJob.id,
-                BuildFarmJob.status.is_in(build_states)))
+            extra_exprs.append(BinaryPackageBuild.status.is_in(build_states))
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         # We'll be looking for builds in the same distroseries as the
         # SPPH for the same release.
         builds_for_distroseries_expr = (
-            BinaryPackageBuild.package_build == PackageBuild.id,
-            BinaryPackageBuild.distro_arch_series_id == DistroArchSeries.id,
             SourcePackagePublishingHistory.distroseriesID ==
-                DistroArchSeries.distroseriesID,
+                BinaryPackageBuild.distro_series_id,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 BinaryPackageBuild.source_package_release_id,
-            SourcePackagePublishingHistory.id.is_in(source_publication_ids))
+            SourcePackagePublishingHistory.id.is_in(source_publication_ids),
+            DistroArchSeries.id == BinaryPackageBuild.distro_arch_series_id,
+            )
 
         # First, we'll find the builds that were built in the same
         # archive context as the published sources.
@@ -1636,7 +1631,7 @@ class PublishingSet:
             BinaryPackageBuild,
             builds_for_distroseries_expr,
             (SourcePackagePublishingHistory.archiveID ==
-                PackageBuild.archive_id),
+                BinaryPackageBuild.archive_id),
             *extra_exprs)
 
         # Next get all the builds that have a binary published in the
@@ -1646,7 +1641,7 @@ class PublishingSet:
             BinaryPackageBuild,
             builds_for_distroseries_expr,
             (SourcePackagePublishingHistory.archiveID !=
-                PackageBuild.archive_id),
+                BinaryPackageBuild.archive_id),
             BinaryPackagePublishingHistory.archive ==
                 SourcePackagePublishingHistory.archiveID,
             BinaryPackagePublishingHistory.binarypackagerelease ==
@@ -1666,22 +1661,16 @@ class PublishingSet:
             SourcePackagePublishingHistory,
             BinaryPackageBuild,
             DistroArchSeries,
-            ) + ((PackageBuild, BuildFarmJob) if need_build_farm_job else ())
+            )
 
         # Storm doesn't let us do builds_union.values('id') -
         # ('Union' object has no attribute 'columns'). So instead
         # we have to instantiate the objects just to get the id.
         build_ids = [build.id for build in builds_union]
 
-        prejoin_exprs = (
-            BinaryPackageBuild.package_build == PackageBuild.id,
-            PackageBuild.build_farm_job == BuildFarmJob.id,
-            ) if need_build_farm_job else ()
-
         result_set = store.find(
             find_spec, builds_for_distroseries_expr,
-            BinaryPackageBuild.id.is_in(build_ids),
-            *prejoin_exprs)
+            BinaryPackageBuild.id.is_in(build_ids))
 
         return result_set.order_by(
             SourcePackagePublishingHistory.id,
@@ -1770,9 +1759,7 @@ class PublishingSet:
             self._getSourceBinaryJoinForSources(
                 source_publication_ids, active_binaries_only=False),
             BinaryPackagePublishingHistory.datepublished != None,
-            BinaryPackageBuild.package_build == PackageBuild.id,
-            PackageBuild.build_farm_job == BuildFarmJob.id,
-            BuildFarmJob.status.is_in(build_states))
+            BinaryPackageBuild.status.is_in(build_states))
 
         published_builds.order_by(
             SourcePackagePublishingHistory.id,
@@ -1934,8 +1921,7 @@ class PublishingSet:
         # Find relevant builds while also getting PackageBuilds and
         # BuildFarmJobs into the cache. They're used later.
         build_info = list(
-            self.getBuildsForSourceIds(
-                source_ids, archive=archive, need_build_farm_job=True))
+            self.getBuildsForSourceIds(source_ids, archive=archive))
         source_pubs = set()
         found_source_ids = set()
         for row in build_info:
@@ -2039,11 +2025,18 @@ class PublishingSet:
             removed_byID=removed_by_id,
             removal_comment=removal_comment)
 
-    def requestDeletion(self, sources, removed_by, removal_comment=None):
+    def requestDeletion(self, pubs, removed_by, removal_comment=None):
         """See `IPublishingSet`."""
-        sources = list(sources)
-        if len(sources) == 0:
+        pubs = list(pubs)
+        sources = [
+            pub for pub in pubs
+            if ISourcePackagePublishingHistory.providedBy(pub)]
+        binaries = [
+            pub for pub in pubs
+            if IBinaryPackagePublishingHistory.providedBy(pub)]
+        if not sources and not binaries:
             return
+        assert len(sources) + len(binaries) == len(pubs)
 
         spph_ids = [spph.id for spph in sources]
         self.setMultipleDeleted(
@@ -2052,11 +2045,12 @@ class PublishingSet:
 
         getUtility(IDistroSeriesDifferenceJobSource).createForSPPHs(sources)
 
-        # Mark binary publications deleted.
-        bpph_ids = [
-            bpph.id
-            for source, bpph, bin, bin_name, arch
-                in self.getBinaryPublicationsForSources(sources)]
+        # Append the sources' related binaries to our condemned list,
+        # and mark them all deleted.
+        bpph_ids = [bpph.id for bpph in binaries]
+        bpph_ids.extend(
+            bpph.id for source, bpph, bin, bin_name, arch
+            in self.getBinaryPublicationsForSources(sources))
         if len(bpph_ids) > 0:
             self.setMultipleDeleted(
                 BinaryPackagePublishingHistory, bpph_ids, removed_by,

@@ -12,6 +12,7 @@ from datetime import (
 
 import pytz
 from storm.store import Store
+from testtools.matchers import GreaterThan
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -29,6 +30,7 @@ from lp.buildmaster.interfaces.buildfarmjob import (
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.services.database.sqlbase import flush_database_updates
 from lp.testing import (
+    admin_logged_in,
     login,
     TestCaseWithFactory,
     )
@@ -50,7 +52,7 @@ class TestBuildFarmJobBase:
     def makeBuildFarmJob(self, builder=None,
                          job_type=BuildFarmJobType.PACKAGEBUILD,
                          status=BuildStatus.NEEDSBUILD,
-                         date_finished=None):
+                         date_finished=None, archive=None):
         """A factory method for creating PackageBuilds.
 
         This is not included in the launchpad test factory because
@@ -59,7 +61,7 @@ class TestBuildFarmJobBase:
         or eventually a SPRecipeBuild).
         """
         build_farm_job = getUtility(IBuildFarmJobSource).new(
-            job_type=job_type, status=status)
+            job_type=job_type, status=status, archive=archive)
         removeSecurityProxy(build_farm_job).builder = builder
         removeSecurityProxy(build_farm_job).date_started = date_finished
         removeSecurityProxy(build_farm_job).date_finished = date_finished
@@ -90,16 +92,9 @@ class TestBuildFarmJob(TestBuildFarmJobBase, TestCaseWithFactory):
         # The job type is required to create a build farm job.
         self.assertEqual(
             BuildFarmJobType.PACKAGEBUILD, bfj.job_type)
-        # Failure count defaults to zero.
-        self.assertEqual(0, bfj.failure_count)
         # Other attributes are unset by default.
-        self.assertEqual(None, bfj.processor)
-        self.assertEqual(None, bfj.virtualized)
-        self.assertEqual(None, bfj.date_started)
         self.assertEqual(None, bfj.date_finished)
-        self.assertEqual(None, bfj.date_first_dispatched)
         self.assertEqual(None, bfj.builder)
-        self.assertEqual(None, bfj.log)
 
     def test_date_created(self):
         # date_created can be passed optionally when creating a
@@ -129,25 +124,21 @@ class TestBuildFarmJobMixin(TestCaseWithFactory):
         self.assertProvides(self.build_farm_job, IBuildFarmJob)
 
     def test_duration_none(self):
-        # If either start or finished is none, the duration will be
-        # none.
-        removeSecurityProxy(self.build_farm_job).date_started = (
-            datetime.now(pytz.UTC))
-        self.failUnlessEqual(None, self.build_farm_job.duration)
-
-        removeSecurityProxy(self.build_farm_job).date_started = None
-        removeSecurityProxy(self.build_farm_job).date_finished = (
-            datetime.now(pytz.UTC))
-        self.failUnlessEqual(None, self.build_farm_job.duration)
+        # If either finished is none, the duration will be none.
+        self.build_farm_job.updateStatus(BuildStatus.BUILDING)
+        self.assertIs(None, self.build_farm_job.duration)
+        self.build_farm_job.updateStatus(BuildStatus.FULLYBUILT)
+        self.assertIsNot(None, self.build_farm_job.duration)
 
     def test_duration_set(self):
         # If both start and finished are defined, the duration will be
         # returned.
         now = datetime.now(pytz.UTC)
         duration = timedelta(1)
-        naked_bfj = removeSecurityProxy(self.build_farm_job)
-        naked_bfj.date_started = now
-        naked_bfj.date_finished = now + duration
+        self.build_farm_job.updateStatus(
+            BuildStatus.BUILDING, date_started=now)
+        self.build_farm_job.updateStatus(
+            BuildStatus.FULLYBUILT, date_finished=now + duration)
         self.failUnlessEqual(duration, self.build_farm_job.duration)
 
     def test_view_build_farm_job(self):
@@ -155,15 +146,77 @@ class TestBuildFarmJobMixin(TestCaseWithFactory):
         self.failUnlessEqual(
             BuildStatus.NEEDSBUILD, self.build_farm_job.status)
         self.assertRaises(
-            Unauthorized, setattr, self.build_farm_job,
-            'status', BuildStatus.FULLYBUILT)
+            Unauthorized, getattr, self.build_farm_job, 'retry')
 
     def test_edit_build_farm_job(self):
         # Users with edit access can update attributes.
         login('admin@canonical.com')
-        self.build_farm_job.status = BuildStatus.FULLYBUILT
-        self.failUnlessEqual(
-            BuildStatus.FULLYBUILT, self.build_farm_job.status)
+        self.assertRaises(AssertionError, self.build_farm_job.retry)
+
+    def test_updateStatus_sets_status(self):
+        # updateStatus always sets status.
+        self.assertEqual(BuildStatus.NEEDSBUILD, self.build_farm_job.status)
+        self.build_farm_job.updateStatus(BuildStatus.FULLYBUILT)
+        self.assertEqual(BuildStatus.FULLYBUILT, self.build_farm_job.status)
+
+    def test_updateStatus_sets_builder(self):
+        # updateStatus sets builder if it's passed.
+        builder = self.factory.makeBuilder()
+        self.assertIs(None, self.build_farm_job.builder)
+        self.build_farm_job.updateStatus(
+            BuildStatus.FULLYBUILT, builder=builder)
+        self.assertEqual(builder, self.build_farm_job.builder)
+
+    def test_updateStatus_BUILDING_sets_date_started(self):
+        # updateStatus sets date_started on transition to BUILDING.
+        # date_first_dispatched is also set if it isn't already.
+        self.assertEqual(BuildStatus.NEEDSBUILD, self.build_farm_job.status)
+        self.assertIs(None, self.build_farm_job.date_started)
+        self.assertIs(None, self.build_farm_job.date_first_dispatched)
+
+        self.build_farm_job.updateStatus(BuildStatus.CANCELLED)
+        self.assertIs(None, self.build_farm_job.date_started)
+        self.assertIs(None, self.build_farm_job.date_first_dispatched)
+
+        # Setting it to BUILDING for the first time sets date_started
+        # and date_first_dispatched.
+        self.build_farm_job.updateStatus(BuildStatus.BUILDING)
+        self.assertIsNot(None, self.build_farm_job.date_started)
+        first = self.build_farm_job.date_started
+        self.assertEqual(first, self.build_farm_job.date_first_dispatched)
+
+        self.build_farm_job.updateStatus(BuildStatus.FAILEDTOBUILD)
+        with admin_logged_in():
+            self.build_farm_job.retry()
+        self.assertIs(None, self.build_farm_job.date_started)
+        self.assertEqual(first, self.build_farm_job.date_first_dispatched)
+
+        # But BUILDING a second time doesn't change
+        # date_first_dispatched.
+        self.build_farm_job.updateStatus(BuildStatus.BUILDING)
+        self.assertThat(self.build_farm_job.date_started, GreaterThan(first))
+        self.assertEqual(first, self.build_farm_job.date_first_dispatched)
+
+    def test_updateStatus_sets_date_finished(self):
+        # updateStatus sets date_finished if it's a final state and
+        # date_started is set.
+        # UPLOADING counts as the end of the job. date_finished doesn't
+        # include the upload time.
+        for status in (
+                BuildStatus.FULLYBUILT, BuildStatus.FAILEDTOBUILD,
+                BuildStatus.CHROOTWAIT, BuildStatus.MANUALDEPWAIT,
+                BuildStatus.UPLOADING, BuildStatus.FAILEDTOUPLOAD,
+                BuildStatus.CANCELLED, BuildStatus.SUPERSEDED):
+            build = self.factory.makeBinaryPackageBuild()
+            build.updateStatus(status)
+            self.assertIs(None, build.date_started)
+            self.assertIs(None, build.date_finished)
+            build.updateStatus(BuildStatus.BUILDING)
+            self.assertIsNot(None, build.date_started)
+            self.assertIs(None, build.date_finished)
+            build.updateStatus(status)
+            self.assertIsNot(None, build.date_started)
+            self.assertIsNot(None, build.date_finished)
 
 
 class TestBuildFarmJobSet(TestBuildFarmJobBase, TestCaseWithFactory):
@@ -261,12 +314,34 @@ class TestBuildFarmJobSet(TestBuildFarmJobBase, TestCaseWithFactory):
         build_2 = self.makeBuildFarmJob(
             builder=self.builder,
             date_finished=datetime(2008, 11, 10, tzinfo=pytz.UTC))
+        build_3 = self.makeBuildFarmJob(
+            builder=self.builder,
+            date_finished=datetime(2008, 9, 10, tzinfo=pytz.UTC))
 
         result = self.build_farm_job_set.getBuildsForBuilder(self.builder)
-        self.assertEqual([build_2, build_1], list(result))
+        self.assertEqual([build_2, build_1, build_3], list(result))
 
-        removeSecurityProxy(build_2).date_finished = (
-            datetime(2008, 8, 10, tzinfo=pytz.UTC))
-        result = self.build_farm_job_set.getBuildsForBuilder(self.builder)
+    def makeBuildsForArchive(self):
+        archive = self.factory.makeArchive()
+        builds = [
+            self.makeBuildFarmJob(archive=archive),
+            self.makeBuildFarmJob(
+                archive=archive, status=BuildStatus.BUILDING),
+            ]
+        return (archive, builds)
 
-        self.assertEqual([build_1, build_2], list(result))
+    def test_getBuildsForArchive_all(self):
+        # The default call without arguments returns all builds for the
+        # archive.
+        archive, builds = self.makeBuildsForArchive()
+        self.assertContentEqual(
+            builds, self.build_farm_job_set.getBuildsForArchive(archive))
+
+    def test_getBuildsForArchive_by_status(self):
+        # If the status arg is used, the results will be filtered by
+        # status.
+        archive, builds = self.makeBuildsForArchive()
+        self.assertContentEqual(
+            builds[1:],
+            self.build_farm_job_set.getBuildsForArchive(
+                archive, status=BuildStatus.BUILDING))

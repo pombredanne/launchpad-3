@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publisher of objects as web pages.
@@ -8,13 +8,13 @@
 __metaclass__ = type
 __all__ = [
     'DataDownloadView',
+    'get_raw_form_value_from_current_request',
     'LaunchpadContainer',
     'LaunchpadView',
     'LaunchpadXMLRPCView',
     'canonical_name',
     'canonical_url',
     'canonical_url_iterator',
-    'get_current_browser_request',
     'nearest',
     'Navigation',
     'rootObject',
@@ -26,6 +26,7 @@ __all__ = [
     'UserAttributeCache',
     ]
 
+from cgi import FieldStorage
 import httplib
 import re
 
@@ -798,6 +799,23 @@ def nearest(obj, *interfaces):
         return None
     except NoCanonicalUrl:
         return None
+
+
+def get_raw_form_value_from_current_request(field_name):
+    # XXX: StevenK 2013-02-06 bug=1116954: We should not need to refetch
+    # the file content from the request, since the passed in one has been
+    # wrongly encoded.
+    # Circular imports.
+    from lp.services.webapp.servers import WebServiceClientRequest
+    request = get_current_browser_request()
+    assert isinstance(request, WebServiceClientRequest)
+    # Zope wrongly encodes any form element that doesn't look like a file,
+    # so re-fetch the file content if it has been encoded.
+    if request and request.form.has_key(field_name) and isinstance(
+        request.form[field_name], unicode):
+        request._environ['wsgi.input'].seek(0)
+        fs = FieldStorage(fp=request._body_instream, environ=request._environ)
+        return fs[field_name].value
 
 
 class RootObject:

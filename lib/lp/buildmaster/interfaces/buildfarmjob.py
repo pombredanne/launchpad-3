@@ -179,6 +179,8 @@ class IBuildFarmJob(Interface):
 
     id = Attribute('The build farm job ID.')
 
+    build_farm_job = Attribute('Generic build farm job record')
+
     processor = Reference(
         IProcessor, title=_("Processor"), required=False, readonly=True,
         description=_(
@@ -285,6 +287,19 @@ class IBuildFarmJob(Interface):
         services job directly on the BuildFarmJob.
         """
 
+    def setLog(log):
+        """Set the `LibraryFileAlias` that contains the job log."""
+
+    def updateStatus(status, builder=None, slave_status=None,
+                     date_started=None, date_finished=None):
+        """Update job metadata when the build status changes.
+
+        This automatically handles setting status, date_finished, builder,
+        dependencies. Later it will manage the denormalised search schema.
+
+        date_started and date_finished override the default (now).
+        """
+
     def gotFailure():
         """Increment the failure_count for this job."""
 
@@ -334,8 +349,8 @@ class ISpecificBuildFarmJobSource(Interface):
 class IBuildFarmJobSource(Interface):
     """A utility of BuildFarmJob used to create _things_."""
 
-    def new(job_type, status=None, processor=None,
-            virtualized=None):
+    def new(job_type, status=None, processor=None, virtualized=None,
+            builder=None):
         """Create a new `IBuildFarmJob`.
 
         :param job_type: A `BuildFarmJobType` item.
@@ -343,6 +358,7 @@ class IBuildFarmJobSource(Interface):
         :param processor: An optional processor for this job.
         :param virtualized: An optional boolean indicating whether
             this job should be run virtualized.
+        :param builder: An optional `IBuilder`.
         """
 
 
@@ -357,4 +373,13 @@ class IBuildFarmJobSet(Interface):
         :param user: If given, this will be used to determine private builds
             that should be included.
         :return: a `ResultSet` representing the requested builds.
+        """
+
+    def getBuildsForArchive(archive, status=None):
+        """Return `IBuildFarmJob` records targeted to a given `IArchive`.
+
+        :param archive: The archive for which builds will be returned.
+        :param status: If status is provided, only builders with that
+            status will be returned.
+        :return: a `ResultSet` representing the requested `IBuildFarmJobs`.
         """

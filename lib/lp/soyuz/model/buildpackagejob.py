@@ -17,7 +17,7 @@ from zope.interface import implements
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.bulk import load_related
 from lp.services.database.lpstorm import IStore
@@ -36,11 +36,10 @@ from lp.soyuz.interfaces.buildpackagejob import (
     SCORE_BY_URGENCY,
     )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 from lp.soyuz.model.packageset import Packageset
 
 
-class BuildPackageJob(BuildFarmJobOldDerived, Storm):
+class BuildPackageJob(BuildFarmJobOld, Storm):
     """See `IBuildPackageJob`."""
     implements(IBuildPackageJob)
 
@@ -56,12 +55,6 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
     def __init__(self, build, job):
         self.build, self.job = build, job
         super(BuildPackageJob, self).__init__()
-
-    def _set_build_farm_job(self):
-        """Setup the IBuildFarmJob delegate.
-
-        We override this to provide a delegate specific to package builds."""
-        self.build_farm_job = BuildFarmBuildJob(self.build)
 
     @staticmethod
     def preloadBuildFarmJobs(jobs):
@@ -164,14 +157,13 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
             )
         sub_query = """
             SELECT TRUE FROM Archive, BinaryPackageBuild, BuildPackageJob,
-                             PackageBuild, BuildFarmJob, DistroArchSeries
+                             DistroArchSeries
             WHERE
             BuildPackageJob.job = Job.id AND
             BuildPackageJob.build = BinaryPackageBuild.id AND
             BinaryPackageBuild.distro_arch_series =
                 DistroArchSeries.id AND
-            BinaryPackageBuild.package_build = PackageBuild.id AND
-            PackageBuild.archive = Archive.id AND
+            BinaryPackageBuild.archive = Archive.id AND
             ((Archive.private IS TRUE AND
               EXISTS (
                   SELECT SourcePackagePublishingHistory.id
@@ -185,8 +177,7 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
                       SourcePackagePublishingHistory.status IN %s))
               OR
               archive.private IS FALSE) AND
-            PackageBuild.build_farm_job = BuildFarmJob.id AND
-            BuildFarmJob.status = %s
+            BinaryPackageBuild.status = %s
         """ % sqlvalues(private_statuses, BuildStatus.NEEDSBUILD)
 
         # Ensure that if BUILDING builds exist for the same
@@ -208,16 +199,12 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
             sub_query += """
             AND Archive.id NOT IN (
                 SELECT Archive.id
-                FROM PackageBuild, BuildFarmJob, Archive,
-                    BinaryPackageBuild, DistroArchSeries
+                FROM Archive, BinaryPackageBuild, DistroArchSeries
                 WHERE
-                    PackageBuild.build_farm_job = BuildFarmJob.id
-                    AND BinaryPackageBuild.package_build = PackageBuild.id
-                    AND BinaryPackageBuild.distro_arch_series
-                        = DistroArchSeries.id
+                    BinaryPackageBuild.distro_arch_series = DistroArchSeries.id
                     AND DistroArchSeries.processorfamily = %s
-                    AND BuildFarmJob.status = %s
-                    AND PackageBuild.archive = Archive.id
+                    AND BinaryPackageBuild.status = %s
+                    AND BinaryPackageBuild.archive = Archive.id
                     AND Archive.purpose = %s
                     AND Archive.private IS FALSE
                 GROUP BY Archive.id
@@ -249,7 +236,7 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
             logger.debug(
                 "Build %s FAILEDTOBUILD, queue item %s REMOVED"
                 % (build.id, job.id))
-            build.status = BuildStatus.FAILEDTOBUILD
+            build.updateStatus(BuildStatus.FAILEDTOBUILD)
             job.destroySelf()
             return False
 
@@ -260,7 +247,7 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
             logger.debug(
                 "Build %s SUPERSEDED, queue item %s REMOVED"
                 % (build.id, job.id))
-            build.status = BuildStatus.SUPERSEDED
+            build.updateStatus(BuildStatus.SUPERSEDED)
             job.destroySelf()
             return False
 

@@ -685,14 +685,14 @@ class IBugView(Interface):
 class IBugEdit(Interface):
     """IBug attributes that require launchpad.Edit permission."""
 
-    @call_with(owner=REQUEST_USER)
+    @call_with(owner=REQUEST_USER, from_api=True)
     @operation_parameters(
         data=Bytes(constraint=attachment_size_constraint),
         comment=Text(), filename=TextLine(), is_patch=Bool(),
         content_type=TextLine(), description=Text())
     @export_factory_operation(IBugAttachment, [])
     def addAttachment(owner, data, comment, filename, is_patch=False,
-                      content_type=None, description=None):
+                      content_type=None, description=None, from_api=False):
         """Attach a file to this bug.
 
         :owner: An IPerson.

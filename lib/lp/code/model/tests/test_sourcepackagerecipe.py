@@ -424,7 +424,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         def request_build():
             build = recipe.requestBuild(archive, requester, series,
                     PackagePublishingPocket.RELEASE)
-            removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
+            build.updateStatus(BuildStatus.FULLYBUILT)
         [request_build() for num in range(5)]
         e = self.assertRaises(TooManyBuilds, request_build)
         self.assertIn(
@@ -451,7 +451,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe.requestBuild(archive, recipe.owner,
             new_distroseries, PackagePublishingPocket.RELEASE)
         # Changing status of old build allows new build.
-        removeSecurityProxy(old_build).status = BuildStatus.FULLYBUILT
+        old_build.updateStatus(BuildStatus.FULLYBUILT)
         recipe.requestBuild(archive, recipe.owner, series,
                 PackagePublishingPocket.RELEASE)
 
@@ -622,11 +622,12 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         hoary = self.factory.makeSourcePackageRecipeDistroseries("hoary")
         recipe.distroseries.add(hoary)
         for series in recipe.distroseries:
-            build = recipe.requestBuild(
-                recipe.daily_build_archive, recipe.owner,
-                series, PackagePublishingPocket.RELEASE)
-            removeSecurityProxy(build).date_created = (
-                datetime.now(UTC) - timedelta(hours=24, seconds=1))
+            self.factory.makeSourcePackageRecipeBuild(
+                recipe=recipe, archive=recipe.daily_build_archive,
+                requester=recipe.owner,
+                distroseries=series, pocket=PackagePublishingPocket.RELEASE,
+                date_created=(
+                    datetime.now(UTC) - timedelta(hours=24, seconds=1)))
         stale_recipes = SourcePackageRecipe.findStaleDailyBuilds()
         self.assertEqual([recipe], list(stale_recipes))
 
@@ -634,9 +635,10 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
 
         def set_duration(build, minutes):
             duration = timedelta(minutes=minutes)
-            build = removeSecurityProxy(build)
-            build.date_started = self.factory.getUniqueDate()
-            build.date_finished = build.date_started + duration
+            build.updateStatus(BuildStatus.BUILDING)
+            build.updateStatus(
+                BuildStatus.FULLYBUILT,
+                date_finished=build.date_started + duration)
         recipe = removeSecurityProxy(self.factory.makeSourcePackageRecipe())
         self.assertIs(None, recipe.getMedianBuildDuration())
         build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
@@ -668,7 +670,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertEqual(builds, list(recipe.builds))
 
         # Change the status of one of the builds and retest.
-        removeSecurityProxy(builds[0]).status = BuildStatus.FULLYBUILT
+        builds[0].updateStatus(BuildStatus.FULLYBUILT)
         self.assertEqual([builds[0]], list(recipe.completed_builds))
         self.assertEqual(builds[1:], list(recipe.pending_builds))
         self.assertEqual(builds, list(recipe.builds))

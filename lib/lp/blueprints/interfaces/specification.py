@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Specification interfaces."""
@@ -403,7 +403,6 @@ class ISpecificationView(IHasOwner, IHasLinkedBranches):
             value_type=Reference(schema=Interface),  # ISpecification, really.
             readonly=True),
         as_of="devel")
-    blocked_specs = Attribute('Specs for which this spec is a dependency.')
     linked_branches = exported(
         CollectionField(
             title=_("Branches associated with this spec, usually "
@@ -411,6 +410,12 @@ class ISpecificationView(IHasOwner, IHasLinkedBranches):
             value_type=Reference(schema=Interface),  # ISpecificationBranch
             readonly=True),
         as_of="devel")
+    
+    def getDependencies():
+        """Specs on which this one depends."""
+
+    def getBlockedSpecs():
+        """Specs for which this spec is a dependency."""
 
     # emergent properties
     informational = Attribute('Is True if this spec is purely informational '

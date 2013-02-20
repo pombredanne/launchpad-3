@@ -134,10 +134,14 @@ It is only editable by someone with launchpad.Edit permissions:
     ...
     Unauthorized:...
 
+    >>> login("admin@canonical.com")
+    >>> cprov_archive.status = ArchiveStatus.ACTIVE
 
-'name' is only editable by an LP administrator and only exposed via
-the ArchiveRebuild user interface. PRIMARY, PARTNER and PPAs still
-using default names.
+
+'name' is only editable by an LP administrator and only exposed via the
+ArchiveRebuild user interface. PRIMARY, PARTNER and DEBUG archives
+cannot be renamed, and PPA named can only be changed once the PPA has
+been deleted.
 
     >>> login("celso.providelo@canonical.com")
 
@@ -154,7 +158,7 @@ asserts the archive is indeed a COPY and if the name is valid.
     >>> cprov_archive.name = 'there-we-go'
     Traceback (most recent call last):
     ...
-    AssertionError: Only COPY archives can be renamed.
+    AssertionError: Only COPY archives and deleted PPAs can be renamed.
 
 We will create a COPY archive and modify its name.
 
@@ -1415,57 +1419,6 @@ limited to 5 items.
     PPA for Launchpad Buildd Admins 8
     PPA for No Privileges Person 4
     PPA for Sample Person 4
-
-'getBuildCountersForArchitecture' allows callsites to quickly present
-the number of builds in pre-defined status for a given `IArchive` and
-`IDistroArchSeries` context.
-
-    >>> def print_build_counters_for(archive, distroarchseries):
-    ...     build_counters = archive_set.getBuildCountersForArchitecture(
-    ...         archive, distroarchseries)
-    ...     sorted_keys = sorted(build_counters.keys())
-    ...     for key in sorted_keys:
-    ...         print key, build_counters[key]
-
-
-Build counters for hoary/i386 in Celso's PPA.
-
-    >>> hoary_i386 = hoary['i386']
-    >>> print_build_counters_for(cprov_archive, hoary_i386)
-    failed     0
-    pending    0
-    succeeded  0
-    total      0
-
-Build counters for hoary/i386 in ubuntu primary archive.
-
-    >>> print_build_counters_for(ubuntu.main_archive, hoary_i386)
-    failed     1
-    pending    2
-    succeeded  1
-    total      4
-
-warty/i386 which has 3 SUPERSEDED builds computed in 'total', but not
-in any other predefined counter.
-
-    >>> warty_i386 = warty['i386']
-    >>> print_build_counters_for(ubuntu.main_archive, warty_i386)
-    failed     3
-    pending    0
-    succeeded  3
-    total      9
-
-Finally, build counters for breezy-autotest/i386 in ubuntu partner
-archive.
-
-    >>> ubuntu_partner = archive_set.getByDistroPurpose(
-    ...      ubuntu, ArchivePurpose.PARTNER)
-    >>> breezy_autotest_i386 = breezy_autotest['i386']
-    >>> print_build_counters_for(ubuntu_partner, breezy_autotest_i386)
-    failed     0
-    pending    0
-    succeeded  1
-    total      1
 
 
 A general way to get specific archives for a distribution

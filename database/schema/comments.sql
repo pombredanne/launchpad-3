@@ -1235,6 +1235,7 @@ COMMENT ON COLUMN BinaryPackagePublishingHistory.pocket IS 'The pocket into whic
 COMMENT ON COLUMN BinaryPackagePublishingHistory.archive IS 'Target archive for this publishing record.';
 COMMENT ON COLUMN BinaryPackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
 COMMENT ON COLUMN BinaryPackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.phased_update_percentage IS 'Percentage of users for whom this package should be recommended. NULL indicates no phasing, i.e. publish the update for everyone.';
 
 -- ProcessorFamily
 
@@ -1515,7 +1516,6 @@ COMMENT ON COLUMN SourcePackageRecipeDistroSeries.sourcepackagerecipe IS 'The pr
 
 COMMENT ON TABLE SourcePackageRecipeBuild IS 'The build record for the process of building a source package as described by a recipe.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.distroseries IS 'The distroseries the build was for.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.package_build IS 'The package_build with the base information about this build.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.requester IS 'Who requested the build.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.recipe IS 'The recipe being processed.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.manifest IS 'The evaluated recipe that was built.';
@@ -1726,29 +1726,14 @@ COMMENT ON COLUMN Milestone.summary IS 'This can be used to summarize the change
 
 -- BuildFarmJob, and its related tables, PackageBuild, BinaryPackageBuild
 COMMENT ON TABLE BuildFarmJob IS 'BuildFarmJob: This table stores the information common to all jobs on the Launchpad build farm.';
-COMMENT ON COLUMN BuildFarmJob.processor IS 'Points to the required processor target for this job, or null.';
-COMMENT ON COLUMN BuildFarmJob.virtualized IS 'The virtualization setting required by this build farm job, or null.';
 COMMENT ON COLUMN BuildFarmJob.date_created IS 'When the build farm job record was created.';
-COMMENT ON COLUMN BuildFarmJob.date_started IS 'When the build farm job started being processed.';
 COMMENT ON COLUMN BuildFarmJob.date_finished IS 'When the build farm job finished being processed.';
-COMMENT ON COLUMN BuildFarmJob.date_first_dispatched IS 'The instant the build was dispatched the first time. This value will not get overridden if the build is retried.';
 COMMENT ON COLUMN BuildFarmJob.builder IS 'Points to the builder which processed this build farm job.';
 COMMENT ON COLUMN BuildFarmJob.status IS 'Stores the current build status.';
-COMMENT ON COLUMN BuildFarmJob.log IS 'Points to the log for this build farm job file stored in librarian.';
 COMMENT ON COLUMN BuildFarmJob.job_type IS 'The type of build farm job to which this record corresponds.';
-COMMENT ON COLUMN BuildFarmJob.failure_count IS 'The number of consecutive failures on this job.  If excessive, the job may be terminated.';
-
--- PackageBuild
-COMMENT ON TABLE PackageBuild IS 'PackageBuild: This table stores the information common to build farm jobs that build source or binary packages.';
-COMMENT ON COLUMN PackageBuild.build_farm_job IS 'Points to the build farm job with the base information.';
-COMMENT ON COLUMN PackageBuild.archive IS 'Targeted archive for this package build.';
-COMMENT ON COLUMN PackageBuild.pocket IS 'Stores the target pocket identifier for this package build.';
-COMMENT ON COLUMN PackageBuild.upload_log IS 'Reference to a LibraryFileAlias containing the upload log messages generated while processing the packages resulting from this package build.';
-COMMENT ON COLUMN PackageBuild.dependencies IS 'Contains a debian-like dependency line specifying the current missing-dependencies for this package.';
 
 -- BinaryPackageBuild
 COMMENT ON TABLE BinaryPackageBuild IS 'BinaryPackageBuild: This table links a package build with a distroarchseries and sourcepackagerelease.';
-COMMENT ON COLUMN BinaryPackageBuild.package_build IS 'Points to the related package build with the base information.';
 COMMENT ON COLUMN BinaryPackageBuild.distro_arch_series IS 'Points the target DistroArchSeries for this build.';
 COMMENT ON COLUMN BinaryPackageBuild.source_package_release IS 'SourcePackageRelease which originated this build.';
 

@@ -43,6 +43,7 @@ from zope.security.proxy import (
     Proxy,
     )
 
+from lp.services.database.sqlbase import flush_database_caches
 from lp.services.webapp import canonical_url
 from lp.services.webapp.batching import BatchNavigator
 from lp.testing import normalize_whitespace
@@ -78,6 +79,7 @@ class BrowsesWithQueryLimit(Matcher):
             context_url = canonical_url(
                 context, view_name=self.view_name, **self.options)
         browser = setupBrowserForUser(self.user)
+        flush_database_caches()
         collector = QueryCollector()
         collector.register()
         try:

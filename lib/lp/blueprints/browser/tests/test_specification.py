@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -27,7 +27,6 @@ from lp.app.browser.tales import format_link
 from lp.app.enums import InformationType
 from lp.app.interfaces.services import IService
 from lp.blueprints.browser import specification
-from lp.blueprints.browser.specification import INFORMATION_TYPE_FLAG
 from lp.blueprints.enums import SpecificationImplementationStatus
 from lp.blueprints.interfaces.specification import (
     ISpecification,
@@ -35,11 +34,7 @@ from lp.blueprints.interfaces.specification import (
     )
 from lp.registry.enums import SpecificationSharingPolicy
 from lp.registry.interfaces.person import PersonVisibility
-from lp.registry.interfaces.product import (
-    IProduct,
-    IProductSeries,
-    )
-from lp.services.features.testing import FeatureFixture
+from lp.registry.interfaces.product import IProductSeries
 from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import BrowserNotificationLevel
@@ -47,13 +42,17 @@ from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     BrowserTestCase,
     FakeLaunchpadRequest,
+    login_celebrity,
     login_person,
     logout,
     person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
-from lp.testing.matchers import DocTestMatches
+from lp.testing.matchers import (
+    BrowsesWithQueryLimit,
+    DocTestMatches,
+    )
 from lp.testing.pages import (
     extract_text,
     find_tag_by_id,
@@ -218,12 +217,6 @@ class TestSpecificationView(BrowserTestCase):
         self.assertIn(spec_name, view.contents)
 
 
-def set_blueprint_information_type(test_case, enabled):
-    value = 'true' if enabled else ''
-    fixture = FeatureFixture({INFORMATION_TYPE_FLAG: value})
-    test_case.useFixture(fixture)
-
-
 class TestSpecificationSet(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
@@ -243,23 +236,29 @@ class TestSpecificationSet(BrowserTestCase):
         with person_logged_in(spec_owner):
             removeSecurityProxy(spec.target)._ensurePolicies(
                 [InformationType.PROPRIETARY])
-            spec.transitionToInformationType(InformationType.PROPRIETARY,
-                                             spec.owner)
+            spec.transitionToInformationType(
+                InformationType.PROPRIETARY, spec.owner)
         browser = self.getViewBrowser(specs)
         self.assertNotIn('Not allowed', browser.contents)
         self.assertNotIn(spec_name, browser.contents)
 
+    def test_query_count(self):
+        product = self.factory.makeProduct()
+        removeSecurityProxy(product).official_blueprints = True
+        self.factory.makeSpecification(product=product)
+        limit = BrowsesWithQueryLimit(37, product.owner, rootsite='blueprints')
+        self.assertThat(product, limit)
+        login_celebrity('admin')
+        [self.factory.makeSpecification(product=product) for i in range(4)]
+        self.assertThat(product, limit)
+        
 
 class TestSpecificationInformationType(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
-    portlet_tag = soupmatchers.Tag('info-type-portlet', True,
-                                   attrs=dict(id='information-type-summary'))
-
-    def setUp(self):
-        super(TestSpecificationInformationType, self).setUp()
-        set_blueprint_information_type(self, True)
+    portlet_tag = soupmatchers.Tag(
+        'info-type-portlet', True, attrs=dict(id='information-type-summary'))
 
     def assertBrowserMatches(self, matcher):
         browser = self.getViewBrowser(self.factory.makeSpecification())
@@ -267,11 +266,6 @@ class TestSpecificationInformationType(BrowserTestCase):
 
     def test_has_privacy_portlet(self):
         self.assertBrowserMatches(soupmatchers.HTMLContains(self.portlet_tag))
-
-    def test_privacy_portlet_requires_flag(self):
-        set_blueprint_information_type(self, False)
-        self.assertBrowserMatches(
-            Not(soupmatchers.HTMLContains(self.portlet_tag)))
 
     def test_has_privacy_banner(self):
         owner = self.factory.makePerson()
@@ -290,8 +284,8 @@ class TestSpecificationInformationType(BrowserTestCase):
             browser = self.getViewBrowser(spec, user=owner)
         privacy_banner = soupmatchers.Tag('privacy-banner', True,
                 attrs={'class': 'private_banner_container'})
-        self.assertThat(browser.contents,
-                        soupmatchers.HTMLContains(privacy_banner))
+        self.assertThat(
+            browser.contents, soupmatchers.HTMLContains(privacy_banner))
 
     def set_secrecy(self, spec, owner, information_type='PROPRIETARY'):
         form = {
@@ -317,8 +311,8 @@ class TestSpecificationInformationType(BrowserTestCase):
             [InformationType.PROPRIETARY])
         self.set_secrecy(spec, owner)
         with person_logged_in(owner):
-            self.assertEqual(InformationType.PROPRIETARY,
-                             spec.information_type)
+            self.assertEqual(
+                InformationType.PROPRIETARY, spec.information_type)
 
     def test_secrecy_change_nonsense(self):
         """Invalid values produce sane errors."""
@@ -363,11 +357,11 @@ class TestSpecificationInformationType(BrowserTestCase):
               ignore_permissions=True)
 
         browser = self.getViewBrowser(spec, '+index', user=owner)
-        self.assertThat(browser.contents,
-                        soupmatchers.HTMLContains(privacy_banner))
+        self.assertThat(
+            browser.contents, soupmatchers.HTMLContains(privacy_banner))
         browser = self.getViewBrowser(spec, '+subscribe', user=owner)
-        self.assertThat(browser.contents,
-                        soupmatchers.HTMLContains(privacy_banner))
+        self.assertThat(
+            browser.contents, soupmatchers.HTMLContains(privacy_banner))
 
 
 # canonical_url erroneously returns http://blueprints.launchpad.dev/+new
@@ -408,8 +402,7 @@ class NewSpecificationTests:
         # specifications.
         view = self.createInitializedView()
         self.assertEqual(
-            InformationType.PUBLIC,
-            view.initial_values['information_type'])
+            InformationType.PUBLIC, view.initial_values['information_type'])
 
 
 class TestNewSpecificationFromRootView(TestCaseWithFactory,
@@ -423,7 +416,6 @@ class TestNewSpecificationFromRootView(TestCaseWithFactory,
 
     def test_allowed_info_type_validated(self):
         """information_type must be validated against context"""
-        set_blueprint_information_type(self, True)
         context = getUtility(ISpecificationSet)
         product = self.factory.makeProduct()
         form = self._create_form_data(product.name)
@@ -444,15 +436,12 @@ class TestNewSpecificationFromSprintView(TestCaseWithFactory,
 
     def test_allowed_info_type_validated(self):
         """information_type must be validated against context"""
-        set_blueprint_information_type(self, True)
         sprint = self.factory.makeSprint()
         product = self.factory.makeProduct(owner=sprint.owner)
         form = self._create_form_data(product.name)
         form['field.information_type'] = 'PROPRIETARY'
         self._assert_information_type_validation_error(
-            sprint,
-            form,
-            sprint.owner)
+            sprint, form, sprint.owner)
 
 
 class TestNewSpecificationFromProjectView(TestCaseWithFactory,
@@ -466,15 +455,12 @@ class TestNewSpecificationFromProjectView(TestCaseWithFactory,
 
     def test_allowed_info_type_validated(self):
         """information_type must be validated against context"""
-        set_blueprint_information_type(self, True)
         project = self.factory.makeProject()
         product = self.factory.makeProduct(project=project)
         form = self._create_form_data(product.name)
         form['field.information_type'] = 'PROPRIETARY'
         self._assert_information_type_validation_error(
-            project,
-            form,
-            project.owner)
+            project, form, project.owner)
 
 
 class TestNewSpecificationFromProductView(TestCaseWithFactory,
@@ -495,8 +481,7 @@ class TestNewSpecificationFromProductView(TestCaseWithFactory,
         # among the allowed types.
         view = self.createInitializedView()
         self.assertEqual(
-            InformationType.EMBARGOED,
-            view.initial_values['information_type'])
+            InformationType.EMBARGOED, view.initial_values['information_type'])
 
 
 class TestNewSpecificationFromDistributionView(TestCaseWithFactory,
@@ -517,9 +502,8 @@ class TestNewSpecificationInformationType(BrowserTestCase):
 
     def setUp(self):
         super(TestNewSpecificationInformationType, self).setUp()
-        set_blueprint_information_type(self, True)
-        it_field = soupmatchers.Tag('it-field', True,
-                                    attrs=dict(name='field.information_type'))
+        it_field = soupmatchers.Tag(
+            'it-field', True, attrs=dict(name='field.information_type'))
         self.match_it = soupmatchers.HTMLContains(it_field)
 
     def test_from_root(self):
@@ -527,24 +511,11 @@ class TestNewSpecificationInformationType(BrowserTestCase):
         browser = self.getUserBrowser(NEW_SPEC_FROM_ROOT_URL)
         self.assertThat(browser.contents, self.match_it)
 
-    def test_from_root_no_flag(self):
-        """Information_type is excluded with no flag."""
-        set_blueprint_information_type(self, False)
-        browser = self.getUserBrowser(NEW_SPEC_FROM_ROOT_URL)
-        self.assertThat(browser.contents, Not(self.match_it))
-
     def test_from_sprint(self):
         """Information_type is included creating from a sprint."""
         sprint = self.factory.makeSprint()
         browser = self.getViewBrowser(sprint, view_name='+addspec')
         self.assertThat(browser.contents, self.match_it)
-
-    def test_from_sprint_no_flag(self):
-        """Information_type is excluded with no flag."""
-        set_blueprint_information_type(self, False)
-        sprint = self.factory.makeSprint()
-        browser = self.getViewBrowser(sprint, view_name='+addspec')
-        self.assertThat(browser.contents, Not(self.match_it))
 
     def submitSpec(self, browser):
         """Submit a Specification via a browser."""
@@ -587,13 +558,6 @@ class TestNewSpecificationInformationType(BrowserTestCase):
             SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY)
         self.assertEqual(InformationType.EMBARGOED, spec.information_type)
 
-    def test_from_product_no_flag(self):
-        """information_type is excluded with no flag."""
-        set_blueprint_information_type(self, False)
-        product = self.factory.makeProduct()
-        browser = self.getViewBrowser(product, view_name='+addspec')
-        self.assertThat(browser.contents, Not(self.match_it))
-
     def test_from_productseries(self):
         """Information_type is included creating from productseries."""
         policy = SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY
@@ -602,13 +566,6 @@ class TestNewSpecificationInformationType(BrowserTestCase):
         series = self.factory.makeProductSeries(product=product)
         browser = self.getViewBrowser(series, view_name='+addspec')
         self.assertThat(browser.contents, self.match_it)
-
-    def test_from_productseries_no_flag(self):
-        """information_type is excluded with no flag."""
-        set_blueprint_information_type(self, False)
-        series = self.factory.makeProductSeries()
-        browser = self.getViewBrowser(series, view_name='+addspec')
-        self.assertThat(browser.contents, Not(self.match_it))
 
     def test_from_distribution(self):
         """information_type is excluded creating from distro."""
@@ -628,9 +585,8 @@ class BaseNewSpecificationInformationTypeDefaultMixin:
     layer = DatabaseFunctionalLayer
 
     def _setUp(self):
-        set_blueprint_information_type(self, True)
-        it_field = soupmatchers.Tag('it-field', True,
-                                    attrs=dict(name='field.information_type'))
+        it_field = soupmatchers.Tag(
+            'it-field', True, attrs=dict(name='field.information_type'))
         self.match_it = soupmatchers.HTMLContains(it_field)
 
     def makeTarget(self, policy, owner=None):
@@ -642,11 +598,9 @@ class BaseNewSpecificationInformationTypeDefaultMixin:
         Useful because we need to follow to product from
         ProductSeries to get to _ensurePolicies.
         """
-        if IProduct.providedBy(target):
-            removeSecurityProxy(target)._ensurePolicies(information_type)
-        elif IProductSeries.providedBy(target):
-            removeSecurityProxy(target.product)._ensurePolicies(
-                information_type)
+        if IProductSeries.providedBy(target):
+            target = target.product
+        removeSecurityProxy(target)._ensurePolicies(information_type)
 
     def getSpecification(self, target, name):
         """Helper to get the specification.

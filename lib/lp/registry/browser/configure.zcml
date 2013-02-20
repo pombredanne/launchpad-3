@@ -2012,7 +2012,7 @@
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.productrelease.IProductRelease"
         factory="lp.registry.browser.milestone.MilestoneBreadcrumb"
-        permission="zope.Public"/>
+        permission="launchpad.View"/>
     <browser:url
         for="lp.registry.interfaces.productrelease.IProductRelease"
         path_expression="version"
@@ -2027,21 +2027,21 @@
         name="+index"/>
     <browser:pages
         for="lp.registry.interfaces.productrelease.IProductRelease"
-        permission="zope.Public">
+        permission="launchpad.View">
         <browser:page
             name="+portlet-downloads"
             template="../templates/productrelease-portlet-downloads.pt"/>
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.productrelease.IProductRelease"
-        permission="zope.Public"
+        permission="launchpad.View"
         name="+index"
         class="lp.registry.browser.milestone.MilestoneView"
         template="../templates/milestone-index.pt"/>
     <browser:page
         for="lp.registry.interfaces.productrelease.IProductRelease"
         class="lp.registry.browser.productrelease.ProductReleaseRdfView"
-        permission="zope.Public"
+        permission="launchpad.View"
         name="+rdf"
         attribute="__call__"/>
     <browser:page

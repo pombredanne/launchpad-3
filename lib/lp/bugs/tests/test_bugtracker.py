@@ -312,7 +312,7 @@ class TestMantis(TestCaseWithFactory):
         test_handler = UrlLib2TransportTestHandler()
         test_handler.setRedirect('http://mantis.example.com/login_page.php'
             '?return=%2Fsome%2Fpage')
-        opener = tracker._opener
+        opener = tracker.url_opener
         opener.add_handler(test_handler)
         opener.open('http://mantis.example.com/some/page')
         # We should now have two entries in the test handler's list
@@ -329,7 +329,7 @@ class TestMantis(TestCaseWithFactory):
         # handles cookies.
         tracker = Mantis('http://mantis.example.com')
         test_handler = UrlLib2TransportTestHandler()
-        opener = tracker._opener
+        opener = tracker.url_opener
         opener.add_handler(test_handler)
         opener.open('http://mantis.example.com', '')
         cookies = list(tracker._cookie_handler.cookiejar)
@@ -344,7 +344,7 @@ class TestMantis(TestCaseWithFactory):
         # thus set csv_data to None.
         tracker = Mantis('http://mantis.example.com')
         test_handler = UrlLib2TransportTestHandler()
-        opener = tracker._opener
+        opener = tracker.url_opener
         opener.add_handler(test_handler)
         test_handler.setError(
             HTTPError(
@@ -358,7 +358,7 @@ class TestMantis(TestCaseWithFactory):
         # they appear as BugTrackerConnectErrors.
         tracker = Mantis('http://mantis.example.com')
         test_handler = UrlLib2TransportTestHandler()
-        opener = tracker._opener
+        opener = tracker.url_opener
         opener.add_handler(test_handler)
         test_handler.setError(
             HTTPError(

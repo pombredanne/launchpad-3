@@ -54,9 +54,7 @@ from lp.archiveuploader.utils import (
     re_issource,
     )
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.packagebuild import IPackageBuildSet
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.buildmaster.model.packagebuild import PackageBuild
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.registry.enums import (
     INCLUSIVE_TEAM_POLICY,
     PersonVisibility,
@@ -226,7 +224,11 @@ class Archive(SQLBase):
         Also assert the name is valid when set via an unproxied object.
         """
         if not self._SO_creating:
-            assert self.is_copy, "Only COPY archives can be renamed."
+            renamable = (
+                self.is_copy or
+                (self.is_ppa and self.status == ArchiveStatus.DELETED))
+            assert renamable, (
+                "Only COPY archives and deleted PPAs can be renamed.")
         assert valid_name(value), "Invalid name given to unproxied object."
         return value
 
@@ -485,17 +487,18 @@ class Archive(SQLBase):
             return getUtility(IBinaryPackageBuildSet).getBuildsForArchive(
                 self, build_state, name, pocket, arch_tag)
         else:
-            if arch_tag is not None or name is not None:
+            if arch_tag is not None or name is not None or pocket is not None:
                 raise IncompatibleArguments(
                     "The 'arch_tag' and 'name' parameters can be used only "
                     "with binary_only=True.")
-            return getUtility(IPackageBuildSet).getBuildsForArchive(
-                self, status=build_state, pocket=pocket)
+            return getUtility(IBuildFarmJobSet).getBuildsForArchive(
+                self, status=build_state)
 
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,
                             exact_match=False, created_since_date=None,
-                            eager_load=False, component_name=None):
+                            eager_load=False, component_name=None,
+                            include_removed=True):
         """See `IArchive`."""
         # clauses contains literal sql expressions for things that don't work
         # easily in storm : this method was migrated from sqlobject but some
@@ -561,6 +564,9 @@ class Archive(SQLBase):
             clauses.append(
                 SourcePackagePublishingHistory.datecreated >=
                     created_since_date)
+
+        if not include_removed:
+            clauses.append(SourcePackagePublishingHistory.dateremoved == None)
 
         store = Store.of(self)
         resultset = store.find(
@@ -705,7 +711,7 @@ class Archive(SQLBase):
     def _getBinaryPublishingBaseClauses(
         self, name=None, version=None, status=None, distroarchseries=None,
         pocket=None, exact_match=False, created_since_date=None,
-        ordered=True):
+        ordered=True, include_removed=True):
         """Base clauses and clauseTables for binary publishing queries.
 
         Returns a list of 'clauses' (to be joined in the callsite) and
@@ -783,17 +789,22 @@ class Archive(SQLBase):
                 "BinaryPackagePublishingHistory.datecreated >= %s"
                 % sqlvalues(created_since_date))
 
+        if not include_removed:
+            clauses.append(
+                "BinaryPackagePublishingHistory.dateremoved IS NULL")
+
         return clauses, clauseTables, orderBy
 
     def getAllPublishedBinaries(self, name=None, version=None, status=None,
                                 distroarchseries=None, pocket=None,
                                 exact_match=False, created_since_date=None,
-                                ordered=True):
+                                ordered=True, include_removed=True):
         """See `IArchive`."""
         clauses, clauseTables, orderBy = self._getBinaryPublishingBaseClauses(
             name=name, version=version, status=status, pocket=pocket,
             distroarchseries=distroarchseries, exact_match=exact_match,
-            created_since_date=created_since_date, ordered=ordered)
+            created_since_date=created_since_date, ordered=ordered,
+            include_removed=include_removed)
 
         all_binaries = BinaryPackagePublishingHistory.select(
             ' AND '.join(clauses), clauseTables=clauseTables,
@@ -1117,20 +1128,13 @@ class Archive(SQLBase):
         extra_exprs = []
         if not include_needsbuild:
             extra_exprs.append(
-                BuildFarmJob.status != BuildStatus.NEEDSBUILD)
+                BinaryPackageBuild.status != BuildStatus.NEEDSBUILD)
 
-        find_spec = (
-            BuildFarmJob.status,
-            Count(BinaryPackageBuild.id),
-            )
-        result = store.using(
-            BinaryPackageBuild, PackageBuild, BuildFarmJob).find(
-            find_spec,
-            BinaryPackageBuild.package_build == PackageBuild.id,
-            PackageBuild.archive == self,
-            PackageBuild.build_farm_job == BuildFarmJob.id,
-            *extra_exprs).group_by(BuildFarmJob.status).order_by(
-                BuildFarmJob.status)
+        result = store.find(
+            (BinaryPackageBuild.status, Count(BinaryPackageBuild.id)),
+            BinaryPackageBuild.archive == self,
+            *extra_exprs).group_by(BinaryPackageBuild.status).order_by(
+                BinaryPackageBuild.status)
 
         # Create a map for each count summary to a number of buildstates:
         count_map = {
@@ -1898,18 +1902,14 @@ class Archive(SQLBase):
         """See `IArchive`."""
         store = Store.of(self)
 
-        base_query = (
-            BinaryPackageBuild.package_build == PackageBuild.id,
-            PackageBuild.archive == self,
-            PackageBuild.build_farm_job == BuildFarmJob.id)
         sprs_building = store.find(
             BinaryPackageBuild.source_package_release_id,
-            BuildFarmJob.status == BuildStatus.BUILDING,
-            *base_query)
+            BinaryPackageBuild.archive == self,
+            BinaryPackageBuild.status == BuildStatus.BUILDING)
         sprs_waiting = store.find(
             BinaryPackageBuild.source_package_release_id,
-            BuildFarmJob.status == BuildStatus.NEEDSBUILD,
-            *base_query)
+            BinaryPackageBuild.archive == self,
+            BinaryPackageBuild.status == BuildStatus.NEEDSBUILD)
 
         # A package is not counted as waiting if it already has at least
         # one build building.
@@ -1917,28 +1917,6 @@ class Archive(SQLBase):
         pkgs_waiting_count = sprs_waiting.difference(sprs_building).count()
 
         return pkgs_building_count, pkgs_waiting_count
-
-    def getSourcePackageReleases(self, build_status=None):
-        """See `IArchive`."""
-        store = Store.of(self)
-
-        extra_exprs = []
-        if build_status is not None:
-            extra_exprs = [
-                PackageBuild.build_farm_job == BuildFarmJob.id,
-                BuildFarmJob.status == build_status,
-                ]
-
-        result_set = store.find(
-            SourcePackageRelease,
-            (BinaryPackageBuild.source_package_release_id ==
-                SourcePackageRelease.id),
-            BinaryPackageBuild.package_build == PackageBuild.id,
-            PackageBuild.archive == self,
-            *extra_exprs)
-
-        result_set.config(distinct=True).order_by(SourcePackageRelease.id)
-        return result_set
 
     def updatePackageDownloadCount(self, bpr, day, country, count):
         """See `IArchive`."""
@@ -1974,18 +1952,15 @@ class Archive(SQLBase):
 
         query = """
             UPDATE Job SET status = %s
-            FROM BinaryPackageBuild, PackageBuild, BuildFarmJob,
-                 BuildPackageJob, BuildQueue
+            FROM BinaryPackageBuild, BuildPackageJob, BuildQueue
             WHERE
-                BinaryPackageBuild.package_build = PackageBuild.id
                 -- insert self.id here
-                AND PackageBuild.archive = %s
+                BinaryPackageBuild.archive = %s
                 AND BuildPackageJob.build = BinaryPackageBuild.id
                 AND BuildPackageJob.job = BuildQueue.job
                 AND Job.id = BuildQueue.job
                 -- Build is in state BuildStatus.NEEDSBUILD (0)
-                AND PackageBuild.build_farm_job = BuildFarmJob.id
-                AND BuildFarmJob.status = %s;
+                AND BinaryPackageBuild.status = %s;
         """ % sqlvalues(status, self, BuildStatus.NEEDSBUILD)
 
         store = Store.of(self)
@@ -1994,6 +1969,7 @@ class Archive(SQLBase):
     def enable(self):
         """See `IArchive`."""
         assert self._enabled == False, "This archive is already enabled."
+        assert self.is_active, "Deleted archives can't be enabled."
         self._enabled = True
         self._setBuildStatuses(JobStatus.WAITING)
 
@@ -2008,12 +1984,6 @@ class Archive(SQLBase):
         assert self.status not in (
             ArchiveStatus.DELETING, ArchiveStatus.DELETED,
             "This archive is already deleted.")
-
-        # Set all the publications to DELETED.
-        sources = self.getPublishedSources(status=active_publishing_status)
-        getUtility(IPublishingSet).requestDeletion(
-            sources, removed_by=deleted_by,
-            removal_comment="Removed when deleting archive")
 
         # Mark the archive's status as DELETING so the repository can be
         # removed by the publisher.
@@ -2408,55 +2378,6 @@ class ArchiveSet:
             most_active.append(the_dict)
 
         return most_active
-
-    def getBuildCountersForArchitecture(self, archive, distroarchseries):
-        """See `IArchiveSet`."""
-        cur = cursor()
-        query = """
-            SELECT BuildFarmJob.status, count(BuildFarmJob.id) FROM
-            BinaryPackageBuild, PackageBuild, BuildFarmJob
-            WHERE
-                BinaryPackageBuild.package_build = PackageBuild.id AND
-                PackageBuild.build_farm_job = BuildFarmJob.id AND
-                PackageBuild.archive = %s AND
-                BinaryPackageBuild.distro_arch_series = %s
-            GROUP BY BuildFarmJob.status ORDER BY BuildFarmJob.status;
-        """ % sqlvalues(archive, distroarchseries)
-        cur.execute(query)
-        result = cur.fetchall()
-
-        status_map = {
-            'failed': (
-                BuildStatus.CHROOTWAIT,
-                BuildStatus.FAILEDTOBUILD,
-                BuildStatus.FAILEDTOUPLOAD,
-                BuildStatus.MANUALDEPWAIT,
-                ),
-            'pending': (
-                BuildStatus.BUILDING,
-                BuildStatus.UPLOADING,
-                BuildStatus.NEEDSBUILD,
-                ),
-            'succeeded': (
-                BuildStatus.FULLYBUILT,
-                ),
-            }
-
-        status_and_counters = {}
-
-        # Set 'total' counter
-        status_and_counters['total'] = sum(
-            [counter for status, counter in result])
-
-        # Set each counter according 'status_map'
-        for key, status in status_map.iteritems():
-            status_and_counters[key] = 0
-            for status_value, status_counter in result:
-                status_values = [item.value for item in status]
-                if status_value in status_values:
-                    status_and_counters[key] += status_counter
-
-        return status_and_counters
 
     def getPrivatePPAs(self):
         """See `IArchiveSet`."""

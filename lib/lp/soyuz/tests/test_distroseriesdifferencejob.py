@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test `DistroSeriesDifferenceJob` and utility."""
@@ -37,7 +37,6 @@ from lp.soyuz.model.distroseriesdifferencejob import (
     create_job,
     create_multiple_jobs,
     DistroSeriesDifferenceJob,
-    FEATURE_FLAG_ENABLE_MODULE,
     find_waiting_jobs,
     make_metadata,
     may_require_job,
@@ -69,10 +68,6 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
     """Tests for `IDistroSeriesDifferenceJobSource`."""
 
     layer = ZopelessDatabaseLayer
-
-    def setUp(self):
-        super(TestDistroSeriesDifferenceJobSource, self).setUp()
-        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'}))
 
     def getJobSource(self):
         return getUtility(IDistroSeriesDifferenceJobSource)
@@ -316,16 +311,6 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
             parent_jobs[0], dsp.parent_series,
             [package.id, parent_dsp.parent_series.id])
 
-    def test_createForPackagePublication_obeys_feature_flag(self):
-        dsp = self.factory.makeDistroSeriesParent()
-        package = self.factory.makeSourcePackageName()
-        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: ''}))
-        self.getJobSource().createForPackagePublication(
-            dsp.derived_series, package, PackagePublishingPocket.RELEASE)
-        self.assertContentEqual(
-            [],
-            find_waiting_jobs(dsp.derived_series, package, dsp.parent_series))
-
     def test_createForPackagePublication_ignores_backports_and_proposed(self):
         dsp = self.factory.makeDistroSeriesParent()
         package = self.factory.makeSourcePackageName()
@@ -360,16 +345,6 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         self.assertEqual(
             1, len(find_waiting_jobs(
                 dsp.derived_series, spn, dsp.parent_series)))
-
-    def test_createForSPPHs_obeys_feature_flag(self):
-        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: ''}))
-        dsp = self.factory.makeDistroSeriesParent()
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            dsp.parent_series, pocket=PackagePublishingPocket.RELEASE)
-        spn = spph.sourcepackagerelease.sourcepackagename
-        self.getJobSource().createForSPPHs([spph])
-        self.assertContentEqual(
-            [], find_waiting_jobs(dsp.derived_series, spn, dsp.parent_series))
 
     def test_createForSPPHs_ignores_backports_and_proposed(self):
         dsp = self.factory.makeDistroSeriesParent()
@@ -451,19 +426,6 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         self.getJobSource().createForSPPHs([spph])
         self.assertContentEqual(
             [], find_waiting_jobs(dsp.derived_series, spn, dsp.parent_series))
-
-    def test_massCreateForSeries_obeys_feature_flag(self):
-        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: ''}))
-        dsp = self.factory.makeDistroSeriesParent()
-        spph = self.createSPPHs(dsp.derived_series, 1)[0]
-        self.getJobSource().massCreateForSeries(dsp.derived_series)
-
-        self.assertContentEqual(
-            [],
-            find_waiting_jobs(
-                dsp.derived_series,
-                spph.sourcepackagerelease.sourcepackagename,
-                dsp.parent_series))
 
     def test_getPendingJobsForDifferences_finds_job(self):
         dsd = self.factory.makeDistroSeriesDifference()
@@ -647,7 +609,6 @@ class TestDistroSeriesDifferenceJobEndToEnd(TestCaseWithFactory):
 
     def setUp(self):
         super(TestDistroSeriesDifferenceJobEndToEnd, self).setUp()
-        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'}))
         self.store = IMasterStore(DistroSeriesDifference)
 
     def getJobSource(self):
@@ -987,7 +948,6 @@ class TestViaCelery(TestCaseWithFactory):
 
     def test_DerivedDistroseriesDifferenceJob(self):
         self.useFixture(FeatureFixture({
-            FEATURE_FLAG_ENABLE_MODULE: u'on',
             'jobs.celery.enabled_classes': 'DistroSeriesDifferenceJob',
             }))
         dsp = self.factory.makeDistroSeriesParent()

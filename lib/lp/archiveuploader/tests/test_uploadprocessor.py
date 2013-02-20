@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for uploadprocessor.py."""
@@ -60,7 +60,6 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
-from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import (
     BufferLogger,
@@ -89,9 +88,6 @@ from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
-from lp.soyuz.model.distroseriesdifferencejob import (
-    FEATURE_FLAG_ENABLE_MODULE,
-    )
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
@@ -169,9 +165,6 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         self.log = BufferLogger()
 
         self.switchToAdmin()
-        self.useFixture(FeatureFixture({
-            FEATURE_FLAG_ENABLE_MODULE: u'on',
-        }))
         self.switchToUploader()
 
     def tearDown(self):
@@ -2091,10 +2084,8 @@ class TestUploadHandler(TestUploadProcessorBase):
 
         builder = self.factory.makeBuilder()
         build.buildqueue_record.markAsBuilding(builder)
-        build.builder = build.buildqueue_record.builder
-
-        build.status = BuildStatus.UPLOADING
-        build.date_finished = UTC_NOW
+        build.updateStatus(
+            BuildStatus.UPLOADING, builder=build.buildqueue_record.builder)
         self.switchToUploader()
 
         # Upload and accept a binary for the primary archive source.
@@ -2137,7 +2128,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         queue_item.setDone()
 
         build.buildqueue_record.markAsBuilding(self.factory.makeBuilder())
-        build.status = BuildStatus.UPLOADING
+        build.updateStatus(BuildStatus.UPLOADING)
         self.switchToUploader()
 
         # Upload and accept a binary for the primary archive source.
@@ -2183,12 +2174,9 @@ class TestUploadHandler(TestUploadProcessorBase):
             "bar_1.0-1", queue_entry=leaf_name, relative_path=relative_path)
         self.options.context = 'buildd'
         self.options.builds = True
-        removeSecurityProxy(build).date_started = UTC_NOW
-        # Commit so date_started is recorded and doesn't cause constraint
-        # violations later.
-        build.status = BuildStatus.UPLOADING
-        build.date_finished = UTC_NOW
-        Store.of(build).flush()
+        build.updateStatus(BuildStatus.BUILDING)
+        build.updateStatus(BuildStatus.UPLOADING)
+        self.switchToUploader()
         BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
             leaf_name).process()
         self.layer.txn.commit()
@@ -2229,13 +2217,9 @@ class TestUploadHandler(TestUploadProcessorBase):
         os.mkdir(os.path.join(self.incoming_folder, leaf_name))
         self.options.context = 'buildd'
         self.options.builds = True
-        removeSecurityProxy(build).date_started = UTC_NOW
+        build.updateStatus(BuildStatus.BUILDING)
+        build.updateStatus(BuildStatus.UPLOADING)
         self.switchToUploader()
-        # Commit so date_started is recorded and doesn't cause constraint
-        # violations later.
-        Store.of(build).flush()
-        build.status = BuildStatus.UPLOADING
-        build.date_finished = UTC_NOW
         BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
             leaf_name).process()
         self.layer.txn.commit()
@@ -2278,15 +2262,14 @@ class TestUploadHandler(TestUploadProcessorBase):
         os.mkdir(os.path.join(self.incoming_folder, leaf_name))
         self.options.context = 'buildd'
         self.options.builds = True
-        removeSecurityProxy(build).date_started = UTC_NOW
+        build.updateStatus(BuildStatus.BUILDING)
         self.switchToAdmin()
         build.recipe.destroySelf()
         self.switchToUploader()
         # Commit so date_started is recorded and doesn't cause constraint
         # violations later.
         Store.of(build).flush()
-        build.status = BuildStatus.UPLOADING
-        build.date_finished = UTC_NOW
+        build.updateStatus(BuildStatus.UPLOADING)
         BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
             leaf_name).process()
         self.layer.txn.commit()
@@ -2315,7 +2298,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         queue_item.setDone()
 
         build.buildqueue_record.markAsBuilding(self.factory.makeBuilder())
-        build.status = BuildStatus.BUILDING
+        build.updateStatus(BuildStatus.BUILDING)
         self.switchToUploader()
 
         shutil.rmtree(upload_dir)

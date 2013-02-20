@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for objects implementing IHasSpecifications."""
@@ -141,16 +141,13 @@ class HasSpecificationsTests(TestCaseWithFactory):
         product1 = self.factory.makeProduct(project=projectgroup)
         product2 = self.factory.makeProduct(project=projectgroup)
         product3 = self.factory.makeProduct(project=other_projectgroup)
-        self.factory.makeSpecification(
-            product=product1, name="spec1")
+        self.factory.makeSpecification(product=product1, name="spec1")
         self.factory.makeSpecification(
             product=product2, name="spec2",
             status=SpecificationDefinitionStatus.OBSOLETE)
-        self.factory.makeSpecification(
-            product=product3, name="spec3")
+        self.factory.makeSpecification(product=product3, name="spec3")
         self.assertNamesOfSpecificationsAre(
-            ["spec1", "spec2"],
-            projectgroup._valid_specifications)
+            ["spec1"], projectgroup._valid_specifications)
 
     def test_person_all_specifications(self):
         person = self.factory.makePerson(name="james-w")

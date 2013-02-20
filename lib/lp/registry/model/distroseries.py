@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for a distribution series."""
@@ -42,17 +42,12 @@ from zope.interface import implements
 from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import IServiceUsage
-from lp.blueprints.enums import (
-    SpecificationFilter,
-    SpecificationGoalStatus,
-    SpecificationImplementationStatus,
-    SpecificationSort,
-    )
 from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
     )
+from lp.blueprints.model.specificationsearch import search_specifications
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
@@ -110,7 +105,6 @@ from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     flush_database_caches,
     flush_database_updates,
-    quote,
     SQLBase,
     sqlvalues,
     )
@@ -148,7 +142,6 @@ from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import (
     DistroArchSeries,
-    DistroArchSeriesSet,
     PocketChroot,
     )
 from lp.soyuz.model.distroseriesbinarypackage import DistroSeriesBinaryPackage
@@ -787,109 +780,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
           - informationalness: if nothing is said, ANY
 
         """
-
-        # Make a new list of the filter, so that we do not mutate what we
-        # were passed as a filter
-        if not filter:
-            # filter could be None or [] then we decide the default
-            # which for a distroseries is to show everything approved
-            filter = [SpecificationFilter.ACCEPTED]
-
-        # defaults for completeness: in this case we don't actually need to
-        # do anything, because the default is ANY
-
-        # defaults for acceptance: in this case, if nothing is said about
-        # acceptance, we want to show only accepted specs
-        acceptance = False
-        for option in [
-            SpecificationFilter.ACCEPTED,
-            SpecificationFilter.DECLINED,
-            SpecificationFilter.PROPOSED]:
-            if option in filter:
-                acceptance = True
-        if acceptance is False:
-            filter.append(SpecificationFilter.ACCEPTED)
-
-        # defaults for informationalness: we don't have to do anything
-        # because the default if nothing is said is ANY
-
-        # sort by priority descending, by default
-        if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.definition_status',
-                     'Specification.name']
-        elif sort == SpecificationSort.DATE:
-            # we are showing specs for a GOAL, so under some circumstances
-            # we care about the order in which the specs were nominated for
-            # the goal, and in others we care about the order in which the
-            # decision was made.
-
-            # we need to establish if the listing will show specs that have
-            # been decided only, or will include proposed specs.
-            show_proposed = set([
-                SpecificationFilter.ALL,
-                SpecificationFilter.PROPOSED,
-                ])
-            if len(show_proposed.intersection(set(filter))) > 0:
-                # we are showing proposed specs so use the date proposed
-                # because not all specs will have a date decided.
-                order = ['-Specification.datecreated', 'Specification.id']
-            else:
-                # this will show only decided specs so use the date the spec
-                # was accepted or declined for the sprint
-                order = ['-Specification.date_goal_decided',
-                         '-Specification.datecreated',
-                         'Specification.id']
-
-        # figure out what set of specifications we are interested in. for
-        # distroseries, we need to be able to filter on the basis of:
-        #
-        #  - completeness.
-        #  - goal status.
-        #  - informational.
-        #
-        base = 'Specification.distroseries = %s' % self.id
-        query = base
-        # look for informational specs
-        if SpecificationFilter.INFORMATIONAL in filter:
-            query += (' AND Specification.implementation_status = %s' %
-              quote(SpecificationImplementationStatus.INFORMATIONAL))
-
-        # filter based on completion. see the implementation of
-        # Specification.is_complete() for more details
-        completeness = Specification.completeness_clause
-
-        if SpecificationFilter.COMPLETE in filter:
-            query += ' AND ( %s ) ' % completeness
-        elif SpecificationFilter.INCOMPLETE in filter:
-            query += ' AND NOT ( %s ) ' % completeness
-
-        # look for specs that have a particular goalstatus (proposed,
-        # accepted or declined)
-        if SpecificationFilter.ACCEPTED in filter:
-            query += ' AND Specification.goalstatus = %d' % (
-                SpecificationGoalStatus.ACCEPTED.value)
-        elif SpecificationFilter.PROPOSED in filter:
-            query += ' AND Specification.goalstatus = %d' % (
-                SpecificationGoalStatus.PROPOSED.value)
-        elif SpecificationFilter.DECLINED in filter:
-            query += ' AND Specification.goalstatus = %d' % (
-                SpecificationGoalStatus.DECLINED.value)
-
-        # ALL is the trump card
-        if SpecificationFilter.ALL in filter:
-            query = base
-
-        # Filter for specification text
-        for constraint in filter:
-            if isinstance(constraint, basestring):
-                # a string in the filter is a text search filter
-                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
-                    constraint)
-
-        results = Specification.select(query, orderBy=order, limit=quantity)
-        if prejoin_people:
-            results = results.prejoin(['_assignee', '_approver', '_drafter'])
-        return results
+        base_clauses = [Specification.distroseriesID == self.id]
+        return search_specifications(
+            self, base_clauses, user, sort, quantity, filter, prejoin_people,
+            default_acceptance=True)
 
     def getDistroSeriesLanguage(self, language):
         """See `IDistroSeries`."""
@@ -1127,15 +1021,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Ignore "user", since it would not make any difference to the
         # records returned here (private builds are only in PPA right
         # now). We also ignore binary_only and always return binaries.
-
-        # Find out the distroarchseries in question.
-        arch_ids = DistroArchSeriesSet().getIdsForArchitectures(
-            self.architectures, arch_tag)
-
-        # Use the facility provided by IBinaryPackageBuildSet to
-        # retrieve the records.
-        return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
-            self.distribution, arch_ids, build_state, name, pocket)
+        return getUtility(IBinaryPackageBuildSet).getBuildsForDistro(
+            self, build_state, name, pocket, arch_tag)
 
     def createUploadedSourcePackageRelease(
         self, sourcepackagename, version, maintainer, builddepends,

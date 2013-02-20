@@ -42,6 +42,7 @@ superseded_body = u"""\
  * Builder: 
 """
 
+
 class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
@@ -62,10 +63,10 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=cake, distroseries=secret, archive=pantry,
             status=BuildStatus.FULLYBUILT, duration=timedelta(minutes=5))
-        naked_build = removeSecurityProxy(build)
-        naked_build.builder = self.factory.makeBuilder(name='bob')
-        naked_build.log = self.factory.makeLibraryFileAlias()
-        Store.of(build).flush()
+        build.updateStatus(
+            BuildStatus.FULLYBUILT,
+            builder=self.factory.makeBuilder(name='bob'))
+        build.setLog(self.factory.makeLibraryFileAlias())
         ctrl = self.makeStatusEmail(build)
         self.assertEqual(
             u'[recipe build #%d] of ~person recipe in distroseries: '
@@ -120,8 +121,7 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
     def test_generateEmail_upload_failure(self):
         """GenerateEmail works when many fields are NULL."""
         build = self.factory.makeSourcePackageRecipeBuild()
-        removeSecurityProxy(build).upload_log = (
-            self.factory.makeLibraryFileAlias())
+        build.storeUploadLog('uploaded')
         upload_log_fragment = 'Upload Log: %s' % build.upload_log_url
         ctrl = self.makeStatusEmail(build)
         self.assertTrue(upload_log_fragment in ctrl.body)

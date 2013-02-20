@@ -54,22 +54,12 @@ Create a corresponding binary publication and its changesfile.
     >>> deb_file = binary_pubs[0].binarypackagerelease.files[0].libraryfile
 
     >>> [build] = test_source.getBuilds()
-    >>> build.date_finished = build.date_created
 
 Create a buildlog and a binary upload_log.
 
-    >>> buildlog_name = (
-    ...     'buildlog_ubuntu-breezy-autotest-i386.'
-    ...     'test-pkg_1.0_FULLYBUILT.txt.gz')
     >>> buildlog = test_publisher.addMockFile(
-    ...     buildlog_name, filecontent='bogus buildlog', restricted=True)
-    >>> build.log = buildlog
-
-    >>> upload_log_name = 'upload_%d_log.txt' % build.id
-    >>> upload_log = test_publisher.addMockFile(
-    ...     upload_log_name, filecontent='bogus build upload_log',
-    ...     restricted=True)
-    >>> build.upload_log = upload_log
+    ...     'log.txt', filecontent='bogus buildlog', restricted=True)
+    >>> build.storeUploadLog('bogus build upload_log')
 
 Create a subsequent source publication so a package diff can be provided.
 
@@ -185,7 +175,7 @@ builds list is presented.
 
     >>> check_urls(no_priv_browser, builds_links,
     ...            'http://launchpad.dev/~no-priv/+archive/p3a/+build/31')
-    buildlog_ubuntu-breezy-autotest-i386.test-pkg_1.0_FULLYBUILT.txt.gz: OK
+    buildlog_ubuntutest-breezy-autotest-i386.test-pkg_1.0_FULLYBUILT.txt.gz: OK
 
     >>> no_priv_browser.open(
     ...     'http://launchpad.dev/~no-priv/+archive/p3a/+packages')

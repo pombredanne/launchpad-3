@@ -1103,8 +1103,7 @@ class IPublishingSet(Interface):
             binary publications.
         """
 
-    def getBuildsForSourceIds(source_ids, archive=None, build_states=None,
-                              need_build_farm_job=False):
+    def getBuildsForSourceIds(source_ids, archive=None, build_states=None):
         """Return all builds related with each given source publication.
 
         The returned ResultSet contains entries with the wanted `Build`s
@@ -1132,10 +1131,8 @@ class IPublishingSet(Interface):
         :type build_states: ``list`` or None
         :param need_build_farm_job: whether to include the `PackageBuild`
             and `BuildFarmJob` in the result.
-        :type need_build_farm_job: bool
         :return: a storm ResultSet containing tuples as
-            (`SourcePackagePublishingHistory`, `Build`, `DistroArchSeries`,
-             [`PackageBuild`, `BuildFarmJob` if need_build_farm_job])
+            (`SourcePackagePublishingHistory`, `Build`, `DistroArchSeries`)
         :rtype: `storm.store.ResultSet`.
         """
 
@@ -1283,13 +1280,15 @@ class IPublishingSet(Interface):
         This is a supporting operation for a deletion request.
         """
 
-    def requestDeletion(sources, removed_by, removal_comment=None):
+    def requestDeletion(pub, removed_by, removal_comment=None):
         """Delete the source and binary publications specified.
 
         This method deletes the source publications passed via the first
-        parameter as well as their associated binary publications.
+        parameter as well as their associated binary publications, and any
+        binary publications passed in.
 
-        :param sources: list of `SourcePackagePublishingHistory` objects.
+        :param pubs: list of `SourcePackagePublishingHistory` and
+            `BinaryPackagePublishingHistory` objects.
         :param removed_by: `IPerson` responsible for the removal.
         :param removal_comment: optional text describing the removal reason.
 

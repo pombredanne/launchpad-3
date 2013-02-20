@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -25,8 +25,12 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
+from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
-from lp.registry.errors import InvalidFilename
+from lp.registry.errors import (
+    InvalidFilename,
+    ProprietaryProduct,
+    )
 from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
@@ -52,6 +56,7 @@ from lp.services.database.sqlbase import (
     )
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.publisher import get_raw_form_value_from_current_request
 
 
 class ProductRelease(SQLBase):
@@ -104,6 +109,11 @@ class ProductRelease(SQLBase):
         """See `IProductRelease`."""
         return self.milestone.title
 
+    @property
+    def can_have_release_files(self):
+        """See `IProductRelease`."""
+        return self.product.information_type == InformationType.PUBLIC
+
     @staticmethod
     def normalizeFilename(filename):
         # Replace slashes in the filename with less problematic dashes.
@@ -139,37 +149,44 @@ class ProductRelease(SQLBase):
                        uploader, signature_filename=None,
                        signature_content=None,
                        file_type=UpstreamFileType.CODETARBALL,
-                       description=None):
+                       description=None, from_api=False):
         """See `IProductRelease`."""
+        if not self.can_have_release_files:
+            raise ProprietaryProduct(
+                "Only public projects can have download files.")
         if self.hasReleaseFile(filename):
             raise InvalidFilename
         # Create the alias for the file.
         filename = self.normalizeFilename(filename)
+        # XXX: StevenK 2013-02-06 bug=1116954: We should not need to refetch
+        # the file content from the request, since the passed in one has been
+        # wrongly encoded.
+        if from_api:
+            file_content = get_raw_form_value_from_current_request(
+                'file_content')
         file_obj, file_size = self._getFileObjectAndSize(file_content)
 
         alias = getUtility(ILibraryFileAliasSet).create(
-            name=filename,
-            size=file_size,
-            file=file_obj,
+            name=filename, size=file_size, file=file_obj,
             contentType=content_type)
         if signature_filename is not None and signature_content is not None:
+            # XXX: StevenK 2013-02-06 bug=1116954: We should not need to 
+            # refetch the file content from the request, since the passed in
+            # one has been wrongly encoded.
+            if from_api:
+                signature_content = get_raw_form_value_from_current_request(
+                    'signature_content')
             signature_obj, signature_size = self._getFileObjectAndSize(
                 signature_content)
-            signature_filename = self.normalizeFilename(
-                signature_filename)
+            signature_filename = self.normalizeFilename(signature_filename)
             signature_alias = getUtility(ILibraryFileAliasSet).create(
-                name=signature_filename,
-                size=signature_size,
-                file=signature_obj,
-                contentType='application/pgp-signature')
+                name=signature_filename, size=signature_size,
+                file=signature_obj, contentType='application/pgp-signature')
         else:
             signature_alias = None
-        return ProductReleaseFile(productrelease=self,
-                                  libraryfile=alias,
-                                  signature=signature_alias,
-                                  filetype=file_type,
-                                  description=description,
-                                  uploader=uploader)
+        return ProductReleaseFile(
+            productrelease=self, libraryfile=alias, signature=signature_alias,
+            filetype=file_type, description=description, uploader=uploader)
 
     def getFileAliasByName(self, name):
         """See `IProductRelease`."""

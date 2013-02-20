@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from datetime import timedelta
 import shutil
 import tempfile
 from textwrap import dedent
@@ -355,11 +354,9 @@ class TestBuildNotifications(TrialTestCase):
     def prepareBehavior(self, fake_successful_upload=False):
         queue_record = self.factory.makeSourcePackageRecipeBuildJob()
         build = queue_record.specific_job.build
-        naked_build = removeSecurityProxy(build)
-        naked_build.status = BuildStatus.FULLYBUILT
-        naked_build.date_started = self.factory.getUniqueDate()
+        build.updateStatus(BuildStatus.FULLYBUILT)
         if fake_successful_upload:
-            naked_build.verifySuccessfulUpload = FakeMethod(
+            removeSecurityProxy(build).verifySuccessfulUpload = FakeMethod(
                 result=True)
             # We overwrite the buildmaster root to use a temp directory.
             tempdir = tempfile.mkdtemp()
@@ -408,7 +405,7 @@ class MakeSPRecipeBuildMixin:
 
     def makeBuild(self):
         build = self.factory.makeSourcePackageRecipeBuild(
-            status=BuildStatus.FULLYBUILT, duration=timedelta(minutes=5))
+            status=BuildStatus.BUILDING)
         build.queueBuild()
         return build
 

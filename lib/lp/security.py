@@ -118,7 +118,6 @@ from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.location import IPersonLocation
 from lp.registry.interfaces.milestone import (
-    IAbstractMilestone,
     IMilestone,
     IProjectGroupMilestone,
     )
@@ -269,7 +268,7 @@ class LimitedViewDeferredToView(AuthorizationBase):
     in cases where a user may know something about a private object. The
     default behaviour is to check if the user has launchpad.View permission;
     private objects must define their own launchpad.LimitedView checker to
-    trully check the permission.
+    truly check the permission.
     """
     permission = 'launchpad.LimitedView'
     usedfor = Interface
@@ -279,11 +278,15 @@ class LimitedViewDeferredToView(AuthorizationBase):
         # might not define a permission checker for launchpad.View.
         # eg. IHasMilestones is implicitly public to anonymous users,
         #     there is no nearest adapter to call checkUnauthenticated.
-        return check_permission('launchpad.View', self.obj)
+        return (
+            check_permission('launchpad.View', self.obj) or
+            check_permission('launchpad.SubscriberView', self.obj))
 
     def checkAuthenticated(self, user):
-        return self.forwardCheckAuthenticated(
-            user, self.obj, 'launchpad.View')
+        return (
+            self.forwardCheckAuthenticated(user, self.obj, 'launchpad.View') or
+            self.forwardCheckAuthenticated(
+                user, self.obj, 'launchpad.SubscriberView'))
 
 
 class AdminByAdminsTeam(AuthorizationBase):
@@ -527,11 +530,6 @@ class EditDistributionMirrorByOwnerOrDistroOwnerOrMirrorAdminsOrAdmins(
 class ViewDistributionMirror(AnonymousAuthorization):
     """Anyone can view an IDistributionMirror."""
     usedfor = IDistributionMirror
-
-
-class ViewAbstractMilestone(AnonymousAuthorization):
-    """Anyone can view an IMilestone or an IProjectGroupMilestone."""
-    usedfor = IAbstractMilestone
 
 
 class EditSpecificationBranch(AuthorizationBase):
@@ -1740,9 +1738,13 @@ class EditProductRelease(EditByOwnersOrAdmins):
             self, user)
 
 
-class ViewProductRelease(AnonymousAuthorization):
-
+class ViewProductRelease(DelegatedAuthorization):
+    permission = 'launchpad.View'
     usedfor = IProductRelease
+
+    def __init__(self, obj):
+        super(ViewProductRelease, self).__init__(
+            obj, obj.milestone, 'launchpad.View')
 
 
 class AdminTranslationImportQueueEntry(AuthorizationBase):
@@ -2499,14 +2501,27 @@ class ViewArchive(AuthorizationBase):
         if user.inTeam(self.obj.owner):
             return True
 
-        filter = get_enabled_archive_filter(
-            user.person, include_subscribed=True)
+        filter = get_enabled_archive_filter(user.person)
         return not IStore(self.obj).find(
             Archive.id, And(Archive.id == self.obj.id, filter)).is_empty()
 
     def checkUnauthenticated(self):
         """Unauthenticated users can see the PPA if it's not private."""
         return not self.obj.private and self.obj.enabled
+
+
+class SubscriberViewArchive(ViewArchive):
+    """Restrict viewing of private archives."""
+    permission = 'launchpad.SubscriberView'
+    usedfor = IArchive
+
+    def checkAuthenticated(self, user):
+        if super(SubscriberViewArchive, self).checkAuthenticated(user):
+            return True
+        filter = get_enabled_archive_filter(
+            user.person, include_subscribed=True)
+        return not IStore(self.obj).find(
+            Archive.id, And(Archive.id == self.obj.id, filter)).is_empty()
 
 
 class EditArchive(AuthorizationBase):

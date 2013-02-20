@@ -4,15 +4,13 @@
 __metaclass__ = type
 __all__ = [
     'BuildFarmJob',
-    'BuildFarmJobDerived',
     'BuildFarmJobMixin',
     'BuildFarmJobOld',
-    'BuildFarmJobOldDerived',
     ]
 
+import datetime
 import hashlib
 
-from lazr.delegates import delegates
 import pytz
 from storm.expr import (
     Desc,
@@ -20,7 +18,6 @@ from storm.expr import (
     Or,
     )
 from storm.locals import (
-    Bool,
     DateTime,
     Int,
     Reference,
@@ -46,11 +43,6 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.services.database.enumcol import DBEnum
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
@@ -58,10 +50,30 @@ from lp.services.database.lpstorm import (
 
 
 class BuildFarmJobOld:
-    """See `IBuildFarmJobOld`."""
+    """Some common implementation for IBuildFarmJobOld."""
+
     implements(IBuildFarmJobOld)
+
     processor = None
     virtualized = None
+
+    @staticmethod
+    def preloadBuildFarmJobs(jobs):
+        """Preload the build farm jobs to which the given jobs will delegate.
+
+        """
+        pass
+
+    @classmethod
+    def getByJob(cls, job):
+        """See `IBuildFarmJobOld`."""
+        return IStore(cls).find(cls, cls.job == job).one()
+
+    @classmethod
+    def getByJobs(cls, jobs):
+        """See `IBuildFarmJobOld`."""
+        job_ids = [job.id for job in jobs]
+        return IStore(cls).find(cls, cls.job_id.is_in(job_ids))
 
     def score(self):
         """See `IBuildFarmJobOld`."""
@@ -76,98 +88,8 @@ class BuildFarmJobOld:
         raise NotImplementedError
 
     def getTitle(self):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-    def getByJob(self, job):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-    def getByJobs(self, job):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-    def jobStarted(self):
-        """See `IBuildFarmJobOld`."""
-        pass
-
-    def jobReset(self):
-        """See `IBuildFarmJobOld`."""
-        pass
-
-    def jobAborted(self):
-        """See `IBuildFarmJobOld`."""
-        pass
-
-    def jobCancel(self):
-        """See `IBuildFarmJobOld`."""
-        pass
-
-    @staticmethod
-    def addCandidateSelectionCriteria(processor, virtualized):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-    @staticmethod
-    def postprocessCandidate(job, logger):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-    def cleanUp(self):
         """See `IBuildFarmJob`."""
-        pass
-
-    def generateSlaveBuildCookie(self):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-
-class BuildFarmJobOldDerived:
-    """Setup the delegation and provide some common implementation."""
-    delegates(IBuildFarmJobOld, context='build_farm_job')
-
-    def __init__(self, *args, **kwargs):
-        """Ensure the instance to which we delegate is set on creation."""
-        self._set_build_farm_job()
-        super(BuildFarmJobOldDerived, self).__init__(*args, **kwargs)
-
-    def __storm_loaded__(self):
-        """Set the attribute for our IBuildFarmJob delegation.
-
-        This is needed here as __init__() is not called when a storm object
-        is loaded from the database.
-        """
-        self._set_build_farm_job()
-
-    def _set_build_farm_job(self):
-        """Set the build farm job to which we will delegate.
-
-        Deriving classes must set the build_farm_job attribute for the
-        delegation.
-        """
-        raise NotImplementedError
-
-    @staticmethod
-    def preloadBuildFarmJobs(jobs):
-        """Preload the build farm jobs to which the given jobs will delegate.
-
-        """
-        pass
-
-    @classmethod
-    def getByJob(cls, job):
-        """See `IBuildFarmJobOld`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(cls, cls.job == job).one()
-
-    @classmethod
-    def getByJobs(cls, jobs):
-        """See `IBuildFarmJobOld`.
-        """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        job_ids = [job.id for job in jobs]
-        return store.find(
-            cls, cls.job_id.is_in(job_ids))
+        return self.build.title
 
     def generateSlaveBuildCookie(self):
         """See `IBuildFarmJobOld`."""
@@ -207,6 +129,23 @@ class BuildFarmJobOldDerived:
         """See `IBuildFarmJobOld`."""
         return True
 
+    def jobStarted(self):
+        """See `IBuildFarmJobOld`."""
+        # XXX wgrant: builder should be set here.
+        self.build.updateStatus(BuildStatus.BUILDING)
+
+    def jobReset(self):
+        """See `IBuildFarmJob`."""
+        self.build.updateStatus(BuildStatus.NEEDSBUILD)
+
+    def jobAborted(self):
+        """See `IBuildFarmJob`."""
+        self.build.updateStatus(BuildStatus.NEEDSBUILD)
+
+    def jobCancel(self):
+        """See `IBuildFarmJob`."""
+        self.build.updateStatus(BuildStatus.CANCELLED)
+
 
 class BuildFarmJob(Storm):
     """A base implementation for `IBuildFarmJob` classes."""
@@ -217,63 +156,47 @@ class BuildFarmJob(Storm):
 
     id = Int(primary=True)
 
-    processor_id = Int(name='processor', allow_none=True)
-    processor = Reference(processor_id, 'Processor.id')
-
-    virtualized = Bool()
-
     date_created = DateTime(
         name='date_created', allow_none=False, tzinfo=pytz.UTC)
 
-    date_started = DateTime(
-        name='date_started', allow_none=True, tzinfo=pytz.UTC)
-
     date_finished = DateTime(
         name='date_finished', allow_none=True, tzinfo=pytz.UTC)
-
-    date_first_dispatched = DateTime(
-        name='date_first_dispatched', allow_none=True, tzinfo=pytz.UTC)
 
     builder_id = Int(name='builder', allow_none=True)
     builder = Reference(builder_id, 'Builder.id')
 
     status = DBEnum(name='status', allow_none=False, enum=BuildStatus)
 
-    log_id = Int(name='log', allow_none=True)
-    log = Reference(log_id, 'LibraryFileAlias.id')
-
     job_type = DBEnum(
         name='job_type', allow_none=False, enum=BuildFarmJobType)
 
-    failure_count = Int(name='failure_count', allow_none=False)
-
-    dependencies = None
+    archive_id = Int(name='archive')
+    archive = Reference(archive_id, 'Archive.id')
 
     def __init__(self, job_type, status=BuildStatus.NEEDSBUILD,
-                 processor=None, virtualized=None, date_created=None):
+                 date_created=None, builder=None, archive=None):
         super(BuildFarmJob, self).__init__()
-        self.job_type, self.status, self.processor, self.virtualized = (
-            job_type,
-            status,
-            processor,
-            virtualized,
-            )
+        (self.job_type, self.status, self.builder, self.archive) = (
+             job_type, status, builder, archive)
         if date_created is not None:
             self.date_created = date_created
 
     @classmethod
-    def new(cls, job_type, status=BuildStatus.NEEDSBUILD, processor=None,
-            virtualized=None, date_created=None):
+    def new(cls, job_type, status=BuildStatus.NEEDSBUILD, date_created=None,
+            builder=None, archive=None):
         """See `IBuildFarmJobSource`."""
         build_farm_job = BuildFarmJob(
-            job_type, status, processor, virtualized, date_created)
-
+            job_type, status, date_created, builder, archive)
         store = IMasterStore(BuildFarmJob)
         store.add(build_farm_job)
         return build_farm_job
 
 
 class BuildFarmJobMixin:
+
+    @property
+    def dependencies(self):
+        return None
 
     @property
     def title(self):
@@ -324,14 +247,46 @@ class BuildFarmJobMixin:
                                    BuildStatus.UPLOADING,
                                    BuildStatus.SUPERSEDED]
 
+    def setLog(self, log):
+        """See `IBuildFarmJob`."""
+        self.log = log
+
+    def updateStatus(self, status, builder=None, slave_status=None,
+                     date_started=None, date_finished=None):
+        """See `IBuildFarmJob`."""
+        self.build_farm_job.status = self.status = status
+
+        # If there's a builder provided, set it if we don't already have
+        # one, or otherwise crash if it's different from the one we
+        # expected.
+        if builder is not None:
+            if self.builder is None:
+                self.build_farm_job.builder = self.builder = builder
+            else:
+                assert self.builder == builder
+
+        # If we're starting to build, set date_started and
+        # date_first_dispatched if required.
+        if self.date_started is None and status == BuildStatus.BUILDING:
+            self.date_started = date_started or datetime.datetime.now(pytz.UTC)
+            if self.date_first_dispatched is None:
+                self.date_first_dispatched = self.date_started
+
+        # If we're in a final build state (or UPLOADING, which sort of
+        # is), set date_finished if date_started is.
+        if (self.date_started is not None and self.date_finished is None
+            and status not in (
+                BuildStatus.NEEDSBUILD, BuildStatus.BUILDING,
+                BuildStatus.CANCELLING)):
+            # XXX cprov 20060615 bug=120584: Currently buildduration includes
+            # the scanner latency, it should really be asking the slave for
+            # the duration spent building locally.
+            self.build_farm_job.date_finished = self.date_finished = (
+                date_finished or datetime.datetime.now(pytz.UTC))
+
     def gotFailure(self):
         """See `IBuildFarmJob`."""
         self.failure_count += 1
-
-
-class BuildFarmJobDerived:
-    implements(IBuildFarmJob)
-    delegates(IBuildFarmJob, context='build_farm_job')
 
 
 class BuildFarmJobSet:
@@ -340,13 +295,12 @@ class BuildFarmJobSet:
     def getBuildsForBuilder(self, builder_id, status=None, user=None):
         """See `IBuildFarmJobSet`."""
         # Imported here to avoid circular imports.
-        from lp.buildmaster.model.packagebuild import PackageBuild
         from lp.soyuz.model.archive import (
             Archive, get_archive_privacy_filter)
 
         clauses = [
             BuildFarmJob.builder == builder_id,
-            Or(PackageBuild.id == None, get_archive_privacy_filter(user))]
+            Or(Archive.id == None, get_archive_privacy_filter(user))]
         if status is not None:
             clauses.append(BuildFarmJob.status == status)
 
@@ -356,12 +310,39 @@ class BuildFarmJobSet:
         # related package build - hence the left join.
         origin = [
             BuildFarmJob,
-            LeftJoin(
-                PackageBuild,
-                PackageBuild.build_farm_job == BuildFarmJob.id),
-            LeftJoin(Archive, Archive.id == PackageBuild.archive_id),
+            LeftJoin(Archive, Archive.id == BuildFarmJob.archive_id),
             ]
 
         return IStore(BuildFarmJob).using(*origin).find(
             BuildFarmJob, *clauses).order_by(
                 Desc(BuildFarmJob.date_finished), BuildFarmJob.id)
+
+    def getBuildsForArchive(self, archive, status=None):
+        """See `IBuildFarmJobSet`."""
+
+        extra_exprs = []
+
+        if status is not None:
+            extra_exprs.append(BuildFarmJob.status == status)
+
+        result_set = IStore(BuildFarmJob).find(
+            BuildFarmJob, BuildFarmJob.archive == archive, *extra_exprs)
+
+        # When we have a set of builds that may include pending or
+        # superseded builds, we order by -date_created (as we won't
+        # always have a date_finished). Otherwise we can order by
+        # -date_finished.
+        unfinished_states = [
+            BuildStatus.NEEDSBUILD,
+            BuildStatus.BUILDING,
+            BuildStatus.UPLOADING,
+            BuildStatus.SUPERSEDED,
+            ]
+        if status is None or status in unfinished_states:
+            result_set.order_by(
+                Desc(BuildFarmJob.date_created), BuildFarmJob.id)
+        else:
+            result_set.order_by(
+                Desc(BuildFarmJob.date_finished), BuildFarmJob.id)
+
+        return result_set

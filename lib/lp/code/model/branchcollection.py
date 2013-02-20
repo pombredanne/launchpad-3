@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IBranchCollection`."""
@@ -13,6 +13,10 @@ from functools import partial
 from operator import attrgetter
 
 from lazr.restful.utils import safe_hasattr
+from lazr.uri import (
+    InvalidURIError,
+    URI,
+    )
 from storm.expr import (
     And,
     Count,
@@ -20,10 +24,8 @@ from storm.expr import (
     In,
     Join,
     LeftJoin,
-    Or,
     Select,
     SQL,
-    Union,
     With,
     )
 from storm.info import ClassAlias
@@ -31,10 +33,7 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.app.enums import (
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
-    )
+from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
@@ -66,12 +65,8 @@ from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.registry.enums import EXCLUSIVE_TEAM_POLICY
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
-from lp.registry.model.person import (
-    Owner,
-    Person,
-    )
+from lp.registry.model.person import Person
 from lp.registry.model.product import Product
-from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.bulk import (
     load_referencing,
@@ -87,7 +82,6 @@ from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import quote
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
-from lp.services.webapp.vocabulary import CountableIterator
 
 
 class GenericBranchCollection:
@@ -647,71 +641,35 @@ class GenericBranchCollection:
         """See `IBranchCollection`."""
         return self._filterBy([Branch.registrant == person], symmetric=False)
 
-    def relatedTo(self, person):
+    def _getExactMatch(self, term):
+        # Try and look up the branch by its URL, which handles lp: shortfom.
+        branch_url = getUtility(IBranchLookup).getByUrl(term)
+        if branch_url:
+            return branch_url
+        # Fall back to searching by unique_name, stripping out the path if it's
+        # a URI.
+        try:
+            path = URI(term).path.strip('/')
+        except InvalidURIError:
+            path = term
+        return getUtility(IBranchLookup).getByUniqueName(path)
+
+    def search(self, term):
         """See `IBranchCollection`."""
-        return self._filterBy(
-            [Branch.id.is_in(
-                Union(
-                    Select(Branch.id, Branch.owner == person),
-                    Select(Branch.id, Branch.registrant == person),
-                    Select(Branch.id,
-                           And(BranchSubscription.person == person,
-                               BranchSubscription.branch == Branch.id))))],
-            symmetric=False)
-
-    def _getExactMatch(self, search_term):
-        """Return the exact branch that 'search_term' matches, or None."""
-        search_term = search_term.rstrip('/')
-        branch_set = getUtility(IBranchLookup)
-        branch = branch_set.getByUniqueName(search_term)
-        if branch is None:
-            branch = branch_set.getByUrl(search_term)
-        return branch
-
-    def search(self, search_term):
-        """See `IBranchCollection`."""
-        # XXX: JonathanLange 2009-02-23 bug 372591: This matches the old
-        # search algorithm that used to live in vocabularies/dbojects.py. It's
-        # not actually very good -- really it should match based on substrings
-        # of the unique name and sort based on relevance.
-        branch = self._getExactMatch(search_term)
-        if branch is not None:
-            if branch in self.getBranches(eager_load=False):
-                return CountableIterator(1, [branch])
-            else:
-                return CountableIterator(0, [])
-        like_term = '%' + search_term + '%'
-        # Match the Branch name or the URL.
-        queries = [Select(Branch.id,
-                          Or(Branch.name.like(like_term),
-                             Branch.url == search_term))]
-        # Match the product name.
-        if 'product' not in self._exclude_from_search:
-            queries.append(Select(
-                Branch.id,
-                And(Branch.product == Product.id,
-                    Product.name.like(like_term))))
-
-        # Match the owner name.
-        queries.append(Select(
-            Branch.id,
-            And(Branch.owner == Owner.id, Owner.name.like(like_term))))
-
-        # Match the package bits.
-        queries.append(
-            Select(Branch.id,
-                   And(Branch.sourcepackagename == SourcePackageName.id,
-                       Branch.distroseries == DistroSeries.id,
-                       DistroSeries.distribution == Distribution.id,
-                       Or(SourcePackageName.name.like(like_term),
-                          DistroSeries.name.like(like_term),
-                          Distribution.name.like(like_term)))))
-
-        # Get the results.
-        collection = self._filterBy([Branch.id.is_in(Union(*queries))])
-        results = collection.getBranches(eager_load=False).order_by(
+        branch = self._getExactMatch(term)
+        if branch:
+            collection = self._filterBy([Branch.id == branch.id])
+        else:
+            term = unicode(term)
+            # Filter by name.
+            field = Branch.name
+            # Except if the term contains /, when we use unique_name.
+            if '/' in term:
+                field = Branch.unique_name
+            collection = self._filterBy(
+                [field.lower().contains_string(term.lower())])
+        return collection.getBranches(eager_load=False).order_by(
             Branch.name, Branch.id)
-        return CountableIterator(results.count(), results)
 
     def scanned(self):
         """See `IBranchCollection`."""
@@ -790,8 +748,7 @@ class AnonymousBranchCollection(GenericBranchCollection):
 
     def _getBranchVisibilityExpression(self, branch_class=Branch):
         """Return the where clauses for visibility."""
-        return [
-            branch_class.information_type.is_in(PUBLIC_INFORMATION_TYPES)]
+        return get_branch_privacy_filter(None, branch_class=branch_class)
 
 
 class VisibleBranchCollection(GenericBranchCollection):
@@ -839,13 +796,9 @@ class VisibleBranchCollection(GenericBranchCollection):
         if exclude_from_search is None:
             exclude_from_search = []
         return self.__class__(
-            self._user,
-            self.store,
-            symmetric_expr,
-            tables,
+            self._user, self.store, symmetric_expr, tables,
             self._exclude_from_search + exclude_from_search,
-            asymmetric_expr,
-            asymmetric_tables)
+            asymmetric_expr, asymmetric_tables)
 
     def _getBranchVisibilityExpression(self, branch_class=Branch):
         """Return the where clauses for visibility.
@@ -853,8 +806,7 @@ class VisibleBranchCollection(GenericBranchCollection):
         :param branch_class: The Branch class to use - permits using
             ClassAliases.
         """
-        return get_branch_privacy_filter(
-            self._user, branch_class=branch_class)
+        return get_branch_privacy_filter(self._user, branch_class=branch_class)
 
     def visibleByUser(self, person):
         """See `IBranchCollection`."""

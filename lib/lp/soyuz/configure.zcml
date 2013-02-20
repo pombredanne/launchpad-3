@@ -403,6 +403,9 @@
         <allow
             interface="lp.soyuz.interfaces.archive.IArchiveRestricted"/>
         <require
+            permission="launchpad.SubscriberView"
+            interface="lp.soyuz.interfaces.archive.IArchiveSubscriberView"/>
+        <require
             permission="launchpad.View"
             interface="lp.soyuz.interfaces.archive.IArchiveView"/>
         <require
@@ -497,27 +500,6 @@
         <require
             permission="launchpad.Admin"
             interface="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildAdmin"/>
-
-        <!-- XXX cprov 2005-10-27
-
-    bug=3580: We need a autobuild celebrity. -->
-
-        <require
-            permission="launchpad.Edit"
-            set_attributes="log date_finished date_started builder
-                            status dependencies upload_log"/>
-
-        <!-- XXX bigjools 2010-07-27 bug=570939
-             Work around the fact that not all BuildFarmJobs are concrete
-             objects.
-
-             This should not be required once the old BuildFarmJob stuff is
-             removed when the Translation Template jobs and Recipe jobs
-             use the new infrastructure -->
-        <require
-            permission="launchpad.Admin"
-            set_attributes="failure_count"/>
-
     </class>
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"
@@ -646,20 +628,6 @@
             provides="lp.services.webapp.interfaces.IBreadcrumb"
             factory="lp.soyuz.browser.distroarchseries.DistroArchSeriesBreadcrumb"
             permission="zope.Public" />
-
-    <!-- DistroArchSeriesSet -->
-
-    <class
-        class="lp.soyuz.model.distroarchseries.DistroArchSeriesSet">
-        <allow
-            interface="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesSet"/>
-    </class>
-    <securedutility
-        class="lp.soyuz.model.distroarchseries.DistroArchSeriesSet"
-        provides="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesSet">
-        <allow
-            interface="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesSet"/>
-    </securedutility>
 
     <!-- PocketChroot -->
 

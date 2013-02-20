@@ -193,8 +193,7 @@ class TestGetUploadMethodsMixin:
             self.behavior.getBuildCookie())
         (job_type, job_id) = parse_build_upload_leaf_name(upload_leaf)
         self.assertEqual(
-            (self.build.build_farm_job.job_type.name, self.build.id),
-            (job_type, job_id))
+            (self.build.job_type.name, self.build.id), (job_type, job_id))
 
 
 class TestHandleStatusMixin:
@@ -283,7 +282,6 @@ class TestHandleStatusMixin:
 
     def test_handleStatus_OK_sets_build_log(self):
         # The build log is set during handleStatus.
-        removeSecurityProxy(self.build).log = None
         self.assertEqual(None, self.build.log)
         d = self.behavior.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
@@ -325,7 +323,6 @@ class TestHandleStatusMixin:
 
     def test_date_finished_set(self):
         # The date finished is updated during handleStatus_OK.
-        removeSecurityProxy(self.build).date_finished = None
         self.assertEqual(None, self.build.date_finished)
         d = self.behavior.handleStatus('OK', None, {
                 'filemap': {'myfile.py': 'test_file_hash'},
@@ -335,47 +332,3 @@ class TestHandleStatusMixin:
             self.assertNotEqual(None, self.build.date_finished)
 
         return d.addCallback(got_status)
-
-
-class TestStoreBuildInfo(TestCaseWithFactory):
-
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        super(TestStoreBuildInfo, self).setUp()
-        self.build = self.factory.makeBinaryPackageBuild()
-        self.builder = self.factory.makeBuilder()
-        self.patch(BuilderSlave, 'makeBuilderSlave',
-                   FakeMethod(WaitingSlave('BuildStatus.OK')))
-        bq = self.build.queueBuild()
-        bq.markAsBuilding(self.builder)
-        self.behavior = removeSecurityProxy(bq.required_build_behavior)
-
-    def testDependencies(self):
-        """Verify that storeBuildInfo sets any dependencies."""
-        self.behavior.storeBuildInfo(
-            self.build, BuildStatus.MANUALDEPWAIT, None,
-            {'dependencies': 'somepackage'})
-        self.assertIsNot(None, self.build.log)
-        self.assertEqual(self.builder, self.build.builder)
-        self.assertEqual(BuildStatus.MANUALDEPWAIT, self.build.status)
-        self.assertEqual(u'somepackage', self.build.dependencies)
-
-    def testWithoutDependencies(self):
-        """Verify that storeBuildInfo clears the build's dependencies."""
-        # Set something just to make sure that storeBuildInfo actually
-        # empties it.
-        self.build.dependencies = u'something'
-        self.behavior.storeBuildInfo(
-            self.build, BuildStatus.CHROOTWAIT, None, {})
-        self.assertIsNot(None, self.build.log)
-        self.assertEqual(self.builder, self.build.builder)
-        self.assertEqual(BuildStatus.CHROOTWAIT, self.build.status)
-        self.assertIs(None, self.build.dependencies)
-        self.assertIsNot(None, self.build.date_finished)
-
-    def test_sets_date_finished(self):
-        # storeBuildInfo should set date_finished on the BuildFarmJob.
-        self.assertIs(None, self.build.date_finished)
-        self.behavior.storeBuildInfo(self.build, None, None, {})
-        self.assertIsNot(None, self.build.date_finished)

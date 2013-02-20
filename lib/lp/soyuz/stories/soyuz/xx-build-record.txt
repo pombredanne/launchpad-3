@@ -157,6 +157,11 @@ messages.
     >>> login('foo.bar@canonical.com')
     >>> from lp.buildmaster.enums import BuildStatus
     >>> in_progress_build.buildqueue_record.reset()
+    >>> import pytz
+    >>> now = datetime.datetime.now(pytz.UTC)
+    >>> build.updateStatus(
+    ...     BuildStatus.BUILDING,
+    ...     date_started=(now - datetime.timedelta(minutes=1)))
     >>> build.buildqueue_record.markAsBuilding(bob_builder)
     >>> build.buildqueue_record.logtail = 'one line\nanother line'
     >>> logout()
@@ -199,15 +204,12 @@ how long it took.
 
     # Mark the testing build as failed.
     >>> login('foo.bar@canonical.com')
+    >>> build.updateStatus(
+    ...     BuildStatus.FAILEDTOUPLOAD, builder=bob_builder,
+    ...     date_finished=now)
     >>> build.buildqueue_record.destroySelf()
-    >>> build.status = BuildStatus.FAILEDTOUPLOAD
-    >>> build.builder = bob_builder
-    >>> import pytz
-    >>> build.date_finished = datetime.datetime.now(pytz.UTC)
-    >>> build.date_started = build.date_finished - datetime.timedelta(
-    ...     minutes=1)
-    >>> build.log = stp.addMockFile('fake-buildlog')
-    >>> build.upload_log = stp.addMockFile('fake-uploadlog')
+    >>> build.setLog(stp.addMockFile('fake-buildlog'))
+    >>> build.storeUploadLog('content')
     >>> logout()
 
     >>> anon_browser.reload()
@@ -224,11 +226,12 @@ how long it took.
     >>> print anon_browser.getLink('Bob The Builder').url
     http://launchpad.dev/builders/bob
 
-    >>> print anon_browser.getLink('buildlog').url
-    http://.../+build/31/+files/fake-buildlog
-
-    >>> print anon_browser.getLink('uploadlog').url
-    http://.../+build/31/+files/fake-uploadlog
+    >>> login(ANONYMOUS)
+    >>> anon_browser.getLink('buildlog').url == build.log_url
+    True
+    >>> anon_browser.getLink('uploadlog').url == build.upload_log_url
+    True
+    >>> logout()
 
 Note that the links to the logs points to their `ProxiedLibrarianFile`
 entry points, so users with permission can reach the files even if
@@ -308,13 +311,8 @@ appropriate 'Build status' section the user will see 2 new sections,
     >>> login('foo.bar@canonical.com')
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> build.buildqueue_record.destroySelf()
-    >>> build.status = BuildStatus.FULLYBUILT
-    >>> build.builder = bob_builder
-    >>> build.date_finished = datetime.datetime.now(pytz.UTC)
-    >>> build.date_started = build.date_finished - datetime.timedelta(
-    ...     minutes=1)
-    >>> build.log = stp.addMockFile('fake-buildlog')
-    >>> build.upload_log = None
+    >>> build.updateStatus(BuildStatus.FULLYBUILT, builder=bob_builder)
+    >>> build.setLog(stp.addMockFile('fake-buildlog'))
     >>> binaries = stp.uploadBinaryForBuild(build, 'testing-bin')
     >>> upload = stp.distroseries.createQueueEntry(
     ...     PackagePublishingPocket.RELEASE,
@@ -332,7 +330,7 @@ appropriate 'Build status' section the user will see 2 new sections,
     Successfully built on Bob The Builder
     Started on 2008-01-01
     Finished on 2008-01-01 (took 5 minutes, 0.0 seconds)
-    buildlog (6 bytes)
+    buildlog (7 bytes)
     testing_1.0_all.changes (15 bytes)
 
     >>> print anon_browser.getLink('testing_1.0_all.changes').url
@@ -452,7 +450,7 @@ navigate to packages.
     ...     binaryname='ppa-test-bin', archive=cprov.archive,
     ...     pub_source=ppa_source)
     >>> [ppa_build] = ppa_source.getBuilds()
-    >>> ppa_build.builder = bob_builder
+    >>> ppa_build.updateStatus(BuildStatus.FULLYBUILT, builder=bob_builder)
     >>> ppa_build_url = (
     ...     "http://launchpad.dev/builders/+build/%d" % ppa_build.id)
     >>> logout()

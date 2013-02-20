@@ -29,7 +29,6 @@ from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
-from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import DevNullLogger
 from lp.soyuz.adapters.overrides import UnknownOverridePolicy
@@ -50,10 +49,7 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.model.distroseriesdifferencejob import (
-    FEATURE_FLAG_ENABLE_MODULE,
-    find_waiting_jobs,
-    )
+from lp.soyuz.model.distroseriesdifferencejob import find_waiting_jobs
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.model.publishing import (
@@ -336,7 +332,7 @@ class SoyuzTestPublisher:
         builds = pub_source.createMissingBuilds()
         published_binaries = []
         for build in builds:
-            build.builder = builder
+            build.updateStatus(BuildStatus.FULLYBUILT, builder=builder)
             pub_binaries = []
             if with_debug:
                 binarypackagerelease_ddeb = self.uploadBinaryForBuild(
@@ -429,12 +425,10 @@ class SoyuzTestPublisher:
         binarypackagerelease.addFile(alias)
 
         # Adjust the build record in way it looks complete.
-        naked_build = removeSecurityProxy(build)
-        naked_build.status = BuildStatus.FULLYBUILT
-        naked_build.date_finished = datetime.datetime(
-            2008, 1, 1, 0, 5, 0, tzinfo=pytz.UTC)
-        naked_build.date_started = (
-            build.date_finished - datetime.timedelta(minutes=5))
+        date_finished = datetime.datetime(2008, 1, 1, 0, 5, 0, tzinfo=pytz.UTC)
+        date_started = date_finished - datetime.timedelta(minutes=5)
+        build.updateStatus(BuildStatus.BUILDING, date_started=date_started)
+        build.updateStatus(BuildStatus.FULLYBUILT, date_finished=date_finished)
         buildlog_filename = 'buildlog_%s-%s-%s.%s_%s_%s.txt.gz' % (
             build.distribution.name,
             build.distro_series.name,
@@ -442,9 +436,11 @@ class SoyuzTestPublisher:
             build.source_package_release.name,
             build.source_package_release.version,
             build.status.name)
-        naked_build.log = self.addMockFile(
-            buildlog_filename, filecontent='Built!',
-            restricted=build.archive.private)
+        if not build.log:
+            build.setLog(
+                self.addMockFile(
+                    buildlog_filename, filecontent='Built!',
+                    restricted=build.archive.private))
 
         return binarypackagerelease
 
@@ -1179,9 +1175,6 @@ class TestPublishingSetLite(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def enableDistroDerivation(self):
-        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'}))
-
     def test_requestDeletion_marks_SPPHs_deleted(self):
         spph = self.factory.makeSourcePackagePublishingHistory()
         getUtility(IPublishingSet).requestDeletion(
@@ -1194,6 +1187,12 @@ class TestPublishingSetLite(TestCaseWithFactory):
         getUtility(IPublishingSet).requestDeletion(
             [other_spph], self.factory.makePerson())
         self.assertEqual(PackagePublishingStatus.PENDING, spph.status)
+
+    def test_requestDeletion_marks_BPPHs_deleted(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        getUtility(IPublishingSet).requestDeletion(
+            [bpph], self.factory.makePerson())
+        self.assertEqual(PackagePublishingStatus.DELETED, bpph.status)
 
     def test_requestDeletion_marks_attached_BPPHs_deleted(self):
         bpph = self.factory.makeBinaryPackagePublishingHistory()
@@ -1222,7 +1221,6 @@ class TestPublishingSetLite(TestCaseWithFactory):
             series, pocket=PackagePublishingPocket.RELEASE)
         spn = spph.sourcepackagerelease.sourcepackagename
 
-        self.enableDistroDerivation()
         getUtility(IPublishingSet).requestDeletion(
             [spph], self.factory.makePerson())
 

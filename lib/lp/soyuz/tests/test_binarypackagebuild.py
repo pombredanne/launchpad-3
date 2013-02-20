@@ -54,15 +54,8 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBinaryPackageBuild, self).setUp()
-        publisher = SoyuzTestPublisher()
-        publisher.prepareBreezyAutotest()
-        gedit_spph = publisher.getPubSource(
-            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED)
-        gedit_spr = gedit_spph.sourcepackagerelease
-        self.build = gedit_spr.createBuild(
-            distro_arch_series=publisher.distroseries['i386'],
-            archive=gedit_spr.upload_archive,
-            pocket=gedit_spr.package_upload.pocket)
+        self.build = self.factory.makeBinaryPackageBuild(
+            archive=self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY))
 
     def test_providesInterfaces(self):
         # Build provides IPackageBuild and IBuild.
@@ -79,18 +72,20 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.assertEqual(bq, self.build.buildqueue_record)
 
     def test_estimateDuration(self):
-        # Without previous builds, a negligable package size estimate is 60s
-        self.assertEqual(60, self.build.estimateDuration().seconds)
+        # Without previous builds, a negligable package size estimate is
+        # 300s.
+        self.assertEqual(300, self.build.estimateDuration().seconds)
 
     def create_previous_build(self, duration):
         spr = self.build.source_package_release
         build = spr.createBuild(
             distro_arch_series=self.build.distro_arch_series,
-            archive=spr.upload_archive, pocket=spr.package_upload.pocket)
-        build.status = BuildStatus.FULLYBUILT
+            archive=self.build.archive, pocket=self.build.pocket)
         now = datetime.now(pytz.UTC)
-        build.date_finished = now
-        build.date_started = now - timedelta(seconds=duration)
+        build.updateStatus(
+            BuildStatus.BUILDING,
+            date_started=now - timedelta(seconds=duration))
+        build.updateStatus(BuildStatus.FULLYBUILT, date_finished=now)
         return build
 
     def test_estimateDuration_with_history(self):
@@ -98,32 +93,33 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.create_previous_build(335)
         self.assertEqual(335, self.build.estimateDuration().seconds)
 
-    def addFakeBuildLog(self):
-        lfa = self.factory.makeLibraryFileAlias('mybuildlog.txt')
-        removeSecurityProxy(self.build).log = lfa
+    def addFakeBuildLog(self, build):
+        build.setLog(self.factory.makeLibraryFileAlias('mybuildlog.txt'))
 
     def test_log_url(self):
         # The log URL for a binary package build will use
         # the distribution source package release when the context
         # is not a PPA or a copy archive.
-        self.addFakeBuildLog()
+        self.addFakeBuildLog(self.build)
         self.assertEqual(
-            'http://launchpad.dev/ubuntutest/+source/'
-            'gedit/666/+build/%d/+files/mybuildlog.txt' % self.build.id,
+            'http://launchpad.dev/%s/+source/'
+            '%s/%s/+build/%d/+files/mybuildlog.txt' % (
+                self.build.distribution.name,
+                self.build.source_package_release.sourcepackagename.name,
+                self.build.source_package_release.version, self.build.id),
             self.build.log_url)
 
     def test_log_url_ppa(self):
         # On the other hand, ppa or copy builds will have a url in the
         # context of the archive.
-        self.addFakeBuildLog()
-        ppa_owner = self.factory.makePerson(name="joe")
-        removeSecurityProxy(self.build).archive = self.factory.makeArchive(
-            owner=ppa_owner, name="myppa")
+        build = self.factory.makeBinaryPackageBuild(
+            archive=self.factory.makeArchive(purpose=ArchivePurpose.PPA))
+        self.addFakeBuildLog(build)
         self.assertEqual(
-            'http://launchpad.dev/~joe/'
-            '+archive/myppa/+build/%d/+files/mybuildlog.txt' % (
-                self.build.build_farm_job.id),
-            self.build.log_url)
+            'http://launchpad.dev/~%s/+archive/'
+            '%s/+build/%d/+files/mybuildlog.txt' % (
+                build.archive.owner.name, build.archive.name, build.id),
+            build.log_url)
 
     def test_getUploader(self):
         # For ACL purposes the uploader is the changes file signer.
@@ -171,7 +167,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         build = self.factory.makeBinaryPackageBuild(archive=ppa)
         bq = build.queueBuild()
-        build.status = BuildStatus.BUILDING
+        build.updateStatus(BuildStatus.BUILDING)
         build.cancel()
         self.assertEqual(BuildStatus.CANCELLING, build.status)
         self.assertEqual(bq, build.buildqueue_record)
@@ -198,9 +194,9 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
             status=PackagePublishingStatus.PUBLISHED)
 
         [depwait_build] = depwait_source.createMissingBuilds()
-        depwait_build.status = BuildStatus.MANUALDEPWAIT
-        depwait_build.dependencies = u'dep-bin'
-
+        depwait_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT,
+            slave_status={'dependencies': u'dep-bin'})
         return depwait_build
 
     def testBuildqueueRemoval(self):
@@ -253,7 +249,9 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         self.assertEqual(depwait_build.dependencies, '')
 
     def assertRaisesUnparsableDependencies(self, depwait_build, dependencies):
-        depwait_build.dependencies = dependencies
+        depwait_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT,
+            slave_status={'dependencies': dependencies})
         self.assertRaises(
             UnparsableDependencies, depwait_build.updateDependencies)
 
@@ -301,10 +299,14 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         depwait_build = self._setupSimpleDepwaitContext()
         self.layer.txn.commit()
 
-        depwait_build.dependencies = u'dep-bin (>> 666)'
+        depwait_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT,
+            slave_status={'dependencies': u'dep-bin (>> 666)'})
         depwait_build.updateDependencies()
         self.assertEqual(depwait_build.dependencies, u'dep-bin (>> 666)')
-        depwait_build.dependencies = u'dep-bin (>= 666)'
+        depwait_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT,
+            slave_status={'dependencies': u'dep-bin (>= 666)'})
         depwait_build.updateDependencies()
         self.assertEqual(depwait_build.dependencies, u'')
 
@@ -320,10 +322,14 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
             status=PackagePublishingStatus.PUBLISHED)
         self.layer.txn.commit()
 
-        depwait_build.dependencies = u'dep-bin (= 666)'
+        depwait_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT,
+            slave_status={'dependencies': u'dep-bin (= 666)'})
         depwait_build.updateDependencies()
         self.assertEqual(depwait_build.dependencies, u'')
-        depwait_build.dependencies = u'dep-bin (= 999)'
+        depwait_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT,
+            slave_status={'dependencies': u'dep-bin (= 999)'})
         depwait_build.updateDependencies()
         self.assertEqual(depwait_build.dependencies, u'')
 
@@ -335,28 +341,21 @@ class BaseTestCaseWithThreeBuilds(TestCaseWithFactory):
     def setUp(self):
         """Publish some builds for the test archive."""
         super(BaseTestCaseWithThreeBuilds, self).setUp()
-        self.publisher = SoyuzTestPublisher()
-        self.publisher.prepareBreezyAutotest()
-
-        # Create three builds for the publisher's default
-        # distroseries.
-        self.builds = []
-        self.sources = []
-        gedit_src_hist = self.publisher.getPubSource(
-            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED)
-        self.builds += gedit_src_hist.createMissingBuilds()
-        self.sources.append(gedit_src_hist)
-
-        firefox_src_hist = self.publisher.getPubSource(
-            sourcename="firefox", status=PackagePublishingStatus.PUBLISHED)
-        self.builds += firefox_src_hist.createMissingBuilds()
-        self.sources.append(firefox_src_hist)
-
-        gtg_src_hist = self.publisher.getPubSource(
-            sourcename="getting-things-gnome",
-            status=PackagePublishingStatus.PUBLISHED)
-        self.builds += gtg_src_hist.createMissingBuilds()
-        self.sources.append(gtg_src_hist)
+        self.ds = self.factory.makeDistroSeries()
+        i386_das = self.factory.makeDistroArchSeries(
+            distroseries=self.ds, architecturetag='i386')
+        hppa_das = self.factory.makeDistroArchSeries(
+            distroseries=self.ds, architecturetag='hppa')
+        self.builds = [
+            self.factory.makeBinaryPackageBuild(
+                archive=self.ds.main_archive, distroarchseries=i386_das),
+            self.factory.makeBinaryPackageBuild(
+                archive=self.ds.main_archive, distroarchseries=i386_das),
+            self.factory.makeBinaryPackageBuild(
+                archive=self.ds.main_archive, distroarchseries=hppa_das),
+            ]
+        self.sources = [
+            build.current_source_publication for build in self.builds]
 
 
 class TestBuildSet(TestCaseWithFactory):
@@ -396,7 +395,7 @@ class TestBuildSetGetBuildsForArchive(BaseTestCaseWithThreeBuilds):
         super(TestBuildSetGetBuildsForArchive, self).setUp()
 
         # Short-cuts for our tests.
-        self.archive = self.publisher.distroseries.main_archive
+        self.archive = self.ds.main_archive
         self.build_set = getUtility(IBinaryPackageBuildSet)
 
     def test_getBuildsForArchive_no_params(self):
@@ -406,11 +405,7 @@ class TestBuildSetGetBuildsForArchive(BaseTestCaseWithThreeBuilds):
 
     def test_getBuildsForArchive_by_arch_tag(self):
         # Results can be filtered by architecture tag.
-        i386_builds = self.builds[:]
-        hppa_build = i386_builds.pop()
-        removeSecurityProxy(hppa_build).distro_arch_series = (
-            self.publisher.distroseries['hppa'])
-
+        i386_builds = self.builds[:2]
         builds = self.build_set.getBuildsForArchive(self.archive,
                                                     arch_tag="i386")
         self.assertContentEqual(builds, i386_builds)
@@ -435,7 +430,7 @@ class TestBuildSetGetBuildsForBuilder(BaseTestCaseWithThreeBuilds):
 
         # Ensure that our builds were all built by the test builder.
         for build in self.builds:
-            build.builder = self.builder
+            build.updateStatus(BuildStatus.FULLYBUILT, builder=self.builder)
 
     def test_getBuildsForBuilder_no_params(self):
         # All builds should be returned when called without filtering
@@ -444,11 +439,7 @@ class TestBuildSetGetBuildsForBuilder(BaseTestCaseWithThreeBuilds):
 
     def test_getBuildsForBuilder_by_arch_tag(self):
         # Results can be filtered by architecture tag.
-        i386_builds = self.builds[:]
-        hppa_build = i386_builds.pop()
-        removeSecurityProxy(hppa_build).distro_arch_series = (
-            self.publisher.distroseries['hppa'])
-
+        i386_builds = self.builds[:2]
         builds = self.build_set.getBuildsForBuilder(self.builder.id,
                                                     arch_tag="i386")
         self.assertContentEqual(builds, i386_builds)
@@ -506,7 +497,8 @@ class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
 
     def test_builder_is_exported(self):
         # The builder property is exported.
-        removeSecurityProxy(self.build).builder = self.factory.makeBuilder()
+        self.build.updateStatus(
+            BuildStatus.FULLYBUILT, builder=self.factory.makeBuilder())
         build_url = api_url(self.build)
         builder_url = api_url(self.build.builder)
         logout()

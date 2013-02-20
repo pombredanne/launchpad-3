@@ -8,88 +8,16 @@ __metaclass__ = type
 import hashlib
 
 from storm.store import Store
-from zope.component import getUtility
 from zope.security.management import checkPermission
-from zope.security.proxy import removeSecurityProxy
 
-from lp.buildmaster.enums import (
-    BuildFarmJobType,
-    BuildStatus,
-    )
-from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuild,
-    IPackageBuildSet,
-    IPackageBuildSource,
-    )
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.buildmaster.model.packagebuild import PackageBuild
-from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.testing import (
     login,
     login_person,
     TestCaseWithFactory,
     )
 from lp.testing.layers import LaunchpadFunctionalLayer
-
-
-class TestPackageBuildBase(TestCaseWithFactory):
-    """Provide a factory method for creating PackageBuilds.
-
-    This is not included in the launchpad test factory because
-    only classes deriving from PackageBuild should be used.
-    """
-
-    def makePackageBuild(
-        self, archive=None, job_type=BuildFarmJobType.PACKAGEBUILD,
-        status=BuildStatus.NEEDSBUILD,
-        pocket=PackagePublishingPocket.RELEASE):
-        if archive is None:
-            archive = self.factory.makeArchive()
-
-        return getUtility(IPackageBuildSource).new(
-            job_type=job_type, virtualized=True, archive=archive,
-            status=status, pocket=pocket)
-
-
-class TestPackageBuild(TestPackageBuildBase):
-    """Tests for the package build object."""
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        """Create a package build with which to test."""
-        super(TestPackageBuild, self).setUp()
-        joe = self.factory.makePerson(name="joe")
-        joes_ppa = self.factory.makeArchive(owner=joe, name="ppa")
-        self.package_build = self.makePackageBuild(archive=joes_ppa)
-
-    def test_saves_record(self):
-        # A package build can be stored in the database.
-        store = Store.of(self.package_build)
-        store.flush()
-        retrieved_build = store.find(
-            PackageBuild,
-            PackageBuild.id == self.package_build.id).one()
-        self.assertEqual(self.package_build, retrieved_build)
-
-    def test_default_values(self):
-        # PackageBuild has a number of default values.
-        pb = removeSecurityProxy(self.package_build)
-        self.failUnlessEqual(None, pb.distribution)
-        self.failUnlessEqual(None, pb.distro_series)
-
-    def test_destroySelf_removes_BuildFarmJob(self):
-        # Destroying a packagebuild also destroys the BuildFarmJob it
-        # references.
-        naked_build = removeSecurityProxy(self.package_build)
-        store = Store.of(self.package_build)
-        # Ensure build_farm_job_id is set.
-        store.flush()
-        build_farm_job_id = naked_build.build_farm_job_id
-        naked_build.destroySelf()
-        result = store.find(
-            BuildFarmJob, BuildFarmJob.id == build_farm_job_id)
-        self.assertIs(None, result.one())
 
 
 class TestPackageBuildMixin(TestCaseWithFactory):
@@ -111,10 +39,28 @@ class TestPackageBuildMixin(TestCaseWithFactory):
         # PackageBuild provides IPackageBuild
         self.assertProvides(self.package_build, IPackageBuild)
 
+    def test_updateStatus_MANUALDEPWAIT_sets_dependencies(self):
+        # updateStatus sets dependencies for a MANUALDEPWAIT build.
+        self.package_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT, slave_status={'dependencies': u'deps'})
+        self.assertEqual(u'deps', self.package_build.dependencies)
+        self.package_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT, slave_status={})
+        self.assertEqual(None, self.package_build.dependencies)
+
+    def test_updateStatus_unsets_dependencies_for_other_statuses(self):
+        # updateStatus unsets existing dependencies when transitioning
+        # to another state.
+        self.package_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT, slave_status={'dependencies': u'deps'})
+        self.assertEqual(u'deps', self.package_build.dependencies)
+        self.package_build.updateStatus(BuildStatus.FULLYBUILT)
+        self.assertEqual(None, self.package_build.dependencies)
+
     def test_log_url(self):
         # The url of the build log file is determined by the PackageBuild.
         lfa = self.factory.makeLibraryFileAlias('mybuildlog.txt')
-        removeSecurityProxy(self.package_build).log = lfa
+        self.package_build.setLog(lfa)
         log_url = self.package_build.log_url
         self.failUnlessEqual(
             'http://launchpad.dev/~joe/'
@@ -158,7 +104,7 @@ class TestPackageBuildMixin(TestCaseWithFactory):
         self.failUnlessEqual(
             'http://launchpad.dev/~joe/'
             '+archive/ppa/+recipebuild/%d/+files/upload_%d_log.txt' % (
-                self.package_build.id, self.package_build.build_farm_job.id),
+                self.package_build.id, self.package_build.id),
             log_url)
 
     def test_view_package_build(self):
@@ -184,44 +130,3 @@ class TestPackageBuildMixin(TestCaseWithFactory):
         login('admin@canonical.com')
         self.assertTrue(checkPermission('launchpad.View', self.package_build))
         self.assertTrue(checkPermission('launchpad.Edit', self.package_build))
-
-
-class TestPackageBuildSet(TestPackageBuildBase):
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(TestPackageBuildSet, self).setUp()
-        person = self.factory.makePerson()
-        self.archive = self.factory.makeArchive(owner=person)
-        self.package_builds = []
-        self.package_builds.append(
-            self.makePackageBuild(archive=self.archive,
-                                  pocket=PackagePublishingPocket.UPDATES))
-        self.package_builds.append(
-            self.makePackageBuild(archive=self.archive,
-                                  status=BuildStatus.BUILDING))
-        self.package_build_set = getUtility(IPackageBuildSet)
-
-    def test_getBuildsForArchive_all(self):
-        # The default call without arguments returns all builds for the
-        # archive.
-        self.assertContentEqual(
-            self.package_builds, self.package_build_set.getBuildsForArchive(
-                self.archive))
-
-    def test_getBuildsForArchive_by_status(self):
-        # If the status arg is used, the results will be filtered by
-        # status.
-        self.assertContentEqual(
-            self.package_builds[1:],
-            self.package_build_set.getBuildsForArchive(
-                self.archive, status=BuildStatus.BUILDING))
-
-    def test_getBuildsForArchive_by_pocket(self):
-        # If the pocket arg is used, the results will be filtered by
-        # pocket.
-        self.assertContentEqual(
-            self.package_builds[:1],
-            self.package_build_set.getBuildsForArchive(
-                self.archive, pocket=PackagePublishingPocket.UPDATES))

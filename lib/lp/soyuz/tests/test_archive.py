@@ -285,38 +285,6 @@ class TestSeriesWithSources(TestCaseWithFactory):
         self.assertEqual([series1, series2], archive.series_with_sources)
 
 
-class TestGetSourcePackageReleases(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def createArchiveWithBuilds(self, statuses):
-        archive = self.factory.makeArchive()
-        sprs = []
-        for status in statuses:
-            sourcepackagerelease = self.factory.makeSourcePackageRelease()
-            self.factory.makeBinaryPackageBuild(
-                source_package_release=sourcepackagerelease,
-                archive=archive, status=status)
-            sprs.append(sourcepackagerelease)
-        self.factory.makeSourcePackageRelease()
-        return archive, sprs
-
-    def test_getSourcePackageReleases_with_no_params(self):
-        # With no params all source package releases are returned.
-        archive, sprs = self.createArchiveWithBuilds(
-            [BuildStatus.NEEDSBUILD, BuildStatus.FULLYBUILT])
-        self.assertContentEqual(
-            sprs, archive.getSourcePackageReleases())
-
-    def test_getSourcePackageReleases_with_buildstatus(self):
-        # Results are filtered by the specified buildstatus.
-        archive, sprs = self.createArchiveWithBuilds(
-            [BuildStatus.NEEDSBUILD, BuildStatus.FULLYBUILT])
-        self.assertContentEqual(
-            [sprs[0]], archive.getSourcePackageReleases(
-                build_status=BuildStatus.NEEDSBUILD))
-
-
 class TestCorrespondingDebugArchive(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -359,16 +327,13 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         # Return the count for archive build jobs with the given status.
         query = """
             SELECT COUNT(Job.id)
-            FROM BinaryPackageBuild, BuildPackageJob, BuildQueue, Job,
-                 PackageBuild, BuildFarmJob
+            FROM BinaryPackageBuild, BuildPackageJob, BuildQueue, Job
             WHERE
                 BuildPackageJob.build = BinaryPackageBuild.id
                 AND BuildPackageJob.job = BuildQueue.job
                 AND Job.id = BuildQueue.job
-                AND BinaryPackageBuild.package_build = PackageBuild.id
-                AND PackageBuild.archive = %s
-                AND PackageBuild.build_farm_job = BuildFarmJob.id
-                AND BuildFarmJob.status = %s
+                AND BinaryPackageBuild.archive = %s
+                AND BinaryPackageBuild.status = %s
                 AND Job.status = %s;
         """ % sqlvalues(archive, BuildStatus.NEEDSBUILD, status)
 

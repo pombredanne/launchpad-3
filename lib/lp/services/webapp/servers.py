@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Definition of the internet servers that Launchpad uses."""
@@ -18,6 +18,7 @@ from lazr.restful.publisher import (
     WebServicePublicationMixin,
     WebServiceRequestTraversal,
     )
+from lazr.restful.utils import get_current_browser_request
 from lazr.uri import URI
 import transaction
 from transaction.interfaces import ISynchronizer
@@ -100,10 +101,7 @@ from lp.services.webapp.notifications import (
     )
 from lp.services.webapp.opstats import OpStats
 from lp.services.webapp.publication import LaunchpadBrowserPublication
-from lp.services.webapp.publisher import (
-    get_current_browser_request,
-    RedirectionView,
-    )
+from lp.services.webapp.publisher import RedirectionView
 from lp.services.webapp.vhosts import allvhosts
 from lp.services.webservice.interfaces import IWebServiceApplication
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
@@ -656,6 +654,15 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadBrowserResponse()
+
+    def _decode(self, text):
+        text = super(LaunchpadBrowserRequest, self)._decode(text)
+        if isinstance(text, str):
+            # BrowserRequest._decode failed to do so with the user-specified
+            # charsets, so decode as UTF-8 with replacements, since we always
+            # want unicode.
+            text = unicode(text, 'utf-8', 'replace')
+        return text
 
     @cachedproperty
     def form_ng(self):

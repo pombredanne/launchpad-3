@@ -8,11 +8,8 @@ __all__ = [
 
 
 import transaction
-from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.bulk import load_related
@@ -21,10 +18,7 @@ from lp.services.looptuner import (
     LoopTuner,
     TunableLoop,
     )
-from lp.soyuz.interfaces.binarypackagebuild import (
-    IBinaryPackageBuildSet,
-    UnparsableDependencies,
-    )
+from lp.soyuz.interfaces.binarypackagebuild import UnparsableDependencies
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.distroarchseries import PocketChroot
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
@@ -45,21 +39,18 @@ class RetryDepwaitTunableLoop(TunableLoop):
         self.start_at = 1
         self.store = IStore(BinaryPackageBuild)
 
-    def findBuildFarmJobs(self):
+    def findBuilds(self):
         return self.store.find(
-            BuildFarmJob,
-            BuildFarmJob.id >= self.start_at,
-            BuildFarmJob.status == BuildStatus.MANUALDEPWAIT,
-            ).order_by(BuildFarmJob.id)
+            BinaryPackageBuild,
+            BinaryPackageBuild.id >= self.start_at,
+            BinaryPackageBuild.status == BuildStatus.MANUALDEPWAIT,
+            ).order_by(BinaryPackageBuild.id)
 
     def isDone(self):
-        return self.findBuildFarmJobs().is_empty()
+        return self.findBuilds().is_empty()
 
     def __call__(self, chunk_size):
-        bfjs = list(self.findBuildFarmJobs()[:chunk_size])
-        bpbs = [
-            removeSecurityProxy(build) for build in
-            getUtility(IBinaryPackageBuildSet).getByBuildFarmJobs(bfjs)]
+        bpbs = list(self.findBuilds()[:chunk_size])
         sprs = load_related(
             SourcePackageRelease, bpbs, ['source_package_release_id'])
         load_related(SourcePackageName, sprs, ['sourcepackagenameID'])
@@ -86,7 +77,7 @@ class RetryDepwaitTunableLoop(TunableLoop):
                 build.retry()
                 build.buildqueue_record.score()
 
-        self.start_at = bfjs[-1].id + 1
+        self.start_at = bpbs[-1].id + 1
 
         if not self.dry_run:
             transaction.commit()

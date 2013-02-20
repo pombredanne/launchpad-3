@@ -48,7 +48,6 @@ from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUploadError
 from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.tagfiles import parse_tagfile_content
-from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.auditor.client import AuditorClient
@@ -1581,7 +1580,6 @@ class PackageUploadSet:
         """See `IPackageUploadSet`."""
         # Avoiding circular imports.
         from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
         archives = distroseries.distribution.getArchiveIDList()
         clauses = [
@@ -1597,9 +1595,7 @@ class PackageUploadSet:
         if names is not None:
             clauses.extend([
                 BinaryPackageBuild.id == PackageUploadBuild.buildID,
-                BinaryPackageBuild.source_package_release ==
-                    SourcePackageRelease.id,
-                SourcePackageRelease.sourcepackagename ==
+                BinaryPackageBuild.source_package_name ==
                     SourcePackageName.id,
                 SourcePackageName.name.is_in(names),
                 ])
@@ -1728,7 +1724,6 @@ def prefill_packageupload_caches(uploads, puses, pubs, pucs):
     source_sprs = load_related(
         SourcePackageRelease, puses, ['sourcepackagereleaseID'])
     bpbs = load_related(BinaryPackageBuild, pubs, ['buildID'])
-    load_related(PackageBuild, bpbs, ['package_build_id'])
     load_related(DistroArchSeries, bpbs, ['distro_arch_series_id'])
     binary_sprs = load_related(
         SourcePackageRelease, bpbs, ['source_package_release_id'])

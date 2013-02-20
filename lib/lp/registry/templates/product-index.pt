@@ -236,6 +236,7 @@
       <div tal:replace="structure context/@@+get-involved" />
 
       <div id="downloads" class="top-portlet downloads"
+        tal:condition="context/information_type/enumvalue:PUBLIC"
         tal:define="release view/latest_release_with_download_files">
         <h2>Downloads</h2>
 

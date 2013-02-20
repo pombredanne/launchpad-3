@@ -19,15 +19,10 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.buildmaster.model.buildfarmjob import (
-    BuildFarmJobOld,
-    BuildFarmJobOldDerived,
-    )
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.model.branchjob import (
@@ -53,7 +48,7 @@ from lp.translations.pottery.detect_intltool import is_intltool_structure
 HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE = 2510
 
 
-class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
+class TranslationTemplatesBuildJob(BuildFarmJobOld, BranchJobDerived):
     """An `IBuildFarmJob` implementation that generates templates.
 
     Implementation-wise, this is actually a `BranchJob`.
@@ -66,16 +61,6 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
     duration_estimate = timedelta(seconds=10)
 
     unsafe_chars = '[^a-zA-Z0-9_+-]'
-
-    def __init__(self, branch_job):
-        super(TranslationTemplatesBuildJob, self).__init__(branch_job)
-
-    def _set_build_farm_job(self):
-        """Setup the IBuildFarmJob delegate.
-
-        We override this to provide a non-database delegate that simply
-        provides required functionality to the queue system."""
-        self.build_farm_job = BuildFarmJobOld()
 
     def score(self):
         """See `IBuildFarmJob`."""
@@ -156,18 +141,10 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
     def create(cls, branch, testing=False):
         """See `ITranslationTemplatesBuildJobSource`."""
         logger = logging.getLogger('translation-templates-build')
-        # XXX Danilo Segan bug=580429: we hard-code processor to the Ubuntu
-        # default processor architecture.  This stops the buildfarm from
-        # accidentally dispatching the jobs to private builders.
-        processor = cls._getBuildArch()
 
-        build_farm_job = getUtility(IBuildFarmJobSource).new(
-            BuildFarmJobType.TRANSLATIONTEMPLATESBUILD, processor=processor)
         build = getUtility(ITranslationTemplatesBuildSource).create(
-            build_farm_job, branch)
-        logger.debug(
-            "Made BuildFarmJob %s, TranslationTemplatesBuild %s.",
-            build_farm_job.id, build.id)
+            branch)
+        logger.debug("Made TranslationTemplatesBuild %s.", build.id)
 
         specific_job = build.makeJob()
         if testing:
@@ -179,19 +156,12 @@ class TranslationTemplatesBuildJob(BuildFarmJobOldDerived, BranchJobDerived):
         build_queue_entry = BuildQueue(
             estimated_duration=duration_estimate,
             job_type=BuildFarmJobType.TRANSLATIONTEMPLATESBUILD,
-            job=specific_job.job, processor=processor)
+            job=specific_job.job, processor=build.processor)
         IMasterStore(BuildQueue).add(build_queue_entry)
 
         logger.debug("Made BuildQueue %s.", build_queue_entry.id)
 
         return specific_job
-
-    @classmethod
-    def _getBuildArch(cls):
-        """Returns an `IProcessor` to queue a translation build for."""
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        # A round-about way of hard-coding i386.
-        return ubuntu.currentseries.nominatedarchindep.default_processor
 
     @classmethod
     def scheduleTranslationTemplatesBuild(cls, branch):

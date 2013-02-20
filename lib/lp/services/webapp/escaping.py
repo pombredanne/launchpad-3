@@ -8,6 +8,7 @@ __all__ = [
     'structured',
     ]
 
+from lazr.restful.utils import get_current_browser_request
 from zope.i18n import (
     Message,
     translate,
@@ -15,7 +16,6 @@ from zope.i18n import (
 from zope.interface import implements
 
 from lp.services.webapp.interfaces import IStructuredString
-from lp.services.webapp.publisher import get_current_browser_request
 
 
 HTML_REPLACEMENTS = (
