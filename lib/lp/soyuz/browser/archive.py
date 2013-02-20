@@ -1989,8 +1989,13 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
         return canonical_url(self.context)
 
     def validate_save(self, action, data):
-        """Default save validation does nothing."""
-        pass
+        """Check that we're not reenabling a deleted archive.."""
+        form.getWidgetsData(self.widgets, 'field', data)
+
+        # Deleted PPAs can't be reactivated.
+        if data.get('enabled') and not self.context.is_active:
+            self.setFieldError(
+                "enabled", "Deleted PPAs can't be enabled.")
 
 
 class ArchiveEditView(BaseArchiveEditView):
@@ -2065,7 +2070,7 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
         If the archive is private and the buildd secret is not set it will be
         generated.
         """
-        form.getWidgetsData(self.widgets, 'field', data)
+        super(ArchiveAdminView, self).validate_save(action, data)
 
         if data.get('private') != self.context.private:
             # The privacy is being switched.
