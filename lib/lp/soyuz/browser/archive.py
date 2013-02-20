@@ -1993,7 +1993,8 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
         form.getWidgetsData(self.widgets, 'field', data)
 
         # Deleted PPAs can't be reactivated.
-        if data.get('enabled') and not self.context.is_active:
+        if ((data.get('enabled') or data.get('publish'))
+            and not self.context.is_active):
             self.setFieldError(
                 "enabled", "Deleted PPAs can't be enabled.")
 
