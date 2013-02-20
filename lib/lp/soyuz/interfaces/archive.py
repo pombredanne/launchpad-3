@@ -358,6 +358,13 @@ class IArchivePublic(IPrivacy, IHasOwner):
 
 class IArchiveSubscriberView(Interface):
 
+    archive_url = Attribute("External archive URL.")
+    dependencies = exported(
+        CollectionField(
+            title=_("Archive dependencies recorded for this archive."),
+            value_type=Reference(schema=Interface),
+            # Really IArchiveDependency
+            readonly=True))
     description = exported(
         Text(
             title=_("Description"), required=False,
@@ -511,8 +518,6 @@ class IArchiveView(IHasBuildRecords):
         title=_(
             "The default component for this archive. Publications without a "
             "valid component will be assigned this one."))
-
-    archive_url = Attribute("External archive URL.")
 
     is_partner = Attribute("True if this archive is a partner archive.")
 
@@ -1028,13 +1033,6 @@ class IArchiveView(IHasBuildRecords):
         title=_("Build farm secret"), required=False,
         description=_(
             "The password used by the build farm to access the archive."))
-
-    dependencies = exported(
-        CollectionField(
-            title=_("Archive dependencies recorded for this archive."),
-            value_type=Reference(schema=Interface),
-            # Really IArchiveDependency
-            readonly=True))
 
     signing_key_fingerprint = exported(
         Text(

@@ -2690,13 +2690,22 @@ class ViewSourcePackageRecipeBuild(DelegatedAuthorization):
         yield self.obj.archive
 
 
-class ViewSourcePackagePublishingHistory(DelegatedAuthorization):
+class ViewSourcePackagePublishingHistory(AuthorizationBase):
     """Restrict viewing of source publications."""
     permission = "launchpad.View"
     usedfor = ISourcePackagePublishingHistory
 
-    def iter_objects(self):
-        yield self.obj.archive
+    def checkUnauthenticated(self):
+        return (
+            check_permission('launchpad.View', self.obj.archive) or
+            check_permission('launchpad.SubscriberView', self.obj.archive))
+
+    def checkAuthenticated(self, user):
+        return (
+            self.forwardCheckAuthenticated(
+                user, self.obj.archive, 'launchpad.View') or
+            self.forwardCheckAuthenticated(
+                user, self.obj.archive, 'launchpad.SubscriberView'))
 
 
 class EditPublishing(DelegatedAuthorization):
