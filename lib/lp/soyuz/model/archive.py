@@ -1965,6 +1965,7 @@ class Archive(SQLBase):
     def enable(self):
         """See `IArchive`."""
         assert self._enabled == False, "This archive is already enabled."
+        assert self.is_active, "Deleted archives can't be enabled."
         self._enabled = True
         self._setBuildStatuses(JobStatus.WAITING)
 

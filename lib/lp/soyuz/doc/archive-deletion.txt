@@ -59,3 +59,13 @@ publisher to remove the publications and the repository:
 
     >>> print archive.status.name
     DELETING
+
+Once deleted the archive can't be reenabled.
+
+    >>> archive.enable()
+    Traceback (most recent call last):
+    ...
+    AssertionError: Deleted archives can't be enabled.
+
+    >>> print archive.enabled
+    False
