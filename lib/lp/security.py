@@ -181,7 +181,6 @@ from lp.services.oauth.interfaces import (
     IOAuthRequestToken,
     )
 from lp.services.openid.interfaces.openididentifier import IOpenIdIdentifier
-from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import (
@@ -274,13 +273,10 @@ class LimitedViewDeferredToView(AuthorizationBase):
     usedfor = Interface
 
     def checkUnauthenticated(self):
-        # The forward adapter approach is not reliable because the object
-        # might not define a permission checker for launchpad.View.
-        # eg. IHasMilestones is implicitly public to anonymous users,
-        #     there is no nearest adapter to call checkUnauthenticated.
         return (
-            check_permission('launchpad.View', self.obj) or
-            check_permission('launchpad.SubscriberView', self.obj))
+            self.forwardCheckUnauthenticated(self.obj, 'launchpad.View') or
+            self.forwardCheckUnauthenticated(
+                self.obj, 'launchpad.SubscriberView'))
 
     def checkAuthenticated(self, user):
         return (
@@ -2697,8 +2693,10 @@ class ViewSourcePackagePublishingHistory(AuthorizationBase):
 
     def checkUnauthenticated(self):
         return (
-            check_permission('launchpad.View', self.obj.archive) or
-            check_permission('launchpad.SubscriberView', self.obj.archive))
+            self.forwardCheckUnauthenticated(
+                self.obj.archive, 'launchpad.View') or
+            self.forwardCheckUnauthenticated(
+                self.obj.archive, 'launchpad.SubscriberView'))
 
     def checkAuthenticated(self, user):
         return (
