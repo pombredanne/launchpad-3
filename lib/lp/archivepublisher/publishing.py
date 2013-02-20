@@ -20,7 +20,9 @@ from debian.deb822 import (
     _multivalued,
     Release,
     )
+from zope.component import getUtility
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher import HARDCODED_COMPONENT_ORDER
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
@@ -40,6 +42,7 @@ from lp.archivepublisher.utils import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.constants import UTC_NOW
 from lp.services.database.sqlbase import sqlvalues
 from lp.services.librarian.client import LibrarianClient
 from lp.services.utils import file_exists
@@ -48,6 +51,10 @@ from lp.soyuz.enums import (
     ArchiveStatus,
     BinaryPackageFormat,
     PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.publishing import (
+    active_publishing_status,
+    IPublishingSet,
     )
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
@@ -746,6 +753,28 @@ class Publisher(object):
         self.log.info(
             "Attempting to delete archive '%s/%s' at '%s'." % (
                 self.archive.owner.name, self.archive.name, root_dir))
+
+        # Set all the publications to DELETED.
+        sources = self.archive.getPublishedSources(
+            status=active_publishing_status)
+        getUtility(IPublishingSet).requestDeletion(
+            sources, removed_by=getUtility(ILaunchpadCelebrities).janitor,
+            removal_comment="Removed when deleting archive")
+
+        # Deleting the sources will have killed the corresponding
+        # binaries too, but there may be orphaned leftovers (eg. NBS).
+        binaries = self.archive.getAllPublishedBinaries(
+            status=active_publishing_status)
+        getUtility(IPublishingSet).requestDeletion(
+            binaries, removed_by=getUtility(ILaunchpadCelebrities).janitor,
+            removal_comment="Removed when deleting archive")
+
+        # Now set dateremoved on any publication that doesn't already
+        # have it set, so things can expire from the librarian.
+        for pub in self.archive.getPublishedSources(include_removed=False):
+            pub.dateremoved = UTC_NOW
+        for pub in self.archive.getAllPublishedBinaries(include_removed=False):
+            pub.dateremoved = UTC_NOW
 
         for directory in (root_dir, self._config.metaroot):
             if not os.path.exists(directory):

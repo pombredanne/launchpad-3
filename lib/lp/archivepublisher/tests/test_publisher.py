@@ -148,6 +148,24 @@ class TestPublisher(TestPublisherBase):
         test_archive = getUtility(IArchiveSet).new(
             distribution=self.ubuntutest, owner=ubuntu_team,
             purpose=ArchivePurpose.PPA)
+
+        # Create some source and binary publications, including an
+        # orphaned NBS binary.
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=test_archive)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            archive=test_archive)
+        orphaned_bpph = self.factory.makeBinaryPackagePublishingHistory(
+            archive=test_archive)
+        bpb = orphaned_bpph.binarypackagerelease.build
+        bpb.current_source_publication.supersede()
+        dead_spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=test_archive)
+        dead_spph.supersede()
+        dead_bpph = self.factory.makeBinaryPackagePublishingHistory(
+            archive=test_archive)
+        dead_bpph.supersede()
+
         publisher = getPublisher(test_archive, None, self.logger)
 
         self.assertTrue(os.path.exists(publisher._config.archiveroot))
@@ -167,6 +185,20 @@ class TestPublisher(TestPublisherBase):
         self.assertFalse(os.path.exists(publisher._config.metaroot))
         self.assertEqual(ArchiveStatus.DELETED, test_archive.status)
         self.assertEqual(False, test_archive.publish)
+
+        # All of the archive's active publications have been marked
+        # DELETED, and dateremoved has been set early because they've
+        # already been removed from disk.
+        for pub in (spph, bpph, orphaned_bpph):
+            self.assertEqual(PackagePublishingStatus.DELETED, pub.status)
+            self.assertEqual(u'janitor', pub.removed_by.name)
+            self.assertIsNot(None, pub.dateremoved)
+
+        # The SUPERSEDED publications now have dateremoved set, even
+        # though p-d-r hasn't run over them.
+        for pub in (dead_spph, dead_bpph):
+            self.assertIs(None, pub.scheduleddeletiondate)
+            self.assertIsNot(None, pub.dateremoved)
 
         # Trying to delete it again won't fail, in the corner case where
         # some admin manually deleted the repo.

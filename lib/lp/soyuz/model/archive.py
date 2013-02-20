@@ -493,7 +493,8 @@ class Archive(SQLBase):
     def getPublishedSources(self, name=None, version=None, status=None,
                             distroseries=None, pocket=None,
                             exact_match=False, created_since_date=None,
-                            eager_load=False, component_name=None):
+                            eager_load=False, component_name=None,
+                            include_removed=True):
         """See `IArchive`."""
         # clauses contains literal sql expressions for things that don't work
         # easily in storm : this method was migrated from sqlobject but some
@@ -559,6 +560,9 @@ class Archive(SQLBase):
             clauses.append(
                 SourcePackagePublishingHistory.datecreated >=
                     created_since_date)
+
+        if not include_removed:
+            clauses.append(SourcePackagePublishingHistory.dateremoved == None)
 
         store = Store.of(self)
         resultset = store.find(
@@ -703,7 +707,7 @@ class Archive(SQLBase):
     def _getBinaryPublishingBaseClauses(
         self, name=None, version=None, status=None, distroarchseries=None,
         pocket=None, exact_match=False, created_since_date=None,
-        ordered=True):
+        ordered=True, include_removed=True):
         """Base clauses and clauseTables for binary publishing queries.
 
         Returns a list of 'clauses' (to be joined in the callsite) and
@@ -781,17 +785,22 @@ class Archive(SQLBase):
                 "BinaryPackagePublishingHistory.datecreated >= %s"
                 % sqlvalues(created_since_date))
 
+        if not include_removed:
+            clauses.append(
+                "BinaryPackagePublishingHistory.dateremoved IS NULL")
+
         return clauses, clauseTables, orderBy
 
     def getAllPublishedBinaries(self, name=None, version=None, status=None,
                                 distroarchseries=None, pocket=None,
                                 exact_match=False, created_since_date=None,
-                                ordered=True):
+                                ordered=True, include_removed=True):
         """See `IArchive`."""
         clauses, clauseTables, orderBy = self._getBinaryPublishingBaseClauses(
             name=name, version=version, status=status, pocket=pocket,
             distroarchseries=distroarchseries, exact_match=exact_match,
-            created_since_date=created_since_date, ordered=ordered)
+            created_since_date=created_since_date, ordered=ordered,
+            include_removed=include_removed)
 
         all_binaries = BinaryPackagePublishingHistory.select(
             ' AND '.join(clauses), clauseTables=clauseTables,
@@ -1970,12 +1979,6 @@ class Archive(SQLBase):
         assert self.status not in (
             ArchiveStatus.DELETING, ArchiveStatus.DELETED,
             "This archive is already deleted.")
-
-        # Set all the publications to DELETED.
-        sources = self.getPublishedSources(status=active_publishing_status)
-        getUtility(IPublishingSet).requestDeletion(
-            sources, removed_by=deleted_by,
-            removal_comment="Removed when deleting archive")
 
         # Mark the archive's status as DELETING so the repository can be
         # removed by the publisher.

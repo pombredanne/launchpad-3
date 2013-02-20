@@ -1992,11 +1992,18 @@ class PublishingSet:
             removed_byID=removed_by_id,
             removal_comment=removal_comment)
 
-    def requestDeletion(self, sources, removed_by, removal_comment=None):
+    def requestDeletion(self, pubs, removed_by, removal_comment=None):
         """See `IPublishingSet`."""
-        sources = list(sources)
-        if len(sources) == 0:
+        pubs = list(pubs)
+        sources = [
+            pub for pub in pubs
+            if ISourcePackagePublishingHistory.providedBy(pub)]
+        binaries = [
+            pub for pub in pubs
+            if IBinaryPackagePublishingHistory.providedBy(pub)]
+        if not sources and not binaries:
             return
+        assert len(sources) + len(binaries) == len(pubs)
 
         spph_ids = [spph.id for spph in sources]
         self.setMultipleDeleted(
@@ -2005,11 +2012,12 @@ class PublishingSet:
 
         getUtility(IDistroSeriesDifferenceJobSource).createForSPPHs(sources)
 
-        # Mark binary publications deleted.
-        bpph_ids = [
-            bpph.id
-            for source, bpph, bin, bin_name, arch
-                in self.getBinaryPublicationsForSources(sources)]
+        # Append the sources' related binaries to our condemned list,
+        # and mark them all deleted.
+        bpph_ids = [bpph.id for bpph in binaries]
+        bpph_ids.extend(
+            bpph.id for source, bpph, bin, bin_name, arch
+            in self.getBinaryPublicationsForSources(sources))
         if len(bpph_ids) > 0:
             self.setMultipleDeleted(
                 BinaryPackagePublishingHistory, bpph_ids, removed_by,
