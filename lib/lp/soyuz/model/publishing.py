@@ -147,7 +147,8 @@ def get_archive(archive, bpr):
     Debug packages live in a DEBUG archive instead of a PRIMARY archive.
     This helper implements that override.
     """
-    if bpr.binpackageformat == BinaryPackageFormat.DDEB:
+    if (archive is not None and
+        bpr.binpackageformat == BinaryPackageFormat.DDEB):
         debug_archive = archive.debug_archive
         if debug_archive is None:
             raise QueueInconsistentStateError(
@@ -1257,15 +1258,12 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             # See if the archive has changed by virtue of the component
             # changing:
             distribution = self.distroarchseries.distroseries.distribution
-            # DDEBs always live in a DEBUG archive, which supports all
-            # components.
-            if bpr.binpackageformat != BinaryPackageFormat.DDEB:
-                new_archive = distribution.getArchiveByComponent(
-                    new_component.name)
-                if new_archive != None and new_archive != self.archive:
-                    raise OverrideError(
-                        "Overriding component to '%s' failed because it would "
-                        "require a new archive." % new_component.name)
+            new_archive = get_archive(
+                distribution.getArchiveByComponent(new_component.name), bpr)
+            if new_archive is not None and new_archive != self.archive:
+                raise OverrideError(
+                    "Overriding component to '%s' failed because it would "
+                    "require a new archive." % new_component.name)
 
         # Refuse to create new publication records that will never be
         # published.
