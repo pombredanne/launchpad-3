@@ -1268,13 +1268,15 @@ class IPublishingSet(Interface):
         This is a supporting operation for a deletion request.
         """
 
-    def requestDeletion(sources, removed_by, removal_comment=None):
+    def requestDeletion(pub, removed_by, removal_comment=None):
         """Delete the source and binary publications specified.
 
         This method deletes the source publications passed via the first
-        parameter as well as their associated binary publications.
+        parameter as well as their associated binary publications, and any
+        binary publications passed in.
 
-        :param sources: list of `SourcePackagePublishingHistory` objects.
+        :param pubs: list of `SourcePackagePublishingHistory` and
+            `BinaryPackagePublishingHistory` objects.
         :param removed_by: `IPerson` responsible for the removal.
         :param removal_comment: optional text describing the removal reason.
 
