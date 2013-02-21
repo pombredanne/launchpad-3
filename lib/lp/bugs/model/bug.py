@@ -366,6 +366,9 @@ class Bug(SQLBase, InformationTypeMixin):
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
     duplicates = SQLMultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
+    specifications = SQLRelatedJoin(
+        'Specification', joinColumn='bug', otherColumn='specification',
+        intermediateTable='SpecificationBug', orderBy='-datecreated')
     questions = SQLRelatedJoin('Question', joinColumn='bug',
         otherColumn='question', intermediateTable='QuestionBug',
         orderBy='-datecreated')
