@@ -313,6 +313,7 @@ class IBugView(Interface):
     initial_message = Attribute(
         "The message that was specified when creating the bug")
     questions = Attribute("List of questions related to this bug.")
+    specifications = Attribute("List of related specifications.")
     tags = exported(List(
         title=_("Tags"),
         description=_("Space-separated keywords for classifying "

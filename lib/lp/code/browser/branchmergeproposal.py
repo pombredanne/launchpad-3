@@ -723,7 +723,8 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
 
     @property
     def spec_links(self):
-        return self.context.source_branch.getSpecificationLinks(self.user)
+        return list(
+            self.context.source_branch.getSpecificationLinks(self.user))
 
     @cachedproperty
     def linked_bugtasks(self):
