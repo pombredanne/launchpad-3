@@ -538,7 +538,7 @@ class BugViewMixin:
 
     @property
     def specifications(self):
-        return self.context.specifications(self.user)
+        return self.context.getSpecifications(self.user)
 
 
 class BugInformationTypePortletView(InformationTypePortletMixin,

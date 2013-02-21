@@ -380,7 +380,8 @@ class Bug(SQLBase, InformationTypeMixin):
     heat_last_updated = UtcDateTimeCol(default=None)
     latest_patch_uploaded = UtcDateTimeCol(default=None)
 
-    def specifications(self, user):
+    def getSpecifications(self, user):
+        """See `IBug`."""
         return IStore(SpecificationBug).using(
             Specification,
             Join(SpecificationBug, SpecificationBug.bugID == self.id)).find(

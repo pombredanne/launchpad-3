@@ -447,6 +447,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         'SpecificationBranch', joinColumn='branch', orderBy='id')
 
     def getSpecificationLinks(self, user):
+        """See `IBranch`."""
         tables = [
             SpecificationBranch,
             Join(

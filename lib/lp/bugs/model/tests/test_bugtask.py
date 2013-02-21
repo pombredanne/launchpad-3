@@ -672,21 +672,27 @@ class TestBugTaskPrivacy(TestCaseWithFactory):
         bug_upstream_firefox_crashes.transitionToStatus(
             BugTaskStatus.NEW, getUtility(ILaunchBag).user)
 
-    def test_bug_specifications_is_filtered_for_anonymous(self):
+    def _createBugAndSpecification(self):
         bug = self.factory.makeBug()
         spec = self.factory.makeSpecification(
             information_type=InformationType.PROPRIETARY)
         with person_logged_in(spec.product.owner):
             spec.linkBug(bug)
-        self.assertEqual([], list(bug.specifications(None)))
+        return spec, bug     
 
-    def test_bug_specifications_for_accepted_user(self):
-        bug = self.factory.makeBug()
-        spec = self.factory.makeSpecification(
-            information_type=InformationType.PROPRIETARY)
-        with person_logged_in(spec.product.owner):
-            spec.linkBug(bug)
-        self.assertEqual([spec], list(bug.specifications(spec.product.owner)))
+    def test_bug_specifications_is_filtered_for_anonymous(self):
+        spec, bug = self._createBugAndSpecification()
+        self.assertContentEqual([], bug.getSpecifications(None))
+
+    def test_bug_specifications_is_filtered_for_unknown_user(self):
+        spec, bug = self._createBugAndSpecification()
+        self.assertContentEqual(
+            [], bug.getSpecifications(self.factory.makePerson()))
+
+    def test_bug_specifications_for_authorised_user(self):
+        spec, bug = self._createBugAndSpecification()
+        self.assertContentEqual(
+            [spec], bug.getSpecifications(spec.product.owner))
 
 
 class TestBugTaskDelta(TestCaseWithFactory):
