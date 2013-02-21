@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -66,6 +66,11 @@ from lp.app.interfaces.launchpad import (
     IPrivacy,
     )
 from lp.app.interfaces.services import IService
+from lp.blueprints.model.specification import Specification
+from lp.blueprints.model.specificationbranch import SpecificationBranch
+from lp.blueprints.model.specificationsearch import (
+    get_specification_privacy_filter,
+    )
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
@@ -438,9 +443,19 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         return bug.unlinkBranch(self, user)
 
-    spec_links = SQLMultipleJoin('SpecificationBranch',
-        joinColumn='branch',
-        orderBy='id')
+    spec_links = SQLMultipleJoin(
+        'SpecificationBranch', joinColumn='branch', orderBy='id')
+
+    def getSpecificationLinks(self, user):
+        tables = [
+            SpecificationBranch,
+            Join(
+                Specification,
+                SpecificationBranch.specificationID == Specification.id)]
+        return Store.of(self).using(*tables).find(
+            SpecificationBranch,
+            SpecificationBranch.branchID == self.id,
+            *get_specification_privacy_filter(user))
 
     def linkSpecification(self, spec, registrant):
         """See `IBranch`."""
@@ -459,8 +474,7 @@ class Branch(SQLBase, BzrIdentityMixin):
     @property
     def active_landing_targets(self):
         """Merge proposals not in final states where this branch is source."""
-        store = Store.of(self)
-        return store.find(
+        return Store.of(self).find(
             BranchMergeProposal, BranchMergeProposal.source_branch == self,
             Not(BranchMergeProposal.queue_status.is_in(
                 BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
@@ -615,8 +629,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def getStackedBranches(self):
         """See `IBranch`."""
-        store = Store.of(self)
-        return store.find(Branch, Branch.stacked_on == self)
+        return Store.of(self).find(Branch, Branch.stacked_on == self)
 
     def getStackedOnBranches(self):
         """See `IBranch`."""

@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Branches."""
@@ -1573,10 +1573,10 @@ class TestBranchDeletionConsequences(TestCase):
         spec2.linkBranch(self.branch, self.branch.owner)
         spec2_branch_id = self.branch.spec_links[1].id
         self.branch.destroySelf(break_references=True)
-        self.assertRaises(SQLObjectNotFound, SpecificationBranch.get,
-                          spec1_branch_id)
-        self.assertRaises(SQLObjectNotFound, SpecificationBranch.get,
-                          spec2_branch_id)
+        self.assertRaises(
+            SQLObjectNotFound, SpecificationBranch.get, spec1_branch_id)
+        self.assertRaises(
+            SQLObjectNotFound, SpecificationBranch.get, spec2_branch_id)
 
     def test_branchWithSeriesRequirements(self):
         """Deletion requirements for a series' branch are right."""
