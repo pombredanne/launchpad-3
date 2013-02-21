@@ -3076,6 +3076,8 @@ class Person(
         return Store.of(self).find(
             Archive,
             Archive.owner == self,
+            Archive.status.is_in(
+                (ArchiveStatus.ACTIVE, ArchiveStatus.DELETING)),
             filter).order_by(Archive.name)
 
     def getPPAByName(self, name):

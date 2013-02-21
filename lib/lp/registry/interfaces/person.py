@@ -1052,7 +1052,7 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         """
 
     def getVisiblePPAs(user):
-        """Return the PPAs for which user has launchpad.View permission."""
+        """Return active PPAs for which user has launchpad.View permission."""
 
     def getInvitedMemberships():
         """Return all TeamMemberships of this team with the INVITED status.
