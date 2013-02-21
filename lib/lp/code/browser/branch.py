@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch views."""
@@ -354,7 +354,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         return Link('+linkbug', text, icon='add')
 
     def link_blueprint(self):
-        if self.context.spec_links:
+        if list(self.context.getSpecificationLinks(self.user)):
             text = 'Link to another blueprint'
         else:
             text = 'Link to a blueprint'
@@ -688,6 +688,10 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
         return EnumChoiceWidget(
             self.context.branch, IBranch['lifecycle_status'],
             header='Change status to', css_class_prefix='branchstatus')
+
+    @property
+    def spec_links(self):
+        return self.context.getSpecificationLinks(self.user)
 
 
 class BranchInProductView(BranchView):

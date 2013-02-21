@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBug related view classes."""
@@ -535,6 +535,10 @@ class BugViewMixin:
         'current' is determined by simply looking in the ILaunchBag utility.
         """
         return getUtility(ILaunchBag).bugtask
+
+    @property
+    def specifications(self):
+        return self.context.getSpecifications(self.user)
 
 
 class BugInformationTypePortletView(InformationTypePortletMixin,
