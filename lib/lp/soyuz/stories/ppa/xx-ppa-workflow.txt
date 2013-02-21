@@ -694,6 +694,20 @@ And direct access to the PPA page is also denied.
     ...
     Unauthorized: ...
 
+Deleted PPAs don't even show up for the owner.
+
+    >>> from lp.soyuz.enums import ArchiveStatus
+    >>> login('admin@canonical.com')
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> cprov.getPPAByName('edge').status = ArchiveStatus.DELETED
+    >>> logout()
+
+    >>> cprov_browser.open("http://launchpad.dev/~cprov")
+    >>> print_tag_with_id(cprov_browser.contents, 'ppas')
+    Personal package archives
+    PPA for Celso Providelo
+    Create a new PPA
+
 
 Enabling or disabling of PPAs by the owner
 ------------------------------------------
