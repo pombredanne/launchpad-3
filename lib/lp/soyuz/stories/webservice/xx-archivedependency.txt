@@ -1,4 +1,5 @@
-= Archive dependencies =
+Archive dependencies
+====================
 
 `ArchiveDependency` records represent build-dependencies between
 archives, and are exposed through the API.
@@ -60,7 +61,7 @@ Nor can said user craft a URL to a dependency.
     ...     '/~cprov/+archive/p3a/+dependency/1')
     HTTP/1.1 401 Unauthorized
     ...
-    (<Archive at ...>, 'getArchiveDependency', 'launchpad.View')
+    (<Archive at ...>, 'getArchiveDependency', 'launchpad.SubscriberView')
 
 Celso can see them if we grant private permissions, of course.
 
