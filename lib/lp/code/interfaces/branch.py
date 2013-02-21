@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch interfaces."""
@@ -481,6 +481,9 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
             readonly=True,
             value_type=Reference(Interface)),  # Really ISpecificationBranch
         as_of="beta")
+
+    def getSpecificationLinks(user):
+        """Fetch the `ISpecificationBranch`'s that the user can view."""
 
     @call_with(registrant=REQUEST_USER)
     @operation_parameters(

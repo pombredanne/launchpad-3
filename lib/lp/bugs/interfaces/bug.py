@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces related to bugs."""
@@ -382,6 +382,9 @@ class IBugView(Interface):
             readonly=True,
             value_type=Reference(schema=IMessage)),
         exported_as='messages'))
+
+    def getSpecifications(user):
+        """List of related specifications that the user can view."""
 
     def _indexed_messages(include_content=False, include_parents=False):
         """Low level query for getting bug messages.

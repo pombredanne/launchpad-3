@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views, navigation and actions for BranchMergeProposals."""
@@ -719,8 +719,12 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     def has_bug_or_spec(self):
         """Return whether or not the merge proposal has a linked bug or spec.
         """
-        branch = self.context.source_branch
-        return self.linked_bugtasks or branch.spec_links
+        return self.linked_bugtasks or self.spec_links
+
+    @property
+    def spec_links(self):
+        return list(
+            self.context.source_branch.getSpecificationLinks(self.user))
 
     @cachedproperty
     def linked_bugtasks(self):

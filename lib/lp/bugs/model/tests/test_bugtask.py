@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -528,7 +528,7 @@ class TestBugTaskBadges(TestCaseWithFactory):
         ])
 
 
-class TestBugTaskPrivacy(TestCase):
+class TestBugTaskPrivacy(TestCaseWithFactory):
     """Verify that the bug is either private or public.
 
     XXX: rharding 2012-05-14 bug=999298: These tests are ported from doctests
@@ -553,14 +553,15 @@ class TestBugTaskPrivacy(TestCase):
         ubuntu_team = getUtility(IPersonSet).getByEmail('support@ubuntu.com')
         bug_upstream_firefox_crashes.bug.subscribe(ubuntu_team, ubuntu_team)
 
-        old_state = Snapshot(bug_upstream_firefox_crashes.bug,
-                             providing=IBug)
-        self.assertTrue(bug_upstream_firefox_crashes.bug.setPrivate(True,
-                                                                    foobar))
+        old_state = Snapshot(
+            bug_upstream_firefox_crashes.bug, providing=IBug)
+        self.assertTrue(
+            bug_upstream_firefox_crashes.bug.setPrivate(True, foobar))
 
-        bug_set_private = ObjectModifiedEvent(bug_upstream_firefox_crashes.bug,
-                                              old_state,
-                                              ["id", "title", "private"])
+        bug_set_private = ObjectModifiedEvent(
+            bug_upstream_firefox_crashes.bug, old_state,
+            ["id", "title", "private"])
+
         notify(bug_set_private)
         flush_database_updates()
 
@@ -670,6 +671,28 @@ class TestBugTaskPrivacy(TestCase):
             BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
         bug_upstream_firefox_crashes.transitionToStatus(
             BugTaskStatus.NEW, getUtility(ILaunchBag).user)
+
+    def _createBugAndSpecification(self):
+        bug = self.factory.makeBug()
+        spec = self.factory.makeSpecification(
+            information_type=InformationType.PROPRIETARY)
+        with person_logged_in(spec.product.owner):
+            spec.linkBug(bug)
+        return spec, bug     
+
+    def test_bug_specifications_is_filtered_for_anonymous(self):
+        spec, bug = self._createBugAndSpecification()
+        self.assertContentEqual([], bug.getSpecifications(None))
+
+    def test_bug_specifications_is_filtered_for_unknown_user(self):
+        spec, bug = self._createBugAndSpecification()
+        self.assertContentEqual(
+            [], bug.getSpecifications(self.factory.makePerson()))
+
+    def test_bug_specifications_for_authorised_user(self):
+        spec, bug = self._createBugAndSpecification()
+        self.assertContentEqual(
+            [spec], bug.getSpecifications(spec.product.owner))
 
 
 class TestBugTaskDelta(TestCaseWithFactory):

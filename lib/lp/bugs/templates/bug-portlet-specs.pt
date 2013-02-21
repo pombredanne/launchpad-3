@@ -3,10 +3,10 @@
     xmlns:metal="http://xml.zope.org/namespaces/metal"
     xmlns:i18n="http://xml.zope.org/namespaces/i18n"
     class="portlet vertical" id="portlet-blueprints"
-    tal:condition="context/specifications">
+    tal:condition="view/specifications">
   <h2>Related blueprints</h2>
   <ul>
-    <li tal:repeat="spec context/specifications"
+    <li tal:repeat="spec view/specifications"
         tal:content="structure spec/fmt:link" />
   </ul>
 </div>

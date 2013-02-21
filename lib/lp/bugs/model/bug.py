@@ -98,6 +98,11 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
 from lp.app.model.launchpad import InformationTypeMixin
 from lp.app.validators import LaunchpadValidationError
+from lp.blueprints.model.specification import Specification
+from lp.blueprints.model.specificationbug import SpecificationBug
+from lp.blueprints.model.specificationsearch import (
+    get_specification_privacy_filter,
+    )
 from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
@@ -360,11 +365,10 @@ class Bug(SQLBase, InformationTypeMixin):
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
-    duplicates = SQLMultipleJoin(
-        'Bug', joinColumn='duplicateof', orderBy='id')
-    specifications = SQLRelatedJoin('Specification', joinColumn='bug',
-        otherColumn='specification', intermediateTable='SpecificationBug',
-        orderBy='-datecreated')
+    duplicates = SQLMultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
+    specifications = SQLRelatedJoin(
+        'Specification', joinColumn='bug', otherColumn='specification',
+        intermediateTable='SpecificationBug', orderBy='-datecreated')
     questions = SQLRelatedJoin('Question', joinColumn='bug',
         otherColumn='question', intermediateTable='QuestionBug',
         orderBy='-datecreated')
@@ -378,6 +382,14 @@ class Bug(SQLBase, InformationTypeMixin):
     heat = IntCol(notNull=True, default=0)
     heat_last_updated = UtcDateTimeCol(default=None)
     latest_patch_uploaded = UtcDateTimeCol(default=None)
+
+    def getSpecifications(self, user):
+        """See `IBug`."""
+        return IStore(SpecificationBug).find(
+            Specification,
+            SpecificationBug.bugID == self.id,
+            SpecificationBug.specificationID == Specification.id,
+            *get_specification_privacy_filter(user))
 
     @property
     def security_related(self):
