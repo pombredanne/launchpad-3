@@ -136,6 +136,7 @@ class PrivateArtifactsViewTestCase(BrowserTestCase):
         with person_logged_in(self.owner):
             self.archive = self.factory.makeArchive(
                 private=True, owner=self.private_team)
+        self.factory.makeSourcePackagePublishingHistory(archive=self.archive)
         self.subscriber = self.factory.makePerson()
 
     def test_traverse_view_private_team_archive_subscriber(self):
