@@ -382,12 +382,11 @@ class Bug(SQLBase, InformationTypeMixin):
 
     def getSpecifications(self, user):
         """See `IBug`."""
-        return IStore(SpecificationBug).using(
+        return IStore(SpecificationBug).find(
             Specification,
-            Join(SpecificationBug, SpecificationBug.bugID == self.id)).find(
-                Specification,
-                Specification.id == SpecificationBug.specificationID,
-                *get_specification_privacy_filter(user))
+            SpecificationBug.bugID == self.id,
+            SpecificationBug.specificationID == Specification.id,
+            *get_specification_privacy_filter(user))
 
     @property
     def security_related(self):
