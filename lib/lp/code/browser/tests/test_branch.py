@@ -24,12 +24,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     UNRESOLVED_BUGTASK_STATUSES,
     )
-from lp.code.browser.branch import (
-    BranchMirrorStatusView,
-    BranchReviewerEditView,
-    BranchView,
-    )
-from lp.code.browser.branchlisting import PersonOwnedBranchesView
+from lp.code.browser.branch import BranchMirrorStatusView
 from lp.code.bzr import (
     BranchFormat,
     ControlFormat,
