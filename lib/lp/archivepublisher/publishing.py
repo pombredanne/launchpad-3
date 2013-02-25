@@ -96,9 +96,6 @@ def _getDiskPool(pubconf, log):
     It ensures the given archive location matches the minimal structure
     required.
     """
-    log.debug("Making directories as needed.")
-    pubconf.setupArchiveDirs()
-
     log.debug("Preparing on-disk pool representation.")
     dp = DiskPool(pubconf.poolroot, pubconf.temproot,
                   logging.getLogger("DiskPool"))
@@ -144,8 +141,6 @@ def getPublisher(archive, allowed_suites, log, distsroot=None):
     pubconf = getPubConfig(archive)
 
     disk_pool = _getDiskPool(pubconf, log)
-
-    _setupHtaccess(archive, pubconf, log)
 
     if distsroot is not None:
         log.debug("Overriding dists root with %s." % distsroot)
@@ -197,9 +192,6 @@ class Publisher(object):
         self.archive = archive
         self.allowed_suites = allowed_suites
 
-        if not os.path.isdir(config.poolroot):
-            raise ValueError("Root %s is not a directory or does "
-                             "not exist" % config.poolroot)
         self._diskpool = diskpool
 
         if library is None:
@@ -216,6 +208,11 @@ class Publisher(object):
         # than dirty_pockets in the case of a careful index run.
         # This is a set of tuples in the form (distroseries.name, pocket)
         self.release_files_needed = set()
+
+    def setupArchiveDirs(self):
+        self.log.debug("Setting up archive directories.")
+        self._config.setupArchiveDirs()
+        _setupHtaccess(self.archive, self._config, self.log)
 
     def isDirty(self, distroseries, pocket):
         """True if a publication has happened in this release and pocket."""

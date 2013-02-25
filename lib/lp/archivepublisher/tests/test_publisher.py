@@ -167,6 +167,7 @@ class TestPublisher(TestPublisherBase):
         dead_bpph.supersede()
 
         publisher = getPublisher(test_archive, None, self.logger)
+        publisher.setupArchiveDirs()
 
         self.assertTrue(os.path.exists(publisher._config.archiveroot))
 
@@ -212,6 +213,7 @@ class TestPublisher(TestPublisherBase):
             purpose=ArchivePurpose.PPA)
         logger = BufferLogger()
         publisher = getPublisher(test_archive, None, logger)
+        publisher.setupArchiveDirs()
 
         self.assertTrue(os.path.exists(publisher._config.archiveroot))
 
@@ -1134,7 +1136,7 @@ class TestPublisher(TestPublisherBase):
 
         # Set up the publisher for it and publish its repository.
         # 'getPublisher' is what actually configures the htaccess file.
-        getPublisher(ppa, [], self.logger)
+        getPublisher(ppa, [], self.logger).setupArchiveDirs()
         pubconf = getPubConfig(ppa)
         htaccess_path = os.path.join(pubconf.htaccessroot, ".htaccess")
         self.assertTrue(os.path.exists(htaccess_path))
