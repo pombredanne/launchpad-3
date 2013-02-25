@@ -300,6 +300,7 @@ class PublishDistro(LaunchpadCronScript):
 
         Commits transactions along the way.
         """
+        publisher.setupArchiveDirs()
         publisher.A_publish(self.isCareful(self.options.careful_publishing))
         self.txn.commit()
 
