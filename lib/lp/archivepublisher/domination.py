@@ -517,6 +517,7 @@ class Dominator:
             binarypackagepublishinghistory.distroarchseries =
                 distroarchseries.id AND
             binarypackagepublishinghistory.scheduleddeletiondate IS NULL AND
+            binarypackagepublishinghistory.dateremoved IS NULL AND
             binarypackagepublishinghistory.archive = %s AND
             binarypackagebuild.source_package_release = %s AND
             distroarchseries.distroseries = %s AND
@@ -786,7 +787,8 @@ class Dominator:
             sourcepackagepublishinghistory.archive = %s AND
             sourcepackagepublishinghistory.pocket = %s AND
             sourcepackagepublishinghistory.status IN %s AND
-            sourcepackagepublishinghistory.scheduleddeletiondate is NULL
+            sourcepackagepublishinghistory.scheduleddeletiondate is NULL AND
+            sourcepackagepublishinghistory.dateremoved is NULL
             """ % sqlvalues(
                 distroseries, self.archive, pocket,
                 inactive_publishing_status))
@@ -798,7 +800,8 @@ class Dominator:
             binarypackagepublishinghistory.archive = %s AND
             binarypackagepublishinghistory.pocket = %s AND
             binarypackagepublishinghistory.status IN %s AND
-            binarypackagepublishinghistory.scheduleddeletiondate is NULL
+            binarypackagepublishinghistory.scheduleddeletiondate is NULL AND
+            binarypackagepublishinghistory.dateremoved is NULL
             """ % sqlvalues(
                 distroseries, self.archive, pocket,
                 inactive_publishing_status),
