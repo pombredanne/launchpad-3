@@ -411,6 +411,7 @@ class FakeArchive:
 class FakePublisher:
     """A very simple fake `Publisher`."""
     def __init__(self):
+        self.setupArchiveDirs = FakeMethod()
         self.A_publish = FakeMethod()
         self.A2_markPocketsWithDeletionsDirty = FakeMethod()
         self.B_dominate = FakeMethod()
