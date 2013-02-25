@@ -226,6 +226,7 @@
                     source_branchID
                     target_branch
                     prerequisite_branch
+                    prerequisite_branchID
                     description
                     whiteboard
                     queue_status

@@ -523,12 +523,18 @@ class TestBranchView(BrowserTestCase):
         branch = self.factory.makeBranch(product=product)
         for i in range(10):
             self.factory.makeBranchMergeProposal(target_branch=branch)
+        stacked = self.factory.makeBranch(product=product)
+        source = self.factory.makeBranch(stacked_on=stacked, product=product)
+        prereq = self.factory.makeBranch(product=product)
+        self.factory.makeBranchMergeProposal(
+            source_branch=source, target_branch=branch,
+            prerequisite_branch=prereq)
         Store.of(branch).flush()
         Store.of(branch).invalidate()
         view = create_view(branch, '+index')
         with StormStatementRecorder() as recorder:
             view.landing_candidates
-        self.assertThat(recorder, HasQueryCount(Equals(3)))
+        self.assertThat(recorder, HasQueryCount(Equals(5)))
 
 
 class TestBranchViewPrivateArtifacts(BrowserTestCase):
