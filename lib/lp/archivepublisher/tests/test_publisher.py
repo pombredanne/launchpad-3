@@ -1135,7 +1135,7 @@ class TestPublisher(TestPublisherBase):
         ppa.buildd_secret = "geheim"
 
         # Set up the publisher for it and publish its repository.
-        # 'getPublisher' is what actually configures the htaccess file.
+        # setupArchiveDirs is what actually configures the htaccess file.
         getPublisher(ppa, [], self.logger).setupArchiveDirs()
         pubconf = getPubConfig(ppa)
         htaccess_path = os.path.join(pubconf.htaccessroot, ".htaccess")
