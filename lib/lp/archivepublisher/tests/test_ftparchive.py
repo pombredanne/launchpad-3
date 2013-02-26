@@ -179,7 +179,8 @@ class TestFTPArchive(TestCaseWithFactory):
 
     def test_getBinariesForOverrides(self):
         # getBinariesForOverrides returns a list of tuples containing:
-        # (sourcename, component, section, priority)
+        # (sourcename, component, section, archtag, priority,
+        # phased_update_percentage)
 
         # Reconfigure FTPArchiveHandler to retrieve sampledata overrides.
         fa = self._setUpFTPArchiveHandler()
@@ -190,9 +191,9 @@ class TestFTPArchive(TestCaseWithFactory):
         published_binaries = fa.getBinariesForOverrides(
             hoary, PackagePublishingPocket.RELEASE)
         expectedBinaries = [
-            ('pmount', 'hppa', 'main', 'base',
+            ('pmount', 'main', 'base', 'hppa',
              PackagePublishingPriority.EXTRA, None),
-            ('pmount', 'i386', 'universe', 'editors',
+            ('pmount', 'universe', 'editors', 'i386',
              PackagePublishingPriority.IMPORTANT, None),
             ]
         self.assertEqual(expectedBinaries, list(published_binaries))

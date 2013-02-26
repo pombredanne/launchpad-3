@@ -276,7 +276,7 @@ class FTPArchiveHandler:
         """Fetch override information about all published binaries.
 
         The override information consists of tuples with 'binaryname',
-        'architecture', 'component', 'section' and 'priority' strings and
+        'component', 'section', 'architecture' and 'priority' strings and
         'phased_update_percentage' integers, in this order.
 
         :param distroseries: target `IDistroSeries`
@@ -307,8 +307,8 @@ class FTPArchiveHandler:
             return EmptyResultSet()
 
         result_set = store.using(*origins).find(
-            (BinaryPackageName.name, DistroArchSeries.architecturetag,
-             Component.name, Section.name,
+            (BinaryPackageName.name, Component.name, Section.name,
+             DistroArchSeries.architecturetag,
              BinaryPackagePublishingHistory.priority,
              BinaryPackagePublishingHistory.phased_update_percentage),
             BinaryPackagePublishingHistory.archive == self.publisher.archive,
