@@ -305,6 +305,7 @@ class SoyuzTestPublisher:
                        architecturespecific=False,
                        builder=None,
                        component='main',
+                       phased_update_percentage=None,
                        with_debug=False, user_defined_fields=None):
         """Return a list of binary publishing records."""
         if distroseries is None:
@@ -341,7 +342,8 @@ class SoyuzTestPublisher:
                     breaks, BinaryPackageFormat.DDEB, version=version)
                 pub_binaries += self.publishBinaryInArchive(
                     binarypackagerelease_ddeb, archive.debug_archive, status,
-                    pocket, scheduleddeletiondate, dateremoved)
+                    pocket, scheduleddeletiondate, dateremoved,
+                    phased_update_percentage)
             else:
                 binarypackagerelease_ddeb = None
 
@@ -353,7 +355,7 @@ class SoyuzTestPublisher:
                 user_defined_fields=user_defined_fields)
             pub_binaries += self.publishBinaryInArchive(
                 binarypackagerelease, archive, status, pocket,
-                scheduleddeletiondate, dateremoved)
+                scheduleddeletiondate, dateremoved, phased_update_percentage)
             published_binaries.extend(pub_binaries)
             package_upload = self.addPackageUpload(
                 archive, distroseries, pocket,
@@ -446,7 +448,8 @@ class SoyuzTestPublisher:
         self, binarypackagerelease, archive,
         status=PackagePublishingStatus.PENDING,
         pocket=PackagePublishingPocket.RELEASE,
-        scheduleddeletiondate=None, dateremoved=None):
+        scheduleddeletiondate=None, dateremoved=None,
+        phased_update_percentage=None):
         """Return the corresponding BinaryPackagePublishingHistory."""
         distroarchseries = binarypackagerelease.build.distro_arch_series
 
@@ -470,7 +473,8 @@ class SoyuzTestPublisher:
                 dateremoved=dateremoved,
                 datecreated=UTC_NOW,
                 pocket=pocket,
-                archive=archive)
+                archive=archive,
+                phased_update_percentage=phased_update_percentage)
             if status == PackagePublishingStatus.PUBLISHED:
                 pub.datepublished = UTC_NOW
             pub_binaries.append(pub)
@@ -1296,18 +1300,30 @@ class TestBinaryDomination(TestNativePublishingBase):
         """Check that atomic domination only covers identical overrides.
 
         This is important, as otherwise newly-overridden arch-indep binaries
-        will supersede themselves, and vanish entirely (bug #178102).
+        will supersede themselves, and vanish entirely (bug #178102).  We
+        check both DEBs and DDEBs.
         """
-        bins = self.getPubBinaries(architecturespecific=False)
-
+        getUtility(IArchiveSet).new(
+            purpose=ArchivePurpose.DEBUG, owner=self.ubuntutest.owner,
+            distribution=self.ubuntutest)
         universe = getUtility(IComponentSet)['universe']
-        super_bins = []
-        for bin in bins:
-            super_bins.append(bin.changeOverride(new_component=universe))
+        games = getUtility(ISectionSet)['games']
+        for name, override in (
+            ("component", {"new_component": universe}),
+            ("section", {"new_section": games}),
+            ("priority", {"new_priority": PackagePublishingPriority.EXTRA}),
+            ("phase", {"new_phased_update_percentage": 50}),
+            ):
+            bins = self.getPubBinaries(
+                binaryname=name, architecturespecific=False, with_debug=True)
 
-        bins[0].supersede(super_bins[0])
-        self.checkSuperseded(bins, super_bins[0])
-        self.checkPublications(super_bins, PackagePublishingStatus.PENDING)
+            super_bins = []
+            for bin in bins:
+                super_bins.append(bin.changeOverride(**override))
+
+            bins[0].supersede(super_bins[0])
+            self.checkSuperseded(bins, super_bins[0])
+            self.checkPublications(super_bins, PackagePublishingStatus.PENDING)
 
     def testSupersedingSupersededArchSpecificBinaryFails(self):
         """Check that supersede() fails with a superseded arch-dep binary.
@@ -1667,9 +1683,14 @@ class TestChangeOverride(TestNativePublishingBase):
 
     def setUpOverride(self, status=SeriesStatus.DEVELOPMENT,
                       pocket=PackagePublishingPocket.RELEASE, binary=False,
-                      **kwargs):
+                      ddeb=False, **kwargs):
         self.distroseries.status = status
-        if binary:
+        if ddeb:
+            pub = self.getPubBinaries(pocket=pocket, with_debug=True)[2]
+            self.assertEqual(
+                BinaryPackageFormat.DDEB,
+                pub.binarypackagerelease.binpackageformat)
+        elif binary:
             pub = self.getPubBinaries(pocket=pocket)[0]
         else:
             pub = self.getPubSource(pocket=pocket)
@@ -1687,6 +1708,11 @@ class TestChangeOverride(TestNativePublishingBase):
         if "new_priority" in kwargs:
             self.assertEqual(
                 kwargs["new_priority"], new_pub.priority.name.lower())
+        if "new_phased_update_percentage" in kwargs:
+            self.assertEqual(
+                kwargs["new_phased_update_percentage"],
+                new_pub.phased_update_percentage)
+        return new_pub
 
     def assertCannotOverride(self, **kwargs):
         self.assertRaises(OverrideError, self.setUpOverride, **kwargs)
@@ -1699,7 +1725,26 @@ class TestChangeOverride(TestNativePublishingBase):
         # BPPH.changeOverride changes the properties of binary publications.
         self.assertCanOverride(
             binary=True,
-            new_component="universe", new_section="misc", new_priority="extra")
+            new_component="universe", new_section="misc", new_priority="extra",
+            new_phased_update_percentage=90)
+
+    def test_changes_ddeb(self):
+        # BPPH.changeOverride changes the properties of DDEB publications.
+        getUtility(IArchiveSet).new(
+            purpose=ArchivePurpose.DEBUG, owner=self.ubuntutest.owner,
+            distribution=self.ubuntutest)
+        self.assertCanOverride(
+            ddeb=True,
+            new_component="universe", new_section="misc", new_priority="extra",
+            new_phased_update_percentage=90)
+
+    def test_set_and_clear_phased_update_percentage(self):
+        # new_phased_update_percentage=<integer> sets a phased update
+        # percentage; new_phased_update_percentage=100 clears it.
+        pub = self.assertCanOverride(
+            binary=True, new_phased_update_percentage=50)
+        new_pub = pub.changeOverride(new_phased_update_percentage=100)
+        self.assertIsNone(new_pub.phased_update_percentage)
 
     def test_no_change(self):
         # changeOverride does not create a new publication if the existing

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Binary package release in Distribution Architecture Release interfaces."""
@@ -51,6 +51,11 @@ class IDistroArchSeriesBinaryPackageRelease(IBinaryPackageRelease):
 
     component = Attribute("The component in which this package is "
         "published or None if it is not currently published.")
+
+    phased_update_percentage = Attribute(
+        "The percentage of users for whom this package should be recommended, "
+        "or None to publish the update for everyone or if it is not currently "
+        "published.")
 
     publishing_history = Attribute("Return a list of publishing "
         "records for this binary package release in this series "

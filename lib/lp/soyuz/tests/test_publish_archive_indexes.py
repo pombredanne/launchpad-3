@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test native archive index generation for Soyuz."""
@@ -95,7 +95,8 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
         pub_binaries = self.getPubBinaries(
             depends='biscuit', recommends='foo-dev', suggests='pyfoo',
             conflicts='old-foo', replaces='old-foo', provides='foo-master',
-            pre_depends='master-foo', enhances='foo-super', breaks='old-foo')
+            pre_depends='master-foo', enhances='foo-super', breaks='old-foo',
+            phased_update_percentage=50)
         pub_binary = pub_binaries[0]
         self.assertEqual(
             [u'Package: foo-bin',
@@ -119,6 +120,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Size: 18',
              u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
              u'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             u'Phased-Update-Percentage: 50',
              u'Description: Foo app is great',
              u' Well ...',
              u' it does nothing, though'],

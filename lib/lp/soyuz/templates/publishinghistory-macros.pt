@@ -24,6 +24,10 @@
     <td tal:content="context/pocket/title/fmt:lower">Release</td>
     <td tal:content="context/component/name">main</td>
     <td tal:content="context/section/name">web</td>
+    <tal:binary_history condition="view/is_binary">
+      <td tal:content="context/priority/title">Optional</td>
+      <td tal:content="view/phased_update_percentage">50% of users</td>
+    </tal:binary_history>
     <td>
       <a tal:content="version_name"
          tal:attributes="href version_url"
@@ -31,7 +35,7 @@
     </td>
   </tr>
   <tr tal:attributes="id string:pub${context/id}">
-    <td colspan="8">
+    <td tal:attributes="colspan python: 10 if view.is_binary else 8">
       <tal:block replace="structure context/@@+record-details" />
     </td>
   </tr>

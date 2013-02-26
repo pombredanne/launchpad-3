@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publishing interfaces."""
@@ -784,6 +784,12 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
             title=_('The priority being published into'),
             required=False, readonly=False,
             )
+    phased_update_percentage = exported(
+        Int(
+            title=_('The percentage of users for whom this package should be '
+                    'recommended, or None to publish the update for everyone'),
+            required=False, readonly=True,
+            ))
     datepublished = exported(
         Datetime(
             title=_("Date Published"),
@@ -961,14 +967,20 @@ class IBinaryPackagePublishingHistoryEdit(IPublishingEdit):
         # save manually looking up the priority name, but it doesn't work in
         # this case: the title is wrong, and tests fail when a string value
         # is passed over the webservice.
-        new_priority=TextLine(title=u"The new priority name."))
+        new_priority=TextLine(title=u"The new priority name."),
+        new_phased_update_percentage=Int(
+            title=u"The new phased update percentage."))
     @export_write_operation()
     @operation_for_version("devel")
     def changeOverride(new_component=None, new_section=None,
-                       new_priority=None):
-        """Change the component, section and/or priority of this publication.
+                       new_priority=None, new_phased_update_percentage=None):
+        """Change the component/section/priority/phase of this publication.
 
         It is changed only if the argument is not None.
+
+        Passing new_phased_update_percentage=100 has the effect of setting
+        the phased update percentage to None (i.e. recommended for all
+        users).
 
         Return the overridden publishing record, a
         `IBinaryPackagePublishingHistory`.

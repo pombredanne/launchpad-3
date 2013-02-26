@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Logic for bulk copying of source/binary publishing history data."""
@@ -180,6 +180,9 @@ class PackageCloner:
                 SourcePackageRelease AS spr,
                 SourcePackageName AS spn
                 """
+        # We do not need to set phased_update_percentage; that is heavily
+        # context-dependent and should be set afresh for the new location if
+        # required.
         query = """
             INSERT INTO BinaryPackagePublishingHistory (
                 binarypackagerelease, distroarchseries, status,

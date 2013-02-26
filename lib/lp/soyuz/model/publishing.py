@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -25,6 +25,7 @@ import sys
 import pytz
 from sqlobject import (
     ForeignKey,
+    IntCol,
     StringCol,
     )
 from storm.expr import (
@@ -146,7 +147,8 @@ def get_archive(archive, bpr):
     Debug packages live in a DEBUG archive instead of a PRIMARY archive.
     This helper implements that override.
     """
-    if bpr.binpackageformat == BinaryPackageFormat.DDEB:
+    if (archive is not None and
+        bpr.binpackageformat == BinaryPackageFormat.DDEB):
         debug_archive = archive.debug_archive
         if debug_archive is None:
             raise QueueInconsistentStateError(
@@ -953,6 +955,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     section = ForeignKey(foreignKey='Section', dbName='section')
     priority = EnumCol(dbName='priority', schema=PackagePublishingPriority)
     status = EnumCol(dbName='status', schema=PackagePublishingStatus)
+    phased_update_percentage = IntCol(
+        dbName='phased_update_percentage', notNull=False, default=None)
     scheduleddeletiondate = UtcDateTimeCol(default=None)
     datepublished = UtcDateTimeCol(default=None)
     datecreated = UtcDateTimeCol(default=UTC_NOW)
@@ -1093,6 +1097,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append('Size', bin_size)
         fields.append('MD5sum', bin_md5)
         fields.append('SHA1', bin_sha1)
+        fields.append(
+            'Phased-Update-Percentage', self.phased_update_percentage)
         fields.append('Description', bin_description)
         if bpr.user_defined_fields:
             fields.extend(bpr.user_defined_fields)
@@ -1107,9 +1113,9 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """Return remaining publications with the same overrides.
 
         Only considers binary publications in the same archive, distroseries,
-        pocket, component, section and priority context. These publications
-        are candidates for domination if this is an architecture-independent
-        package.
+        pocket, component, section, priority and phased-update-percentage
+        context. These publications are candidates for domination if this is
+        an architecture-independent package.
 
         The override match is critical -- it prevents a publication created
         by new overrides from superseding itself.
@@ -1128,14 +1134,15 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 pocket=self.pocket,
                 component=self.component,
                 section=self.section,
-                priority=self.priority)
+                priority=self.priority,
+                phased_update_percentage=self.phased_update_percentage)
 
     def _getCorrespondingDDEBPublications(self):
         """Return remaining publications of the corresponding DDEB.
 
         Only considers binary publications in the corresponding debug
-        archive with the same distroarchseries, pocket, component, section
-        and priority.
+        archive with the same distroarchseries, pocket, component, section,
+        priority and phased-update-percentage.
         """
         return IMasterStore(BinaryPackagePublishingHistory).find(
                 BinaryPackagePublishingHistory,
@@ -1148,7 +1155,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 pocket=self.pocket,
                 component=self.component,
                 section=self.section,
-                priority=self.priority)
+                priority=self.priority,
+                phased_update_percentage=self.phased_update_percentage)
 
     def supersede(self, dominant=None, logger=None):
         """See `IBinaryPackagePublishingHistory`."""
@@ -1205,14 +1213,15 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 dominated.supersede(dominant, logger)
 
     def changeOverride(self, new_component=None, new_section=None,
-                       new_priority=None):
+                       new_priority=None, new_phased_update_percentage=None):
         """See `IBinaryPackagePublishingHistory`."""
 
         # Check we have been asked to do something
         if (new_component is None and new_section is None
-            and new_priority is None):
-            raise AssertionError("changeOverride must be passed a new"
-                                 "component, section and/or priority.")
+            and new_priority is None and new_phased_update_percentage is None):
+            raise AssertionError("changeOverride must be passed a new "
+                                 "component, section, priority and/or "
+                                 "phased_update_percentage.")
 
         # Check there is a change to make
         if new_component is None:
@@ -1227,19 +1236,31 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             new_priority = self.priority
         elif isinstance(new_priority, basestring):
             new_priority = name_priority_map[new_priority]
+        if new_phased_update_percentage is None:
+            new_phased_update_percentage = self.phased_update_percentage
+        elif (new_phased_update_percentage < 0 or
+              new_phased_update_percentage > 100):
+            raise ValueError(
+                "new_phased_update_percentage must be between 0 and 100 "
+                "(inclusive).")
+        elif new_phased_update_percentage == 100:
+            new_phased_update_percentage = None
 
         if (new_component == self.component and
             new_section == self.section and
-            new_priority == self.priority):
+            new_priority == self.priority and
+            new_phased_update_percentage == self.phased_update_percentage):
             return
+
+        bpr = self.binarypackagerelease
 
         if new_component != self.component:
             # See if the archive has changed by virtue of the component
             # changing:
             distribution = self.distroarchseries.distroseries.distribution
-            new_archive = distribution.getArchiveByComponent(
-                new_component.name)
-            if new_archive != None and new_archive != self.archive:
+            new_archive = get_archive(
+                distribution.getArchiveByComponent(new_component.name), bpr)
+            if new_archive is not None and new_archive != self.archive:
                 raise OverrideError(
                     "Overriding component to '%s' failed because it would "
                     "require a new archive." % new_component.name)
@@ -1253,8 +1274,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         # Append the modified package publishing entry
         return BinaryPackagePublishingHistory(
-            binarypackagename=self.binarypackagerelease.binarypackagename,
-            binarypackagerelease=self.binarypackagerelease,
+            binarypackagename=bpr.binarypackagename,
+            binarypackagerelease=bpr,
             distroarchseries=self.distroarchseries,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
@@ -1262,7 +1283,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             component=new_component,
             section=new_section,
             priority=new_priority,
-            archive=self.archive)
+            archive=self.archive,
+            phased_update_percentage=new_phased_update_percentage)
 
     def copyTo(self, distroseries, pocket, archive):
         """See `BinaryPackagePublishingHistory`."""
@@ -1493,6 +1515,11 @@ class PublishingSet:
             return []
 
         BPPH = BinaryPackagePublishingHistory
+        # XXX cjwatson 2013-02-13: We do not currently set the
+        # phased_update_percentage here.  However, it might be useful in
+        # future to be able to copy a package from PROPOSED to UPDATES and
+        # immediately set its phased_update_percentage to zero; this should
+        # perhaps be an option.
         return bulk.create(
             (BPPH.archive, BPPH.distroarchseries, BPPH.pocket,
              BPPH.binarypackagerelease, BPPH.binarypackagename,
@@ -1527,6 +1554,10 @@ class PublishingSet:
                 archive, distroarchseries.distroseries, component),
             section=section,
             priority=priority,
+            # We do not set the phased_update_percentage here, as in general
+            # it requires feedback on error statistics.  In any case,
+            # pockets that benefit from phased updates should not normally
+            # also be direct upload targets.
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             pocket=pocket)
