@@ -1,4 +1,6 @@
-= DistroSeries Source Package Pages =
+=================================
+DistroSeries Source Package Pages
+=================================
 
 In Launchpad, SourcePackageReleases are directly attached to a
 DistroSeries by a publication record (see doc/publishing.txt).
@@ -41,11 +43,14 @@ Click the "See full publishing history" link to see specific information
 about Firefox's publishing history.
 
   >>> browser.getLink("View full publishing history").click()
-  >>> print extract_text(
-  ...     find_tag_by_id(browser.contents, 'publishing-summary'))
-  Date                                              Status     Target   Pocket   Component   Section   Version
-  2006-02-13 12:19:00 UTC                           Published  Warty    release  main        web       0.9
-  Published on 2006-02-13 2004-09-27 11:57:13 UTC   Pending    Warty   release   main        editors   0.9
+  >>> table = find_tag_by_id(browser.contents, 'publishing-summary')
+  >>> print extract_text(table)
+  Date                      Status     Target   Pocket   Component   Section   Version
+  2006-02-13 12:19:00 UTC   Published  Warty    release  main        web       0.9
+  Published on 2006-02-13
+  2004-09-27 11:57:13 UTC   Pending    Warty   release   main        editors   0.9
+  >>> print table.findAll("tr")[2].td["colspan"]
+  8
 
 Jump back to the DistributionSourcePackage page to continue the tests:
 
@@ -289,7 +294,8 @@ warning the user that no file is available:
   No files available for download.
 
 
-= DistroSeries Partner Source Package Pages =
+DistroSeries Partner Source Package Pages
+=========================================
 
 Partner packages in Launchpad differ from regular packages by two things:
 1. Their component is 'partner'
@@ -402,7 +408,8 @@ And also download the files contained in this source, like '.orig',
     http://launchpad.dev/ubuntu/breezy-autotest/+source/commercialpackage/1.0-1/+files/commercialpackage_1.0-1.dsc
 
 
-== Tracing copied sources ==
+Tracing copied sources
+======================
 
 Any user can view the publishing history details for a source in the
 distribution PRIMARY archive, specifically in the
