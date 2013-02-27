@@ -17,36 +17,40 @@ class BinaryPackagePublishingHistoryWebserviceTests(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def test_binaryFileUrls(self):
+    def make_bpph_url(self, person):
         bpr = self.factory.makeBinaryPackageRelease()
         self.factory.makeBinaryPackageFile(binarypackagerelease=bpr)
         bpph = self.factory.makeBinaryPackagePublishingHistory(
             binarypackagerelease=bpr)
+        with person_logged_in(person):
+            bpph_url = api_url(bpph)
+
+        return bpph_url
+
+    def test_binaryFileUrls(self):
         person = self.factory.makePerson()
         webservice = webservice_for_person(
             person, permission=OAuthPermission.READ_PUBLIC)
-        with person_logged_in(person):
-            bpph_url = api_url(bpph)
+        bpph_url = self.make_bpph_url_for(person)
+
         response = webservice.named_get(
             bpph_url, 'binaryFileUrls', api_version='devel')
+
         self.assertEqual(200, response.status)
         urls = response.jsonBody()
         self.assertEqual(1, len(urls))
         self.assertTrue(type(urls[0]) == unicode)
 
     def test_binaryFileUrls_include_sizes(self):
-        bpr = self.factory.makeBinaryPackageRelease()
-        self.factory.makeBinaryPackageFile(binarypackagerelease=bpr)
-        bpph = self.factory.makeBinaryPackagePublishingHistory(
-            binarypackagerelease=bpr)
         person = self.factory.makePerson()
         webservice = webservice_for_person(
             person, permission=OAuthPermission.READ_PUBLIC)
-        with person_logged_in(person):
-            bpph_url = api_url(bpph)
+        bpph_url = self.make_bpph_url_for(person)
+
         response = webservice.named_get(
             bpph_url, 'binaryFileUrls', include_sizes=True,
             api_version='devel')
+
         self.assertEqual(200, response.status)
         urls = response.jsonBody()
         self.assertEqual(1, len(urls))
