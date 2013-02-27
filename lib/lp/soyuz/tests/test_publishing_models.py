@@ -183,7 +183,7 @@ class TestBinaryPackagePublishingHistory(TestCaseWithFactory):
         self.assertContentEqual(expected_urls, urls)
 
     def test_binaryFileUrls_one_binary(self):
-        bpph = self.make_bpph()
+        bpph = self.make_bpph(num_binaries=1)
         expected_urls = self.get_urls_for_bpph(bpph)
 
         urls = bpph.binaryFileUrls()
