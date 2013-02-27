@@ -1379,6 +1379,10 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See `IBinaryPackagePublishingHistory`."""
         binary_urls = proxied_urls(
             [f.libraryfilealias for f in self.files], self.archive)
+        if include_sizes:
+            sizes = [f.libraryfilealias.content.filesize for f in self.files]
+            return [dict(url=url, size=size)
+                for url, size in zip(binary_urls, sizes)]
         return binary_urls
 
 
