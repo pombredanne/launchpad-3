@@ -4,11 +4,9 @@
 """Test model and set utilities used for publishing."""
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
-from lp.services.database.constants import UTC_NOW
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.webapp.publisher import canonical_url
 from lp.soyuz.enums import BinaryPackageFileType
@@ -206,4 +204,3 @@ class TestBinaryPackagePublishingHistory(TestCaseWithFactory):
             bpr, archive, include_sizes=True)
         self.assertContentEqual(bpph.binaryFileUrls(include_sizes=True),
                                 expected_urls)
-
