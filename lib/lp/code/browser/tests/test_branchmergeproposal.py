@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 
@@ -223,19 +223,6 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         self._nominateReviewer(private_team1, owner)
 
         return private_team1, public_person1
-
-    def testPrivateVotesNotVisibleIfBranchNotVisible(self):
-        # User can't see votes for private teams if they can't see the branch.
-        private_team1, public_person1 = self._createPrivateVotes(False)
-        login_person(self.factory.makePerson())
-        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
-
-        # Check the requested reviews.
-        requested_reviews = view.requested_reviews
-        self.assertEqual(1, len(requested_reviews))
-        self.assertContentEqual(
-            [public_person1],
-            [review.reviewer for review in requested_reviews])
 
     def testPrivateVotesVisibleIfBranchVisible(self):
         # User can see votes for private teams if they can see the branch.
@@ -805,7 +792,8 @@ class TestResubmitBrowser(BrowserTestCase):
         browser = self.getViewBrowser(bmp, '+resubmit')
         browser.getControl('Description').value = 'flibble'
         browser.getControl('Resubmit').click()
-        self.assertEqual('flibble', bmp.superseded_by.description)
+        with person_logged_in(self.user):
+            self.assertEqual('flibble', bmp.superseded_by.description)
 
 
 class TestBranchMergeProposalView(TestCaseWithFactory):

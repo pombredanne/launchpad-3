@@ -218,75 +218,23 @@
   <!-- Branch Merge Proposal -->
 
   <class class="lp.code.model.branchmergeproposal.BranchMergeProposal">
-    <allow attributes="
-                    address
-                    id
-                    registrant
-                    source_branch
-                    source_branchID
-                    target_branch
-                    prerequisite_branch
-                    prerequisite_branchID
-                    description
-                    whiteboard
-                    queue_status
-                    private
-                    reviewer
-                    reviewed_revision_id
-                    queuer
-                    queue_position
-                    queued_revision_id
-                    commit_message
-                    date_queued
-                    merged_revno
-                    date_merged
-                    merge_reporter
-                    supersedes
-                    superseded_by
-                    title
-                    date_created
-                    date_review_requested
-                    date_reviewed
-                    next_preview_diff_job
-                    preview_diff
+    <allow
+        interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalPublic"
+        attributes="generateIncrementalDiff
                     getIncrementalDiffs
-                    votes
-                    all_comments
-                    getRelatedBugTasks
-                    revision_end_date
-                    isMergable
-                    getComment
-                    getRevisionsSinceReviewStart
-                    getNotificationRecipients
-                    getVoteReference
-                    isValidTransition
-                    getUnlandedSourceBranchRevisions
-                    root_message_id
-                    getUsersVoteReference
-                    generateIncrementalDiff"/>
+                    revision_end_date"/>
     <allow interface="lp.code.interfaces.branchtarget.IHasBranchTarget"/>
     <require
+        permission="launchpad.View"
+        interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalView"/>
+    <require
         permission="launchpad.Edit"
+        interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalEdit"
         set_attributes="description whiteboard merged_revno commit_message
-                        root_message_id prerequisite_branch"
-        attributes="
-                    deleteProposal
-                    setStatus
-                    setAsWorkInProgress
-                    requestReview
-                    approveBranch
-                    rejectBranch
-                    markAsMerged
-                    resubmit
-                    enqueue
-                    dequeue
-                    moveToFrontOfQueue
-                    nominateReviewer
-                    updatePreviewDiff"/>
+                        root_message_id prerequisite_branch"/>
     <require
         permission="launchpad.AnyPerson"
-        attributes="createComment
-                    createCommentFromMessage"/>
+        interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalAnyPerson"/>
   </class>
 
   <!-- Branch Merge Proposal Jobs -->

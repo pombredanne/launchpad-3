@@ -667,8 +667,9 @@ Preview diff generation status
     Updating diff...
     An updated diff will be available in a few minutes.  Reload to see the
     changes.
-    >>> bmp.next_preview_diff_job.start()
-    >>> bmp.next_preview_diff_job.complete()
+    >>> job = removeSecurityProxy(bmp).next_preview_diff_job
+    >>> job.start()
+    >>> job.complete()
     >>> transaction.commit()
     >>> nopriv_browser.open(url)
     >>> print find_tag_by_id(nopriv_browser.contents, 'diff-pending-update')
