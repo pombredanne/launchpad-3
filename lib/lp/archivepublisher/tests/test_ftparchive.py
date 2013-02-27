@@ -9,6 +9,7 @@ import difflib
 import os
 import re
 import shutil
+from textwrap import dedent
 
 from zope.component import getUtility
 
@@ -26,7 +27,10 @@ from lp.services.log.logger import (
     BufferLogger,
     DevNullLogger,
     )
-from lp.soyuz.enums import PackagePublishingPriority
+from lp.soyuz.enums import (
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
@@ -52,6 +56,9 @@ class SamplePublisher:
 
     def __init__(self, archive):
         self.archive = archive
+
+    def isAllowed(self, distroseries, pocket):
+        return True
 
 
 class FakeSelectResult:
@@ -248,6 +255,32 @@ class TestFTPArchive(TestCaseWithFactory):
             self.assertIn(
                 "foo/i386\tPhased-Update-Percentage\t50",
                 result_file.read().splitlines())
+
+    def test_generateOverrides(self):
+        # generateOverrides generates all the overrides from start to finish.
+        self._distribution = getUtility(IDistributionSet).getByName('ubuntu')
+        self._archive = self._distribution.main_archive
+        self._publisher = SamplePublisher(self._archive)
+        fa = self._setUpFTPArchiveHandler()
+        pubs = self._archive.getAllPublishedBinaries(
+            name="pmount", status=PackagePublishingStatus.PUBLISHED,
+            distroarchseries=self._distribution.getSeries("hoary")["hppa"])
+        for pub in pubs:
+            pub.changeOverride(new_phased_update_percentage=30).setPublished()
+        fa.generateOverrides(fullpublish=True)
+        result_path = os.path.join(self._overdir, "override.hoary.main")
+        with open(result_path) as result_file:
+            self.assertEqual("pmount\textra\tbase\n", result_file.read())
+        result_path = os.path.join(self._overdir, "override.hoary.main.src")
+        with open(result_path) as result_file:
+            self.assertIn("pmount\teditors\n", result_file.readlines())
+        result_path = os.path.join(self._overdir, "override.hoary.extra.main")
+        with open(result_path) as result_file:
+            self.assertEqual(dedent("""\
+                pmount\tOrigin\tUbuntu
+                pmount\tBugs\thttps://bugs.launchpad.net/ubuntu/+filebug
+                pmount/hppa\tPhased-Update-Percentage\t30
+                """), result_file.read())
 
     def test_getSourceFiles(self):
         # getSourceFiles returns a list of tuples containing:
