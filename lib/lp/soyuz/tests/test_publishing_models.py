@@ -152,15 +152,9 @@ class TestBinaryPackagePublishingHistory(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def test_binaryFileUrls_no_binaries(self):
-        bpr = self.factory.makeBinaryPackageRelease()
-        bpph = self.factory.makeBinaryPackagePublishingHistory(
-            binarypackagerelease=bpr)
-        expected_urls = []
-        self.assertContentEqual(expected_urls, bpph.binaryFileUrls())
-
-    def get_urls_for_binarypackagerelease(self, bpr, archive,
-                                          include_sizes=False):
+    def get_urls_for_bpph(self, bpph, include_sizes=False):
+        bpr = bpph.binarypackagerelease
+        archive = bpph.archive
         urls = [ProxiedLibraryFileAlias(f.libraryfile, archive).http_url
             for f in bpr.files]
 
@@ -170,37 +164,44 @@ class TestBinaryPackagePublishingHistory(TestCaseWithFactory):
                 for url, size in zip(urls, sizes)]
         return urls
 
-    def test_binaryFileUrls_one_binary(self):
+    def make_bpph(self, num_binaries=1):
         archive = self.factory.makeArchive(private=False)
         bpr = self.factory.makeBinaryPackageRelease()
-        self.factory.makeBinaryPackageFile(binarypackagerelease=bpr)
-        bpph = self.factory.makeBinaryPackagePublishingHistory(
+        filetypes = [BinaryPackageFileType.DEB, BinaryPackageFileType.DDEB]
+        for count in range(num_binaries):
+            self.factory.makeBinaryPackageFile(binarypackagerelease=bpr,
+                                               filetype=filetypes[count % 2])
+        return self.factory.makeBinaryPackagePublishingHistory(
             binarypackagerelease=bpr, archive=archive)
-        expected_urls = self.get_urls_for_binarypackagerelease(bpr, archive)
-        self.assertContentEqual(expected_urls, bpph.binaryFileUrls())
+
+    def test_binaryFileUrls_no_binaries(self):
+        bpph = self.make_bpph(num_binaries=0)
+        expected_urls = []
+
+        urls = bpph.binaryFileUrls()
+
+        self.assertContentEqual(expected_urls, urls)
+
+    def test_binaryFileUrls_one_binary(self):
+        bpph = self.make_bpph()
+        expected_urls = self.get_urls_for_bpph(bpph)
+        
+        urls = bpph.binaryFileUrls()
+
+        self.assertContentEqual(expected_urls, urls)
 
     def test_binaryFileUrls_two_binaries(self):
-        archive = self.factory.makeArchive(private=False)
-        bpr = self.factory.makeBinaryPackageRelease()
-        self.factory.makeBinaryPackageFile(
-            binarypackagerelease=bpr, filetype=BinaryPackageFileType.DEB)
-        self.factory.makeBinaryPackageFile(
-            binarypackagerelease=bpr, filetype=BinaryPackageFileType.DDEB)
-        bpph = self.factory.makeBinaryPackagePublishingHistory(
-            binarypackagerelease=bpr, archive=archive)
-        expected_urls = self.get_urls_for_binarypackagerelease(bpr, archive)
-        self.assertContentEqual(expected_urls, bpph.binaryFileUrls())
+        bpph = self.make_bpph(num_binaries=2)
+        expected_urls = self.get_urls_for_bpph(bpph)
+
+        urls = bpph.binaryFileUrls()
+
+        self.assertContentEqual(expected_urls, urls)
 
     def test_binaryFileUrls_include_sizes(self):
-        archive = self.factory.makeArchive(private=False)
-        bpr = self.factory.makeBinaryPackageRelease()
-        self.factory.makeBinaryPackageFile(
-            binarypackagerelease=bpr, filetype=BinaryPackageFileType.DEB)
-        self.factory.makeBinaryPackageFile(
-            binarypackagerelease=bpr, filetype=BinaryPackageFileType.DDEB)
-        bpph = self.factory.makeBinaryPackagePublishingHistory(
-            binarypackagerelease=bpr, archive=archive)
-        expected_urls = self.get_urls_for_binarypackagerelease(
-            bpr, archive, include_sizes=True)
-        self.assertContentEqual(bpph.binaryFileUrls(include_sizes=True),
-                                expected_urls)
+        bpph = self.make_bpph(num_binaries=2)
+        expected_urls = self.get_urls_for_bpph(bpph, include_sizes=True)
+
+        urls = bpph.binaryFileUrls(include_sizes=True)
+
+        self.assertContentEqual(expected_urls, urls)
