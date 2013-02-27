@@ -1375,7 +1375,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See `IPublishing`."""
         self.setDeleted(removed_by, removal_comment)
 
-    def binaryFileUrls(self):
+    def binaryFileUrls(self, include_sizes=False):
         """See `IBinaryPackagePublishingHistory`."""
         binary_urls = proxied_urls(
             [f.libraryfilealias for f in self.files], self.archive)

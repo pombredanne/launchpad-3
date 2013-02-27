@@ -681,9 +681,13 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         """
 
     @export_read_operation()
-    def binaryFileUrls():
+    @operation_parameters(
+        include_sizes=Bool(title=_("Include Sizes"), required=False))
+    def binaryFileUrls(include_sizes=False):
         """URLs for this source publication's binary files.
 
+        :param include_sizes: Return a dict with keys url and size
+            for each url instead of a list of urls.
         :return: A collection of URLs for this source.
         """
 

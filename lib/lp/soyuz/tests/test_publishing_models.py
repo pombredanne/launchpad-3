@@ -161,9 +161,16 @@ class TestBinaryPackagePublishingHistory(TestCaseWithFactory):
         expected_urls = []
         self.assertContentEqual(expected_urls, bpph.binaryFileUrls())
 
-    def get_urls_for_binarypackagerelease(self, bpr, archive):
-        return [ProxiedLibraryFileAlias(f.libraryfile, archive).http_url
+    def get_urls_for_binarypackagerelease(self, bpr, archive,
+                                          include_sizes=False):
+        urls = [ProxiedLibraryFileAlias(f.libraryfile, archive).http_url
             for f in bpr.files]
+
+        if include_sizes:
+            sizes = [f.libraryfile.content.filesize for f in bpr.files]
+            return [dict(url=url, size=size)
+                for url, size in zip(urls, sizes)]
+        return urls
 
     def test_binaryFileUrls_one_binary(self):
         archive = self.factory.makeArchive(private=False)
@@ -185,3 +192,18 @@ class TestBinaryPackagePublishingHistory(TestCaseWithFactory):
             binarypackagerelease=bpr, archive=archive)
         expected_urls = self.get_urls_for_binarypackagerelease(bpr, archive)
         self.assertContentEqual(expected_urls, bpph.binaryFileUrls())
+
+    def test_binaryFileUrls_include_sizes(self):
+        archive = self.factory.makeArchive(private=False)
+        bpr = self.factory.makeBinaryPackageRelease()
+        self.factory.makeBinaryPackageFile(
+            binarypackagerelease=bpr, filetype=BinaryPackageFileType.DEB)
+        self.factory.makeBinaryPackageFile(
+            binarypackagerelease=bpr, filetype=BinaryPackageFileType.DDEB)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr, archive=archive)
+        expected_urls = self.get_urls_for_binarypackagerelease(
+            bpr, archive, include_sizes=True)
+        self.assertContentEqual(bpph.binaryFileUrls(include_sizes=True),
+                                expected_urls)
+
