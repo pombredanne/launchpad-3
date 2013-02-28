@@ -180,32 +180,29 @@ class TestBinaryPackagePublishingHistory(TestCaseWithFactory):
 
     def test_binaryFileUrls_no_binaries(self):
         bpph = self.make_bpph(num_binaries=0)
-        expected_urls = []
 
         urls = bpph.binaryFileUrls()
 
-        self.assertContentEqual(expected_urls, urls)
+        self.assertContentEqual([], urls)
 
     def test_binaryFileUrls_one_binary(self):
         bpph = self.make_bpph(num_binaries=1)
-        expected_urls = self.get_urls_for_bpph(bpph)
 
         urls = bpph.binaryFileUrls()
 
-        self.assertContentEqual(expected_urls, urls)
+        self.assertContentEqual(self.get_urls_for_bpph(bpph), urls)
 
     def test_binaryFileUrls_two_binaries(self):
         bpph = self.make_bpph(num_binaries=2)
-        expected_urls = self.get_urls_for_bpph(bpph)
 
         urls = bpph.binaryFileUrls()
 
-        self.assertContentEqual(expected_urls, urls)
+        self.assertContentEqual(self.get_urls_for_bpph(bpph), urls)
 
     def test_binaryFileUrls_include_meta(self):
         bpph = self.make_bpph(num_binaries=2)
-        expected_urls = self.get_urls_for_bpph(bpph, include_meta=True)
 
         urls = bpph.binaryFileUrls(include_meta=True)
 
-        self.assertContentEqual(expected_urls, urls)
+        self.assertContentEqual(
+            self.get_urls_for_bpph(bpph, include_meta=True), urls)

@@ -23,18 +23,16 @@ class BinaryPackagePublishingHistoryWebserviceTests(TestCaseWithFactory):
             self.factory.makeBinaryPackageFile(binarypackagerelease=bpr)
             bpph = self.factory.makeBinaryPackagePublishingHistory(
             binarypackagerelease=bpr)
-            bpph_url = api_url(bpph)
-
-        return bpph_url
+            return api_url(bpph)
 
     def test_binaryFileUrls(self):
         person = self.factory.makePerson()
         webservice = webservice_for_person(
             person, permission=OAuthPermission.READ_PUBLIC)
-        bpph_url = self.make_bpph_url_for(person)
 
         response = webservice.named_get(
-            bpph_url, 'binaryFileUrls', api_version='devel')
+            self.make_bpph_url_for(person), 'binaryFileUrls',
+            api_version='devel')
 
         self.assertEqual(200, response.status)
         urls = response.jsonBody()
@@ -45,11 +43,10 @@ class BinaryPackagePublishingHistoryWebserviceTests(TestCaseWithFactory):
         person = self.factory.makePerson()
         webservice = webservice_for_person(
             person, permission=OAuthPermission.READ_PUBLIC)
-        bpph_url = self.make_bpph_url_for(person)
 
         response = webservice.named_get(
-            bpph_url, 'binaryFileUrls', include_meta=True,
-            api_version='devel')
+            self.make_bpph_url_for(person), 'binaryFileUrls',
+            include_meta=True, api_version='devel')
 
         self.assertEqual(200, response.status)
         urls = response.jsonBody()
