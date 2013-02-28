@@ -11,6 +11,7 @@ from lp.testing import (
     )
 from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.pages import webservice_for_person
+from testtools.matchers import IsInstance
 
 
 class BinaryPackagePublishingHistoryWebserviceTests(TestCaseWithFactory):
@@ -37,7 +38,7 @@ class BinaryPackagePublishingHistoryWebserviceTests(TestCaseWithFactory):
         self.assertEqual(200, response.status)
         urls = response.jsonBody()
         self.assertEqual(1, len(urls))
-        self.assertTrue(type(urls[0]) == unicode)
+        self.assertTrue(urls[0], IsInstance(unicode))
 
     def test_binaryFileUrls_include_meta(self):
         person = self.factory.makePerson()
@@ -51,4 +52,4 @@ class BinaryPackagePublishingHistoryWebserviceTests(TestCaseWithFactory):
         self.assertEqual(200, response.status)
         urls = response.jsonBody()
         self.assertEqual(1, len(urls))
-        self.assertTrue(type(urls[0]) == dict)
+        self.assertThat(urls[0], IsInstance(dict))
