@@ -548,6 +548,19 @@ class TestBranchView(BrowserTestCase):
             view.render()
         self.assertThat(recorder, HasQueryCount(Equals(9)))
 
+    def test_query_count_index_with_subscribers(self):
+        branch = self.factory.makeBranch()
+        for i in range(10):
+            self.factory.makeBranchSubscription(branch=branch)
+        Store.of(branch).flush()
+        Store.of(branch).invalidate()
+        branch_url = canonical_url(branch, view_name='+index', rootsite='code')
+        browser = setupBrowser()
+        logout()
+        with StormStatementRecorder() as recorder:
+            browser.open(branch_url)
+        self.assertThat(recorder, HasQueryCount(Equals(26)))
+
 
 class TestBranchViewPrivateArtifacts(BrowserTestCase):
     """ Tests that branches with private team artifacts can be viewed.
