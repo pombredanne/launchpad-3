@@ -93,10 +93,9 @@ class DecoratedBranch(BzrIdentityMixin):
         list of subscribers anyway, a simple check over the list is
         sufficient.
         """
-        for sub in self.subscriptions:
-            if sub.person == user:
-                return True
-        return False
+        if user is None:
+            return False
+        return user.id in [sub.personID for sub in self.subscriptions]
 
     @cachedproperty
     def latest_revisions(self):
