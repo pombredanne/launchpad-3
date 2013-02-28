@@ -152,16 +152,20 @@ class TestBinaryPackagePublishingHistory(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def get_urls_for_bpph(self, bpph, include_sizes=False):
+    def get_urls_for_bpph(self, bpph, include_meta=False):
         bpr = bpph.binarypackagerelease
         archive = bpph.archive
         urls = [ProxiedLibraryFileAlias(f.libraryfile, archive).http_url
             for f in bpr.files]
 
-        if include_sizes:
-            sizes = [f.libraryfile.content.filesize for f in bpr.files]
-            return [dict(url=url, size=size)
-                for url, size in zip(urls, sizes)]
+        if include_meta:
+            meta = [(
+                f.libraryfile.content.filesize,
+                f.libraryfile.content.sha1,
+            ) for f in bpr.files]
+
+            return [dict(url=url, size=size, sha1=sha1)
+                for url, (size, sha1) in zip(urls, meta)]
         return urls
 
     def make_bpph(self, num_binaries=1):
@@ -198,9 +202,9 @@ class TestBinaryPackagePublishingHistory(TestCaseWithFactory):
 
         self.assertContentEqual(expected_urls, urls)
 
-    def test_binaryFileUrls_include_sizes(self):
+    def test_binaryFileUrls_include_meta(self):
         bpph = self.make_bpph(num_binaries=2)
-        expected_urls = self.get_urls_for_bpph(bpph, include_sizes=True)
+        expected_urls = self.get_urls_for_bpph(bpph, include_meta=True)
 
         urls = bpph.binaryFileUrls(include_sizes=True)
 
