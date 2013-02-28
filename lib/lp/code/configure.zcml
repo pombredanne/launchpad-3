@@ -219,10 +219,7 @@
 
   <class class="lp.code.model.branchmergeproposal.BranchMergeProposal">
     <allow
-        interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalPublic"
-        attributes="generateIncrementalDiff
-                    getIncrementalDiffs
-                    revision_end_date"/>
+        interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalPublic"/>
     <allow interface="lp.code.interfaces.branchtarget.IHasBranchTarget"/>
     <require
         permission="launchpad.View"
@@ -233,8 +230,8 @@
         set_attributes="description whiteboard merged_revno commit_message
                         root_message_id prerequisite_branch"/>
     <require
-        permission="launchpad.AnyPerson"
-        interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalAnyPerson"/>
+        permission="launchpad.AnyAllowedPerson"
+        interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalAnyAllowedPerson"/>
   </class>
 
   <!-- Branch Merge Proposal Jobs -->

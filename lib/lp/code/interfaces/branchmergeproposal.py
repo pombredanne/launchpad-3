@@ -279,6 +279,10 @@ class IBranchMergeProposalView(Interface):
             description=_('Any emails sent to this address will result'
                           'in comments being added.')))
 
+    revision_end_date = Datetime(
+        title=_('Cutoff date for showing revisions.'), required=False,
+        readonly=True)
+
     @operation_parameters(
         id=Int(
             title=_("A CodeReviewComment ID.")))
@@ -346,6 +350,24 @@ class IBranchMergeProposalView(Interface):
         """Get the existing vote reference for the given user.
 
         :return: A `CodeReviewVoteReference` or None.
+        """
+
+    def generateIncrementalDiff(old_revision, new_revision, diff=None):
+        """Generate an incremental diff for the merge proposal.
+
+        :param old_revision: The `Revision` to generate the diff from.
+        :param new_revision: The `Revision` to generate the diff to.
+        :param diff: If supplied, a pregenerated `Diff`.
+        """
+
+    def getIncrementalDiffs(revision_list):
+        """Return a list of diffs for the specified revisions.
+
+        :param revision_list: A list of tuples of (`Revision`, `Revision`).
+            The first revision in the tuple is the old revision.  The second
+            is the new revision.
+        :return: A list of IncrementalDiffs in the same order as the supplied
+            Revisions.
         """
 
 
@@ -515,7 +537,7 @@ class IBranchMergeProposalEdit(Interface):
         """
 
 
-class IBranchMergeProposalAnyPerson(Interface):
+class IBranchMergeProposalAnyAllowedPerson(Interface):
 
     @operation_parameters(
         subject=Text(), content=Text(),
@@ -549,7 +571,7 @@ class IBranchMergeProposalAnyPerson(Interface):
 
 class IBranchMergeProposal(IBranchMergeProposalPublic,
                            IBranchMergeProposalView, IBranchMergeProposalEdit,
-                           IBranchMergeProposalAnyPerson):
+                           IBranchMergeProposalAnyAllowedPerson):
     """Branch merge proposals show intent of landing one branch on another."""
 
     export_as_webservice_entry()
