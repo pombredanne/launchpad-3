@@ -53,7 +53,6 @@ from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.security import (
     AdminSpecification,
     EditSpecificationByRelatedPeople,
-    EditWhiteboardSpecification,
     ViewSpecification,
     )
 from lp.services.propertycache import get_property_cache
@@ -208,7 +207,6 @@ class SpecificationTests(TestCaseWithFactory):
         expected_adapters = {
             CheckerPublic: None,
             'launchpad.Admin': AdminSpecification,
-            'launchpad.AnyAllowedPerson': EditWhiteboardSpecification,
             'launchpad.Edit': EditSpecificationByRelatedPeople,
             'launchpad.LimitedView': ViewSpecification,
             }
@@ -722,7 +720,7 @@ class TestSpecifications(TestCaseWithFactory):
             list(getUtility(ISpecificationSet).specifications(grant.grantee)))
         self.assertIn(
             grant.grantee.id, removeSecurityProxy(spec)._known_viewers)
-       
+
     def test_proprietary_listed_for_artifact_grant(self):
         # Proprietary blueprints are listed for users with an artifact grant.
         spec = self.makeSpec(information_type=InformationType.PROPRIETARY)

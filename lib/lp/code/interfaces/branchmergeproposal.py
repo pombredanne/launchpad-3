@@ -94,20 +94,24 @@ BRANCH_MERGE_PROPOSAL_FINAL_STATES = (
     )
 
 
-class IBranchMergeProposal(IPrivacy):
-    """Branch merge proposals show intent of landing one branch on another."""
-
-    export_as_webservice_entry()
+class IBranchMergeProposalPublic(IPrivacy):
 
     id = Int(
         title=_('DB ID'), required=True, readonly=True,
         description=_("The tracking number for this merge proposal."))
+    source_branchID = Int(
+        title=_('Source branch ID'), required=True, readonly=True)
+    prerequisite_branchID = Int(
+        title=_('Prerequisite branch ID'), required=True, readonly=True)
 
-    registrant = exported(
-        PublicPersonChoice(
-            title=_('Person'), required=True,
-            vocabulary='ValidPersonOrTeam', readonly=True,
-            description=_('The person who registered the merge proposal.')))
+    # This is redefined from IPrivacy.private because the attribute is
+    # read-only. The value is determined by the involved branches.
+    private = exported(
+        Bool(
+            title=_("Proposal is confidential"), required=False,
+            readonly=True, default=False,
+            description=_(
+                "If True, this proposal is visible only to subscribers.")))
 
     source_branch = exported(
         ReferenceChoice(
@@ -131,14 +135,14 @@ class IBranchMergeProposal(IPrivacy):
                 "If this branch is the same as the target branch, then "
                 "leave this field blank.")))
 
-    # This is redefined from IPrivacy.private because the attribute is
-    # read-only. The value is determined by the involved branches.
-    private = exported(
-        Bool(
-            title=_("Proposal is confidential"), required=False,
-            readonly=True, default=False,
-            description=_(
-                "If True, this proposal is visible only to subscribers.")))
+
+class IBranchMergeProposalView(Interface):
+
+    registrant = exported(
+        PublicPersonChoice(
+            title=_('Person'), required=True,
+            vocabulary='ValidPersonOrTeam', readonly=True,
+            description=_('The person who registered the merge proposal.')))
 
     description = exported(
         Text(title=_('Description'), required=False,
@@ -275,6 +279,10 @@ class IBranchMergeProposal(IPrivacy):
             description=_('Any emails sent to this address will result'
                           'in comments being added.')))
 
+    revision_end_date = Datetime(
+        title=_('Cutoff date for showing revisions.'), required=False,
+        readonly=True)
+
     @operation_parameters(
         id=Int(
             title=_("A CodeReviewComment ID.")))
@@ -312,18 +320,80 @@ class IBranchMergeProposal(IPrivacy):
             notified.
         """
 
-    # Cannot specify value type without creating a circular dependency
     votes = exported(
         CollectionField(
             title=_('The votes cast or expected for this proposal'),
             # Really ICodeReviewVoteReference.
             value_type=Reference(schema=Interface),
-            readonly=True,
-            )
-        )
+            readonly=True))
 
     def isValidTransition(next_state, user=None):
         """True if it is valid for user update the proposal to next_state."""
+
+    def isMergable():
+        """Is the proposal in a state that allows it to being merged?
+
+        As long as the proposal isn't in one of the end states, it is valid
+        to be merged.
+        """
+
+    def getUnlandedSourceBranchRevisions():
+        """Return a sequence of `BranchRevision` objects.
+
+        Returns up to 10 revisions that are in the revision history for the
+        source branch that are not in the revision history of the target
+        branch.  These are the revisions that have been committed to the
+        source branch since it branched off the target branch.
+        """
+
+    def getUsersVoteReference(user):
+        """Get the existing vote reference for the given user.
+
+        :return: A `CodeReviewVoteReference` or None.
+        """
+
+    def generateIncrementalDiff(old_revision, new_revision, diff=None):
+        """Generate an incremental diff for the merge proposal.
+
+        :param old_revision: The `Revision` to generate the diff from.
+        :param new_revision: The `Revision` to generate the diff to.
+        :param diff: If supplied, a pregenerated `Diff`.
+        """
+
+    def getIncrementalDiffs(revision_list):
+        """Return a list of diffs for the specified revisions.
+
+        :param revision_list: A list of tuples of (`Revision`, `Revision`).
+            The first revision in the tuple is the old revision.  The second
+            is the new revision.
+        :return: A list of IncrementalDiffs in the same order as the supplied
+            Revisions.
+        """
+
+
+class IBranchMergeProposalEdit(Interface):
+
+    def deleteProposal():
+        """Delete the proposal to merge."""
+
+    def updatePreviewDiff(diff_content, source_revision_id,
+                          target_revision_id, prerequisite_revision_id=None,
+                          conflicts=None):
+        """Update the preview diff for this proposal.
+
+        If there is not an existing preview diff, one will be created.
+
+        :param diff_content: The raw bytes of the diff content to be put in
+            the librarian.
+        :param diff_stat: Text describing the files added, remove or modified.
+        :param source_revision_id: The revision id that was used from the
+            source branch.
+        :param target_revision_id: The revision id that was used from the
+            target branch.
+        :param prerequisite_revision_id: The revision id that was used from
+            the prerequisite branch.
+        :param conflicts: Text describing the conflicts if any.
+        """
 
     @call_with(user=REQUEST_USER)
     @rename_parameters_as(revision_id='revid')
@@ -385,27 +455,6 @@ class IBranchMergeProposal(IPrivacy):
                  the branch reviewer for the target branch.
         """
 
-    def enqueue(queuer, revision_id):
-        """Put the proposal into the merge queue for the target branch.
-
-        If the proposal is not in the Approved state before this method
-        is called, approveBranch is called with the reviewer and revision_id
-        specified.
-
-        If None is supplied as the revision_id, the proposals
-        reviewed_revision_id is used.
-        """
-
-    def dequeue():
-        """Take the proposal out of the merge queue of the target branch.
-
-        :raises: BadStateTransition if the proposal is not in the queued
-                 state.
-        """
-
-    def moveToFrontOfQueue():
-        """Move the queue proposal to the front of the queue."""
-
     def markAsMerged(merged_revno=None, date_merged=None,
                      merge_reporter=None):
         """Mark the branch merge proposal as merged.
@@ -451,21 +500,26 @@ class IBranchMergeProposal(IPrivacy):
             the current description).
         """
 
-    def isMergable():
-        """Is the proposal in a state that allows it to being merged?
+    def enqueue(queuer, revision_id):
+        """Put the proposal into the merge queue for the target branch.
 
-        As long as the proposal isn't in one of the end states, it is valid
-        to be merged.
+        If the proposal is not in the Approved state before this method
+        is called, approveBranch is called with the reviewer and revision_id
+        specified.
+
+        If None is supplied as the revision_id, the proposals
+        reviewed_revision_id is used.
         """
 
-    def getUnlandedSourceBranchRevisions():
-        """Return a sequence of `BranchRevision` objects.
+    def dequeue():
+        """Take the proposal out of the merge queue of the target branch.
 
-        Returns up to 10 revisions that are in the revision history for the
-        source branch that are not in the revision history of the target
-        branch.  These are the revisions that have been committed to the
-        source branch since it branched off the target branch.
+        :raises: BadStateTransition if the proposal is not in the queued
+                 state.
         """
+
+    def moveToFrontOfQueue():
+        """Move the queue proposal to the front of the queue."""
 
     @operation_parameters(
         reviewer=Reference(
@@ -482,11 +536,8 @@ class IBranchMergeProposal(IPrivacy):
         the details are updated.
         """
 
-    def getUsersVoteReference(user):
-        """Get the existing vote reference for the given user.
 
-        :return: A `CodeReviewVoteReference` or None.
-        """
+class IBranchMergeProposalAnyAllowedPerson(Interface):
 
     @operation_parameters(
         subject=Text(), content=Text(),
@@ -517,27 +568,13 @@ class IBranchMergeProposal(IPrivacy):
         :param original_email: Original email message.
         """
 
-    def deleteProposal():
-        """Delete the proposal to merge."""
 
-    def updatePreviewDiff(diff_content, source_revision_id,
-                          target_revision_id, prerequisite_revision_id=None,
-                          conflicts=None):
-        """Update the preview diff for this proposal.
+class IBranchMergeProposal(IBranchMergeProposalPublic,
+                           IBranchMergeProposalView, IBranchMergeProposalEdit,
+                           IBranchMergeProposalAnyAllowedPerson):
+    """Branch merge proposals show intent of landing one branch on another."""
 
-        If there is not an existing preview diff, one will be created.
-
-        :param diff_content: The raw bytes of the diff content to be put in
-            the librarian.
-        :param diff_stat: Text describing the files added, remove or modified.
-        :param source_revision_id: The revision id that was used from the
-            source branch.
-        :param target_revision_id: The revision id that was used from the
-            target branch.
-        :param prerequisite_revision_id: The revision id that was used from
-            the prerequisite branch.
-        :param conflicts: Text describing the conflicts if any.
-        """
+    export_as_webservice_entry()
 
 
 class IBranchMergeProposalJob(Interface):

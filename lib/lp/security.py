@@ -260,6 +260,22 @@ class ViewByLoggedInUser(AuthorizationBase):
         return True
 
 
+class AnyAllowedPersonDeferredToView(AuthorizationBase):
+    """The default ruleset for the launchpad.AnyAllowedPerson permission.
+
+    An authenticated user is delegated to the View security adapter. Since
+    anonymous users are not logged in, they are denied.
+    """
+    permission = 'launchpad.AnyAllowedPerson'
+    usedfor = Interface
+
+    def checkUnauthenticated(self):
+        return False
+
+    def checkAuthenticated(self, user):
+        return self.forwardCheckAuthenticated(user, self.obj, 'launchpad.View')
+
+
 class LimitedViewDeferredToView(AuthorizationBase):
     """The default ruleset for the launchpad.LimitedView permission.
 
@@ -447,19 +463,6 @@ class LimitedViewProduct(ViewProduct):
                 self.obj, user))
 
 
-class ChangeProduct(ViewProduct):
-    """Used for attributes of IProduct that are accessible to any logged
-    in user for public product but only to persons with access grants
-    for private products.
-    """
-
-    permission = 'launchpad.AnyAllowedPerson'
-    usedfor = IProduct
-
-    def checkUnauthenticated(self):
-        return False
-
-
 class EditProduct(EditByOwnersOrAdmins):
     usedfor = IProduct
 
@@ -574,15 +577,6 @@ class ViewSpecification(AuthorizationBase):
 
     def checkUnauthenticated(self):
         return self.obj.userCanView(None)
-
-
-class EditWhiteboardSpecification(ViewSpecification):
-
-    permission = 'launchpad.AnyAllowedPerson'
-    usedfor = ISpecificationView
-
-    def checkUnauthenticated(self):
-        return False
 
 
 class EditSpecificationByRelatedPeople(AuthorizationBase):
@@ -767,14 +761,6 @@ class ViewMilestone(AuthorizationBase):
 
     def checkUnauthenticated(self):
         return self.obj.userCanView(user=None)
-
-
-class EditMilestone(ViewMilestone):
-    permission = 'launchpad.AnyAllowedPerson'
-    usedfor = IMilestone
-
-    def checkUnauthenticated(self):
-        return False
 
 
 class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
@@ -1336,17 +1322,6 @@ class ViewProductSeries(AuthorizationBase):
 
     def checkUnauthenticated(self):
         return self.obj.userCanView(None)
-
-
-class ChangeProductSeries(ViewProductSeries):
-    permission = 'launchpad.AnyAllowedPerson'
-    usedfor = IProductSeriesView
-
-    def checkAuthenticated(self, user):
-        return self.obj.userCanView(user)
-
-    def checkUnauthenticated(self):
-        return False
 
 
 class EditProductSeries(EditByOwnersOrAdmins):
