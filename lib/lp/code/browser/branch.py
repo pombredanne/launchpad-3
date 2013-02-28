@@ -330,8 +330,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
 
     @enabled_with_permission('launchpad.AnyPerson')
     def subscription(self):
-        person_ids = [sub.personID for sub in self.context.subscriptions]
-        if self.user and self.user.id in person_ids:
+        if self.context.hasSubscription(self.user):
             url = '+edit-subscription'
             text = 'Edit your subscription'
             icon = 'edit'
