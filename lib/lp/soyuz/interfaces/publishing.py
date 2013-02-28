@@ -947,13 +947,13 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
 
     @export_read_operation()
     @operation_parameters(
-        include_sizes=Bool(title=_("Include Sizes"), required=False))
+        include_meta=Bool(title=_("Include Metadata"), required=False))
     @operation_for_version("devel")
-    def binaryFileUrls(include_sizes=False):
+    def binaryFileUrls(include_meta=False):
         """URLs for this binary publication's binary files.
 
-        :param include_sizes: Return a dict with keys url and size
-            for each url instead of a list of urls.
+        :param include_meta: Return a list of dicts with keys url, size
+            and sha1 for each url instead of a simple list.
         :return: A collection of URLs for this binary.
         """
 

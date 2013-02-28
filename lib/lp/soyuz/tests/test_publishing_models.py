@@ -206,6 +206,6 @@ class TestBinaryPackagePublishingHistory(TestCaseWithFactory):
         bpph = self.make_bpph(num_binaries=2)
         expected_urls = self.get_urls_for_bpph(bpph, include_meta=True)
 
-        urls = bpph.binaryFileUrls(include_sizes=True)
+        urls = bpph.binaryFileUrls(include_meta=True)
 
         self.assertContentEqual(expected_urls, urls)
