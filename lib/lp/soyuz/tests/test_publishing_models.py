@@ -4,11 +4,9 @@
 """Test model and set utilities used for publishing."""
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
-from lp.services.database.constants import UTC_NOW
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.webapp.publisher import canonical_url
 from lp.soyuz.enums import BinaryPackageFileType
@@ -154,34 +152,57 @@ class TestBinaryPackagePublishingHistory(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def test_binaryFileUrls_no_binaries(self):
-        bpr = self.factory.makeBinaryPackageRelease()
-        bpph = self.factory.makeBinaryPackagePublishingHistory(
-            binarypackagerelease=bpr)
-        expected_urls = []
-        self.assertContentEqual(expected_urls, bpph.binaryFileUrls())
-
-    def get_urls_for_binarypackagerelease(self, bpr, archive):
-        return [ProxiedLibraryFileAlias(f.libraryfile, archive).http_url
+    def get_urls_for_bpph(self, bpph, include_meta=False):
+        bpr = bpph.binarypackagerelease
+        archive = bpph.archive
+        urls = [ProxiedLibraryFileAlias(f.libraryfile, archive).http_url
             for f in bpr.files]
 
-    def test_binaryFileUrls_one_binary(self):
+        if include_meta:
+            meta = [(
+                f.libraryfile.content.filesize,
+                f.libraryfile.content.sha1,
+            ) for f in bpr.files]
+
+            return [dict(url=url, size=size, sha1=sha1)
+                for url, (size, sha1) in zip(urls, meta)]
+        return urls
+
+    def make_bpph(self, num_binaries=1):
         archive = self.factory.makeArchive(private=False)
         bpr = self.factory.makeBinaryPackageRelease()
-        self.factory.makeBinaryPackageFile(binarypackagerelease=bpr)
-        bpph = self.factory.makeBinaryPackagePublishingHistory(
+        filetypes = [BinaryPackageFileType.DEB, BinaryPackageFileType.DDEB]
+        for count in range(num_binaries):
+            self.factory.makeBinaryPackageFile(binarypackagerelease=bpr,
+                                               filetype=filetypes[count % 2])
+        return self.factory.makeBinaryPackagePublishingHistory(
             binarypackagerelease=bpr, archive=archive)
-        expected_urls = self.get_urls_for_binarypackagerelease(bpr, archive)
-        self.assertContentEqual(expected_urls, bpph.binaryFileUrls())
+
+    def test_binaryFileUrls_no_binaries(self):
+        bpph = self.make_bpph(num_binaries=0)
+
+        urls = bpph.binaryFileUrls()
+
+        self.assertContentEqual([], urls)
+
+    def test_binaryFileUrls_one_binary(self):
+        bpph = self.make_bpph(num_binaries=1)
+
+        urls = bpph.binaryFileUrls()
+
+        self.assertContentEqual(self.get_urls_for_bpph(bpph), urls)
 
     def test_binaryFileUrls_two_binaries(self):
-        archive = self.factory.makeArchive(private=False)
-        bpr = self.factory.makeBinaryPackageRelease()
-        self.factory.makeBinaryPackageFile(
-            binarypackagerelease=bpr, filetype=BinaryPackageFileType.DEB)
-        self.factory.makeBinaryPackageFile(
-            binarypackagerelease=bpr, filetype=BinaryPackageFileType.DDEB)
-        bpph = self.factory.makeBinaryPackagePublishingHistory(
-            binarypackagerelease=bpr, archive=archive)
-        expected_urls = self.get_urls_for_binarypackagerelease(bpr, archive)
-        self.assertContentEqual(expected_urls, bpph.binaryFileUrls())
+        bpph = self.make_bpph(num_binaries=2)
+
+        urls = bpph.binaryFileUrls()
+
+        self.assertContentEqual(self.get_urls_for_bpph(bpph), urls)
+
+    def test_binaryFileUrls_include_meta(self):
+        bpph = self.make_bpph(num_binaries=2)
+
+        urls = bpph.binaryFileUrls(include_meta=True)
+
+        self.assertContentEqual(
+            self.get_urls_for_bpph(bpph, include_meta=True), urls)
