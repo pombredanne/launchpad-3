@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base class view for branch merge proposal listings."""
@@ -142,8 +142,8 @@ class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
     implements(IBranchMergeProposalListingBatchNavigator)
 
     def __init__(self, view):
-        TableBatchNavigator.__init__(
-            self, view.getVisibleProposalsForUser(), view.request,
+        super(BranchMergeProposalListingBatchNavigator, self).__init__(
+            view.getVisibleProposalsForUser(), view.request,
             columns_to_show=view.extra_columns,
             size=config.launchpad.branchlisting_batch_size)
         self.view = view
@@ -216,9 +216,7 @@ class BranchMergeProposalListingView(LaunchpadFormView):
 
     @property
     def initial_values(self):
-        return {
-            'status': FilterableStatusValues.ALL,
-            }
+        return {'status': FilterableStatusValues.ALL}
 
     @cachedproperty
     def status_value(self):
@@ -248,8 +246,8 @@ class BranchMergeProposalListingView(LaunchpadFormView):
 
     def getVisibleProposalsForUser(self):
         """Branch merge proposals that are visible by the logged in user."""
-        has_proposals = IHasMergeProposals(self.context)
-        return has_proposals.getMergeProposals(self.status_filter, self.user)
+        return IHasMergeProposals(self.context).getMergeProposals(
+            self.status_filter, self.user, eager_load=True)
 
     @cachedproperty
     def proposal_count(self):
@@ -286,8 +284,7 @@ class ActiveReviewsView(BranchMergeProposalListingView):
         collection = collection.visibleByUser(self.user)
         proposals = collection.getMergeProposals(
             [BranchMergeProposalStatus.CODE_APPROVED,
-             BranchMergeProposalStatus.NEEDS_REVIEW, ],
-            eager_load=True)
+             BranchMergeProposalStatus.NEEDS_REVIEW], eager_load=True)
         return proposals
 
     def _getReviewGroup(self, proposal, votes, reviewer):
@@ -445,13 +442,9 @@ class PersonActiveReviewsView(ActiveReviewsView):
     def getProposals(self):
         """See `ActiveReviewsView`."""
         collection = self._getCollection().visibleByUser(self.user)
-        proposals = collection.getMergeProposalsForPerson(
-            self._getReviewer(),
-            [BranchMergeProposalStatus.CODE_APPROVED,
-             BranchMergeProposalStatus.NEEDS_REVIEW],
-            eager_load=True)
-
-        return proposals
+        return collection.getMergeProposalsForPerson(
+            self._getReviewer(), [BranchMergeProposalStatus.CODE_APPROVED,
+            BranchMergeProposalStatus.NEEDS_REVIEW], eager_load=True)
 
 
 class PersonProductActiveReviewsView(PersonActiveReviewsView):

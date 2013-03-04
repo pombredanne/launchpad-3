@@ -41,7 +41,8 @@ class HasBranchesMixin:
 class HasMergeProposalsMixin:
     """A mixin implementation class for `IHasMergeProposals`."""
 
-    def getMergeProposals(self, status=None, visible_by_user=None):
+    def getMergeProposals(self, status=None, visible_by_user=None,
+                          eager_load=False):
         """See `IHasMergeProposals`."""
         if not status:
             status = (
@@ -50,7 +51,7 @@ class HasMergeProposalsMixin:
                 BranchMergeProposalStatus.WORK_IN_PROGRESS)
 
         collection = IBranchCollection(self).visibleByUser(visible_by_user)
-        return collection.getMergeProposals(status)
+        return collection.getMergeProposals(status, eager_load=eager_load)
 
 
 class HasRequestedReviewsMixin:
@@ -63,9 +64,7 @@ class HasRequestedReviewsMixin:
 
         visible_branches = getUtility(IAllBranches).visibleByUser(
             visible_by_user)
-        proposals = visible_branches.getMergeProposalsForReviewer(
-            self, status)
-        return proposals
+        return visible_branches.getMergeProposalsForReviewer(self, status)
 
 
 class HasCodeImportsMixin:
