@@ -37,7 +37,7 @@ def notify_specification_modified(spec, event):
     indent = ' ' * 4
     info_lines = []
     if spec_delta.name:
-        info_lines.append('%sname: %s => %s' % (
+        info_lines.append('%sName: %s => %s' % (
             indent, spec_delta.name['old'], spec_delta.name['new']))
     for dbitem_name in ('definition_status', 'priority'):
         title = ISpecification[dbitem_name].title
