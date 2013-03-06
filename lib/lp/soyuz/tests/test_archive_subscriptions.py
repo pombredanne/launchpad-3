@@ -6,10 +6,13 @@
 from urlparse import urljoin
 
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.publisher import canonical_url
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.testing import (
     BrowserTestCase,
     login_person,
@@ -136,7 +139,12 @@ class PrivateArtifactsViewTestCase(BrowserTestCase):
         with person_logged_in(self.owner):
             self.archive = self.factory.makeArchive(
                 private=True, owner=self.private_team)
-        self.factory.makeSourcePackagePublishingHistory(archive=self.archive)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.archive, status=PackagePublishingStatus.PUBLISHED)
+        spr = removeSecurityProxy(spph).sourcepackagerelease
+        self.factory.makeBinaryPackageBuild(
+            source_package_release=spr, archive=self.archive,
+            status=BuildStatus.FAILEDTOBUILD)
         self.subscriber = self.factory.makePerson()
 
     def test_traverse_view_private_team_archive_subscriber(self):
@@ -150,8 +158,6 @@ class PrivateArtifactsViewTestCase(BrowserTestCase):
         browser.open(url)
         content = find_tag_by_id(browser.contents, 'document')
         self.assertIsNotNone(find_tag_by_id(content, 'ppa-install'))
-        self.assertIsNotNone(
-            find_tag_by_id(content, 'portlet-latest-updates'))
 
     def test_unauthorized_subscriber_for_plus_packages(self):
         with person_logged_in(self.owner):

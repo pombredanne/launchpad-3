@@ -318,7 +318,8 @@ div.package-details {
     Present the latest updates for a PPA in a portlet.
   </tal:comment>
 
-  <tal:latest_updates define="updates view/latest_updates">
+  <tal:latest_updates define="updates view/latest_updates"
+    tal:condition="view/display_latest_updates">
   <div id="portlet-latest-updates" class="portlet">
     <h2>Latest updates</h2>
 
