@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-import bisect
+from bisect import bisect
 from datetime import (
     datetime,
     timedelta,
@@ -70,10 +70,6 @@ from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.utils import total_seconds
-from lp.services.webapp import (
-    canonical_url,
-    urlappend,
-    )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.canonicalurl import nearest_adapter
 from lp.services.webapp.error import SystemErrorView
@@ -95,13 +91,14 @@ from lp.services.webapp.menu import (
     get_facet,
     )
 from lp.services.webapp.publisher import (
+    canonical_url,
     LaunchpadView,
     nearest,
     )
 from lp.services.webapp.session import get_cookie_domain
+from lp.services.webapp.url import urlappend
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IPPA
-from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryAndSourcePackageName
 
 
@@ -1862,20 +1859,16 @@ class PPAFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for `IPPA` objects."""
 
     _link_summary_template = '%(display_name)s'
-    _link_permission = 'launchpad.View'
+    _link_permission = 'launchpad.SubscriberView'
     _reference_template = "ppa:%(owner_name)s/%(ppa_name)s"
 
-    final_traversable_names = {
-        'reference': 'reference',
-        }
+    final_traversable_names = {'reference': 'reference'}
     final_traversable_names.update(
         CustomizableFormatter.final_traversable_names)
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
-        return {
-            'display_name': self._context.displayname,
-            }
+        return {'display_name': self._context.displayname}
 
     def link(self, view_name):
         """Return html including a link for the context PPA.
@@ -1901,21 +1894,11 @@ class PPAFormatterAPI(CustomizableFormatter):
 
     def reference(self, view_name=None, rootsite=None):
         """Return the text PPA reference for a PPA."""
-        # XXX: noodles 2010-02-11 bug=336779: This following check
-        # should be replaced with the normal check_permission once
-        # permissions for archive subscribers has been resolved.
-        if self._context.private:
-            request = get_current_browser_request()
-            person = IPerson(request.principal)
-            subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
-                person, self._context)
-            if subscriptions.is_empty():
-                return ''
-
+        if not check_permission(self._link_permission, self._context):
+            return ''
         return self._reference_template % {
             'owner_name': self._context.owner.name,
-            'ppa_name': self._context.name,
-            }
+            'ppa_name': self._context.name}
 
 
 class SpecificationBranchFormatterAPI(CustomizableFormatter):
@@ -2353,7 +2336,7 @@ class DurationFormatterAPI:
         if seconds < second_boundaries[-1]:
             # Use the built-in bisection algorithm to locate the index
             # of the item which "seconds" sorts after.
-            matching_element_index = bisect.bisect(second_boundaries, seconds)
+            matching_element_index = bisect(second_boundaries, seconds)
 
             # Return the corresponding display value.
             return display_values[matching_element_index]
@@ -2510,8 +2493,7 @@ class LaunchpadLayerToMainTemplateAdapter:
 
     def __init__(self, context):
         here = os.path.dirname(os.path.realpath(__file__))
-        self.path = os.path.join(
-            here, '../templates/base-layout.pt')
+        self.path = os.path.join(here, '../templates/base-layout.pt')
 
 
 class PageMacroDispatcher:

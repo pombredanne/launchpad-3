@@ -2487,6 +2487,8 @@ class SubscriberViewArchive(ViewArchive):
     usedfor = IArchive
 
     def checkAuthenticated(self, user):
+        if user.person in self.obj._known_subscribers:
+            return True
         if super(SubscriberViewArchive, self).checkAuthenticated(user):
             return True
         filter = get_enabled_archive_filter(

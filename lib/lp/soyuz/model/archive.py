@@ -442,6 +442,10 @@ class Archive(SQLBase):
         else:
             return None
 
+    @cachedproperty
+    def _known_subscribers(self):
+        return set()
+
     @property
     def archive_url(self):
         """See `IArchive`."""
