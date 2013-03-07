@@ -143,12 +143,7 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
         # Create a brand new PPA.
         archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
-            purpose=ArchivePurpose.PPA)
-
-        # Make it private if necessary.
-        if private:
-            archive.buildd_secret = 'x'
-            archive.private = True
+            purpose=ArchivePurpose.PPA, private=private)
 
         # Create a testing source publication with binaries
         source = self.test_publisher.getPubSource(archive=archive)
@@ -183,7 +178,7 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
         self.assertChangedFiles([], changed_files)
         self.assertSourceFilesArePrivate(private_source, 3)
 
-        # Copy The original source to a public PPA, at this point all
+        # Copy the original source to a public PPA. At this point all
         # files related to it will remain private.
         public_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
@@ -258,7 +253,7 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
         self.assertChangedFiles([], changed_files)
         self.assertBinaryFilesArePrivate(private_binary, 3)
 
-        # Copy The original binary to a public PPA, at this point all
+        # Copy the original binary to a public PPA. At this point all
         # files related to it will remain private.
         public_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
@@ -295,12 +290,10 @@ class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
         public_binary = public_source.getPublishedBinaries()[0]
         self.layer.commit()
 
-        # Copy The original source and binaries to a private PPA.
+        # Copy the original source and binaries to a private PPA.
         private_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
-            purpose=ArchivePurpose.PPA)
-        private_archive.buildd_secret = 'x'
-        private_archive.private = True
+            purpose=ArchivePurpose.PPA, private=True)
 
         copied_source = public_source.copyTo(
             public_source.distroseries, public_source.pocket,
@@ -652,9 +645,7 @@ class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
         """Override the probing source with a private one."""
         private_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
-            purpose=ArchivePurpose.PPA)
-        private_archive.buildd_secret = 'x'
-        private_archive.private = True
+            purpose=ArchivePurpose.PPA, private=True)
 
         self.source = self.test_publisher.getPubSource(archive=private_archive)
 
