@@ -1887,9 +1887,11 @@ class PPAFormatterAPI(CustomizableFormatter):
         if check_permission(self._link_permission, self._context):
             url = self.url(view_name)
             return '<a href="%s" class="%s">%s</a>' % (url, css, summary)
-        elif check_permission(self._reference_permission, self._context):
-            return '<span class="%s">%s</span>' % (css, summary)
-        return ''
+        else:
+            if not self._context.private:
+                return '<span class="%s">%s</span>' % (css, summary)
+            else:
+                return ''
 
     def reference(self, view_name=None, rootsite=None):
         """Return the text PPA reference for a PPA."""
