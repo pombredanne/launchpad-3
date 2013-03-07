@@ -508,7 +508,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         override_policy = FromExistingOverridePolicy()
         ancestry = override_policy.calculateSourceOverrides(
             self.target_archive, self.target_distroseries,
-            self.target_pocket, [source_name], include_deleted=False)
+            self.target_pocket, [source_name])
 
         copy_policy = self.getPolicyImplementation()
 

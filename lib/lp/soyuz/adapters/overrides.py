@@ -1,8 +1,7 @@
 # Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Generic Override Policy classes.
-"""
+"""Generic Override Policy classes."""
 
 __metaclass__ = type
 
@@ -202,7 +201,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
         return status
 
     def calculateSourceOverrides(self, archive, distroseries, pocket, spns,
-                                 source_component=None, include_deleted=True):
+                                 source_component=None, include_deleted=False):
         def eager_load(rows):
             bulk.load(Component, (row[1] for row in rows))
             bulk.load(Section, (row[2] for row in rows))
@@ -233,7 +232,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             for (name, component, section) in already_published]
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
-                                 binaries, include_deleted=True):
+                                 binaries, include_deleted=False):
         def eager_load(rows):
             bulk.load(Component, (row[2] for row in rows))
             bulk.load(Section, (row[3] for row in rows))
@@ -341,13 +340,13 @@ class UbuntuOverridePolicy(FromExistingOverridePolicy,
                                  sources, source_component=None):
         total = set(sources)
         overrides = FromExistingOverridePolicy.calculateSourceOverrides(
-            self, archive, distroseries, pocket, sources, source_component)
+            self, archive, distroseries, pocket, sources, source_component,
+            include_deleted=True)
         existing = set(override.source_package_name for override in overrides)
         missing = total.difference(existing)
         if missing:
             unknown = UnknownOverridePolicy.calculateSourceOverrides(
-                self, archive, distroseries, pocket, missing,
-                source_component)
+                self, archive, distroseries, pocket, missing, source_component)
             overrides.extend(unknown)
         return overrides
 
@@ -355,7 +354,8 @@ class UbuntuOverridePolicy(FromExistingOverridePolicy,
                                  binaries):
         total = set(binaries)
         overrides = FromExistingOverridePolicy.calculateBinaryOverrides(
-            self, archive, distroseries, pocket, binaries)
+            self, archive, distroseries, pocket, binaries,
+            include_deleted=True)
         existing = set(
             (
                 override.binary_package_name,
