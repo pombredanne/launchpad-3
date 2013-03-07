@@ -181,7 +181,11 @@ class PersonArchiveSubscriptions(TestCaseWithFactory):
         for x in range(10):
             archive = self.factory.makeArchive(private=True)
             with person_logged_in(archive.owner):
-                archive.newSubscription(subscriber, archive.owner)
+                if x >= 5:
+                    team = self.factory.makeTeam(members=[subscriber])
+                    archive.newSubscription(team, archive.owner)
+                else:
+                    archive.newSubscription(subscriber, archive.owner)
         Store.of(subscriber).flush()
         Store.of(subscriber).invalidate()
         with person_logged_in(subscriber):
