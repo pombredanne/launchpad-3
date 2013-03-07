@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ArchiveSubscriber interface."""
@@ -47,6 +47,7 @@ class IArchiveSubscriberView(Interface):
 
     id = Int(title=_('ID'), required=True, readonly=True)
 
+    archive_id = Int(title=_('Archive ID'), required=True, readonly=True)
     archive = exported(Reference(
         IArchive, title=_("Archive"), required=True, readonly=True,
         description=_("The archive for this subscription.")))

@@ -5,6 +5,8 @@
 
 from urlparse import urljoin
 
+from storm.store import Store
+from testtools.matchers import Equals
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
@@ -17,10 +19,12 @@ from lp.testing import (
     BrowserTestCase,
     login_person,
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.mail_helpers import pop_notifications
+from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import (
     find_tag_by_id,
     setupBrowserForUser,
@@ -102,8 +106,7 @@ class TestArchiveSubscriptions(TestCaseWithFactory):
         notifications = pop_notifications()
         self.assertEqual(1, len(notifications))
         self.assertEqual(
-            self.subscriber.preferredemail.email,
-            notifications[0]['to'])
+            self.subscriber.preferredemail.email, notifications[0]['to'])
 
     def test_new_commercial_subscription_no_email(self):
         # As per bug 611568, an email is not sent for
@@ -167,3 +170,23 @@ class PrivateArtifactsViewTestCase(BrowserTestCase):
             url = urljoin(canonical_url(self.archive), '+packages')
         browser = setupBrowserForUser(self.subscriber)
         self.assertRaises(Unauthorized, browser.open, url)
+
+
+class PersonArchiveSubscriptions(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_query_count(self):
+        subscriber = self.factory.makePerson()
+        for x in range(10):
+            archive = self.factory.makeArchive(private=True)
+            with person_logged_in(archive.owner):
+                archive.newSubscription(subscriber, archive.owner)
+        Store.of(subscriber).flush()
+        Store.of(subscriber).invalidate()
+        with person_logged_in(subscriber):
+            with StormStatementRecorder() as recorder:
+                view = create_initialized_view(
+                    subscriber, '+archivesubscriptions', principal=subscriber)
+                view.render()
+        self.assertThat(recorder, HasQueryCount(Equals(9)))
