@@ -1294,11 +1294,12 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         self.assertComponentSectionAndPriority(
             ebin_hppa.component, ebin_hppa, copied_bin_hppa)
 
-    def _setup_archive(self):
+    def _setup_archive(self, version="1.0-2", use_nobby=False, **kwargs):
         archive = self.test_publisher.ubuntutest.main_archive
-        source = self.test_publisher.getPubSource(
-            archive=archive, version='1.0-2', architecturehintlist='any')
         nobby = self.createNobby(('i386', 'hppa'))
+        source = self.test_publisher.getPubSource(
+            archive=archive, version=version, architecturehintlist='any',
+            distroseries=(nobby if use_nobby else None), **kwargs)
         getUtility(ISourcePackageFormatSelectionSet).add(
             nobby, SourcePackageFormat.FORMAT_1_0)
         return nobby, archive, source
@@ -1306,10 +1307,8 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
     def test_existing_publication_overrides_pockets(self):
         # When we copy source/binaries from one pocket to another, the
         # overrides are unchanged from the source publication overrides.
-        nobby, archive, _ = self._setup_archive()
-        source = self.test_publisher.getPubSource(
-            archive=archive, version='1.0-1', architecturehintlist='any',
-            distroseries=nobby, pocket=PackagePublishingPocket.PROPOSED)
+        nobby, archive, source = self._setup_archive(
+            use_nobby=True, pocket=PackagePublishingPocket.PROPOSED)
         [bin_i386, bin_hppa] = self.test_publisher.getPubBinaries(
             pub_source=source, distroseries=nobby,
             pocket=PackagePublishingPocket.PROPOSED)
@@ -1350,10 +1349,8 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
     def test_deleted_publication_overrides(self):
         # Copying a deleted publication still respects its overrides.
-        nobby, archive, _ = self._setup_archive()
-        source = self.test_publisher.getPubSource(
-            archive=archive, version='1.0-1', architecturehintlist='any',
-            distroseries=nobby, pocket=PackagePublishingPocket.PROPOSED)
+        nobby, archive, source = self._setup_archive(
+            use_nobby=True, pocket=PackagePublishingPocket.PROPOSED)
         [bin_i386, bin_hppa] = self.test_publisher.getPubBinaries(
             pub_source=source, distroseries=nobby,
             pocket=PackagePublishingPocket.PROPOSED)
@@ -1373,9 +1370,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
     def test_copy_into_derived_series(self):
         # We are able to successfully copy into a derived series.
-        archive = self.test_publisher.ubuntutest.main_archive
-        source = self.test_publisher.getPubSource(
-            archive=archive, version='1.0-2', architecturehintlist='any')
+        _, archive, source = self._setup_archive()
         dsp = self.factory.makeDistroSeriesParent()
         target_archive = dsp.derived_series.main_archive
         switch_dbuser('archivepublisher')
@@ -1386,9 +1381,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
     def test_copy_with_override(self):
         # Test the override parameter for do_copy and by extension
         # _do_direct_copy.
-        archive = self.test_publisher.ubuntutest.main_archive
-        source = self.test_publisher.getPubSource(
-            archive=archive, version='1.0-2', architecturehintlist='any')
+        _, archive, source = self._setup_archive()
         dsp = self.factory.makeDistroSeriesParent()
         target_archive = dsp.derived_series.main_archive
         override = SourceOverride(
@@ -1447,16 +1440,11 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
     def test_copy_generates_notification(self):
         # When a copy into a primary archive is performed, a notification is
         # sent.
-        archive = self.test_publisher.ubuntutest.main_archive
-        source = self.test_publisher.getPubSource(
-            archive=archive, version='1.0-2', architecturehintlist='any')
+        nobby, archive, source = self._setup_archive()
         changelog = self.factory.makeChangelog(spn="foo", versions=["1.0-2"])
         source.sourcepackagerelease.changelog = changelog
         # Copying to a primary archive reads the changes to close bugs.
         transaction.commit()
-        nobby = self.createNobby(('i386', 'hppa'))
-        getUtility(ISourcePackageFormatSelectionSet).add(
-            nobby, SourcePackageFormat.FORMAT_1_0)
         nobby.changeslist = 'nobby-changes@example.com'
         [copied_source] = do_copy(
             [source], archive, nobby, source.pocket, False,
@@ -1529,19 +1517,14 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         # the changelog should contain all of the changelog_entry texts for
         # all the sourcepackagereleases between the last published version
         # and the new version.
-        archive = self.test_publisher.ubuntutest.main_archive
-        source3 = self.test_publisher.getPubSource(
-            sourcename="foo", archive=archive, version='1.2',
-            architecturehintlist='any')
+        nobby, archive, source3 = self._setup_archive(
+            sourcename="foo", version="1.2")
         changelog = self.factory.makeChangelog(
             spn="foo", versions=["1.2",  "1.1",  "1.0"])
         source3.sourcepackagerelease.changelog = changelog
         transaction.commit()
 
-        # Now make a new series, nobby, and publish foo 1.0 in it.
-        nobby = self.createNobby(('i386', 'hppa'))
-        getUtility(ISourcePackageFormatSelectionSet).add(
-            nobby, SourcePackageFormat.FORMAT_1_0)
+        # Now publish foo 1.0 in nobby.
         nobby.changeslist = 'nobby-changes@example.com'
         source1 = self.factory.makeSourcePackageRelease(
             sourcepackagename="foo", version="1.0")
