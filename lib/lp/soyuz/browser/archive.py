@@ -927,10 +927,6 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             archive, description, title, hide_empty=False,
             linkify_text=linkify_text)
 
-    @property
-    def display_latest_updates(self):
-        return check_permission('launchpad.View', self.context)
-
     @cachedproperty
     def latest_updates(self):
         """Return the last five published sources for this archive."""

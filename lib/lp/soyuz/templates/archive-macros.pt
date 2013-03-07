@@ -319,7 +319,7 @@ div.package-details {
   </tal:comment>
 
   <tal:latest_updates define="updates view/latest_updates"
-    tal:condition="view/display_latest_updates">
+    tal:condition="context/required:launchpad.View">
   <div id="portlet-latest-updates" class="portlet">
     <h2>Latest updates</h2>
 
