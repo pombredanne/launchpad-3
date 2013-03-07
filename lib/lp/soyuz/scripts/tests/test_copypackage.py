@@ -1211,8 +1211,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         # The copy succeeds, and no i386 publication is created.
         self.assertCopied(copies, nobby, ('hppa',))
 
-    def assertComponentSectionAndPriority(self, component, source,
-                                          destination):
+    def assertOverrides(self, component, source, destination):
         self.assertEqual(component, destination.component)
         self.assertEqual(source.section, destination.section)
         self.assertEqual(source.priority, destination.priority)
@@ -1243,10 +1242,8 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             source, target_archive, nobby, source.pocket, True)
         universe = getUtility(IComponentSet)['universe']
         self.assertEqual(universe, copied_source.component)
-        self.assertComponentSectionAndPriority(
-            universe, bin_i386, copied_bin_i386)
-        self.assertComponentSectionAndPriority(
-            universe, bin_hppa, copied_bin_hppa)
+        self.assertOverrides(universe, bin_i386, copied_bin_i386)
+        self.assertOverrides(universe, bin_hppa, copied_bin_hppa)
 
     def test_existing_publication_overrides(self):
         # When source/binaries are copied to a destination primary archive,
@@ -1279,10 +1276,8 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
             source, target_archive, nobby, source.pocket, True)
         self.assertEqual(copied_source.component, existing_source.component)
-        self.assertComponentSectionAndPriority(
-            ebin_i386.component, ebin_i386, copied_bin_i386)
-        self.assertComponentSectionAndPriority(
-            ebin_hppa.component, ebin_hppa, copied_bin_hppa)
+        self.assertOverrides(ebin_i386.component, ebin_i386, copied_bin_i386)
+        self.assertOverrides(ebin_hppa.component, ebin_hppa, copied_bin_hppa)
 
     def _setup_archive(self, version="1.0-2", use_nobby=False, **kwargs):
         archive = self.test_publisher.ubuntutest.main_archive
@@ -1310,10 +1305,8 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
             source, archive, nobby, PackagePublishingPocket.UPDATES, True)
         self.assertEqual(copied_source.component, source.component)
-        self.assertComponentSectionAndPriority(
-            bin_i386.component, bin_i386, copied_bin_i386)
-        self.assertComponentSectionAndPriority(
-            bin_hppa.component, bin_hppa, copied_bin_hppa)
+        self.assertOverrides(bin_i386.component, bin_i386, copied_bin_i386)
+        self.assertOverrides(bin_hppa.component, bin_hppa, copied_bin_hppa)
 
     def test_existing_publication_no_overrides(self):
         # When we copy source/binaries into a PPA, we don't respect their
@@ -1332,8 +1325,8 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             source, target_archive, nobby, source.pocket, True)
         main = getUtility(IComponentSet)['main']
         self.assertEqual(main, copied_source.component)
-        self.assertComponentSectionAndPriority(main, bin_i386, copied_bin_i386)
-        self.assertComponentSectionAndPriority(main, bin_hppa, copied_bin_hppa)
+        self.assertOverrides(main, bin_i386, copied_bin_i386)
+        self.assertOverrides(main, bin_hppa, copied_bin_hppa)
 
     def test_deleted_publication_overrides(self):
         # Copying a deleted publication still respects its overrides.
@@ -1351,10 +1344,8 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
             source, archive, nobby, PackagePublishingPocket.UPDATES, True)
         self.assertEqual(source.component, copied_source.component)
-        self.assertComponentSectionAndPriority(
-            bin_i386.component, bin_i386, copied_bin_i386)
-        self.assertComponentSectionAndPriority(
-            bin_hppa.component, bin_hppa, copied_bin_hppa)
+        self.assertOverrides(bin_i386.component, bin_i386, copied_bin_i386)
+        self.assertOverrides(bin_hppa.component, bin_hppa, copied_bin_hppa)
 
     def test_copy_into_derived_series(self):
         # We are able to successfully copy into a derived series.
