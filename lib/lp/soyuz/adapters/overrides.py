@@ -191,7 +191,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
     for the latest published binary publication.
     """
 
-    def existing_publishing_status(self, include_deleted):
+    def getExistingPublishingStatuses(self, include_deleted):
         status = [
             PackagePublishingStatus.PENDING,
             PackagePublishingStatus.PUBLISHED,
@@ -216,7 +216,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 SourcePackagePublishingHistory.distroseriesID ==
                     distroseries.id,
                 SourcePackagePublishingHistory.status.is_in(
-                    self.existing_publishing_status(include_deleted)),
+                    self.getExistingPublishingStatuses(include_deleted)),
                 SourcePackagePublishingHistory.sourcepackagenameID.is_in(
                     spn.id for spn in spns)).order_by(
                         SourcePackagePublishingHistory.sourcepackagenameID,
@@ -253,7 +253,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                  BinaryPackagePublishingHistory.sectionID,
                  BinaryPackagePublishingHistory.priority),
                 BinaryPackagePublishingHistory.status.is_in(
-                    self.existing_publishing_status(include_deleted)),
+                    self.getExistingPublishingStatuses(include_deleted)),
                 Or(*candidates)).order_by(
                     BinaryPackagePublishingHistory.distroarchseriesID,
                     BinaryPackagePublishingHistory.binarypackagenameID,
