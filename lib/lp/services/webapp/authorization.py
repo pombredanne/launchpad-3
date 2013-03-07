@@ -3,6 +3,17 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'available_with_permission',
+    'check_permission',
+    'clear_cache',
+    'iter_authorization',
+    'LaunchpadPermissiveSecurityPolicy',
+    'LaunchpadSecurityPolicy',
+    'LAUNCHPAD_SECURITY_POLICY_CACHE_KEY',
+    'precache_permission_for_objects',
+    ]
+
 from collections import (
     deque,
     Iterable,

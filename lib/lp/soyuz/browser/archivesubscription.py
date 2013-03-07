@@ -49,6 +49,7 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.webapp.authorization import precache_permission_for_objects
 from lp.services.webapp.batching import (
     BatchNavigator,
     StormRangeFactory,
@@ -329,8 +330,9 @@ class PersonArchiveSubscriptionsView(LaunchpadView):
         subs_with_tokens = subscriber_set.getBySubscriberWithActiveToken(
             self.context)
 
-        archives = load_related(
-            Archive, map(itemgetter(0), subs_with_tokens), ['archive_id'])
+        subscriptions = map(itemgetter(0), subs_with_tokens)
+        precache_permission_for_objects(None, 'launchpad.View', subscriptions)
+        archives = load_related(Archive, subscriptions, ['archive_id'])
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
             [archive.ownerID for archive in archives], need_validity=True))
         for archive in archives:
