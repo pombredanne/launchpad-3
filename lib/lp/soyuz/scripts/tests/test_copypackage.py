@@ -407,8 +407,7 @@ class CopyCheckerHarness:
 
     def test_cannot_copy_binaries_from_building(self):
         [build] = self.source.createMissingBuilds()
-        self.assertCannotCopyBinaries(
-            'source has no binaries to be copied')
+        self.assertCannotCopyBinaries('source has no binaries to be copied')
 
     def test_cannot_copy_check_perm_no_person(self):
         # If check_permissions=True and person=None is passed to
@@ -441,8 +440,7 @@ class CopyCheckerHarness:
 
     def test_can_copy_binaries_from_fullybuilt_and_published(self):
         self.test_publisher.getPubBinaries(
-            pub_source=self.source,
-            status=PackagePublishingStatus.PUBLISHED)
+            pub_source=self.source, status=PackagePublishingStatus.PUBLISHED)
         self.assertCanCopyBinaries()
 
 
@@ -576,8 +574,7 @@ class CopyCheckerSameArchiveHarness(TestCaseWithFactory,
 
     def test_cannot_copy_only_source_from_fullybuilt_and_published(self):
         self.test_publisher.getPubBinaries(
-            pub_source=self.source,
-            status=PackagePublishingStatus.PUBLISHED)
+            pub_source=self.source, status=PackagePublishingStatus.PUBLISHED)
         self.assertCannotCopySourceOnly(
             'same version already has published binaries in the '
             'destination archive')
@@ -648,8 +645,7 @@ class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
 
     def test_can_copy_only_source_from_fullybuilt_and_published(self):
         self.test_publisher.getPubBinaries(
-            pub_source=self.source,
-            status=PackagePublishingStatus.PUBLISHED)
+            pub_source=self.source, status=PackagePublishingStatus.PUBLISHED)
         self.assertCanCopySourceOnly()
 
     def switchToAPrivateSource(self):
@@ -660,8 +656,7 @@ class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
         private_archive.buildd_secret = 'x'
         private_archive.private = True
 
-        self.source = self.test_publisher.getPubSource(
-            archive=private_archive)
+        self.source = self.test_publisher.getPubSource(archive=private_archive)
 
     def test_can_copy_only_source_from_private_archives(self):
         # Source-only copies from private archives to public ones
@@ -693,8 +688,7 @@ class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
         self.source = self.test_publisher.getPubSource(archive=ppa)
         self.test_publisher.getPubBinaries(
             pub_source=self.source, with_debug=True)
-        self.assertCannotCopyBinaries(
-            'Cannot copy DDEBs to a primary archive')
+        self.assertCannotCopyBinaries('Cannot copy DDEBs to a primary archive')
 
     def test_cannot_copy_source_twice(self):
         # checkCopy refuses to copy the same source twice.  Duplicates are
@@ -831,8 +825,7 @@ class CopyCheckerDifferentArchiveHarness(TestCaseWithFactory,
         spr.addFile(new_tar)
         # Set previous source tarball to be expired.
         with dbuser('librarian'):
-            naked_prev_tar = removeSecurityProxy(prev_tar)
-            naked_prev_tar.content = None
+            removeSecurityProxy(prev_tar).content = None
         self.assertCanCopySourceOnly()
 
 
@@ -998,10 +991,8 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         # the copy batch.
 
         # Create a source with binaries in ubuntutest/breezy-autotest.
-        source = self.test_publisher.getPubSource(
-            architecturehintlist='i386')
-        binary = self.test_publisher.getPubBinaries(
-            pub_source=source)[0]
+        source = self.test_publisher.getPubSource(architecturehintlist='i386')
+        binary = self.test_publisher.getPubBinaries(pub_source=source)[0]
 
         # Copy it with binaries to ubuntutest/hoary-test.
         hoary = self.test_publisher.ubuntutest.getSeries('hoary-test')
@@ -1048,8 +1039,7 @@ class BaseDoCopyTests:
         for arch in archs:
             pf = self.factory.makeProcessorFamily(name='my_%s' % arch)
             self.factory.makeDistroArchSeries(
-                distroseries=nobby, architecturetag=arch,
-                processorfamily=pf)
+                distroseries=nobby, architecturetag=arch, processorfamily=pf)
         nobby.nominatedarchindep = nobby[archs[0]]
         self.test_publisher.addFakeChroots(nobby)
         return nobby
@@ -1342,10 +1332,8 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             source, target_archive, nobby, source.pocket, True)
         main = getUtility(IComponentSet)['main']
         self.assertEqual(main, copied_source.component)
-        self.assertComponentSectionAndPriority(
-            main, bin_i386, copied_bin_i386)
-        self.assertComponentSectionAndPriority(
-            main, bin_hppa, copied_bin_hppa)
+        self.assertComponentSectionAndPriority(main, bin_i386, copied_bin_i386)
+        self.assertComponentSectionAndPriority(main, bin_hppa, copied_bin_hppa)
 
     def test_deleted_publication_overrides(self):
         # Copying a deleted publication still respects its overrides.
