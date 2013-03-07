@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Generic Override Policy classes.
@@ -33,8 +33,8 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database import bulk
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
@@ -192,9 +192,17 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
     for the latest published binary publication.
     """
 
-    def calculateSourceOverrides(self, archive, distroseries, pocket, spns,
-                                 source_component=None):
+    def existing_publishing_status(self, include_deleted):
+        status = [
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED,
+            ]
+        if include_deleted:
+            status.append(PackagePublishingStatus.DELETED)
+        return status
 
+    def calculateSourceOverrides(self, archive, distroseries, pocket, spns,
+                                 source_component=None, include_deleted=True):
         def eager_load(rows):
             bulk.load(Component, (row[1] for row in rows))
             bulk.load(Section, (row[2] for row in rows))
@@ -209,7 +217,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 SourcePackagePublishingHistory.distroseriesID ==
                     distroseries.id,
                 SourcePackagePublishingHistory.status.is_in(
-                    active_publishing_status),
+                    self.existing_publishing_status(include_deleted)),
                 SourcePackagePublishingHistory.sourcepackagenameID.is_in(
                     spn.id for spn in spns)).order_by(
                         SourcePackagePublishingHistory.sourcepackagenameID,
@@ -225,7 +233,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             for (name, component, section) in already_published]
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
-                                 binaries):
+                                 binaries, include_deleted=True):
         def eager_load(rows):
             bulk.load(Component, (row[2] for row in rows))
             bulk.load(Section, (row[3] for row in rows))
@@ -246,7 +254,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                  BinaryPackagePublishingHistory.sectionID,
                  BinaryPackagePublishingHistory.priority),
                 BinaryPackagePublishingHistory.status.is_in(
-                    active_publishing_status),
+                    self.existing_publishing_status(include_deleted)),
                 Or(*candidates)).order_by(
                     BinaryPackagePublishingHistory.distroarchseriesID,
                     BinaryPackagePublishingHistory.binarypackagenameID,

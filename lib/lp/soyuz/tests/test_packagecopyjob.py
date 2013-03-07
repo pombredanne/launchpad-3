@@ -978,6 +978,22 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         published_sources = archive.getPublishedSources(name=u"copyme")
         self.assertIsNotNone(published_sources.any())
 
+    def test_copying_resurrects_deleted_package_primary_new(self):
+        # Resurrecting a previously-deleted package in a PRIMARY archive
+        # (which has an archive admin workflow) requires NEW queue approval.
+        archive = self.factory.makeArchive(
+            self.distroseries.distribution, purpose=ArchivePurpose.PRIMARY)
+        spph = self.publisher.getPubSource(
+            distroseries=self.distroseries, sourcename="copyme",
+            status=PackagePublishingStatus.DELETED, archive=archive)
+        job = self.createCopyJobForSPPH(
+            spph, archive, archive, requester=archive.owner)
+        self.runJob(job)
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
+        pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+            [removeSecurityProxy(job).context.id]).one()
+        self.assertEqual(PackageUploadStatus.NEW, pu.status)
+
     def test_copying_to_main_archive_unapproved(self):
         # Uploading to a series that is in a state that precludes auto
         # approval will cause the job to suspend and a packageupload

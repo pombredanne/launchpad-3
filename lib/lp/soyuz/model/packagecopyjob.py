@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -508,7 +508,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         override_policy = FromExistingOverridePolicy()
         ancestry = override_policy.calculateSourceOverrides(
             self.target_archive, self.target_distroseries,
-            self.target_pocket, [source_name])
+            self.target_pocket, [source_name], include_deleted=False)
 
         copy_policy = self.getPolicyImplementation()
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -1347,6 +1347,29 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             main, bin_i386, copied_bin_i386)
         self.assertComponentSectionAndPriority(
             main, bin_hppa, copied_bin_hppa)
+
+    def test_deleted_publication_overrides(self):
+        # Copying a deleted publication still respects its overrides.
+        nobby, archive, _ = self._setup_archive()
+        source = self.test_publisher.getPubSource(
+            archive=archive, version='1.0-1', architecturehintlist='any',
+            distroseries=nobby, pocket=PackagePublishingPocket.PROPOSED)
+        [bin_i386, bin_hppa] = self.test_publisher.getPubBinaries(
+            pub_source=source, distroseries=nobby,
+            pocket=PackagePublishingPocket.PROPOSED)
+        component = self.factory.makeComponent()
+        for kind in (source, bin_i386, bin_hppa):
+            kind.component = component
+        getUtility(IPublishingSet).requestDeletion([source], archive.owner)
+        transaction.commit()
+
+        [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
+            source, archive, nobby, PackagePublishingPocket.UPDATES, True)
+        self.assertEqual(source.component, copied_source.component)
+        self.assertComponentSectionAndPriority(
+            bin_i386.component, bin_i386, copied_bin_i386)
+        self.assertComponentSectionAndPriority(
+            bin_hppa.component, bin_hppa, copied_bin_hppa)
 
     def test_copy_into_derived_series(self):
         # We are able to successfully copy into a derived series.
