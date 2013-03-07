@@ -1859,7 +1859,8 @@ class PPAFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for `IPPA` objects."""
 
     _link_summary_template = '%(display_name)s'
-    _link_permission = 'launchpad.SubscriberView'
+    _link_permission = 'launchpad.View'
+    _reference_permission = 'launchpad.SubscriberView'
     _reference_template = "ppa:%(owner_name)s/%(ppa_name)s"
 
     final_traversable_names = {'reference': 'reference'}
@@ -1886,15 +1887,13 @@ class PPAFormatterAPI(CustomizableFormatter):
         if check_permission(self._link_permission, self._context):
             url = self.url(view_name)
             return '<a href="%s" class="%s">%s</a>' % (url, css, summary)
-        else:
-            if not self._context.private:
-                return '<span class="%s">%s</span>' % (css, summary)
-            else:
-                return ''
+        elif check_permission(self._reference_permission, self._context):
+            return '<span class="%s">%s</span>' % (css, summary)
+        return ''
 
     def reference(self, view_name=None, rootsite=None):
         """Return the text PPA reference for a PPA."""
-        if not check_permission(self._link_permission, self._context):
+        if not check_permission(self._reference_permission, self._context):
             return ''
         return self._reference_template % {
             'owner_name': self._context.owner.name,
