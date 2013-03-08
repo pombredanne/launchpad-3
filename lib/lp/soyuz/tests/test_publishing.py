@@ -505,11 +505,8 @@ class SoyuzTestPublisher:
             if new_version is None:
                 new_version = version
             changesfile_content = ''
-            handle = open(changesfile_path, 'r')
-            try:
+            with open(changesfile_path, 'r') as handle:
                 changesfile_content = handle.read()
-            finally:
-                handle.close()
 
             source = self.getPubSource(
                 sourcename=sourcename, archive=archive, version=new_version,
@@ -689,9 +686,8 @@ class TestNativePublishing(TestNativePublishingBase):
         foo_path = os.path.join(self.pool_dir, 'main', 'f', 'foo')
         os.makedirs(foo_path)
         foo_dsc_path = os.path.join(foo_path, 'foo_666.dsc')
-        foo_dsc = open(foo_dsc_path, 'w')
-        foo_dsc.write('Hello world')
-        foo_dsc.close()
+        with open(foo_dsc_path, 'w') as foo_dsc:
+            foo_dsc.write('Hello world')
 
         pub_source = self.getPubSource(filecontent="Something")
         pub_source.publish(self.disk_pool, self.logger)
