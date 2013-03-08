@@ -1160,55 +1160,50 @@ class TestPublishingSetLite(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
+    def setUp(self):
+        super(TestPublishingSetLite, self).setUp()
+        self.person = self.factory.makePerson()
+
     def test_requestDeletion_marks_SPPHs_deleted(self):
         spph = self.factory.makeSourcePackagePublishingHistory()
-        getUtility(IPublishingSet).requestDeletion(
-            [spph], self.factory.makePerson())
+        getUtility(IPublishingSet).requestDeletion([spph], self.person)
         self.assertEqual(PackagePublishingStatus.DELETED, spph.status)
 
     def test_requestDeletion_leaves_other_SPPHs_alone(self):
         spph = self.factory.makeSourcePackagePublishingHistory()
         other_spph = self.factory.makeSourcePackagePublishingHistory()
-        getUtility(IPublishingSet).requestDeletion(
-            [other_spph], self.factory.makePerson())
+        getUtility(IPublishingSet).requestDeletion([other_spph], self.person)
         self.assertEqual(PackagePublishingStatus.PENDING, spph.status)
 
     def test_requestDeletion_marks_BPPHs_deleted(self):
         bpph = self.factory.makeBinaryPackagePublishingHistory()
-        getUtility(IPublishingSet).requestDeletion(
-            [bpph], self.factory.makePerson())
+        getUtility(IPublishingSet).requestDeletion([bpph], self.person)
         self.assertEqual(PackagePublishingStatus.DELETED, bpph.status)
 
     def test_requestDeletion_marks_attached_BPPHs_deleted(self):
         bpph = self.factory.makeBinaryPackagePublishingHistory()
         spph = self.factory.makeSPPHForBPPH(bpph)
-        getUtility(IPublishingSet).requestDeletion(
-            [spph], self.factory.makePerson())
+        getUtility(IPublishingSet).requestDeletion([spph], self.person)
         self.assertEqual(PackagePublishingStatus.DELETED, spph.status)
 
     def test_requestDeletion_leaves_other_BPPHs_alone(self):
         bpph = self.factory.makeBinaryPackagePublishingHistory()
         unrelated_spph = self.factory.makeSourcePackagePublishingHistory()
         getUtility(IPublishingSet).requestDeletion(
-            [unrelated_spph], self.factory.makePerson())
+            [unrelated_spph], self.person)
         self.assertEqual(PackagePublishingStatus.PENDING, bpph.status)
 
     def test_requestDeletion_accepts_empty_sources_list(self):
-        person = self.factory.makePerson()
-        getUtility(IPublishingSet).requestDeletion([], person)
+        getUtility(IPublishingSet).requestDeletion([], self.person)
         # The test is that this does not fail.
-        Store.of(person).flush()
+        Store.of(self.person).flush()
 
     def test_requestDeletion_creates_DistroSeriesDifferenceJobs(self):
         dsp = self.factory.makeDistroSeriesParent()
-        series = dsp.derived_series
         spph = self.factory.makeSourcePackagePublishingHistory(
-            series, pocket=PackagePublishingPocket.RELEASE)
+            dsp.derived_series, pocket=PackagePublishingPocket.RELEASE)
         spn = spph.sourcepackagerelease.sourcepackagename
-
-        getUtility(IPublishingSet).requestDeletion(
-            [spph], self.factory.makePerson())
-
+        getUtility(IPublishingSet).requestDeletion([spph], self.person)
         self.assertEqual(
             1, len(find_waiting_jobs(
                 dsp.derived_series, spn, dsp.parent_series)))
@@ -1220,14 +1215,13 @@ class TestPublishingSetLite(TestCaseWithFactory):
             distroseries=bpph.distroseries,
             pocket=PackagePublishingPocket.RELEASE)
         spph.distroseries.status = SeriesStatus.CURRENT
-        person = self.factory.makePerson()
         message = "Cannot delete publications from suite '%s'" % (
             spph.distroseries.getSuite(spph.pocket))
         for pub in spph, bpph:
             self.assertRaisesWithContent(
-                DeletionError, message, pub.requestDeletion, person)
+                DeletionError, message, pub.requestDeletion, self.person)
             self.assertRaisesWithContent(
-                DeletionError, message, pub.api_requestDeletion, person)
+                DeletionError, message, pub.api_requestDeletion, self.person)
 
 
 class TestSourceDomination(TestNativePublishingBase):
