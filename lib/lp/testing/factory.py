@@ -3678,7 +3678,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             initial source package release  upload archive, or to the
             distro series main archive.
         :param pocket: The pocket to publish into. Can be specified as a
-            string. Defaults to the RELEASE pocket.
+            string. Defaults to the BACKPORTS pocket.
         :param status: The publication status. Defaults to PENDING. If
             set to PUBLISHED, the publisheddate will be set to now.
         :param dateremoved: The removal date.
