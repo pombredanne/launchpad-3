@@ -646,9 +646,9 @@ class TestNativePublishingBase(TestCaseWithFactory, SoyuzTestPublisher):
                     dominant = supersededby.binarypackagerelease.build
                 else:
                     dominant = supersededby.sourcepackagerelease
-                self.assertEquals(dominant, pub.supersededby)
+                self.assertEqual(dominant, pub.supersededby)
             else:
-                self.assertIs(None, pub.supersededby)
+                self.assertIsNone(pub.supersededby)
 
 
 class TestNativePublishing(TestNativePublishingBase):
@@ -866,10 +866,10 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
             copies = (copied, )
 
         for copy in copies:
-            self.assertEquals(copy.component, pub_record.component)
+            self.assertEqual(pub_record.component, copy.component)
             copy.overrideFromAncestry()
             self.layer.commit()
-            self.assertEquals(copy.component.name, 'universe')
+            self.assertEqual("universe", copy.component.name)
 
     def test_overrideFromAncestry_fallback_to_source_component(self):
         # overrideFromAncestry on the lack of ancestry, falls back to the
@@ -950,7 +950,7 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
         spph = self.factory.makeSourcePackagePublishingHistory(
             sourcepackagerelease=spr, archive=ppa)
         spph.overrideFromAncestry()
-        self.assertEquals(spph.component.name, 'main')
+        self.assertEqual("main", spph.component.name)
 
     def test_ppa_override_with_ancestry(self):
         # Test a PPA publication with ancestry
@@ -962,7 +962,7 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
         spph2 = self.factory.makeSourcePackagePublishingHistory(
             sourcepackagerelease=spr, archive=ppa)
         spph2.overrideFromAncestry()
-        self.assertEquals(spph2.component.name, 'main')
+        self.assertEqual("main", spph2.component.name)
 
     def test_copyTo_with_overrides(self):
         # Specifying overrides with copyTo should result in the new
@@ -1042,7 +1042,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         """
         available_archs = [self.sparc_distroarch, self.avr_distroarch]
         pubrec = self.getPubSource(architecturehintlist='any')
-        self.assertEquals([self.sparc_distroarch],
+        self.assertEqual(
+            [self.sparc_distroarch],
             pubrec._getAllowedArchitectures(available_archs))
 
     def test__getAllowedArchitectures_restricted_override(self):
@@ -1054,7 +1055,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         available_archs = [self.sparc_distroarch, self.avr_distroarch]
         getUtility(IArchiveArchSet).new(self.archive, self.avr_family)
         pubrec = self.getPubSource(architecturehintlist='any')
-        self.assertEquals([self.sparc_distroarch, self.avr_distroarch],
+        self.assertEqual(
+            [self.sparc_distroarch, self.avr_distroarch],
             pubrec._getAllowedArchitectures(available_archs))
 
     def test_createMissingBuilds_restricts_any(self):
@@ -1063,8 +1065,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         """
         pubrec = self.getPubSource(architecturehintlist='any')
         builds = pubrec.createMissingBuilds()
-        self.assertEquals(1, len(builds))
-        self.assertEquals(self.sparc_distroarch, builds[0].distro_arch_series)
+        self.assertEqual(1, len(builds))
+        self.assertEqual(self.sparc_distroarch, builds[0].distro_arch_series)
 
     def test_createMissingBuilds_restricts_explicitlist(self):
         """createMissingBuilds() limits builds targeted at a variety of
@@ -1072,8 +1074,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         """
         pubrec = self.getPubSource(architecturehintlist='sparc i386 avr')
         builds = pubrec.createMissingBuilds()
-        self.assertEquals(1, len(builds))
-        self.assertEquals(self.sparc_distroarch, builds[0].distro_arch_series)
+        self.assertEqual(1, len(builds))
+        self.assertEqual(self.sparc_distroarch, builds[0].distro_arch_series)
 
     def test_createMissingBuilds_restricts_all(self):
         """createMissingBuilds() should limit builds targeted at 'all'
@@ -1082,8 +1084,8 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         """
         pubrec = self.getPubSource(architecturehintlist='all')
         builds = pubrec.createMissingBuilds()
-        self.assertEquals(1, len(builds))
-        self.assertEquals(self.sparc_distroarch, builds[0].distro_arch_series)
+        self.assertEqual(1, len(builds))
+        self.assertEqual(self.sparc_distroarch, builds[0].distro_arch_series)
 
     def test_createMissingBuilds_restrict_override(self):
         """createMissingBuilds() should limit builds targeted at 'any'
@@ -1093,9 +1095,9 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         getUtility(IArchiveArchSet).new(self.archive, self.avr_family)
         pubrec = self.getPubSource(architecturehintlist='any')
         builds = pubrec.createMissingBuilds()
-        self.assertEquals(2, len(builds))
-        self.assertEquals(self.avr_distroarch, builds[0].distro_arch_series)
-        self.assertEquals(self.sparc_distroarch, builds[1].distro_arch_series)
+        self.assertEqual(2, len(builds))
+        self.assertEqual(self.avr_distroarch, builds[0].distro_arch_series)
+        self.assertEqual(self.sparc_distroarch, builds[1].distro_arch_series)
 
 
 class PublishingSetTests(TestCaseWithFactory):
@@ -1263,7 +1265,7 @@ class TestSourceDomination(TestNativePublishingBase):
 
         self.assertRaises(AssertionError, source.supersede, super_source)
         self.checkSuperseded([source], super_source)
-        self.assertEquals(super_date, source.datesuperseded)
+        self.assertEqual(super_date, source.datesuperseded)
 
 
 class TestBinaryDomination(TestNativePublishingBase):
@@ -1342,7 +1344,7 @@ class TestBinaryDomination(TestNativePublishingBase):
 
         self.assertRaises(AssertionError, bin.supersede, super_bin)
         self.checkSuperseded([bin], super_bin)
-        self.assertEquals(super_date, bin.datesuperseded)
+        self.assertEqual(super_date, bin.datesuperseded)
 
     def testSkipsSupersededArchIndependentBinary(self):
         """Check that supersede() skips a superseded arch-indep binary.
@@ -1364,7 +1366,7 @@ class TestBinaryDomination(TestNativePublishingBase):
 
         bin.supersede(super_bin)
         self.checkSuperseded([bin], super_bin)
-        self.assertEquals(super_date, bin.datesuperseded)
+        self.assertEqual(super_date, bin.datesuperseded)
 
     def testSupersedesCorrespondingDDEB(self):
         """Check that supersede() takes with it any corresponding DDEB.
@@ -1411,9 +1413,8 @@ class TestBinaryGetOtherPublications(TestNativePublishingBase):
     """Test BinaryPackagePublishingHistory._getOtherPublications() works."""
 
     def checkOtherPublications(self, this, others):
-        self.assertEquals(
-            set(removeSecurityProxy(this)._getOtherPublications()),
-            set(others))
+        self.assertContentEqual(
+            removeSecurityProxy(this)._getOtherPublications(), others)
 
     def testFindsOtherArchIndepPublications(self):
         """Arch-indep publications with the same overrides should be found."""
@@ -1526,7 +1527,7 @@ class TestGetBuiltBinaries(TestNativePublishingBase):
         # SPPH, BPPHs and BPRs.
         with StormStatementRecorder() as recorder:
             bins = spph.getBuiltBinaries()
-        self.assertEquals(0, len(bins))
+        self.assertEqual(0, len(bins))
         self.assertThat(recorder, HasQueryCount(Equals(3)))
 
         self.getPubBinaries(pub_source=spph)
@@ -1538,7 +1539,7 @@ class TestGetBuiltBinaries(TestNativePublishingBase):
         # BPF has no query penalty.
         with StormStatementRecorder() as recorder:
             bins = spph.getBuiltBinaries(want_files=True)
-            self.assertEquals(2, len(bins))
+            self.assertEqual(2, len(bins))
             for bpph in bins:
                 files = bpph.binarypackagerelease.files
                 self.assertEqual(1, len(files))
@@ -1592,8 +1593,7 @@ class TestPublishBinaries(TestCaseWithFactory):
     def test_architecture_independent(self):
         # Architecture-independent binaries get published to all enabled
         # DASes in the series.
-        bpr = self.factory.makeBinaryPackageRelease(
-            architecturespecific=False)
+        bpr = self.factory.makeBinaryPackageRelease(architecturespecific=False)
         # Create 3 architectures. The binary will not be published in
         # the disabled one.
         target_das_a = self.factory.makeDistroArchSeries()
@@ -1603,12 +1603,11 @@ class TestPublishBinaries(TestCaseWithFactory):
         self.factory.makeDistroArchSeries(
             distroseries=target_das_a.distroseries, enabled=False)
         args = self.makeArgs([bpr], target_das_a.distroseries)
-        bpphs = getUtility(IPublishingSet).publishBinaries(
-            **args)
-        self.assertEquals(2, len(bpphs))
-        self.assertEquals(
-            set((target_das_a, target_das_b)),
-            set(bpph.distroarchseries for bpph in bpphs))
+        bpphs = getUtility(IPublishingSet).publishBinaries(**args)
+        self.assertEqual(2, len(bpphs))
+        self.assertContentEqual(
+            (target_das_a, target_das_b),
+            [bpph.distroarchseries for bpph in bpphs])
 
     def test_architecture_disabled(self):
         # An empty list is return if the DistroArchSeries was disabled.
@@ -1661,13 +1660,12 @@ class TestPublishBinaries(TestCaseWithFactory):
             build=build, binpackageformat=BinaryPackageFormat.DDEB)
         args = self.makeArgs([normal, debug], das.distroseries)
         bpphs = getUtility(IPublishingSet).publishBinaries(**args)
-        self.assertEquals(2, len(bpphs))
-        self.assertEquals(
-            set((normal, debug)),
-            set(bpph.binarypackagerelease for bpph in bpphs))
-        self.assertEquals(
-            set((das.main_archive, das.main_archive.debug_archive)),
-            set(bpph.archive for bpph in bpphs))
+        self.assertEqual(2, len(bpphs))
+        self.assertContentEqual(
+            (normal, debug), [bpph.binarypackagerelease for bpph in bpphs])
+        self.assertContentEqual(
+            (das.main_archive, das.main_archive.debug_archive),
+            [bpph.archive for bpph in bpphs])
 
         # A second copy does nothing, because it checks in the debug
         # archive too.
