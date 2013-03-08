@@ -42,6 +42,7 @@ from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.publishing import (
+    DeletionError,
     IPublishingSet,
     OverrideError,
     PackagePublishingPriority,
@@ -1227,6 +1228,22 @@ class TestPublishingSetLite(TestCaseWithFactory):
         self.assertEqual(
             1, len(find_waiting_jobs(
                 dsp.derived_series, spn, dsp.parent_series)))
+
+    def test_requestDeletion_disallows_unmodifiable_suites(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            pocket=PackagePublishingPocket.RELEASE)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=bpph.distroseries,
+            pocket=PackagePublishingPocket.RELEASE)
+        spph.distroseries.status = SeriesStatus.CURRENT
+        person = self.factory.makePerson()
+        message = "Cannot delete publications from suite '%s'" % (
+            spph.distroseries.getSuite(spph.pocket))
+        for pub in spph, bpph:
+            self.assertRaisesWithContent(
+                DeletionError, message, pub.requestDeletion, person)
+            self.assertRaisesWithContent(
+                DeletionError, message, pub.api_requestDeletion, person)
 
 
 class TestSourceDomination(TestNativePublishingBase):

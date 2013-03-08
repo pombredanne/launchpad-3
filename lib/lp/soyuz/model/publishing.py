@@ -91,6 +91,7 @@ from lp.soyuz.interfaces.distributionjob import (
     )
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
+    DeletionError,
     IBinaryPackageFilePublishing,
     IBinaryPackagePublishingHistory,
     IPublishingSet,
@@ -925,6 +926,11 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def requestDeletion(self, removed_by, removal_comment=None):
         """See `IPublishing`."""
+        if not self.archive.canModifySuite(self.distroseries, self.pocket):
+            raise DeletionError(
+                "Cannot delete publications from suite '%s'" %
+                self.distroseries.getSuite(self.pocket))
+
         self.setDeleted(removed_by, removal_comment)
         if self.archive.is_main:
             dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
@@ -1373,6 +1379,11 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def requestDeletion(self, removed_by, removal_comment=None):
         """See `IPublishing`."""
+        if not self.archive.canModifySuite(self.distroseries, self.pocket):
+            raise DeletionError(
+                "Cannot delete publications from suite '%s'" %
+                self.distroseries.getSuite(self.pocket))
+
         self.setDeleted(removed_by, removal_comment)
 
     def binaryFileUrls(self, include_meta=False):
@@ -2042,6 +2053,14 @@ class PublishingSet:
         if not sources and not binaries:
             return
         assert len(sources) + len(binaries) == len(pubs)
+
+        locations = set(
+            (pub.archive, pub.distroseries, pub.pocket) for pub in pubs)
+        for archive, distroseries, pocket in locations:
+            if not archive.canModifySuite(distroseries, pocket):
+                raise DeletionError(
+                    "Cannot delete publications from suite '%s'" %
+                    distroseries.getSuite(pocket))
 
         spph_ids = [spph.id for spph in sources]
         self.setMultipleDeleted(

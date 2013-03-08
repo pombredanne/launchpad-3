@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'DeletionError',
     'IArchiveSafePublisher',
     'IBinaryPackageFilePublishing',
     'IBinaryPackagePublishingHistory',
@@ -104,6 +105,11 @@ class MissingSymlinkInPool(Exception):
 @error_status(httplib.BAD_REQUEST)
 class OverrideError(Exception):
     """Raised when an attempt to change an override fails."""
+
+
+@error_status(httplib.BAD_REQUEST)
+class DeletionError(Exception):
+    """Raised when an attempt to delete a publication fails."""
 
 
 name_priority_map = {
