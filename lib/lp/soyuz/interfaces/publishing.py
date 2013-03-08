@@ -290,19 +290,16 @@ class IFilePublishing(Interface):
             title=_('Component name'), required=True, readonly=True,
             )
     publishingstatus = Int(
-            title=_('Package publishing status'), required=True,
-            readonly=True,
+            title=_('Package publishing status'), required=True, readonly=True,
             )
     pocket = Int(
-            title=_('Package publishing pocket'), required=True,
-            readonly=True,
+            title=_('Package publishing pocket'), required=True, readonly=True,
             )
     archive = Int(
             title=_('Archive ID'), required=True, readonly=True,
             )
     libraryfilealias = Int(
-            title=_('Binarypackage file alias'), required=True,
-            readonly=True,
+            title=_('Binarypackage file alias'), required=True, readonly=True,
             )
     libraryfilealiasfilename = TextLine(
             title=_('File name'), required=True, readonly=True,

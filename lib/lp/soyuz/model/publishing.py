@@ -123,8 +123,7 @@ def makePoolPath(source_name, component_name):
     # XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
     """Return the pool path for a given source name and component name."""
     from lp.archivepublisher.diskpool import poolify
-    return os.path.join(
-        'pool', poolify(source_name, component_name))
+    return os.path.join('pool', poolify(source_name, component_name))
 
 
 def get_component(archive, distroseries, component):
@@ -161,8 +160,7 @@ def get_archive(archive, bpr):
 
 def proxied_urls(files, parent):
     """Run the files passed through `ProxiedLibraryFileAlias`."""
-    return [
-        ProxiedLibraryFileAlias(file, parent).http_url for file in files]
+    return [ProxiedLibraryFileAlias(file, parent).http_url for file in files]
 
 
 class FilePublishingBase:
@@ -179,15 +177,13 @@ class FilePublishingBase:
         sha1 = filealias.content.sha1
         path = diskpool.pathFor(component, source, filename)
 
-        action = diskpool.addFile(
-            component, source, filename, sha1, filealias)
+        action = diskpool.addFile(component, source, filename, sha1, filealias)
         if action == diskpool.results.FILE_ADDED:
             log.debug("Added %s from library" % path)
         elif action == diskpool.results.SYMLINK_ADDED:
             log.debug("%s created as a symlink." % path)
         elif action == diskpool.results.NONE:
-            log.debug(
-                "%s is already in pool with the same content." % path)
+            log.debug("%s is already in pool with the same content." % path)
 
     @property
     def archive_url(self):
@@ -436,8 +432,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         foreignKey='SourcePackageName', dbName='sourcepackagename')
     sourcepackagerelease = ForeignKey(
         foreignKey='SourcePackageRelease', dbName='sourcepackagerelease')
-    distroseries = ForeignKey(
-        foreignKey='DistroSeries', dbName='distroseries')
+    distroseries = ForeignKey(foreignKey='DistroSeries', dbName='distroseries')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
     status = EnumCol(schema=PackagePublishingStatus)
@@ -733,8 +728,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See `IPublishing`."""
         release = self.sourcepackagerelease
         name = release.sourcepackagename.name
-        return "%s %s in %s" % (name, release.version,
-                                self.distroseries.name)
+        return "%s %s in %s" % (name, release.version, self.distroseries.name)
 
     def buildIndexStanzaFields(self):
         """See `IPublishing`."""
@@ -1059,8 +1053,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         #  ...
         #  <DESCRIPTION LN>
         descr_lines = [line.lstrip() for line in bpr.description.splitlines()]
-        bin_description = (
-            '%s\n %s' % (bpr.summary, '\n '.join(descr_lines)))
+        bin_description = '%s\n %s' % (bpr.summary, '\n '.join(descr_lines))
 
         # Dealing with architecturespecific field.
         # Present 'all' in every archive index for architecture
@@ -1335,11 +1328,9 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             ]
 
         if start_date is not None:
-            clauses.append(
-                BinaryPackageReleaseDownloadCount.day >= start_date)
+            clauses.append(BinaryPackageReleaseDownloadCount.day >= start_date)
         if end_date is not None:
-            clauses.append(
-                BinaryPackageReleaseDownloadCount.day <= end_date)
+            clauses.append(BinaryPackageReleaseDownloadCount.day <= end_date)
 
         return clauses
 
@@ -1952,8 +1943,7 @@ class PublishingSet:
             # separate query for now.
             source_pubs.update(store.find(
                 SourcePackagePublishingHistory,
-                SourcePackagePublishingHistory.id.is_in(
-                    pubs_without_builds),
+                SourcePackagePublishingHistory.id.is_in(pubs_without_builds),
                 SourcePackagePublishingHistory.archive == archive))
         # For each source_pub found, provide an aggregate summary of its
         # builds.
