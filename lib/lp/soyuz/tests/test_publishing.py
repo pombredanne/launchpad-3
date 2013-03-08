@@ -658,9 +658,7 @@ class TestNativePublishing(TestNativePublishingBase):
         # the corresponding files are dumped in the disk pool/.
         pub_source = self.getPubSource(filecontent='Hello world')
         pub_source.publish(self.disk_pool, self.logger)
-        self.assertEqual(
-            PackagePublishingStatus.PUBLISHED,
-            pub_source.status)
+        self.assertEqual(PackagePublishingStatus.PUBLISHED, pub_source.status)
         pool_path = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
         self.assertEqual(open(pool_path).read().strip(), 'Hello world')
 
@@ -669,9 +667,7 @@ class TestNativePublishing(TestNativePublishingBase):
         # the corresponding files are dumped in the disk pool/.
         pub_binary = self.getPubBinaries(filecontent='Hello world')[0]
         pub_binary.publish(self.disk_pool, self.logger)
-        self.assertEqual(
-            PackagePublishingStatus.PUBLISHED,
-            pub_binary.status)
+        self.assertEqual(PackagePublishingStatus.PUBLISHED, pub_binary.status)
         pool_path = "%s/main/f/foo/foo-bin_666_all.deb" % self.pool_dir
         self.assertEqual(open(pool_path).read().strip(), 'Hello world')
 
@@ -696,8 +692,7 @@ class TestNativePublishing(TestNativePublishingBase):
         self.assertEqual("PoolFileOverwriteError", self.oopses[0]['type'])
 
         self.layer.commit()
-        self.assertEqual(
-            pub_source.status, PackagePublishingStatus.PENDING)
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
         self.assertEqual(open(foo_dsc_path).read().strip(), 'Hello world')
 
     def testPublishingDifferentContents(self):
@@ -708,8 +703,7 @@ class TestNativePublishing(TestNativePublishingBase):
 
         foo_name = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
         pub_source.sync()
-        self.assertEqual(
-            pub_source.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
         self.assertEqual(open(foo_name).read().strip(), 'foo is happy')
 
         # try to publish 'foo' again with a different content, it
@@ -720,8 +714,7 @@ class TestNativePublishing(TestNativePublishingBase):
         self.layer.commit()
 
         pub_source2.sync()
-        self.assertEqual(
-            pub_source2.status, PackagePublishingStatus.PENDING)
+        self.assertEqual(pub_source2.status, PackagePublishingStatus.PENDING)
         self.assertEqual(open(foo_name).read().strip(), 'foo is happy')
 
     def testPublishingAlreadyInPool(self):
@@ -737,16 +730,14 @@ class TestNativePublishing(TestNativePublishingBase):
         bar_name = "%s/main/b/bar/bar_666.dsc" % self.pool_dir
         self.assertEqual(open(bar_name).read().strip(), 'bar is good')
         pub_source.sync()
-        self.assertEqual(
-            pub_source.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
 
         pub_source2 = self.getPubSource(
             sourcename='bar', filecontent='bar is good')
         pub_source2.publish(self.disk_pool, self.logger)
         self.layer.commit()
         pub_source2.sync()
-        self.assertEqual(
-            pub_source2.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(pub_source2.status, PackagePublishingStatus.PUBLISHED)
 
     def testPublishingSymlink(self):
         """Test if publishOne moving publication between components.
@@ -756,8 +747,7 @@ class TestNativePublishing(TestNativePublishingBase):
         """
         content = 'am I a file or a symbolic link ?'
         # publish sim.dsc in main and re-publish in universe
-        pub_source = self.getPubSource(
-            sourcename='sim', filecontent=content)
+        pub_source = self.getPubSource(sourcename='sim', filecontent=content)
         pub_source2 = self.getPubSource(
             sourcename='sim', component='universe', filecontent=content)
         pub_source.publish(self.disk_pool, self.logger)
@@ -766,10 +756,8 @@ class TestNativePublishing(TestNativePublishingBase):
 
         pub_source.sync()
         pub_source2.sync()
-        self.assertEqual(
-            pub_source.status, PackagePublishingStatus.PUBLISHED)
-        self.assertEqual(
-            pub_source2.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(pub_source2.status, PackagePublishingStatus.PUBLISHED)
 
         # check the resulted symbolic link
         sim_universe = "%s/universe/s/sim/sim_666.dsc" % self.pool_dir
@@ -785,8 +773,7 @@ class TestNativePublishing(TestNativePublishingBase):
         self.layer.commit()
 
         pub_source3.sync()
-        self.assertEqual(
-            pub_source3.status, PackagePublishingStatus.PENDING)
+        self.assertEqual(pub_source3.status, PackagePublishingStatus.PENDING)
 
     def testPublishInAnotherArchive(self):
         """Publication in another archive
@@ -1006,8 +993,7 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
         # SPPH's ancestor get's populated when a spph is copied over.
         target_archive = self.factory.makeArchive()
         spph = self.factory.makeSourcePackagePublishingHistory()
-        copy = spph.copyTo(
-            spph.distroseries, spph.pocket, target_archive)
+        copy = spph.copyTo(spph.distroseries, spph.pocket, target_archive)
 
         self.assertEqual(spph, copy.ancestor)
 
@@ -1392,8 +1378,7 @@ class TestBinaryDomination(TestNativePublishingBase):
 
         # Each of these will return (i386 deb, i386 ddeb, hppa deb,
         # hppa ddeb).
-        bins = self.getPubBinaries(
-            architecturespecific=True, with_debug=True)
+        bins = self.getPubBinaries(architecturespecific=True, with_debug=True)
         super_bins = self.getPubBinaries(
             architecturespecific=True, with_debug=True)
 
@@ -1418,8 +1403,7 @@ class TestBinaryDomination(TestNativePublishingBase):
             distribution=self.ubuntutest)
 
         # This will return (i386 deb, i386 ddeb, hppa deb, hppa ddeb).
-        bins = self.getPubBinaries(
-            architecturespecific=True, with_debug=True)
+        bins = self.getPubBinaries(architecturespecific=True, with_debug=True)
         self.assertRaises(AssertionError, bins[0].supersede, bins[1])
 
 
