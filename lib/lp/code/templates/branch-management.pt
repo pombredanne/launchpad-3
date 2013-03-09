@@ -48,7 +48,7 @@
               <tt class="command">
               bzr push
               <tal:use-existing condition="view/is_empty_directory">
-              --use-existing
+              --use-existing-dir
               </tal:use-existing>
               <span class="branch-url" tal:content="context/bzr_identity" />
               </tt>
