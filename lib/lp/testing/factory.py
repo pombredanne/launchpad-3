@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for the Launchpad application.
@@ -3678,7 +3678,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             initial source package release  upload archive, or to the
             distro series main archive.
         :param pocket: The pocket to publish into. Can be specified as a
-            string. Defaults to the RELEASE pocket.
+            string. Defaults to the BACKPORTS pocket.
         :param status: The publication status. Defaults to PENDING. If
             set to PUBLISHED, the publisheddate will be set to now.
         :param dateremoved: The removal date.

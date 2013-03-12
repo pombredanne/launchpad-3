@@ -1165,13 +1165,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return DecoratedResultSet(result, decorate)
 
     @property
-    def name_with_project(self):
-        """See `IProduct`"""
-        if self.project and self.project.name != self.name:
-            return self.project.name + ": " + self.name
-        return self.name
-
-    @property
     def releases(self):
         store = Store.of(self)
         origin = [
