@@ -477,13 +477,12 @@ class PersonDeactivateJob(PersonTransferJobDerived):
     config = config.IPersonMergeJobSource
 
     @classmethod
-    def create(cls, person, comment):
+    def create(cls, person):
         """See `IPersonMergeJobSource`."""
-        metadata = {'comment': comment}
         # Minor person has to be not null, so use the janitor.
         janitor = getUtility(ILaunchpadCelebrities).janitor
         return super(PersonDeactivateJob, cls).create(
-            minor_person=janitor, major_person=person, metadata=metadata)
+            minor_person=janitor, major_person=person, metadata={})
 
     @classmethod
     def find(cls, person=None):
@@ -506,10 +505,6 @@ class PersonDeactivateJob(PersonTransferJobDerived):
         return self.major_person
 
     @property
-    def comment(self):
-        return self.metadata['comment']
-
-    @property
     def log_name(self):
         return self.__class__.__name__
 
@@ -522,7 +517,7 @@ class PersonDeactivateJob(PersonTransferJobDerived):
         from lp.services.scripts import log
         person_name = self.person.name
         log.debug('about to deactivate ~%s', person_name)
-        self.person.deactivate(self.comment, validate=False)
+        self.person.deactivate(validate=False, pre_deactivate=False)
         log.debug('done deactivating ~%s', person_name)
 
     def __repr__(self):

@@ -240,7 +240,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         self._setBuilderConfig()
         owner = self.factory.makePerson()
         with person_logged_in(owner):
-            owner.deactivate('deactivating')
+            owner.deactivate(comment='deactivating')
         job = self.makeJob(owner)
         distroarchseries = job.build.distroseries.architectures[0]
         extra_args = job._extraBuildArgs(distroarchseries)

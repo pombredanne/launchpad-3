@@ -127,13 +127,13 @@ The deactivate method is restricted to the user himself --not
 even launchpad admins can use it.
 
     >>> login('mark@example.com')
-    >>> foobar.deactivate(comment)
+    >>> foobar.deactivate(comment=comment)
     Traceback (most recent call last):
     ...
     Unauthorized: ...'launchpad.Special')
 
     >>> login('foo.bar@canonical.com')
-    >>> foobar.deactivate(comment)
+    >>> foobar.deactivate(comment=comment)
     >>> transaction.commit()
 
 Deactivating an account changes many of the person's attributes.  It

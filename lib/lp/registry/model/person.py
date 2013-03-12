@@ -2189,7 +2189,15 @@ class Person(
 
         return errors
 
-    def deactivate(self, comment, validate=True):
+    def preDeactivate(self, comment):
+        for email in self.validatedemails:
+            email.status = EmailAddressStatus.NEW
+        self.account_status = AccountStatus.DEACTIVATED
+        self.account_status_comment = comment
+        self.preferredemail.status = EmailAddressStatus.NEW
+        del get_property_cache(self).preferredemail
+
+    def deactivate(self, comment=None, validate=True, pre_deactivate=True):
         """See `IPersonSpecialRestricted`."""
         assert self.is_valid_person, (
             "You can only deactivate an account of a valid person.")
@@ -2200,15 +2208,20 @@ class Person(
             errors = self.canDeactivate()
             assert not errors, ' & '.join(errors)
 
+        if pre_deactivate and not comment:
+            raise AssertionError("Require a comment to deactivate.")
+
+        # Set account status, and set all e-mails to NEW.
+        if pre_deactivate:
+            self.preDeactivate(comment)
+
         for membership in self.team_memberships:
             self.leave(membership.team)
 
-        # Deactivate CoC signatures, invalidate email addresses, unassign bug
-        # tasks and specs and reassign pillars and teams.
+        # Deactivate CoC signatures, unassign bug tasks and specs and reassign
+        # pillars and teams.
         for coc in self.signedcocs:
             coc.active = False
-        for email in self.validatedemails:
-            email.status = EmailAddressStatus.NEW
         params = BugTaskSearchParams(self, assignee=self)
         for bug_task in self.searchTasks(params):
             # If the bugtask has a conjoined master we don't try to
@@ -2222,11 +2235,9 @@ class Person(
             assert bug_task.assignee.id == self.id, (
                "Bugtask %s assignee isn't the one expected: %s != %s" % (
                     bug_task.id, bug_task.assignee.name, self.name))
-            bug_task.transitionToAssignee(None)
+            bug_task.transitionToAssignee(None, validate=False)
 
-        assigned_specs = Store.of(self).find(
-            Specification, _assignee=self)
-        for spec in assigned_specs:
+        for spec in Store.of(self).find(Specification, _assignee=self):
             spec.assignee = None
 
         registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
@@ -2272,11 +2283,7 @@ class Person(
             cur.execute("DELETE FROM %s WHERE %s=%d"
                         % (table, person_id_column, self.id))
 
-        # Update the account's status, preferred email and name.
-        self.account_status = AccountStatus.DEACTIVATED
-        self.account_status_comment = comment
-        self.preferredemail.status = EmailAddressStatus.NEW
-        del get_property_cache(self).preferredemail
+        # Update the person's name.
         base_new_name = self.name + '-deactivatedaccount'
         self.name = self._ensureNewName(base_new_name)
 

@@ -816,7 +816,7 @@ class TestPersonStates(TestCaseWithFactory):
         """
         sample_person = Person.byName('name12')
         login(sample_person.preferredemail.email)
-        sample_person.deactivate("blah!")
+        sample_person.deactivate(comment="blah!")
         self.failUnlessEqual(sample_person.name, 'name12-deactivatedaccount')
         # Now that name12 is free Foo Bar can use it.
         foo_bar = Person.byName('name16')
@@ -824,7 +824,7 @@ class TestPersonStates(TestCaseWithFactory):
         # If Foo Bar deactivates his account, though, we'll have to use a name
         # other than name12-deactivatedaccount because that is already in use.
         login(foo_bar.preferredemail.email)
-        foo_bar.deactivate("blah!")
+        foo_bar.deactivate(comment="blah!")
         self.failUnlessEqual(foo_bar.name, 'name12-deactivatedaccount1')
 
     def test_deactivate_reassigns_owner_and_driver(self):
@@ -840,7 +840,7 @@ class TestPersonStates(TestCaseWithFactory):
         with person_logged_in(user):
             product.driver = user
             product.bug_supervisor = user
-            user.deactivate("Going off the grid.")
+            user.deactivate(comment="Going off the grid.")
         registry_team = getUtility(ILaunchpadCelebrities).registry_experts
         self.assertEqual(registry_team, product.owner)
         self.assertIs(None, product.driver)

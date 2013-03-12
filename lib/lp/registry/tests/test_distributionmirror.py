@@ -212,7 +212,7 @@ class TestDistributionMirror(TestCaseWithFactory):
         mirror = self.cdimage_mirror
         login_as(mirror.owner)
         # Deactivate the mirror owner to remove the contact address.
-        mirror.owner.deactivate("I hate mirror spam.")
+        mirror.owner.deactivate(comment="I hate mirror spam.")
         login_as(mirror.distribution.mirror_admin)
         # Clear out notifications about the new team member.
         transaction.commit()

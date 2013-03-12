@@ -1768,7 +1768,10 @@ class IPersonSpecialRestricted(Interface):
         :return: A possibly empty list which contains error messages.
         """
 
-    def deactivate(comment, validate=True):
+    def preDeactivate(comment):
+        """Perform the easy work in deactivating a user."""
+
+    def deactivate(comment=None, validate=True, pre_deactivate=True):
         """Deactivate this person's Launchpad account.
 
         Deactivating an account means:

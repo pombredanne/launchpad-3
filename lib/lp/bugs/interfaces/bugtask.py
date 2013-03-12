@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug task interfaces."""
@@ -718,7 +718,7 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
     @operation_parameters(
         assignee=copy_field(assignee))
     @export_write_operation()
-    def transitionToAssignee(assignee):
+    def transitionToAssignee(assignee, validate=True):
         """Perform a workflow transition to the given assignee.
 
         When the bugtask assignee is changed from None to an IPerson

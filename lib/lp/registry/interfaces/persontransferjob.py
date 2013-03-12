@@ -149,11 +149,10 @@ class IPersonDeactivateJob(IPersonTransferJob):
 class IPersonDeactivateJobSource(IJobSource):
     """An interface for acquiring IPersonDeactivateJobs."""
 
-    def create(person, comment):
+    def create(person):
         """Create a new IPersonMergeJob.
 
         :param person: A `IPerson` to deactivate.
-        :param comment: The comment why the user is deactivating.
         """
 
     def find(person=None):
