@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -789,27 +789,22 @@ class TestPersonStates(TestCaseWithFactory):
         self.bzr = product_set.getByName('bzr')
         self.now = datetime.now(pytz.UTC)
 
-    def test_canDeactivateAccount_private_projects(self):
+    def test_canDeactivate_private_projects(self):
         """A user owning non-public products cannot be deactivated."""
         user = self.factory.makePerson()
         self.factory.makeProduct(
             information_type=InformationType.PUBLIC,
-            name="public",
-            owner=user)
+            name="public", owner=user)
         self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY,
-            name="private",
-            owner=user)
+            name="private", owner=user)
 
         login(user.preferredemail.email)
-        can_deactivate, errors = user.canDeactivateAccountWithErrors()
-
-        self.assertFalse(can_deactivate)
         expected_error = ('This account cannot be deactivated because it owns '
                         'the following non-public products: private')
-        self.assertIn(expected_error, errors)
+        self.assertEquals([expected_error], user.canDeactivate())
 
-    def test_deactivateAccount_copes_with_names_already_in_use(self):
+    def test_deactivate_copes_with_names_already_in_use(self):
         """When a user deactivates his account, its name is changed.
 
         We do that so that other users can use that name, which the original
@@ -821,7 +816,7 @@ class TestPersonStates(TestCaseWithFactory):
         """
         sample_person = Person.byName('name12')
         login(sample_person.preferredemail.email)
-        sample_person.deactivateAccount("blah!")
+        sample_person.deactivate("blah!")
         self.failUnlessEqual(sample_person.name, 'name12-deactivatedaccount')
         # Now that name12 is free Foo Bar can use it.
         foo_bar = Person.byName('name16')
@@ -829,10 +824,10 @@ class TestPersonStates(TestCaseWithFactory):
         # If Foo Bar deactivates his account, though, we'll have to use a name
         # other than name12-deactivatedaccount because that is already in use.
         login(foo_bar.preferredemail.email)
-        foo_bar.deactivateAccount("blah!")
+        foo_bar.deactivate("blah!")
         self.failUnlessEqual(foo_bar.name, 'name12-deactivatedaccount1')
 
-    def test_deactivateAccountReassignsOwnerAndDriver(self):
+    def test_deactivate_reassigns_owner_and_driver(self):
         """Product owner and driver are reassigned.
 
         If a user is a product owner and/or driver, when the user is
@@ -845,14 +840,11 @@ class TestPersonStates(TestCaseWithFactory):
         with person_logged_in(user):
             product.driver = user
             product.bug_supervisor = user
-            user.deactivateAccount("Going off the grid.")
+            user.deactivate("Going off the grid.")
         registry_team = getUtility(ILaunchpadCelebrities).registry_experts
-        self.assertEqual(registry_team, product.owner,
-                         "Owner is not registry team.")
-        self.assertEqual(None, product.driver,
-                         "Driver is not emptied.")
-        self.assertEqual(None, product.bug_supervisor,
-                         "Driver is not emptied.")
+        self.assertEqual(registry_team, product.owner)
+        self.assertIs(None, product.driver)
+        self.assertIs(None, product.bug_supervisor)
 
     def test_getDirectMemberIParticipateIn(self):
         sample_person = Person.byName('name12')

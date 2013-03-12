@@ -2172,12 +2172,7 @@ class Person(
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
-    def canDeactivateAccount(self):
-        """See `IPerson`."""
-        can_deactivate, errors = self.canDeactivateAccountWithErrors()
-        return can_deactivate
-
-    def canDeactivateAccountWithErrors(self):
+    def canDeactivate(self):
         """See `IPerson`."""
         # Users that own non-public products cannot be deactivated until the
         # products are reassigned.
@@ -2192,26 +2187,18 @@ class Person(
         if self.account_status != AccountStatus.ACTIVE:
             errors.append('This account is already deactivated.')
 
-        return (not errors), errors
+        return errors
 
-    # XXX: salgado, 2009-04-16: This should be called just deactivate(),
-    # because it not only deactivates this person's account but also the
-    # person.
-    def deactivateAccount(self, comment, can_deactivate=None):
+    def deactivate(self, comment, validate=True):
         """See `IPersonSpecialRestricted`."""
-        if not self.is_valid_person:
-            raise AssertionError(
-                "You can only deactivate an account of a valid person.")
+        assert self.is_valid_person, (
+            "You can only deactivate an account of a valid person.")
 
-        if can_deactivate is None:
+        if validate:
             # The person can only be deactivated if they do not own any
             # non-public products.
-            can_deactivate = self.canDeactivateAccount()
-
-        if not can_deactivate:
-            message = ("You cannot deactivate an account that owns a "
-                       "non-public product.")
-            raise AssertionError(message)
+            errors = self.canDeactivate()
+            assert not errors, ' & '.join(errors)
 
         for membership in self.team_memberships:
             self.leave(membership.team)
@@ -2618,9 +2605,8 @@ class Person(
         self.account.reactivate(comment)
         self.setPreferredEmail(preferred_email)
         if '-deactivatedaccount' in self.name:
-            # The name was changed by deactivateAccount(). Restore the
-            # name, but we must ensure it does not conflict with a current
-            # user.
+            # The name was changed by deactivate(). Restore the name, but we
+            # must ensure it does not conflict with a current user.
             name_parts = self.name.split('-deactivatedaccount')
             base_new_name = name_parts[0]
             self.name = self._ensureNewName(base_new_name)

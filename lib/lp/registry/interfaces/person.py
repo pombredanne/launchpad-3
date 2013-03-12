@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person interfaces."""
@@ -1762,33 +1762,25 @@ class IPersonEditRestricted(Interface):
 class IPersonSpecialRestricted(Interface):
     """IPerson methods that require launchpad.Special permission to use."""
 
-    def canDeactivateAccount():
+    def canDeactivate():
         """Verify we safely deactivate this user account.
 
-        :return: True if the person can be deactivated, False otherwise.
+        :return: A possibly empty list which contains error messages.
         """
 
-    def canDeactivateAccountWithErrors():
-        """See canDeactivateAccount with the addition of error messages for
-        why the account cannot be deactivated.
-
-        :return tuple: boolean, list of error messages.
-        """
-
-    def deactivateAccount(comment, can_deactivate=None):
+    def deactivate(comment, validate=True):
         """Deactivate this person's Launchpad account.
 
         Deactivating an account means:
-            - Removing the user from all teams he's a member of;
-            - Changing all his email addresses' status to NEW;
+            - Removing the user from all teams they are a member of;
+            - Changing all of their email addresses' status to NEW;
             - Revoking Code of Conduct signatures of that user;
-            - Reassigning bugs/specs assigned to him;
-            - Changing the ownership of products/projects/teams owned by him.
+            - Reassigning bugs/specs assigned to that user;
+            - Changing the ownership of products/projects/teams owned by that
+              user.
 
         :param comment: An explanation of why the account status changed.
-        :param can_deactivate: Override the check if we can deactivate by
-            supplying a known value. If None, then the method will run the
-            checks.
+        :param validate: Run validation checks.
         """
 
     def reactivate(comment, preferred_email):
@@ -1798,7 +1790,7 @@ class IPersonSpecialRestricted(Interface):
         address.
 
         If the person's name contains a -deactivatedaccount suffix (usually
-        added by `IPerson`.deactivateAccount(), it is removed.
+        added by `IPerson`.deactivate(), it is removed.
 
         :param comment: An explanation of why the account status changed.
         :param preferred_email: The `EmailAddress` to set as the account's
