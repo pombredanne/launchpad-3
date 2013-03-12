@@ -2199,9 +2199,6 @@ class Person(
 
     def deactivate(self, comment=None, validate=True, pre_deactivate=True):
         """See `IPersonSpecialRestricted`."""
-        assert self.is_valid_person, (
-            "You can only deactivate an account of a valid person.")
-
         if validate:
             # The person can only be deactivated if they do not own any
             # non-public products.

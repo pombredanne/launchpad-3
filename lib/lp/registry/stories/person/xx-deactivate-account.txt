@@ -43,6 +43,16 @@ There's a link to the +deactivate-account page in a person's +edit page.
     ...     print msg
     Your account has been deactivated.
 
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.persontransferjob import (
+    ...     IPersonDeactivateJobSource)
+    >>> login('admin@canonical.com')
+    >>> name12 = getUtility(IPersonSet).getByName('name12')
+    >>> [job] = getUtility(IPersonDeactivateJobSource).find(name12)
+    >>> job.run()
+    >>> logout()
+
 And now the Launchpad page for Sample Person person will clearly say he
 does not use Launchpad.
 
