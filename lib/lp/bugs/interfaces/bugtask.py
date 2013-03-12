@@ -715,8 +715,7 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         """Check if the current user can set assignee to None."""
 
     @mutator_for(assignee)
-    @operation_parameters(
-        assignee=copy_field(assignee))
+    @operation_parameters(assignee=copy_field(assignee))
     @export_write_operation()
     def transitionToAssignee(assignee, validate=True):
         """Perform a workflow transition to the given assignee.
