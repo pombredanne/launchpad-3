@@ -33,7 +33,6 @@
       <div tal:repeat="series batch">
         <div style="margin-top: 1em;
                     border-bottom: 1px solid #ccc; max-width: 60em;"
-          tal:define="is_focus series/is_development_focus"
           tal:attributes="class string:${series/css_class} series;
                           id series/name/fmt:css-id/series-;">
           <tal:status replace="structure series/series/@@+status" />

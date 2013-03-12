@@ -1614,7 +1614,7 @@ class BranchFormatterAPI(ObjectFormatterAPI):
     """Adapter for IBranch objects to a formatted string."""
 
     traversable_names = {
-        'link': 'link', 'url': 'url', 'project-link': 'projectLink',
+        'link': 'link', 'url': 'url',
         'title-link': 'titleLink', 'bzr-link': 'bzrLink',
         'api_url': 'api_url'}
 
@@ -1639,14 +1639,6 @@ class BranchFormatterAPI(ObjectFormatterAPI):
         """A hyperlinked branch icon with the bazaar identity."""
         # Defer to link.
         return self.link(view_name)
-
-    def projectLink(self, view_name):
-        """A hyperlinked branch icon with the name and title."""
-        return structured(
-            '<a href="%(url)s" title="%(display_name)s">'
-            '<img src="/@@/branch" alt=""/>'
-            '&nbsp;%(name)s</a>: %(title)s',
-            **self._args(view_name)).escapedtext
 
     def titleLink(self, view_name):
         """A hyperlinked branch name with following title."""
