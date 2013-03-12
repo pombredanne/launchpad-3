@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Enums for the Registry app."""
@@ -341,6 +341,13 @@ class PersonTransferJobType(DBEnumeratedType):
         Person merge
 
         Merge one person or team into another person or team.
+        """)
+
+    DEACTIVATE = DBItem(2, """
+        Deactivate person
+
+        Do the work to deactivate a person, like reassigning bugs and removing
+        the user from teams.
         """)
 
 

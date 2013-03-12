@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -97,6 +97,12 @@
       <allow interface=".interfaces.persontransferjob.IPersonMergeJobSource"/>
     </securedutility>
 
+    <securedutility
+        component=".model.persontransferjob.PersonDeactivateJob"
+        provides=".interfaces.persontransferjob.IPersonDeactivateJobSource">
+      <allow interface=".interfaces.persontransferjob.IPersonDeactivateJobSource"/>
+    </securedutility>
+
     <class class=".model.persontransferjob.PersonTransferJob">
         <allow interface=".interfaces.persontransferjob.IPersonTransferJob"/>
     </class>
@@ -107,6 +113,10 @@
 
     <class class=".model.persontransferjob.PersonMergeJob">
       <allow interface=".interfaces.persontransferjob.IPersonMergeJob"/>
+    </class>
+
+    <class class=".model.persontransferjob.PersonDeactivateJob">
+      <allow interface=".interfaces.persontransferjob.IPersonDeactivateJob"/>
     </class>
 
     <!-- IProductNotificationJob -->

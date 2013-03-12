@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test RecipeBuildBehavior."""
@@ -240,7 +240,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         self._setBuilderConfig()
         owner = self.factory.makePerson()
         with person_logged_in(owner):
-            owner.deactivateAccount('deactivating')
+            owner.deactivate(comment='deactivating')
         job = self.makeJob(owner)
         distroarchseries = job.build.distroseries.architectures[0]
         extra_args = job._extraBuildArgs(distroarchseries)

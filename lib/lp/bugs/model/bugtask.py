@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes that implement IBugTask and its related interfaces."""
@@ -1022,13 +1022,13 @@ class BugTask(SQLBase):
                 (assignee is None and self.userCanUnassign(user)) or
                 self.userCanSetAnyAssignee(user)))
 
-    def transitionToAssignee(self, assignee):
+    def transitionToAssignee(self, assignee, validate=True):
         """See `IBugTask`."""
         if assignee == self.assignee:
             # No change to the assignee, so nothing to do.
             return
 
-        if not self.canTransitionToAssignee(assignee):
+        if validate and not self.canTransitionToAssignee(assignee):
             raise UserCannotEditBugTaskAssignee(
                 'Regular users can assign and unassign only themselves and '
                 'their teams. Only project owners, bug supervisors, drivers '
