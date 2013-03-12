@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'DeletionError',
     'IArchiveSafePublisher',
     'IBinaryPackageFilePublishing',
     'IBinaryPackagePublishingHistory',
@@ -104,6 +105,11 @@ class MissingSymlinkInPool(Exception):
 @error_status(httplib.BAD_REQUEST)
 class OverrideError(Exception):
     """Raised when an attempt to change an override fails."""
+
+
+@error_status(httplib.BAD_REQUEST)
+class DeletionError(Exception):
+    """Raised when an attempt to delete a publication fails."""
 
 
 name_priority_map = {
@@ -284,19 +290,16 @@ class IFilePublishing(Interface):
             title=_('Component name'), required=True, readonly=True,
             )
     publishingstatus = Int(
-            title=_('Package publishing status'), required=True,
-            readonly=True,
+            title=_('Package publishing status'), required=True, readonly=True,
             )
     pocket = Int(
-            title=_('Package publishing pocket'), required=True,
-            readonly=True,
+            title=_('Package publishing pocket'), required=True, readonly=True,
             )
     archive = Int(
             title=_('Archive ID'), required=True, readonly=True,
             )
     libraryfilealias = Int(
-            title=_('Binarypackage file alias'), required=True,
-            readonly=True,
+            title=_('Binarypackage file alias'), required=True, readonly=True,
             )
     libraryfilealiasfilename = TextLine(
             title=_('File name'), required=True, readonly=True,
