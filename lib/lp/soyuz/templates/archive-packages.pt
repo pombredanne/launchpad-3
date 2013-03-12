@@ -132,6 +132,8 @@ tr#package-counters p{
 
         <div tal:condition="view/has_pending_copy_jobs">
           <div class="copy-job-message">
+            <span tal:condition="view/pending_copy_jobs_text"
+              tal:content="view/pending_copy_jobs_text"/>
             <tal:jobs tal:repeat="job view/package_copy_jobs">
             <div class="pending-job" tal:attributes="job_id job/id">
               <a href="" class="job-summary js-action">

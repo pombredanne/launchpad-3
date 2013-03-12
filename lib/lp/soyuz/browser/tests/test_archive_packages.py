@@ -11,6 +11,7 @@ __all__ = [
 
 import re
 
+from BeautifulSoup import BeautifulSoup
 import soupmatchers
 from testtools.matchers import (
     Equals,
@@ -382,6 +383,22 @@ class TestPPAPackagesJobNotifications(TestCaseWithFactory):
                 attrs={'class': 'pending-job', 'job_id': job3.id}),
             )
         self.assertThat(html, packages_matches)
+        self.assertEquals(
+            [], BeautifulSoup(html).findAll(
+                'span', text=re.compile('Showing 5 of .')))
+
+    def test_job_notifications_display_multiple_is_capped(self):
+        jobs = [self.makeJob('package%d' % i) for i in range(7)]
+        with person_logged_in(self.archive.owner):
+            view = create_initialized_view(
+                self.archive, "+packages", principal=self.archive.owner)
+            soup = BeautifulSoup(view.render())
+        self.assertEquals([],
+            soup.findAll(
+                'div', attrs={'class': 'pending-job', 'job_id': jobs[-1].id}))
+        self.assertEquals(
+            [u'Showing 5 of 7'],
+            soup.findAll('span', text=re.compile('Showing 5 of .')))
 
     def test_job_notifications_display_owner_is_team(self):
         team = self.factory.makeTeam()

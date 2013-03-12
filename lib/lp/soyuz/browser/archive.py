@@ -1042,12 +1042,19 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
         # Pre-load related source archives.
         load_related(Archive, pcjs, ['source_archive_id'])
 
-        return ppcjs
+        return ppcjs.config(limit=5)
 
     @cachedproperty
     def has_pending_copy_jobs(self):
         return self.package_copy_jobs.any()
 
+    @cachedproperty
+    def pending_copy_jobs_text(self):
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        count = job_source.getIncompleteJobsForArchive(self.context).count()
+        if count > 5:
+            return 'Showing 5 of %s' % count
+    
     @cachedproperty
     def has_append_perm(self):
         return check_permission('launchpad.Append', self.context)
