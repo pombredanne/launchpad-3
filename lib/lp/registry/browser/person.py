@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person-related view classes."""
@@ -171,6 +171,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     )
 from lp.registry.interfaces.personproduct import IPersonProductFactory
+from lp.registry.interfaces.persontransferjob import IPersonDeactivateJobSource
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.poll import IPollSubset
 from lp.registry.interfaces.product import IProduct
@@ -942,15 +943,12 @@ class PersonDeactivateAccountView(LaunchpadFormView):
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
-        can_deactivate, errors = self.context.canDeactivateAccountWithErrors()
-        if not can_deactivate:
-            [self.addError(message) for message in errors]
+        [self.addError(message) for message in self.context.canDeactivate()]
 
     @action(_("Deactivate My Account"), name="deactivate")
     def deactivate_action(self, action, data):
-        # We override the can_deactivate since validation already processed
-        # this information.
-        self.context.deactivateAccount(data['comment'], can_deactivate=True)
+        self.context.preDeactivate(data['comment'])
+        getUtility(IPersonDeactivateJobSource).create(self.context)
         logoutPerson(self.request)
         self.request.response.addInfoNotification(
             _(u'Your account has been deactivated.'))

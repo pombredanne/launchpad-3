@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Job classes related to PersonTransferJob."""
@@ -39,6 +39,8 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.persontransferjob import (
     IMembershipNotificationJob,
     IMembershipNotificationJobSource,
+    IPersonDeactivateJob,
+    IPersonDeactivateJobSource,
     IPersonMergeJob,
     IPersonMergeJobSource,
     IPersonTransferJob,
@@ -462,3 +464,66 @@ class PersonMergeJob(PersonTransferJobDerived):
     def getOperationDescription(self):
         return ('merging ~%s into ~%s' %
                 (self.from_person.name, self.to_person.name))
+
+
+class PersonDeactivateJob(PersonTransferJobDerived):
+    """A Job that deactivates a person."""
+
+    implements(IPersonDeactivateJob)
+    classProvides(IPersonDeactivateJobSource)
+
+    class_job_type = PersonTransferJobType.DEACTIVATE
+
+    config = config.IPersonMergeJobSource
+
+    @classmethod
+    def create(cls, person):
+        """See `IPersonMergeJobSource`."""
+        # Minor person has to be not null, so use the janitor.
+        janitor = getUtility(ILaunchpadCelebrities).janitor
+        return super(PersonDeactivateJob, cls).create(
+            minor_person=janitor, major_person=person, metadata={})
+
+    @classmethod
+    def find(cls, person=None):
+        """See `IPersonMergeJobSource`."""
+        conditions = [
+            PersonTransferJob.job_type == cls.class_job_type,
+            PersonTransferJob.job_id == Job.id,
+            Job._status.is_in(Job.PENDING_STATUSES)]
+        arg_conditions = []
+        if person:
+            arg_conditions.append(PersonTransferJob.major_person == person)
+        conditions.extend(arg_conditions)
+        return DecoratedResultSet(
+            IStore(PersonTransferJob).find(
+                PersonTransferJob, *conditions), cls)
+
+    @property
+    def person(self):
+        """See `IPersonMergeJob`."""
+        return self.major_person
+
+    @property
+    def log_name(self):
+        return self.__class__.__name__
+
+    def getErrorRecipients(self):
+        """See `IPersonMergeJob`."""
+        return [format_address_for_person(self.person)]
+
+    def run(self):
+        """Perform the merge."""
+        from lp.services.scripts import log
+        person_name = self.person.name
+        log.debug('about to deactivate ~%s', person_name)
+        self.person.deactivate(validate=False, pre_deactivate=False)
+        log.debug('done deactivating ~%s', person_name)
+
+    def __repr__(self):
+        return (
+            "<{self.__class__.__name__} to deactivate "
+            "~{self.person.name}").format(self=self)
+
+    def getOperationDescription(self):
+        return 'deactivating ~%s' % self.person.name
