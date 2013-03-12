@@ -128,6 +128,13 @@ def retire_active_publishing_histories(histories, requester):
 
 def retire_distro_archives(distribution, culprit):
     """Retire all items in `distribution`'s archives."""
+
+    # Temporarily mark all `DistroSeries` as in-development so that we can
+    # delete publications from them.  We're about to delete the series
+    # anyway.
+    for series in distribution.series:
+        series.status = SeriesStatus.DEVELOPMENT
+
     for archive in distribution.all_distro_archives:
         retire_active_publishing_histories(
             archive.getPublishedSources, culprit)
