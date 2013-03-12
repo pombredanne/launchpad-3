@@ -379,7 +379,9 @@ requestDeletion requires a removed_by (IPerson) and optionally a
 removal_comment argument.
 
     >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.series import SeriesStatus
     >>> mark = getUtility(IPersonSet).getByName('mark')
+    >>> spph.distroseries.status = SeriesStatus.DEVELOPMENT
     >>> spph.requestDeletion(mark, "testing deletion")
 
 Inspecting the modified record shows it's ready for domination:
@@ -413,6 +415,8 @@ pockets for stable distroseries):
 
     >>> modified_spph.scheduleddeletiondate == transaction_timestamp
     True
+
+    >>> spph.distroseries.status = SeriesStatus.CURRENT
 
 
 Copying and published binarypackages lookup
@@ -475,7 +479,6 @@ including its binaries.
 
 'distroseries' and 'archive' will be constant.
 
-    >>> from lp.registry.interfaces.series import SeriesStatus
     >>> distroseries = source.distroseries
     >>> distroseries.status = SeriesStatus.CURRENT
     >>> archive = source.archive
