@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces including and related to IProduct."""
@@ -669,10 +669,6 @@ class IProductView(
                 'The Bazaar URL lp:<project> points to the development focus '
                 'series branch.')))
     development_focusID = Attribute("The development focus ID.")
-
-    name_with_project = Attribute(_("Returns the product name prefixed "
-        "by the project name, if a project is associated with this "
-        "product; otherwise, simply returns the product name."))
 
     releases = exported(
         doNotSnapshot(

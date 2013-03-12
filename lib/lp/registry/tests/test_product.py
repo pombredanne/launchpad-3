@@ -853,7 +853,7 @@ class TestProduct(TestCaseWithFactory):
             'homepageurl', 'invitesTranslationEdits',
             'invitesTranslationSuggestions',
             'license_info', 'license_status', 'licenses', 'milestones',
-            'mugshot', 'name_with_project', 'newCodeImport',
+            'mugshot', 'newCodeImport',
             'obsolete_translatable_series', 'official_bug_tags',
             'packagedInDistros', 'packagings',
             'past_sprints', 'personHasDriverRights', 'pillar',
