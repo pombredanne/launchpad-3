@@ -209,6 +209,15 @@ class TestMerges(BrowserTestCase):
                 product, '+merges', rootsite='code', user=product.owner)
         self.assertThat(recorder, HasQueryCount(Equals(40)))
         
+    def test_productseries(self):
+        target = self.factory.makeBranch()
+        unique_name = target.unique_name
+        with person_logged_in(target.product.owner):
+            target.product.development_focus.branch = target
+        self.factory.makeBranchMergeProposal(target_branch=target)
+        view = self.getViewBrowser(target, '+merges', rootsite='code')
+        self.assertIn(unique_name, view.contents)
+
 
 class ActiveReviewGroupsTest(TestCaseWithFactory):
     """Tests for groupings used in for active reviews."""
