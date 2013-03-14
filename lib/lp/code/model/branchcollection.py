@@ -303,7 +303,8 @@ class GenericBranchCollection:
 
         def cache_permission(branch):
             if self._user:
-                get_property_cache(branch)._known_viewers = [self._user.id]
+                get_property_cache(branch)._known_viewers = set(
+                    [self._user.id])
             return branch
 
         eager_load_hook = (

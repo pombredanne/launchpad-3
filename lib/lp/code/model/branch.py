@@ -853,9 +853,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         # This is eager loaded by BranchCollection.getBranches.
         # Imported here to avoid circular import.
         from lp.registry.model.productseries import ProductSeries
-        return Store.of(self).find(
-            ProductSeries,
-            ProductSeries.branch == self)
+        return Store.of(self).find(ProductSeries, ProductSeries.branch == self)
 
     def associatedProductSeries(self):
         """See `IBranch`."""
