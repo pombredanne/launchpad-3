@@ -12,7 +12,6 @@ from collections import defaultdict
 from functools import partial
 from operator import attrgetter
 
-from lazr.restful.utils import safe_hasattr
 from lazr.uri import (
     InvalidURIError,
     URI,
@@ -255,12 +254,9 @@ class GenericBranchCollection:
             for branch in branches)
         branch_ids = caches.keys()
         for cache in caches.values():
-            if not safe_hasattr(cache, '_associatedProductSeries'):
-                cache._associatedProductSeries = []
-            if not safe_hasattr(cache, '_associatedSuiteSourcePackages'):
-                cache._associatedSuiteSourcePackages = []
-            if not safe_hasattr(cache, 'code_import'):
-                cache.code_import = None
+            cache._associatedProductSeries = []
+            cache._associatedSuiteSourcePackages = []
+            cache.code_import = None
         # associatedProductSeries
         # Imported here to avoid circular import.
         from lp.registry.model.productseries import ProductSeries
@@ -306,8 +302,8 @@ class GenericBranchCollection:
 
         def cache_permission(branch):
             if self._user:
-                get_property_cache(branch)._known_viewers = (
-                    set([self._user.id]))
+                get_property_cache(branch)._known_viewers = set(
+                    [self._user.id])
             return branch
 
         eager_load_hook = (
@@ -528,8 +524,7 @@ class GenericBranchCollection:
                 linked_bugtasks[branch.id].extend(
                     filter_bugtasks_by_context(branch.target.context, tasks))
 
-        return [make_rev_info(
-                rev, merge_proposal_revs, linked_bugtasks)
+        return [make_rev_info(rev, merge_proposal_revs, linked_bugtasks)
                 for rev in revisions]
 
     def getTeamsWithBranches(self, person):
@@ -543,8 +538,7 @@ class GenericBranchCollection:
             Person,
             Person.id == TeamParticipation.teamID,
             TeamParticipation.person == person,
-            TeamParticipation.team != person,
-            Person.id.is_in(branch_query))
+            TeamParticipation.team != person, Person.id.is_in(branch_query))
 
     def inProduct(self, product):
         """See `IBranchCollection`."""
@@ -555,8 +549,7 @@ class GenericBranchCollection:
         """See `IBranchCollection`."""
         return self._filterBy(
             [Product.project == project.id],
-            table=Product,
-            join=Join(Product, Branch.product == Product.id))
+            table=Product, join=Join(Product, Branch.product == Product.id))
 
     def inDistribution(self, distribution):
         """See `IBranchCollection`."""
@@ -599,14 +592,13 @@ class GenericBranchCollection:
 
     def isJunk(self):
         """See `IBranchCollection`."""
-        return self._filterBy([
-            Branch.product == None,
-            Branch.sourcepackagename == None])
+        return self._filterBy(
+            [Branch.product == None, Branch.sourcepackagename == None])
 
     def isPrivate(self):
         """See `IBranchCollection`."""
-        return self._filterBy([
-            Branch.information_type.is_in(PRIVATE_INFORMATION_TYPES)])
+        return self._filterBy(
+            [Branch.information_type.is_in(PRIVATE_INFORMATION_TYPES)])
 
     def isExclusive(self):
         """See `IBranchCollection`."""
@@ -617,7 +609,7 @@ class GenericBranchCollection:
 
     def isSeries(self):
         """See `IBranchCollection`."""
-        # ProductSeries import's this module.
+        # Circular imports.
         from lp.registry.model.productseries import ProductSeries
         return self._filterBy(
             [Branch.id == ProductSeries.branchID],
@@ -633,9 +625,7 @@ class GenericBranchCollection:
         subquery = Select(
             TeamParticipation.teamID,
             where=TeamParticipation.personID == person.id)
-        filter = [In(Branch.ownerID, subquery)]
-
-        return self._filterBy(filter, symmetric=False)
+        return self._filterBy([In(Branch.ownerID, subquery)], symmetric=False)
 
     def registeredBy(self, person):
         """See `IBranchCollection`."""
@@ -721,18 +711,18 @@ class GenericBranchCollection:
             self._asymmetric_filter_expressions, self._asymmetric_tables)
 
     def withBranchType(self, *branch_types):
-        return self._filterBy([Branch.branch_type.is_in(branch_types)],
-            symmetric=False)
+        return self._filterBy(
+            [Branch.branch_type.is_in(branch_types)], symmetric=False)
 
     def withLifecycleStatus(self, *statuses):
         """See `IBranchCollection`."""
-        return self._filterBy([Branch.lifecycle_status.is_in(statuses)],
-            symmetric=False)
+        return self._filterBy(
+            [Branch.lifecycle_status.is_in(statuses)], symmetric=False)
 
     def modifiedSince(self, epoch):
         """See `IBranchCollection`."""
-        return self._filterBy([Branch.date_last_modified > epoch],
-            symmetric=False)
+        return self._filterBy(
+            [Branch.date_last_modified > epoch], symmetric=False)
 
     def scannedSince(self, epoch):
         """See `IBranchCollection`."""
