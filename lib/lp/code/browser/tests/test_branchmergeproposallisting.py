@@ -208,7 +208,7 @@ class TestMerges(BrowserTestCase):
             self.getViewBrowser(
                 product, '+merges', rootsite='code', user=product.owner)
         self.assertThat(recorder, HasQueryCount(Equals(40)))
-        
+
     def test_productseries(self):
         target = self.factory.makeBranch()
         unique_name = target.unique_name

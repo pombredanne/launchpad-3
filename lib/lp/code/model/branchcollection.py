@@ -12,7 +12,6 @@ from collections import defaultdict
 from functools import partial
 from operator import attrgetter
 
-from lazr.restful.utils import safe_hasattr
 from lazr.uri import (
     InvalidURIError,
     URI,
