@@ -609,6 +609,10 @@ class Archive(SQLBase):
 
     def getSourcesForDeletion(self, name=None, status=None, distroseries=None):
         """See `IArchive`."""
+        # We will return sources that can be deleted, or deleted sources that
+        # still have published binaries. We can use scheduleddeletiondate
+        # rather than linking through BPB, BPR and BPPH since we don't condemn
+        # sources until their binaries are all gone due to GPL compliance.
         clauses = [
             SourcePackagePublishingHistory.archiveID == self.id,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
