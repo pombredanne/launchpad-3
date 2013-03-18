@@ -23,7 +23,6 @@ from sqlobject import (
     IntCol,
     StringCol,
     )
-from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     And,
     Desc,
@@ -75,6 +74,7 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
+from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -87,7 +87,6 @@ from lp.services.database.interfaces import (
 from lp.services.database.lpstorm import ISlaveStore
 from lp.services.database.sqlbase import (
     cursor,
-    quote,
     quote_like,
     SQLBase,
     sqlvalues,
@@ -608,70 +607,40 @@ class Archive(SQLBase):
                 list(store.find(GPGKey, GPGKey.id.is_in(ids)))
         return DecoratedResultSet(resultset, pre_iter_hook=eager_load)
 
-    def getSourcesForDeletion(self, name=None, status=None,
-            distroseries=None):
+    def getSourcesForDeletion(self, name=None, status=None, distroseries=None):
         """See `IArchive`."""
-        clauses = ["""
-            SourcePackagePublishingHistory.archive = %s AND
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
-            SourcePackagePublishingHistory.sourcepackagename =
-                SourcePackageName.id
-        """ % sqlvalues(self)]
+        # We will return sources that can be deleted, or deleted sources that
+        # still have published binaries. We can use scheduleddeletiondate
+        # rather than linking through BPB, BPR and BPPH since we don't condemn
+        # sources until their binaries are all gone due to GPL compliance.
+        clauses = [
+            SourcePackagePublishingHistory.archiveID == self.id,
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                SourcePackageRelease.id,
+            SourcePackagePublishingHistory.sourcepackagenameID ==
+                SourcePackageName.id,
+            SourcePackagePublishingHistory.scheduleddeletiondate == None]
 
-        has_published_binaries_clause = """
-            EXISTS (SELECT TRUE FROM
-                BinaryPackagePublishingHistory bpph,
-                BinaryPackageRelease bpr, BinaryPackageBuild
-            WHERE
-                bpph.archive = %s AND
-                bpph.status = %s AND
-                bpph.binarypackagerelease = bpr.id AND
-                bpr.build = BinaryPackageBuild.id AND
-                BinaryPackageBuild.source_package_release =
-                    SourcePackageRelease.id)
-        """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED)
-
-        source_deletable_states = (
-            PackagePublishingStatus.PENDING,
-            PackagePublishingStatus.PUBLISHED,
-            )
-        clauses.append("""
-           (%s OR SourcePackagePublishingHistory.status IN %s)
-        """ % (has_published_binaries_clause,
-               quote(source_deletable_states)))
-
-        if status is not None:
+        if status:
             try:
                 status = tuple(status)
             except TypeError:
                 status = (status, )
-            clauses.append("""
-                SourcePackagePublishingHistory.status IN %s
-            """ % sqlvalues(status))
+            clauses.append(SourcePackagePublishingHistory.status.is_in(status))
 
-        if distroseries is not None:
-            clauses.append("""
-                SourcePackagePublishingHistory.distroseries = %s
-            """ % sqlvalues(distroseries))
+        if distroseries:
+            clauses.append(
+                SourcePackagePublishingHistory.distroseriesID == 
+                    distroseries.id)
 
-        clauseTables = ['SourcePackageRelease', 'SourcePackageName']
+        if name:
+            clauses.append(SourcePackageName.name.contains_string(name))
 
-        order_const = "SourcePackageRelease.version"
-        desc_version_order = SQLConstant(order_const + " DESC")
-        orderBy = ['SourcePackageName.name', desc_version_order,
-                   '-SourcePackagePublishingHistory.id']
-
-        if name is not None:
-            clauses.append("""
-                    SourcePackageName.name LIKE '%%' || %s || '%%'
-                """ % quote_like(name))
-
-        preJoins = ['sourcepackagerelease']
-        sources = SourcePackagePublishingHistory.select(
-            ' AND '.join(clauses), clauseTables=clauseTables, orderBy=orderBy,
-            prejoins=preJoins)
-
+        sources = Store.of(self).find(
+            SourcePackagePublishingHistory, *clauses).order_by(
+                SourcePackageName.name, Desc(SourcePackageRelease.version),
+                Desc(SourcePackagePublishingHistory.id))
+        load_related(SourcePackageRelease, sources, ['sourcepackagereleaseID'])
         return sources
 
     @property
@@ -758,9 +727,7 @@ class Archive(SQLBase):
                 BinaryPackageRelease.version = %s
             """ % sqlvalues(version))
         elif ordered:
-            order_const = "BinaryPackageRelease.version"
-            desc_version_order = SQLConstant(order_const + " DESC")
-            orderBy.insert(1, desc_version_order)
+            orderBy.insert(1, Desc(BinaryPackageRelease.version))
 
         if status is not None:
             try:
@@ -992,8 +959,7 @@ class Archive(SQLBase):
             Component.name.is_in(components))
             for (archive, not_used, pocket, components) in deps])
 
-        store = ISlaveStore(BinaryPackagePublishingHistory)
-        return store.find(
+        return ISlaveStore(BinaryPackagePublishingHistory).find(
             BinaryPackagePublishingHistory,
             BinaryPackageName.name == dep_name,
             BinaryPackagePublishingHistory.binarypackagename ==
