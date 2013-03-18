@@ -573,8 +573,10 @@ decreases.
 
     >>> cprov_archive.number_of_sources
     3
-    >>> cprov_archive.getPublishedSources(
-    ...     name=u'cdrkit').first().supersede()
+    >>> cdrkit = cprov_archive.getPublishedSources(name=u'cdrkit').first()
+    >>> cdrkit.supersede()
+    >>> from lp.services.database.constants import UTC_NOW
+    >>> cdrkit.scheduleddeletiondate = UTC_NOW
 
     >>> cprov_archive.number_of_sources
     2
@@ -608,7 +610,7 @@ PUBLISHED status, respecting the given name and status filters.
 This method can optionally receive a source package name filter (SQL
 LIKE) to restrict its result.
 
-    >>> cprov_archive.getSourcesForDeletion(name='ice').count()
+    >>> cprov_archive.getSourcesForDeletion(name=u'ice').count()
     1
 
 If only the source publication is DELETED, leaving its binary behind,
@@ -622,29 +624,28 @@ it continues to be considered 'available for deletion'.
     >>> login("celso.providelo@canonical.com")
     >>> removal_candidate.requestDeletion(cprov, 'go away !')
 
-    >>> cprov_archive.getSourcesForDeletion(name='ice').count()
+    >>> cprov_archive.getSourcesForDeletion(name=u'ice').count()
     1
 
 The status filter can be used to only return sources that can be
 deleted matching a given status.
 
     >>> cprov_archive.getSourcesForDeletion(
-    ...      name='ice', status=PackagePublishingStatus.DELETED).count()
+    ...      name=u'ice', status=PackagePublishingStatus.DELETED).count()
     1
 
     >>> cprov_archive.getSourcesForDeletion(
-    ...      name='ice', status=PackagePublishingStatus.PUBLISHED).count()
+    ...      name=u'ice', status=PackagePublishingStatus.PUBLISHED).count()
     0
 
 The status filter can also be a sequence of status.
 
     >>> irrelevant_status = (
     ...     PackagePublishingStatus.SUPERSEDED,
-    ...     PackagePublishingStatus.DELETED,
-    ...     )
+    ...     PackagePublishingStatus.DELETED)
 
     >>> cprov_archive.getSourcesForDeletion(
-    ...      name='ice', status=irrelevant_status).count()
+    ...      name=u'ice', status=irrelevant_status).count()
     1
 
 The series filter can be used to return only sources from a certain
@@ -655,20 +656,18 @@ series:
     >>> cprov_archive.getSourcesForDeletion(distroseries=hoary).count()
     0
 
-The source publication is only excluded from 'deletion list' when its
-binary is also DELETED.
+The source publication is only excluded from 'deletion list' when it's
+scheduled deletion date is set.
 
-    >>> for bin in removal_candidate.getPublishedBinaries():
-    ...     bin.requestDeletion(cprov, 'go away !')
-
-    >>> cprov_archive.getSourcesForDeletion(name='ice').count()
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(removal_candidate).scheduleddeletiondate = UTC_NOW
+    >>> cprov_archive.getSourcesForDeletion(name=u'ice').count()
     0
 
 Flush the database caches to invalidate old caches from the
 corresponding publishing Postgres views.
 
-    >>> from lp.services.database.sqlbase import flush_database_caches
-    >>> flush_database_caches()
+    >>> transaction.commit()
 
 
 Build Lookup
