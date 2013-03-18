@@ -117,6 +117,8 @@ Please note that the 'deletion_comment' field (which is optional) is empty.
 The single package in mark's archive was deleted successfully.
 
     >>> print_ppa_packages(admin_browser.contents)
+    Source             Published   Status     Series   Section  Build Status
+    iceweasel...(...)  2007-07-09  Deleted    ...
 
 Now back to cprov's archive for the remaining tests.
 
@@ -159,18 +161,12 @@ entirely readable content.
 
     >>> print_ppa_packages(admin_browser.contents)
     Source             Published   Status     Series   Section  Build Status
+    cdrkit - 1.0       2007-07-09  Deleted    ...      Editors  i386
     iceweasel...(...)  2007-07-09  Published  Warty    Editors  i386
     pmount - 0.1-1     2007-07-09  Published  Warty    Editors
 
 Here we can check for maliciously submitted forms containing
 invalid data.
-
-An already deleted source:
-
-    >>> admin_browser.getControl(name='field.selected_sources').value = ['27']
-    Traceback (most recent call last):
-    ...
-    ItemNotFoundError: insufficient items with name '27'
 
 An nonexistent source:
 
@@ -243,9 +239,20 @@ Multiple packages can be deleted in one single batch.
     pmount 0.1-1 in warty
     Deletion comment: DO IT AGAIN !
 
+    >>> from lp.services.database.constants import UTC_NOW
+    >>> from lp.services.database.lpstorm import IStore
+    >>> from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+    >>> IStore(SourcePackagePublishingHistory).find(
+    ...     SourcePackagePublishingHistory,
+    ...     SourcePackagePublishingHistory.id.is_in([27, 28, 29])).set(
+    ...         scheduleddeletiondate=UTC_NOW)
+    >>> transaction.commit()
+
 The page doesn't present the form anymore, since there are no sources
 available for deletion.
 
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/~cprov/+archive/ppa/+delete-packages')
     >>> main_content = find_main_content(admin_browser.contents)
     >>> print extract_text(
     ...   find_tags_by_class(str(main_content), 'top-portlet')[0])
