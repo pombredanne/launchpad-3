@@ -643,9 +643,6 @@ which the available options already exclude the deleted items.
     ...         'field.selected_sources-empty-marker': 1,
     ...         })
 
-    >>> view.has_sources_for_display
-    False
-
     >>> import transaction
     >>> transaction.commit()
 
@@ -663,11 +660,8 @@ situation and ignore it. See bug #185922 for reference.
     ...         'field.selected_sources-empty-marker': 1,
     ...         })
 
-    >>> view.has_sources_for_display
-    False
-
     >>> len(view.errors)
-    2
+    0
 
 
 ArchiveEditDependenciesView
