@@ -1524,9 +1524,7 @@ class Archive(SQLBase):
             result.order_by(LibraryFileAlias.id)
             return result.first()
 
-        archive_file = IStore(LibraryFileAlias).find(
-            LibraryFileAlias, *(base_clauses + clauses)).config(
-                distinct=True).order_by(LibraryFileAlias.id).first()
+        archive_file = do_query()
 
         if archive_file is None:
             # If a diff.gz wasn't found in the source-files domain, try in
