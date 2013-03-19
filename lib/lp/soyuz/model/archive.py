@@ -79,12 +79,10 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
+from lp.services.database.lpstorm import (
+    ISlaveStore,
+    IStore,
     )
-from lp.services.database.lpstorm import ISlaveStore
 from lp.services.database.sqlbase import (
     cursor,
     quote_like,
@@ -389,20 +387,16 @@ class Archive(SQLBase):
     @property
     def series_with_sources(self):
         """See `IArchive`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-
         # Import DistroSeries here to avoid circular imports.
         from lp.registry.model.distroseries import DistroSeries
 
-        distro_series = store.find(
+        distro_series = IStore(DistroSeries).find(
             DistroSeries,
             DistroSeries.distribution == self.distribution,
             SourcePackagePublishingHistory.distroseries == DistroSeries.id,
             SourcePackagePublishingHistory.archive == self,
             SourcePackagePublishingHistory.status.is_in(
-                active_publishing_status))
-
-        distro_series.config(distinct=True)
+                active_publishing_status)).config(distinct=True)
 
         # Ensure the ordering is the same as presented by
         # Distribution.series
@@ -511,12 +505,10 @@ class Archive(SQLBase):
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 SourcePackageRelease.id,
             SourcePackagePublishingHistory.sourcepackagenameID ==
-                SourcePackageName.id,
-            ]
+                SourcePackageName.id]
         orderBy = [
             SourcePackageName.name,
-            Desc(SourcePackagePublishingHistory.id),
-            ]
+            Desc(SourcePackagePublishingHistory.id)]
 
         if name is not None:
             if type(name) in (str, unicode):
@@ -652,8 +644,7 @@ class Archive(SQLBase):
     @property
     def sources_size(self):
         """See `IArchive`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result = store.find((
+        result = IStore(LibraryFileContent).find((
             LibraryFileAlias.filename,
             LibraryFileContent.sha1,
             LibraryFileContent.filesize),
@@ -677,9 +668,7 @@ class Archive(SQLBase):
         # the same.
         result = result.config(distinct=True)
 
-        # Using result.sum(LibraryFileContent.filesize) throws errors when
-        # the result is empty, so instead:
-        return sum(result.values(LibraryFileContent.filesize))
+        return result.sum(LibraryFileContent.filesize) or 0
 
     def _getBinaryPublishingBaseClauses(
         self, name=None, version=None, status=None, distroarchseries=None,
@@ -844,22 +833,19 @@ class Archive(SQLBase):
     @property
     def binaries_size(self):
         """See `IArchive`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-
-        clauses = [
+        result = IStore(LibraryFileContent).find((
+            LibraryFileAlias.filename,
+            LibraryFileContent.sha1,
+            LibraryFileContent.filesize),
             BinaryPackagePublishingHistory.archive == self.id,
             BinaryPackagePublishingHistory.dateremoved == None,
             BinaryPackagePublishingHistory.binarypackagereleaseID ==
                 BinaryPackageFile.binarypackagereleaseID,
             BinaryPackageFile.libraryfileID == LibraryFileAlias.id,
-            LibraryFileAlias.contentID == LibraryFileContent.id,
-            ]
-        result = store.find(LibraryFileContent, *clauses)
-
+            LibraryFileAlias.contentID == LibraryFileContent.id)
         # See `IArchive.sources_size`.
         result = result.config(distinct=True)
-        size = sum([lfc.filesize for lfc in result])
-        return size
+        return result.sum(LibraryFileContent.filesize) or 0
 
     @property
     def estimated_size(self):
@@ -1499,8 +1485,6 @@ class Archive(SQLBase):
 
     def getFileByName(self, filename):
         """See `IArchive`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-
         base_clauses = (
             LibraryFileAlias.filename == filename,
             LibraryFileAlias.content != None,
@@ -1534,12 +1518,15 @@ class Archive(SQLBase):
             raise NotFoundError(filename)
 
         def do_query():
-            result = store.find((LibraryFileAlias), *(base_clauses + clauses))
+            result = IStore(LibraryFileAlias).find(
+                LibraryFileAlias, *(base_clauses + clauses))
             result = result.config(distinct=True)
             result.order_by(LibraryFileAlias.id)
             return result.first()
 
-        archive_file = do_query()
+        archive_file = IStore(LibraryFileAlias).find(
+            LibraryFileAlias, *(base_clauses + clauses)).config(
+                distinct=True).order_by(LibraryFileAlias.id).first()
 
         if archive_file is None:
             # If a diff.gz wasn't found in the source-files domain, try in
@@ -1563,8 +1550,7 @@ class Archive(SQLBase):
         """See `IArchive`."""
         from lp.soyuz.model.distroarchseries import DistroArchSeries
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        results = store.find(
+        results = IStore(BinaryPackageRelease).find(
             BinaryPackageRelease,
             BinaryPackagePublishingHistory.archive == self,
             BinaryPackagePublishingHistory.binarypackagename == name,
@@ -1580,8 +1566,7 @@ class Archive(SQLBase):
         return results.one()
 
     def getBinaryPackageReleaseByFileName(self, filename):
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
+        return IStore(BinaryPackageRelease).find(
             BinaryPackageRelease,
             BinaryPackageFile.binarypackagereleaseID ==
                 BinaryPackageRelease.id,
@@ -1828,8 +1813,7 @@ class Archive(SQLBase):
         archive_auth_token.token = token
         if date_created is not None:
             archive_auth_token.date_created = date_created
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        store.add(archive_auth_token)
+        IStore(ArchiveAuthToken).add(archive_auth_token)
         return archive_auth_token
 
     def newSubscription(self, subscriber, registrant, date_expires=None,
@@ -1858,8 +1842,7 @@ class Archive(SQLBase):
         subscription.description = description
         subscription.status = ArchiveSubscriberStatus.CURRENT
         subscription.date_created = UTC_NOW
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        store.add(subscription)
+        IStore(ArchiveSubscriber).add(subscription)
 
         # Notify any listeners that a new subscription was created.
         # This is used currently for sending email notifications.
@@ -2292,16 +2275,13 @@ class ArchiveSet:
 
     def getPPAsPendingSigningKey(self):
         """See `IArchiveSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = (
             Archive,
             Join(SourcePackagePublishingHistory,
-                 SourcePackagePublishingHistory.archive == Archive.id),
-            )
-        results = store.using(*origin).find(
+                 SourcePackagePublishingHistory.archive == Archive.id))
+        results = IStore(Archive).using(*origin).find(
             Archive,
-            Archive.signing_key == None,
-            Archive.purpose == ArchivePurpose.PPA,
+            Archive.signing_key == None, Archive.purpose == ArchivePurpose.PPA,
             Archive._enabled == True)
         results.order_by(Archive.date_created)
         return results.config(distinct=True)
@@ -2351,11 +2331,9 @@ class ArchiveSet:
 
     def getPrivatePPAs(self):
         """See `IArchiveSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
+        return IStore(Archive).find(
             Archive,
-            Archive._private == True,
-            Archive.purpose == ArchivePurpose.PPA)
+            Archive._private == True, Archive.purpose == ArchivePurpose.PPA)
 
     def getArchivesForDistribution(self, distribution, name=None,
                                    purposes=None, user=None,
