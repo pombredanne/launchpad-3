@@ -448,12 +448,18 @@ time is returned.
 LoopTuner allows a timeout to be specified. If the loop runs for longer
 than this timeout, it is aborted and a INFO logged.
 
+    >>> from lp.services.log.logger import BufferLogger
+    >>> from lp.services.log import loglevels
+    >>> logger = BufferLogger()
+    >>> logger.setLevel(loglevels.INFO)
     >>> body = PlannedLoop([5, 7, 8, 9, 10, 11, 9, 20, 7, 10, 10])
-    >>> loop = TestTuner(body, goal_seconds, 100, abort_time=20)
+    >>> loop = TestTuner(body, goal_seconds, 100, abort_time=20, log=logger)
     >>> loop.run()
     start
     same (0.0)
     same (0.0)
+    >>> print logger.getLogBufferAndClear()
+    INFO Task aborted after 20 seconds.
 
 
 == Cleanup ==
@@ -473,10 +479,12 @@ the isDone() method, and __del__ is fragile and can never be relied on.
     clean up
 
     >>> body = PlannedLoopWithCleanup([5, 7, 8, 9, 10, 11, 9, 20, 7, 10, 10])
-    >>> loop = TestTuner(body, goal_seconds, 100, abort_time=20)
+    >>> loop = TestTuner(body, goal_seconds, 100, abort_time=20, log=logger)
     >>> loop.run()
     start
     same (0.0)
     same (0.0)
     clean up
+    >>> print logger.getLogBufferAndClear()
+    INFO Task aborted after 20 seconds.
 
