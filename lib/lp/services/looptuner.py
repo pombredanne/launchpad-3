@@ -167,7 +167,7 @@ class LoopTuner:
             while not self.operation.isDone():
 
                 if self._isTimedOut():
-                    self.log.warn(
+                    self.log.info(
                         "Task aborted after %d seconds.", self.abort_time)
                     break
 

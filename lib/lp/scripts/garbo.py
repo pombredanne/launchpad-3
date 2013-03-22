@@ -1408,9 +1408,8 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
             else:
                 break
 
-        # If the script ran out of time, warn.
         if self.get_remaining_script_time() < 0:
-            self.logger.warn(
+            self.logger.info(
                 "Script aborted after %d seconds.", self.script_timeout)
 
         if tunable_loops:
