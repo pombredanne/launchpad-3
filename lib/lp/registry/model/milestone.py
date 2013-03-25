@@ -139,6 +139,14 @@ class MultipleProductReleases(Exception):
         super(MultipleProductReleases, self).__init__(msg)
 
 
+@error_status(httplib.BAD_REQUEST)
+class InvalidTags(Exception):
+    """Raised when tags are invalid."""
+    
+    def __init__(self, msg='Tags are invalid.'):
+        super(InvalidTags, self).__init__(msg)
+
+
 class MilestoneData:
     implements(IMilestoneData)
 
@@ -312,7 +320,7 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
         assert self.product_release is None, (
             "You cannot delete a milestone which has a product release "
             "associated with it.")
-        SQLBase.destroySelf(self)
+        super(Milestone, self).destroySelf()
 
     def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
@@ -323,9 +331,11 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
     def setTags(self, tags, user):
         """See IMilestone."""
         # Circular reference prevention.
-        from lp.registry.model.milestonetag import MilestoneTag
+        from lp.registry.model.milestonetag import MilestoneTag, validate_tags
         store = Store.of(self)
         if tags:
+            if not validate_tags(tags):
+                raise InvalidTags()
             current_tags = set(self.getTags())
             new_tags = set(tags)
             if new_tags == current_tags:
