@@ -1,4 +1,7 @@
 #!/usr/bin/python -S
+#
+# Copyright 2012-2013 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -7,28 +10,15 @@ import _pythonpath
 from zope.component import getUtility
 from zope.interface import implements
 
-from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.model.distroseries import DistroSeries
+from lp.services.database.lpstorm import IMasterStore
 from lp.services.looptuner import (
     DBLoopTuner,
     ITunableLoop,
     )
 from lp.services.scripts.base import LaunchpadScript
 
-
-series_name = 'quantal'
-
-select_series = """\
-SELECT DistroSeries.id
-  FROM DistroSeries
-  JOIN Distribution ON
-           Distribution.id = DistroSeries.distribution
- WHERE Distribution.name = 'ubuntu'
-   AND DistroSeries.name = '%s'
-""" % series_name
 
 delete_pofiletranslator = """\
 DELETE FROM POFileTranslator
@@ -37,9 +27,9 @@ DELETE FROM POFileTranslator
       FROM POFileTranslator, POFile, POTemplate
      WHERE POFileTranslator.pofile = POFile.id
        AND POFile.potemplate = POTemplate.id
-       AND POTemplate.distroseries = (%s)
+       AND POTemplate.distroseries = ?
      LIMIT ?)
-""" % select_series
+"""
 
 null_translationimportqueueentry_pofile = """\
 UPDATE TranslationImportQueueEntry
@@ -49,9 +39,9 @@ UPDATE TranslationImportQueueEntry
       FROM TranslationImportQueueEntry, POFile, POTemplate
      WHERE TranslationImportQueueEntry.pofile = POFile.id
        AND POFile.potemplate = POTemplate.id
-       AND POTemplate.distroseries = (%s)
+       AND POTemplate.distroseries = ?
      LIMIT ?)
-""" % select_series
+"""
 
 delete_pofile = """\
 DELETE FROM POFile
@@ -59,9 +49,9 @@ DELETE FROM POFile
     SELECT POFile.id
       FROM POFile, POTemplate
      WHERE POFile.potemplate = POTemplate.id
-       AND POTemplate.distroseries = (%s)
+       AND POTemplate.distroseries = ?
      LIMIT ?)
-""" % select_series
+"""
 
 delete_translationtemplateitem = """\
 DELETE FROM TranslationTemplateItem
@@ -69,9 +59,9 @@ DELETE FROM TranslationTemplateItem
     SELECT TranslationTemplateItem.id
       FROM TranslationTemplateItem, POTemplate
      WHERE TranslationTemplateItem.potemplate = POTemplate.id
-       AND POTemplate.distroseries = (%s)
+       AND POTemplate.distroseries = ?
      LIMIT ?)
-""" % select_series
+"""
 
 delete_packagingjob = """\
 DELETE FROM PackagingJob
@@ -79,9 +69,9 @@ DELETE FROM PackagingJob
     SELECT PackagingJob.id
       FROM PackagingJob, POTemplate
      WHERE PackagingJob.potemplate = POTemplate.id
-       AND POTemplate.distroseries = (%s)
+       AND POTemplate.distroseries = ?
      LIMIT ?)
-""" % select_series
+"""
 
 null_translationimportqueueentry_potemplate = """\
 UPDATE TranslationImportQueueEntry
@@ -90,18 +80,18 @@ UPDATE TranslationImportQueueEntry
     SELECT TranslationImportQueueEntry.id
       FROM TranslationImportQueueEntry, POTemplate
      WHERE TranslationImportQueueEntry.potemplate = POTemplate.id
-       AND POTemplate.distroseries = (%s)
+       AND POTemplate.distroseries = ?
      LIMIT ?)
-""" % select_series
+"""
 
 delete_potemplate = """\
 DELETE FROM POTemplate
  WHERE POTemplate.id IN (
     SELECT POTemplate.id
       FROM POTemplate
-     WHERE POTemplate.distroseries = (%s)
+     WHERE POTemplate.distroseries = ?
      LIMIT ?)
-""" % select_series
+"""
 
 statements = [
     delete_pofiletranslator,
@@ -118,8 +108,9 @@ class ExecuteLoop:
 
     implements(ITunableLoop)
 
-    def __init__(self, statement, logger):
+    def __init__(self, statement, series, logger):
         self.statement = statement
+        self.series = series
         self.logger = logger
         self.done = False
 
@@ -128,11 +119,10 @@ class ExecuteLoop:
 
     def __call__(self, chunk_size):
         self.logger.info(
-            "%s (limited to %d rows)",
-            self.statement.splitlines()[0],
+            "%s (limited to %d rows)", self.statement.splitlines()[0],
             chunk_size)
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        result = store.execute(self.statement, (chunk_size,))
+        store = IMasterStore(DistroSeries)
+        result = store.execute(self.statement, (self.series.id, chunk_size,))
         self.done = (result.rowcount == 0)
         self.logger.info(
             "%d rows deleted (%s)", result.rowcount,
@@ -142,17 +132,23 @@ class ExecuteLoop:
 
 class WipeSeriesTranslationsScript(LaunchpadScript):
 
-    description = "Wipe Ubuntu %s's translations." % series_name.title()
+    description = "Wipe translations for a series."
 
     def add_my_options(self):
-        self.parser.epilog = (
-            "Before running this script you must `GRANT DELETE ON TABLE "
-            "PackagingJob TO rosettaadmin` and afterwards you ought to "
-            "`REVOKE DELETE ON PackagingJob FROM rosettaadmin`.")
+        self.parser.add_option('-d', '--distribution', dest='distro',
+            default='ubuntu',
+            help='Name of distribution to delete translations in.')
+        self.parser.add_option('-s', '--series', dest='series',
+            help='Name of distroseries whose translations should be removed')
+
+    def _getTargetSeries(self):
+        series = self.options.series
+        return getUtility(IDistributionSet)[self.options.distro][series]
 
     def main(self):
+        series = self._getTargetSeries()
         for statement in statements:
-            delete = ExecuteLoop(statement, self.logger)
+            delete = ExecuteLoop(statement, series, self.logger)
             tuner = DBLoopTuner(delete, 2.0, maximum_chunk_size=5000)
             tuner.run()
 
