@@ -76,7 +76,6 @@ from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu,
     RegistryCollectionActionMenuBase,
     )
-from lp.registry.browser.milestone import validate_tags
 from lp.registry.browser.objectreassignment import ObjectReassignmentView
 from lp.registry.browser.pillar import PillarViewMixin
 from lp.registry.browser.product import (
@@ -90,7 +89,10 @@ from lp.registry.interfaces.projectgroup import (
     IProjectGroupSeries,
     IProjectGroupSet,
     )
-from lp.registry.model.milestonetag import ProjectGroupMilestoneTag
+from lp.registry.model.milestonetag import (
+    ProjectGroupMilestoneTag,
+    validate_tags,
+    )
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.fields import (
     PillarAliases,
