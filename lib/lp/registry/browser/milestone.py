@@ -454,9 +454,6 @@ class MilestoneAddView(MilestoneTagBase, LaunchpadFormView):
 
     custom_widget('dateexpected', DateWidget)
 
-    def extendFields(self):
-        super(MilestoneAddView, self).extendFields()
-
     @action(_('Register Milestone'), name='register')
     def register_action(self, action, data):
         """Use the newMilestone method on the context to make a milestone."""
@@ -519,9 +516,6 @@ class MilestoneEditView(MilestoneTagBase, LaunchpadEditFormView):
     @property
     def initial_values(self):
         return {'tags': u' '.join(self.context.getTags())}
-
-    def extendFields(self):
-        super(MilestoneEditView, self).extendFields()
 
     def setUpFields(self):
         """See `LaunchpadFormView`.
