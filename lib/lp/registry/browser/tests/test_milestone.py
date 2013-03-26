@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test milestone views."""
@@ -156,10 +156,9 @@ class TestAddMilestoneViews(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestAddMilestoneViews, self).setUp()
         self.product = self.factory.makeProduct()
-        self.series = (
-            self.factory.makeProductSeries(product=self.product))
+        self.series = self.factory.makeProductSeries(product=self.product)
         self.owner = self.product.owner
         login_person(self.owner)
 
@@ -168,8 +167,7 @@ class TestAddMilestoneViews(TestCaseWithFactory):
             'field.name': '1.1',
             'field.actions.register': 'Register Milestone',
             }
-        view = create_initialized_view(
-            self.series, '+addmilestone', form=form)
+        view = create_initialized_view(self.series, '+addmilestone', form=form)
         self.assertEqual([], view.errors)
 
     def test_add_milestone_with_good_date(self):
@@ -178,8 +176,7 @@ class TestAddMilestoneViews(TestCaseWithFactory):
             'field.dateexpected': '2010-10-10',
             'field.actions.register': 'Register Milestone',
             }
-        view = create_initialized_view(
-            self.series, '+addmilestone', form=form)
+        view = create_initialized_view(self.series, '+addmilestone', form=form)
         # It's important to make sure no errors occured,
         # but also confirm that the milestone was created.
         self.assertEqual([], view.errors)
@@ -191,8 +188,7 @@ class TestAddMilestoneViews(TestCaseWithFactory):
             'field.dateexpected': '1010-10-10',
             'field.actions.register': 'Register Milestone',
             }
-        view = create_initialized_view(
-            self.series, '+addmilestone', form=form)
+        view = create_initialized_view(self.series, '+addmilestone', form=form)
         error_msg = view.errors[0].errors[0]
         expected_msg = (
             "Date could not be formatted. Provide a date formatted "
@@ -206,11 +202,19 @@ class TestAddMilestoneViews(TestCaseWithFactory):
             'field.tags': tags,
             'field.actions.register': 'Register Milestone',
             }
-        view = create_initialized_view(
-            self.series, '+addmilestone', form=form)
+        view = create_initialized_view(self.series, '+addmilestone', form=form)
         self.assertEqual([], view.errors)
         expected = sorted(tags.split())
         self.assertEqual(expected, self.product.milestones[0].getTags())
+
+    def test_add_milestone_with_invalid_tags(self):
+        form = {
+            'field.name': '1.1',
+            'field.tags': '&%&%*',
+            'field.actions.register': 'Register Milestone',
+            }
+        view = create_initialized_view(self.series, '+addmilestone', form=form)
+        self.assertEqual(1, len(view.errors))
 
 
 class TestMilestoneEditView(TestCaseWithFactory):
@@ -218,7 +222,7 @@ class TestMilestoneEditView(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestMilestoneEditView, self).setUp()
         self.product = self.factory.makeProduct()
         self.milestone = self.factory.makeMilestone(
             name='orig-name', product=self.product)
@@ -226,35 +230,38 @@ class TestMilestoneEditView(TestCaseWithFactory):
         login_person(self.owner)
 
     def test_edit_milestone_with_tags(self):
-        orig_tags = u'b a c'
+        orig_tags = u'ba ac'
         self.milestone.setTags(orig_tags.split(), self.owner)
-        new_tags = u'z a B'
+        new_tags = u'za ab'
         form = {
             'field.name': 'new-name',
             'field.tags': new_tags,
             'field.actions.update': 'Update',
             }
-        view = create_initialized_view(
-            self.milestone, '+edit', form=form)
+        view = create_initialized_view(self.milestone, '+edit', form=form)
         self.assertEqual([], view.errors)
         self.assertEqual('new-name', self.milestone.name)
         expected = sorted(new_tags.lower().split())
         self.assertEqual(expected, self.milestone.getTags())
 
     def test_edit_milestone_clear_tags(self):
-        orig_tags = u'b a c'
+        orig_tags = u'ba ac'
         self.milestone.setTags(orig_tags.split(), self.owner)
         form = {
             'field.name': 'new-name',
             'field.tags': '',
             'field.actions.update': 'Update',
             }
-        view = create_initialized_view(
-            self.milestone, '+edit', form=form)
+        view = create_initialized_view(self.milestone, '+edit', form=form)
         self.assertEqual([], view.errors)
         self.assertEqual('new-name', self.milestone.name)
-        expected = []
-        self.assertEqual(expected, self.milestone.getTags())
+        self.assertEqual([], self.milestone.getTags())
+
+    def test_edit_milestone_with_invalid_tags(self):
+        form = {'field.tags': '&%$^', 'field.actions.update': 'Update'}
+        view = create_initialized_view(
+            self.milestone, '+edit', form=form)
+        self.assertEqual(1, len(view.errors))
 
 
 class TestMilestoneDeleteView(TestCaseWithFactory):

@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'MilestoneTag',
     'ProjectGroupMilestoneTag',
+    'validate_tags',
     ]
 
 
@@ -23,6 +24,7 @@ from storm.properties import (
 from storm.references import Reference
 from zope.interface import implements
 
+from lp.app.validators.name import valid_name
 from lp.registry.interfaces.milestonetag import IProjectGroupMilestoneTag
 from lp.registry.model.milestone import (
     Milestone,
@@ -93,3 +95,10 @@ class ProjectGroupMilestoneTag(MilestoneData):
                 Milestone.productID == Product.id,
                 Product.project == self.target,
                 tag_constraints))
+
+
+def validate_tags(tags):
+    """Check that `separator` separated `tags` are valid tag names."""
+    return (
+        all(valid_name(tag) for tag in tags) and
+        len(set(tags)) == len(tags))
