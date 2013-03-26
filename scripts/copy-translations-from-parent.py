@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Furnish distroseries with lacking translations that its parent does have.
@@ -16,6 +16,7 @@ import sys
 
 from zope.component import getUtility
 
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.translations.scripts.copy_distroseries_translations import (
     copy_distroseries_translations,
@@ -41,14 +42,10 @@ class TranslationsCopier(LaunchpadCronScript):
 
     def _getTargetSeries(self):
         """Retrieve target `DistroSeries`."""
-        from lp.registry.interfaces.distribution import IDistributionSet
-        distro = self.options.distro
         series = self.options.series
-        return getUtility(IDistributionSet)[distro][series]
+        return getUtility(IDistributionSet)[self.options.distro][series]
 
     def main(self):
-        from lp.registry.interfaces.distribution import IDistributionSet
-        distribution = getUtility(IDistributionSet)[self.options.distro]
         series = self._getTargetSeries()
 
         # Both translation UI and imports for this series should be blocked
@@ -96,9 +93,6 @@ class TranslationsCopier(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
-
     script = TranslationsCopier(
         'copy-missing-translations', dbuser='translations_distroseries_copy')
-
     script.lock_and_run()
-
