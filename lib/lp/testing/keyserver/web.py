@@ -112,7 +112,7 @@ class PksResource(_BaseResource):
 
 KEY_NOT_FOUND_BODY = (
     "<html><head><title>Error handling request</title></head>\n"
-    "<body><h1>Error handling request</h1>Error handling request: "
+    "<body><h1>Error handling request</h1>No results found: "
     "No keys found</body></html>")
 
 
