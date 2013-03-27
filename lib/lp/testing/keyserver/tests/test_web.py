@@ -98,7 +98,7 @@ class TestWebResources(TestCase):
             self.assertEqual(
                 '<html><head><title>Error handling request</title></head>\n'
                 '<body><h1>Error handling request</h1>'
-                'Error handling request: No keys found</body></html>',
+                'No results found: No keys found</body></html>',
                 failure.value.response)
 
         d.addCallback(regular_execution_callback)

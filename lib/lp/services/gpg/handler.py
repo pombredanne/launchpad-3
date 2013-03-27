@@ -495,7 +495,7 @@ class GPGHandler:
             # into the response's content.
             if exc.code in (404, 500) and exc.fp is not None:
                 content = exc.fp.read()
-                no_key_message = 'Error handling request: No keys found'
+                no_key_message = 'No results found: No keys found'
                 if content.find(no_key_message) >= 0:
                     raise GPGKeyDoesNotExistOnServer(fingerprint)
                 errorlog.globalErrorUtility.raising(sys.exc_info(), request)
