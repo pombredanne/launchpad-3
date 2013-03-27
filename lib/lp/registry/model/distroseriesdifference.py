@@ -60,6 +60,7 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     )
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment,
     )
@@ -116,53 +117,41 @@ def most_recent_publications(dsds, in_parent, statuses, match_version=False):
     :param in_parent: A boolean indicating if we should look in the parent
         series' archive instead of the derived series' archive.
     """
+    # Check in the parent archive or the child?
+    if in_parent:
+        series_col = DistroSeriesDifference.parent_series_id
+        version_col = DistroSeriesDifference.parent_source_version
+    else:
+        series_col = DistroSeriesDifference.derived_series_id
+        version_col = DistroSeriesDifference.source_version
     columns = (
         DistroSeriesDifference.source_package_name_id,
         SourcePackagePublishingHistory,
         )
+    # DistroSeries.getPublishedSources() matches on MAIN_ARCHIVE_PURPOSES,
+    # but we are only ever going to be interested in the distribution's
+    # main (PRIMARY) archive.
+    archive_subselect = Select(
+        Archive.id, tables=[Archive, DistroSeries],
+        where=And(
+            DistroSeries.id == series_col,
+            Archive.distributionID == DistroSeries.distributionID,
+            Archive.purpose == ArchivePurpose.PRIMARY))
     conditions = And(
         DistroSeriesDifference.id.is_in(dsd.id for dsd in dsds),
-        # XXX: GavinPanella 2011-06-23 bug=801097: The + 0 in the condition
-        # below prevents PostgreSQL from using the (archive, status) index on
-        # SourcePackagePublishingHistory, the use of which results in a
-        # terrible query plan. This might be indicative of an underlying,
-        # undiagnosed issue in production with wider repurcussions.
-        SourcePackagePublishingHistory.archiveID + 0 == Archive.id,
-        SourcePackagePublishingHistory.sourcepackagereleaseID == (
-            SourcePackageRelease.id),
+        SourcePackagePublishingHistory.archiveID == archive_subselect,
+        SourcePackagePublishingHistory.distroseriesID == series_col,
         SourcePackagePublishingHistory.status.is_in(statuses),
-        SourcePackageRelease.sourcepackagenameID == (
+        SourcePackagePublishingHistory.sourcepackagenameID == (
             DistroSeriesDifference.source_package_name_id),
-        )
-    # Check in the parent archive or the child?
-    if in_parent:
-        conditions = And(
-            conditions,
-            SourcePackagePublishingHistory.distroseriesID == (
-                DistroSeriesDifference.parent_series_id),
-            )
-    else:
-        conditions = And(
-            conditions,
-            SourcePackagePublishingHistory.distroseriesID == (
-                DistroSeriesDifference.derived_series_id),
-            )
-    # Ensure that the archive has the right purpose.
-    conditions = And(
-        conditions,
-        # DistroSeries.getPublishedSources() matches on MAIN_ARCHIVE_PURPOSES,
-        # but we are only ever going to be interested in PRIMARY archives.
-        Archive.purpose == ArchivePurpose.PRIMARY,
         )
     # Do we match on DistroSeriesDifference.(parent_)source_version?
     if match_version:
-        if in_parent:
-            version_column = DistroSeriesDifference.parent_source_version
-        else:
-            version_column = DistroSeriesDifference.source_version
         conditions = And(
             conditions,
-            SourcePackageRelease.version == version_column,
+            SourcePackageRelease.id ==
+                SourcePackagePublishingHistory.sourcepackagereleaseID,
+            SourcePackageRelease.version == version_col,
             )
     # The sort order is critical so that the DISTINCT ON clause selects the
     # most recent publication (i.e. the one with the highest id).
