@@ -435,11 +435,8 @@ class TestBuildViews(TestCaseWithFactory):
         build = self.factory.makeBinaryPackageBuild()
         build.queueBuild()
         self.factory.makeBuilder(processor=build.processor, virtualized=True)
-        v = create_initialized_view(build, '+index')
-        self.assertIsNot(None, v.eta)
+        self.assertIsNot(None, create_initialized_view(build, '+index').eta)
         with admin_logged_in():
             build.archive.disable()
         flush_database_caches()
-        v = create_initialized_view(build, '+index')
-        self.assertIs(None, v.eta)
-
+        self.assertIs(None, create_initialized_view(build, '+index').eta)
