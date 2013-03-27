@@ -19,6 +19,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.sqlbase import flush_database_caches
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import StormRangeFactoryError
@@ -29,6 +30,7 @@ from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.queue import PackageUploadBuild
 from lp.testing import (
+    admin_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -426,3 +428,15 @@ class TestBuildViews(TestCaseWithFactory):
                 'start': 75,
                 'memo': '["2012-01-01T01:01:01", 0]'})
         view.setupBuildList()
+
+    def test_eta(self):
+        # BuildView.eta returns a non-None value when it should, or None
+        # when there's no start time.
+        build = self.factory.makeBinaryPackageBuild()
+        build.queueBuild()
+        self.factory.makeBuilder(processor=build.processor, virtualized=True)
+        self.assertIsNot(None, create_initialized_view(build, '+index').eta)
+        with admin_logged_in():
+            build.archive.disable()
+        flush_database_caches()
+        self.assertIs(None, create_initialized_view(build, '+index').eta)
