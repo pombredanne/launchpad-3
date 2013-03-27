@@ -50,7 +50,6 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     InconsistentBuildFarmJobError,
     ISpecificBuildFarmJobSource,
     )
-from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
