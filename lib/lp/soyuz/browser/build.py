@@ -50,7 +50,6 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     InconsistentBuildFarmJobError,
     ISpecificBuildFarmJobSource,
     )
-from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
@@ -336,10 +335,10 @@ class BuildView(LaunchpadView):
         queue_record = self.context.buildqueue_record
         if queue_record.job.status == JobStatus.WAITING:
             start_time = queue_record.getEstimatedJobStartTime()
-            if start_time is None:
-                return None
         else:
             start_time = queue_record.job.date_started
+        if start_time is None:
+            return None
         duration = queue_record.estimated_duration
         return start_time + duration
 
