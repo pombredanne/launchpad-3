@@ -1233,13 +1233,17 @@ class POFile(SQLBase, POFileMixIn):
 
         flag_name = getUtility(ITranslationSideTraitsSet).getForTemplate(
             self.potemplate).flag_name
+        template_id = quote(self.potemplate)
         params = {
             'flag': flag_name,
             'language': quote(self.language),
+            'template': template_id,
         }
         query = main_select + """
             FROM TranslationTemplateItem
             LEFT JOIN TranslationMessage ON
+                (TranslationMessage.potemplate IS NULL
+                 OR TranslationMessage.potemplate = %(template)s) AND
                 TranslationMessage.potmsgset =
                     TranslationTemplateItem.potmsgset AND
                 TranslationMessage.%(flag)s IS TRUE AND
@@ -1252,12 +1256,7 @@ class POFile(SQLBase, POFileMixIn):
             query += "LEFT JOIN POTranslation AS %s ON %s.id = %s\n" % (
                     alias, alias, field)
 
-        template_id = quote(self.potemplate)
-        conditions = [
-            "TranslationTemplateItem.potemplate = %s" % template_id,
-            "(TranslationMessage.potemplate IS NULL OR "
-                 "TranslationMessage.potemplate = %s)" % template_id,
-            ]
+        conditions = ["TranslationTemplateItem.potemplate = %s" % template_id]
 
         if ignore_obsolete:
             conditions.append("TranslationTemplateItem.sequence <> 0")
