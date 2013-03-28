@@ -139,9 +139,11 @@ When we export trunk, only the trunk message shows up.
     >>> for row in trunk_pofile.getTranslationRows():
     ...     print describe_poexport_row(row)
     1   1   een
+    2   2   None
 
 In an export for stable, only the stable message shows up.
 
     >>> for row in stable_pofile.getTranslationRows():
     ...     print describe_poexport_row(row)
     2   2   twee
+    1   1   None
