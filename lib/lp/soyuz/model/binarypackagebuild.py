@@ -406,6 +406,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         self.log = None
         self.upload_log = None
         self.dependencies = None
+        self.failure_count = 0
         self.queueBuild()
 
     def rescore(self, score):
