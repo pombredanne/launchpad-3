@@ -236,18 +236,20 @@ class TestBuild(TestCaseWithFactory):
         expected_url = '%s/%s' % (url_start, expected_filename)
         self.assertEquals(expected_url, build.upload_log_url)
 
-    def test_retry_does_not_modify_first_dispatch(self):
-        # Retrying a build does not modify the first dispatch time of the
-        # build
+    def test_retry_resets_state(self):
+        # Retrying a build resets most of the state attributes, but does
+        # not modify the first dispatch time.
         build = self.factory.makeBinaryPackageBuild()
         build.updateStatus(BuildStatus.BUILDING, date_started=self.now)
         build.updateStatus(BuildStatus.FAILEDTOBUILD)
+        build.gotFailure()
         with person_logged_in(self.admin):
             build.retry()
         self.assertEquals(BuildStatus.NEEDSBUILD, build.status)
         self.assertEquals(self.now, build.date_first_dispatched)
         self.assertEquals(None, build.log)
         self.assertEquals(None, build.upload_log)
+        self.assertEquals(0, build.failure_count)
 
     def test_create_bpr(self):
         # Test that we can create a BPR from a given build.
