@@ -15,6 +15,7 @@ __all__ = [
 
 import datetime
 import httplib
+from operator import itemgetter
 
 from lazr.restful.declarations import error_status
 from sqlobject import (
@@ -186,13 +187,11 @@ class MilestoneData:
                             SpecificationWorkItem.deleted == False)),
                     all=True)),
             *clauses)
-        ordered_results = results.order_by(Desc(Specification.priority),
-                                           Specification.definition_status,
-                                           Specification.implementation_status,
-                                           Specification.title)
+        ordered_results = results.order_by(
+            Desc(Specification.priority), Specification.definition_status,
+            Specification.implementation_status, Specification.title)
         ordered_results.config(distinct=True)
-        mapper = lambda row: row[0]
-        return DecoratedResultSet(ordered_results, mapper)
+        return DecoratedResultSet(ordered_results, itemgetter(0))
 
     def bugtasks(self, user):
         """The list of non-conjoined bugtasks targeted to this milestone."""

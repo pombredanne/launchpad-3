@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Common registry browser helpers and mixins."""
@@ -30,6 +30,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.registry.interfaces.productseries import IProductSeries
@@ -248,6 +249,9 @@ class RegistryDeleteViewMixin:
                 nb.milestone = None
         for spec in self._getSpecifications(milestone):
             spec.milestone = None
+        Store.of(milestone).find(
+            SpecificationWorkItem, milestone_id=milestone.id).set(
+                milestone_id=None)
         self._deleteRelease(milestone.product_release)
         milestone.destroySelf()
 
