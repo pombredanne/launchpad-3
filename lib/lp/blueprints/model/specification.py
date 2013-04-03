@@ -1013,10 +1013,6 @@ class SpecificationSet(HasSpecificationsMixin):
         cur.execute(query)
         return cur.fetchall()
 
-    def __iter__(self):
-        """See ISpecificationSet."""
-        return iter(Specification.select())
-
     def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
         from lp.blueprints.model.specificationsearch import (
