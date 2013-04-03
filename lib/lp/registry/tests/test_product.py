@@ -812,7 +812,7 @@ class TestProduct(TestCaseWithFactory):
             'official_blueprints', 'official_codehosting', 'official_malone',
             'owner', 'parent_subscription_target', 'project', 'title', )),
         'launchpad.View': set((
-            '_getOfficialTagClause', '_all_specifications',
+            '_getOfficialTagClause', 'visible_specifications',
             '_valid_specifications', 'active_or_packaged_series',
             'aliases', 'all_milestones',
             'allowsTranslationEdits', 'allowsTranslationSuggestions',

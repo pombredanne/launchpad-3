@@ -37,7 +37,7 @@ class IHasSpecifications(Interface):
     associated with them, and you can use this interface to query those.
     """
 
-    _all_specifications = exported(doNotSnapshot(
+    visible_specifications = exported(doNotSnapshot(
         CollectionField(
             title=_("All specifications"),
             value_type=Reference(schema=Interface),  # ISpecification, really.

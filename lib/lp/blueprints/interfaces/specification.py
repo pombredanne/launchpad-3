@@ -698,9 +698,6 @@ class ISpecificationSet(IHasSpecifications):
         :return: A list of tuples containing (status_id, count).
         """
 
-    def __iter__():
-        """Iterate over all specifications."""
-
     def getByURL(url):
         """Return the specification with the given url."""
 

@@ -1055,6 +1055,7 @@
                 productseries
                 series_target
                 summary
+                all_specifications
                 "/>
         <require
             permission="launchpad.LimitedView"
@@ -1458,7 +1459,7 @@
         <require
             permission="launchpad.View"
             attributes="
-                _all_specifications
+                visible_specifications
                 _valid_specifications
                 getAllowedSpecificationInformationTypes
                 getDefaultSpecificationInformationType
