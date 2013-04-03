@@ -734,7 +734,7 @@ patch_entry_return_type(
 
 # IHasSpecifications
 patch_collection_property(
-    IHasSpecifications, '_all_specifications', ISpecification)
+    IHasSpecifications, 'visible_specifications', ISpecification)
 patch_collection_property(
     IHasSpecifications, '_valid_specifications', ISpecification)
 

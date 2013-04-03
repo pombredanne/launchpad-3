@@ -182,21 +182,3 @@ class TestProductSeriesStatus(TestCaseWithFactory):
                 (status_count.status, status_count.count)
                 for status_count in view.bugtask_status_counts]
         self.assertEqual(expected, observed)
-
-
-class TestProductSeriesDeleteView(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def test_delete_series_with_deleted_workitems(self):
-        series = self.factory.makeProductSeries()
-        milestone = self.factory.makeMilestone(productseries=series)
-        specification = self.factory.makeSpecification(
-            product=milestone.product)
-        workitem = self.factory.makeSpecificationWorkItem(
-            specification=specification, milestone=milestone, deleted=True)
-        form = {'field.actions.delete': 'Delete Series'}
-        with person_logged_in(milestone.product.owner):
-            view = create_initialized_view(series, '+delete', form=form)
-        self.assertEqual([], view.errors)
-        self.assertIs(None, workitem.milestone)

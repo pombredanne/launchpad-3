@@ -332,6 +332,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             self, base_clauses, user, sort, quantity, filter, prejoin_people,
             default_acceptance=True)
 
+    @property
+    def all_specifications(self):
+        return Store.of(self).find(
+            Specification, Specification.productseriesID == self.id)
+
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this product series."""
         search_params.setProductSeries(self)

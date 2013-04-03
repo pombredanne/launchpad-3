@@ -626,7 +626,7 @@ class ProductSeriesSecurityAdaperTestCase(TestCaseWithFactory):
             'bugtargetdisplayname', 'bugtarget_parent', 'name',
             'parent_subscription_target', 'product', 'productID', 'series')),
         'launchpad.View': set((
-            '_all_specifications', '_getOfficialTagClause',
+            'visible_specifications', '_getOfficialTagClause',
             '_valid_specifications', 'active', 'all_milestones',
             'answers_usage', 'blueprints_usage', 'branch',
             'bug_reported_acknowledgement', 'bug_reporting_guidelines',

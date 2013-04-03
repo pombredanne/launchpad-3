@@ -68,7 +68,6 @@ from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import SQLBase
 from lp.services.propertycache import get_property_cache
-from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.sorting import expand_numbers
 
 
@@ -159,6 +158,11 @@ class MilestoneData:
     @property
     def title(self):
         raise NotImplementedError
+
+    @property
+    def all_specifications(self):
+        return Store.of(self).find(
+            Specification, Specification.milestoneID == self.id)
 
     def getSpecifications(self, user):
         """See `IMilestoneData`"""
@@ -306,14 +310,13 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
         params = BugTaskSearchParams(milestone=self, user=None)
         bugtasks = getUtility(IBugTaskSet).search(params)
         subscriptions = IResultSet(self.getSubscriptions())
-        user = getUtility(ILaunchBag).user
         assert subscriptions.is_empty(), (
             "You cannot delete a milestone which has structural "
             "subscriptions.")
-        assert bugtasks.count() == 0, (
+        assert bugtasks.is_empty(), (
             "You cannot delete a milestone which has bugtasks targeted "
             "to it.")
-        assert self.getSpecifications(user).count() == 0, (
+        assert self.all_specifications.is_empty(), (
             "You cannot delete a milestone which has specifications targeted "
             "to it.")
         assert self.product_release is None, (

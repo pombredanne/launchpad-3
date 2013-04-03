@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 import soupmatchers
+from storm.store import Store
 from testtools.matchers import LessThan
 from zope.component import getUtility
 
@@ -308,6 +309,36 @@ class TestMilestoneDeleteView(TestCaseWithFactory):
         tasks = milestone.product.development_focus.searchTasks(
             BugTaskSearchParams(user=None))
         self.assertEqual(0, tasks.count())
+
+    def test_delete_milestone_with_deleted_workitems(self):
+        milestone = self.factory.makeMilestone()
+        specification = self.factory.makeSpecification(
+            product=milestone.product)
+        workitem = self.factory.makeSpecificationWorkItem(
+            specification=specification, milestone=milestone, deleted=True)
+        form = {'field.actions.delete': 'Delete Milestone'}
+        owner = milestone.product.owner
+        with person_logged_in(owner):
+            view = create_initialized_view(milestone, '+delete', form=form)
+        Store.of(workitem).flush()    
+        self.assertEqual([], view.errors)
+        self.assertIs(None, workitem.milestone)
+
+    def test_delete_milestone_with_private_specification(self):
+        policy = SpecificationSharingPolicy.PROPRIETARY
+        product = self.factory.makeProduct(specification_sharing_policy=policy)
+        milestone = self.factory.makeMilestone(product=product)
+        specification = self.factory.makeSpecification(
+            information_type=InformationType.PROPRIETARY, milestone=milestone)
+        ap = getUtility(IAccessPolicySource).find(
+            [(product, InformationType.PROPRIETARY)])
+        getUtility(IAccessPolicyGrantSource).revokeByPolicy(ap)
+        form = {'field.actions.delete': 'Delete Milestone'}
+        with person_logged_in(product.owner):
+            view = create_initialized_view(milestone, '+delete', form=form)
+        Store.of(specification).flush()    
+        self.assertEqual([], view.errors)
+        self.assertIs(None, specification.milestone)
 
 
 class TestQueryCountBase(TestCaseWithFactory):

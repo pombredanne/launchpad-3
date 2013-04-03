@@ -569,7 +569,7 @@ class MilestoneDeleteView(LaunchpadFormView, RegistryDeleteViewMixin):
     @cachedproperty
     def specifications(self):
         """The list `ISpecification`s targeted to the milestone."""
-        return self._getSpecifications(self.context)
+        return self.context.getSpecifications(self.user)
 
     @cachedproperty
     def product_release(self):

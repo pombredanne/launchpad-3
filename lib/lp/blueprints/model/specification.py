@@ -968,7 +968,7 @@ class HasSpecificationsMixin:
             return (Desc(Specification.datecreated), Specification.id)
 
     @property
-    def _all_specifications(self):
+    def visible_specifications(self):
         """See IHasSpecifications."""
         user = getUtility(ILaunchBag).user
         return self.specifications(user, filter=[SpecificationFilter.ALL])
@@ -1013,13 +1013,9 @@ class SpecificationSet(HasSpecificationsMixin):
         cur.execute(query)
         return cur.fetchall()
 
-    @property
-    def _all_specifications(self):
-        return Specification.select()
-
     def __iter__(self):
         """See ISpecificationSet."""
-        return iter(self.all_specifications)
+        return iter(Specification.select())
 
     def specifications(self, user, sort=None, quantity=None, filter=None,
                        prejoin_people=True):
