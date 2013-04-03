@@ -265,7 +265,8 @@ class IProductSeriesView(
             "A Bazaar branch to commit translation snapshots to.  "
             "Leave blank to disable."))
 
-    all_specifications = Attribute('All specifications linked to this series.')
+    all_specifications = doNotSnapshot(
+        Attribute('All specifications linked to this series.'))
 
     def getCachedReleases():
         """Gets a cached copy of this series' releases.

@@ -696,9 +696,10 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     @cachedproperty
     def specifications(self):
         """A list of all `ISpecification`s targeted to this series."""
-        return list(self.context.visible_specifications) + [
-            list(milestone.getSpecifications(self.user))
-                for milestone in self.milestones]
+        all_specifications = list(self.context.visible_specifications)
+        for milestone in self.milestones:
+            all_specifications.extend(milestone.getSpecifications(self.user))
+        return all_specifications
 
     @cachedproperty
     def has_bugtasks_and_specifications(self):

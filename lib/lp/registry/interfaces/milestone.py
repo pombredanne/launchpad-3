@@ -135,8 +135,8 @@ class IMilestoneData(IHasBugs, IStructuralSubscriptionTarget,
     title = exported(
         TextLine(title=_("A context title for pages."),
                  readonly=True))
-    all_specifications = Attribute(
-        'All specifications linked to this milestone.')
+    all_specifications = doNotSnapshot(
+        Attribute('All specifications linked to this milestone.'))
 
     def bugtasks(user):
         """Get a list of non-conjoined bugtasks visible to this user."""
