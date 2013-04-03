@@ -99,9 +99,6 @@ member, and therefore should be able to edit any spec attached to it
 
 SpecificationSet implements the ISpecificationSet interface
 
-    >>> ubuspec in specset
-    True
-
     >>> from lp.testing import verifyObject
     >>> verifyObject(ISpecificationSet, specset)
     True
