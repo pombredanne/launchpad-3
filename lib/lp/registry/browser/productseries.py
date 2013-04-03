@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes for `IProductSeries`."""
@@ -696,9 +696,9 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     @cachedproperty
     def specifications(self):
         """A list of all `ISpecification`s targeted to this series."""
-        all_specifications = self._getSpecifications(self.context)
+        all_specifications = list(self.context.visible_specifications)
         for milestone in self.milestones:
-            all_specifications.extend(self._getSpecifications(milestone))
+            all_specifications.extend(milestone.getSpecifications(self.user))
         return all_specifications
 
     @cachedproperty

@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View tests for ProductSeries pages."""
@@ -104,9 +104,9 @@ class TestWithBrowser(BrowserTestCase):
         """The displayed branch name should include the unique name."""
         branch = self.factory.makeProductBranch()
         series = self.factory.makeProductSeries(branch=branch)
-        tag = soupmatchers.Tag('series-branch', 'a',
-                               attrs={'id': 'series-branch'},
-                               text='lp://dev/' + branch.unique_name)
+        tag = soupmatchers.Tag(
+            'series-branch', 'a', attrs={'id': 'series-branch'},
+            text='lp://dev/' + branch.unique_name)
         browser = self.getViewBrowser(series)
         self.assertThat(browser.contents, soupmatchers.HTMLContains(tag))
 
@@ -121,8 +121,8 @@ class TestWithBrowser(BrowserTestCase):
             information_type=InformationType.PROPRIETARY)
         productseries = self.factory.makeProductSeries(product=product)
         ubuntu_series = self.factory.makeUbuntuDistroSeries()
-        sp = self.factory.makeSourcePackage(distroseries=ubuntu_series,
-                                            publish=True)
+        sp = self.factory.makeSourcePackage(
+            distroseries=ubuntu_series, publish=True)
         browser = self.getBrowser(productseries, '+ubuntupkg')
         browser.getControl('Source Package Name').value = (
             sp.sourcepackagename.name)
@@ -156,11 +156,9 @@ class TestProductSeriesStatus(TestCaseWithFactory):
         series = self.factory.makeProductSeries(product=product)
         for status in BugTaskStatusSearch.items:
             self.factory.makeBug(
-                series=series, status=status,
-                owner=product.owner)
+                series=series, status=status, owner=product.owner)
         self.factory.makeBug(
-            series=series, status=BugTaskStatus.UNKNOWN,
-            owner=product.owner)
+            series=series, status=BugTaskStatus.UNKNOWN, owner=product.owner)
         expected = [
             (BugTaskStatus.NEW, 1),
             (BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE, 1),
@@ -177,8 +175,7 @@ class TestProductSeriesStatus(TestCaseWithFactory):
             (BugTaskStatus.INPROGRESS, 1),
             (BugTaskStatus.FIXCOMMITTED, 1),
             (BugTaskStatus.FIXRELEASED, 1),
-            (BugTaskStatus.UNKNOWN, 1),
-            ]
+            (BugTaskStatus.UNKNOWN, 1)]
         with person_logged_in(product.owner):
             view = create_initialized_view(series, '+status')
             observed = [

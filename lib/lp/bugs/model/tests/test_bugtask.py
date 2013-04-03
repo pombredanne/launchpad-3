@@ -27,7 +27,6 @@ from lp.app.enums import (
     ServiceUsage,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBug,
@@ -505,7 +504,7 @@ class TestBugTaskBadges(TestCaseWithFactory):
             ' has_specification: False'])
 
         # a specification gets linked...
-        spec = getUtility(ISpecificationSet)._all_specifications[0]
+        spec = self.factory.makeSpecification()
         spec.linkBug(bug_two)
 
         # or a branch gets linked to the bug...
