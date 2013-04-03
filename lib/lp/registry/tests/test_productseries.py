@@ -650,7 +650,7 @@ class ProductSeriesSecurityAdaperTestCase(TestCaseWithFactory):
             'getTranslationTemplates', 'getUbuntuTranslationFocusPackage',
             'getUsedBugTagsWithOpenCounts',
             'has_current_translation_templates', 'has_milestones',
-            'has_obsolete_translation_templates',
+            'has_obsolete_translation_templates', 'all_specifications',
             'has_sharing_translation_templates', 'has_translation_files',
             'has_translation_templates', 'is_development_focus', 'milestones',
             'official_bug_tags', 'owner', 'packagings', 'parent',
@@ -735,7 +735,7 @@ class ProductSeriesSecurityAdaperTestCase(TestCaseWithFactory):
                 self.proprietary_series)
 
             # They have access to attributes requiring the permission
-            # launchpad.Viewand launchpad.LimitedView of a series for a
+            # launchpad.View and launchpad.LimitedView of a series for a
             # public product...
             self.assertAccessAuthorized(
                 self.expected_get_permissions['launchpad.View'],
