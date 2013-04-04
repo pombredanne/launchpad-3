@@ -1035,6 +1035,39 @@ class TestSharingPOFileCreation(TestCaseWithFactory):
         self.assertNotEqual(None, stable_potemplate.getPOFileByLang('eo'))
         self.assertNotEqual(None, stable_potemplate.getPOFileByLang('de'))
 
+    def test_pofile_creation_sharing_with_credits(self):
+        # When pofiles are created due to sharing, any credits messages
+        # in the new pofiles are translated, even if they have different
+        # names.
+        devel_potemplate = self.factory.makePOTemplate(
+            productseries=self.foo_devel, name="messages")
+        stable_potemplate = self.factory.makePOTemplate(
+            productseries=self.foo_stable, name="messages")
+        devel_credits = self.factory.makePOTMsgSet(
+            potemplate=devel_potemplate, singular=u'translator-credits')
+        stable_credits = self.factory.makePOTMsgSet(
+            potemplate=stable_potemplate, singular=u'translation-credits')
+
+        # Create one language from the devel end, and the other from
+        # stable.
+        devel_eo = devel_potemplate.newPOFile('eo')
+        stable_eo = stable_potemplate.getPOFileByLang('eo')
+        stable_is = stable_potemplate.newPOFile('is')
+        devel_is = devel_potemplate.getPOFileByLang('is')
+
+        # Even though the devel and stable credits msgids are different,
+        # both are translated for both languages.
+        for ms, po in [
+                (devel_credits, devel_eo),
+                (devel_credits, devel_is),
+                (stable_credits, stable_eo),
+                (stable_credits, stable_is)]:
+            self.assertIsNot(
+                None,
+                ms.getCurrentTranslation(
+                    po.potemplate, po.language,
+                    po.potemplate.translation_side))
+
 
 class TestTranslationCredits(TestCaseWithFactory):
     """Test generation of translation credits."""
