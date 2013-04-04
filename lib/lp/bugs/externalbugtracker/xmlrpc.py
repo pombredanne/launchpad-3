@@ -58,6 +58,7 @@ class XMLRPCRedirectHandler(HTTPRedirectHandler):
         # We can therefore just copy the data from the old request to
         # the new without worrying about breaking things.
         new_request.data = req.data
+        new_request.timeout = req.timeout
         return new_request
 
 
