@@ -768,6 +768,10 @@ class POTemplate(SQLBase, RosettaStats):
             # Update cache to reflect the change.
             template._cached_pofiles_by_language[language_code] = pofile
 
+            # Set dummy translations for translation credits in this POFile.
+            for credits in template.getTranslationCredits():
+                credits.setTranslationCreditsToTranslated(pofile)
+
     def newPOFile(self, language_code, create_sharing=True, owner=None):
         """See `IPOTemplate`."""
         # Make sure we don't already have a PO file for this language.
