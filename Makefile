@@ -37,7 +37,7 @@ endef
 JS_BUILD_DIR := build/js
 YUI_VERSIONS := 3.3.0 3.5.1
 YUI_BUILDS := $(patsubst %,$(JS_BUILD_DIR)/yui-%, $(YUI_VERSIONS))
-YUI_TWO := $(JS_BUILD_DIR)/yui2
+YUI2_BUILD:= $(JS_BUILD_DIR)/yui2
 YUI_DEFAULT := $(JS_BUILD_DIR)/yui-3.5.1
 JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD:raw=))
 JS_LP := $(shell find -L $(JS_LP_PATHS) -name '*.js' ! -name '.*.js')
@@ -184,13 +184,13 @@ $(YUI_BUILDS): | $(JS_BUILD_DIR)
 
 $(JS_LP): jsbuild_widget_css
 
-$(YUI_TWO): lib/canonical/launchpad/icing/yui_2.7.0b/build
+$(YUI2_BUILD): lib/canonical/launchpad/icing/yui_2.7.0b/build
 	mkdir -p $@
 	cp -a $</* $@
 
 # YUI_DEFAULT is one of the targets in YUI_BUILDS which expands all of our YUI
 # versions for us.
-$(JS_ALL): $(YUI_TWO) $(YUI_BUILDS) $(YUI_DEFAULT)
+$(JS_ALL): $(YUI2_BUILD) $(YUI_BUILDS) $(YUI_DEFAULT)
 $(JS_OUT): $(JS_ALL)
 ifeq ($(JS_BUILD), min)
 	cat $^ | bin/lpjsmin > $@
