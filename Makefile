@@ -37,6 +37,7 @@ endef
 JS_BUILD_DIR := build/js
 YUI_VERSIONS := 3.3.0 3.5.1
 YUI_BUILDS := $(patsubst %,$(JS_BUILD_DIR)/yui-%, $(YUI_VERSIONS))
+YUI_TWO := $(JS_BUILD_DIR)/yui2
 YUI_DEFAULT := $(JS_BUILD_DIR)/yui-3.5.1
 JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD:raw=))
 JS_LP := $(shell find -L $(JS_LP_PATHS) -name '*.js' ! -name '.*.js')
@@ -175,24 +176,21 @@ jsbuild_watch:
 $(JS_BUILD_DIR):
 	mkdir -p $@
 
-$(YUI_BUILDS): $(JS_BUILD_DIR)
-	for V in $(YUI_VERSIONS); do \
-		$(RM) -r $(JS_BUILD_DIR)/yui-$$V; \
-		mkdir $(JS_BUILD_DIR)/yui-$$V $(JS_BUILD_DIR)/yui-$$V-tmp; \
-		unzip -q download-cache/dist/yui_$$V.zip -d $(JS_BUILD_DIR)/yui-$$V-tmp; \
-		mv $(JS_BUILD_DIR)/yui-$$V-tmp/yui/build/* $(JS_BUILD_DIR)/yui-$$V/; \
-		rm -rf $(JS_BUILD_DIR)/yui-$$V-tmp; \
-	done
+$(YUI_BUILDS): | $(JS_BUILD_DIR)
+	mkdir -p $@/tmp
+	unzip -q download-cache/dist/yui_$(subst build/js/yui-,,$@).zip -d $@/tmp 'yui/build/*'
+	mv $@/tmp/yui/build/* $@
+	$(RM) -r $@/tmp
 
 $(JS_LP): jsbuild_widget_css
 
-build/js/yui2/%: lib/canonical/launchpad/icing/yui_2.7.0b/build/%
-	mkdir -p `dirname $@`
-	cp -a $< $@
+$(YUI_TWO): lib/canonical/launchpad/icing/yui_2.7.0b/build
+	mkdir -p $@
+	cp -a $</* $@
 
 # YUI_DEFAULT is one of the targets in YUI_BUILDS which expands all of our YUI
 # versions for us.
-$(JS_ALL): $(YUI_DEFAULT)
+$(JS_ALL): $(YUI_TWO) $(YUI_BUILDS) $(YUI_DEFAULT)
 $(JS_OUT): $(JS_ALL)
 ifeq ($(JS_BUILD), min)
 	cat $^ | bin/lpjsmin > $@
@@ -206,7 +204,7 @@ combobuild:
 	utilities/check-js-deps
 
 jsbuild: $(PY) $(JS_OUT)
-	bin/combo-rootdir build/js $(YUI_DEFAULT)
+	bin/combo-rootdir $(JS_BUILD_DIR) $(YUI_DEFAULT)
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
@@ -518,7 +516,7 @@ pydoctor:
 		--docformat restructuredtext --verbose-about epytext-summary \
 		$(PYDOCTOR_OPTIONS)
 
-.PHONY: apidoc build_eggs buildonce_eggs buildout_bin check check	\
+.PHONY: apidoc build_eggs buildonce_eggs buildout_bin check \
 	check_config check_mailman clean clean_buildout clean_js	\
 	clean_logs compile css_combine debug default doc ftest_build	\
 	ftest_inplace hosted_branches jsbuild jsbuild_widget_css	\

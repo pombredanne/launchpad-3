@@ -23,11 +23,6 @@ if [ ! -h $BUILD_DIR/yui ]; then
     ln -sf `basename $YUI_VERSION` $BUILD_DIR/yui
 fi
 
-# And YUI 2, for now.
-if [ ! -d $BUILD_DIR/yui2 ]; then
-    cp -a lib/canonical/launchpad/icing/yui_2.7.0b/build $BUILD_DIR/yui2
-fi
-
 # Copy in our modules.
 rm -rf $BUILD_DIR/lp
 mkdir $BUILD_DIR/lp
