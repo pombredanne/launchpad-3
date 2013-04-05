@@ -177,6 +177,7 @@ $(JS_BUILD_DIR):
 
 $(YUI_BUILDS): $(JS_BUILD_DIR)
 	for V in $(YUI_VERSIONS); do \
+		$(RM) -r $(JS_BUILD_DIR)/yui-$$V; \
 		mkdir $(JS_BUILD_DIR)/yui-$$V $(JS_BUILD_DIR)/yui-$$V-tmp; \
 		unzip -q download-cache/dist/yui_$$V.zip -d $(JS_BUILD_DIR)/yui-$$V-tmp; \
 		mv $(JS_BUILD_DIR)/yui-$$V-tmp/yui/build/* $(JS_BUILD_DIR)/yui-$$V/; \
