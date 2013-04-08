@@ -164,22 +164,6 @@ class YUITestFixtureControllerView(LaunchpadView):
     TEARDOWN = 'TEARDOWN'
     INDEX = 'INDEX'
 
-    yui_block_no_combo = dedent("""\
-        <script type="text/javascript"
-            src="/+icing/rev%(revno)s/build/launchpad.js"></script>
-
-        <script type="text/javascript">
-            YUI.GlobalConfig = {
-                fetchCSS: false,
-                timeout: 50,
-                ignore: [
-                    'yui2-yahoo', 'yui2-event', 'yui2-dom',
-                    'yui2-calendar','yui2-dom-event'
-                ]
-            }
-       </script>
-    """)
-
     yui_block_combo = dedent("""\
        <script type="text/javascript"
            src="/+yuitest/build/js/yui/yui/yui-min.js"></script>
@@ -274,8 +258,6 @@ class YUITestFixtureControllerView(LaunchpadView):
         <html>
           <head>
           <title>YUI XHR Tests</title>
-          <script type="text/javascript"
-            src="/+icing/rev%(revno)s/build/launchpad.js"></script>
           <link rel="stylesheet"
             href="/+icing/yui/assets/skins/sam/skin.css"/>
           <link rel="stylesheet" href="/+icing/rev%(revno)s/combo.css"/>
@@ -487,12 +469,9 @@ class YUITestFixtureControllerView(LaunchpadView):
         to load launchpad.js, else we need launchpad.js for things to run.
 
         """
-        if self.request.features.getFlag('js.combo_loader.enabled'):
-            return self.yui_block_combo % dict(
-                revno=revno,
-                combo_url=self.combo_url)
-        else:
-            return self.yui_block_no_combo % dict(revno=revno)
+        return self.yui_block_combo % dict(
+            revno=revno,
+            combo_url=self.combo_url)
 
     def render(self):
         return getattr(self, 'render' + self.action)()
