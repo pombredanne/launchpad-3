@@ -22,12 +22,6 @@ LISTEN_ADDRESS?=127.0.0.88
 ICING=lib/canonical/launchpad/icing
 LP_BUILT_JS_ROOT=${ICING}/build
 
-ifeq ($(LPCONFIG), development)
-JS_BUILD := raw
-else
-JS_BUILD := min
-endif
-
 JS_BUILD_DIR := build/js
 YUI_VERSIONS := 3.5.1
 YUI_BUILDS := $(patsubst %,$(JS_BUILD_DIR)/yui-%, $(YUI_VERSIONS))
@@ -185,9 +179,7 @@ $(LP_JS_BUILD): | $(JS_BUILD_DIR)
 		cp -a $$jsdir $@/$$app; \
 	done
 	find $@ -name 'tests' -type d | xargs rm -rf
-ifeq ($(JS_BUILD), min)
 	bin/lpjsmin -p $@
-endif
 
 $(YUI2_BUILD): lib/canonical/launchpad/icing/yui_2.7.0b/build
 	mkdir -p $@
