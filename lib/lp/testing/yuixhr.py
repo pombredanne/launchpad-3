@@ -189,7 +189,7 @@ class YUITestFixtureControllerView(LaunchpadView):
                         fetchCSS: false
                     },
                     yui2: {
-                        combine: true,
+                        combine: false,
                         base: '/+yuitest/build/js/yui2/',
                         fetchCSS: false,
                         modules: {
@@ -213,6 +213,8 @@ class YUITestFixtureControllerView(LaunchpadView):
                 }
             }
         </script>
+        <script type="text/javascript"
+            src="/+yuitest/build/js/lp/app/testing/testrunner.js"></script>
     """)
 
     page_template = dedent("""\
@@ -221,12 +223,6 @@ class YUITestFixtureControllerView(LaunchpadView):
           <head>
             <title>Test</title>
             %(javascript_block)s
-            <script type="text/javascript">
-              // we need this to create a single YUI instance all events and
-              // code talks across. All instances of YUI().use should be
-              // based off of LPJS instead.
-              LPJS = new YUI();
-            </script>
             <link rel="stylesheet"
               href="/+yuitest/build/js/yui/console/assets/console-core.css"/>
             <link rel="stylesheet"
@@ -238,15 +234,15 @@ class YUITestFixtureControllerView(LaunchpadView):
           </head>
         <body class="yui3-skin-sam">
           <div id="log"></div>
+          <ul id="suites"><li>%(test_namespace)s</li></ul>
           <p>Want to re-run your test?</p>
           <ul>
             <li><a href="?">Reload test JS</a></li>
             <li><a href="?reload=1">Reload test JS and the associated
                                     Python fixtures</a></li>
           </ul>
-          <p>Don't forget to run <code>make jsbuild</code> and then do a
-             hard reload of this page if you change a file that is built
-             into launchpad.js!</p>
+          <p>Don't forget to run <code>make jsbuild</code> if you change a
+             comboloaded file.</p>
           <p>If you change Python code other than the fixtures, you must
              restart the server.  Sorry.</p>
         </body>
@@ -415,6 +411,7 @@ class YUITestFixtureControllerView(LaunchpadView):
                 reload(module)
         return self.page_template % dict(
             test_module='/+yuitest/%s.js' % self.traversed_path,
+            test_namespace=self.traversed_path.replace('/', '.'),
             revno=revno,
             javascript_block=self.renderYUI())
 
