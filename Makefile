@@ -28,21 +28,13 @@ else
 JS_BUILD := min
 endif
 
-define JS_LP_PATHS
-lib -path 'lib/lp/*/javascript/*' \
-! -path '*/tests/*' ! -path '*/testing/*' \
-! -path 'lib/lp/services/*'
-endef
-
 JS_BUILD_DIR := build/js
-YUI_VERSIONS := 3.3.0 3.5.1
+YUI_VERSIONS := 3.5.1
 YUI_BUILDS := $(patsubst %,$(JS_BUILD_DIR)/yui-%, $(YUI_VERSIONS))
 YUI2_BUILD:= $(JS_BUILD_DIR)/yui2
-YUI_DEFAULT := $(JS_BUILD_DIR)/yui-3.5.1
-JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD:raw=))
-JS_LP := $(shell find -L $(JS_LP_PATHS) -name '*.js' ! -name '.*.js')
-JS_ALL := $(JS_YUI) $(JS_LP)
-JS_OUT := $(LP_BUILT_JS_ROOT)/launchpad.js
+YUI_DEFAULT := yui-3.5.1
+YUI_DEFAULT_SYMLINK := $(JS_BUILD_DIR)/yui
+LP_JS_BUILD := $(JS_BUILD_DIR)/lp
 
 MINS_TO_SHUTDOWN=15
 
@@ -160,9 +152,10 @@ else
 	@exit 1
 endif
 
-css_combine:
+css_combine: jsbuild_widget_css
 	${SHHH} bin/sprite-util create-image
 	${SHHH} bin/sprite-util create-css
+	ln -sfn ../../../../build/js/$(YUI_DEFAULT) $(ICING)/yui
 	${SHHH} bin/combine-css
 
 jsbuild_widget_css: bin/jsbuild
@@ -182,29 +175,30 @@ $(YUI_BUILDS): | $(JS_BUILD_DIR)
 	mv $@/tmp/yui/build/* $@
 	$(RM) -r $@/tmp
 
-$(JS_LP): jsbuild_widget_css
+$(YUI_DEFAULT_SYMLINK): $(YUI_BUILDS)
+	ln -sfn $(YUI_DEFAULT) $@
+
+$(LP_JS_BUILD): | $(JS_BUILD_DIR)
+	mkdir $@
+	for jsdir in lib/lp/*/javascript; do \
+		app=$$(echo $$jsdir | sed -e 's,lib/lp/\(.*\)/javascript,\1,'); \
+		cp -a $$jsdir $@/$$app; \
+	done
+	find $@ -name 'tests' -type d | xargs rm -rf
+ifeq ($(JS_BUILD), min)
+	bin/lpjsmin -p $@
+endif
 
 $(YUI2_BUILD): lib/canonical/launchpad/icing/yui_2.7.0b/build
 	mkdir -p $@
 	cp -a $</* $@
-
-# YUI_DEFAULT is one of the targets in YUI_BUILDS which expands all of our YUI
-# versions for us.
-$(JS_ALL): $(YUI2_BUILD) $(YUI_BUILDS) $(YUI_DEFAULT)
-$(JS_OUT): $(JS_ALL)
-ifeq ($(JS_BUILD), min)
-	cat $^ | bin/lpjsmin > $@
-else
-	awk 'FNR == 1 {print "/* " FILENAME " */"} {print}' $^ > $@
-endif
 
 combobuild:
 	utilities/js-deps -n LP_MODULES -s build/js/lp -x '-min.js' -o \
 	build/js/lp/meta.js >/dev/null
 	utilities/check-js-deps
 
-jsbuild: $(PY) $(JS_OUT)
-	bin/combo-rootdir $(JS_BUILD_DIR) $(YUI_DEFAULT)
+jsbuild: $(LP_JS_BUILD) $(YUI_DEFAULT_SYMLINK) $(YUI2_BUILD)
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
@@ -260,7 +254,6 @@ compile: $(PY) $(BZR_VERSION_INFO)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
-	ln -sf ../../../../build/js/yui-3.3.0 $(ICING)/yui
 
 test_build: build
 	bin/test $(TESTFLAGS) $(TESTOPTS)
@@ -273,10 +266,6 @@ ftest_build: build
 
 ftest_inplace: inplace
 	bin/test -f $(TESTFLAGS) $(TESTOPTS)
-
-merge-proposal-jobs:
-	# Handle merge proposal email jobs.
-	$(PY) cronscripts/merge-proposal-jobs.py -v
 
 run: build inplace stop
 	bin/run -r librarian,google-webservice,memcached,rabbitmq,txlongpoll \
@@ -317,15 +306,6 @@ start_librarian: compile
 
 stop_librarian:
 	bin/killservice librarian
-
-pull_branches: support_files
-	$(PY) cronscripts/supermirror-pull.py
-
-scan_branches:
-	# Scan branches from the filesystem into the database.
-	$(PY) cronscripts/scan_branches.py
-
-sync_branches: pull_branches scan_branches merge-proposal-jobs
 
 $(BZR_VERSION_INFO):
 	scripts/update-bzr-version-info.sh
@@ -374,7 +354,6 @@ rebuildfti:
 	$(PY) database/schema/fti.py -d launchpad_dev --force
 
 clean_js:
-	$(RM) $(JS_OUT)
 	$(RM) -r $(ICING)/yui
 
 clean_buildout:
@@ -392,9 +371,7 @@ clean_logs:
 	$(RM) logs/thread*.request
 
 clean_mailman:
-	$(RM) -r \
-			  /var/tmp/mailman \
-			  /var/tmp/mailman-xmlrpc.test
+	$(RM) -r /var/tmp/mailman /var/tmp/mailman-xmlrpc.test
 ifdef LP_MAKE_KEEP_MAILMAN
 	@echo "Keeping previously built mailman."
 else
@@ -429,8 +406,7 @@ lxc-clean: clean_js clean_mailman clean_buildout clean_logs
 	$(RM) -r build
 	$(RM) $(BZR_VERSION_INFO)
 	$(RM) +config-overrides.zcml
-	$(RM) -r \
-			  /var/tmp/builddmaster \
+	$(RM) -r /var/tmp/builddmaster \
 			  /var/tmp/bzrsync \
 			  /var/tmp/codehosting.test \
 			  /var/tmp/codeimport \
