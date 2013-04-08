@@ -67,27 +67,9 @@
     LP.devmode = true;
   </script>
 
-  <tal:js-legacy condition="not: request/features/js.combo_loader.enabled">
-    <script type="text/javascript"
-          tal:attributes="src string:${icingroot}/build/launchpad.js"></script>
-    <script type="text/javascript" tal:content="string:
-       YUI.GlobalConfig = {
-           debug: ${yui_console_debug},
-           fetchCSS: false,
-           timeout: 50,
-           ignore: [
-               'yui2-yahoo', 'yui2-event', 'yui2-dom',
-               'yui2-calendar','yui2-dom-event'
-           ]
-        }
-       ">
-    </script>
-  </tal:js-legacy>
-
   <script type="text/javascript"
       tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
 
-  <tal:js-loader condition="request/features/js.combo_loader.enabled">
    <script type="text/javascript" tal:attributes="src string:${combo_url}/?${yui_version}/yui/yui-min.js&amp;lp/meta.js&amp;${yui_version}/loader/loader-min.js"></script>
    <script type="text/javascript" tal:content="string:
         var raw = null;
@@ -138,9 +120,8 @@
                 }
             }
         }">
-   </script>
+  </script>
 
-  </tal:js-loader>
   <script type="text/javascript">
       // we need this to create a single YUI instance all events and code
       // talks across. All instances of YUI().use should be based off of
