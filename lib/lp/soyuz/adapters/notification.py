@@ -396,7 +396,7 @@ def send_mail(
         debug(logger, "  Bcc: %s" % extra_headers['Bcc'])
     debug(logger, "  Body:")
     for line in mail_text.splitlines():
-        debug(logger, line)
+        debug(logger, line.decode('utf-8', 'replace'))
 
     if not dry_run:
         # Since we need to send the original changesfile as an
