@@ -108,7 +108,6 @@ setup(
         'zope.app.pagetemplate',
         'zope.app.publication',
         'zope.app.publisher',
-        'zope.app.schema',
         'zope.app.server',
         'zope.app.testing',
         'zope.app.wsgi',
@@ -142,6 +141,7 @@ setup(
         'zope.testing',
         'zope.traversing',
         'zope.viewlet',  # only fixing a broken dependency
+        'zope.vocabularyregistry',
         # Loggerhead dependencies. These should be removed once
         # bug 383360 is fixed and we include it as a source dist.
         'Paste',
