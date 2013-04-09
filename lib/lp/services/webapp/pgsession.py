@@ -11,7 +11,7 @@ from UserDict import DictMixin
 
 from lazr.restful.utils import get_current_browser_request
 from storm.zope.interfaces import IZStorm
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.authentication.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.interface import implements
 from zope.session.interfaces import (

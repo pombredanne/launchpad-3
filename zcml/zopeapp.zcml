@@ -26,7 +26,9 @@
   <include package="zope.app.generations" file="subscriber.zcml" />
     -->
   <!-- Ordinary Application (non-view) configuration) -->
-  <include package="zope.app.security" />
+  <include package="zope.security" />
+  <include package="zope.authentication" />
+  <include package="zope.principalregistry" />
 
   <include package="zope.login" />
   <include package="zope.session" />

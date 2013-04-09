@@ -500,7 +500,7 @@ of objects). Therefore, if no request is explicitly given,
 canonical_url() returns the browser URL, even if the current request is
 a web service request
 
-    >>> from zope.app.security.principalregistry import (
+    >>> from zope.principalregistry.principalregistry import (
     ...     UnauthenticatedPrincipal)
     >>> from lp.services.webapp.interaction import setupInteraction
     >>> from lp.services.webapp.servers import WebServiceTestRequest

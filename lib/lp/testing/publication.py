@@ -13,10 +13,10 @@ __all__ = [
 from cStringIO import StringIO
 
 from zope.app.publication.requestpublicationregistry import factoryRegistry
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.authentication.interfaces import IUnauthenticatedPrincipal
 from zope.component import (
-    getUtility,
     getGlobalSiteManager,
+    getUtility,
     )
 from zope.interface import providedBy
 from zope.publisher.interfaces.browser import IDefaultSkin

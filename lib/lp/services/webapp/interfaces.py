@@ -12,7 +12,7 @@ from lazr.enum import (
     use_template,
     )
 import zope.app.publication.interfaces
-from zope.app.security.interfaces import (
+from zope.authentication.interfaces import (
     IAuthentication,
     IPrincipal,
     IPrincipalSource,

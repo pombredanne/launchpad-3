@@ -31,7 +31,7 @@ import transaction
 from zc.zservertracelog.interfaces import ITraceLog
 import zope.app.publication.browser
 from zope.app.publication.interfaces import BeforeTraverseEvent
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.authentication.interfaces import IUnauthenticatedPrincipal
 from zope.component import (
     getGlobalSiteManager,
     getUtility,
