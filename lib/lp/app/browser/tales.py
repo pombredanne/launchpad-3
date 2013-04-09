@@ -23,7 +23,6 @@ from lazr.restful.utils import get_current_browser_request
 from lazr.uri import URI
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app import zapi
 from zope.component import (
     adapts,
     getMultiAdapter,
@@ -37,6 +36,7 @@ from zope.interface import (
     Interface,
     )
 from zope.publisher.browser import BrowserView
+from zope.publisher.defaultview import getDefaultViewName
 from zope.schema import TextLine
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
@@ -254,7 +254,7 @@ class MenuAPI:
         request_urlobj = URI(request.getURL())
         # If the default view name is being used, we will want the url
         # without the default view name.
-        defaultviewname = zapi.getDefaultViewName(self._context, request)
+        defaultviewname = getDefaultViewName(self._context, request)
         if request_urlobj.path.rstrip('/').endswith(defaultviewname):
             request_urlobj = URI(request.getURL(1))
         query = request.get('QUERY_STRING')

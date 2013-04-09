@@ -26,7 +26,6 @@
   <include package="zope.app.generations" file="subscriber.zcml" />
     -->
   <!-- Ordinary Application (non-view) configuration) -->
-  <include package="zope.app.interface" />
   <include package="zope.app.security" />
 
   <include package="zope.login" />
@@ -72,7 +71,6 @@
   <!-- end of selected things from zope.traversing -->
 
   <include package="zope.app.pagetemplate" />
-  <include package="zope.app.zapi" />
 
   <!-- Views -->
   <include package="zope.app.http" />

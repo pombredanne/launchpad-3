@@ -29,12 +29,11 @@ from storm.zope.interfaces import IZStorm
 import tickcount
 import transaction
 from zc.zservertracelog.interfaces import ITraceLog
-# used to get at the adapters service
-from zope.app import zapi
 import zope.app.publication.browser
 from zope.app.publication.interfaces import BeforeTraverseEvent
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import (
+    getGlobalSiteManager,
     getUtility,
     queryMultiAdapter,
     )
@@ -272,7 +271,7 @@ class LaunchpadBrowserPublication(
         getUtility(IOpenLaunchBag).clear()
 
         # Set the default layer.
-        adapters = zapi.getGlobalSiteManager().adapters
+        adapters = getGlobalSiteManager().adapters
         layer = adapters.lookup((providedBy(request),), IDefaultSkin, '')
         if layer is not None:
             layers.setAdditionalLayer(request, layer)

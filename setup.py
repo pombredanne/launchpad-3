@@ -118,7 +118,6 @@ setup(
         'zope.app.testing',
         'zope.app.tree',
         'zope.app.wsgi',
-        'zope.app.zapi',
         'zope.contenttype',
         'zope.component[zcml]',
         'zope.datetime',
