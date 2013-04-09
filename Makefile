@@ -23,7 +23,7 @@ ICING=lib/canonical/launchpad/icing
 LP_BUILT_JS_ROOT=${ICING}/build
 
 JS_BUILD_DIR := build/js
-YUI_VERSIONS := 3.5.1
+YUI_VERSIONS := 3.5.1 3.9.1
 YUI_BUILDS := $(patsubst %,$(JS_BUILD_DIR)/yui-%, $(YUI_VERSIONS))
 YUI2_BUILD:= $(JS_BUILD_DIR)/yui2
 YUI_DEFAULT := yui-3.5.1
