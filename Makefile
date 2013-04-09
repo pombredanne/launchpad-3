@@ -23,7 +23,7 @@ ICING=lib/canonical/launchpad/icing
 LP_BUILT_JS_ROOT=${ICING}/build
 
 JS_BUILD_DIR := build/js
-YUI_VERSIONS := 3.5.1
+YUI_VERSIONS := 3.5.1 3.9.1
 YUI_BUILDS := $(patsubst %,$(JS_BUILD_DIR)/yui-%, $(YUI_VERSIONS))
 YUI2_BUILD:= $(JS_BUILD_DIR)/yui2
 YUI_DEFAULT := yui-3.5.1
@@ -127,7 +127,7 @@ codehosting-dir:
 	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
-inplace: build combobuild logs clean_logs codehosting-dir
+inplace: build logs clean_logs codehosting-dir
 	if [ -d /srv/launchpad.dev ]; then \
 		ln -sfn $(WD)/build/js $(CONVOY_ROOT); \
 	fi
@@ -185,12 +185,10 @@ $(YUI2_BUILD): lib/canonical/launchpad/icing/yui_2.7.0b/build
 	mkdir -p $@
 	cp -a $</* $@
 
-combobuild:
+jsbuild: $(LP_JS_BUILD) $(YUI_DEFAULT_SYMLINK) $(YUI2_BUILD)
 	utilities/js-deps -n LP_MODULES -s build/js/lp -x '-min.js' -o \
 	build/js/lp/meta.js >/dev/null
 	utilities/check-js-deps
-
-jsbuild: $(LP_JS_BUILD) $(YUI_DEFAULT_SYMLINK) $(YUI2_BUILD)
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
