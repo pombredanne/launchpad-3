@@ -2069,8 +2069,6 @@ class NumberFormatterAPI:
         """Render number as byte contractions according to IEC60027-2."""
         # See http://en.wikipedia.org/wiki
         # /Binary_prefixes#Specific_units_of_IEC_60027-2_A.2
-        # Note that there is a zope.app.size.byteDisplay() function, but
-        # it really limited and doesn't work well enough for us here.
         assert not float(self._number) < 0, "Expected a non-negative number."
         n = int(self._number)
         if n == 1:

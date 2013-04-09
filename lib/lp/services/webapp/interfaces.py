@@ -497,7 +497,7 @@ class IPlacelessLoginSource(IPrincipalSource):
         """Not implemented.
 
         Get principals with matching names.
-        See zope.app.pluggableauth.interfaces.IPrincipalSource
+        See zope.authentication.interfaces.IPrincipalSource
         """
 
 

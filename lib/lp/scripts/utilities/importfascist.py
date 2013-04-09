@@ -171,21 +171,7 @@ class NotFoundPolicyViolation(JackbootError):
 def import_fascist(name, globals={}, locals={}, fromlist=[], level=-1):
     global naughty_imports
 
-    try:
-        module = original_import(name, globals, locals, fromlist, level)
-    except ImportError:
-        # import_fascist screws zope configuration module which introspects
-        # the stack to determine if an ImportError means a module
-        # initialization error or a genuine error. The browser:page always
-        # tries to load a layer from zope.app.layers first, which most of the
-        # time doesn't exist and dies a horrible death because of the import
-        # fascist. That's the long explanation for why we special case this
-        # module.
-        if name.startswith('zope.app.layers.'):
-            name = name[16:]
-            module = original_import(name, globals, locals, fromlist, level)
-        else:
-            raise
+    module = original_import(name, globals, locals, fromlist, level)
     # Python's re module imports some odd stuff every time certain regexes
     # are used.  Let's optimize this.
     if name == 'sre':
