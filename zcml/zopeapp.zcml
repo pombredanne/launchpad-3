@@ -29,6 +29,7 @@
   <include package="zope.app.security" />
 
   <include package="zope.login" />
+  <include package="zope.session" />
 
   <!--
   <include package="zope.app.observable" />

@@ -7,9 +7,6 @@
     <include file="zcml/zopeapp.zcml" />
     <!--<include package="zope.app" />-->
 
-    <!-- Session machinery -->
-    <include file="zcml/zopeappsession.zcml" />
-
     <!-- Browser Configurations -->
     <include file="zcml/zopeappbrowser.zcml" />
     <!-- <include package="zope.app" file="browser.zcml" /> -->

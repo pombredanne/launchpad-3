@@ -112,7 +112,6 @@ setup(
         'zope.app.security',
         'zope.app.securitypolicy',
         'zope.app.server',
-        'zope.app.session',
         'zope.app.testing',
         'zope.app.wsgi',
         'zope.contenttype',
