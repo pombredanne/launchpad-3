@@ -16,6 +16,8 @@
   <include package="zope.browserpage" file="meta.zcml" />
   <includeOverrides package="z3c.ptcompat" file="meta.zcml" />
   <include package="zope.app.publisher.xmlrpc" file="meta.zcml" />
+  <!-- This is probably only used by zope.app.apidoc. -->
+  <include package="zope.browserresource" file="meta.zcml" />
 
   <!-- Note that we need to do this early, as later startup
        subscribers may break without fixups -->
