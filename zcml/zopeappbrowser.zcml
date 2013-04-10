@@ -11,5 +11,4 @@
     <browser:defaultView name="index.html" />
 
     <include package="zope.traversing.browser" />
-    <include package="zope.app.form.browser" />
 </configure>
