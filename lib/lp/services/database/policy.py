@@ -25,7 +25,7 @@ from storm.cache import (
     )
 from storm.exceptions import DisconnectionError
 from storm.zope.interfaces import IZStorm
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.authentication.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.interface import (
     alsoProvides,

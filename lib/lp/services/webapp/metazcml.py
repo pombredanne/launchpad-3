@@ -10,7 +10,6 @@ from z3c.ptcompat.zcml import (
     page_directive as original_page,
     pages_directive as original_pages,
     )
-from zope.app.component.contentdirective import ClassDirective
 from zope.app.file.image import Image
 import zope.app.form.browser.metadirectives
 from zope.app.pagetemplate.engine import TrustedEngine
@@ -47,6 +46,7 @@ from zope.security.checker import (
     CheckerPublic,
     )
 from zope.security.interfaces import IPermission
+from zope.security.metaconfigure import ClassDirective
 from zope.security.permission import Permission
 from zope.security.proxy import ProxyFactory
 from zope.security.zcml import IPermissionDirective

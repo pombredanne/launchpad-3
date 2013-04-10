@@ -100,8 +100,8 @@ browser:renamed-page is available for this purpose.
     >>> from zope.configuration import xmlconfig
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser">
+    ...   <include package="zope.component" file="meta.zcml" />
     ...   <include package="lp.services.webapp" file="meta.zcml" />
-    ...   <include package="zope.app.zcmlfiles" file="meta.zcml" />
     ...   <browser:renamed-page
     ...       for="lp.answers.interfaces.questiontarget.IQuestionTarget"
     ...       name="+old_tickets_page"
