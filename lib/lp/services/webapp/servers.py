@@ -83,7 +83,6 @@ from lp.services.webapp.authorization import (
 from lp.services.webapp.errorlog import ErrorReportRequest
 from lp.services.webapp.interfaces import (
     FinishReadOnlyRequestEvent,
-    IAPIDocRoot,
     IBasicLaunchpadRequest,
     IBrowserFormNG,
     ILaunchpadBrowserApplicationRequest,
@@ -1137,16 +1136,6 @@ class FeedsBrowserRequest(LaunchpadBrowserRequest):
     strict_transport_security = False
 
 
-# ---- apidoc
-
-class APIDocBrowserRequest(LaunchpadBrowserRequest):
-    implements(lp.layers.APIDocLayer)
-
-
-class APIDocBrowserPublication(LaunchpadBrowserPublication):
-    root_object_interface = IAPIDocRoot
-
-
 # ---- testopenid
 
 class TestOpenIDBrowserRequest(LaunchpadBrowserRequest):
@@ -1530,10 +1519,6 @@ def register_launchpad_request_publication_factories():
     if config.launchpad.enable_test_openid_provider:
         factories.append(VHRP('testopenid', TestOpenIDBrowserRequest,
                               TestOpenIDBrowserPublication))
-
-    if config.devmode:
-        factories.append(
-            VHRP('apidoc', APIDocBrowserRequest, APIDocBrowserPublication))
 
     # We may also have a private XML-RPC server.
     private_port = None

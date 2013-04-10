@@ -43,10 +43,6 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://api.launchpad.dev/
     althosts:
     ----
-    apidoc @ apidoc.launchpad.dev
-    rooturl: http://apidoc.launchpad.dev/
-    althosts:
-    ----
     blueprints @ blueprints.launchpad.dev
     rooturl: http://blueprints.launchpad.dev/
     althosts:
@@ -100,7 +96,6 @@ request is headed to one of the officialy-used Launchpad host names:
     ...     print hostname
     answers.launchpad.dev
     api.launchpad.dev
-    apidoc.launchpad.dev
     blueprints.launchpad.dev
     bugs.launchpad.dev
     code.launchpad.dev

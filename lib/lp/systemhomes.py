@@ -64,7 +64,6 @@ from lp.services.database.lpstorm import IStore
 from lp.services.feeds.interfaces.application import IFeedsApplication
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.webapp.interfaces import (
-    IAPIDocRoot,
     ICanonicalUrlData,
     ILaunchBag,
     )
@@ -442,11 +441,3 @@ class WebServiceApplication(ServiceRootResource):
 
 class TestOpenIDApplication:
     implements(ITestOpenIDApplication)
-
-
-class APIDocRoot:
-    implements(IAPIDocRoot)
-    __parent__ = None
-    __name__ = None
-
-apidocroot = APIDocRoot()

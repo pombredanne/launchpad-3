@@ -1407,40 +1407,6 @@ class EditStructuralSubscription(AuthorizationBase):
         return (can_edit_target or can_edit_subscription)
 
 
-class UseApiDoc(AuthorizationBase):
-    """This is just to please apidoc.launchpad.dev."""
-    permission = 'zope.app.apidoc.UseAPIDoc'
-    usedfor = Interface
-
-    def checkUnauthenticated(self):
-        # We only want this permission to work at all for devmode.
-        return config.devmode
-
-    def checkAuthenticated(self, user):
-        # We only want this permission to work at all for devmode.
-        return config.devmode
-
-
-class ManageApplicationForEverybody(UseApiDoc):
-    """This is just to please apidoc.launchpad.dev.
-
-    We do this because zope.app.apidoc uses that permission, but nothing else
-    should be using it.
-    """
-    permission = 'zope.ManageApplication'
-    usedfor = Interface
-
-
-class ZopeViewForEverybody(UseApiDoc):
-    """This is just to please apidoc.launchpad.dev.
-
-    We do this because zope.app.apidoc uses that permission, but nothing else
-    should be using it.
-    """
-    permission = 'zope.View'
-    usedfor = Interface
-
-
 class OnlyBazaarExpertsAndAdmins(AuthorizationBase):
     """Base class that allows only the Launchpad admins and Bazaar
     experts."""
