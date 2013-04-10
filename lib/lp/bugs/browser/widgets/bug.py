@@ -17,11 +17,11 @@ from zope.app.form.browser.textwidgets import (
     TextAreaWidget,
     TextWidget,
     )
-from zope.app.form.interfaces import (
+from zope.component import getUtility
+from zope.formlib.interfaces import (
     ConversionError,
     WidgetInputError,
     )
-from zope.component import getUtility
 from zope.schema.interfaces import ConstraintNotSatisfied
 
 from lp.app.errors import NotFoundError

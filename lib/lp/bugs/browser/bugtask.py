@@ -78,7 +78,6 @@ from zope import (
     )
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
-from zope.app.form.interfaces import InputErrors
 from zope.authentication.interfaces import IUnauthenticatedPrincipal
 from zope.component import (
     ComponentLookupError,
@@ -88,6 +87,7 @@ from zope.component import (
     queryMultiAdapter,
     )
 from zope.event import notify
+from zope.formlib.interfaces import InputErrors
 from zope.interface import (
     implementer,
     implements,

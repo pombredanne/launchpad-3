@@ -14,7 +14,7 @@ __metaclass__ = type
 from zope.app.form.browser.exception import (
     WidgetInputErrorView as Z3WidgetInputErrorView,
     )
-from zope.app.form.interfaces import IWidgetInputError
+from zope.formlib.interfaces import IWidgetInputError
 from zope.interface import (
     implements,
     Interface,

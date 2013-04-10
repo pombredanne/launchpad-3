@@ -10,11 +10,11 @@ from urllib import urlencode
 
 import pytz
 import simplejson
-from zope.app.form.interfaces import MissingInputError
 from zope.component import (
     getSiteManager,
     getUtility,
     )
+from zope.formlib.interfaces import MissingInputError
 from zope.interface import implements
 from zope.schema.interfaces import IVocabularyFactory
 from zope.schema.vocabulary import SimpleTerm

@@ -25,15 +25,15 @@ import pytz
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser.textwidgets import TextWidget
 from zope.app.form.browser.widget import DisplayWidget
-from zope.app.form.interfaces import (
-    ConversionError,
-    InputErrors,
-    WidgetInputError,
-    )
 from zope.component import getUtility
 from zope.datetime import (
     DateTimeError,
     parse,
+    )
+from zope.formlib.interfaces import (
+    ConversionError,
+    InputErrors,
+    WidgetInputError,
     )
 
 from lp.app.validators import LaunchpadValidationError

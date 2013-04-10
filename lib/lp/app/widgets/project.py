@@ -12,13 +12,13 @@ from zope.app.form.browser.widget import (
     BrowserWidget,
     renderElement,
     )
-from zope.app.form.interfaces import (
+from zope.app.form.utility import setUpWidget
+from zope.formlib.interfaces import (
     ConversionError,
     IInputWidget,
     InputErrors,
     WidgetInputError,
     )
-from zope.app.form.utility import setUpWidget
 from zope.interface import implements
 from zope.schema import Choice
 

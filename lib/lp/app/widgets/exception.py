@@ -3,10 +3,8 @@
 
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser.interfaces import IWidgetInputErrorView
-from zope.app.form.interfaces import (
-    IWidgetInputError,
-    WidgetInputError as _WidgetInputError,
-    )
+from zope.app.form.interfaces import WidgetInputError as _WidgetInputError
+from zope.formlib.interfaces import IWidgetInputError
 from zope.interface import implements
 
 

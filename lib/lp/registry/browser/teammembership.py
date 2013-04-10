@@ -14,8 +14,8 @@ from datetime import datetime
 
 import pytz
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.interfaces import InputErrors
 from zope.formlib import form
+from zope.formlib.interfaces import InputErrors
 from zope.schema import Date
 
 from lp import _

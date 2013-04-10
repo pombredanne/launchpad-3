@@ -28,11 +28,11 @@ from zope.app.form.browser import (
     RadioWidget,
     TextAreaWidget,
     )
-from zope.app.form.interfaces import IInputWidget
 from zope.event import notify
 from zope.formlib import form
 # imported so it may be exported
 from zope.formlib.form import action
+from zope.formlib.interfaces import IInputWidget
 from zope.interface import (
     classImplements,
     implements,

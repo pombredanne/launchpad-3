@@ -23,10 +23,10 @@ from lazr.restful.interface import (
     use_template,
     )
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.formlib import form
+from zope.formlib.interfaces import IInputWidget
 from zope.interface import Interface
 from zope.schema import Choice
 from zope.security.interfaces import Unauthorized

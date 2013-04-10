@@ -4,7 +4,7 @@
 import doctest
 import unittest
 
-from zope.app.form.interfaces import (
+from zope.formlib.interfaces import (
     IDisplayWidget,
     IInputWidget,
     )

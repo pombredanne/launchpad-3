@@ -55,10 +55,10 @@ from zope.app.form.browser import (
     TextAreaWidget,
     TextWidget,
     )
-from zope.app.form.interfaces import WidgetInputError
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.formlib.interfaces import WidgetInputError
 from zope.interface import (
     implements,
     Interface,

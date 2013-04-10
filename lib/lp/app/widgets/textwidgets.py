@@ -10,11 +10,11 @@ from zope.app.form.browser.textwidgets import (
     TextAreaWidget,
     TextWidget,
     )
-from zope.app.form.interfaces import ConversionError
 from zope.datetime import (
     DateTimeError,
     parse,
     )
+from zope.formlib.interfaces import ConversionError
 
 from lp.app.errors import UnexpectedFormData
 

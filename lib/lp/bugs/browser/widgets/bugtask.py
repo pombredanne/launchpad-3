@@ -27,15 +27,15 @@ from zope.app.form.browser.widget import (
     BrowserWidget,
     renderElement,
     )
-from zope.app.form.interfaces import (
+from zope.app.form.utility import setUpWidget
+from zope.component import getUtility
+from zope.formlib.interfaces import (
     ConversionError,
     IDisplayWidget,
     IInputWidget,
     InputErrors,
     WidgetInputError,
     )
-from zope.app.form.utility import setUpWidget
-from zope.component import getUtility
 from zope.interface import (
     implements,
     Interface,

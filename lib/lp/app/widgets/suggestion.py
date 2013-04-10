@@ -17,14 +17,14 @@ from datetime import (
 
 from pytz import utc
 from zope.app.form.browser.widget import renderElement
-from zope.app.form.interfaces import (
-    IInputWidget,
-    InputErrors,
-    )
 from zope.app.form.utility import setUpWidget
 from zope.component import (
     getMultiAdapter,
     getUtility,
+    )
+from zope.formlib.interfaces import (
+    IInputWidget,
+    InputErrors,
     )
 from zope.schema.vocabulary import (
     SimpleTerm,

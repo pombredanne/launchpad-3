@@ -8,10 +8,10 @@ from StringIO import StringIO
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import FileWidget
 from zope.app.form.browser.widget import SimpleInputWidget
-from zope.app.form.interfaces import WidgetInputError
 from zope.component import getUtility
 from zope.contenttype import guess_content_type
 from zope.formlib import form
+from zope.formlib.interfaces import WidgetInputError
 from zope.interface import implements
 from zope.schema import (
     Bytes,

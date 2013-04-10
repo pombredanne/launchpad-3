@@ -9,11 +9,11 @@ import pytz
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.interfaces import ISimpleInputWidget
 from zope.app.form.browser.widget import SimpleInputWidget
-from zope.app.form.interfaces import (
+from zope.formlib import form
+from zope.formlib.interfaces import (
     ConversionError,
     WidgetInputError,
     )
-from zope.formlib import form
 from zope.interface import implements
 from zope.schema import (
     Choice,
