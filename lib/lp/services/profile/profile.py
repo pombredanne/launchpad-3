@@ -25,7 +25,6 @@ import threading
 from bzrlib import lsprof
 import oops_datedir_repo.serializer_rfc822
 from z3c.pt.pagetemplate import PageTemplateFile
-from zope.app.publication.interfaces import IEndRequestEvent
 from zope.component import (
     adapter,
     getUtility,
@@ -33,7 +32,10 @@ from zope.component import (
 from zope.contenttype.parse import parse
 from zope.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
-from zope.publisher.interfaces import IStartRequestEvent
+from zope.publisher.interfaces import (
+    IEndRequestEvent,
+    IStartRequestEvent,
+    )
 from zope.traversing.namespace import view
 
 from lp.services.config import config

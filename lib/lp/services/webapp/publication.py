@@ -30,7 +30,6 @@ import tickcount
 import transaction
 from zc.zservertracelog.interfaces import ITraceLog
 import zope.app.publication.browser
-from zope.app.publication.interfaces import BeforeTraverseEvent
 from zope.authentication.interfaces import IUnauthenticatedPrincipal
 from zope.component import (
     getGlobalSiteManager,
@@ -55,6 +54,7 @@ from zope.publisher.interfaces.browser import (
 from zope.publisher.publish import mapply
 from zope.security.management import newInteraction
 from zope.security.proxy import removeSecurityProxy
+from zope.traversing.interfaces import BeforeTraverseEvent
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 import lp.layers as layers
