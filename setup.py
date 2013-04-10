@@ -99,7 +99,6 @@ setup(
         'z3c.pt',
         'z3c.ptcompat',
         'zc.zservertracelog',
-        'zope.app.apidoc',
         'zope.app.appsetup',
         'zope.app.exception',
         'zope.app.file',
