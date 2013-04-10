@@ -32,10 +32,10 @@ __all__ = [
 
 
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.formlib.widgets import TextWidget
 from zope.interface import (
     implements,
     Interface,

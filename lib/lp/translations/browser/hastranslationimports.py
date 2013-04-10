@@ -14,9 +14,9 @@ import datetime
 import pytz
 import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser import DropdownWidget
 from zope.component import getUtility
 from zope.formlib import form
+from zope.formlib.widgets import DropdownWidget
 from zope.interface import implements
 from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder

@@ -44,12 +44,12 @@ from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IJSONRequestCache
 from simplejson import dumps
 from zope import formlib
-from zope.app.form.browser import TextWidget
 from zope.component import (
     getMultiAdapter,
     getUtility,
     )
 from zope.event import notify
+from zope.formlib.widgets import TextWidget
 from zope.interface import (
     implements,
     Interface,

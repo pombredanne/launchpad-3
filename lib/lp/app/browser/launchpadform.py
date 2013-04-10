@@ -22,17 +22,17 @@ from lazr.lifecycle.snapshot import Snapshot
 import simplejson
 import transaction
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser import (
-    CheckBoxWidget,
-    DropdownWidget,
-    RadioWidget,
-    TextAreaWidget,
-    )
 from zope.event import notify
 from zope.formlib import form
 # imported so it may be exported
 from zope.formlib.form import action
 from zope.formlib.interfaces import IInputWidget
+from zope.formlib.widgets import (
+    CheckBoxWidget,
+    DropdownWidget,
+    RadioWidget,
+    TextAreaWidget,
+    )
 from zope.interface import (
     classImplements,
     implements,

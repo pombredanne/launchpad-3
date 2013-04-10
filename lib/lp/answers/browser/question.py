@@ -34,14 +34,14 @@ from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import copy_field
 from lazr.restful.utils import smartquote
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser import (
-    TextAreaWidget,
-    TextWidget,
-    )
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.formlib.widget import renderElement
+from zope.formlib.widgets import (
+    TextAreaWidget,
+    TextWidget,
+    )
 from zope.interface import (
     alsoProvides,
     implements,

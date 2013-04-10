@@ -17,8 +17,8 @@ __all__ = [
 
 import urllib
 
-from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
+from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
     alsoProvides,
     directlyProvides,
