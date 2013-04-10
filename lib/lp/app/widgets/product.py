@@ -20,9 +20,9 @@ from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.boolwidgets import CheckBoxWidget
 from zope.app.form.browser.textwidgets import TextWidget
 from zope.app.form.browser.widget import renderElement
-from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.formlib.interfaces import IInputWidget
+from zope.formlib.utility import setUpWidget
 from zope.schema import (
     Choice,
     Text,
