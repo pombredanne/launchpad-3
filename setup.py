@@ -97,7 +97,6 @@ setup(
         'z3c.ptcompat',
         'zc.zservertracelog',
         'zope.app.appsetup',
-        'zope.app.exception',
         'zope.app.file',
         'zope.app.http',
         'zope.app.pagetemplate',
