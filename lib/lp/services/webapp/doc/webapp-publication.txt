@@ -1107,7 +1107,7 @@ The feeds implementation always returns the anonymous user.
     ...     extra_environment=dict(HTTP_AUTHORIZATION=foo_bar_auth))
     >>> principal = publication.getPrincipal(request)
 
-    >>> from zope.app.security.interfaces import IUnauthenticatedPrincipal
+    >>> from zope.authentication.interfaces import IUnauthenticatedPrincipal
     >>> IUnauthenticatedPrincipal.providedBy(principal)
     True
 

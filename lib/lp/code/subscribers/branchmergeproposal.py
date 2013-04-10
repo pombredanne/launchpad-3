@@ -6,8 +6,8 @@
 __metaclass__ = type
 
 
-from zope.app.security.principalregistry import UnauthenticatedPrincipal
 from zope.component import getUtility
+from zope.principalregistry.principalregistry import UnauthenticatedPrincipal
 
 from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
 from lp.code.enums import BranchMergeProposalStatus

@@ -6,14 +6,14 @@ __metaclass__ = type
 import base64
 
 import testtools
-from zope.app.security.basicauthadapter import BasicAuthAdapter
-from zope.app.security.interfaces import ILoginPassword
-from zope.app.security.principalregistry import UnauthenticatedPrincipal
 from zope.app.testing import ztapi
 from zope.app.testing.placelesssetup import PlacelessSetup
+from zope.authentication.interfaces import ILoginPassword
 from zope.component import getUtility
 from zope.interface import implements
+from zope.principalregistry.principalregistry import UnauthenticatedPrincipal
 from zope.publisher.browser import TestRequest
+from zope.publisher.http import BasicAuthAdapter
 from zope.publisher.interfaces.http import IHTTPCredentials
 
 from lp.registry.interfaces.person import IPerson

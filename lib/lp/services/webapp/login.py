@@ -30,7 +30,7 @@ from paste.httpexceptions import (
     )
 import transaction
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.authentication.interfaces import IUnauthenticatedPrincipal
 from zope.component import (
     getSiteManager,
     getUtility,

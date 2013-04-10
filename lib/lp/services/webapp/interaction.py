@@ -34,7 +34,7 @@ See also lib/canonical/launchpad/doc/webapp-authorization.txt.
 
 __metaclass__ = type
 
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.authentication.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.interfaces import IPublicationRequest

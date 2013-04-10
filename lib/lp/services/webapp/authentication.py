@@ -17,9 +17,10 @@ from UserDict import UserDict
 
 from contrib.oauth import OAuthRequest
 from zope.annotation.interfaces import IAnnotations
-from zope.app.security.interfaces import ILoginPassword
-from zope.app.security.principalregistry import UnauthenticatedPrincipal
-from zope.authentication.interfaces import IUnauthenticatedPrincipal
+from zope.authentication.interfaces import (
+    ILoginPassword,
+    IUnauthenticatedPrincipal,
+    )
 from zope.component import (
     adapts,
     getUtility,
@@ -27,6 +28,7 @@ from zope.component import (
 from zope.event import notify
 from zope.interface import implements
 from zope.preference.interfaces import IPreferenceGroup
+from zope.principalregistry.principalregistry import UnauthenticatedPrincipal
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession

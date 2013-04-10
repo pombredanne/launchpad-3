@@ -103,9 +103,8 @@ class TestJsonModelView(BrowserTestCase):
         xmlconfig.string("""
           <configure
               xmlns:browser="http://namespaces.zope.org/browser">
-              <include package="lp.services.webapp"
-                  file="meta.zcml" />
-              <include package="zope.app.zcmlfiles" file="meta.zcml" />
+              <include package="zope.browserpage" file="meta.zcml" />
+              <include package="lp.services.webapp" file="meta.zcml" />
               <browser:page
                 name="+modeltest"
                 for="lp.registry.interfaces.product.IProduct"
