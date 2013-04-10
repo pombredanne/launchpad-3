@@ -78,7 +78,7 @@
       for="zope.publisher.interfaces.http.IHTTPRequest"
       provides="zope.i18n.interfaces.IUserPreferredCharsets"
       />
-  <adapter factory="zope.app.publisher.browser.ModifiableBrowserLanguages"
+  <adapter factory="zope.publisher.browser.ModifiableBrowserLanguages"
       for="zope.publisher.interfaces.http.IHTTPRequest"
       provides="zope.i18n.interfaces.IModifiableUserPreferredLanguages"
       />

@@ -84,30 +84,6 @@ Name some variables to mirror the names used as arguments.
     >>> facet = "FACET"
     >>> page(context, name, permission, for_, facet=facet)
 
-# This is a pointless doctest - it is totally non obvious what the result
-# is supposed to mean, or what is being tested, so when it breaks we have
-# no idea if the test is broken or the code being tested is broken.
-# -- StuartBishop 20060411
-#
-#     >>> context
-#     ((None,
-#       <function provideInterface>,
-#       ('', 'FOR_')),
-#      (('view',
-#        'FOR_',
-#        'NAME',
-#        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
-#        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
-#       <function handler>,
-#       ('Adapters',
-#        'register',
-#        ('FOR_',
-#         <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
-#        <InterfaceClass zope.interface.Interface>,
-#        'NAME',
-#        <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>,
-#        'INFO')))
-
 Look for the SimpleLaunchpadViewClass in the data structure above, and check
 its __launchpad_facetname__ attribute.
 
