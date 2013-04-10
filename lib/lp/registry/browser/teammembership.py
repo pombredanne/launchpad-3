@@ -13,9 +13,9 @@ __all__ = [
 from datetime import datetime
 
 import pytz
-from zope.app.form import CustomWidgetFactory
 from zope.formlib import form
 from zope.formlib.interfaces import InputErrors
+from zope.formlib.widget import CustomWidgetFactory
 from zope.schema import Date
 
 from lp import _

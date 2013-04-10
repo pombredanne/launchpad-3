@@ -1342,9 +1342,9 @@ class SearchableFAQRadioWidget(LaunchpadRadioWidget):
 
         # Display self._messageNoValue radio button since an existing
         # FAQ may not be relevant. This logic is copied from
-        # zope/app/form/browser/itemswidgets.py except that we have
-        # to prepend the value at the end of this method to prevent
-        # the insert in the for-loop above from going to the top of the list.
+        # zope/formlib/itemswidgets.py except that we have to prepend
+        # the value at the end of this method to prevent the insert in
+        # the for-loop above from going to the top of the list.
         missing = self._toFormValue(self.context.missing_value)
 
         if self._displayItemForMissingValue and not self.context.required:

@@ -3,9 +3,11 @@
 
 __metaclass__ = type
 
-from zope.app.form.browser.interfaces import IBrowserWidget
 from zope.component import getUtility
-from zope.formlib.interfaces import IInputWidget
+from zope.formlib.interfaces import (
+    IBrowserWidget,
+    IInputWidget,
+    )
 from zope.interface import (
     implements,
     Interface,

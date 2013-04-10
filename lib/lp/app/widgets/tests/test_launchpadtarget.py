@@ -7,8 +7,8 @@ import re
 
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.fields import Reference
-from zope.app.form.browser.interfaces import IBrowserWidget
 from zope.formlib.interfaces import (
+    IBrowserWidget,
     IInputWidget,
     WidgetInputError,
     )

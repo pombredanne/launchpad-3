@@ -11,7 +11,7 @@ See README.txt for discussion
 
 __metaclass__ = type
 
-from zope.app.form.browser.exception import (
+from zope.formlib.exception import (
     WidgetInputErrorView as Z3WidgetInputErrorView,
     )
 from zope.formlib.interfaces import IWidgetInputError
@@ -99,7 +99,7 @@ class WidgetInputErrorView(Z3WidgetInputErrorView):
         If the error implements provides a snippet() method, just return it.
         Otherwise return the error message.
 
-        >>> from zope.app.form.interfaces import WidgetInputError
+        >>> from zope.formlib.interfaces import WidgetInputError
         >>> from lp.services.webapp.escaping import structured
         >>> bold_error = LaunchpadValidationError(structured("<b>Foo</b>"))
         >>> err = WidgetInputError("foo", "Foo", bold_error)

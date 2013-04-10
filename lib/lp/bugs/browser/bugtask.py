@@ -76,7 +76,6 @@ from zope import (
     component,
     formlib,
     )
-from zope.app.form import CustomWidgetFactory
 from zope.authentication.interfaces import IUnauthenticatedPrincipal
 from zope.component import (
     ComponentLookupError,
@@ -88,6 +87,7 @@ from zope.component import (
 from zope.event import notify
 from zope.formlib.interfaces import InputErrors
 from zope.formlib.itemswidgets import RadioWidget
+from zope.formlib.widget import CustomWidgetFactory
 from zope.interface import (
     implementer,
     implements,

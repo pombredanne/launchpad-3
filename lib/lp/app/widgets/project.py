@@ -7,7 +7,6 @@ __metaclass__ = type
 
 from textwrap import dedent
 
-from zope.app.form import InputWidget
 from zope.formlib.interfaces import (
     ConversionError,
     IInputWidget,
@@ -17,6 +16,7 @@ from zope.formlib.interfaces import (
 from zope.formlib.utility import setUpWidget
 from zope.formlib.widget import (
     BrowserWidget,
+    InputWidget,
     renderElement,
     )
 from zope.interface import implements

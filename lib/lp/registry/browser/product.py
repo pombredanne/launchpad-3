@@ -49,11 +49,11 @@ from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IJSONRequestCache
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form import CustomWidgetFactory
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.formlib.interfaces import WidgetInputError
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import (
     CheckBoxWidget,
     TextAreaWidget,
