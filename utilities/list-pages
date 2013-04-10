@@ -47,8 +47,8 @@ import _pythonpath
 from inspect import getmro
 import os
 
-from zope.app.pagetemplate.simpleviewclass import simple
 from zope.app.testing.functional import FunctionalTestSetup
+from zope.browserpage.simpleviewclass import simple
 from zope.component import adapts, getGlobalSiteManager
 from zope.interface import directlyProvides, implements
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer

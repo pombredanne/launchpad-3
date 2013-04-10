@@ -10,7 +10,6 @@ from z3c.ptcompat.zcml import (
     pages_directive as original_pages,
     )
 from zope.app.file.image import Image
-from zope.app.pagetemplate.engine import TrustedEngine
 from zope.app.publication.metaconfigure import publisher
 import zope.browserpage.metadirectives
 from zope.component import getUtility
@@ -33,6 +32,7 @@ from zope.interface import (
     implements,
     Interface,
     )
+from zope.pagetemplate.engine import TrustedEngine
 from zope.publisher.interfaces.browser import (
     IBrowserPublisher,
     IBrowserRequest,

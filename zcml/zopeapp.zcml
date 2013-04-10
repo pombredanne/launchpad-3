@@ -57,8 +57,6 @@
     />
   <!-- end of selected things from zope.traversing -->
 
-  <include package="zope.app.pagetemplate" />
-
   <!-- Views -->
   <include package="zope.app.http" />
 

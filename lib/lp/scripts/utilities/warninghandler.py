@@ -68,12 +68,12 @@ from zope.tales.pythonexpr import PythonExpr
 
 # TrustedZopeContext has self.contexts, a dict with template, view, context,
 # request, etc.
-from zope.app.pagetemplate.engine import TrustedZopeContext
+from zope.pagetemplate.engine import TrustedZopeContext
 
 # TALInterpreter has self.sourceFile, a filename of a page template.
 from zope.tal.talinterpreter import TALInterpreter
 
-from zope.app.pagetemplate.simpleviewclass import simple
+from zope.browserpage.simpleviewclass import simple
 
 def find_important_info():
     stack = inspect.stack()
