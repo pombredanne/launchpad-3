@@ -21,7 +21,7 @@ account id.
     >>> from lp.services.webapp.interfaces import ILaunchpadPrincipal
     >>> ILaunchpadPrincipal.providedBy(principal)
     True
-    >>> principal.id == account.id
+    >>> principal.id == unicode(account.id)
     True
 
 The corresponding Account and Person records are also in the
