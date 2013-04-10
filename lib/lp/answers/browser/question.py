@@ -38,10 +38,10 @@ from zope.app.form.browser import (
     TextAreaWidget,
     TextWidget,
     )
-from zope.formlib.widget import renderElement
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.formlib.widget import renderElement
 from zope.interface import (
     alsoProvides,
     implements,

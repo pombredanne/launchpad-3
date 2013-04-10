@@ -22,10 +22,6 @@ from zope.app.form import (
     CustomWidgetFactory,
     Widget,
     )
-from zope.formlib.widget import (
-    BrowserWidget,
-    renderElement,
-    )
 from zope.component import getUtility
 from zope.formlib.interfaces import (
     ConversionError,
@@ -36,6 +32,10 @@ from zope.formlib.interfaces import (
     )
 from zope.formlib.itemswidgets import RadioWidget
 from zope.formlib.utility import setUpWidget
+from zope.formlib.widget import (
+    BrowserWidget,
+    renderElement,
+    )
 from zope.interface import (
     implements,
     Interface,

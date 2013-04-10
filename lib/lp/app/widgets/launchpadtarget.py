@@ -8,10 +8,6 @@ from zope.app.form import (
     CustomWidgetFactory,
     InputWidget,
     )
-from zope.formlib.widget import (
-    BrowserWidget,
-    renderElement,
-    )
 from zope.component import getUtility
 from zope.formlib.interfaces import (
     ConversionError,
@@ -21,6 +17,10 @@ from zope.formlib.interfaces import (
     WidgetInputError,
     )
 from zope.formlib.utility import setUpWidget
+from zope.formlib.widget import (
+    BrowserWidget,
+    renderElement,
+    )
 from zope.interface import implements
 from zope.schema import Choice
 

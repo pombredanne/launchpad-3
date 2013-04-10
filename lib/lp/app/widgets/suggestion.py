@@ -16,7 +16,6 @@ from datetime import (
     )
 
 from pytz import utc
-from zope.formlib.widget import renderElement
 from zope.component import (
     getMultiAdapter,
     getUtility,
@@ -26,6 +25,7 @@ from zope.formlib.interfaces import (
     InputErrors,
     )
 from zope.formlib.utility import setUpWidget
+from zope.formlib.widget import renderElement
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,

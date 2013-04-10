@@ -8,12 +8,12 @@ from datetime import datetime
 import pytz
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.interfaces import ISimpleInputWidget
-from zope.formlib.widget import SimpleInputWidget
 from zope.formlib import form
 from zope.formlib.interfaces import (
     ConversionError,
     WidgetInputError,
     )
+from zope.formlib.widget import SimpleInputWidget
 from zope.interface import implements
 from zope.schema import (
     Choice,

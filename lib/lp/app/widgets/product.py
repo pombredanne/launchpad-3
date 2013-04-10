@@ -18,11 +18,11 @@ from lazr.restful.interface import copy_field
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.boolwidgets import CheckBoxWidget
-from zope.formlib.widget import renderElement
 from zope.component import getUtility
 from zope.formlib.interfaces import IInputWidget
 from zope.formlib.textwidgets import TextWidget
 from zope.formlib.utility import setUpWidget
+from zope.formlib.widget import renderElement
 from zope.schema import (
     Choice,
     Text,

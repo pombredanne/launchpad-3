@@ -23,7 +23,6 @@ from datetime import datetime
 
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.formlib.widget import DisplayWidget
 from zope.component import getUtility
 from zope.datetime import (
     DateTimeError,
@@ -35,6 +34,7 @@ from zope.formlib.interfaces import (
     WidgetInputError,
     )
 from zope.formlib.textwidgets import TextWidget
+from zope.formlib.widget import DisplayWidget
 
 from lp.app.validators import LaunchpadValidationError
 from lp.services.webapp.escaping import html_escape
