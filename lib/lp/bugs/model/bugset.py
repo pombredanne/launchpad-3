@@ -4,7 +4,7 @@
 __metaclass__ = type
 __all__ = ['BugSetBase']
 
-from zope.app.form.browser.interfaces import IAddFormCustomization
+from zope.formlib.interfaces import IAddFormCustomization
 from zope.interface import implements
 
 from lp.app.errors import NotFoundError

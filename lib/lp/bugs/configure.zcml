@@ -316,7 +316,7 @@
             <allow
                 interface="lp.bugs.interfaces.bugtask.IBugTaskSet"/>
             <allow
-                interface="zope.app.form.browser.interfaces.IAddFormCustomization"/>
+                interface="zope.formlib.interfaces.IAddFormCustomization"/>
         </class>
         <securedutility
             provides="lp.bugs.interfaces.bugtask.IBugTaskSet"
@@ -916,8 +916,7 @@
             class="lp.bugs.model.bugwatch.BugWatchSet">
             <allow
                 interface="lp.bugs.interfaces.bugwatch.IBugWatchSet"/>
-            <allow
-                interface="zope.app.form.browser.interfaces.IAddFormCustomization"/>
+            <allow interface="zope.formlib.interfaces.IAddFormCustomization"/>
         </class>
         <securedutility
             class="lp.bugs.model.bugwatch.BugWatchSet"

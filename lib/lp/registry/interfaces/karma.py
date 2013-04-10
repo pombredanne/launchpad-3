@@ -17,8 +17,8 @@ __all__ = [
     'IKarmaContext',
     ]
 
-from zope.app.form.browser.interfaces import IAddFormCustomization
 from zope.component.interfaces import IObjectEvent
+from zope.formlib.interfaces import IAddFormCustomization
 from zope.interface import (
     Attribute,
     Interface,
