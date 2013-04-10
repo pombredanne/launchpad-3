@@ -25,33 +25,6 @@
           />
     </meta:complexDirective>
 
-    <meta:complexDirective
-        name="editform"
-        schema="lp.services.webapp.metazcml.IEditFormDirective"
-        handler="lp.services.webapp.metazcml.EditFormDirective"
-        >
-      <meta:subdirective
-          name="widget"
-          schema="zope.app.form.browser.metadirectives.IWidgetSubdirective"
-          />
-    </meta:complexDirective>
-
-    <meta:complexDirective
-        name="addform"
-        schema="lp.services.webapp.metazcml.IAddFormDirective"
-        handler="lp.services.webapp.metazcml.AddFormDirective"
-        >
-      <meta:subdirective
-          name="widget"
-          schema="zope.app.form.browser.metadirectives.IWidgetSubdirective"
-          />
-    </meta:complexDirective>
-
-    <meta:complexDirective
-        name="schemadisplay"
-        schema="lp.services.webapp.metazcml.ISchemaDisplayDirective"
-        handler="lp.services.webapp.metazcml.SchemaDisplayDirective"
-        />
 </meta:directives>
 
 <meta:directive
