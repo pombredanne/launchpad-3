@@ -75,7 +75,7 @@ class BranchTargetWidget(BrowserWidget, InputWidget):
         return self.name in self.request.form
 
     def hasValidInput(self):
-        """See zope.app.form.interfaces.IInputWidget."""
+        """See zope.formlib.interfaces.IInputWidget."""
         try:
             self.getInputValue()
             return True
@@ -83,7 +83,7 @@ class BranchTargetWidget(BrowserWidget, InputWidget):
             return False
 
     def getInputValue(self):
-        """See zope.app.form.interfaces.IInputWidget."""
+        """See zope.formlib.interfaces.IInputWidget."""
         self.setUpSubWidgets()
         form_value = self.request.form_ng.getOne(self.name)
         if form_value == 'product':
@@ -121,7 +121,7 @@ class BranchTargetWidget(BrowserWidget, InputWidget):
             raise AssertionError('Not a valid value: %r' % value)
 
     def error(self):
-        """See zope.app.form.interfaces.IBrowserWidget."""
+        """See zope.formlib.interfaces.IBrowserWidget."""
         try:
             if self.hasInput():
                 self.getInputValue()
@@ -130,7 +130,7 @@ class BranchTargetWidget(BrowserWidget, InputWidget):
         return super(BranchTargetWidget, self).error()
 
     def __call__(self):
-        """See zope.app.form.interfaces.IBrowserWidget."""
+        """See zope.formlib.interfaces.IBrowserWidget."""
         self.setUpSubWidgets()
         self.setUpOptions()
         return self.template()

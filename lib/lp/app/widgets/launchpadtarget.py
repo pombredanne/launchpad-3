@@ -99,7 +99,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
         return self.name in self.request.form
 
     def hasValidInput(self):
-        """See zope.app.form.interfaces.IInputWidget."""
+        """See zope.formlib.interfaces.IInputWidget."""
         try:
             self.getInputValue()
             return True
@@ -107,7 +107,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
             return False
 
     def getInputValue(self):
-        """See zope.app.form.interfaces.IInputWidget."""
+        """See zope.formlib.interfaces.IInputWidget."""
         self.setUpSubWidgets()
         form_value = self.request.form_ng.getOne(self.name)
         if form_value == 'product':
@@ -183,7 +183,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
             raise AssertionError('Not a valid value: %r' % value)
 
     def __call__(self):
-        """See zope.app.form.interfaces.IBrowserWidget."""
+        """See zope.formlib.interfaces.IBrowserWidget."""
         self.setUpSubWidgets()
         self.setUpOptions()
         return self.template()

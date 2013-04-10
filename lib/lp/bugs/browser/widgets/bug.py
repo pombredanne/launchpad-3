@@ -35,14 +35,14 @@ class BugWidget(IntWidget):
     """A widget for displaying a field that is bound to an IBug."""
 
     def _toFormValue(self, value):
-        """See zope.app.form.widget.SimpleInputWidget."""
+        """See zope.formlib.widget.SimpleInputWidget."""
         if value == self.context.missing_value:
             return self._missing
         else:
             return value.id
 
     def _toFieldValue(self, input):
-        """See zope.app.form.widget.SimpleInputWidget."""
+        """See zope.formlib.widget.SimpleInputWidget."""
         if input == self._missing:
             return self.context.missing_value
         else:

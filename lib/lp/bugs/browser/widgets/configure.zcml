@@ -11,7 +11,7 @@
   <view
       type="zope.publisher.interfaces.browser.IBrowserRequest"
       for="lp.services.fields.IBugField"
-      provides="zope.app.form.interfaces.IInputWidget"
+      provides="zope.formlib.interfaces.IInputWidget"
       factory="lp.bugs.browser.widgets.bug.BugWidget"
       permission="zope.Public"
       />
