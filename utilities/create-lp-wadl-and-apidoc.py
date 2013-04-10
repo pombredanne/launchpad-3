@@ -20,8 +20,8 @@ import sys
 import bzrlib
 from bzrlib.branch import Branch
 from lazr.restful.interfaces import IWebServiceConfiguration
+from z3c.ptcompat import PageTemplateFile
 from zope.component import getUtility
-from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 
 from lp.services.scripts import execute_zcml_for_scripts
 from lp.services.webservice.wadl import (
