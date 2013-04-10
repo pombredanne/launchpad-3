@@ -38,7 +38,7 @@ from zope.app.form.browser import (
     TextAreaWidget,
     TextWidget,
     )
-from zope.app.form.browser.widget import renderElement
+from zope.formlib.widget import renderElement
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form

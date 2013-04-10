@@ -46,13 +46,13 @@ import pytz
 import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextAreaWidget
-from zope.app.form.browser.textwidgets import IntWidget
 from zope.component import getUtility
 from zope.formlib.form import (
     Fields,
     FormField,
     FormFields,
     )
+from zope.formlib.textwidgets import IntWidget
 from zope.interface import (
     classImplements,
     implements,

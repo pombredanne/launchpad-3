@@ -22,8 +22,7 @@ from zope.app.form import (
     CustomWidgetFactory,
     Widget,
     )
-from zope.app.form.browser.itemswidgets import RadioWidget
-from zope.app.form.browser.widget import (
+from zope.formlib.widget import (
     BrowserWidget,
     renderElement,
     )
@@ -35,6 +34,7 @@ from zope.formlib.interfaces import (
     InputErrors,
     WidgetInputError,
     )
+from zope.formlib.itemswidgets import RadioWidget
 from zope.formlib.utility import setUpWidget
 from zope.interface import (
     implements,

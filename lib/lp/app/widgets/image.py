@@ -7,7 +7,7 @@ from StringIO import StringIO
 
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import FileWidget
-from zope.app.form.browser.widget import SimpleInputWidget
+from zope.formlib.widget import SimpleInputWidget
 from zope.component import getUtility
 from zope.contenttype import guess_content_type
 from zope.formlib import form

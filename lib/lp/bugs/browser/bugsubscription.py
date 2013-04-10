@@ -20,7 +20,7 @@ from lazr.restful.interfaces import (
 from simplejson import dumps
 from zope import formlib
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser.itemswidgets import RadioWidget
+from zope.formlib.itemswidgets import RadioWidget
 from zope.schema import Choice
 from zope.schema.vocabulary import (
     SimpleTerm,

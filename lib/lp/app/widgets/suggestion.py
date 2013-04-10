@@ -16,7 +16,7 @@ from datetime import (
     )
 
 from pytz import utc
-from zope.app.form.browser.widget import renderElement
+from zope.formlib.widget import renderElement
 from zope.component import (
     getMultiAdapter,
     getUtility,

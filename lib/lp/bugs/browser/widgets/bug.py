@@ -12,15 +12,15 @@ __all__ = [
 import re
 
 from simplejson import dumps
-from zope.app.form.browser.textwidgets import (
-    IntWidget,
-    TextAreaWidget,
-    TextWidget,
-    )
 from zope.component import getUtility
 from zope.formlib.interfaces import (
     ConversionError,
     WidgetInputError,
+    )
+from zope.formlib.textwidgets import (
+    IntWidget,
+    TextAreaWidget,
+    TextWidget,
     )
 from zope.schema.interfaces import ConstraintNotSatisfied
 

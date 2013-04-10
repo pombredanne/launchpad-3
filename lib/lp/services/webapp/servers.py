@@ -23,8 +23,7 @@ from lazr.uri import URI
 import transaction
 from transaction.interfaces import ISynchronizer
 from zc.zservertracelog.tracelog import Server as ZServerTracelogServer
-from zope.app.form.browser.itemswidgets import MultiDataHelper
-from zope.app.form.browser.widget import SimpleInputWidget
+from zope.formlib.widget import SimpleInputWidget
 from zope.app.publication.httpfactory import HTTPPublicationRequestFactory
 from zope.app.publication.interfaces import IRequestPublicationFactory
 from zope.app.publication.requestpublicationregistry import (
@@ -34,6 +33,7 @@ from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
 from zope.component import getUtility
 from zope.event import notify
+from zope.formlib.itemswidgets import MultiDataHelper
 from zope.interface import (
     alsoProvides,
     implements,

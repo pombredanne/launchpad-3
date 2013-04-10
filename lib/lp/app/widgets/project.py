@@ -8,7 +8,7 @@ __metaclass__ = type
 from textwrap import dedent
 
 from zope.app.form import InputWidget
-from zope.app.form.browser.widget import (
+from zope.formlib.widget import (
     BrowserWidget,
     renderElement,
     )

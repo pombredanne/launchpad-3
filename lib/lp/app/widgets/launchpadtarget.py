@@ -8,7 +8,7 @@ from zope.app.form import (
     CustomWidgetFactory,
     InputWidget,
     )
-from zope.app.form.browser.widget import (
+from zope.formlib.widget import (
     BrowserWidget,
     renderElement,
     )
