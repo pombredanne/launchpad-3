@@ -8,8 +8,9 @@ The collection of stuff we have traversed.
 """
 __metaclass__ = type
 
+import threading
+
 import pytz
-from zope import thread
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -55,7 +56,7 @@ class LaunchBag:
         IBugTask: 'bugtask',
         }
 
-    _store = thread.local()
+    _store = threading.local()
 
     def setLogin(self, login):
         '''See IOpenLaunchBag.'''
