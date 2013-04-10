@@ -46,6 +46,7 @@ from zope.interface import (
 from zope.publisher.interfaces import (
     IPublishTraverse,
     Retry,
+    StartRequestEvent,
     )
 from zope.publisher.interfaces.browser import (
     IBrowserRequest,
@@ -82,7 +83,6 @@ from lp.services.webapp.interfaces import (
     IPrimaryContext,
     NoReferrerError,
     OffsiteFormPostError,
-    StartRequestEvent,
     )
 from lp.services.webapp.opstats import OpStats
 from lp.services.webapp.vhosts import allvhosts

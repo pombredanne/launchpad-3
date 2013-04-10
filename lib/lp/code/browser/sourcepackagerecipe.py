@@ -36,17 +36,17 @@ import simplejson
 from storm.locals import Store
 from z3c.ptcompat import ViewPageTemplateFile
 from zope import component
-from zope.app.form.browser.widget import Widget
-from zope.app.form.interfaces import IView
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.formlib.widget import Widget
 from zope.interface import (
     implementer,
     implements,
     Interface,
     providedBy,
     )
+from zope.publisher.interfaces import IView
 from zope.schema import (
     Choice,
     Field,
