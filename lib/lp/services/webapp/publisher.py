@@ -40,7 +40,6 @@ from lazr.restful.tales import WebLayerAPI
 from lazr.restful.utils import get_current_browser_request
 import simplejson
 from zope import i18n
-from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
 from zope.component import (
     getUtility,
@@ -59,6 +58,7 @@ from zope.publisher.interfaces.browser import (
     IBrowserPublisher,
     IDefaultBrowserLayer,
     )
+from zope.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.security.checker import (
     NamesChecker,
     ProxyFactory,

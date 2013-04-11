@@ -202,8 +202,8 @@ IHasBadges.  Here is the sample from the branch.zcml to illustrate.
 
 Luckily zope provides a way to do this in doctests:
 
-    >>> from zope.app.testing import ztapi
-    >>> ztapi.provideAdapter(Foo, IHasBadges, FooBadges)
+    >>> from zope.component import provideAdapter
+    >>> provideAdapter(FooBadges, (IFoo,), IHasBadges)
 
 Now adapting a Foo to IHasBadges should provide an instance of FooBadges.
 

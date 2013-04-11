@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from lazr.restful import EntryResource
 from lazr.restful.utils import get_current_browser_request
-from zope.app.pagetemplate.simpleviewclass import simple
+from zope.browserpage.simpleviewclass import simple
 from zope.component import (
     getSiteManager,
     getUtility,

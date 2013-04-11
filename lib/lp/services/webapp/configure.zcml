@@ -154,7 +154,7 @@
         />
 
     <subscriber
-        for="zope.app.publication.interfaces.IBeforeTraverseEvent"
+        for="zope.traversing.interfaces.IBeforeTraverseEvent"
         handler="lp.services.webapp.launchbag.set_developer_in_launchbag_before_traversal"
         />
 
@@ -383,12 +383,12 @@
         />
 
     <subscriber
-        for="zope.app.publication.interfaces.IBeforeTraverseEvent"
+        for="zope.traversing.interfaces.IBeforeTraverseEvent"
         handler="lp.services.webapp.sigusr1.before_traverse"
         />
 
     <subscriber
-        for="zope.app.publication.interfaces.IEndRequestEvent"
+        for="zope.publisher.interfaces.IEndRequestEvent"
         handler="lp.services.webapp.sigusr1.end_request"
         />
 

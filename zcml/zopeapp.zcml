@@ -16,8 +16,6 @@
   <include package="zope.browserpage" file="meta.zcml" />
   <includeOverrides package="z3c.ptcompat" file="meta.zcml" />
   <include package="zope.app.publisher.xmlrpc" file="meta.zcml" />
-  <!-- This is probably only used by zope.app.apidoc. -->
-  <include package="zope.browserresource" file="meta.zcml" />
 
   <!-- Note that we need to do this early, as later startup
        subscribers may break without fixups -->
@@ -57,8 +55,6 @@
     />
   <!-- end of selected things from zope.traversing -->
 
-  <include package="zope.app.pagetemplate" />
-
   <!-- Views -->
   <include package="zope.app.http" />
 
@@ -69,16 +65,13 @@
        relative to a package given in this directive.
   <i18n:registerTranslations package="zope.app" directory="translation_files" />
   -->
-  <!--
-  <include package="zope.app.i18n" />
-  -->
 
   <!-- Setup charset negotiation -->
   <adapter factory="zope.publisher.http.HTTPCharsets"
       for="zope.publisher.interfaces.http.IHTTPRequest"
       provides="zope.i18n.interfaces.IUserPreferredCharsets"
       />
-  <adapter factory="zope.app.publisher.browser.ModifiableBrowserLanguages"
+  <adapter factory="zope.publisher.browser.ModifiableBrowserLanguages"
       for="zope.publisher.interfaces.http.IHTTPRequest"
       provides="zope.i18n.interfaces.IModifiableUserPreferredLanguages"
       />

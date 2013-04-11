@@ -11,7 +11,6 @@ from lazr.enum import (
     DBItem,
     use_template,
     )
-import zope.app.publication.interfaces
 from zope.authentication.interfaces import (
     IAuthentication,
     IPrincipal,
@@ -23,6 +22,7 @@ from zope.interface import (
     implements,
     Interface,
     )
+from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.schema import (
     Bool,
     Choice,
@@ -399,8 +399,7 @@ class IBrowserFormNG(Interface):
 
 
 class ILaunchpadBrowserApplicationRequest(
-    IBasicLaunchpadRequest,
-    zope.publisher.interfaces.browser.IBrowserApplicationRequest):
+    IBasicLaunchpadRequest, IBrowserApplicationRequest):
     """The request interface to the application for LP browser requests."""
 
     form_ng = Object(

@@ -9,8 +9,6 @@ from z3c.ptcompat.zcml import (
     page_directive as original_page,
     pages_directive as original_pages,
     )
-from zope.app.file.image import Image
-from zope.app.pagetemplate.engine import TrustedEngine
 from zope.app.publication.metaconfigure import publisher
 import zope.browserpage.metadirectives
 from zope.component import getUtility
@@ -29,10 +27,12 @@ from zope.configuration.fields import (
     PythonIdentifier,
     Tokens,
     )
+from zope.contenttype import guess_content_type
 from zope.interface import (
     implements,
     Interface,
     )
+from zope.pagetemplate.engine import TrustedEngine
 from zope.publisher.interfaces.browser import (
     IBrowserPublisher,
     IBrowserRequest,
@@ -413,15 +413,14 @@ class FaviconRendererBase:
 
     def __call__(self):
         self.request.response.setHeader(
-            'Content-type', self.file.contentType)
-        return self.file.data
+            'Content-Type', guess_content_type(self.path, self.data)[0])
+        return self.data
 
 
 def favicon(_context, for_, file):
-    fileobj = Image(open(file, 'rb').read())
-
     class Favicon(FaviconRendererBase):
-        file = fileobj
+        path = file
+        data = open(file, 'rb').read()
 
     name = "favicon.ico"
     permission = CheckerPublic
