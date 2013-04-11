@@ -20,9 +20,9 @@ from launchpadlib.credentials import (
     )
 from launchpadlib.launchpad import Launchpad
 import transaction
-from zope.app.publication.interfaces import IEndRequestEvent
 from zope.app.testing import ztapi
 from zope.component import getUtility
+from zope.publisher.interfaces import IEndRequestEvent
 import zope.testing.cleanup
 
 from lp.registry.interfaces.person import IPersonSet

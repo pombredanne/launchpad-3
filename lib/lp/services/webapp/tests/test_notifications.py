@@ -8,10 +8,8 @@ __metaclass__ = type
 from doctest import DocTestSuite
 import unittest
 
-from zope.app.testing import (
-    placelesssetup,
-    ztapi,
-    )
+from zope.app.testing import placelesssetup
+from zope.component import provideAdapter
 from zope.interface import implements
 from zope.publisher.browser import TestRequest
 from zope.publisher.interfaces.browser import IBrowserRequest
@@ -55,7 +53,7 @@ class MockHTTPApplicationResponse:
     def redirect(self, location, status=None, trusted=False):
         """Just report the redirection to the doctest"""
         if status is None:
-            status=302
+            status = 302
         print '%d: %s' % (status, location)
 
 
@@ -72,22 +70,16 @@ def adaptNotificationRequestToResponse(request):
 def setUp(test):
     placelesssetup.setUp()
     mock_session = MockSession()
-    ztapi.provideAdapter(
-            INotificationRequest, ISession, lambda x: mock_session
-            )
-    ztapi.provideAdapter(
-            INotificationResponse, ISession, lambda x: mock_session
-            )
-    ztapi.provideAdapter(
-            INotificationRequest, INotificationResponse,
-            adaptNotificationRequestToResponse
-            )
+    provideAdapter(lambda x: mock_session, (INotificationRequest,), ISession)
+    provideAdapter(lambda x: mock_session, (INotificationResponse,), ISession)
+    provideAdapter(
+        adaptNotificationRequestToResponse,
+        (INotificationRequest,), INotificationResponse)
 
     mock_browser_request = TestRequest()
-    ztapi.provideAdapter(
-            INotificationRequest, IBrowserRequest,
-            lambda x: mock_browser_request
-            )
+    provideAdapter(
+        lambda x: mock_browser_request, (INotificationRequest,),
+        IBrowserRequest)
 
     test.globs['MockResponse'] = MockHTTPApplicationResponse
     test.globs['structured'] = structured
