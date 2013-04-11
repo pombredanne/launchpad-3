@@ -32,6 +32,7 @@
   >>> print http(r"""
   ... POST /mozilla/+reassign HTTP/1.1
   ... Authorization: Basic mark@example.com:test
+  ... Referer: https://launchpad.dev/
   ...
   ... field.owner=mark&field.existing=existing"""
   ... r"""&field.actions.change=Change""")

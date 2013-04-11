@@ -25,6 +25,19 @@ will put in lp.testing.
     ...     country = Attribute('the country the town is in')
     ...     name = Attribute('the name of this town')
 
+XXX: This is evil, as it changes the hash of the interfaces. It *must* be done
+before they're registered anywhere.
+
+Put the interfaces into lp.testing, ensuring that there
+are not already objects with those names there.
+
+    >>> import lp.testing
+    >>> for interface in ICountrySet, ICountry, ITown:
+    ...     name = interface.getName()
+    ...     assert getattr(lp.testing, name, None) is None
+    ...     setattr(lp.testing, name, interface)
+    ...     interface.__module__ = 'lp.testing'
+
 Add a view for Country/+map.
 
     >>> from zope.component import provideAdapter
@@ -59,16 +72,6 @@ Define a navigation for the Country URL.
     ...     CountryNavigation, [ICountry, IDefaultBrowserLayer], 
     ...     IBrowserPublisher)
 
-Put the interfaces into lp.testing, ensuring that there
-are not already objects with those names there.
-
-    >>> import lp.testing
-    >>> for interface in ICountrySet, ICountry, ITown:
-    ...     name = interface.getName()
-    ...     assert getattr(lp.testing, name, None) is None
-    ...     setattr(lp.testing, name, interface)
-    ...     interface.__module__ = 'lp.testing'
-
 We don't have ICanonicalUrlData adapters for objects that provide any of these
 interfaces.  First, we create some countryset, country and town objects.
 
@@ -98,7 +101,8 @@ Configure a browser:url for ITown.  Our first attempt fails because we mistyped
     >>> from zope.configuration import xmlconfig
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser">
-    ...   <include file="lib/lp/services/webapp/meta.zcml" />
+    ...   <include package="zope.component" file="meta.zcml" />
+    ...   <include package="lp.services.webapp" file="meta.zcml" />
     ...   <browser:url
     ...       for="lp.testing.ITown"
     ...       path_expression="string:+towns/${name}"
@@ -113,7 +117,7 @@ Configure a browser:url for ITown.  Our first attempt fails because we mistyped
 
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser">
-    ...   <include file="lib/lp/services/webapp/meta.zcml" />
+    ...   <include package="lp.services.webapp" file="meta.zcml" />
     ...   <browser:url
     ...       for="lp.testing.ITown"
     ...       path_expression="string:+towns/${name}"
@@ -147,8 +151,9 @@ at it from zcml.  I'll put it in lp.testing.
     ... <configure
     ...     xmlns="http://namespaces.zope.org/zope"
     ...     xmlns:browser="http://namespaces.zope.org/browser">
-    ...   <include file="lib/lp/services/webapp/meta.zcml" />
-    ...   <configure package="zope.app.component">
+    ...   <include package="zope.component" file="meta.zcml" />
+    ...   <include package="lp.services.webapp" file="meta.zcml" />
+    ...   <configure package="zope.security">
     ...       <include file="meta.zcml" />
     ...   </configure>
     ...   <utility
@@ -207,7 +212,7 @@ in lp.testing.
 
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser">
-    ...   <include file="lib/lp/services/webapp/meta.zcml" />
+    ...   <include package="lp.services.webapp" file="meta.zcml" />
     ...   <browser:url
     ...       for="lp.testing.ICountrySet"
     ...       urldata="lp.testing.CountrySetUrl"
@@ -418,10 +423,8 @@ And if the configuration does provide a rootsite:
     ... <configure
     ...     xmlns="http://namespaces.zope.org/zope"
     ...     xmlns:browser="http://namespaces.zope.org/browser">
-    ...   <include file="lib/lp/services/webapp/meta.zcml" />
-    ...   <configure package="zope.app.component">
-    ...       <include file="meta.zcml" />
-    ...   </configure>
+    ...   <include package="zope.component" file="meta.zcml" />
+    ...   <include package="lp.services.webapp" file="meta.zcml" />
     ...   <utility
     ...       provides="lp.testing.ICountrySet"
     ...       component="lp.testing.countryset_instance"
@@ -500,7 +503,7 @@ of objects). Therefore, if no request is explicitly given,
 canonical_url() returns the browser URL, even if the current request is
 a web service request
 
-    >>> from zope.app.security.principalregistry import (
+    >>> from zope.principalregistry.principalregistry import (
     ...     UnauthenticatedPrincipal)
     >>> from lp.services.webapp.interaction import setupInteraction
     >>> from lp.services.webapp.servers import WebServiceTestRequest

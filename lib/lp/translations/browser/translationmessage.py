@@ -28,11 +28,11 @@ import urllib
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
 from zope import datetime as zope_datetime
-from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser import DropdownWidget
-from zope.app.form.interfaces import IInputWidget
-from zope.app.form.utility import setUpWidgets
 from zope.component import getUtility
+from zope.formlib.interfaces import IInputWidget
+from zope.formlib.utility import setUpWidgets
+from zope.formlib.widget import CustomWidgetFactory
+from zope.formlib.widgets import DropdownWidget
 from zope.interface import implements
 from zope.schema.vocabulary import getVocabularyRegistry
 

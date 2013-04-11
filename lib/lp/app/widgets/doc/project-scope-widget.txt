@@ -21,8 +21,10 @@ selected.
 
 The widget complies to both IInputWidget and IBrowserWidget.
 
-    >>> from zope.app.form.browser.interfaces import IBrowserWidget
-    >>> from zope.app.form.interfaces import IInputWidget
+    >>> from zope.formlib.interfaces import (
+    ...     IBrowserWidget,
+    ...     IInputWidget,
+    ...     )
     >>> verifyObject(IInputWidget, widget)
     True
     >>> verifyObject(IBrowserWidget, widget)

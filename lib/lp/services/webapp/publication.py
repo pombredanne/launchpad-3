@@ -29,12 +29,10 @@ from storm.zope.interfaces import IZStorm
 import tickcount
 import transaction
 from zc.zservertracelog.interfaces import ITraceLog
-# used to get at the adapters service
-from zope.app import zapi
 import zope.app.publication.browser
-from zope.app.publication.interfaces import BeforeTraverseEvent
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.authentication.interfaces import IUnauthenticatedPrincipal
 from zope.component import (
+    getGlobalSiteManager,
     getUtility,
     queryMultiAdapter,
     )
@@ -47,6 +45,7 @@ from zope.interface import (
 from zope.publisher.interfaces import (
     IPublishTraverse,
     Retry,
+    StartRequestEvent,
     )
 from zope.publisher.interfaces.browser import (
     IBrowserRequest,
@@ -55,6 +54,7 @@ from zope.publisher.interfaces.browser import (
 from zope.publisher.publish import mapply
 from zope.security.management import newInteraction
 from zope.security.proxy import removeSecurityProxy
+from zope.traversing.interfaces import BeforeTraverseEvent
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 import lp.layers as layers
@@ -83,7 +83,6 @@ from lp.services.webapp.interfaces import (
     IPrimaryContext,
     NoReferrerError,
     OffsiteFormPostError,
-    StartRequestEvent,
     )
 from lp.services.webapp.opstats import OpStats
 from lp.services.webapp.vhosts import allvhosts
@@ -272,7 +271,7 @@ class LaunchpadBrowserPublication(
         getUtility(IOpenLaunchBag).clear()
 
         # Set the default layer.
-        adapters = zapi.getGlobalSiteManager().adapters
+        adapters = getGlobalSiteManager().adapters
         layer = adapters.lookup((providedBy(request),), IDefaultSkin, '')
         if layer is not None:
             layers.setAdditionalLayer(request, layer)

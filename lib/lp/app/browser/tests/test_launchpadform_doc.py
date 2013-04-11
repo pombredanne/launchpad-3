@@ -4,7 +4,7 @@
 import doctest
 import unittest
 
-from zope.app.form.interfaces import (
+from zope.formlib.interfaces import (
     IDisplayWidget,
     IInputWidget,
     )
@@ -93,7 +93,7 @@ def doctest_custom_widget_with_setUpFields_override():
     class advisor should still work when setUpFields is overridden.  For
     instance, consider this custom widget and view:
 
-        >>> from zope.app.form.interfaces import IDisplayWidget, IInputWidget
+        >>> from zope.formlib.interfaces import IDisplayWidget, IInputWidget
         >>> from zope.interface import directlyProvides, implements
         >>> from lp.app.browser.launchpadform import (
         ...     LaunchpadFormView, custom_widget)

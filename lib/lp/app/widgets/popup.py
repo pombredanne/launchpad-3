@@ -8,7 +8,7 @@ __metaclass__ = type
 from lazr.restful.utils import safe_hasattr
 import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser.itemswidgets import (
+from zope.formlib.itemswidgets import (
     ItemsWidgetBase,
     SingleDataHelper,
     )

@@ -92,10 +92,4 @@
     title="The role of someone who created or otherwise owns an object."
     access_level="write" />
 
-  <!-- This permission only exists to please apidoc.launchpad.dev and
-       shouldn't be used anywhere else. -->
-  <permission
-    id="zope.ManageApplication" title="Needed by zope.app.apidoc"
-    access_level="read" />
-
 </configure>

@@ -138,7 +138,7 @@ If no product name is given, an error message is displayed.
     >>> edit_view.initialize()
     >>> for error in edit_view.errors:
     ...     print error
-    ('product', u'Project', RequiredMissing())
+    ('product', u'Project', RequiredMissing('product'))
 
 
 == Bug Watch Linkage ==
@@ -211,7 +211,7 @@ on the distribution or product context. When the user has this
 permission, the edit page renders an input widget, otherwise it renders
 a display widget.
 
-    >>> from zope.app.form.interfaces import IInputWidget
+    >>> from zope.formlib.interfaces import IInputWidget
     >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
 
 The distribution owner gets an edit widget for the distribution task.
@@ -229,7 +229,7 @@ The distribution owner gets an edit widget for the distribution task.
 
 But an unprivileged user does not.
 
-    >>> from zope.app.form.browser import ItemDisplayWidget
+    >>> from zope.formlib.itemswidgets import ItemDisplayWidget
 
     >>> login("no-priv@canonical.com")
 

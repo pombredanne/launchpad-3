@@ -32,7 +32,6 @@ import urllib
 
 from lazr.uri import URI
 from zope import i18n
-from zope.app import zapi
 from zope.component import (
     getGlobalSiteManager,
     getUtility,
@@ -47,6 +46,7 @@ from zope.interface import (
     implements,
     Interface,
     )
+from zope.publisher.defaultview import getDefaultViewName
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
@@ -308,7 +308,7 @@ class Hierarchy(LaunchpadView):
         """
         url = self.request.getURL()
         obj = self.request.traversed_objects[-2]
-        default_view_name = zapi.getDefaultViewName(obj, self.request)
+        default_view_name = getDefaultViewName(obj, self.request)
         view = self._naked_context_view
         if view.__name__ != default_view_name:
             title = getattr(view, 'page_title', None)

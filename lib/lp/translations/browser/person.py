@@ -20,8 +20,8 @@ import urllib
 
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser import TextWidget
 from zope.component import getUtility
+from zope.formlib.widgets import TextWidget
 from zope.interface import (
     implements,
     Interface,

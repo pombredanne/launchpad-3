@@ -5,15 +5,10 @@ __metaclass__ = type
 
 import inspect
 
-import z3c.ptcompat.zcml
 from z3c.ptcompat.zcml import (
     page_directive as original_page,
     pages_directive as original_pages,
     )
-from zope.app.component.contentdirective import ClassDirective
-from zope.app.file.image import Image
-import zope.app.form.browser.metadirectives
-from zope.app.pagetemplate.engine import TrustedEngine
 from zope.app.publication.metaconfigure import publisher
 import zope.browserpage.metadirectives
 from zope.component import getUtility
@@ -32,10 +27,12 @@ from zope.configuration.fields import (
     PythonIdentifier,
     Tokens,
     )
+from zope.contenttype import guess_content_type
 from zope.interface import (
     implements,
     Interface,
     )
+from zope.pagetemplate.engine import TrustedEngine
 from zope.publisher.interfaces.browser import (
     IBrowserPublisher,
     IBrowserRequest,
@@ -47,6 +44,7 @@ from zope.security.checker import (
     CheckerPublic,
     )
 from zope.security.interfaces import IPermission
+from zope.security.metaconfigure import ClassDirective
 from zope.security.permission import Permission
 from zope.security.proxy import ProxyFactory
 from zope.security.zcml import IPermissionDirective
@@ -415,15 +413,14 @@ class FaviconRendererBase:
 
     def __call__(self):
         self.request.response.setHeader(
-            'Content-type', self.file.contentType)
-        return self.file.data
+            'Content-Type', guess_content_type(self.path, self.data)[0])
+        return self.data
 
 
 def favicon(_context, for_, file):
-    fileobj = Image(open(file, 'rb').read())
-
     class Favicon(FaviconRendererBase):
-        file = fileobj
+        path = file
+        data = open(file, 'rb').read()
 
     name = "favicon.ico"
     permission = CheckerPublic
@@ -558,87 +555,12 @@ def renamed_page(_context, for_, name, new_name, layer=IDefaultBrowserLayer,
             renamed_factory, (for_, layer), Interface, name, _context.info))
 
 
-class IEditFormDirective(
-    zope.app.form.browser.metadirectives.IEditFormDirective,
-    IAssociatedWithAFacet):
-    """Edit form browser:editform directive, extended to have an extra
-    'facet' attribute."""
-
-
-class EditFormDirective(
-    z3c.ptcompat.zcml.EditFormDirective):
-
-    # This makes 'facet' a valid attribute for the directive.
-    facet = None
-
-    def __call__(self):
-        # self.bases will be a tuple of base classes for this view.
-        # So, insert a new base-class containing the facet name attribute.
-        facet = self.facet or getattr(self._context, 'facet', None)
-        if facet is not None:
-            cdict = {'__launchpad_facetname__': facet}
-            new_class = type('SimpleLaunchpadViewClass', (), cdict)
-            self.bases += (new_class, )
-
-        z3c.ptcompat.zcml.EditFormDirective.__call__(self)
-
-
-class IAddFormDirective(
-    zope.app.form.browser.metadirectives.IAddFormDirective,
-    IAssociatedWithAFacet):
-    """Edit form browser:addform directive, extended to have an extra
-    'facet' attribute."""
-
-
-class AddFormDirective(
-    z3c.ptcompat.zcml.AddFormDirective):
-
-    # This makes 'facet' a valid attribute for the directive.
-    facet = None
-
-    def __call__(self):
-        # self.bases will be a tuple of base classes for this view.
-        # So, insert a new base-class containing the facet name attribute.
-        facet = self.facet or getattr(self._context, 'facet', None)
-        if facet is not None:
-            cdict = {'__launchpad_facetname__': facet}
-            new_class = type('SimpleLaunchpadViewClass', (), cdict)
-            self.bases += (new_class, )
-
-        z3c.ptcompat.zcml.AddFormDirective.__call__(self)
-
-
 class IGroupingFacet(IAssociatedWithAFacet):
     """Grouping directive that just has a facet attribute."""
 
 
 class GroupingFacet(zope.configuration.config.GroupingContextDecorator):
     """Grouping facet directive."""
-
-
-class ISchemaDisplayDirective(
-    zope.app.form.browser.metadirectives.ISchemaDisplayDirective,
-    IAssociatedWithAFacet):
-    """Schema display directive with added 'facet' attribute."""
-
-
-class SchemaDisplayDirective(
-    z3c.ptcompat.zcml.SchemaDisplayDirective):
-
-    # This makes 'facet' a valid attribute for the directive.
-    facet = None
-
-    def __call__(self):
-        # self.bases will be a tuple of base classes for this view.
-        # So, insert a new base-class containing the facet name attribute.
-        facet = self.facet or getattr(self._context, 'facet', None)
-        if facet is not None:
-            cdict = {'__launchpad_facetname__': facet}
-            new_class = type('SimpleLaunchpadViewClass', (), cdict)
-            self.bases += (new_class, )
-
-        z3c.ptcompat.zcml.SchemaDisplayDirective.__call__(
-            self)
 
 
 class ICallDirective(Interface):

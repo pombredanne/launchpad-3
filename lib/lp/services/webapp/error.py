@@ -19,7 +19,7 @@ import sys
 import traceback
 
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.exception.interfaces import ISystemErrorView
+from zope.browser.interfaces import ISystemErrorView
 from zope.component import getUtility
 from zope.exceptions.exceptionformatter import format_exception
 from zope.interface import implements
@@ -86,7 +86,7 @@ class SystemErrorView(LaunchpadView):
         self.specialuser = getUtility(ILaunchBag).developer
 
     def isSystemError(self):
-        """See zope.app.exception.interfaces import ISystemErrorView
+        """See zope.browser.interfaces import ISystemErrorView
 
         It appears that returning True from this method means the
         exception is logged as a SiteError.

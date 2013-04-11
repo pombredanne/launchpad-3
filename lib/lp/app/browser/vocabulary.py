@@ -16,19 +16,21 @@ from itertools import izip
 
 from lazr.restful.interfaces import IWebServiceClientRequest
 import simplejson
-from zope.app.form.interfaces import MissingInputError
-from zope.app.schema.vocabulary import IVocabularyFactory
 from zope.component import (
     adapter,
     getUtility,
     )
 from zope.component.interfaces import ComponentLookupError
+from zope.formlib.interfaces import MissingInputError
 from zope.interface import (
     Attribute,
     implements,
     Interface,
     )
+from zope.schema.interfaces import IVocabularyFactory
 from zope.security.interfaces import Unauthorized
+# This registers the registry.
+import zope.vocabularyregistry.registry
 
 from lp.app.browser.tales import (
     DateTimeFormatterAPI,

@@ -5,7 +5,7 @@ __metaclass__ = type
 
 from datetime import datetime
 
-from zope.app.form.interfaces import ConversionError
+from zope.formlib.interfaces import ConversionError
 from zope.schema import Field
 
 from lp.app.widgets.date import DateTimeWidget

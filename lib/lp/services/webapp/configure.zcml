@@ -154,7 +154,7 @@
         />
 
     <subscriber
-        for="zope.app.publication.interfaces.IBeforeTraverseEvent"
+        for="zope.traversing.interfaces.IBeforeTraverseEvent"
         handler="lp.services.webapp.launchbag.set_developer_in_launchbag_before_traversal"
         />
 
@@ -383,12 +383,12 @@
         />
 
     <subscriber
-        for="zope.app.publication.interfaces.IBeforeTraverseEvent"
+        for="zope.traversing.interfaces.IBeforeTraverseEvent"
         handler="lp.services.webapp.sigusr1.before_traverse"
         />
 
     <subscriber
-        for="zope.app.publication.interfaces.IEndRequestEvent"
+        for="zope.publisher.interfaces.IEndRequestEvent"
         handler="lp.services.webapp.sigusr1.end_request"
         />
 
@@ -403,7 +403,7 @@
       type="zope.publisher.interfaces.browser.IBrowserRequest"
       for="zope.schema.interfaces.IChoice
         lp.services.webapp.vocabulary.IHugeVocabulary"
-      provides="zope.app.form.interfaces.IInputWidget"
+      provides="zope.formlib.interfaces.IInputWidget"
       factory="lp.app.widgets.popup.VocabularyPickerWidget"
       permission="zope.Public"
       />
@@ -413,7 +413,7 @@
       type="zope.publisher.interfaces.browser.IBrowserRequest"
       for="lp.services.fields.PersonChoice
         lp.services.webapp.vocabulary.IHugeVocabulary"
-      provides="zope.app.form.interfaces.IInputWidget"
+      provides="zope.formlib.interfaces.IInputWidget"
       factory="lp.app.widgets.popup.PersonPickerWidget"
       permission="zope.Public"
       />
@@ -423,7 +423,7 @@
       type="zope.publisher.interfaces.browser.IBrowserRequest"
       for="zope.schema.interfaces.IChoice
         lp.code.vocabularies.branch.BranchVocabulary"
-      provides="zope.app.form.interfaces.IInputWidget"
+      provides="zope.formlib.interfaces.IInputWidget"
       factory="lp.code.browser.widgets.branch.BranchPopupWidget"
       permission="zope.Public"
       />

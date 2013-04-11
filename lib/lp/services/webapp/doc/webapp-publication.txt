@@ -43,10 +43,6 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://api.launchpad.dev/
     althosts:
     ----
-    apidoc @ apidoc.launchpad.dev
-    rooturl: http://apidoc.launchpad.dev/
-    althosts:
-    ----
     blueprints @ blueprints.launchpad.dev
     rooturl: http://blueprints.launchpad.dev/
     althosts:
@@ -100,7 +96,6 @@ request is headed to one of the officialy-used Launchpad host names:
     ...     print hostname
     answers.launchpad.dev
     api.launchpad.dev
-    apidoc.launchpad.dev
     blueprints.launchpad.dev
     bugs.launchpad.dev
     code.launchpad.dev
@@ -679,6 +674,7 @@ there's nothing to store.
 
     >>> from lp.services.webapp.adapter import (
     ...     clear_request_started, set_request_started)
+    >>> logger.setLevel(logging.CRITICAL)
     >>> request, publication = get_request_and_publication()
     >>> request.setPrincipal(auth_utility.unauthenticatedPrincipal())
     >>> import sys
@@ -722,6 +718,7 @@ the publication, up to the point where it was forcefully stopped.
     >>> request._orig_env['launchpad.publicationticks'] < 50
     True
     >>> publication.endRequest(request, None)
+    >>> logger.setLevel(old_level)
 
 When a Retry or DisconnectionError exception is raised and the request
 supports retry, it will be retried with a copy of the WSGI environment.
@@ -1107,7 +1104,7 @@ The feeds implementation always returns the anonymous user.
     ...     extra_environment=dict(HTTP_AUTHORIZATION=foo_bar_auth))
     >>> principal = publication.getPrincipal(request)
 
-    >>> from zope.app.security.interfaces import IUnauthenticatedPrincipal
+    >>> from zope.authentication.interfaces import IUnauthenticatedPrincipal
     >>> IUnauthenticatedPrincipal.providedBy(principal)
     True
 

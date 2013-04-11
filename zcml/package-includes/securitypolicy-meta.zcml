@@ -2,4 +2,4 @@
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
-<include package="zope.app.securitypolicy" file="meta.zcml" />
+<include package="zope.securitypolicy" file="meta.zcml" />

@@ -128,7 +128,7 @@ empty.
     ...     principal=product.owner)
     >>> for error in view.view.errors:
     ...     print error
-    ('product', u'Project', RequiredMissing())
+    ('product', u'Project', RequiredMissing('product'))
 
 Submitting the same product series as the current packaging is not an error,
 but there is no notification message that the upstream link was updated.

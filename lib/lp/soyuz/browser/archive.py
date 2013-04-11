@@ -38,9 +38,9 @@ from lazr.restful.utils import smartquote
 import pytz
 from sqlobject import SQLObjectNotFound
 from storm.expr import Desc
-from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
+from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
     implements,
     Interface,

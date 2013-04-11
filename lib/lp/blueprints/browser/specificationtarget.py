@@ -161,7 +161,7 @@ class HasSpecificationsView(LaunchpadView):
     def template(self):
         # Check for the magical "index" added by the browser:page template
         # machinery. If it exists this is actually the
-        # zope.app.pagetemplate.simpleviewclass.simple class that is magically
+        # zope.browserpage.simpleviewclass.simple class that is magically
         # mixed in by the browser:page zcml directive the template defined in
         # the directive should be used.
         if safe_hasattr(self, 'index'):

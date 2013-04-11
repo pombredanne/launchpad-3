@@ -55,9 +55,9 @@ adapt our specific build farm job to its behavior like:
 
 But for the sake of this documentation we'll add the adapter manually.
 
-    >>> from zope.app.testing import ztapi
-    >>> ztapi.provideAdapter(
-    ...     MyNewBuildFarmJob, IBuildFarmJobBehavior, MyNewBuildBehavior)
+    >>> from zope.component import provideAdapter
+    >>> provideAdapter(
+    ...     MyNewBuildBehavior, (IMyNewBuildFarmJob,), IBuildFarmJobBehavior)
 
 This will then allow the builder to request and set the required behavior from
 the current job. Bob the builder currently has a binary package job and so
