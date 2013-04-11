@@ -155,7 +155,7 @@ class BugNavigation(Navigation):
         """Retrieve a BugWatch by name."""
         if name.isdigit():
             # in future this should look up by (bug.id, watch.seqnum)
-            return getUtility(IBugWatchSet)[name]
+            return getUtility(IBugWatchSet).get(int(name))
 
     @stepthrough('+subscription')
     def traverse_subscriptions(self, person_name):
