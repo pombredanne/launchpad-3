@@ -563,10 +563,10 @@ urls_redirected_to = []
 class MyHTTPRedirectHandler(mechanize.HTTPRedirectHandler):
     """Custom HTTPRedirectHandler which stores the URLs redirected to."""
 
-    def redirect_request(self, newurl, req, fp, code, msg, headers):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
         urls_redirected_to.append(newurl)
         return mechanize.HTTPRedirectHandler.redirect_request(
-            self, newurl, req, fp, code, msg, headers)
+            self, req, fp, code, msg, headers, newurl)
 
 
 class MyMechanizeBrowser(mechanize.Browser):

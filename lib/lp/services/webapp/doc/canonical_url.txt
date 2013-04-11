@@ -25,6 +25,19 @@ will put in lp.testing.
     ...     country = Attribute('the country the town is in')
     ...     name = Attribute('the name of this town')
 
+XXX: This is evil, as it changes the hash of the interfaces. It *must* be done
+before they're registered anywhere.
+
+Put the interfaces into lp.testing, ensuring that there
+are not already objects with those names there.
+
+    >>> import lp.testing
+    >>> for interface in ICountrySet, ICountry, ITown:
+    ...     name = interface.getName()
+    ...     assert getattr(lp.testing, name, None) is None
+    ...     setattr(lp.testing, name, interface)
+    ...     interface.__module__ = 'lp.testing'
+
 Add a view for Country/+map.
 
     >>> from zope.component import provideAdapter
@@ -58,16 +71,6 @@ Define a navigation for the Country URL.
     >>> provideAdapter(
     ...     CountryNavigation, [ICountry, IDefaultBrowserLayer], 
     ...     IBrowserPublisher)
-
-Put the interfaces into lp.testing, ensuring that there
-are not already objects with those names there.
-
-    >>> import lp.testing
-    >>> for interface in ICountrySet, ICountry, ITown:
-    ...     name = interface.getName()
-    ...     assert getattr(lp.testing, name, None) is None
-    ...     setattr(lp.testing, name, interface)
-    ...     interface.__module__ = 'lp.testing'
 
 We don't have ICanonicalUrlData adapters for objects that provide any of these
 interfaces.  First, we create some countryset, country and town objects.

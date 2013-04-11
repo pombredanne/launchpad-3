@@ -211,7 +211,7 @@ bin/buildout: download-cache eggs
 	$(SHHH) PYTHONPATH= $(PYTHON) bootstrap.py\
 		--setup-source=ez_setup.py \
 		--download-base=download-cache/dist --eggs=eggs \
-		--version=1.5.1
+		--version=1.5.2
 	touch --no-create $@
 
 # This target is used by LOSAs to prepare a build to be pushed out to

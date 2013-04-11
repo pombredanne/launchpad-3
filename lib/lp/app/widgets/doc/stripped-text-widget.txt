@@ -63,4 +63,4 @@ provided.
   >>> widget.getInputValue()
   Traceback (most recent call last):
   ...
-  WidgetInputError: ('field', u'Title', RequiredMissing())
+  WidgetInputError: ('field', u'Title', RequiredMissing('field'))

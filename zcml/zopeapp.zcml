@@ -23,7 +23,6 @@
        subscribers may break without fixups -->
 
   <include package="zope.component" />
-  <include package="zope.app.component" />
   <include package="zope.security" />
   <include package="zope.authentication" />
   <include package="zope.principalregistry" />

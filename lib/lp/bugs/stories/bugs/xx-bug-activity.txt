@@ -263,7 +263,7 @@ If a bug task is deleted the pillar no longer affected will be shown.
     >>> admin_browser.getLink(url='+distrotask').click()
     >>> admin_browser.getControl('Distribution').value = ['ubuntu']
     >>> admin_browser.getControl('Continue').click()
-    >>> admin_browser.open("https://bugs.launchpad.dev/ubuntu/+bug/6/+delete")
+    >>> admin_browser.open("http://bugs.launchpad.dev/ubuntu/+bug/6/+delete")
     >>> admin_browser.getControl('Delete').click()
     >>> print_comments(admin_browser.contents)
     Foo Bar (name16)

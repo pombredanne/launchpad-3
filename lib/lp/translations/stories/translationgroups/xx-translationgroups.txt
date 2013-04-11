@@ -280,7 +280,7 @@ closed permissions.
     ...     'Translation permissions policy').displayValue = ['Closed']
     >>> print ubuntu_owner_browser.getControl(
     ...     'Translation group').displayOptions
-    ['(no value)', 'Single-language Translators',
+    ['(nothing selected)', 'Single-language Translators',
      'The PolyGlot Translation Group', 'Just a testing team']
 
     >>> ubuntu_owner_browser.getControl(
@@ -349,12 +349,12 @@ group and permissions.
 
     >>> print netapplet_owner_browser.getControl(
     ...     'Translation group').displayOptions
-    ['(no value)', 'Single-language Translators',
+    ['(nothing selected)', 'Single-language Translators',
      'The PolyGlot Translation Group', 'Just a testing team']
 
     >>> print netapplet_owner_browser.getControl(
     ...     'Translation group').displayValue
-    ['(no value)']
+    ['(nothing selected)']
 
 Ordinary users cannot see the "Configure translations" link or the page it
 leads to.
@@ -423,7 +423,7 @@ closed permissions.
     ...     'Translation permissions policy').displayValue = ['Closed']
     >>> print gnome_owner_browser.getControl(
     ...     'Translation group').displayOptions
-    ['(no value)', 'Single-language Translators',
+    ['(nothing selected)', 'Single-language Translators',
      'The PolyGlot Translation Group', 'Just a testing team']
 
     >>> gnome_owner_browser.getControl(
@@ -1017,7 +1017,7 @@ as the translation group for the netapplet product...
     >>> admin_browser.getLink('Translations').click()
     >>> admin_browser.getLink('Configure translations').click()
     >>> admin_browser.getControl('Translation group').displayOptions
-    ['(no value)', 'Single-language Translators',
+    ['(nothing selected)', 'Single-language Translators',
      'The PolyGlot Translation Group', 'Just a testing team']
 
     >>> admin_browser.getControl('Translation group').displayValue = [
