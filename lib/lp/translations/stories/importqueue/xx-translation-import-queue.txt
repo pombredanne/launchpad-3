@@ -224,6 +224,7 @@ No Privileges Person tries to remove entries but to no effect.
   ...         'field.status_5': 'DELETED',
   ...         'field.actions.change_status': 'Change status',
   ...     })
+  >>> user_browser.addHeader("Referer", "http://launchpad.dev")
   >>> user_browser.open(
   ...     'http://translations.launchpad.dev/+imports',
   ...     data=post_data)
