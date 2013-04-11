@@ -70,15 +70,16 @@ def adaptNotificationRequestToResponse(request):
 def setUp(test):
     placelesssetup.setUp()
     mock_session = MockSession()
-    provideAdapter(lambda x: mock_session, INotificationRequest, ISession)
-    provideAdapter(lambda x: mock_session, INotificationResponse, ISession)
+    provideAdapter(lambda x: mock_session, (INotificationRequest,), ISession)
+    provideAdapter(lambda x: mock_session, (INotificationResponse,), ISession)
     provideAdapter(
         adaptNotificationRequestToResponse,
-        INotificationRequest, INotificationResponse)
+        (INotificationRequest,), INotificationResponse)
 
     mock_browser_request = TestRequest()
     provideAdapter(
-        lambda x: mock_browser_request, INotificationRequest, IBrowserRequest)
+        lambda x: mock_browser_request, (INotificationRequest,),
+        IBrowserRequest)
 
     test.globs['MockResponse'] = MockHTTPApplicationResponse
     test.globs['structured'] = structured
