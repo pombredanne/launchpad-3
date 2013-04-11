@@ -44,7 +44,7 @@ since that is the one language we always translate from, never to.
     ...     'evolution/+pots/evolution-2.2/es/+translate')
     >>> anon_browser.open(translate_page)
     >>> get_alternative_languages_widget(anon_browser).displayOptions[:4]
-    ['(no value)', 'Abkhazian (ab)', 'Achinese (ace)', 'Acoli (ach)']
+    ['(nothing selected)', 'Abkhazian (ab)', 'Achinese (ace)', 'Acoli (ach)']
 
 The same goes for a user who has no preferred languages set.
 
@@ -52,7 +52,7 @@ The same goes for a user who has no preferred languages set.
     ...     auth='Basic jeff.waugh@ubuntulinux.com:test')
     >>> user_browser.open(translate_page)
     >>> get_alternative_languages_widget(user_browser).displayOptions[:4]
-    ['(no value)', 'Abkhazian (ab)', 'Achinese (ace)', 'Acoli (ach)']
+    ['(nothing selected)', 'Abkhazian (ab)', 'Achinese (ace)', 'Acoli (ach)']
 
 Carlos, however, has configured his preferred languages.  Besides English he
  speaks Spanish and Catalan.
@@ -65,7 +65,7 @@ offered.  No alternative language is selected initially.
     >>> browser.open(translate_page)
     >>> dropdown = get_alternative_languages_widget(browser)
     >>> dropdown.displayOptions
-    ['(no value)', 'Catalan (ca)', 'Spanish (es)']
+    ['(nothing selected)', 'Catalan (ca)', 'Spanish (es)']
 
     >>> dropdown.value
     ['']
@@ -223,7 +223,7 @@ is unset.
 
     >>> user_browser.getControl(
     ...     name='field.alternative_language').displayValue
-    ['(no value)']
+    ['(nothing selected)']
 
 
 There is only one alternative language at a time
@@ -261,7 +261,7 @@ control is unset.
 
     >>> browser.getControl(
     ...     name='field.alternative_language').displayValue
-    ['(no value)']
+    ['(nothing selected)']
 
     >>> browser.open(
     ...     'http://translations.launchpad.dev/alsa-utils/trunk/'
@@ -273,5 +273,5 @@ control is unset.
 
     >>> browser.getControl(
     ...     name='field.alternative_language').displayValue
-    ['(no value)']
+    ['(nothing selected)']
 

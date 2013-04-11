@@ -756,9 +756,10 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         self.show_ppa_chooser = len(archive_widget.vocabulary) > 0
         if not self.show_ppa_chooser:
             self.widgets['ppa_name'].setRenderedValue('ppa')
-        # Force there to be no '(no value)' item in the select.  We do this as
-        # the input isn't listed as 'required' otherwise the validator gets
-        # all confused when we want to create a new PPA.
+        # Force there to be no '(nothing selected)' item in the select.
+        # We do this as the input isn't listed as 'required' otherwise
+        # the validator gets all confused when we want to create a new
+        # PPA.
         archive_widget._displayItemForMissingValue = False
 
     def setUpFields(self):

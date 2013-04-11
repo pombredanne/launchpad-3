@@ -35,7 +35,7 @@ We can see two potential series candidates, the "trunk" and the "1.0" series.
 
     >>> print find_main_content(browser.contents)
     <...
-    <option selected="selected" value="">(no value)</option>
+    <option selected="selected" value="">(nothing selected)</option>
     <option value="2">firefox 1.0</option>
     <option value="1">firefox trunk</option>
     ...
