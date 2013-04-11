@@ -33,6 +33,7 @@ from zope.component import (
 from zope.contenttype.parse import parse
 from zope.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
+from zope.publisher.interfaces import IStartRequestEvent
 from zope.traversing.namespace import view
 
 from lp.services.config import config
@@ -43,7 +44,6 @@ from lp.services.profile.mem import (
     resident,
     )
 import lp.services.webapp.adapter as da
-from lp.services.webapp.interfaces import IStartRequestEvent
 
 
 class ProfilingOops(Exception):

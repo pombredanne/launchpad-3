@@ -7,10 +7,8 @@ from datetime import datetime
 
 import pytz
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser.widget import (
-    ISimpleInputWidget,
-    SimpleInputWidget,
-    )
+from zope.app.form.browser.interfaces import ISimpleInputWidget
+from zope.app.form.browser.widget import SimpleInputWidget
 from zope.app.form.interfaces import (
     ConversionError,
     WidgetInputError,

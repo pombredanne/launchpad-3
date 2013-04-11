@@ -219,7 +219,7 @@ class CodeReviewCommentAddView(LaunchpadFormView):
     """View for adding a CodeReviewComment."""
 
     class MyDropWidget(DropdownWidget):
-        "Override the default no-value display name to -Select-."
+        "Override the default none-selected display name to -Select-."
         _messageNoValue = 'Comment only'
 
     schema = IEditCodeReviewComment

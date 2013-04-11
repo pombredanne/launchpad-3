@@ -10,12 +10,12 @@
         package=".browser"/>
 
     <subscriber
-        for="lp.services.webapp.interfaces.IStartRequestEvent"
+        for="zope.publisher.interfaces.IStartRequestEvent"
         handler="lp.services.features.webapp.start_request"
         />
 
     <subscriber
-        for="zope.app.publication.interfaces.IEndRequestEvent"
+        for="zope.publisher.interfaces.IEndRequestEvent"
         handler="lp.services.features.webapp.end_request"
         />
 

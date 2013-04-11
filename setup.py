@@ -79,9 +79,6 @@ setup(
         'python-openid',
         'pytz',
         'rabbitfixture',
-        # This appears to be a broken indirect dependency from zope.security:
-        'RestrictedPython',
-        'selenium',
         'setproctitle',
         'setuptools',
         'Sphinx',
@@ -114,7 +111,6 @@ setup(
         'zope.contenttype',
         'zope.component[zcml]',
         'zope.datetime',
-        'zope.thread',
         'zope.error',
         'zope.event',
         'zope.exceptions',

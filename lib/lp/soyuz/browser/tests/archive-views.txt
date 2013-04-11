@@ -1324,7 +1324,7 @@ value is submitted.
     ...
     WidgetInputError: ('destination_archive',
                        u'Destination PPA',
-                       RequiredMissing())
+                       RequiredMissing('destination_archive'))
 
 
 Copy private files to public archives

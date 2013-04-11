@@ -30,6 +30,7 @@ When doing a POST to an invalid URL, we get an error:
     >>> print http(r"""
     ... POST /UbUntU/hoary/+source/evolution/+pots/evolution-2.2/es/+translate HTTP/1.1
     ... Host: translations.launchpad.dev
+    ... Referer: https://launchpad.dev/
     ... """)
     HTTP/1.1 500 Internal Server Error
     ...

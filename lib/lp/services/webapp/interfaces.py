@@ -741,32 +741,6 @@ class IPrimaryContext(Interface):
     context = Attribute('The primary context.')
 
 
-# XXX mars 2010-07-14 bug=598816
-#
-# We need a conditional import of the request events until the real events
-# land in the Zope mainline.
-#
-# See bug 598816 for the details.
-
-try:
-    from zope.publisher.interfaces import StartRequestEvent
-except ImportError:
-    class IStartRequestEvent(Interface):
-        """An event that gets sent before the start of a request."""
-
-        request = Attribute("The request the event is about")
-
-    class StartRequestEvent:
-        """An event fired once at the start of requests.
-
-        :ivar request: The request the event is for.
-        """
-        implements(IStartRequestEvent)
-
-        def __init__(self, request):
-            self.request = request
-
-
 class IFinishReadOnlyRequestEvent(Interface):
     """An event which gets sent when the publication is ended"""
 

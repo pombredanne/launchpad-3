@@ -23,12 +23,12 @@ from zope.component import (
     queryUtility,
     )
 from zope.error.interfaces import IErrorReportingUtility
+from zope.publisher.interfaces import StartRequestEvent
 
 from lp.services.features.testing import FeatureFixture
 from lp.services.profile import profile
 import lp.services.webapp.adapter as da
 from lp.services.webapp.errorlog import ErrorReportingUtility
-from lp.services.webapp.interfaces import StartRequestEvent
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     layers,
