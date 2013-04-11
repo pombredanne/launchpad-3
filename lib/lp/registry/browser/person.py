@@ -75,10 +75,6 @@ from lazr.uri import URI
 import pytz
 from storm.zope.interfaces import IResultSet
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser import (
-    TextAreaWidget,
-    TextWidget,
-    )
 from zope.component import (
     adapts,
     getUtility,
@@ -87,6 +83,10 @@ from zope.component import (
 from zope.error.interfaces import IErrorReportingUtility
 from zope.formlib import form
 from zope.formlib.form import FormFields
+from zope.formlib.widgets import (
+    TextAreaWidget,
+    TextWidget,
+    )
 from zope.interface import (
     classImplements,
     implements,
@@ -171,7 +171,9 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     )
 from lp.registry.interfaces.personproduct import IPersonProductFactory
-from lp.registry.interfaces.persontransferjob import IPersonDeactivateJobSource
+from lp.registry.interfaces.persontransferjob import (
+    IPersonDeactivateJobSource,
+    )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.poll import IPollSubset
 from lp.registry.interfaces.product import IProduct

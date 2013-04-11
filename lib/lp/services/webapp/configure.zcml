@@ -403,7 +403,7 @@
       type="zope.publisher.interfaces.browser.IBrowserRequest"
       for="zope.schema.interfaces.IChoice
         lp.services.webapp.vocabulary.IHugeVocabulary"
-      provides="zope.app.form.interfaces.IInputWidget"
+      provides="zope.formlib.interfaces.IInputWidget"
       factory="lp.app.widgets.popup.VocabularyPickerWidget"
       permission="zope.Public"
       />
@@ -413,7 +413,7 @@
       type="zope.publisher.interfaces.browser.IBrowserRequest"
       for="lp.services.fields.PersonChoice
         lp.services.webapp.vocabulary.IHugeVocabulary"
-      provides="zope.app.form.interfaces.IInputWidget"
+      provides="zope.formlib.interfaces.IInputWidget"
       factory="lp.app.widgets.popup.PersonPickerWidget"
       permission="zope.Public"
       />
@@ -423,7 +423,7 @@
       type="zope.publisher.interfaces.browser.IBrowserRequest"
       for="zope.schema.interfaces.IChoice
         lp.code.vocabularies.branch.BranchVocabulary"
-      provides="zope.app.form.interfaces.IInputWidget"
+      provides="zope.formlib.interfaces.IInputWidget"
       factory="lp.code.browser.widgets.branch.BranchPopupWidget"
       permission="zope.Public"
       />

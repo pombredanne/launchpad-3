@@ -33,14 +33,14 @@ from lazr.enum import (
 from lazr.restful.interface import copy_field
 from lazr.restful.utils import smartquote
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser import DropdownWidget
-from zope.app.form.interfaces import IInputWidget
 from zope.component import (
     adapter,
     getMultiAdapter,
     getUtility,
     )
 from zope.formlib.form import Fields
+from zope.formlib.interfaces import IInputWidget
+from zope.formlib.widgets import DropdownWidget
 from zope.interface import (
     implements,
     Interface,

@@ -16,12 +16,12 @@ from itertools import izip
 
 from lazr.restful.interfaces import IWebServiceClientRequest
 import simplejson
-from zope.app.form.interfaces import MissingInputError
 from zope.component import (
     adapter,
     getUtility,
     )
 from zope.component.interfaces import ComponentLookupError
+from zope.formlib.interfaces import MissingInputError
 from zope.interface import (
     Attribute,
     implements,

@@ -42,10 +42,10 @@ from collections import defaultdict
 import datetime
 
 from lazr.restful.utils import smartquote
-from zope.app.form.browser.boolwidgets import CheckBoxWidget
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.formlib.boolwidgets import CheckBoxWidget
 from zope.interface import implements
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Bool

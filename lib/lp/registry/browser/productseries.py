@@ -35,12 +35,12 @@ from lazr.restful.interface import (
     use_template,
     )
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser import (
+from zope.component import getUtility
+from zope.formlib import form
+from zope.formlib.widgets import (
     TextAreaWidget,
     TextWidget,
     )
-from zope.component import getUtility
-from zope.formlib import form
 from zope.interface import (
     implements,
     Interface,

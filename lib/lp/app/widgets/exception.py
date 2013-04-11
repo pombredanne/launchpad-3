@@ -2,9 +2,9 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser.interfaces import IWidgetInputErrorView
-from zope.app.form.interfaces import (
+from zope.formlib.interfaces import (
     IWidgetInputError,
+    IWidgetInputErrorView,
     WidgetInputError as _WidgetInputError,
     )
 from zope.interface import implements

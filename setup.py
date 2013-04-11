@@ -99,7 +99,6 @@ setup(
         'zope.app.appsetup',
         'zope.app.exception',
         'zope.app.file',
-        'zope.app.form',
         'zope.app.http',
         'zope.app.pagetemplate',
         'zope.app.publication',

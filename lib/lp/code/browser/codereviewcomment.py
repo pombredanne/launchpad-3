@@ -13,7 +13,7 @@ __all__ = [
 
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
-from zope.app.form.browser import (
+from zope.formlib.widgets import (
     DropdownWidget,
     TextAreaWidget,
     )

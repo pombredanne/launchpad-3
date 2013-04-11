@@ -14,8 +14,8 @@ import time
 
 import feedparser
 from lazr.batchnavigator.z3batching import batch
-from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
+from zope.formlib.interfaces import ConversionError
 from zope.interface import Interface
 from zope.schema import TextLine
 from zope.schema.interfaces import TooLong

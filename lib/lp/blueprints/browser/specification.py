@@ -57,15 +57,15 @@ from lazr.restful.interfaces import (
     IWebServiceClientRequest,
     )
 from zope import component
-from zope.app.form.browser import (
-    TextAreaWidget,
-    TextWidget,
-    )
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.formlib.form import Fields
+from zope.formlib.widgets import (
+    TextAreaWidget,
+    TextWidget,
+    )
 from zope.interface import (
     implementer,
     Interface,

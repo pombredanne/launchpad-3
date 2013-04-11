@@ -32,13 +32,13 @@ from lazr.restful.interfaces import (
     )
 from simplejson import dumps
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser import DropdownWidget
 from zope.component import (
     getMultiAdapter,
     getUtility,
     queryMultiAdapter,
     )
 from zope.formlib import form
+from zope.formlib.widgets import DropdownWidget
 from zope.schema import (
     Bool,
     Choice,

@@ -12,16 +12,16 @@ __all__ = [
 import re
 
 from simplejson import dumps
-from zope.app.form.browser.textwidgets import (
+from zope.component import getUtility
+from zope.formlib.interfaces import (
+    ConversionError,
+    WidgetInputError,
+    )
+from zope.formlib.textwidgets import (
     IntWidget,
     TextAreaWidget,
     TextWidget,
     )
-from zope.app.form.interfaces import (
-    ConversionError,
-    WidgetInputError,
-    )
-from zope.component import getUtility
 from zope.schema.interfaces import ConstraintNotSatisfied
 
 from lp.app.errors import NotFoundError
@@ -35,14 +35,14 @@ class BugWidget(IntWidget):
     """A widget for displaying a field that is bound to an IBug."""
 
     def _toFormValue(self, value):
-        """See zope.app.form.widget.SimpleInputWidget."""
+        """See zope.formlib.widget.SimpleInputWidget."""
         if value == self.context.missing_value:
             return self._missing
         else:
             return value.id
 
     def _toFieldValue(self, input):
-        """See zope.app.form.widget.SimpleInputWidget."""
+        """See zope.formlib.widget.SimpleInputWidget."""
         if input == self._missing:
             return self.context.missing_value
         else:

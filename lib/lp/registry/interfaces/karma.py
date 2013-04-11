@@ -17,7 +17,6 @@ __all__ = [
     'IKarmaContext',
     ]
 
-from zope.app.form.browser.interfaces import IAddFormCustomization
 from zope.component.interfaces import IObjectEvent
 from zope.interface import (
     Attribute,
@@ -75,7 +74,7 @@ class IKarmaAction(Interface):
                       "this action."))
 
 
-class IKarmaActionSet(IAddFormCustomization):
+class IKarmaActionSet(Interface):
     """The set of actions that gives karma to a Person."""
 
     title = Attribute('Title')

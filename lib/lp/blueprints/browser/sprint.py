@@ -29,8 +29,8 @@ from StringIO import StringIO
 
 from lazr.restful.utils import smartquote
 import pytz
-from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
+from zope.formlib.widgets import TextAreaWidget
 from zope.interface import implements
 
 from lp import _
