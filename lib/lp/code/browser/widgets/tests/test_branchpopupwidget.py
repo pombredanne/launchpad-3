@@ -8,9 +8,9 @@ __metaclass__ = type
 import unittest
 
 from lazr.uri import URI
-from zope.app.form.interfaces import ConversionError
 from zope.app.testing import ztapi
 from zope.component import getUtility
+from zope.formlib.interfaces import ConversionError
 from zope.interface import implements
 from zope.schema import Choice
 

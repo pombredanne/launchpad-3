@@ -40,13 +40,13 @@ from lazr.restful.interfaces import (
     IWebServiceClientRequest,
     )
 import simplejson
-from zope.app.form.browser import TextAreaWidget
 from zope.component import (
     adapts,
     getMultiAdapter,
     getUtility,
     )
 from zope.formlib import form
+from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
     implements,
     Interface,

@@ -14,9 +14,9 @@ __all__ = [
     'LanguageView',
     ]
 
-from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.event import notify
+from zope.formlib.widgets import TextWidget
 from zope.interface import Interface
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import TextLine

@@ -21,9 +21,9 @@ __all__ = [
 import operator
 
 from lazr.restful.utils import smartquote
-from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.event import notify
+from zope.formlib.widgets import TextWidget
 from zope.lifecycleevent import ObjectCreatedEvent
 
 from lp import _

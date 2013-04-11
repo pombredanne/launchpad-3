@@ -11,12 +11,12 @@ __metaclass__ = type
 __all__ = ["ObjectReassignmentView"]
 
 
-from zope.app.form.interfaces import (
+from zope.component import getUtility
+from zope.formlib.form import FormFields
+from zope.formlib.interfaces import (
     ConversionError,
     WidgetInputError,
     )
-from zope.component import getUtility
-from zope.formlib.form import FormFields
 from zope.schema import Choice
 from zope.schema.vocabulary import (
     SimpleTerm,

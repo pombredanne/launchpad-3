@@ -20,10 +20,10 @@ from operator import (
     )
 
 import pytz
-from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.formlib import form
+from zope.formlib.widget import CustomWidgetFactory
+from zope.formlib.widgets import TextWidget
 from zope.interface import (
     implements,
     Interface,

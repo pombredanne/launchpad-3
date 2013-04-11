@@ -15,8 +15,8 @@ __all__ = [
 
 import os
 
-from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
+from zope.formlib.interfaces import ConversionError
 from zope.interface import implements
 from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import (

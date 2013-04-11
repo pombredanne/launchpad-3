@@ -15,8 +15,8 @@ from lazr.uri import (
     InvalidURIError,
     URI,
     )
-from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
+from zope.formlib.interfaces import ConversionError
 
 from lp.app.browser.tales import BranchFormatterAPI
 from lp.app.validators import LaunchpadValidationError

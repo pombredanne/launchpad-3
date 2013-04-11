@@ -15,8 +15,8 @@ __all__ = [
 
 from textwrap import dedent
 
-from zope.app.form.interfaces import WidgetsError
 from zope.component import getUtility
+from zope.formlib.interfaces import WidgetsError
 
 from lp import _
 from lp.app.errors import NotFoundError

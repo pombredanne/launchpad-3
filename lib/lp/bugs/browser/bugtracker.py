@@ -24,9 +24,9 @@ __all__ = [
 from itertools import chain
 
 from lazr.restful.utils import smartquote
-from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
+from zope.formlib.widgets import TextAreaWidget
 from zope.interface import implements
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary

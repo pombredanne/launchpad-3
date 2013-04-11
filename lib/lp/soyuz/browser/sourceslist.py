@@ -4,9 +4,9 @@
 """Browser views for sources list entries."""
 
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.interfaces import IInputWidget
-from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
+from zope.formlib.interfaces import IInputWidget
+from zope.formlib.utility import setUpWidget
 from zope.schema import Choice
 from zope.schema.vocabulary import (
     SimpleTerm,

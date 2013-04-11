@@ -48,13 +48,13 @@ from lazr.restful.utils import smartquote
 from lazr.uri import URI
 import pytz
 import simplejson
-from zope.app.form.browser import TextAreaWidget
 from zope.component import (
     getUtility,
     queryAdapter,
     )
 from zope.event import notify
 from zope.formlib import form
+from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
     implements,
     Interface,
