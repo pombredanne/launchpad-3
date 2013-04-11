@@ -27,9 +27,9 @@ forwarded, but is only required by the Zope machinery, not the view.
     >>> view = create_initialized_view(product_set, name='+new', form=form)
     >>> for error in view.view.errors:
     ...     print error
-    ('displayname', 'Name', RequiredMissing())
-    ('name', 'URL', RequiredMissing())
-    ('summary', u'Summary', RequiredMissing())
+    ('displayname', 'Name', RequiredMissing('displayname'))
+    ('name', 'URL', RequiredMissing('name'))
+    ('summary', u'Summary', RequiredMissing('summary'))
 
     >>> form['field.displayname'] = 'Snowdog'
     >>> form['field.name'] = 'snowdog'

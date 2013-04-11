@@ -60,6 +60,7 @@ treat all empty-equivalent values equally.
     >>> print http(r"""
     ... POST /firefox/+filebug HTTP/1.1
     ... Authorization: Basic test@canonical.com:test
+    ... Referer: https://launchpad.dev/
     ... Content-Type: multipart/form-data; boundary=---------------------------2051078912280543729816242321
     ... -----------------------------2051078912280543729816242321
     ... Content-Disposition: form-data; name="field.title"

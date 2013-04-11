@@ -275,14 +275,14 @@ class ISpecificationView(IHasOwner, IHasLinkedBranches):
         title=_('Series Goal'), required=False,
         vocabulary='FilteredProductSeries',
         description=_(
-             "Choose a series in which you would like to deliver "
-             "this feature. Selecting '(no value)' will clear the goal."))
+             "Choose a series in which you would like to deliver this "
+             "feature. Selecting '(nothing selected)' will clear the goal."))
     distroseries = Choice(
         title=_('Series Goal'), required=False,
         vocabulary='FilteredDistroSeries',
         description=_(
-            "Choose a series in which you would like to deliver "
-            "this feature. Selecting '(no value)' will clear the goal."))
+             "Choose a series in which you would like to deliver this "
+             "feature. Selecting '(nothing selected)' will clear the goal."))
 
     # milestone
     milestone = exported(

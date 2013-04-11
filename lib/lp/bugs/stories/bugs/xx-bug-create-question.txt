@@ -203,12 +203,6 @@ could not be created.
     >>> print extract_text(message)
     This bug report was converted into a question:...question #16...
 
-    >>> user_browser.goBack(count=1)
-    >>> user_browser.getControl('Comment').value = 'This will fail.'
-    >>> user_browser.getControl('Convert this Bug into a Question').click()
-    >>> print "\n".join(get_feedback_messages(user_browser.contents))
-    This bug could not be converted into a question.
-
 
 Remove the question
 -------------------

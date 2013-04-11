@@ -138,7 +138,7 @@ If no product name is given, an error message is displayed.
     >>> edit_view.initialize()
     >>> for error in edit_view.errors:
     ...     print error
-    ('product', u'Project', RequiredMissing())
+    ('product', u'Project', RequiredMissing('product'))
 
 
 == Bug Watch Linkage ==

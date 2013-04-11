@@ -279,10 +279,10 @@ run_all: build inplace stop
 	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,\
 	memcached,rabbitmq,txlongpoll -i $(LPCONFIG)
 
-run_codebrowse: build
+run_codebrowse: compile
 	BZR_PLUGIN_PATH=bzrplugins $(PY) scripts/start-loggerhead.py -f
 
-start_codebrowse: build
+start_codebrowse: compile
 	BZR_PLUGIN_PATH=$(shell pwd)/bzrplugins $(PY) scripts/start-loggerhead.py
 
 stop_codebrowse:

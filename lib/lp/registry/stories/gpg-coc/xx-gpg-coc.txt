@@ -582,6 +582,7 @@ Ensure we are raising 404 error instead of System Error
   >>> print http(r"""
   ... POST /codeofconduct/donkey HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: https://launchpad.dev/
   ... """)
   HTTP/1.1 404 Not Found
   ...

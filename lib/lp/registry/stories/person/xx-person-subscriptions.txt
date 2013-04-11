@@ -117,7 +117,7 @@ member.
 Webster chooses to review the subscriptions for his team America.
 
     >>> subscriber_browser.open(
-    ...     'https://bugs.launchpad.dev/~america/+subscriptions')
+    ...     'http://bugs.launchpad.dev/~america/+subscriptions')
     >>> print subscriber_browser.title
     Subscriptions : Bugs ...
 
@@ -143,7 +143,7 @@ Webster now chooses to unsubscribe team America from the bug about Scofflaw.
     >>> subscriber_browser.getControl('Continue').click()
 
     >>> subscriber_browser.open(
-    ...     'https://launchpad.dev/~america/+subscriptions')
+    ...     'http://launchpad.dev/~america/+subscriptions')
     >>> page_text = extract_text(
     ...     find_main_content(subscriber_browser.contents))
     >>> "does not have any direct bug subscriptions" in page_text

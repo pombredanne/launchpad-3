@@ -381,8 +381,8 @@ class BugTaskBugWatchWidget(RadioWidget):
               value != self._new_bugwatch_value):
             value = self._toFieldValue(value)
         # check if we want to select first item, the previously selected item
-        # or the "no value" item.
-        no_value = None
+        # or the "nothing selected" item.
+        nothing_selected = None
         if (value == self.context.missing_value
             and getattr(self, 'firstItem', False)
             and len(self.vocabulary) > 0
@@ -392,8 +392,8 @@ class BugTaskBugWatchWidget(RadioWidget):
         elif value != self.context.missing_value:
             values = [value]
         else:
-            # the "no value" option will be checked
-            no_value = 'checked'
+            # the "nothing selected" option will be checked
+            nothing_selected = 'checked'
             values = []
 
         items = self.renderItemsWithValues(values)
@@ -404,7 +404,7 @@ class BugTaskBugWatchWidget(RadioWidget):
                 'value': '',
                 'name': self.name,
                 'cssClass': self.cssClass}
-            if no_value:
+            if nothing_selected:
                 option = self.renderSelectedItem(**kwargs)
             else:
                 option = self.renderItem(**kwargs)

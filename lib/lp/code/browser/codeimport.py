@@ -99,9 +99,9 @@ class CodeImportSetBreadcrumb(Breadcrumb):
 
 
 class DropdownWidgetWithAny(LaunchpadDropdownWidget):
-    """A <select> widget with a more appropriate 'no value' message.
+    """A <select> widget with a more appropriate 'nothing selected' message.
 
-    By default `LaunchpadDropdownWidget` displays 'no value' when the
+    By default `LaunchpadDropdownWidget` displays 'nothing selected' when the
     associated value is None or not supplied, which is not what we want on
     this page.
     """
