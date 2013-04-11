@@ -383,10 +383,8 @@ class BugWatchSet:
     """A set for BugWatch"""
 
     implements(IBugWatchSet)
-    table = BugWatch
 
     def __init__(self, bug=None):
-        self.title = 'A set of bug watches'
         self.bugtracker_parse_functions = {
             BugTrackerType.BUGZILLA: self.parseBugzillaURL,
             BugTrackerType.DEBBUGS: self.parseDebbugsURL,
