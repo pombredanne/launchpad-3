@@ -8,8 +8,10 @@ __metaclass__ = type
 import unittest
 
 from lazr.uri import URI
-from zope.app.testing import ztapi
-from zope.component import getUtility
+from zope.component import (
+    getUtility,
+    provideUtility,
+    )
 from zope.formlib.interfaces import ConversionError
 from zope.interface import implements
 from zope.schema import Choice
@@ -57,7 +59,7 @@ class TestBranchPopupWidget(unittest.TestCase):
 
     def installLaunchBag(self, user=None, product=None):
         bag = DummyLaunchBag(user, product)
-        ztapi.provideUtility(ILaunchBag, bag)
+        provideUtility(bag, ILaunchBag)
         return bag
 
     def makeBranchPopup(self, vocabulary=None):
@@ -89,7 +91,7 @@ class TestBranchPopupWidget(unittest.TestCase):
         self.popup = self.makeBranchPopup()
 
     def tearDown(self):
-        ztapi.provideUtility(ILaunchBag, self._original_launch_bag)
+        provideUtility(self._original_launch_bag, ILaunchBag)
         logout()
 
     def test_getProduct(self):

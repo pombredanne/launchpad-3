@@ -9,7 +9,11 @@ import testtools
 from zope.app.testing import ztapi
 from zope.app.testing.placelesssetup import PlacelessSetup
 from zope.authentication.interfaces import ILoginPassword
-from zope.component import getUtility
+from zope.component import (
+    getUtility,
+    provideAdapter,
+    provideUtility,
+    )
 from zope.interface import implements
 from zope.principalregistry.principalregistry import UnauthenticatedPrincipal
 from zope.publisher.browser import TestRequest
@@ -60,11 +64,9 @@ class TestPlacelessAuth(PlacelessSetup, testtools.TestCase):
     def setUp(self):
         testtools.TestCase.setUp(self)
         PlacelessSetup.setUp(self)
-        ztapi.provideUtility(IPlacelessLoginSource,
-                             DummyPlacelessLoginSource())
-        ztapi.provideUtility(IPlacelessAuthUtility, PlacelessAuthUtility())
-        ztapi.provideAdapter(
-            IHTTPCredentials, ILoginPassword, BasicAuthAdapter)
+        provideUtility(DummyPlacelessLoginSource(), IPlacelessLoginSource)
+        provideUtility(PlacelessAuthUtility(), IPlacelessAuthUtility)
+        provideAdapter(BasicAuthAdapter, (IHTTPCredentials,), ILoginPassword)
 
     def tearDown(self):
         ztapi.unprovideUtility(IPlacelessLoginSource)

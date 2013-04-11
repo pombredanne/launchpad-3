@@ -46,10 +46,10 @@ timestamp.
     ...             return fixed_time_utc
     ...         else:
     ...             return fixed_time
-    >>> from zope.app.testing import ztapi
+    >>> from zope.component import provideAdapter
     >>> from zope.traversing.interfaces import IPathAdapter
-    >>> ztapi.provideAdapter(
-    ...     datetime, IPathAdapter, TestDateTimeFormatterAPI, 'testfmt')
+    >>> provideAdapter(
+    ...     TestDateTimeFormatterAPI, (datetime,), IPathAdapter, 'testfmt')
 
 A time that is ten seconds or less will be displayed as an approximate:
 
