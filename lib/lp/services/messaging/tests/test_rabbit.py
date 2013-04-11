@@ -8,7 +8,6 @@ __metaclass__ = type
 from functools import partial
 from itertools import count
 import socket
-import thread
 
 from testtools.testcase import ExpectedException
 import transaction
@@ -389,9 +388,8 @@ class TestRabbit(RabbitTestCase):
     """Integration-like tests for the RabbitMQ messaging abstractions."""
 
     def get_synced_sessions(self):
-        thread_id = thread.get_ident()
         try:
-            syncs_set = transaction.manager._synchs[thread_id]
+            syncs_set = transaction.manager._synchs
         except KeyError:
             return set()
         else:
