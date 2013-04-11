@@ -18,7 +18,6 @@ __all__ = [
     ]
 
 from zope.component.interfaces import IObjectEvent
-from zope.formlib.interfaces import IAddFormCustomization
 from zope.interface import (
     Attribute,
     Interface,
@@ -75,7 +74,7 @@ class IKarmaAction(Interface):
                       "this action."))
 
 
-class IKarmaActionSet(IAddFormCustomization):
+class IKarmaActionSet(Interface):
     """The set of actions that gives karma to a Person."""
 
     title = Attribute('Title')
