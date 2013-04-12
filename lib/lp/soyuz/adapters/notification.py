@@ -396,6 +396,8 @@ def send_mail(
         debug(logger, "  Bcc: %s" % extra_headers['Bcc'])
     debug(logger, "  Body:")
     for line in mail_text.splitlines():
+        if isinstance(line, str):
+            line = line.decode('utf-8', 'replace')
         debug(logger, line)
 
     if not dry_run:
