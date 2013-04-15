@@ -30,8 +30,8 @@ from testtools.matchers import (
     LessThan,
     Matcher,
     Mismatch,
-    MismatchesAll,
     )
+from testtools.matchers._higherorder import MismatchesAll
 from zope.interface.exceptions import (
     BrokenImplementation,
     BrokenMethodImplementation,
