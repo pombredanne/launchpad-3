@@ -902,6 +902,13 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
         transaction.commit()
         return upload, self.load(upload, person)
 
+    def makeCopyJobPackageUpload(self, person, **kwargs):
+        with person_logged_in(person):
+            upload = self.factory.makeCopyJobPackageUpload(
+                distroseries=self.distroseries, **kwargs)
+        transaction.commit()
+        return upload, self.load(upload, person)
+
     def makeBinaryPackageUpload(self, person, binarypackagename=None,
                                 component=None):
         with person_logged_in(person):
@@ -1292,6 +1299,24 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
             "customformat": "raw-translations",
             }
         self.assertEqual(expected_custom, ws_binaries[-1])
+
+    def test_copy_info(self):
+        # API clients can inspect properties of copies, including the source
+        # archive.
+        person = self.makeQueueAdmin([self.universe])
+        archive = self.factory.makeArchive()
+        upload, ws_upload = self.makeCopyJobPackageUpload(
+            person, sourcepackagename="hello", source_archive=archive)
+
+        self.assertFalse(ws_upload.contains_source)
+        self.assertFalse(ws_upload.contains_build)
+        self.assertTrue(ws_upload.contains_copy)
+        self.assertEqual("hello", ws_upload.display_name)
+        self.assertEqual("sync", ws_upload.display_arches)
+        self.assertEqual("hello", ws_upload.package_name)
+        with person_logged_in(person):
+            archive_url = api_url(archive)
+        self.assertEndsWith(ws_upload.copy_source_archive_link, archive_url)
 
     def test_getPackageUploads_query_count(self):
         person = self.makeQueueAdmin([self.universe])
