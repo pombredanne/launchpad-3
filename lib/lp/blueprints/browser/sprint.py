@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Sprint views."""
@@ -47,7 +47,6 @@ from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsView,
     )
 from lp.blueprints.enums import (
-    SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationPriority,
     SpecificationSort,
@@ -466,19 +465,13 @@ class SprintMeetingExportView(LaunchpadView):
         for spec in self.context.specifications(
             self.user, filter=[SpecificationFilter.ACCEPTED]):
 
-            # skip sprints with no priority or less than low:
+            # Skip sprints with no priority or less than LOW.
             if spec.priority < SpecificationPriority.UNDEFINED:
-                continue
-
-            if (spec.definition_status not in
-                [SpecificationDefinitionStatus.NEW,
-                 SpecificationDefinitionStatus.DISCUSSION,
-                 SpecificationDefinitionStatus.DRAFT]):
                 continue
             model_specs.append(spec)
 
         people = defaultdict(dict)
-        # Attendees per specification
+        # Attendees per specification.
         for subscription in load_referencing(SpecificationSubscription,
                 model_specs, ['specificationID']):
             if subscription.personID not in attendee_set:
@@ -507,9 +500,9 @@ class SprintMeetingExportView(LaunchpadView):
                 ) for spec in model_specs]
 
     def render(self):
-        self.request.response.setHeader('content-type',
-                                        'application/xml;charset=utf-8')
-        body = LaunchpadView.render(self)
+        self.request.response.setHeader(
+            'content-type', 'application/xml;charset=utf-8')
+        body = super(SprintMeetingExportView, self).render()
         return body.encode('utf-8')
 
 
