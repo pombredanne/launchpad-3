@@ -885,6 +885,20 @@ class TestPersonSetCreateByOpenId(TestCaseWithFactory):
             u'other-openid-identifier', 'foo@bar.com', 'New Name',
             PersonCreationRationale.UNKNOWN, 'No Comment')
 
+    def testDeactivatedAccount(self):
+        # Logging into a deactivated account with a new email address
+        # reactivates the account, adds that email address, and sets it
+        # as preferred.
+        addr = 'not@an.address'
+        self.person.preDeactivate('I hate life.')
+        self.assertEqual(AccountStatus.DEACTIVATED, self.person.account_status)
+        self.assertIs(None, self.person.preferredemail)
+        found, updated = self.person_set.getOrCreateByOpenIDIdentifier(
+            self.identifier.identifier, addr, 'New Name',
+            PersonCreationRationale.UNKNOWN, 'No Comment')
+        self.assertEqual(AccountStatus.ACTIVE, self.person.account_status)
+        self.assertEqual(addr, self.person.preferredemail.email)
+
 
 class TestCreatePersonAndEmail(TestCase):
     """Test `IPersonSet`.createPersonAndEmail()."""
