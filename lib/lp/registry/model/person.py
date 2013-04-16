@@ -3370,6 +3370,9 @@ class PersonSet:
             elif person.account.status in [AccountStatus.DEACTIVATED,
                                            AccountStatus.NOACCOUNT]:
                 removeSecurityProxy(person.account).reactivate(comment)
+                if email is None:
+                    email = getUtility(IEmailAddressSet).new(
+                        email_address, person)
                 removeSecurityProxy(person).setPreferredEmail(email)
                 db_updated = True
             else:
