@@ -343,7 +343,7 @@ rebuildfti:
 	$(PY) database/schema/fti.py -d launchpad_dev --force
 
 clean_js:
-	$(RM) -r $(ICING)/yui
+	$(RM) -r $(JS_BUILD_DIR)
 
 clean_buildout:
 	$(RM) -r build
