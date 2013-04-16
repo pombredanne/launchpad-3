@@ -833,11 +833,14 @@ class TestFactoryWithLibrarian(TestCaseWithFactory):
     def test_makeCopyJobPackageUpload_passes_on_args(self):
         distroseries = self.factory.makeDistroSeries()
         spn = self.factory.makeSourcePackageName()
+        source_archive = self.factory.makeArchive()
         pu = self.factory.makeCopyJobPackageUpload(
-            distroseries=distroseries, sourcepackagename=spn)
+            distroseries=distroseries, sourcepackagename=spn,
+            source_archive=source_archive)
         job = removeSecurityProxy(pu.package_copy_job)
         self.assertEqual(distroseries, pu.distroseries)
         self.assertEqual(distroseries.distribution, pu.archive.distribution)
+        self.assertEqual(source_archive, job.source_archive)
         self.assertEqual(distroseries, job.target_distroseries)
         self.assertEqual(spn.name, job.package_name)
 

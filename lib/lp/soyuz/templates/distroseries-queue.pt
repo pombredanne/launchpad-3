@@ -224,15 +224,15 @@
       <tr>
         <td />
         <td tal:condition="view/availableActions" />
-        <td colspan="7">
+        <td colspan="7"
+            tal:define="pcj packageupload/package_copy_job">
           Sync from
-          <tal:archive
-            content="packageupload/package_copy_job/source_archive/displayname">
+          <a tal:attributes="href pcj/source_archive/fmt:url"
+             tal:content="pcj/source_archive/displayname">
             Primary Archive for Ubuntu
-          </tal:archive>,
+          </a>,
           requested by
-          <tal:requester
-            content="structure packageupload/package_copy_job/job/requester/fmt:link" />
+          <tal:requester content="structure pcj/job/requester/fmt:link" />
         </td>
       </tr>
     </tal:sync>
