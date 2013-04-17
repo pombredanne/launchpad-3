@@ -21,6 +21,7 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.model.distribution import Distribution
 from lp.services.database.bulk import (
     load_referencing,
     load_related,
@@ -198,6 +199,7 @@ class QueueItemsView(LaunchpadView):
             PackageCopyJob, uploads, ['package_copy_job_id'])
         archives = load_related(
             Archive, package_copy_jobs, ['source_archive_id'])
+        load_related(Distribution, archives, ['distributionID'])
         person_ids = map(attrgetter('ownerID'), archives)
         jobs = load_related(Job, package_copy_jobs, ['job_id'])
         person_ids.extend(map(attrgetter('requester_id'), jobs))

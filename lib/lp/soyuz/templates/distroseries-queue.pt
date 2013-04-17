@@ -228,11 +228,9 @@
             tal:define="pcj packageupload/package_copy_job">
           Sync from
           <a tal:attributes="href pcj/source_archive/fmt:url"
-             tal:content="pcj/source_archive/displayname"
-             tal:condition="pcj/source_archive/is_ppa" />
-          <tal:archive
-            replace="pcj/source_archive/displayname"
-            condition="not: pcj/source_archive/is_ppa" />,
+             tal:content="pcj/source_archive/displayname">
+            Primary Archive for Ubuntu
+          </a>,
           requested by
           <tal:requester content="structure pcj/job/requester/fmt:link" />
         </td>

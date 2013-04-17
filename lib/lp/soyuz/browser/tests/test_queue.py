@@ -352,6 +352,14 @@ class TestQueueItemsView(TestCaseWithFactory):
             html_text = view()
         self.assertIn(upload.package_name, html_text)
 
+    def assertLinksToArchive(self, html_text, archive):
+        source_archive_url = canonical_url(archive, path_only_if_possible=True)
+        self.assertThat(html_text, soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "source archive", "a", text=archive.displayname,
+                attrs={"href": source_archive_url}),
+            ))
+
     def test_view_renders_copy_upload(self):
         login(ADMIN_EMAIL)
         upload = self.factory.makeCopyJobPackageUpload()
@@ -362,9 +370,8 @@ class TestQueueItemsView(TestCaseWithFactory):
             html_text = view()
         self.assertIn(upload.package_name, html_text)
         # The details section states the sync's origin and requester.
-        source_archive = upload.package_copy_job.source_archive
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            "Sync from %s," % source_archive.displayname, html_text)
+        self.assertLinksToArchive(
+            html_text, upload.package_copy_job.source_archive)
         self.assertIn(
             upload.package_copy_job.job.requester.displayname, html_text)
 
@@ -379,14 +386,8 @@ class TestQueueItemsView(TestCaseWithFactory):
             html_text = view()
         self.assertIn(upload.package_name, html_text)
         # The details section states the sync's origin and requester.
-        source_archive = upload.package_copy_job.source_archive
-        source_archive_url = canonical_url(
-            source_archive, path_only_if_possible=True)
-        self.assertThat(html_text, soupmatchers.HTMLContains(
-            soupmatchers.Tag(
-                "source archive", "a", text=source_archive.displayname,
-                attrs={"href": source_archive_url}),
-            ))
+        self.assertLinksToArchive(
+            html_text, upload.package_copy_job.source_archive)
         self.assertIn(
             upload.package_copy_job.job.requester.displayname, html_text)
 
@@ -425,7 +426,7 @@ class TestQueueItemsView(TestCaseWithFactory):
             with StormStatementRecorder() as recorder:
                 view = self.makeView(distroseries, queue_admin)
                 view()
-        self.assertThat(recorder, HasQueryCount(Equals(55)))
+        self.assertThat(recorder, HasQueryCount(Equals(56)))
 
 
 class TestCompletePackageUpload(TestCaseWithFactory):
