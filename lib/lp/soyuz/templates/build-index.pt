@@ -86,14 +86,7 @@
       <dl>
         <dt>Archive:</dt>
           <dd>
-            <span tal:condition="view/is_ppa"
-                  tal:replace="structure context/archive/fmt:link"
-             >Celso PPA</span>
-            <a class="sprite distribution"
-               tal:condition="not: view/is_ppa"
-      	     tal:attributes="href context/archive/fmt:url"
-               tal:content="context/archive/displayname"
-             >Ubuntu Primary Archive</a>
+            <a tal:replace="structure context/archive/fmt:link" />
           </dd>
       </dl>
       <dl>

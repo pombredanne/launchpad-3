@@ -193,6 +193,14 @@ class IPackageUpload(Interface):
             readonly=True),
         ("devel", dict(exported=False)), exported=True)
 
+    copy_source_archive = exported(
+        Reference(
+            # Really IArchive, patched in _schema_circular_imports.py
+            schema=Interface,
+            description=_("The archive from which this package was copied, if "
+                          "any."),
+            title=_("Copy source archive"), required=False, readonly=True))
+
     displayname = exported(
         TextLine(
             title=_("Generic displayname for a queue item"), readonly=True),

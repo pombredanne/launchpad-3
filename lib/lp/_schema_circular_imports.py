@@ -591,6 +591,7 @@ patch_collection_return_type(
 IPackageUpload['pocket'].vocabulary = PackagePublishingPocket
 patch_reference_property(IPackageUpload, 'distroseries', IDistroSeries)
 patch_reference_property(IPackageUpload, 'archive', IArchive)
+patch_reference_property(IPackageUpload, 'copy_source_archive', IArchive)
 
 # IStructuralSubscription
 patch_collection_property(

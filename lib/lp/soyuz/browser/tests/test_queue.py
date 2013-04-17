@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from lxml import html
+import soupmatchers
 from storm.store import Store
 from testtools.matchers import Equals
 import transaction
@@ -17,6 +18,7 @@ from zope.component import (
 from lp.archiveuploader.tests import datadir
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.webapp.escaping import html_escape
+from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.browser.queue import CompletePackageUpload
 from lp.soyuz.enums import PackageUploadStatus
@@ -360,8 +362,28 @@ class TestQueueItemsView(TestCaseWithFactory):
             html_text = view()
         self.assertIn(upload.package_name, html_text)
         # The details section states the sync's origin and requester.
+        archive = upload.package_copy_job.source_archive
+        url = canonical_url(archive.distribution, path_only_if_possible=True)
+        self.assertThat(html_text, soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "link", "a", text=archive.displayname, attrs={"href": url}),
+            ))
         self.assertIn(
-            upload.package_copy_job.source_archive.displayname, html_text)
+            upload.package_copy_job.job.requester.displayname, html_text)
+
+    def test_view_renders_copy_upload_from_private_archive(self):
+        login(ADMIN_EMAIL)
+        p3a = self.factory.makeArchive(private=True)
+        upload = self.factory.makeCopyJobPackageUpload(source_archive=p3a)
+        queue_admin = self.factory.makeArchiveAdmin(
+            upload.distroseries.main_archive)
+        with person_logged_in(queue_admin):
+            view = self.makeView(upload.distroseries, queue_admin)
+            html_text = view()
+        self.assertIn(upload.package_name, html_text)
+        # The details section states the sync's origin and requester.
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            "Sync from <span>private archive</span>,", html_text)
         self.assertIn(
             upload.package_copy_job.job.requester.displayname, html_text)
 
@@ -379,6 +401,8 @@ class TestQueueItemsView(TestCaseWithFactory):
             sprs[-1].addFile(dsc)
             uploads.append(self.factory.makeCustomPackageUpload(distroseries))
             uploads.append(self.factory.makeCopyJobPackageUpload(distroseries))
+            uploads.append(self.factory.makeCopyJobPackageUpload(
+                distroseries, source_archive=self.factory.makeArchive()))
         self.factory.makePackageset(
             packages=(sprs[0].sourcepackagename, sprs[2].sourcepackagename,
                 sprs[4].sourcepackagename),
@@ -398,7 +422,7 @@ class TestQueueItemsView(TestCaseWithFactory):
             with StormStatementRecorder() as recorder:
                 view = self.makeView(distroseries, queue_admin)
                 view()
-        self.assertThat(recorder, HasQueryCount(Equals(54)))
+        self.assertThat(recorder, HasQueryCount(Equals(56)))
 
 
 class TestCompletePackageUpload(TestCaseWithFactory):

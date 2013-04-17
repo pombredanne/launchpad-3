@@ -295,6 +295,14 @@ class PackageUpload(SQLBase):
                 })
         return properties
 
+    @property
+    def copy_source_archive(self):
+        """See `IPackageUpload`."""
+        if self.package_copy_job_id is not None:
+            return self.package_copy_job.source_archive
+        else:
+            return None
+
     def getFileByName(self, filename):
         """See `IPackageUpload`."""
         if (self.changesfile is not None and
