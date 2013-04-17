@@ -597,9 +597,9 @@
   <!-- TALES fmt: namespace -->
 
   <adapter
-      for="lp.soyuz.interfaces.archive.IPPA"
+      for="lp.soyuz.interfaces.archive.IArchive"
       provides="zope.traversing.interfaces.IPathAdapter"
-      factory="lp.app.browser.tales.PPAFormatterAPI"
+      factory="lp.app.browser.tales.ArchiveFormatterAPI"
       name="fmt"
       />
 
