@@ -282,6 +282,9 @@ class FakeTransport:
     def write(self, text):
         pass
 
+    def writeSequence(self, text):
+        pass
+
 
 class FakeFactory(RedirectAwareProberFactory):
     redirectedTo = None
