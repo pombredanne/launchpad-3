@@ -596,9 +596,6 @@
       />
   <!-- TALES fmt: namespace -->
 
-  <!-- The next directive is registered for all dicts, but we really only
-       want it to apply to the page template's CONTEXTS dict.
-    -->
   <adapter
       for="lp.soyuz.interfaces.archive.IPPA"
       provides="zope.traversing.interfaces.IPathAdapter"
