@@ -31,7 +31,6 @@ setup(
         'auditorfixture',
         'BeautifulSoup',
         'bzr',
-        'Chameleon',
         'cssutils',
         # Required for pydkim
         'dnspython',
@@ -55,13 +54,9 @@ setup(
         'lazr.testing',
         'lazr.uri',
         'lpjsmin',
-        # Required for launchpadlib
-        'keyring',
-        'manuel',
         'Markdown',
         'mechanize',
         'meliae',
-        'mocker',
         'oauth',
         'oops',
         'oops_amqp',
@@ -137,7 +132,7 @@ setup(
         # bug 383360 is fixed and we include it as a source dist.
         'Paste',
         'PasteDeploy',
-        'SimpleTal',
+        'SimpleTAL',
     ],
     url='https://launchpad.net/',
     classifiers=[
