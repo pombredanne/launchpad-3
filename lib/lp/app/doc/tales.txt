@@ -160,8 +160,8 @@ them.
     ...     name='pppa', private=True, owner=owner)
 
     >>> print test_tales("ppa/fmt:link", ppa=private_ppa)
-    <a href="/~joe/+archive/pppa" class="sprite ppa-icon private">PPA named pppa
-    for Joe Smith</a>
+    <a href="/~joe/+archive/pppa" class="sprite ppa-icon private">PPA named
+    pppa for Joe Smith</a>
 
     >>> login(ANONYMOUS)
 

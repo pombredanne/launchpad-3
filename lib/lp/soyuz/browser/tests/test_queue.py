@@ -382,7 +382,6 @@ class TestQueueItemsView(TestCaseWithFactory):
             html_text = view()
         self.assertIn(upload.package_name, html_text)
         # The details section states the sync's origin and requester.
-        archive = upload.package_copy_job.source_archive
         self.assertTextMatchesExpressionIgnoreWhitespace(
             "Sync from <span>private archive</span>,", html_text)
         self.assertIn(
