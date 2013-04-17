@@ -352,14 +352,6 @@ class TestQueueItemsView(TestCaseWithFactory):
             html_text = view()
         self.assertIn(upload.package_name, html_text)
 
-    def assertLinksToArchive(self, html_text, archive):
-        source_archive_url = canonical_url(archive, path_only_if_possible=True)
-        self.assertThat(html_text, soupmatchers.HTMLContains(
-            soupmatchers.Tag(
-                "source archive", "a", text=archive.displayname,
-                attrs={"href": source_archive_url}),
-            ))
-
     def test_view_renders_copy_upload(self):
         login(ADMIN_EMAIL)
         upload = self.factory.makeCopyJobPackageUpload()
@@ -370,8 +362,12 @@ class TestQueueItemsView(TestCaseWithFactory):
             html_text = view()
         self.assertIn(upload.package_name, html_text)
         # The details section states the sync's origin and requester.
-        self.assertLinksToArchive(
-            html_text, upload.package_copy_job.source_archive)
+        archive = upload.package_copy_job.source_archive
+        url = canonical_url(archive.distribution, path_only_if_possible=True)
+        self.assertThat(html_text, soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "link", "a", text=archive.displayname, attrs={"href": url}),
+            ))
         self.assertIn(
             upload.package_copy_job.job.requester.displayname, html_text)
 
@@ -386,8 +382,9 @@ class TestQueueItemsView(TestCaseWithFactory):
             html_text = view()
         self.assertIn(upload.package_name, html_text)
         # The details section states the sync's origin and requester.
-        self.assertLinksToArchive(
-            html_text, upload.package_copy_job.source_archive)
+        archive = upload.package_copy_job.source_archive
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            "Sync from <span>private archive</span>,", html_text)
         self.assertIn(
             upload.package_copy_job.job.requester.displayname, html_text)
 
