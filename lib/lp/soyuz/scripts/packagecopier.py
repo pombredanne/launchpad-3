@@ -625,7 +625,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             source, archive, destination_series, pocket, include_binaries,
             override, close_bugs=close_bugs, create_dsd_job=create_dsd_job,
             close_bugs_since_version=old_version, creator=creator,
-            sponsor=sponsor, packageupload=packageupload)
+            sponsor=sponsor, packageupload=packageupload, logger=logger)
         if send_email:
             notify(
                 person, source.sourcepackagerelease, [], [], archive,
@@ -653,7 +653,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
 def _do_direct_copy(source, archive, series, pocket, include_binaries,
                     override=None, close_bugs=True, create_dsd_job=True,
                     close_bugs_since_version=None, creator=None,
-                    sponsor=None, packageupload=None):
+                    sponsor=None, packageupload=None, logger=None):
     """Copy publishing records to another location.
 
     Copy each item of the given list of `SourcePackagePublishingHistory`
@@ -683,6 +683,7 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
     :param sponsor: the sponsor `IPerson`, if this copy is being sponsored.
     :param packageupload: The `IPackageUpload` that caused this publication
         to be created.
+    :param logger: An optional logger.
 
     :return: a list of `ISourcePackagePublishingHistory` and
         `BinaryPackagePublishingHistory` corresponding to the copied
@@ -757,6 +758,6 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
     # Always ensure the needed builds exist in the copy destination
     # after copying the binaries.
     # XXX cjwatson 2012-06-22 bug=869308: Fails to honour P-a-s.
-    source_copy.createMissingBuilds()
+    source_copy.createMissingBuilds(logger=logger)
 
     return copies
