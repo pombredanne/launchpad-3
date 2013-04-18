@@ -1864,19 +1864,6 @@ class ArchiveFormatterAPI(CustomizableFormatter):
     final_traversable_names.update(
         CustomizableFormatter.final_traversable_names)
 
-    def url(self, view_name=None, rootsite='mainsite'):
-        """See `ObjectFormatterAPI`.
-
-        The default URL for a distribution main archive is the URL of the
-        distribution.  Other archive URLs are constructed as normal.
-        """
-        if self._context.is_main:
-            return queryAdapter(
-                self._context.distribution, IPathAdapter, 'fmt').url(
-                    view_name, rootsite)
-        else:
-            return super(ArchiveFormatterAPI, self).url(view_name, rootsite)
-
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
         return {'display_name': self._context.displayname}
@@ -1895,7 +1882,12 @@ class ArchiveFormatterAPI(CustomizableFormatter):
         summary = self._make_link_summary()
         css = self.sprite_css()
         if check_permission(self._link_permission, self._context):
-            url = self.url(view_name)
+            if self._context.is_main:
+                url = queryAdapter(
+                    self._context.distribution, IPathAdapter, 'fmt').url(
+                        view_name)
+            else:
+                url = self.url(view_name)
             return '<a href="%s" class="%s">%s</a>' % (url, css, summary)
         else:
             if not self._context.private:
