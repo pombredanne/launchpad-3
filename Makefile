@@ -344,6 +344,7 @@ rebuildfti:
 
 clean_js:
 	$(RM) -r $(JS_BUILD_DIR)
+	$(RM) -r yui # Remove obsolete top-level directory for now.
 
 clean_buildout:
 	$(RM) -r build
