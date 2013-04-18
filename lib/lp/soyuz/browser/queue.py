@@ -21,6 +21,7 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.model.distribution import Distribution
 from lp.services.database.bulk import (
     load_referencing,
     load_related,
@@ -196,11 +197,14 @@ class QueueItemsView(LaunchpadView):
         """Batch-load `PackageCopyJob`s and related information."""
         package_copy_jobs = load_related(
             PackageCopyJob, uploads, ['package_copy_job_id'])
-        load_related(Archive, package_copy_jobs, ['source_archive_id'])
+        archives = load_related(
+            Archive, package_copy_jobs, ['source_archive_id'])
+        load_related(Distribution, archives, ['distributionID'])
+        person_ids = map(attrgetter('ownerID'), archives)
         jobs = load_related(Job, package_copy_jobs, ['job_id'])
-        person_ids = map(attrgetter('requester_id'), jobs)
+        person_ids.extend(map(attrgetter('requester_id'), jobs))
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-            person_ids, need_validity=True))
+            person_ids, need_validity=True, need_icon=True))
 
     def decoratedQueueBatch(self):
         """Return the current batch, converted to decorated objects.

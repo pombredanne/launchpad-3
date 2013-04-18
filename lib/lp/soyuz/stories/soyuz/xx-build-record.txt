@@ -98,7 +98,7 @@ question.
     Pocket: Release
     Component: main
 
-Re-enable the build in order to avioid subsequent test breakage.
+Re-enable the build in order to avoid subsequent test breakage.
 
     >>> login('foo.bar@canonical.com')
     >>> build.buildqueue_record.job.resume()
@@ -106,13 +106,13 @@ Re-enable the build in order to avioid subsequent test breakage.
     >>> anon_browser.open(build_url)
 
 The 'Build details' section exists for all status and contains links
-to all the relevant entities involed in this build.
+to all the relevant entities involved in this build.
 
     >>> print anon_browser.getLink('testing - 1.0').url
     http://launchpad.dev/ubuntutest/+source/testing/1.0
 
     >>> print anon_browser.getLink('Primary Archive for Ubuntu Test').url
-    http://launchpad.dev/ubuntutest/+archive/primary
+    http://launchpad.dev/ubuntutest
 
     >>> print anon_browser.getLink('Breezy Badger Autotest').url
     http://launchpad.dev/ubuntutest/breezy-autotest

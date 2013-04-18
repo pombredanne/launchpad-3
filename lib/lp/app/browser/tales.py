@@ -98,7 +98,10 @@ from lp.services.webapp.publisher import (
 from lp.services.webapp.session import get_cookie_domain
 from lp.services.webapp.url import urlappend
 from lp.soyuz.enums import ArchivePurpose
-from lp.soyuz.interfaces.archive import IPPA
+from lp.soyuz.interfaces.archive import (
+    IArchive,
+    IPPA,
+    )
 from lp.soyuz.interfaces.binarypackagename import IBinaryAndSourcePackageName
 
 
@@ -760,6 +763,8 @@ class ObjectImageDisplayAPI:
                 sprite_string = 'ppa-icon'
             else:
                 sprite_string = 'ppa-icon-inactive'
+        elif IArchive.providedBy(context):
+            sprite_string = 'distribution'
         elif IBranch.providedBy(context):
             sprite_string = 'branch'
         elif ISpecification.providedBy(context):
@@ -1847,8 +1852,8 @@ class CodeReviewCommentFormatterAPI(CustomizableFormatter):
         return {'author': self._context.message.owner.displayname}
 
 
-class PPAFormatterAPI(CustomizableFormatter):
-    """Adapter providing fmt support for `IPPA` objects."""
+class ArchiveFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for `IArchive` objects."""
 
     _link_summary_template = '%(display_name)s'
     _link_permission = 'launchpad.View'
@@ -1864,20 +1869,25 @@ class PPAFormatterAPI(CustomizableFormatter):
         return {'display_name': self._context.displayname}
 
     def link(self, view_name):
-        """Return html including a link for the context PPA.
+        """Return html including a link for the context archive.
 
         Render a link using CSS sprites for users with permission to view
-        the PPA.
+        the archive.
 
         Disabled PPAs are listed with sprites but not linkified.
 
-        Unaccessible private PPA are not rendered at all (empty string
+        Inaccessible private PPAs are not rendered at all (empty string
         is returned).
         """
         summary = self._make_link_summary()
         css = self.sprite_css()
         if check_permission(self._link_permission, self._context):
-            url = self.url(view_name)
+            if self._context.is_main:
+                url = queryAdapter(
+                    self._context.distribution, IPathAdapter, 'fmt').url(
+                        view_name)
+            else:
+                url = self.url(view_name)
             return '<a href="%s" class="%s">%s</a>' % (url, css, summary)
         else:
             if not self._context.private:
@@ -1887,6 +1897,10 @@ class PPAFormatterAPI(CustomizableFormatter):
 
     def reference(self, view_name=None, rootsite=None):
         """Return the text PPA reference for a PPA."""
+        if not IPPA.providedBy(self._context):
+            raise NotImplementedError(
+                "No reference implementation for non-PPA archive %r." %
+                self._context)
         if not check_permission(self._reference_permission, self._context):
             return ''
         return self._reference_template % {

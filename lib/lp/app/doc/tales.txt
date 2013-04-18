@@ -160,8 +160,8 @@ them.
     ...     name='pppa', private=True, owner=owner)
 
     >>> print test_tales("ppa/fmt:link", ppa=private_ppa)
-    <a href="/~joe/+archive/pppa" class="sprite ppa-icon private">PPA named pppa
-    for Joe Smith</a>
+    <a href="/~joe/+archive/pppa" class="sprite ppa-icon private">PPA named
+    pppa for Joe Smith</a>
 
     >>> login(ANONYMOUS)
 
@@ -179,6 +179,33 @@ a subscription to the PPA.
     >>> ignored = login_person(ppa_user)
     >>> print test_tales("ppa/fmt:reference", ppa=private_ppa)
     ppa:joe/pppa
+
+The same 'link' formatter works for distribution archives, with a different
+sprite.  The link target for main archives (primary, partner, and debug) is
+the distribution rather than the archive, as the archives would just
+redirect anyway.
+
+    >>> print test_tales("archive/fmt:link", archive=primary)
+    <a href="/ubuntu" class="sprite distribution">Primary Archive for Ubuntu
+    Linux</a>
+
+    >>> print test_tales("archive/fmt:link", archive=partner)
+    <a href="/ubuntu" class="sprite distribution">Partner Archive for Ubuntu
+    Linux</a>
+
+    >>> print test_tales("archive/fmt:link", archive=debug)
+    <a href="/ubuntu" class="sprite distribution">Ubuntu DEBUG archive</a>
+
+    >>> print test_tales("archive/fmt:link", archive=copy)
+    <a href="/ubuntu/+archive/rebuild" class="sprite distribution">Copy
+    archive rebuild for Mark Shuttleworth</a>
+
+The 'reference' formatter is meaningless for non-PPA archives.
+
+    >>> test_tales("archive/fmt:reference", archive=primary)
+    Traceback (most recent call last):
+    ...
+    NotImplementedError: No reference implementation for non-PPA archive ...
 
 We also have icons for builds which may have different dimensions.
 

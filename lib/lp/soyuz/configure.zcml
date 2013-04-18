@@ -168,6 +168,7 @@
                 custom_file_urls
                 customFileUrls
                 getBinaryProperties
+                copy_source_archive
                 getFileByName
                 date_created
                 sourcepackagerelease

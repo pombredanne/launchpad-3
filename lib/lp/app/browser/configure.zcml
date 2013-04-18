@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -596,13 +596,10 @@
       />
   <!-- TALES fmt: namespace -->
 
-  <!-- The next directive is registered for all dicts, but we really only
-       want it to apply to the page template's CONTEXTS dict.
-    -->
   <adapter
-      for="lp.soyuz.interfaces.archive.IPPA"
+      for="lp.soyuz.interfaces.archive.IArchive"
       provides="zope.traversing.interfaces.IPathAdapter"
-      factory="lp.app.browser.tales.PPAFormatterAPI"
+      factory="lp.app.browser.tales.ArchiveFormatterAPI"
       name="fmt"
       />
 

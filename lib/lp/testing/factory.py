@@ -3460,12 +3460,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return upload
 
     def makeCopyJobPackageUpload(self, distroseries=None,
-                                 sourcepackagename=None, target_pocket=None):
+                                 sourcepackagename=None, source_archive=None,
+                                 target_pocket=None):
         """Make a `PackageUpload` with a `PackageCopyJob` attached."""
         if distroseries is None:
             distroseries = self.makeDistroSeries()
         spph = self.makeSourcePackagePublishingHistory(
-            sourcepackagename=sourcepackagename)
+            archive=source_archive, sourcepackagename=sourcepackagename)
         spr = spph.sourcepackagerelease
         job = self.makePlainPackageCopyJob(
             package_name=spr.sourcepackagename.name,
