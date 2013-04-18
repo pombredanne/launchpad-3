@@ -194,7 +194,6 @@ eggs:
 	# Usually this is linked via link-external-sourcecode, but in
 	# deployment we create this ourselves.
 	mkdir eggs
-	mkdir yui
 
 buildonce_eggs: $(PY)
 	find eggs -name '*.pyc' -exec rm {} \;
@@ -344,7 +343,8 @@ rebuildfti:
 	$(PY) database/schema/fti.py -d launchpad_dev --force
 
 clean_js:
-	$(RM) -r $(ICING)/yui
+	$(RM) -r $(JS_BUILD_DIR)
+	$(RM) -r yui # Remove obsolete top-level directory for now.
 
 clean_buildout:
 	$(RM) -r build
