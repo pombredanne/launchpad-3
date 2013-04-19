@@ -173,7 +173,7 @@ $(YUI_DEFAULT_SYMLINK): $(YUI_BUILDS)
 	ln -sfn $(YUI_DEFAULT) $@
 
 $(LP_JS_BUILD): | $(JS_BUILD_DIR)
-	mkdir $@
+	-mkdir $@
 	for jsdir in lib/lp/*/javascript; do \
 		app=$$(echo $$jsdir | sed -e 's,lib/lp/\(.*\)/javascript,\1,'); \
 		cp -a $$jsdir $@/$$app; \
@@ -489,4 +489,4 @@ pydoctor:
 	launchpad.pot pagetests pull_branches pydoctor realclean	\
 	reload-apache run run-testapp runner scan_branches schema	\
 	sprite_css sprite_image start stop sync_branches TAGS tags	\
-	test_build test_inplace zcmldocs
+	test_build test_inplace zcmldocs $(LP_JS_BUILD)
