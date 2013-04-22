@@ -252,10 +252,19 @@ h3 a.sprite {
     top: 4px;
     }
 
-/* Hidden must be the last rule because it overides all other rules. */
 .inline {
     display: inline;
     margin: 0;
+    }
+
+/* Hidden must be the last rule because it overides all other rules. */
+.yui3-skin-sam .yui3-pretty-overlay .yui3-calendar-content {
+    background: none;
+    border: none;
+    }
+
+.yui3-calendarbase {
+    margin: 0 auto;
     }
 
 /* Use 'hidden' to hide elements unconditionally.

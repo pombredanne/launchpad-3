@@ -88,22 +88,19 @@
         Javascript and CSS needed for using the yui2calendar-based
         Date and DateTime widgets.
     </tal:comment>
-    <tal:yui2resources
-      tal:define="yui2 string:${icingroot}/yui_2.7.0b/build;">
-
-      <script type="text/javascript">
-          LPJS.use('lang', 'node', 'lp.app.calendar', function(Y) {
-                  Y.lp.app.calendar.setup_calendar_widgets();
-              }
-          );
-      </script>
-
-      <link rel="stylesheet" type="text/css"
-          tal:attributes="href
-          string:${yui2}/calendar/assets/skins/sam/calendar.css" />
-    </tal:yui2resources>
-
+    <script type="text/javascript">
+        LPJS.use('lang', 'node', 'lp.app.calendar', function(Y) {
+                Y.lp.app.calendar.setup_calendar_widgets();
+            });
+    </script>
+    <link rel="stylesheet" type="text/css"
+        href="/+icing/yui/assets/skins/sam/calendar-base.css" />
+    <link rel="stylesheet" type="text/css"
+        href="/+icing/yui/assets/skins/sam/calendar.css" />
+    <link rel="stylesheet" type="text/css"
+        href="/+icing/yui/assets/skins/sam/calendarnavigator.css" />
+    <link rel="stylesheet" type="text/css"
+        href="/+icing/yui/cssgrids/cssgrids.css" />
 </metal:yui2calendar-dependencies>
 
 </tal:root>
-
