@@ -93,14 +93,6 @@
                 Y.lp.app.calendar.setup_calendar_widgets();
             });
     </script>
-    <link rel="stylesheet" type="text/css"
-        href="/+icing/yui/assets/skins/sam/calendar-base.css" />
-    <link rel="stylesheet" type="text/css"
-        href="/+icing/yui/assets/skins/sam/calendar.css" />
-    <link rel="stylesheet" type="text/css"
-        href="/+icing/yui/assets/skins/sam/calendarnavigator.css" />
-    <link rel="stylesheet" type="text/css"
-        href="/+icing/yui/cssgrids/cssgrids.css" />
 </metal:yui2calendar-dependencies>
 
 </tal:root>
