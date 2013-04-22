@@ -252,6 +252,17 @@ h3 a.sprite {
     top: 4px;
     }
 
+/* Hide the grey background for the Calendar content. */
+.yui3-skin-sam .yui3-pretty-overlay .yui3-calendar-content {
+    background: none;
+    border: none;
+    }
+
+/* Center the Calendar within its overlay. */
+.yui3-calendarbase {
+    margin: 0 auto;
+    }
+
 /* Hidden must be the last rule because it overides all other rules. */
 .inline {
     display: inline;
