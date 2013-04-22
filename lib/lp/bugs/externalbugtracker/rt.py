@@ -88,8 +88,7 @@ class RequestTracker(ExternalBugTracker):
         except (urllib2.HTTPError, urllib2.URLError) as error:
             raise BugTrackerConnectError('%s/' % self.baseurl,
                 "Unable to authenticate with remote RT service: "
-                "Could not submit login form: " +
-                error.message)
+                "Could not submit login form: %s" % error)
 
         return opener
 
@@ -111,7 +110,7 @@ class RequestTracker(ExternalBugTracker):
         try:
             bug_data = self.urlopen(query_url)
         except urllib2.HTTPError as error:
-            raise BugTrackerConnectError(ticket_url, error.message)
+            raise BugTrackerConnectError(ticket_url, str(error))
 
         # We use the first line of the response to ensure that we've
         # made a successful request.
