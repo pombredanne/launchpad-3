@@ -114,7 +114,7 @@ class IBuilder(IHasOwner):
         schema=IProcessor,
         description=_('Build Slave Processor, used to identify '
                       'which jobs can be built by this device.')),
-        as_of='devel', readonly=True)
+        as_of='devel')
 
     owner = exported(PersonChoice(
         title=_('Owner'), required=True, vocabulary='ValidOwner',
