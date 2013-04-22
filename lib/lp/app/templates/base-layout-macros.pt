@@ -93,30 +93,6 @@
                     // comes from including lp/meta.js
                     modules: LP_MODULES,
                     fetchCSS: false
-                },
-                yui2: {
-                    combine: true,
-                    base: '${combo_url}/?yui2/',
-                    comboBase: '${combo_url}/?',
-                    root: 'yui2/',
-                    fetchCSS: false,
-                    modules: {
-                        'yui2-yahoo': {
-                            path: 'yahoo/yahoo.js'
-                        },
-                        'yui2-event': {
-                            path: 'event/event.js'
-                        },
-                        'yui2-dom': {
-                            path: 'dom/dom.js'
-                        },
-                        'yui2-calendar': {
-                            path: 'calendar/calendar.js'
-                        },
-                        'yui2-dom-event': {
-                            path: 'yahoo-dom-event/yahoo-dom-event.js'
-                        }
-                    }
                 }
             }
         }">

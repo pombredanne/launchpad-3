@@ -25,7 +25,6 @@ LP_BUILT_JS_ROOT=${ICING}/build
 JS_BUILD_DIR := build/js
 YUI_VERSIONS := 3.9.1
 YUI_BUILDS := $(patsubst %,$(JS_BUILD_DIR)/yui-%, $(YUI_VERSIONS))
-YUI2_BUILD:= $(JS_BUILD_DIR)/yui2
 YUI_DEFAULT := yui-3.9.1
 YUI_DEFAULT_SYMLINK := $(JS_BUILD_DIR)/yui
 LP_JS_BUILD := $(JS_BUILD_DIR)/lp
@@ -181,11 +180,7 @@ $(LP_JS_BUILD): | $(JS_BUILD_DIR)
 	find $@ -name 'tests' -type d | xargs rm -rf
 	bin/lpjsmin -p $@
 
-$(YUI2_BUILD): lib/canonical/launchpad/icing/yui_2.7.0b/build
-	mkdir -p $@
-	cp -a $</* $@
-
-jsbuild: $(LP_JS_BUILD) $(YUI_DEFAULT_SYMLINK) $(YUI2_BUILD)
+jsbuild: $(LP_JS_BUILD) $(YUI_DEFAULT_SYMLINK)
 	utilities/js-deps -n LP_MODULES -s build/js/lp -x '-min.js' -o \
 	build/js/lp/meta.js >/dev/null
 	utilities/check-js-deps
