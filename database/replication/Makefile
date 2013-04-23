@@ -57,6 +57,8 @@ stagingsetup:
 	${STAGING_PGBOUNCER} -c 'kill launchpad_staging'
 	${STAGING_PGBOUNCER} -c 'kill launchpad_staging_slave'
 	-${PGMASSACRE} lpmain_staging
+	${STAGING_PGBOUNCER} -c 'kill session_staging'
+	psql -d session_staging -c 'TRUNCATE sessiondata CASCADE;'
 	# Create the DB with the desired default tablespace.
 	${CREATEDB} --tablespace ${STAGING_TABLESPACE} lpmain_staging
 	# Restore the database. We need to restore permissions, despite
