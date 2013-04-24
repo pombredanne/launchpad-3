@@ -115,5 +115,8 @@ def python():
 
 
 def ipython():
-    import IPython.ipapi
-    IPython.ipapi.launch_new_instance(_get_locals())
+    from IPython.frontend.terminal.ipapp import TerminalIPythonApp
+    app = TerminalIPythonApp.instance()
+    app.initialize(argv=[])
+    app.shell.user_ns.update(_get_locals())
+    app.start()
