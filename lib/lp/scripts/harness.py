@@ -39,6 +39,7 @@ from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.projectgroup import ProjectGroup
+from lp.services.config import dbconfig
 from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -60,6 +61,7 @@ def _get_locals():
         dbuser = sys.argv[1]
     else:
         dbuser = None
+    dbconfig.override(dbuser=dbuser)
     execute_zcml_for_scripts()
     readline.parse_and_bind('tab: complete')
     # Mimic the real interactive interpreter's loading of any
