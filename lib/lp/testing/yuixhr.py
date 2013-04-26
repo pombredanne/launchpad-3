@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Fixture code for YUITest + XHR integration testing."""
@@ -187,28 +187,6 @@ class YUITestFixtureControllerView(LaunchpadView):
                         // comes from including lp/meta.js
                         modules: LP_MODULES,
                         fetchCSS: false
-                    },
-                    yui2: {
-                        combine: false,
-                        base: '/+yuitest/build/js/yui2/',
-                        fetchCSS: false,
-                        modules: {
-                            'yui2-yahoo': {
-                                path: 'yahoo/yahoo.js'
-                            },
-                            'yui2-event': {
-                                path: 'event/event.js'
-                            },
-                            'yui2-dom': {
-                                path: 'dom/dom.js'
-                            },
-                            'yui2-calendar': {
-                                path: 'calendar/calendar.js'
-                            },
-                            'yui2-dom-event': {
-                                path: 'yahoo-dom-event/yahoo-dom-event.js'
-                            }
-                        }
                     }
                 }
             }
