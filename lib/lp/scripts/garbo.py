@@ -101,7 +101,10 @@ from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.job.model.job import Job
-from lp.services.librarian.model import TimeLimitedToken
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    TimeLimitedToken,
+    )
 from lp.services.log.logger import PrefixFilter
 from lp.services.looptuner import TunableLoop
 from lp.services.oauth.model import OAuthNonce
