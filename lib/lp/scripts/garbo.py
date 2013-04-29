@@ -61,7 +61,10 @@ from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.code.model.diff import PreviewDiff
+from lp.code.model.diff import (
+    Diff,
+    PreviewDiff,
+    )
 from lp.code.model.revision import (
     RevisionAuthor,
     RevisionCache,
@@ -103,7 +106,10 @@ from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.job.model.job import Job
-from lp.services.librarian.model import TimeLimitedToken
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    TimeLimitedToken,
+    )
 from lp.services.log.logger import PrefixFilter
 from lp.services.looptuner import TunableLoop
 from lp.services.oauth.model import OAuthNonce
@@ -1359,12 +1365,16 @@ class PopulatePreviewDiffMergeProposal(TunableLoop):
     def __call__(self, chunk_size):
         bmp_ids = list(self.findBranchMergeProposalIDs()[:chunk_size])
         columns = dict(
-            [(PreviewDiff.merge_proposal_id, BranchMergeProposal.id)])
+            [(PreviewDiff.merge_proposal_id, BranchMergeProposal.id),
+             (PreviewDiff.date_created, LibraryFileAlias.date_created)])
         self.store.execute(
             BulkUpdate(
-                columns, table=PreviewDiff, values=BranchMergeProposal,
+                columns, table=PreviewDiff,
+                values=[BranchMergeProposal, Diff, LibraryFileAlias],
                 where=And(
                     BranchMergeProposal.id.is_in(bmp_ids),
+                    PreviewDiff.diff_id == Diff.id,
+                    Diff.diff_text == LibraryFileAlias.id,
                     PreviewDiff.id == BranchMergeProposal.preview_diff_id)))
         self.start_at = bmp_ids[-1] + 1
         transaction.commit()

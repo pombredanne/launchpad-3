@@ -1171,12 +1171,16 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         switch_dbuser('testadmin')
         diffs = [self.factory.makePreviewDiff() for i in range(5)]
         expected_bmps = [diff.merge_proposal_id for diff in diffs]
+        expected_dates = [diff.diff.diff_text.date_created for diff in diffs]
         for diff in diffs:
             diff.merge_proposal.preview_diff = diff
             diff.merge_proposal = None
+            diff.date_created = None
         self.runHourly()
         self.assertContentEqual(
             expected_bmps, [diff.merge_proposal_id for diff in diffs])
+        self.assertEqual(
+            expected_dates, [diff.date_created for diff in diffs])
 
     def test_PopulateLatestPersonSourcePackageReleaseCache(self):
         switch_dbuser('testadmin')
