@@ -53,6 +53,7 @@ from zope.interface import (
     implements,
     )
 
+from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.enums import BranchType
 from lp.code.errors import (
     BranchHasPendingWrites,
@@ -370,8 +371,8 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         """See `IRunnableJob`."""
         self.checkReady()
         with server(get_ro_server(), no_replace=True):
-            import pdb; pdb.set_trace()
-            PreviewDiff.fromBranchMergeProposal(self.branch_merge_proposal)
+            with BranchMergeProposalDelta.monitor(self.branch_merge_proposal):
+                PreviewDiff.fromBranchMergeProposal(self.branch_merge_proposal)
 
     def getOperationDescription(self):
         return ('generating the diff for a merge proposal')

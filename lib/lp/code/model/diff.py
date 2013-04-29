@@ -387,17 +387,17 @@ class PreviewDiff(Storm):
         source_revision = source_branch.last_revision()
         target_branch = bmp.target_branch.getBzrBranch()
         target_revision = target_branch.last_revision()
-        preview = cls()
-        preview.source_revision_id = source_revision.decode('utf-8')
-        preview.target_revision_id = target_revision.decode('utf-8')
-        preview.merge_proposal = bmp
         if bmp.prerequisite_branch is not None:
             prerequisite_branch = bmp.prerequisite_branch.getBzrBranch()
         else:
             prerequisite_branch = None
-        preview.diff, conflicts = Diff.mergePreviewFromBranches(
-            source_branch, source_revision, target_branch,
-            prerequisite_branch)
+        diff, conflicts = Diff.mergePreviewFromBranches(
+            source_branch, source_revision, target_branch, prerequisite_branch)
+        preview = cls()
+        preview.source_revision_id = source_revision.decode('utf-8')
+        preview.target_revision_id = target_revision.decode('utf-8')
+        preview.merge_proposal = bmp
+        preview.diff = diff
         preview.conflicts = u''.join(
             unicode(conflict) + '\n' for conflict in conflicts)
         del get_property_cache(bmp).preview_diffs
