@@ -1483,9 +1483,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, prerequisite_branch=None,
                                 product=None, initial_comment=None,
-                                source_branch=None, preview_diff=None,
-                                date_created=None, description=None,
-                                reviewer=None, merged_revno=None):
+                                source_branch=None, date_created=None,
+                                description=None, reviewer=None,
+                                merged_revno=None):
         """Create a proposal to merge based on anonymous branches."""
         if target_branch is not None:
             target_branch = removeSecurityProxy(target_branch)
@@ -1521,8 +1521,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         unsafe_proposal = removeSecurityProxy(proposal)
         unsafe_proposal.merged_revno = merged_revno
-        if preview_diff is not None:
-            unsafe_proposal.preview_diff = preview_diff
         if (set_state is None or
             set_state == BranchMergeProposalStatus.WORK_IN_PROGRESS):
             # The initial state is work in progress, so do nothing.
