@@ -1167,6 +1167,17 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             [InformationType.PRIVATESECURITY, InformationType.PROPRIETARY],
             self.getAccessPolicyTypes(product))
 
+    def test_PopulatePreviewDiffMergeProposal(self):
+        switch_dbuser('testadmin')
+        diffs = [self.factory.makePreviewDiff() for i in range(5)]
+        expected_bmps = [diff.merge_proposal_id for diff in diffs]
+        for diff in diffs:
+            diff.merge_proposal.preview_diff = diff
+            diff.merge_proposal = None
+        self.runHourly()
+        self.assertContentEqual(
+            expected_bmps, [diff.merge_proposal_id for diff in diffs])
+
     def test_PopulateLatestPersonSourcePackageReleaseCache(self):
         switch_dbuser('testadmin')
         # Make some same test data - we create published source package

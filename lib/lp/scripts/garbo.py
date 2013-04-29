@@ -58,8 +58,10 @@ from lp.bugs.scripts.checkwatches.scheduler import (
     MAX_SAMPLE_SIZE,
     )
 from lp.code.interfaces.revision import IRevisionSet
+from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.code.model.diff import PreviewDiff
 from lp.code.model.revision import (
     RevisionAuthor,
     RevisionCache,
@@ -1335,6 +1337,39 @@ class UnusedAccessPolicyPruner(TunableLoop):
         transaction.commit()
 
 
+class PopulatePreviewDiffMergeProposal(TunableLoop):
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(PopulatePreviewDiffMergeProposal, self).__init__(log, abort_time)
+        self.start_at = 1
+        self.store = IMasterStore(BranchMergeProposal)
+
+    def findBranchMergeProposalIDs(self):
+        return self.store.find(
+            (BranchMergeProposal.id),
+            BranchMergeProposal.preview_diff_id != None,
+            BranchMergeProposal.id >= self.start_at).order_by(
+                BranchMergeProposal.id)
+
+    def isDone(self):
+        return self.findBranchMergeProposalIDs().is_empty()
+
+    def __call__(self, chunk_size):
+        bmp_ids = list(self.findBranchMergeProposalIDs()[:chunk_size])
+        columns = dict(
+            [(PreviewDiff.merge_proposal_id, BranchMergeProposal.id)])
+        self.store.execute(
+            BulkUpdate(
+                columns, table=PreviewDiff, values=BranchMergeProposal,
+                where=And(
+                    BranchMergeProposal.id.is_in(bmp_ids),
+                    PreviewDiff.id == BranchMergeProposal.preview_diff_id)))
+        self.start_at = bmp_ids[-1] + 1
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1589,6 +1624,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
+        PopulatePreviewDiffMergeProposal,
         ]
     experimental_tunable_loops = []
 

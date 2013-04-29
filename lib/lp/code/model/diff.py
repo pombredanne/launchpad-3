@@ -49,6 +49,8 @@ from lp.code.interfaces.diff import (
 from lp.codehosting.bzrutils import read_locked
 from lp.services.config import config
 from lp.services.database.bulk import load_referencing
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.sqlbase import SQLBase
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.interfaces.client import (
@@ -362,6 +364,11 @@ class PreviewDiff(Storm):
 
     prerequisite_revision_id = Unicode(name='dependent_revision_id')
 
+    merge_proposal_id = Int(name='merge_proposal')
+    merge_proposal = Reference(merge_proposal_id, 'BranchMergeProposal.id')
+
+    date_created = UtcDateTimeCol(dbName='date_created', default=UTC_NOW)
+
     conflicts = Unicode()
 
     @property
@@ -385,6 +392,9 @@ class PreviewDiff(Storm):
 
     @cachedproperty
     def branch_merge_proposal(self):
+        # This can turn into return self.merge_proposal when it's populated.
+        if self.merge_proposal:
+            return self.merge_proposal
         return self._branch_merge_proposal
 
     @classmethod
@@ -402,6 +412,7 @@ class PreviewDiff(Storm):
         preview = cls()
         preview.source_revision_id = source_revision.decode('utf-8')
         preview.target_revision_id = target_revision.decode('utf-8')
+        preview.merge_proposal = bmp
         if bmp.prerequisite_branch is not None:
             prerequisite_branch = bmp.prerequisite_branch.getBzrBranch()
         else:
@@ -414,10 +425,11 @@ class PreviewDiff(Storm):
         return preview
 
     @classmethod
-    def create(cls, diff_content, source_revision_id, target_revision_id,
+    def create(cls, bmp, diff_content, source_revision_id, target_revision_id,
                prerequisite_revision_id, conflicts):
         """Create a PreviewDiff with specified values.
 
+        :param bmp: The `BranchMergeProposal` this diff references.
         :param diff_content: The text of the dift, as bytes.
         :param source_revision_id: The revision_id of the source branch.
         :param target_revision_id: The revision_id of the target branch.
@@ -427,6 +439,7 @@ class PreviewDiff(Storm):
         :return: A `PreviewDiff` with specified values.
         """
         preview = cls()
+        preview.merge_proposal = bmp
         preview.source_revision_id = source_revision_id
         preview.target_revision_id = target_revision_id
         preview.prerequisite_revision_id = prerequisite_revision_id

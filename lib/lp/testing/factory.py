@@ -1573,7 +1573,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if merge_proposal is None:
             merge_proposal = self.makeBranchMergeProposal()
         preview_diff = PreviewDiff()
-        preview_diff._branch_merge_proposal = merge_proposal
+        preview_diff.merge_proposal = merge_proposal
         preview_diff.conflicts = conflicts
         preview_diff.diff = diff
         preview_diff.source_revision_id = self.getUniqueUnicode()

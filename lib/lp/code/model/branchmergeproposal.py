@@ -862,7 +862,7 @@ class BranchMergeProposal(SQLBase):
         """See `IBranchMergeProposal`."""
         # Create the PreviewDiff.
         self.preview_diff = PreviewDiff.create(
-            diff_content, source_revision_id, target_revision_id,
+            self, diff_content, source_revision_id, target_revision_id,
             prerequisite_revision_id, conflicts)
 
         # XXX: TimPenhey 2009-02-19 bug 324724
