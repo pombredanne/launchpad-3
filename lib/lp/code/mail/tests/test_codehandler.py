@@ -381,16 +381,10 @@ class TestCodeHandler(TestCaseWithFactory):
 
     def test_reviewer_with_diff(self):
         """Requesting a review with a diff works."""
-        diff_text = ''.join(unified_diff('', 'Fake diff'))
-        preview_diff = PreviewDiff.create(
-            diff_text,
-            unicode(self.factory.getUniqueString('revid')),
-            unicode(self.factory.getUniqueString('revid')),
-            None, None)
+        bmp = make_merge_proposal_without_reviewers(self.factory)
+        preview_diff = self.factory.makePreviewDiff(merge_proposal=bmp)
         # To record the diff in the librarian.
         transaction.commit()
-        bmp = make_merge_proposal_without_reviewers(
-            self.factory, preview_diff=preview_diff)
         eric = self.factory.makePerson(name="eric", email="eric@example.com")
         mail = self.factory.makeSignedMessage(body=' reviewer eric')
         email_addr = bmp.address

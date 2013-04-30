@@ -717,11 +717,11 @@ class BranchMergeProposal(SQLBase):
             comment.destroySelf()
         # Delete all jobs referring to the BranchMergeProposal, whether
         # or not they have completed.
-        from lp.code.model.branchmergeproposaljob import (
-            BranchMergeProposalJob)
+        from lp.code.model.branchmergeproposaljob import BranchMergeProposalJob
         for job in BranchMergeProposalJob.selectBy(
             branch_merge_proposal=self.id):
             job.destroySelf()
+        self.preview_diffs.remove()
         self.destroySelf()
 
     def getUnlandedSourceBranchRevisions(self):
