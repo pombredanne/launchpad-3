@@ -1,10 +1,9 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
     'BugTracker',
-    'BugTrackerSet',
     'BugTrackerAlias',
     'BugTrackerAliasSet',
     'BugTrackerComponent',
@@ -74,11 +73,6 @@ from lp.registry.interfaces.person import (
     validate_public_person,
     )
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     flush_database_updates,
@@ -779,19 +773,19 @@ class BugTrackerSet:
         """See `IBugTrackerSet`."""
         return BugTracker.select()
 
-    def trackers(self, active=None):
-        # Without context, cannot tell what store flavour is desirable.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        if active is not None:
-            clauses = [BugTracker.active == active]
-        else:
-            clauses = []
-        results = store.find(BugTracker, *clauses)
-        results.order_by(BugTracker.name)
-        return results
+    def trackers(self, user=None, active=None):
+        # Circular.
+        from lp.registry.model.product import Product, ProductSet
+        clauses = [
+            Product.bugtracker == BugTracker.id,
+            ProductSet.getProductPrivacyFilter(user)]
+        if active:
+            clauses.append(BugTracker.active == active)
+        return IStore(BugTracker).find(BugTracker, *clauses).order_by(
+            BugTracker.name)
 
-    def ensureBugTracker(self, baseurl, owner, bugtrackertype,
-        title=None, summary=None, contactdetails=None, name=None):
+    def ensureBugTracker(self, baseurl, owner, bugtrackertype, title=None,
+                         summary=None, contactdetails=None, name=None):
         """See `IBugTrackerSet`."""
         # Try to find an existing bug tracker that matches.
         bugtracker = self.queryByBaseURL(baseurl)
@@ -826,16 +820,10 @@ class BugTrackerSet:
 
     def getMostActiveBugTrackers(self, limit=None):
         """See `IBugTrackerSet`."""
-        store = IStore(BugTracker)
-        result = store.find(
+        return IStore(BugTracker).find(
             BugTracker,
-            BugTracker.id == BugWatch.bugtrackerID)
-        result = result.group_by(BugTracker)
-        result = result.order_by(Desc(Count(BugWatch)))
-        if limit is not None:
-            return result[:limit]
-        else:
-            return result
+            BugTracker.id == BugWatch.bugtrackerID).group_by(
+                BugTracker).order_by(Desc(Count(BugWatch))).config(limit=limit)
 
     def getPillarsForBugtrackers(self, bugtrackers):
         """See `IBugTrackerSet`."""

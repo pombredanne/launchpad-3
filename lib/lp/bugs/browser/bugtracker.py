@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug tracker views."""
@@ -167,7 +167,7 @@ class BugTrackerSetView(LaunchpadView):
         # bug watch counts per tracker. However the batching makes
         # the inefficiency tolerable for now. Robert Collins 20100919.
         self._pillar_cache = self.context.getPillarsForBugtrackers(
-            list(self.context.trackers()))
+            list(self.context.trackers(user=self.user)))
 
     @property
     def inactive_tracker_count(self):
@@ -175,14 +175,14 @@ class BugTrackerSetView(LaunchpadView):
 
     @cachedproperty
     def active_trackers(self):
-        results = self.context.trackers(active=True)
+        results = self.context.trackers(user=self.user, active=True)
         navigator = ActiveBatchNavigator(results, self.request)
         navigator.setHeadings('tracker', 'trackers')
         return navigator
 
     @cachedproperty
     def inactive_trackers(self):
-        results = self.context.trackers(active=False)
+        results = self.context.trackers(user=self.user, active=False)
         navigator = InactiveBatchNavigator(results, self.request)
         navigator.setHeadings('tracker', 'trackers')
         return navigator
