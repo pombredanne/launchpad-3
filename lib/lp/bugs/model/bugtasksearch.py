@@ -12,7 +12,6 @@ __all__ = [
     ]
 
 from lazr.enum import BaseItem
-from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     Alias,
     And,
@@ -794,9 +793,6 @@ def _process_order_by(params):
             pass
 
     for orderby_col in orderby:
-        if isinstance(orderby_col, SQLConstant):
-            orderby_arg.append(orderby_col)
-            continue
         desc_search = False
         if orderby_col.startswith("-"):
             orderby_col = orderby_col[1:]

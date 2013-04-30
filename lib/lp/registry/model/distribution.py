@@ -18,7 +18,6 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     And,
     Desc,
@@ -1229,12 +1228,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         if text:
             orderBy.insert(
-                0, SQLConstant(
-                    'rank(Archive.fti, ftq(%s)) DESC' % quote(text)))
+                0, SQL('rank(Archive.fti, ftq(%s)) DESC' % quote(text)))
 
-            clauses.append("""
-                Archive.fti @@ ftq(%s)
-            """ % sqlvalues(text))
+            clauses.append("Archive.fti @@ ftq(%s)" % sqlvalues(text))
 
         if user is not None:
             if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):

@@ -34,8 +34,10 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
-from sqlobject.sqlbuilder import SQLConstant
-from storm.expr import LeftJoin
+from storm.expr import (
+    LeftJoin,
+    SQL,
+    )
 from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
@@ -1020,17 +1022,16 @@ class QuestionSearch:
             return ["Question.status", "-Question.datecreated"]
         elif sort is QuestionSort.RELEVANCY:
             if self.search_text:
-                # SQLConstant is a workaround for bug 53455
                 if self.nl_phrase_used:
-                    return [SQLConstant(
-                                "-rank(Question.fti, %s::tsquery)" % quote(
-                                    self.search_text)),
-                            "-Question.datecreated"]
+                    return [
+                        SQL("-rank(Question.fti, %s::tsquery)" % quote(
+                            self.search_text)),
+                        "-Question.datecreated"]
                 else:
-                    return [SQLConstant(
-                                "-rank(Question.fti, ftq(%s))" % quote(
-                                    self.search_text)),
-                            "-Question.datecreated"]
+                    return [
+                        SQL("-rank(Question.fti, ftq(%s))" % quote(
+                            self.search_text)),
+                        "-Question.datecreated"]
             else:
                 return "-Question.datecreated"
         elif sort is QuestionSort.RECENT_OWNER_ACTIVITY:

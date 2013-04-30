@@ -12,13 +12,13 @@ __all__ = [
     ]
 
 from lazr.lifecycle.event import ObjectCreatedEvent
+from storm.locals import SQL
 from sqlobject import (
     ForeignKey,
     SQLMultipleJoin,
     SQLObjectNotFound,
     StringCol,
     )
-from sqlobject.sqlbuilder import SQLConstant
 from zope.event import notify
 from zope.interface import implements
 
@@ -136,7 +136,7 @@ class FAQ(SQLBase):
         return FAQ.select(
             '%s AND FAQ.fti @@ %s' % (target_constraint, quote(fti_search)),
             orderBy=[
-                SQLConstant("-rank(FAQ.fti, %s::tsquery)" % quote(fti_search)),
+                SQL("-rank(FAQ.fti, %s::tsquery)" % quote(fti_search)),
                 "-FAQ.date_created"])
 
     @staticmethod
@@ -267,11 +267,9 @@ class FAQSearch:
             return "FAQ.date_created"
         elif sort is FAQSort.RELEVANCY:
             if self.search_text:
-                # SQLConstant is a workaround for bug 53455.
-                return [SQLConstant(
-                            "-rank(FAQ.fti, ftq(%s))" % quote(
-                                self.search_text)),
-                        "-FAQ.date_created"]
+                return [
+                    SQL("-rank(FAQ.fti, ftq(%s))" % quote(self.search_text)),
+                    "-FAQ.date_created"]
             else:
                 return "-FAQ.date_created"
         else:

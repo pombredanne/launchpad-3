@@ -8,8 +8,10 @@ __all__ = [
     'Library',
     ]
 
-from sqlobject.sqlbuilder import AND
-from storm.expr import SQL
+from storm.expr import (
+    And,
+    SQL,
+    )
 
 from lp.services.database.sqlbase import session_store
 from lp.services.librarian.model import (
@@ -63,11 +65,10 @@ class Library:
                 raise LookupError("Token stale/pruned/path mismatch")
             else:
                 restricted = True
-        alias = LibraryFileAlias.selectOne(AND(
-            LibraryFileAlias.q.id==aliasid,
-            LibraryFileAlias.q.contentID==LibraryFileContent.q.id,
-            LibraryFileAlias.q.restricted==restricted,
-            ))
+        alias = LibraryFileAlias.selectOne(And(
+            LibraryFileAlias.id == aliasid,
+            LibraryFileAlias.contentID == LibraryFileContent.q.id,
+            LibraryFileAlias.restricted == restricted))
         if alias is None:
             raise LookupError("No file alias with LibraryFileContent")
         return alias
