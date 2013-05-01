@@ -56,23 +56,7 @@ function loadDetails(expander) {
         }
     };
 
-    /**
-     * If a page wants to use this outside of an archive context then it
-     * can define LP.cache['archive_context'], which should be a
-     * full or relative URL to the context archive page required.
-     */
-    var base_url = (
-        typeof(LP.cache['archive_context_url']) != "undefined")
-            ? LP.cache['archive_context_url']
-            : '';
-    if (base_url !== '') {
-        base_url += '/';
-    }
-    var pub_id = expander.content_node.get('id')
-                   .replace('pub', '')
-                   .replace('-container', '');
-    var uri = base_url + '+sourcepub/' + pub_id + '/+listing-archive-extra';
-    Y.io(uri, config);
+    Y.io(expander.icon_node.get('href'), config);
 }
 
 /**
