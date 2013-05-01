@@ -76,6 +76,7 @@ from lp.services.webapp.errorlog import (
     )
 from lp.services.worlddata.model.country import Country
 from lp.soyuz.enums import (
+    ArchivePurpose,
     BinaryPackageFormat,
     PackagePublishingPriority,
     PackagePublishingStatus,
@@ -139,23 +140,6 @@ def get_component(archive, distroseries, component):
         archive.default_component is not None):
         return archive.default_component
     return component
-
-
-def get_archive(archive, bpr):
-    """Get the archive in which this binary should be published.
-
-    Debug packages live in a DEBUG archive instead of a PRIMARY archive.
-    This helper implements that override.
-    """
-    if (archive is not None and
-        bpr.binpackageformat == BinaryPackageFormat.DDEB):
-        debug_archive = archive.debug_archive
-        if debug_archive is None:
-            raise QueueInconsistentStateError(
-                "Could not find the corresponding DEBUG archive "
-                "for %s" % (archive.displayname))
-        archive = debug_archive
-    return archive
 
 
 def proxied_urls(files, parent):
@@ -1150,7 +1134,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 BinaryPackagePublishingHistory.distroarchseries ==
                     self.distroarchseries,
                 binarypackagerelease=self.binarypackagerelease.debug_package,
-                archive=self.archive.debug_archive,
+                archive=self.archive,
                 pocket=self.pocket,
                 component=self.component,
                 section=self.section,
@@ -1257,8 +1241,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             # See if the archive has changed by virtue of the component
             # changing:
             distribution = self.distroarchseries.distroseries.distribution
-            new_archive = get_archive(
-                distribution.getArchiveByComponent(new_component.name), bpr)
+            new_archive = distribution.getArchiveByComponent(
+                new_component.name)
             if new_archive is not None and new_archive != self.archive:
                 raise OverrideError(
                     "Overriding component to '%s' failed because it would "
@@ -1487,19 +1471,28 @@ class PublishingSet:
             # an unsupported architecture.
             return []
 
+        if (archive.purpose == ArchivePurpose.PRIMARY
+            and not archive.build_debug_symbols
+            and any(
+                1 for _, bpr, _ in expanded
+                if bpr.binpackageformat == BinaryPackageFormat.DDEB)):
+            raise QueueInconsistentStateError(
+                "Won't publish ddebs to a primary archive that doesn't want "
+                "them.")
+
         # Find existing publications.
         # We should really be able to just compare BPR.id, but
         # CopyChecker doesn't seem to ensure that there are no
         # conflicting binaries from other sources.
         def make_package_condition(archive, das, bpr):
             return And(
-                BinaryPackagePublishingHistory.archiveID ==
-                    get_archive(archive, bpr).id,
+                BinaryPackagePublishingHistory.archiveID == archive.id,
                 BinaryPackagePublishingHistory.distroarchseriesID == das.id,
                 BinaryPackagePublishingHistory.binarypackagenameID ==
                     bpr.binarypackagenameID,
                 BinaryPackageRelease.version == bpr.version,
                 )
+
         candidates = (
             make_package_condition(archive, das, bpr)
             for das, bpr, overrides in expanded)
@@ -1533,8 +1526,7 @@ class PublishingSet:
              BPPH.binarypackagerelease, BPPH.binarypackagename,
              BPPH.component, BPPH.section, BPPH.priority, BPPH.status,
              BPPH.datecreated),
-            [(get_archive(archive, bpr), das, pocket, bpr,
-              bpr.binarypackagename,
+            [(archive, das, pocket, bpr, bpr.binarypackagename,
               get_component(archive, das.distroseries, component),
               section, priority, PackagePublishingStatus.PENDING, UTC_NOW)
               for (das, bpr, (component, section, priority)) in needed],

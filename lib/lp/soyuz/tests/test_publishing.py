@@ -342,7 +342,7 @@ class SoyuzTestPublisher:
                     conflicts, replaces, provides, pre_depends, enhances,
                     breaks, BinaryPackageFormat.DDEB, version=version)
                 pub_binaries += self.publishBinaryInArchive(
-                    binarypackagerelease_ddeb, archive.debug_archive, status,
+                    binarypackagerelease_ddeb, archive, status,
                     pocket, scheduleddeletiondate, dateremoved,
                     phased_update_percentage)
             else:
@@ -1632,39 +1632,21 @@ class TestPublishBinaries(TestCaseWithFactory):
         args['pocket'] = PackagePublishingPocket.RELEASE
         [another_bpph] = getUtility(IPublishingSet).publishBinaries(**args)
 
-    def test_ddebs_need_debug_archive(self):
+    def test_primary_ddebs_need_ddebs_enabled(self):
         debug = self.factory.makeBinaryPackageRelease(
             binpackageformat=BinaryPackageFormat.DDEB)
         args = self.makeArgs(
             [debug], debug.build.distro_arch_series.distroseries)
+
+        # ddebs are rejected with build_debug_symbols unset
         self.assertRaises(
             QueueInconsistentStateError,
             getUtility(IPublishingSet).publishBinaries, **args)
 
-    def test_ddebs_go_to_debug_archive(self):
-        # Normal packages go to the given archive, but debug packages go
-        # to the corresponding debug archive.
-        das = self.factory.makeDistroArchSeries()
-        self.factory.makeArchive(
-            purpose=ArchivePurpose.DEBUG,
-            distribution=das.distroseries.distribution)
-        build = self.factory.makeBinaryPackageBuild(distroarchseries=das)
-        normal = self.factory.makeBinaryPackageRelease(build=build)
-        debug = self.factory.makeBinaryPackageRelease(
-            build=build, binpackageformat=BinaryPackageFormat.DDEB)
-        args = self.makeArgs([normal, debug], das.distroseries)
-        bpphs = getUtility(IPublishingSet).publishBinaries(**args)
-        self.assertEqual(2, len(bpphs))
-        self.assertContentEqual(
-            (normal, debug), [bpph.binarypackagerelease for bpph in bpphs])
-        self.assertContentEqual(
-            (das.main_archive, das.main_archive.debug_archive),
-            [bpph.archive for bpph in bpphs])
-
-        # A second copy does nothing, because it checks in the debug
-        # archive too.
-        self.assertContentEqual(
-            [], getUtility(IPublishingSet).publishBinaries(**args))
+        # But accepted with build_debug_symbols set
+        archive = debug.build.distro_arch_series.distroseries.main_archive
+        archive.build_debug_symbols = True
+        getUtility(IPublishingSet).publishBinaries(**args)
 
 
 class TestChangeOverride(TestNativePublishingBase):
