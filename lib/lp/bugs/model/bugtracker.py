@@ -32,7 +32,6 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from sqlobject.sqlbuilder import AND
 from storm.expr import (
     Count,
     Desc,
@@ -510,12 +509,12 @@ class BugTracker(SQLBase):
         # are already watching a remote bug.
         if self.bugtrackertype == BugTrackerType.EMAILADDRESS:
             return []
-
-        return shortlist(Bug.select(AND(BugWatch.q.bugID == Bug.q.id,
-                                        BugWatch.q.bugtrackerID == self.id,
-                                        BugWatch.q.remotebug == remotebug),
-                                    distinct=True,
-                                    orderBy=['datecreated']))
+        return shortlist(
+            Store.of(self).find(
+                Bug,
+                BugWatch.bugID == Bug.id, BugWatch.bugtrackerID == self.id,
+                BugWatch.remotebug == remotebug).config(
+                    distinct=True).order_by(Bug.datecreated))
 
     @property
     def watches_ready_to_check(self):
@@ -591,10 +590,10 @@ class BugTracker(SQLBase):
     @property
     def imported_bug_messages(self):
         """See `IBugTracker`."""
-        return BugMessage.select(
-            AND((BugMessage.q.bugwatchID == BugWatch.q.id),
-                (BugWatch.q.bugtrackerID == self.id)),
-            orderBy=BugMessage.q.id)
+        return Store.of(self).find(
+            BugMessage,
+            BugMessage.bugwatchID == BugWatch.id,
+            BugWatch.bugtrackerID == self.id).order_by(BugMessage.id)
 
     def getLinkedPersonByName(self, name):
         """Return the Person with a given name on this bugtracker."""

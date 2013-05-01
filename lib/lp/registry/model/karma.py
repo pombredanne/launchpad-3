@@ -21,7 +21,6 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from sqlobject.sqlbuilder import AND
 from storm.expr import Desc
 from zope.interface import implements
 
@@ -183,16 +182,14 @@ class KarmaCacheManager:
 
         Return None if it's not found.
         """
-        # Can't use selectBy() because product/distribution/sourcepackagename
-        # may be None.
-        query = AND(
-            KarmaCache.q.personID == person_id,
-            KarmaCache.q.categoryID == category_id,
-            KarmaCache.q.productID == product_id,
-            KarmaCache.q.projectID == project_id,
-            KarmaCache.q.distributionID == distribution_id,
-            KarmaCache.q.sourcepackagenameID == sourcepackagename_id)
-        return KarmaCache.selectOne(query)
+        return IStore(KarmaCache).find(
+            KarmaCache, 
+            KarmaCache.personID == person_id,
+            KarmaCache.categoryID == category_id,
+            KarmaCache.productID == product_id,
+            KarmaCache.projectID == project_id,
+            KarmaCache.distributionID == distribution_id,
+            KarmaCache.sourcepackagenameID == sourcepackagename_id).one()
 
 
 class KarmaTotalCache(SQLBase):

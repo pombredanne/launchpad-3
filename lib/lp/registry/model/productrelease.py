@@ -56,7 +56,9 @@ from lp.services.database.sqlbase import (
     )
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.propertycache import cachedproperty
-from lp.services.webapp.publisher import get_raw_form_value_from_current_request
+from lp.services.webapp.publisher import (
+    get_raw_form_value_from_current_request,
+    )
 
 
 class ProductRelease(SQLBase):

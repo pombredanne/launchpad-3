@@ -174,9 +174,9 @@ class TestSpecifications(TestCaseWithFactory):
         blueprint1 = self.makeSpec(title='abc')
         sprint = blueprint1.sprints[0]
         blueprint2 = self.makeSpec(sprint, title='def')
-        result = list_result(sprint, ['abc'])
+        result = list_result(sprint, [u'abc'])
         self.assertEqual([blueprint1], result)
-        result = list_result(sprint, ['def'])
+        result = list_result(sprint, [u'def'])
         self.assertEqual([blueprint2], result)
 
     def test_declined(self):

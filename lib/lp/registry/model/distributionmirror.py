@@ -25,7 +25,6 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
-from sqlobject.sqlbuilder import AND
 from storm.expr import (
     And,
     Desc,
@@ -589,13 +588,13 @@ class DistributionMirrorSet:
         country_id = None
         if country is not None:
             country_id = country.id
-        base_query = AND(
-            DistributionMirror.q.content == mirror_type,
-            DistributionMirror.q.enabled == True,
-            DistributionMirror.q.http_base_url != None,
-            DistributionMirror.q.official_candidate == True,
-            DistributionMirror.q.status == MirrorStatus.OFFICIAL)
-        query = AND(DistributionMirror.q.countryID == country_id, base_query)
+        base_query = And(
+            DistributionMirror.content == mirror_type,
+            DistributionMirror.enabled == True,
+            DistributionMirror.http_base_url != None,
+            DistributionMirror.official_candidate == True,
+            DistributionMirror.status == MirrorStatus.OFFICIAL)
+        query = And(DistributionMirror.countryID == country_id, base_query)
         # The list of mirrors returned by this method is fed to apt through
         # launchpad.net, so we order the results randomly in a lame attempt to
         # balance the load on the mirrors.
@@ -606,9 +605,9 @@ class DistributionMirrorSet:
 
         if not mirrors and country is not None:
             continent = country.continent
-            query = AND(
+            query = And(
                 Country.q.continentID == continent.id,
-                DistributionMirror.q.countryID == Country.q.id,
+                DistributionMirror.countryID == Country.q.id,
                 base_query)
             mirrors.extend(shortlist(
                 DistributionMirror.select(query, orderBy=order_by),

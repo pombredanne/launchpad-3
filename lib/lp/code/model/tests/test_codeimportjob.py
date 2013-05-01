@@ -14,7 +14,6 @@ import StringIO
 import unittest
 
 from pytz import UTC
-from sqlobject.sqlbuilder import SQLConstant
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -121,9 +120,7 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
         if state == CodeImportJobState.RUNNING:
             getUtility(ICodeImportJobWorkflow).startJob(job, self.machine)
         naked_job = removeSecurityProxy(job)
-        naked_job.date_due = SQLConstant(
-            "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + '%d days'"
-            % date_due_delta)
+        naked_job.date_due = UTC_NOW + u'%d days' % date_due_delta
         naked_job.requesting_user = requesting_user
         return job
 
@@ -231,9 +228,7 @@ class ReclaimableJobTests(TestCaseWithFactory):
     def makeJobWithHeartbeatInPast(self, seconds_in_past):
         code_import = make_running_import(factory=self.factory)
         naked_job = removeSecurityProxy(code_import.import_job)
-        naked_job.heartbeat = SQLConstant(
-            "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + '%d seconds'"
-            % (-seconds_in_past,))
+        naked_job.heartbeat = UTC_NOW + u'%d seconds' % -seconds_in_past
         return code_import.import_job
 
     def assertReclaimableJobs(self, jobs):

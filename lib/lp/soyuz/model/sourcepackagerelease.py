@@ -29,8 +29,8 @@ from sqlobject import (
 from storm.expr import Join
 from storm.info import ClassAlias
 from storm.locals import (
-    Int,
     Desc,
+    Int,
     Reference,
     )
 from storm.store import Store

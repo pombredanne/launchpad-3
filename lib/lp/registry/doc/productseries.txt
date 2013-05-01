@@ -299,7 +299,7 @@ complete ones that have been accepted.
 We can search for text in specifications (in this case there are no
 matches):
 
-    >>> print len(list(onezero.specifications(None, filter=['new'])))
+    >>> print len(list(onezero.specifications(None, filter=[u'new'])))
     0
 
 

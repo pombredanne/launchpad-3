@@ -36,7 +36,7 @@ project group's searchQuestions() method.
     ...     "It would be a nice feature if SVG attachments could be displayed"
     ...     " inlined.")
 
-    >>> for question in mozilla_project.searchQuestions(search_text='svg'):
+    >>> for question in mozilla_project.searchQuestions(search_text=u'svg'):
     ...     print question.title, question.target.displayname
     SVG attachments aren't displayed            Mozilla Thunderbird
     Problem showing the SVG demo on W3C site    Mozilla Firefox

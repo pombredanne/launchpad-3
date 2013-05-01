@@ -2186,7 +2186,7 @@ class IPersonSet(Interface):
     def getByAccount(account):
         """Return the `IPerson` with the given account, or None."""
 
-    def updateStatistics(ztm):
+    def updateStatistics():
         """Update statistics caches and commit."""
 
     def peopleCount():

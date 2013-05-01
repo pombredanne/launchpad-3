@@ -1234,7 +1234,7 @@ And on another one, he is the drafter
 
 We can filter for specifications that contain specific text:
 
-    >>> for spec in cprov.specifications(None, filter=['svg']):
+    >>> for spec in cprov.specifications(None, filter=[u'svg']):
     ...     print spec.name
     svg-support
 
@@ -1250,7 +1250,7 @@ Inactive products are excluded from the listings.
     >>> unlink_source_packages(firefox)
     >>> firefox.active = False
     >>> flush_database_updates()
-    >>> cprov.specifications(None, filter=['svg']).count()
+    >>> cprov.specifications(None, filter=[u'svg']).count()
     0
 
 Reset firefox so we don't mess up later tests.

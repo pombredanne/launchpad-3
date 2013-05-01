@@ -31,7 +31,7 @@ class StatUpdater(LaunchpadCronScript):
         launchpad_stats = getUtility(ILaunchpadStatisticSet)
         launchpad_stats.updateStatistics(self.txn)
 
-        getUtility(IPersonSet).updateStatistics(self.txn)
+        getUtility(IPersonSet).updateStatistics()
 
         self.logger.debug('Finished the stats update')
 
