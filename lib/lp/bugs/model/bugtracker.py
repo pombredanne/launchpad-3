@@ -779,7 +779,7 @@ class BugTrackerSet:
         return BugTracker.select()
 
     def getAllTrackers(self, active=None):
-        if active:
+        if active is not None:
             clauses = [BugTracker.active == active]
         else:
             clauses = []
