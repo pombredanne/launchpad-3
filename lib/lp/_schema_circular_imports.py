@@ -531,7 +531,7 @@ patch_entry_return_type(
 patch_reference_property(
     IDistroSeries, 'main_archive', IArchive)
 patch_collection_property(
-    IDistroSeries, 'architectures', IDistroArchSeries)
+    IDistroSeries, 'enabled_architectures', IDistroArchSeries)
 patch_reference_property(
     IDistroSeries, 'distribution', IDistribution)
 patch_choice_parameter_type(
