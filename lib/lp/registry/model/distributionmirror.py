@@ -593,8 +593,7 @@ class DistributionMirrorSet:
             DistributionMirror.enabled == True,
             DistributionMirror.http_base_url != None,
             DistributionMirror.official_candidate == True,
-            DistributionMirror.status == MirrorStatus.OFFICIAL,
-            DistributionMirror.countryID == country_id)
+            DistributionMirror.status == MirrorStatus.OFFICIAL)
         query = And(DistributionMirror.countryID == country_id, base_query)
         # The list of mirrors returned by this method is fed to apt through
         # launchpad.net, so we order the results randomly in a lame attempt to

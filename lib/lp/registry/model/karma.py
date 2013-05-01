@@ -189,7 +189,7 @@ class KarmaCacheManager:
             KarmaCache.productID == product_id,
             KarmaCache.projectID == project_id,
             KarmaCache.distributionID == distribution_id,
-            KarmaCache.sourcepackagenameID == sourcepackagename_id)
+            KarmaCache.sourcepackagenameID == sourcepackagename_id).one()
 
 
 class KarmaTotalCache(SQLBase):
