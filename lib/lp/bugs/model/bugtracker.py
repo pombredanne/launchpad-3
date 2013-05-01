@@ -1,10 +1,9 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
     'BugTracker',
-    'BugTrackerSet',
     'BugTrackerAlias',
     'BugTrackerAliasSet',
     'BugTrackerComponent',
@@ -72,12 +71,12 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     validate_public_person,
     )
-from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
+from lp.registry.model.product import (
+    Product,
+    ProductSet,
     )
+from lp.registry.model.projectgroup import ProjectGroup
+from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     flush_database_updates,
@@ -778,19 +777,16 @@ class BugTrackerSet:
         """See `IBugTrackerSet`."""
         return BugTracker.select()
 
-    def trackers(self, active=None):
-        # Without context, cannot tell what store flavour is desirable.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    def getAllTrackers(self, active=None):
         if active is not None:
             clauses = [BugTracker.active == active]
         else:
             clauses = []
-        results = store.find(BugTracker, *clauses)
-        results.order_by(BugTracker.name)
-        return results
+        return IStore(BugTracker).find(BugTracker, *clauses).order_by(
+            BugTracker.name)
 
-    def ensureBugTracker(self, baseurl, owner, bugtrackertype,
-        title=None, summary=None, contactdetails=None, name=None):
+    def ensureBugTracker(self, baseurl, owner, bugtrackertype, title=None,
+                         summary=None, contactdetails=None, name=None):
         """See `IBugTrackerSet`."""
         # Try to find an existing bug tracker that matches.
         bugtracker = self.queryByBaseURL(baseurl)
@@ -825,34 +821,28 @@ class BugTrackerSet:
 
     def getMostActiveBugTrackers(self, limit=None):
         """See `IBugTrackerSet`."""
-        store = IStore(BugTracker)
-        result = store.find(
+        return IStore(BugTracker).find(
             BugTracker,
-            BugTracker.id == BugWatch.bugtrackerID)
-        result = result.group_by(BugTracker)
-        result = result.order_by(Desc(Count(BugWatch)))
-        if limit is not None:
-            return result[:limit]
-        else:
-            return result
+            BugTracker.id == BugWatch.bugtrackerID).group_by(
+                BugTracker).order_by(Desc(Count(BugWatch))).config(limit=limit)
 
-    def getPillarsForBugtrackers(self, bugtrackers):
+    def getPillarsForBugtrackers(self, bugtrackers, user=None):
         """See `IBugTrackerSet`."""
-        from lp.registry.model.product import Product
-        from lp.registry.model.projectgroup import ProjectGroup
-        ids = [str(b.id) for b in bugtrackers]
-        products = Product.select(
-            "bugtracker in (%s) AND active IS True" %
-            ",".join(ids), orderBy="name")
-        projects = ProjectGroup.select(
-            "bugtracker in (%s) AND active IS True" %
-            ",".join(ids), orderBy="name")
-        ret = {}
+        ids = [tracker.id for tracker in bugtrackers]
+        products = IStore(Product).find(
+            Product,
+            Product.bugtrackerID.is_in(ids), Product.active == True,
+            ProductSet.getProductPrivacyFilter(user)).order_by(Product.name)
+        groups = IStore(ProjectGroup).find(
+            ProjectGroup,
+            ProjectGroup.bugtrackerID.is_in(ids),
+            ProjectGroup.active == True).order_by(ProjectGroup.name)
+        results = {}
         for product in products:
-            ret.setdefault(product.bugtracker, []).append(product)
-        for project in projects:
-            ret.setdefault(project.bugtracker, []).append(project)
-        return ret
+            results.setdefault(product.bugtracker, []).append(product)
+        for project in groups:
+            results.setdefault(project.bugtracker, []).append(project)
+        return results
 
 
 class BugTrackerAlias(SQLBase):
