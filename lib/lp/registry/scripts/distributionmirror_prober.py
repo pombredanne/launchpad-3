@@ -12,6 +12,7 @@ import itertools
 import logging
 import os
 from StringIO import StringIO
+import urllib
 import urllib2
 import urlparse
 
@@ -318,7 +319,8 @@ class RedirectAwareProberFactory(ProberFactory):
 
         scheme, host, port, orig_path = _parse(self.url)
         scheme, host, port, new_path = _parse(url)
-        if orig_path.split('/')[-1] != new_path.split('/')[-1]:
+        if (urllib.unquote(orig_path.split('/')[-1])
+            != urllib.unquote(new_path.split('/')[-1])):
             # Server redirected us to a file which doesn't seem to be what we
             # requested.  It's likely to be a stupid server which redirects
             # instead of 404ing (https://launchpad.net/bugs/204460).
