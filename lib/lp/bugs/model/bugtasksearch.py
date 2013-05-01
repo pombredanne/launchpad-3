@@ -91,7 +91,9 @@ from lp.services.database.sqlbase import sqlvalues
 from lp.services.database.stormexpr import (
     ArrayAgg,
     ArrayIntersects,
+    fti_search,
     get_where_for_reference,
+    rank_by_fti,
     Unnest,
     )
 from lp.services.propertycache import get_property_cache
@@ -838,21 +840,19 @@ def _build_search_text_clause(params, fast=False):
         assert params.searchtext is None, (
             'Cannot use searchtext at the same time as fast_searchtext.')
         searchtext = params.fast_searchtext
-        fti_expression = "?::tsquery"
+        ftq_for_fti = False
     else:
         assert params.fast_searchtext is None, (
             'Cannot use fast_searchtext at the same time as searchtext.')
         searchtext = params.searchtext
-        fti_expression = "ftq(?)"
+        ftq_for_fti = True
 
     if params.orderby is None:
         # Unordered search results aren't useful, so sort by relevance
         # instead.
-        params.orderby = [
-            SQL("-rank(BugTaskFlat.fti, %s)" % fti_expression,
-                params=(searchtext,))]
+        params.orderby = [rank_by_fti(BugTaskFlat, searchtext, ftq_for_fti)]
 
-    return SQL("BugTaskFlat.fti @@ %s" % fti_expression, params=(searchtext,))
+    return fti_search(BugTaskFlat, searchtext, ftq_for_fti)
 
 
 def _build_status_clause(col, status):

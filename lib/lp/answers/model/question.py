@@ -34,10 +34,7 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
-from storm.expr import (
-    LeftJoin,
-    SQL,
-    )
+from storm.expr import LeftJoin
 from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
@@ -109,6 +106,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.database.stormexpr import rank_by_fti
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.messages.interfaces.message import IMessage
 from lp.services.messages.model.message import (
@@ -1022,16 +1020,10 @@ class QuestionSearch:
             return ["Question.status", "-Question.datecreated"]
         elif sort is QuestionSort.RELEVANCY:
             if self.search_text:
-                if self.nl_phrase_used:
-                    return [
-                        SQL("-rank(Question.fti, ?::tsquery)", (
-                            self.search_text,)),
-                        "-Question.datecreated"]
-                else:
-                    return [
-                        SQL("-rank(Question.fti, ftq(?))", (
-                            self.search_text,)),
-                        "-Question.datecreated"]
+                ftq = not self.nl_phrase_used
+                return [
+                    rank_by_fti(Question, self.search_text, ftq=ftq),
+                    "-Question.datecreated"]
             else:
                 return "-Question.datecreated"
         elif sort is QuestionSort.RECENT_OWNER_ACTIVITY:

@@ -146,6 +146,10 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.database.stormexpr import (
+    fti_search,
+    rank_by_fti,
+    )
 from lp.services.helpers import shortlist
 from lp.services.propertycache import (
     cachedproperty,
@@ -1227,10 +1231,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             """ % sqlvalues(active_publishing_status))
 
         if text:
-            orderBy.insert(
-                0, SQL('rank(Archive.fti, ftq(?)) DESC', quote(text)))
-
-            clauses.append("Archive.fti @@ ftq(%s)" % sqlvalues(text))
+            orderBy.insert(0, rank_by_fti(Archive, text))
+            clauses.append(fti_search(Archive, text))
 
         if user is not None:
             if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):

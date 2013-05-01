@@ -18,10 +18,7 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from storm.expr import (
-    And,
-    SQL,
-    )
+from storm.expr import And
 from zope.event import notify
 from zope.interface import implements
 
@@ -44,6 +41,10 @@ from lp.services.database.sqlbase import (
     quote,
     SQLBase,
     sqlvalues,
+    )
+from lp.services.database.stormexpr import (
+    fti_search,
+    rank_by_fti,
     )
 
 
@@ -131,16 +132,15 @@ class FAQ(SQLBase):
         else:
             raise AssertionError('must provide product or distribution')
 
-        fti_search = nl_phrase_search(summary, FAQ, target_constraint)
-        if not fti_search:
+        phrases = nl_phrase_search(summary, FAQ, target_constraint)
+        if not phrases:
             # No useful words to search on in that summary.
             return FAQ.select('1 = 2')
 
         return FAQ.select(
-            And(target_constraint, SQL('FAQ.fti @@ ?', (fti_search,))),
+            And(target_constraint, fti_search(FAQ, phrases, ftq=False)),
             orderBy=[
-                SQL("-rank(FAQ.fti, ?::tsquery)", (fti_search,)),
-                "-FAQ.date_created"])
+                rank_by_fti(FAQ, phrases, ftq=False), "-FAQ.date_created"])
 
     @staticmethod
     def getForTarget(id, target):
@@ -271,8 +271,7 @@ class FAQSearch:
         elif sort is FAQSort.RELEVANCY:
             if self.search_text:
                 return [
-                    SQL("-rank(FAQ.fti, ftq(?))", (self.search_text,)),
-                    "-FAQ.date_created"]
+                    rank_by_fti(FAQ, self.search_text), "-FAQ.date_created"]
             else:
                 return "-FAQ.date_created"
         else:

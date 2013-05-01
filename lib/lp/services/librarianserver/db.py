@@ -13,6 +13,7 @@ from storm.expr import (
     SQL,
     )
 
+from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import session_store
 from lp.services.librarian.model import (
     LibraryFileAlias,
@@ -74,11 +75,11 @@ class Library:
         return alias
 
     def getAliases(self, fileid):
-        results = LibraryFileAlias.select(AND(
-                LibraryFileAlias.q.contentID==LibraryFileContent.q.id,
-                LibraryFileContent.q.id==fileid,
-                LibraryFileAlias.q.restricted==self.restricted,
-                ))
+        results = IStore(LibraryFileAlias).find(
+            LibraryFileAlias,
+            LibraryFileAlias.contentID == LibraryFileContent.id,
+            LibraryFileAlias.restricted == self.restricted,
+            LibraryFileContent.id == fileid)
         return [(a.id, a.filename, a.mimetype) for a in results]
 
     # the following methods are used for adding to the library
