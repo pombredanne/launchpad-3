@@ -16,6 +16,7 @@ __all__ = [
 import httplib
 
 from lazr.enum import DBEnumeratedType
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
     error_status,
@@ -401,14 +402,16 @@ class IDistroSeriesPublic(
         """
 
     # DistroArchSeries lookup properties/methods.
-    architectures = exported(
-        CollectionField(
-            title=_("All architectures in this series."),
-            value_type=Reference(schema=Interface),  # IDistroArchSeries.
-            readonly=True))
+    architectures = Attribute("All architectures in this series.")
 
-    enabled_architectures = Attribute(
-        "All architectures in this series with the 'enabled' flag set.")
+    enabled_architectures = exported(doNotSnapshot(
+        CollectionField(
+            title=_("Enabled architectures"),
+            description=_("All architectures in this series with the "
+                          "'enabled' flag set."),
+            value_type=Reference(schema=Interface),  # IDistroArchSeries
+            readonly=True)),
+        exported_as="architectures")
 
     virtualized_architectures = Attribute(
         "All architectures in this series where PPA is supported.")
