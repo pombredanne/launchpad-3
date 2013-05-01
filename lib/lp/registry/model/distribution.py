@@ -1228,7 +1228,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         if text:
             orderBy.insert(
-                0, SQL('rank(Archive.fti, ftq(%s)) DESC' % quote(text)))
+                0, SQL('rank(Archive.fti, ftq(?)) DESC', quote(text)))
 
             clauses.append("Archive.fti @@ ftq(%s)" % sqlvalues(text))
 

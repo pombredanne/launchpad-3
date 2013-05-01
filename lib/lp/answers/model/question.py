@@ -1024,13 +1024,13 @@ class QuestionSearch:
             if self.search_text:
                 if self.nl_phrase_used:
                     return [
-                        SQL("-rank(Question.fti, %s::tsquery)" % quote(
-                            self.search_text)),
+                        SQL("-rank(Question.fti, ?::tsquery)", (
+                            self.search_text,)),
                         "-Question.datecreated"]
                 else:
                     return [
-                        SQL("-rank(Question.fti, ftq(%s))" % quote(
-                            self.search_text)),
+                        SQL("-rank(Question.fti, ftq(?))", (
+                            self.search_text,)),
                         "-Question.datecreated"]
             else:
                 return "-Question.datecreated"

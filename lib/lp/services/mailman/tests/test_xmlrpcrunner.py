@@ -39,8 +39,8 @@ from lp.services.mailman.tests import (
     )
 from lp.services.xmlrpc import Transport
 from lp.testing import (
-    person_logged_in,
     monkey_patch,
+    person_logged_in,
     TestCase,
     )
 from lp.testing.fixture import CaptureOops

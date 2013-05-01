@@ -163,7 +163,7 @@ The search_text parameter will select the questions that contain the
 passed in text.  The standard text searching algorithm is used; see
 ../../../canonical/launchpad/doct/textsearching.txt.
 
-    >>> for t in target.searchQuestions(search_text='new'):
+    >>> for t in target.searchQuestions(search_text=u'new'):
     ...     print t.title
     New question
     Another question
@@ -199,8 +199,9 @@ You can pass in a list of statuses, and you can also use the search_text and
 status parameters at the same time.  This will search OPEN and INVALID
 questions with the word 'index'.
 
-    >>> for t in target.searchQuestions(search_text='request index',
-    ...         status=(QuestionStatus.OPEN, QuestionStatus.INVALID)):
+    >>> for t in target.searchQuestions(
+    ...     search_text=u'request index',
+    ...     status=(QuestionStatus.OPEN, QuestionStatus.INVALID)):
     ...     print t.title
     Question title4
     Question title2

@@ -36,7 +36,6 @@ from operator import attrgetter
 import random
 import re
 import subprocess
-import transaction
 import weakref
 
 from lazr.delegates import delegates
@@ -81,6 +80,7 @@ from storm.store import (
     EmptyResultSet,
     Store,
     )
+import transaction
 from zope.component import (
     adapter,
     getUtility,

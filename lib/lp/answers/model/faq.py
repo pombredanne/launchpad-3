@@ -12,12 +12,15 @@ __all__ = [
     ]
 
 from lazr.lifecycle.event import ObjectCreatedEvent
-from storm.locals import SQL
 from sqlobject import (
     ForeignKey,
     SQLMultipleJoin,
     SQLObjectNotFound,
     StringCol,
+    )
+from storm.expr import (
+    And,
+    SQL,
     )
 from zope.event import notify
 from zope.interface import implements
@@ -134,9 +137,9 @@ class FAQ(SQLBase):
             return FAQ.select('1 = 2')
 
         return FAQ.select(
-            '%s AND FAQ.fti @@ %s' % (target_constraint, quote(fti_search)),
+            And(target_constraint, SQL('FAQ.fti @@ ?', (fti_search,))),
             orderBy=[
-                SQL("-rank(FAQ.fti, %s::tsquery)" % quote(fti_search)),
+                SQL("-rank(FAQ.fti, ?::tsquery)", (fti_search,)),
                 "-FAQ.date_created"])
 
     @staticmethod
@@ -268,7 +271,7 @@ class FAQSearch:
         elif sort is FAQSort.RELEVANCY:
             if self.search_text:
                 return [
-                    SQL("-rank(FAQ.fti, ftq(%s))" % quote(self.search_text)),
+                    SQL("-rank(FAQ.fti, ftq(?))", (self.search_text,)),
                     "-FAQ.date_created"]
             else:
                 return "-FAQ.date_created"

@@ -231,7 +231,9 @@ from lp.services.propertycache import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchBag
-from lp.services.webapp.publisher import get_raw_form_value_from_current_request
+from lp.services.webapp.publisher import (
+    get_raw_form_value_from_current_request,
+    )
 
 
 def snapshot_bug_params(bug_params):
