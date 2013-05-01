@@ -203,9 +203,12 @@ class IBuildFarmJob(Interface):
         as_of="beta",
         )
 
-    date_started = Datetime(
-        title=_("Date started"), required=False, readonly=True,
-        description=_("The timestamp when the build farm job was started."))
+    date_started = exported(
+        Datetime(
+            title=_("Date started"), required=False, readonly=True,
+            description=_(
+                "The timestamp when the build farm job was started.")),
+        as_of="devel")
 
     date_finished = exported(
         Datetime(
@@ -216,10 +219,12 @@ class IBuildFarmJob(Interface):
         as_of="beta",
         )
 
-    duration = Timedelta(
-        title=_("Duration"), required=False,
-        description=_("Duration interval, calculated when the "
-                      "result gets collected."))
+    duration = exported(
+        Timedelta(
+            title=_("Duration"), required=False, readonly=True,
+            description=_("Duration interval, calculated when the "
+                          "result gets collected.")),
+        as_of="devel")
 
     date_first_dispatched = exported(
         Datetime(
