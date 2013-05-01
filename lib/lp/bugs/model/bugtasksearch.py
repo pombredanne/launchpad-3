@@ -795,8 +795,11 @@ def _process_order_by(params):
             pass
 
     for orderby_col in orderby:
+        if isinstance(orderby_col, SQL):
+            orderby_arg.append(orderby_col)
+            continue
         desc_search = False
-        if orderby_col.startswith("-"):
+        if orderby_col.startswith(u"-"):
             orderby_col = orderby_col[1:]
             desc_search = True
         if orderby_col not in orderby_expression:

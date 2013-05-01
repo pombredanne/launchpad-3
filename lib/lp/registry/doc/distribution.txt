@@ -542,7 +542,7 @@ And if we ask just for specs, we get the incomplete ones.
 
 We can filter for specifications that contain specific text:
 
-    >>> for spec in kubuntu.specifications(None, filter=['package']):
+    >>> for spec in kubuntu.specifications(None, filter=[u'package']):
     ...     print spec.name
     revu
 

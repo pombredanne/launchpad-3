@@ -1249,9 +1249,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             clauses.append(
                 "Archive.private = FALSE AND Archive.enabled = TRUE")
 
-        query = ' AND '.join(clauses)
         return Archive.select(
-            query, orderBy=orderBy, clauseTables=clauseTables)
+            And(*clauses), orderBy=orderBy, clauseTables=clauseTables)
 
     def getPendingAcceptancePPAs(self):
         """See `IDistribution`."""

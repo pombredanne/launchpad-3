@@ -93,7 +93,7 @@ class LaunchpadStatisticSet:
         self._updateRegistryStatistics(ztm)
         self._updateRosettaStatistics(ztm)
         self._updateQuestionStatistics(ztm)
-        getUtility(IPersonSet).updateStatistics(ztm)
+        getUtility(IPersonSet).updateStatistics()
 
     def _updateMaloneStatistics(self, ztm):
         self.update('bug_count', Bug.select().count())
