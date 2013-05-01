@@ -50,9 +50,8 @@ For a distroarchseries we publish a subset of its attributes.
 
 DistroArchSeries.enabled is published in the API devel version.
 
-    >>> distroarchseries = webservice.named_get(
-    ...     current_series['self_link'], "getDistroArchSeries",
-    ...     archtag='i386', api_version='devel').jsonBody()
+    >>> distroarchseries = webservice.get(
+    ...     "/ubuntu/hoary/i386", api_version='devel').jsonBody()
 
     >>> pprint_entry(distroarchseries)
     architecture_tag: u'i386'
