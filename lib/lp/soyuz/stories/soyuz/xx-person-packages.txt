@@ -381,9 +381,9 @@ First list the packages in the PPA.
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-packages")
     >>> print_ppa_rows(admin_browser)
-    source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
-        ...ago None
     source2 PPA named p3a for No Priv... - Ubuntutest Breezy-autotest 666
+        ...ago None
+    source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
         ...ago None
 
 Then delete the 'source2' package.
@@ -420,9 +420,9 @@ appears.
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-packages")
     >>> print_ppa_rows(admin_browser)
-    source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
-        ...ago None
     source2 PPA named p3a for No Priv... - Ubuntutest Breezy-autotest 666
+        ...ago None
+    source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
         ...ago None
 
 Please note also that disabled archives are not viewable by anonymous users.
