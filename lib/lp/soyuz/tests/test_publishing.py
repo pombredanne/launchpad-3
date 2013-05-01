@@ -1298,9 +1298,6 @@ class TestBinaryDomination(TestNativePublishingBase):
         will supersede themselves, and vanish entirely (bug #178102).  We
         check both DEBs and DDEBs.
         """
-        getUtility(IArchiveSet).new(
-            purpose=ArchivePurpose.DEBUG, owner=self.ubuntutest.owner,
-            distribution=self.ubuntutest)
         universe = getUtility(IComponentSet)['universe']
         games = getUtility(ISectionSet)['games']
         for name, override in (
@@ -1368,10 +1365,6 @@ class TestBinaryDomination(TestNativePublishingBase):
         DDEB publications should be superseded when their corresponding DEB
         is.
         """
-        getUtility(IArchiveSet).new(
-            purpose=ArchivePurpose.DEBUG, owner=self.ubuntutest.owner,
-            distribution=self.ubuntutest)
-
         # Each of these will return (i386 deb, i386 ddeb, hppa deb,
         # hppa ddeb).
         bins = self.getPubBinaries(architecturespecific=True, with_debug=True)
@@ -1394,10 +1387,6 @@ class TestBinaryDomination(TestNativePublishingBase):
         Since DDEBs are superseded when their DEBs are, there's no need to
         for them supersede anything themselves. Any such attempt is an error.
         """
-        getUtility(IArchiveSet).new(
-            purpose=ArchivePurpose.DEBUG, owner=self.ubuntutest.owner,
-            distribution=self.ubuntutest)
-
         # This will return (i386 deb, i386 ddeb, hppa deb, hppa ddeb).
         bins = self.getPubBinaries(architecturespecific=True, with_debug=True)
         self.assertRaises(AssertionError, bins[0].supersede, bins[1])
@@ -1701,9 +1690,6 @@ class TestChangeOverride(TestNativePublishingBase):
 
     def test_changes_ddeb(self):
         # BPPH.changeOverride changes the properties of DDEB publications.
-        getUtility(IArchiveSet).new(
-            purpose=ArchivePurpose.DEBUG, owner=self.ubuntutest.owner,
-            distribution=self.ubuntutest)
         self.assertCanOverride(
             ddeb=True,
             new_component="universe", new_section="misc", new_priority="extra",

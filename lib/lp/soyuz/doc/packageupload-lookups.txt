@@ -67,8 +67,6 @@ assumptions done in the lookups.
     17 of 20 sources and 6 of 8 builds missing uploads
     * Partner Archive for Ubuntu Linux
     0 of 1 sources and 1 of 1 builds missing uploads
-    * Ubuntu DEBUG archive
-    0 of 0 sources and 0 of 0 builds missing uploads
 
     >>> for ppa in ubuntu.getAllPPAs():
     ...     check_upload_lookups(ppa)

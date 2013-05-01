@@ -79,7 +79,6 @@ for the ubuntutest distribution.
     >>> from lp.soyuz.scripts.initialize_distroseries import (
     ...     InitializeDistroSeries)
     >>> from lp.services.librarian.model import LibraryFileAlias
-    >>> from lp.soyuz.enums import ArchivePurpose
     >>> from lp.testing.factory import LaunchpadObjectFactory
     >>> ubuntu = Distribution.byName('ubuntu')
     >>> breezy_autotest = ubuntu['breezy-autotest']
@@ -89,8 +88,6 @@ for the ubuntutest distribution.
     ...     'Black and White', 'Someone', '5.10', None,
     ...     breezy_autotest.owner)
     >>> factory = LaunchpadObjectFactory()
-    >>> debug_archive = factory.makeArchive(
-    ...     distribution=breezy.distribution, purpose=ArchivePurpose.DEBUG)
     >>> breezy.previous_series = breezy_autotest
     >>> ids = InitializeDistroSeries(breezy, [breezy_autotest.id])
     >>> ids.initialize()

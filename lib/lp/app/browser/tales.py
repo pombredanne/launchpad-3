@@ -1153,7 +1153,6 @@ class ArchiveImageDisplayAPI(ObjectImageDisplayAPI):
             ArchivePurpose.PARTNER: '/@@/distribution',
             ArchivePurpose.PPA: '/@@/ppa-icon',
             ArchivePurpose.COPY: '/@@/distribution',
-            ArchivePurpose.DEBUG: '/@@/distribution',
             }
 
         alt = '[%s]' % self._context.purpose.title

@@ -106,7 +106,6 @@ class ArchivePurpose(DBEnumeratedType):
 archive_suffixes = {
     ArchivePurpose.PRIMARY: '',
     ArchivePurpose.PARTNER: '-partner',
-    ArchivePurpose.DEBUG: '-debug',
 }
 
 

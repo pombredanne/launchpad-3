@@ -419,7 +419,7 @@ other partner applications by default.
 
     # Populate the ubuntutest PARTNER archive with one built and one
     # pending build source.
-    >>> primary, partner, debug = ubuntu.all_distro_archives
+    >>> primary, partner = ubuntu.all_distro_archives
     >>> unused_source = test_publisher.getPubSource(
     ...     archive=partner, component='partner')
     >>> unused = test_publisher.getPubBinaries(
