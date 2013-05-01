@@ -95,20 +95,17 @@ personal package archives (PPAs).
     >>> print test_tales("ppa/image:icon", ppa=mark.archive)
     <img ... src="/@@/ppa-icon" />
 
-Then distribution main archives (primary, partner and debug).
+Then distribution main archives (primary and partner).
 
     >>> from lp.registry.interfaces.distribution import (
     ...      IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> [primary, partner, debug] = ubuntu.all_distro_archives
+    >>> [primary, partner] = ubuntu.all_distro_archives
 
     >>> print test_tales("archive/image:icon", archive=primary)
     <img ... src="/@@/distribution" />
 
     >>> print test_tales("archive/image:icon", archive=partner)
-    <img ... src="/@@/distribution" />
-
-    >>> print test_tales("archive/image:icon", archive=debug)
     <img ... src="/@@/distribution" />
 
 And finally Copy archives.
@@ -180,10 +177,10 @@ a subscription to the PPA.
     >>> print test_tales("ppa/fmt:reference", ppa=private_ppa)
     ppa:joe/pppa
 
-The same 'link' formatter works for distribution archives, with a different
-sprite.  The link target for main archives (primary, partner, and debug) is
-the distribution rather than the archive, as the archives would just
-redirect anyway.
+The same 'link' formatter works for distribution archives, with a
+different sprite.  The link target for main archives (primary and
+partner) is the distribution rather than the archive, as the archives
+would just redirect anyway.
 
     >>> print test_tales("archive/fmt:link", archive=primary)
     <a href="/ubuntu" class="sprite distribution">Primary Archive for Ubuntu
@@ -192,9 +189,6 @@ redirect anyway.
     >>> print test_tales("archive/fmt:link", archive=partner)
     <a href="/ubuntu" class="sprite distribution">Partner Archive for Ubuntu
     Linux</a>
-
-    >>> print test_tales("archive/fmt:link", archive=debug)
-    <a href="/ubuntu" class="sprite distribution">Ubuntu DEBUG archive</a>
 
     >>> print test_tales("archive/fmt:link", archive=copy)
     <a href="/ubuntu/+archive/rebuild" class="sprite distribution">Copy

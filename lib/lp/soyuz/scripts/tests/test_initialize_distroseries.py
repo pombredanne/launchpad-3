@@ -1197,16 +1197,16 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             ids.check)
 
     def createDistroSeriesWithPublication(self, distribution=None):
-        # Create a distroseries with a publication in the DEBUG archive.
+        # Create a distroseries with a publication in the PARTNER archive.
         distroseries = self.factory.makeDistroSeries(
             distribution=distribution)
         # Publish a package in another archive in distroseries' distribution.
-        debug_archive = self.factory.makeArchive(
+        partner_archive = self.factory.makeArchive(
             distribution=distroseries.distribution,
-            purpose=ArchivePurpose.DEBUG)
+            purpose=ArchivePurpose.PARTNER)
 
         self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, archive=debug_archive)
+            distroseries=distroseries, archive=partner_archive)
         return distroseries
 
     def test_copy_method_diff_archive_empty_target(self):

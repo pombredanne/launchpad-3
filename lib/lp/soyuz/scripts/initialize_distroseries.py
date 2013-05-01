@@ -499,7 +499,7 @@ class InitializeDistroSeries:
         We copy all PENDING and PUBLISHED records as PENDING into our own
         publishing records.
 
-        We copy only the RELEASE pocket in the PRIMARY and DEBUG archives.
+        We copy only the RELEASE pocket in the PRIMARY archive.
         """
         archive_set = getUtility(IArchiveSet)
 
@@ -516,8 +516,7 @@ class InitializeDistroSeries:
 
             distroarchseries_list = distroarchseries_lists[parent]
             for archive in parent.distribution.all_distro_archives:
-                if archive.purpose not in (
-                    ArchivePurpose.PRIMARY, ArchivePurpose.DEBUG):
+                if archive.purpose != ArchivePurpose.PRIMARY:
                     continue
 
                 target_archive = archive_set.getByDistroPurpose(
