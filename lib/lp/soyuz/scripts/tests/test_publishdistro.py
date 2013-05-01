@@ -772,7 +772,8 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         script = self.makeScript(distro)
         deletion_done = script.deleteArchive(archive, None)
         self.assertFalse(deletion_done)
-        self.assertContentEqual([archive], script.getDebugArchive(distro))
+        self.assertContentEqual(
+            [archive], distro.getArchiveByComponent('partner'))
 
     def test_publishArchive_drives_publisher(self):
         # publishArchive puts a publisher through its paces.  This work

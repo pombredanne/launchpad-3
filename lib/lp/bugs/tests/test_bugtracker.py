@@ -72,11 +72,11 @@ class TestBugTrackerSet(TestCaseWithFactory):
         login(ADMIN_EMAIL)
         tracker.active = False
         # Inactive trackers are in all trackers
-        self.assertTrue(tracker in trackers.trackers())
+        self.assertTrue(tracker in trackers.getAllTrackers())
         # and inactive,
-        self.assertTrue(tracker in trackers.trackers(active=False))
+        self.assertTrue(tracker in trackers.getAllTrackers(active=False))
         # but not in active.
-        self.assertFalse(tracker in trackers.trackers(active=True))
+        self.assertFalse(tracker in trackers.getAllTrackers(active=True))
 
     def test_inactive_products_in_pillars(self):
         # the list of pillars should only contain active
