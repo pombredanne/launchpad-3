@@ -111,7 +111,6 @@ from lp.bugs.model.bugtarget import (
     OfficialBugTagTargetMixin,
     )
 from lp.bugs.model.bugtask import BugTask
-from lp.bugs.model.bugtracker import BugTracker
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
@@ -2058,6 +2057,8 @@ class ProductSet:
 
     def getProductsWithNoneRemoteProduct(self, bugtracker_type=None):
         """See `IProductSet`."""
+        # Circular.
+        from lp.bugs.model.bugtracker import BugTracker
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         conditions = [Product.remote_product == None]
         if bugtracker_type is not None:

@@ -11,7 +11,7 @@ from lp.app.enums import InformationType
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.services.webapp import canonical_url
 from lp.testing import (
-    celebrity_logged_in,
+    admin_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -28,7 +28,7 @@ class TestBugTrackerView(TestCaseWithFactory):
         tracker = self.factory.makeBugTracker()
         project_group = self.factory.makeProject() 
         product = self.factory.makeProduct()
-        with celebrity_logged_in('admin'):
+        with admin_logged_in():
             project_group.bugtracker = tracker
             product.bugtracker = tracker
         view = create_initialized_view(tracker, name='+index')
@@ -39,7 +39,7 @@ class TestBugTrackerView(TestCaseWithFactory):
         tracker = self.factory.makeBugTracker()
         active_product = self.factory.makeProduct()
         inactive_product = self.factory.makeProduct()
-        with celebrity_logged_in('admin'):
+        with admin_logged_in():
             active_product.bugtracker = tracker
             inactive_product.bugtracker = tracker
             inactive_product.active = False
@@ -63,7 +63,7 @@ class TestBugTrackerSetView(TestCaseWithFactory):
         self.factory.makeBugTracker()
         inactive_tracker1 = self.factory.makeBugTracker()
         inactive_tracker2 = self.factory.makeBugTracker()
-        with celebrity_logged_in('admin'):
+        with admin_logged_in():
             inactive_tracker1.active = False
             inactive_tracker2.active = False
         trackers = getUtility(IBugTrackerSet)
@@ -82,11 +82,11 @@ class TestBugTrackerSetView(TestCaseWithFactory):
 
     def test_tracker_with_private_project(self):
         tracker = self.factory.makeBugTracker()
-        project = self.factory.makeProduct(
-            information_type=InformationType.PROPRIETARY)
-        with celebrity_logged_in('admin'):
-            project.bugtracker = tracker
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY, name='foobar')
+        with admin_logged_in():
+            product.bugtracker = tracker
         url = canonical_url(getUtility(IBugTrackerSet))
         browser = self.getUserBrowser(url)
-        self.assertIn('GnomeGBug GTracker', browser.contents)
-        self.assertNotIn(tracker.name, browser.contents)
+        self.assertIn(tracker.name, browser.contents)
+        self.assertNotIn('foobar', browser.contents)

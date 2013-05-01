@@ -167,7 +167,7 @@ class BugTrackerSetView(LaunchpadView):
         # bug watch counts per tracker. However the batching makes
         # the inefficiency tolerable for now. Robert Collins 20100919.
         self._pillar_cache = self.context.getPillarsForBugtrackers(
-            list(self.context.trackers(user=self.user)))
+            list(self.context.getAllTrackers()), self.user)
 
     @property
     def inactive_tracker_count(self):
@@ -175,14 +175,14 @@ class BugTrackerSetView(LaunchpadView):
 
     @cachedproperty
     def active_trackers(self):
-        results = self.context.trackers(user=self.user, active=True)
+        results = self.context.getAllTrackers(active=True)
         navigator = ActiveBatchNavigator(results, self.request)
         navigator.setHeadings('tracker', 'trackers')
         return navigator
 
     @cachedproperty
     def inactive_trackers(self):
-        results = self.context.trackers(user=self.user, active=False)
+        results = self.context.getAllTrackers(active=False)
         navigator = InactiveBatchNavigator(results, self.request)
         navigator.setHeadings('tracker', 'trackers')
         return navigator
@@ -205,8 +205,7 @@ class BugTrackerSetView(LaunchpadView):
             has_more_pillars = False
         return {
             'pillars': pillars[:self.pillar_limit],
-            'has_more_pillars': has_more_pillars,
-        }
+            'has_more_pillars': has_more_pillars}
 
 
 class BugTrackerView(LaunchpadView):

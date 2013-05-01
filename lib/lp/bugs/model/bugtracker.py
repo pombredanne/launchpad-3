@@ -72,6 +72,11 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     validate_public_person,
     )
+from lp.registry.model.product import (
+    Product,
+    ProductSet,
+    )
+from lp.registry.model.projectgroup import ProjectGroup
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
@@ -773,14 +778,11 @@ class BugTrackerSet:
         """See `IBugTrackerSet`."""
         return BugTracker.select()
 
-    def trackers(self, user=None, active=None):
-        # Circular.
-        from lp.registry.model.product import Product, ProductSet
-        clauses = [
-            Product.bugtracker == BugTracker.id,
-            ProductSet.getProductPrivacyFilter(user)]
+    def getAllTrackers(self, active=None):
         if active:
-            clauses.append(BugTracker.active == active)
+            clauses = [BugTracker.active == active]
+        else:
+            clauses = []
         return IStore(BugTracker).find(BugTracker, *clauses).order_by(
             BugTracker.name)
 
@@ -825,23 +827,23 @@ class BugTrackerSet:
             BugTracker.id == BugWatch.bugtrackerID).group_by(
                 BugTracker).order_by(Desc(Count(BugWatch))).config(limit=limit)
 
-    def getPillarsForBugtrackers(self, bugtrackers):
+    def getPillarsForBugtrackers(self, bugtrackers, user=None):
         """See `IBugTrackerSet`."""
-        from lp.registry.model.product import Product
-        from lp.registry.model.projectgroup import ProjectGroup
-        ids = [str(b.id) for b in bugtrackers]
-        products = Product.select(
-            "bugtracker in (%s) AND active IS True" %
-            ",".join(ids), orderBy="name")
-        projects = ProjectGroup.select(
-            "bugtracker in (%s) AND active IS True" %
-            ",".join(ids), orderBy="name")
-        ret = {}
+        ids = [tracker.id for tracker in bugtrackers]
+        products = IStore(Product).find(
+            Product,
+            Product.bugtrackerID.is_in(ids), Product.active == True,
+            ProductSet.getProductPrivacyFilter(user)).order_by(Product.name)
+        groups = IStore(ProjectGroup).find(
+            ProjectGroup,
+            ProjectGroup.bugtrackerID.is_in(ids),
+            ProjectGroup.active == True).order_by(ProjectGroup.name)
+        results = {}
         for product in products:
-            ret.setdefault(product.bugtracker, []).append(product)
-        for project in projects:
-            ret.setdefault(project.bugtracker, []).append(project)
-        return ret
+            results.setdefault(product.bugtracker, []).append(product)
+        for project in groups:
+            results.setdefault(project.bugtracker, []).append(project)
+        return results
 
 
 class BugTrackerAlias(SQLBase):
