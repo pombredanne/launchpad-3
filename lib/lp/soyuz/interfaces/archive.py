@@ -510,9 +510,6 @@ class IArchiveView(IHasBuildRecords):
         "Concatenation of the source and binary packages published in this "
         "archive. Its content is used for indexed searches across archives.")
 
-    debug_archive = Attribute(
-        "The archive into which debug binaries should be uploaded.")
-
     default_component = Reference(
         IComponent,
         title=_(
