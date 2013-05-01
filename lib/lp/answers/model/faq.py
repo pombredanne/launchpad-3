@@ -18,7 +18,7 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from sqlobject.sqlbuilder import SQLConstant
+from storm.expr import And
 from zope.event import notify
 from zope.interface import implements
 
@@ -41,6 +41,10 @@ from lp.services.database.sqlbase import (
     quote,
     SQLBase,
     sqlvalues,
+    )
+from lp.services.database.stormexpr import (
+    fti_search,
+    rank_by_fti,
     )
 
 
@@ -128,16 +132,15 @@ class FAQ(SQLBase):
         else:
             raise AssertionError('must provide product or distribution')
 
-        fti_search = nl_phrase_search(summary, FAQ, target_constraint)
-        if not fti_search:
+        phrases = nl_phrase_search(summary, FAQ, target_constraint)
+        if not phrases:
             # No useful words to search on in that summary.
             return FAQ.select('1 = 2')
 
         return FAQ.select(
-            '%s AND FAQ.fti @@ %s' % (target_constraint, quote(fti_search)),
+            And(target_constraint, fti_search(FAQ, phrases, ftq=False)),
             orderBy=[
-                SQLConstant("-rank(FAQ.fti, %s::tsquery)" % quote(fti_search)),
-                "-FAQ.date_created"])
+                rank_by_fti(FAQ, phrases, ftq=False), "-FAQ.date_created"])
 
     @staticmethod
     def getForTarget(id, target):
@@ -267,11 +270,8 @@ class FAQSearch:
             return "FAQ.date_created"
         elif sort is FAQSort.RELEVANCY:
             if self.search_text:
-                # SQLConstant is a workaround for bug 53455.
-                return [SQLConstant(
-                            "-rank(FAQ.fti, ftq(%s))" % quote(
-                                self.search_text)),
-                        "-FAQ.date_created"]
+                return [
+                    rank_by_fti(FAQ, self.search_text), "-FAQ.date_created"]
             else:
                 return "-FAQ.date_created"
         else:

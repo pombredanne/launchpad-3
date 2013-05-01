@@ -49,7 +49,7 @@ regular full text algorithm.
 
     # Because not everyone uses a real editor <wink>
     >>> from lp.services.encoding import ascii_smash
-    >>> for question in question_set.searchQuestions(search_text='firefox'):
+    >>> for question in question_set.searchQuestions(search_text=u'firefox'):
     ...     print ascii_smash(question.title), question.target.displayname
     Problemas de Impressao no Firefox                Mozilla Firefox
     Firefox loses focus and gets stuck               Mozilla Firefox
@@ -104,8 +104,8 @@ The returned set of questions is the intersection of the sets delimited by
 each criteria.
 
     >>> for question in question_set.searchQuestions(
-    ...         search_text='firefox',
-    ...         status=(QuestionStatus.OPEN, QuestionStatus.INVALID)):
+    ...     search_text=u'firefox',
+    ...     status=(QuestionStatus.OPEN, QuestionStatus.INVALID)):
     ...     print ascii_smash(question.title), question.status.title, (
     ...           question.target.displayname)
     Problemas de Impressao no Firefox Open           Mozilla Firefox
@@ -125,7 +125,7 @@ of the constant defined in the QuestionSort enumeration.
 
     >>> from lp.answers.enums import QuestionSort
     >>> for question in question_set.searchQuestions(
-    ...         search_text='firefox', sort=QuestionSort.OLDEST_FIRST):
+    ...     search_text=u'firefox', sort=QuestionSort.OLDEST_FIRST):
     ...     print question.id, ascii_smash(question.title), (
     ...          question.target.displayname)
     14 AINKAFSEEN ALEFLAMTEHGHAINYEHYEHREHALEFTEH ...   Ubuntu

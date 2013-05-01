@@ -52,11 +52,6 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from sqlobject.sqlbuilder import (
-    AND,
-    OR,
-    SQLConstant,
-    )
 from storm.base import Storm
 from storm.expr import (
     Alias,
@@ -85,6 +80,7 @@ from storm.store import (
     EmptyResultSet,
     Store,
     )
+import transaction
 from zope.component import (
     adapter,
     getUtility,
@@ -524,14 +520,13 @@ class Person(
 
     delegates(IPersonSettings, context='_person_settings')
 
-    sortingColumns = SQLConstant(
-        "person_sort_key(Person.displayname, Person.name)")
+    sortingColumns = SQL("person_sort_key(Person.displayname, Person.name)")
     # Redefine the default ordering into Storm syntax.
     _storm_sortingColumns = ('Person.displayname', 'Person.name')
     # When doing any sort of set operations (union, intersect, except_) with
     # SQLObject we can't use sortingColumns because the table name Person is
     # not available in that context, so we use this one.
-    _sortingColumnsForSetOperations = SQLConstant(
+    _sortingColumnsForSetOperations = SQL(
         "person_sort_key(displayname, name)")
     _defaultOrder = sortingColumns
     _visibility_warning_marker = object()
@@ -941,13 +936,13 @@ class Person(
         person participates in, the one with the oldest creation date is
         returned.
         """
-        query = AND(
-            TeamMembership.q.teamID == team.id,
-            TeamMembership.q.personID == Person.q.id,
-            OR(TeamMembership.q.status == TeamMembershipStatus.ADMIN,
-               TeamMembership.q.status == TeamMembershipStatus.APPROVED),
-            TeamParticipation.q.teamID == Person.q.id,
-            TeamParticipation.q.personID == self.id)
+        query = And(
+            TeamMembership.teamID == team.id,
+            TeamMembership.personID == Person.q.id,
+            Or(TeamMembership.status == TeamMembershipStatus.ADMIN,
+               TeamMembership.status == TeamMembershipStatus.APPROVED),
+            TeamParticipation.teamID == Person.id,
+            TeamParticipation.personID == self.id)
         clauseTables = ['TeamMembership', 'TeamParticipation']
         member = Person.selectFirst(
             query, clauseTables=clauseTables, orderBy='datecreated')
@@ -3487,28 +3482,28 @@ class PersonSet:
 
     def getByName(self, name, ignore_merged=True):
         """See `IPersonSet`."""
-        query = (Person.q.name == name)
+        query = (Person.name == name)
         if ignore_merged:
-            query = AND(query, Person.q.mergedID == None)
+            query = And(query, Person.mergedID == None)
         return Person.selectOne(query)
 
     def getByAccount(self, account):
         """See `IPersonSet`."""
         return Person.selectOne(Person.q.accountID == account.id)
 
-    def updateStatistics(self, ztm):
+    def updateStatistics(self):
         """See `IPersonSet`."""
         stats = getUtility(ILaunchpadStatisticSet)
         people_count = Person.select(
-            AND(Person.q.teamownerID == None,
-                Person.q.mergedID == None)).count()
+            And(Person.teamownerID == None,
+                Person.mergedID == None)).count()
         stats.update('people_count', people_count)
-        ztm.commit()
+        transaction.commit()
         teams_count = Person.select(
-            AND(Person.q.teamownerID != None,
+            And(Person.q.teamownerID != None,
                 Person.q.mergedID == None)).count()
         stats.update('teams_count', teams_count)
-        ztm.commit()
+        transaction.commit()
 
     def peopleCount(self):
         """See `IPersonSet`."""

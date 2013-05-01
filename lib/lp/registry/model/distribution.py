@@ -18,7 +18,6 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     And,
     Desc,
@@ -146,6 +145,10 @@ from lp.services.database.sqlbase import (
     quote,
     SQLBase,
     sqlvalues,
+    )
+from lp.services.database.stormexpr import (
+    fti_search,
+    rank_by_fti,
     )
 from lp.services.helpers import shortlist
 from lp.services.propertycache import (
@@ -1228,13 +1231,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             """ % sqlvalues(active_publishing_status))
 
         if text:
-            orderBy.insert(
-                0, SQLConstant(
-                    'rank(Archive.fti, ftq(%s)) DESC' % quote(text)))
-
-            clauses.append("""
-                Archive.fti @@ ftq(%s)
-            """ % sqlvalues(text))
+            orderBy.insert(0, rank_by_fti(Archive, text))
+            clauses.append(fti_search(Archive, text))
 
         if user is not None:
             if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):

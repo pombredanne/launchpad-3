@@ -27,7 +27,7 @@ Search text
 The search_text parameter will limit the questions to those matching
 the query using the regular full text algorithm.
 
-    >>> for question in foo_bar.searchQuestions(search_text='firefox'):
+    >>> for question in foo_bar.searchQuestions(search_text=u'firefox'):
     ...     print question.title, question.status.title
     Firefox loses focus and gets stuck              Open
     mailto: problem in webpage                      Solved
@@ -43,7 +43,7 @@ the constant defined in the QuestionSort enumeration.
 
     >>> from lp.answers.enums import QuestionSort
     >>> for question in foo_bar.searchQuestions(
-    ...         search_text='firefox', sort=QuestionSort.OLDEST_FIRST):
+    ...     search_text=u'firefox', sort=QuestionSort.OLDEST_FIRST):
     ...     print question.id, question.title, question.status.title
     4 Firefox loses focus and gets stuck              Open
     6 Newly installed plug-in doesn't seem to be used Answered
@@ -200,7 +200,7 @@ Search combinations
 The results are the intersection of the sets delimited by each criteria.
 
     >>> for question in foo_bar.searchQuestions(
-    ...         search_text='firefox OR Java',
+    ...         search_text=u'firefox OR Java',
     ...         status=QuestionStatus.ANSWERED,
     ...         participation=QuestionParticipation.COMMENTER):
     ...     print question.title, question.status.title

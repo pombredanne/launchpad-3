@@ -3,6 +3,8 @@
 
 """Test webservice methods related to the publisher."""
 
+from testtools.matchers import IsInstance
+
 from lp.services.database.sqlbase import flush_database_caches
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
@@ -10,10 +12,9 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing._webservice import QueryCollector
 from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.pages import webservice_for_person
-from lp.testing._webservice import QueryCollector
-from testtools.matchers import IsInstance
 
 
 class BinaryPackagePublishingHistoryWebserviceTests(TestCaseWithFactory):
