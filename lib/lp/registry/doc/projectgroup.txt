@@ -172,7 +172,7 @@ And there are five incomplete specs:
 
 We can filter for specifications that contain specific text:
 
-    >>> for spec in mozilla.specifications(None, filter=['install']):
+    >>> for spec in mozilla.specifications(None, filter=[u'install']):
     ...     print spec.name
     extension-manager-upgrades
 
@@ -291,7 +291,7 @@ project itself.
  Searching for text is also possible.
 
     >>> for spec in mozilla_series_1_0.specifications(
-    ...     None, filter=['install']):
+    ...     None, filter=[u'install']):
     ...     print spec.name
     extension-manager-upgrades
 

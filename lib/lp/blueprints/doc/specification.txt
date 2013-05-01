@@ -219,7 +219,7 @@ The "SpecificationSet" can be used to search across all specifications.
 We can filter for specifications that contain specific text, across all
 specifications:
 
-    >>> for spec in specset.specifications(None, filter=['install']):
+    >>> for spec in specset.specifications(None, filter=[u'install']):
     ...     print spec.name, spec.target.name
     cluster-installation kubuntu
     extension-manager-upgrades firefox
@@ -236,7 +236,7 @@ Specs from inactive products are filtered out.
     >>> unlink_source_packages(upstream_firefox)
     >>> upstream_firefox.active = False
     >>> flush_database_updates()
-    >>> for spec in specset.specifications(None, filter=['install']):
+    >>> for spec in specset.specifications(None, filter=[u'install']):
     ...     print spec.name, spec.target.name
     cluster-installation kubuntu
     media-integrity-check ubuntu

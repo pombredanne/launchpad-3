@@ -89,19 +89,19 @@ and its  'contents description' (see package-cache.txt).
     mark: packages to help the humanity (you know, ubuntu)
     no-priv: I am not allowed to say, I have no privs.
 
-    >>> result = ubuntu.searchPPAs(text='friend')
+    >>> result = ubuntu.searchPPAs(text=u'friend')
     >>> [archive.owner.name for archive in result]
     [u'cprov']
 
-    >>> result = ubuntu.searchPPAs(text='oink')
+    >>> result = ubuntu.searchPPAs(text=u'oink')
     >>> [archive.owner.name for archive in result]
     []
 
-    >>> result = ubuntu.searchPPAs(text='packages')
+    >>> result = ubuntu.searchPPAs(text=u'packages')
     >>> [archive.owner.name for archive in result]
     [u'cprov', u'mark']
 
-    >>> result = ubuntu.searchPPAs(text='help')
+    >>> result = ubuntu.searchPPAs(text=u'help')
     >>> [archive.owner.name for archive in result]
     [u'cprov', u'mark']
 
@@ -111,11 +111,11 @@ Including 'inactive' PPAs:
     >>> [archive.owner.name for archive in result]
     [u'cprov', u'mark', u'no-priv']
 
-    >>> result = ubuntu.searchPPAs(text='priv', show_inactive=True)
+    >>> result = ubuntu.searchPPAs(text=u'priv', show_inactive=True)
     >>> [archive.owner.name for archive in result]
     [u'no-priv']
 
-    >>> result = ubuntu.searchPPAs(text='ubuntu', show_inactive=True)
+    >>> result = ubuntu.searchPPAs(text=u'ubuntu', show_inactive=True)
     >>> [archive.owner.name for archive in result]
     [u'mark']
 
@@ -125,7 +125,7 @@ The searchPPAs() method only returns the PPAs of active users.
     >>> login('admin@canonical.com')
     >>> no_priv.account.status = AccountStatus.SUSPENDED
 
-    >>> result = ubuntu.searchPPAs(text='priv', show_inactive=True)
+    >>> result = ubuntu.searchPPAs(text=u'priv', show_inactive=True)
     >>> [archive for archive in result]
     []
 

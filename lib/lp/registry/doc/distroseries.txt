@@ -910,7 +910,7 @@ ones that have been accepted.
 
 We can filter for specifications that contain specific text:
 
-    >>> for spec in krunch.specifications(None, filter=['usb']):
+    >>> for spec in krunch.specifications(None, filter=[u'usb']):
     ...     print spec.name
     thinclient-local-devices
 

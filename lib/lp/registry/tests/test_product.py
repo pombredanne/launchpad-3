@@ -2085,9 +2085,9 @@ class TestSpecifications(TestCaseWithFactory):
         blueprint1 = self.makeSpec(title='abc')
         product = blueprint1.product
         blueprint2 = self.makeSpec(product, title='def')
-        result = list_result(product, ['abc'])
+        result = list_result(product, [u'abc'])
         self.assertEqual([blueprint1], result)
-        result = list_result(product, ['def'])
+        result = list_result(product, [u'def'])
         self.assertEqual([blueprint2], result)
 
     def test_proprietary_not_listed(self):

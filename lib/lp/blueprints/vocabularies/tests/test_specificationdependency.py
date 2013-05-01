@@ -183,7 +183,7 @@ class TestSpecificationDepCandidatesVocabulary(TestCaseWithFactory):
         foo_b = self.factory.makeSpecification(name='foo-b')
         foo_a = self.factory.makeSpecification(name='foo-a')
         vocab = self.getVocabularyForSpec(spec)
-        results = vocab.searchForTerms('foo')
+        results = vocab.searchForTerms(u'foo')
         self.assertEqual(2, len(results))
         found = [item.value for item in results]
         self.assertEqual([foo_a, foo_b], found)
@@ -195,7 +195,7 @@ class TestSpecificationDepCandidatesVocabulary(TestCaseWithFactory):
         foo_b = self.factory.makeSpecification(name='foo-b', product=widget)
         foo_a = self.factory.makeSpecification(name='foo-a')
         vocab = self.getVocabularyForSpec(spec)
-        results = vocab.searchForTerms('foo')
+        results = vocab.searchForTerms(u'foo')
         self.assertEqual(2, len(results))
         found = [item.value for item in results]
         self.assertEqual([foo_b, foo_a], found)
@@ -211,7 +211,7 @@ class TestSpecificationDepCandidatesVocabulary(TestCaseWithFactory):
         foo_b = self.factory.makeSpecification(name='foo-b', product=widget)
         foo_a = self.factory.makeSpecification(name='foo-a')
         vocab = self.getVocabularyForSpec(spec)
-        results = vocab.searchForTerms('foo')
+        results = vocab.searchForTerms(u'foo')
         self.assertEqual(3, len(results))
         found = [item.value for item in results]
         self.assertEqual([foo_c, foo_b, foo_a], found)
@@ -224,7 +224,7 @@ class TestSpecificationDepCandidatesVocabulary(TestCaseWithFactory):
             name='foo-b', distribution=mint)
         foo_a = self.factory.makeSpecification(name='foo-a')
         vocab = self.getVocabularyForSpec(spec)
-        results = vocab.searchForTerms('foo')
+        results = vocab.searchForTerms(u'foo')
         self.assertEqual(2, len(results))
         found = [item.value for item in results]
         self.assertEqual([foo_b, foo_a], found)
@@ -243,7 +243,7 @@ class TestSpecificationDepCandidatesVocabulary(TestCaseWithFactory):
             name='foo-b', distribution=mint)
         foo_a = self.factory.makeSpecification(name='foo-a')
         vocab = self.getVocabularyForSpec(spec)
-        results = vocab.searchForTerms('foo')
+        results = vocab.searchForTerms(u'foo')
         self.assertEqual(3, len(results))
         found = [item.value for item in results]
         self.assertEqual([foo_c, foo_b, foo_a], found)

@@ -377,7 +377,7 @@ And there are five incomplete specs:
 
 We can filter for specifications that contain specific text:
 
-    >>> for spec in firefox.specifications(None, filter=['new']):
+    >>> for spec in firefox.specifications(None, filter=[u'new']):
     ...     print spec.name
     canvas
     e4x
