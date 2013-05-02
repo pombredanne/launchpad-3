@@ -721,7 +721,7 @@ class BugTracker(SQLBase):
             ProjectGroup,
             ProjectGroup.bugtrackerID == self.id,
             ProjectGroup.active == True).order_by(ProjectGroup.name)
-        return list(groups) + list(products)
+        return groups, products
 
 
 class BugTrackerSet:
