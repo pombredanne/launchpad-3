@@ -382,6 +382,7 @@
                     multi_product
                     name
                     owner
+                    products
                     summary
                     title
                     watches

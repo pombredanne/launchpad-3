@@ -287,6 +287,7 @@ class IBugTracker(Interface):
         Bool(
             title=_('This bug tracker has a Launchpad plugin installed.'),
             required=False, default=False))
+    products = Attribute('The products that use this bug tracker.')
     latestwatches = Attribute('The last 10 watches created.')
     imported_bug_messages = Attribute(
         'Bug messages that have been imported from this bug tracker.')
