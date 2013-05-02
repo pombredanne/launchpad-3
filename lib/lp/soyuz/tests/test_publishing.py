@@ -1230,7 +1230,8 @@ class TestPublishingSetLite(TestCaseWithFactory):
             pocket=PackagePublishingPocket.RELEASE,
             binpackageformat=BinaryPackageFormat.DDEB,
             archive=matching_bpph.archive,
-            section_name=matching_bpph.section)
+            section_name=matching_bpph.section,
+            distroarchseries=matching_bpph.distroarchseries)
         debug_match_bpr = debug_matching_bpph.binarypackagerelease
         non_match_bpph = self.factory.makeBinaryPackagePublishingHistory(
             pocket=PackagePublishingPocket.RELEASE)
@@ -1244,13 +1245,8 @@ class TestPublishingSetLite(TestCaseWithFactory):
         non_match_bpr.debug_package = debug_non_match_bpr
         getUtility(IPublishingSet).requestDeletion(
             [matching_bpph, non_match_bpph], self.person)
-        self.assertEqual(matching_bpph.status, PackagePublishingStatus.DELETED)
-        self.assertEqual(
-            debug_matching_bpph.status, PackagePublishingStatus.DELETED)
-        self.assertEqual(
-            non_match_bpph.status, PackagePublishingStatus.DELETED)
-        #for pub in (matching_bpph, debug_matching_bpph, non_match_bpph):
-        #    self.assertEqual(pub.status, PackagePublishingStatus.DELETED)
+        for pub in (matching_bpph, debug_matching_bpph, non_match_bpph):
+            self.assertEqual(pub.status, PackagePublishingStatus.DELETED)
         self.assertEqual(
             debug_non_match_bpph.status, PackagePublishingStatus.PENDING)
 

@@ -3870,10 +3870,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             binpackageformat = BinaryPackageFormat.DEB
         if component is None:
             component = build.source_package_release.component
-        if section_name is None:
-            section = build.source_package_release.section
-        else:
-            section = section_name
+        section = section_name or build.source_package_release.section
         if priority is None:
             priority = PackagePublishingPriority.OPTIONAL
         if summary is None:

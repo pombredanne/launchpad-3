@@ -1130,23 +1130,11 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def _getCorrespondingDDEBPublications(self):
         """Return remaining publications of the corresponding DDEB.
 
-        Only considers binary publications in the corresponding debug
-        archive with the same distroarchseries, pocket, component, section,
-        priority and phased-update-percentage.
+        Only considers binary publications with the same distroarchseries,
+        pocket, component, section, priority and phased-update-percentage.
         """
-        return IMasterStore(BinaryPackagePublishingHistory).find(
-                BinaryPackagePublishingHistory,
-                BinaryPackagePublishingHistory.status.is_in(
-                    active_publishing_status),
-                BinaryPackagePublishingHistory.distroarchseries ==
-                    self.distroarchseries,
-                binarypackagerelease=self.binarypackagerelease.debug_package,
-                archive=self.archive,
-                pocket=self.pocket,
-                component=self.component,
-                section=self.section,
-                priority=self.priority,
-                phased_update_percentage=self.phased_update_percentage)
+        return getUtility(IPublishingSet).findCorrespondingDDEBPublications(
+            [self])
 
     def supersede(self, dominant=None, logger=None):
         """See `IBinaryPackagePublishingHistory`."""
@@ -2023,30 +2011,17 @@ class PublishingSet:
 
         affected_pubs = IMasterStore(publication_class).find(
             publication_class, publication_class.id.is_in(ids))
-        # Find any related debug packages.
+        affected_pubs.set(
+            status=PackagePublishingStatus.DELETED,
+            datesuperseded=UTC_NOW,
+            removed_byID=removed_by_id,
+            removal_comment=removal_comment)
+
+        # Find and mark any related debug packages.
         if publication_class == BinaryPackagePublishingHistory:
-            bpph = ClassAlias(publication_class)
-            debug_bpph = BinaryPackagePublishingHistory
-            origin = [
-                bpph,
-                Join(
-                    BinaryPackageRelease,
-                    bpph.binarypackagereleaseID == BinaryPackageRelease.id),
-                Join(
-                    debug_bpph,
-                    debug_bpph.binarypackagereleaseID ==
-                        BinaryPackageRelease.debug_packageID)]
-            debugs = IMasterStore(publication_class).using(*origin).find(
-                (debug_bpph.id,),
-                bpph.id.is_in(ids), bpph.archiveID == debug_bpph.archiveID,
-                bpph.pocket == debug_bpph.pocket,
-                bpph.componentID == debug_bpph.componentID,
-                bpph.sectionID == debug_bpph.sectionID,
-                bpph.priority == debug_bpph.priority,
-                Not(IsDistinctFrom(
-                    bpph.phased_update_percentage,
-                    debug_bpph.phased_update_percentage)))
-            debug_ids = [pub[0] for pub in debugs]
+            debug_ids = [
+                pub.id for pub in self.findCorrespondingDDEBPublications(
+                    affected_pubs)]
             IMasterStore(publication_class).find(
                 BinaryPackagePublishingHistory,
                 BinaryPackagePublishingHistory.id.is_in(debug_ids)).set(
@@ -2054,11 +2029,35 @@ class PublishingSet:
                     datesuperseded=UTC_NOW,
                     removed_byID=removed_by_id,
                     removal_comment=removal_comment)
-        affected_pubs.set(
-            status=PackagePublishingStatus.DELETED,
-            datesuperseded=UTC_NOW,
-            removed_byID=removed_by_id,
-            removal_comment=removal_comment)
+
+    def findCorrespondingDDEBPublications(self, pubs):
+        """See `IPublishingSet`."""
+        ids = [pub.id for pub in pubs]
+        deb_bpph = ClassAlias(BinaryPackagePublishingHistory)
+        debug_bpph = BinaryPackagePublishingHistory
+        origin = [
+            deb_bpph,
+            Join(
+                BinaryPackageRelease,
+                deb_bpph.binarypackagereleaseID ==
+                    BinaryPackageRelease.id),
+            Join(
+                debug_bpph,
+                debug_bpph.binarypackagereleaseID ==
+                    BinaryPackageRelease.debug_packageID)]
+        return IMasterStore(debug_bpph).using(*origin).find(
+            debug_bpph,
+            deb_bpph.id.is_in(ids),
+            debug_bpph.status.is_in(active_publishing_status),
+            deb_bpph.archiveID == debug_bpph.archiveID,
+            deb_bpph.distroarchseriesID == debug_bpph.distroarchseriesID,
+            deb_bpph.pocket == debug_bpph.pocket,
+            deb_bpph.componentID == debug_bpph.componentID,
+            deb_bpph.sectionID == debug_bpph.sectionID,
+            deb_bpph.priority == debug_bpph.priority,
+            Not(IsDistinctFrom(
+                deb_bpph.phased_update_percentage,
+                debug_bpph.phased_update_percentage)))
 
     def requestDeletion(self, pubs, removed_by, removal_comment=None):
         """See `IPublishingSet`."""
