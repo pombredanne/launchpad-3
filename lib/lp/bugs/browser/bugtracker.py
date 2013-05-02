@@ -227,7 +227,7 @@ class BugTrackerView(LaunchpadView):
         This property was created for the Related projects portlet in
         the bug tracker's page.
         """
-        pillars = chain(self.context.projects, self.context.products)
+        pillars = chain(*self.context.getRelatedPillars(self.user))
         return shortlist([p for p in pillars if p.active], 100)
 
     @property

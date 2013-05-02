@@ -307,8 +307,8 @@ class BugTracker(SQLBase):
 
     _table = 'BugTracker'
 
-    bugtrackertype = EnumCol(dbName='bugtrackertype',
-        schema=BugTrackerType, notNull=True)
+    bugtrackertype = EnumCol(
+        dbName='bugtrackertype', schema=BugTrackerType, notNull=True)
     name = StringCol(notNull=True, unique=True)
     title = StringCol(notNull=True)
     summary = StringCol(notNull=False)
@@ -321,10 +321,6 @@ class BugTracker(SQLBase):
         storm_validator=validate_public_person, notNull=True)
     contactdetails = StringCol(notNull=False)
     has_lp_plugin = BoolCol(notNull=False, default=False)
-    projects = SQLMultipleJoin(
-        'ProjectGroup', joinColumn='bugtracker', orderBy='name')
-    products = SQLMultipleJoin(
-        'Product', joinColumn='bugtracker', orderBy='name')
     watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bugtracker', orderBy='-datecreated',
         prejoins=['bug'])
@@ -714,6 +710,18 @@ class BugTracker(SQLBase):
             BugTrackerComponent.distribution == distribution.id,
             BugTrackerComponent.source_package_name ==
                 dsp.sourcepackagename.id).one()
+
+    def getRelatedPillars(self, user=None):
+        """See `IBugTracker`."""
+        products = IStore(Product).find(
+            Product,
+            Product.bugtrackerID == self.id, Product.active == True,
+            ProductSet.getProductPrivacyFilter(user)).order_by(Product.name)
+        groups = IStore(ProjectGroup).find(
+            ProjectGroup,
+            ProjectGroup.bugtrackerID == self.id,
+            ProjectGroup.active == True).order_by(ProjectGroup.name)
+        return groups, products
 
 
 class BugTrackerSet:
