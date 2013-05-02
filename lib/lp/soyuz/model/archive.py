@@ -242,11 +242,10 @@ class Archive(SQLBase):
 
         # If the privacy is being changed ensure there are no sources
         # published.
-        sources_count = self.getPublishedSources().count()
-        if sources_count > 0:
+        if not self.getPublishedSources().is_empty():
             raise CannotSwitchPrivacy(
-                "This archive has had %d sources published and therefore "
-                "cannot have its privacy switched." % sources_count)
+                "This archive has had sources published and therefore "
+                "cannot have its privacy switched.")
 
         return value
 
@@ -1818,7 +1817,7 @@ class Archive(SQLBase):
         # Ensure there is not already a current subscription for subscriber:
         subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
             subscriber, archive=self)
-        if subscriptions.count() > 0:
+        if not subscriptions.is_empty():
             raise AlreadySubscribed(
             "%s already has a current subscription for '%s'." % (
                 subscriber.displayname, self.displayname))

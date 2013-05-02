@@ -744,8 +744,8 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def canBeDeleted(self):
         """See `IBranch`."""
-        if ((len(self.deletionRequirements()) != 0) or
-            self.getStackedBranches().count() > 0):
+        if ((len(self.deletionRequirements()) != 0) or not
+            self.getStackedBranches().is_empty()):
             # Can't delete if the branch is associated with anything.
             return False
         else:
@@ -1353,7 +1353,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             Job._status != JobStatus.COMPLETED,
             Job._status != JobStatus.FAILED,
             BranchJob.job_type == BranchJobType.UPGRADE_BRANCH)
-        return jobs.count() > 0
+        return not jobs.is_empty()
 
     def requestUpgrade(self, requester):
         """See `IBranch`."""

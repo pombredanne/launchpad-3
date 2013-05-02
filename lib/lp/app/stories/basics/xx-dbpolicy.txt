@@ -36,10 +36,10 @@ We should confirm that the empty database is as empty as we hope it is.
     ...     MAIN_STORE, SLAVE_FLAVOR)
     >>> master_store = getUtility(IStoreSelector).get(
     ...     MAIN_STORE, MASTER_FLAVOR)
-    >>> slave_store.find(Person).count()
-    0
-    >>> master_store.find(Person).count() > 0
+    >>> slave_store.find(Person).is_empty()
     True
+    >>> master_store.find(Person).is_empty()
+    False
 
 This helper parses the output of the +whichdb view (which unfortunately
 needs to be created externally to this pagetest).

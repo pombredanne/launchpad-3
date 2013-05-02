@@ -839,11 +839,11 @@ class TestProbeFunctionSemaphores(TestCase):
 
     def test_MirrorCDImageSeries_records_are_deleted_before_probing(self):
         mirror = DistributionMirror.byName('releases-mirror2')
-        self.failUnless(mirror.cdimage_series.count() > 0)
+        self.failUnless(not mirror.cdimage_series.is_empty())
         # Note that calling this function won't actually probe any mirrors; we
         # need to call reactor.run() to actually start the probing.
         probe_cdimage_mirror(mirror, StringIO(), [], logging)
-        self.failUnlessEqual(mirror.cdimage_series.count(), 0)
+        self.failUnless(mirror.cdimage_series.is_empty())
 
     def test_archive_mirror_probe_function(self):
         mirror1 = DistributionMirror.byName('archive-mirror')

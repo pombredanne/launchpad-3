@@ -1050,8 +1050,8 @@ All 'valid' persons who are not a team.
     'Select a Person'
 
     >>> people = vocab.search(None)
-    >>> people.count() > 0
-    True
+    >>> people.is_empty()
+    False
 
     >>> invalid_people = [
     ...     person for person in people if not person.is_valid_person]

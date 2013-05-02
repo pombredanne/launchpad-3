@@ -74,7 +74,7 @@ class ValidatingMergeView(LaunchpadFormView):
                     "deleted PPA's files.",
                     mapping=dict(name=dupe_person.name)))
             all_branches = getUtility(IAllBranches)
-            if all_branches.ownedBy(dupe_person).isPrivate().count() != 0:
+            if not all_branches.ownedBy(dupe_person).isPrivate().is_empty():
                 self.addError(
                     _("${name} owns private branches that must be "
                       "deleted or transferred to another owner first.",
@@ -172,7 +172,7 @@ class AdminPeopleMergeView(AdminMergeBaseView):
         we'll ask for confirmation before actually performing the merge.
         """
         self.setUpPeople(data)
-        if self.dupe_person_emails.count() > 0:
+        if not self.dupe_person_emails.is_empty():
             # We're merging a person which has one or more email addresses,
             # so we better warn the admin doing the operation and have him
             # check the emails that will be reassigned to ensure he's not
@@ -236,7 +236,7 @@ class AdminTeamMergeView(AdminMergeBaseView):
         members first.
         """
         self.setUpPeople(data)
-        if self.dupe_person.activemembers.count() > 0:
+        if not self.dupe_person.activemembers.is_empty():
             # Merging teams with active members is not possible, so we'll
             # ask the admin if he wants to deactivate all members and then
             # merge.

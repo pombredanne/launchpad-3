@@ -120,7 +120,7 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
     if from_state in FINAL_STATES and next_state not in FINAL_STATES:
         dupes = BranchMergeProposalGetter.activeProposalsForBranches(
             proposal.source_branch, proposal.target_branch)
-        if dupes.count() > 0:
+        if not dupes.is_empty():
             return False
 
     [

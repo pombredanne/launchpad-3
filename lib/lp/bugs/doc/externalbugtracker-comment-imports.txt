@@ -514,8 +514,8 @@ more than one.
     ...     '3': 'Third imported comment (initial import)',
     ...     '4': 'Fourth imported comment (initial import)',
     ...     }
-    >>> bug_watch.getImportedBugMessages().count() > 0
-    True
+    >>> bug_watch.getImportedBugMessages().is_empty()
+    False
 
     >>> transaction.commit()
 

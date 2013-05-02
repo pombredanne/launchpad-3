@@ -531,7 +531,7 @@ class Dominator:
                           'BinaryPackageBuild'])
 
             # There is at least one non-removed binary to consider
-            if considered_binaries.count() > 0:
+            if not considered_binaries.is_empty():
                 # However we can still remove *this* record if there's
                 # at least one other PUBLISHED for the spr. This happens
                 # when a package is moved between components.
@@ -543,7 +543,7 @@ class Dominator:
                     sourcepackagereleaseID=srcpkg_release.id)
                 # Zero PUBLISHED for this spr, so nothing to take over
                 # for us, so leave it for consideration next time.
-                if published.count() == 0:
+                if published.is_empty():
                     continue
 
             # Okay, so there's no unremoved binaries, let's go for it...

@@ -311,7 +311,7 @@ class CheckwatchesMaster(WorkingBase):
                     "Bug tracker '%s' doesn't exist. Ignoring." %
                     bug_tracker_name)
                 return
-            elif bug_tracker.watches.count() == 0:
+            elif bug_tracker.watches.is_empty():
                 # If there are no watches to update, ignore the bug tracker.
                 self.logger.info(
                     "Bug tracker '%s' doesn't have any watches. Ignoring." %
@@ -415,10 +415,8 @@ class CheckwatchesMaster(WorkingBase):
             # for update.
             bug_watches_to_update = (
                 bug_tracker.watches_needing_update.config(limit=1000))
-            bug_watches_need_updating = (
-                bug_watches_to_update.count() > 0)
 
-        if bug_watches_need_updating:
+        if not bug_watches_to_update.is_empty():
             # XXX: GavinPanella 2010-01-18 bug=509223 : Ask remote
             # tracker which remote bugs have been modified, and use
             # this to fill up a batch, rather than figuring out

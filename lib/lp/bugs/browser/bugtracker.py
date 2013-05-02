@@ -359,7 +359,7 @@ class BugTrackerEditView(LaunchpadEditFormView):
 
         # Only admins and registry experts can delete bug watches en
         # masse.
-        if self.context.watches.count() > 0:
+        if not self.context.watches.is_empty():
             admin_teams = [celebrities.admin, celebrities.registry_experts]
             for team in admin_teams:
                 if self.user.inTeam(team):
@@ -371,7 +371,7 @@ class BugTrackerEditView(LaunchpadEditFormView):
                         sorted(team.title for team in admin_teams)))
 
         # Bugtrackers with imported messages cannot be deleted.
-        if self.context.imported_bug_messages.count() > 0:
+        if not self.context.imported_bug_messages.is_empty():
             reasons.append(
                 'Bug comments have been imported via this bug tracker.')
 
@@ -424,9 +424,7 @@ class BugTrackerEditView(LaunchpadEditFormView):
         """Return True if the user can see the reschedule action."""
         user_can_reset_watches = check_permission(
             "launchpad.Admin", self.context)
-        return (
-            user_can_reset_watches and
-            self.context.watches.count() > 0)
+        return user_can_reset_watches and not self.context.watches.is_empty()
 
     @action(
         'Reschedule all watches', name='reschedule',

@@ -1823,7 +1823,7 @@ class Person(
                     "or more if its super teams are not open." % policy)
 
         # Does the team own a productseries.branch?
-        if getUtility(IAllBranches).ownedBy(self).isSeries().count() != 0:
+        if not getUtility(IAllBranches).ownedBy(self).isSeries().is_empty():
             raise TeamMembershipPolicyError(
                 "The team membership policy cannot be %s because it owns "
                 "or more branches linked to project series." % policy)
@@ -2174,7 +2174,7 @@ class Person(
         errors = []
         product_set = getUtility(IProductSet)
         non_public_products = product_set.get_users_private_products(self)
-        if non_public_products.count() != 0:
+        if not non_public_products.is_empty():
             errors.append(('This account cannot be deactivated because it owns'
                         ' the following non-public products: ') +
                         ','.join([p.name for p in non_public_products]))
@@ -2980,7 +2980,7 @@ class Person(
         """See `IPerson`."""
         permissions = getUtility(IArchivePermissionSet).componentsForUploader(
             distribution.main_archive, self)
-        return permissions.count() > 0
+        return not permissions.is_empty()
 
     @cachedproperty
     def is_ubuntu_coc_signer(self):
@@ -3089,8 +3089,7 @@ class Person(
     def isBugContributor(self, user=None):
         """See `IPerson`."""
         search_params = BugTaskSearchParams(user=user, assignee=self)
-        bugtask_count = self.searchTasks(search_params).count()
-        return bugtask_count > 0
+        return not self.searchTasks(search_params).is_empty()
 
     def isBugContributorInTarget(self, user=None, target=None):
         """See `IPerson`."""
@@ -3098,8 +3097,7 @@ class Person(
                 IProjectGroup.providedBy(target)), (
             "%s isn't a valid bug target." % target)
         search_params = BugTaskSearchParams(user=user, assignee=self)
-        bugtask_count = target.searchTasks(search_params).count()
-        return bugtask_count > 0
+        return not target.searchTasks(search_params).is_empty()
 
     @property
     def structural_subscriptions(self):
@@ -4253,12 +4251,13 @@ class PersonSet:
             raise AssertionError(
                 'from_person has a ppa in ACTIVE or DELETING status')
         from_person_branches = getUtility(IAllBranches).ownedBy(from_person)
-        if from_person_branches.isPrivate().count() != 0:
+        if not from_person_branches.isPrivate().is_empty():
             raise AssertionError('from_person has private branches.')
         if from_person.is_team:
             self._purgeUnmergableTeamArtifacts(
                 from_person, to_person, reviewer)
-        if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
+        if not getUtility(
+            IEmailAddressSet).getByPerson(from_person).is_empty():
             raise AssertionError('from_person still has email addresses.')
 
         # Get a database cursor.
