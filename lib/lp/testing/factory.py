@@ -3744,6 +3744,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                            datecreated=None,
                                            pocket=None, archive=None,
                                            source_package_release=None,
+                                           binpackageformat=None,
                                            sourcepackagename=None):
         """Make a `BinaryPackagePublishingHistory`."""
         if distroarchseries is None:
@@ -3761,13 +3762,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 purpose=ArchivePurpose.PRIMARY)
 
         if pocket is None:
-            pocket = self.getAnyPocket()
-
+            pocket = self.getAnyPocket() 
         if status is None:
             status = PackagePublishingStatus.PENDING
 
         if priority is None:
             priority = PackagePublishingPriority.OPTIONAL
+        if binpackageformat is None:
+            binpackageformat = BinaryPackageFormat.DEB
 
         if binarypackagerelease is None:
             # Create a new BinaryPackageBuild and BinaryPackageRelease
@@ -3779,9 +3781,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             binarypackagerelease = self.makeBinaryPackageRelease(
                 binarypackagename=binarypackagename,
                 build=binarypackagebuild,
-                component=component,
-                section_name=section_name,
-                priority=priority)
+                component=component, binpackageformat=binpackageformat,
+                section_name=section_name, priority=priority)
 
         if datecreated is None:
             datecreated = self.getUniqueDate()
@@ -3869,7 +3870,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             binpackageformat = BinaryPackageFormat.DEB
         if component is None:
             component = build.source_package_release.component
-        section = build.source_package_release.section
+        if section_name is None:
+            section = build.source_package_release.section
+        else:
+            section = section_name
         if priority is None:
             priority = PackagePublishingPriority.OPTIONAL
         if summary is None:

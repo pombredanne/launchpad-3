@@ -17,7 +17,10 @@ __all__ = [
 
 from collections import defaultdict
 from datetime import datetime
-import operator
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 import os
 import re
 import sys
@@ -31,10 +34,13 @@ from sqlobject import (
 from storm.expr import (
     And,
     Desc,
+    Join,
     LeftJoin,
+    Not,
     Or,
     Sum,
     )
+from storm.info import ClassAlias
 from storm.store import Store
 from storm.zope import IResultSet
 from storm.zope.interfaces import ISQLObjectResultSet
@@ -61,6 +67,7 @@ from lp.services.database.lpstorm import (
     IStore,
     )
 from lp.services.database.sqlbase import SQLBase
+from lp.services.database.stormexpr import IsDistinctFrom
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.librarian.model import (
     LibraryFileAlias,
@@ -543,7 +550,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         publishing_set = getUtility(IPublishingSet)
         result_set = publishing_set.getUnpublishedBuildsForSources(
             self, build_states)
-        return DecoratedResultSet(result_set, operator.itemgetter(1))
+        return DecoratedResultSet(result_set, itemgetter(1))
 
     def getFileByName(self, name):
         """See `ISourcePackagePublishingHistory`."""
@@ -667,7 +674,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         # XXX cprov 20080710: UNIONs cannot be ordered appropriately.
         # See IPublishing.getFilesForSources().
-        return sorted(libraryfiles, key=operator.attrgetter('filename'))
+        return sorted(libraryfiles, key=attrgetter('filename'))
 
     @property
     def meta_sourcepackage(self):
@@ -2016,6 +2023,37 @@ class PublishingSet:
 
         affected_pubs = IMasterStore(publication_class).find(
             publication_class, publication_class.id.is_in(ids))
+        # Find any related debug packages.
+        if publication_class == BinaryPackagePublishingHistory:
+            bpph = ClassAlias(publication_class)
+            debug_bpph = BinaryPackagePublishingHistory
+            origin = [
+                bpph,
+                Join(
+                    BinaryPackageRelease,
+                    bpph.binarypackagereleaseID == BinaryPackageRelease.id),
+                Join(
+                    debug_bpph,
+                    debug_bpph.binarypackagereleaseID ==
+                        BinaryPackageRelease.debug_packageID)]
+            debugs = IMasterStore(publication_class).using(*origin).find(
+                (debug_bpph.id,),
+                bpph.id.is_in(ids), bpph.archiveID == debug_bpph.archiveID,
+                bpph.pocket == debug_bpph.pocket,
+                bpph.componentID == debug_bpph.componentID,
+                bpph.sectionID == debug_bpph.sectionID,
+                bpph.priority == debug_bpph.priority,
+                Not(IsDistinctFrom(
+                    bpph.phased_update_percentage,
+                    debug_bpph.phased_update_percentage)))
+            debug_ids = [pub[0] for pub in debugs]
+            IMasterStore(publication_class).find(
+                BinaryPackagePublishingHistory,
+                BinaryPackagePublishingHistory.id.is_in(debug_ids)).set(
+                    status=PackagePublishingStatus.DELETED,
+                    datesuperseded=UTC_NOW,
+                    removed_byID=removed_by_id,
+                    removal_comment=removal_comment)
         affected_pubs.set(
             status=PackagePublishingStatus.DELETED,
             datesuperseded=UTC_NOW,
@@ -2098,7 +2136,7 @@ def get_current_source_releases(context_sourcepackagenames, archive_ids_func,
     for context, package_names in context_sourcepackagenames.items():
         clause = And(
             SourcePackagePublishingHistory.sourcepackagenameID.is_in(
-                map(operator.attrgetter('id'), package_names)),
+                map(attrgetter('id'), package_names)),
             SourcePackagePublishingHistory.archiveID.is_in(
                 archive_ids_func(context)),
             package_clause_func(context),

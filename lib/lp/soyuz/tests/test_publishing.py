@@ -37,7 +37,6 @@ from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
@@ -1222,6 +1221,38 @@ class TestPublishingSetLite(TestCaseWithFactory):
                 DeletionError, message, pub.requestDeletion, self.person)
             self.assertRaisesWithContent(
                 DeletionError, message, pub.api_requestDeletion, self.person)
+
+    def test_requestDeletion_marks_debug_as_deleted(self):
+        matching_bpph = self.factory.makeBinaryPackagePublishingHistory(
+            pocket=PackagePublishingPocket.RELEASE)
+        matching_bpr = removeSecurityProxy(matching_bpph.binarypackagerelease)
+        debug_matching_bpph = self.factory.makeBinaryPackagePublishingHistory(
+            pocket=PackagePublishingPocket.RELEASE,
+            binpackageformat=BinaryPackageFormat.DDEB,
+            archive=matching_bpph.archive,
+            section_name=matching_bpph.section)
+        debug_match_bpr = debug_matching_bpph.binarypackagerelease
+        non_match_bpph = self.factory.makeBinaryPackagePublishingHistory(
+            pocket=PackagePublishingPocket.RELEASE)
+        non_match_bpr = removeSecurityProxy(
+            non_match_bpph.binarypackagerelease)
+        debug_non_match_bpph = self.factory.makeBinaryPackagePublishingHistory(
+            pocket=PackagePublishingPocket.RELEASE,
+            binpackageformat=BinaryPackageFormat.DDEB)
+        debug_non_match_bpr = debug_non_match_bpph.binarypackagerelease
+        matching_bpr.debug_package = debug_match_bpr
+        non_match_bpr.debug_package = debug_non_match_bpr
+        getUtility(IPublishingSet).requestDeletion(
+            [matching_bpph, non_match_bpph], self.person)
+        self.assertEqual(matching_bpph.status, PackagePublishingStatus.DELETED)
+        self.assertEqual(
+            debug_matching_bpph.status, PackagePublishingStatus.DELETED)
+        self.assertEqual(
+            non_match_bpph.status, PackagePublishingStatus.DELETED)
+        #for pub in (matching_bpph, debug_matching_bpph, non_match_bpph):
+        #    self.assertEqual(pub.status, PackagePublishingStatus.DELETED)
+        self.assertEqual(
+            debug_non_match_bpph.status, PackagePublishingStatus.PENDING)
 
 
 class TestSourceDomination(TestNativePublishingBase):
