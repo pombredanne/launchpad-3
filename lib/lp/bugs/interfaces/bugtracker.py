@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug tracker interfaces."""
@@ -287,7 +287,6 @@ class IBugTracker(Interface):
         Bool(
             title=_('This bug tracker has a Launchpad plugin installed.'),
             required=False, default=False))
-    projects = Attribute('The projects that use this bug tracker.')
     products = Attribute('The products that use this bug tracker.')
     latestwatches = Attribute('The last 10 watches created.')
     imported_bug_messages = Attribute(
@@ -417,6 +416,10 @@ class IBugTracker(Interface):
         """Returns the component linked to this source package, if any.
 
         If no components have been linked, returns value of None.
+        """
+
+    def getRelatedPillars(user=None):
+        """Returns the `IProduct`s and `IProjectGroup`s that use this tracker.
         """
 
 

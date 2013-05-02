@@ -272,8 +272,8 @@ class BugTaskAssigneeWidget(Widget):
         user = getUtility(ILaunchBag).user
         context = self.context.context
         return user is not None and (
-            context.userCanSetAnyAssignee(user) or
-            user.teams_participated_in.count() > 0)
+            context.userCanSetAnyAssignee(user) or not
+            user.teams_participated_in.is_empty())
 
 
 class BugWatchEditForm(Interface):

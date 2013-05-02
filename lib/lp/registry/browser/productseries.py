@@ -722,7 +722,7 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     @cachedproperty
     def has_linked_packages(self):
         """Is the series linked to source packages."""
-        return self.context.packagings.count() > 0
+        return not self.context.packagings.is_empty()
 
     @cachedproperty
     def linked_packages_message(self):

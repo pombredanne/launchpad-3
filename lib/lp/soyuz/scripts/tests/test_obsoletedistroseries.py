@@ -141,8 +141,8 @@ class TestObsoleteDistroseries(TestCaseWithFactory):
             self.getPublicationsForDistroseries())
 
         # Assert that none of them is obsolete yet:
-        self.assertTrue(published_sources.count() != 0)
-        self.assertTrue(published_binaries.count() != 0)
+        self.assertFalse(published_sources.is_empty())
+        self.assertFalse(published_binaries.is_empty())
         for source in published_sources:
             self.assertTrue(
                 source.status == PackagePublishingStatus.PUBLISHED)

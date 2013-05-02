@@ -732,7 +732,7 @@ class Bug(SQLBase, InformationTypeMixin):
         # view all bugs.
         bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(
             days_old, getUtility(ILaunchpadCelebrities).janitor, bug=self)
-        return bugtasks.count() > 0
+        return not bugtasks.is_empty()
 
     def isExpirable(self, days_old=None):
         """See `IBug`."""
@@ -757,7 +757,7 @@ class Bug(SQLBase, InformationTypeMixin):
         # view all bugs.
         bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(
             days_old, getUtility(ILaunchpadCelebrities).janitor, bug=self)
-        return bugtasks.count() > 0
+        return not bugtasks.is_empty()
 
     @cachedproperty
     def initial_message(self):

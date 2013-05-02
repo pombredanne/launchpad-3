@@ -71,8 +71,8 @@ will cause this spec to be reassigned.
     >>> personset = getUtility(IPersonSet)
     >>> foobar_preferredemail = emailset.getByEmail('foo.bar@canonical.com')
     >>> foobar = personset.get(foobar_preferredemail.personID)
-    >>> foobar.specifications(None).count() > 0
-    True
+    >>> foobar.specifications(None).is_empty()
+    False
 
     >>> from lp.blueprints.model.specification import Specification
     >>> from lp.registry.model.person import Person
@@ -98,12 +98,12 @@ will cause this spec to be reassigned.
 
     >>> from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
     >>> params = BugTaskSearchParams(foobar, assignee=foobar)
-    >>> foobar.searchTasks(params).count() > 0
-    True
+    >>> foobar.searchTasks(params).is_empty()
+    False
 
     >>> foobar.specifications(
-    ...     foobar, filter=[SpecificationFilter.ASSIGNEE]).count() > 0
-    True
+    ...     foobar, filter=[SpecificationFilter.ASSIGNEE]).is_empty()
+    False
 
     >>> foobar_pillars = []
     >>> for pillar_name in foobar.getAffiliatedPillars(foobar):
@@ -170,24 +170,24 @@ adds a '-deactivatedaccount' suffix to the person's name...
 
 ...no assigned bug tasks...
 
-    >>> foobar.searchTasks(params).count()
-    0
+    >>> foobar.searchTasks(params).is_empty()
+    True
 
 ...no assigned specs...
 
     >>> foobar.specifications(
-    ...     foobar, filter=[SpecificationFilter.ASSIGNEE]).count()
-    0
+    ...     foobar, filter=[SpecificationFilter.ASSIGNEE]).is_empty()
+    True
 
 ...no owned teams...
 
-    >>> Person.selectBy(teamowner=foobar).count()
-    0
+    >>> Person.selectBy(teamowner=foobar).is_empty()
+    True
 
 ...no owned or driven pillars...
 
-    >>> foobar.getAffiliatedPillars(foobar).count()
-    0
+    >>> foobar.getAffiliatedPillars(foobar).is_empty()
+    True
 
 ...and, finally, to not be considered a valid person in Launchpad.
 

@@ -211,10 +211,8 @@ class DistributionSourcePackage(BugTargetBase,
     def delete(self):
         """See `DistributionSourcePackage`."""
         dsp_in_db = self._self_in_database
-        no_spph = self.publishing_history.count() == 0
-        if dsp_in_db is not None and no_spph:
-            store = IStore(dsp_in_db)
-            store.remove(dsp_in_db)
+        if dsp_in_db is not None and self.publishing_history.is_empty():
+            IStore(dsp_in_db).remove(dsp_in_db)
             return True
         return False
 
@@ -266,7 +264,7 @@ class DistributionSourcePackage(BugTargetBase,
             orderBy='-datecreated',
             prejoinClauseTables=['SourcePackageRelease'],
             clauseTables=['DistroSeries', 'SourcePackageRelease'])
-        if spph.count() == 0:
+        if spph.is_empty():
             return None
         return DistributionSourcePackageRelease(
             distribution=self.distribution,
@@ -362,9 +360,8 @@ class DistributionSourcePackage(BugTargetBase,
     def binary_names(self):
         """See `IDistributionSourcePackage`."""
         names = []
-        history = self.publishing_history
-        if history.count() > 0:
-            binaries = history[0].getBuiltBinaries()
+        if not self.publishing_history.is_empty():
+            binaries = self.publishing_history[0].getBuiltBinaries()
             names = [binary.binary_package_name for binary in binaries]
         return names
 
@@ -377,7 +374,7 @@ class DistributionSourcePackage(BugTargetBase,
             DistroSeries.distribution == self.distribution)
         result = store.find(Packaging, condition)
         result.order_by("debversion_sort_key(version) DESC")
-        if result.count() == 0:
+        if result.is_empty():
             return None
         else:
             return result[0].productseries.product
