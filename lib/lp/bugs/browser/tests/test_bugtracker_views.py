@@ -46,6 +46,15 @@ class TestBugTrackerView(TestCaseWithFactory):
         view = create_initialized_view(tracker, name='+index')
         self.assertEqual([active_product], view.related_projects)
             
+    def test_bugtracker_with_private_project(self):
+        tracker = self.factory.makeBugTracker()
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY, name='foobar')
+        with admin_logged_in():
+            product.bugtracker = tracker
+        view = create_initialized_view(tracker, name='+index')
+        self.assertEqual([], view.related_projects)
+
 
 class TestBugTrackerSetView(TestCaseWithFactory):
 

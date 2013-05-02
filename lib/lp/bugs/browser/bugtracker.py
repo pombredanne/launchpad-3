@@ -21,8 +21,6 @@ __all__ = [
     'RemoteBug',
     ]
 
-from itertools import chain
-
 from lazr.restful.utils import smartquote
 from zope.component import getUtility
 from zope.formlib import form
@@ -227,7 +225,7 @@ class BugTrackerView(LaunchpadView):
         This property was created for the Related projects portlet in
         the bug tracker's page.
         """
-        pillars = chain(self.context.projects, self.context.products)
+        pillars = self.context.getRelatedPillars(self.user)
         return shortlist([p for p in pillars if p.active], 100)
 
     @property
