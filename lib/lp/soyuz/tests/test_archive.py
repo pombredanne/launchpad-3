@@ -285,39 +285,6 @@ class TestSeriesWithSources(TestCaseWithFactory):
         self.assertEqual([series1, series2], archive.series_with_sources)
 
 
-class TestCorrespondingDebugArchive(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def testPrimaryDebugArchiveIsDebug(self):
-        distribution = self.factory.makeDistribution()
-        primary = self.factory.makeArchive(
-            distribution=distribution, purpose=ArchivePurpose.PRIMARY)
-        debug = self.factory.makeArchive(
-            distribution=distribution, purpose=ArchivePurpose.DEBUG)
-        self.assertEqual(primary.debug_archive, debug)
-
-    def testPartnerDebugArchiveIsSelf(self):
-        partner = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
-        self.assertEqual(partner.debug_archive, partner)
-
-    def testCopyDebugArchiveIsSelf(self):
-        copy = self.factory.makeArchive(purpose=ArchivePurpose.COPY)
-        self.assertEqual(copy.debug_archive, copy)
-
-    def testDebugDebugArchiveIsSelf(self):
-        debug = self.factory.makeArchive(purpose=ArchivePurpose.DEBUG)
-        self.assertEqual(debug.debug_archive, debug)
-
-    def testPPADebugArchiveIsSelf(self):
-        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        self.assertEqual(ppa.debug_archive, ppa)
-
-    def testMissingPrimaryDebugArchiveIsNone(self):
-        primary = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        self.assertIs(primary.debug_archive, None)
-
-
 class TestArchiveEnableDisable(TestCaseWithFactory):
     """Test the enable and disable methods of Archive."""
 

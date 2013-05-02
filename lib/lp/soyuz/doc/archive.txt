@@ -139,9 +139,9 @@ It is only editable by someone with launchpad.Edit permissions:
 
 
 'name' is only editable by an LP administrator and only exposed via the
-ArchiveRebuild user interface. PRIMARY, PARTNER and DEBUG archives
-cannot be renamed, and PPA named can only be changed once the PPA has
-been deleted.
+ArchiveRebuild user interface. PRIMARY and PARTNER archives cannot be
+renamed, and PPA named can only be changed once the PPA has been
+deleted.
 
     >>> login("celso.providelo@canonical.com")
 
@@ -1060,10 +1060,6 @@ PunlisherConfig require us to log in as an admin:
     ...     ubuntutest, ArchivePurpose.PRIMARY).archive_url
     http://archive.launchpad.dev/ubuntutest
 
-    >>> print getUtility(IArchiveSet).getByDistroPurpose(
-    ...     ubuntu, ArchivePurpose.DEBUG).archive_url
-    http://archive.launchpad.dev/ubuntu-debug
-
 COPY archives use a URL format of <distro-name>-<archive-name>:
 
     >>> print naked_copy_target.archive.is_copy
@@ -1109,17 +1105,17 @@ distribution, person name and the PPA name. This method is used in
     True
 
 Iteration over the own utility is performed against all archives,
-including PPA, DEBUG, PRIMARY, PARTNER and COPY:
+including PPA, PRIMARY, PARTNER and COPY:
 
     >>> from lp.testing import celebrity_logged_in
     >>> with celebrity_logged_in('admin'):
     ...     archive_purposes = [
     ...         archive.purpose.name for archive in archive_set]
     >>> len(archive_purposes)
-    18
+    17
 
     >>> print sorted(set(archive_purposes))
-    ['COPY', 'DEBUG', 'PARTNER', 'PPA', 'PRIMARY']
+    ['COPY', 'PARTNER', 'PPA', 'PRIMARY']
 
 'getPPAsForUser' returns all the PPAs a given user participates in. It
 uses `TeamParticipation` relationships to calculate all the PPAs the

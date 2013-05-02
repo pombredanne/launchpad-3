@@ -495,10 +495,10 @@ class IBugTrackerSet(Interface):
         of bugwatches for each tracker, from highest to lowest.
         """
 
-    def getPillarsForBugtrackers(bug_trackers):
+    def getPillarsForBugtrackers(bug_trackers, user=None):
         """Return dict mapping bugtrackers to lists of pillars."""
 
-    def trackers(active=None):
+    def getAllTrackers(active=None):
         """Return a ResultSet of bugtrackers.
 
         :param active: If True, only active trackers are returned, if False

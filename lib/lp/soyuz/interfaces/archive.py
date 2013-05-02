@@ -510,9 +510,6 @@ class IArchiveView(IHasBuildRecords):
         "Concatenation of the source and binary packages published in this "
         "archive. Its content is used for indexed searches across archives.")
 
-    debug_archive = Attribute(
-        "The archive into which debug binaries should be uploaded.")
-
     default_component = Reference(
         IComponent,
         title=_(
@@ -2110,14 +2107,12 @@ default_name_by_purpose = {
     ArchivePurpose.PRIMARY: 'primary',
     ArchivePurpose.PPA: 'ppa',
     ArchivePurpose.PARTNER: 'partner',
-    ArchivePurpose.DEBUG: 'debug',
     }
 
 
 MAIN_ARCHIVE_PURPOSES = (
     ArchivePurpose.PRIMARY,
     ArchivePurpose.PARTNER,
-    ArchivePurpose.DEBUG,
     )
 
 ALLOW_RELEASE_BUILDS = (
@@ -2128,7 +2123,6 @@ ALLOW_RELEASE_BUILDS = (
 
 FULL_COMPONENT_SUPPORT = (
     ArchivePurpose.PRIMARY,
-    ArchivePurpose.DEBUG,
     ArchivePurpose.COPY,
     )
 

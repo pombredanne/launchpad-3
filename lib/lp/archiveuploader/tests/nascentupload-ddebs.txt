@@ -106,12 +106,11 @@ We override the binary to main/devel, and accept it into the archive.
 Now, both, binary and debug-symbol packages are pending publication.
 
     >>> for bin_pub in bin_pubs:
-    ...     print '%s %s %s %s %s' % (
+    ...     print '%s %s %s %s' % (
     ...         bin_pub.displayname, bin_pub.status.name,
-    ...         bin_pub.component.name, bin_pub.section.name,
-    ...         bin_pub.archive.purpose.name)
-    debug-bin 1.0-1 in hoary i386 PENDING main devel PRIMARY
-    debug-bin-dbgsym 1.0-1 in hoary i386 PENDING main devel DEBUG
+    ...         bin_pub.component.name, bin_pub.section.name)
+    debug-bin 1.0-1 in hoary i386 PENDING main devel
+    debug-bin-dbgsym 1.0-1 in hoary i386 PENDING main devel
 
 DEBs and DDEBs are uploaded to separate archives, because the size
 impact of uploading them to a single archive on mirrors would be

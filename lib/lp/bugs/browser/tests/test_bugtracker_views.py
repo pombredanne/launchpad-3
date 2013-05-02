@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BugTracker views."""
@@ -7,16 +7,15 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.enums import InformationType
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.services.webapp import canonical_url
 from lp.testing import (
-    person_logged_in,
+    admin_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import IsConfiguredBatchNavigator
-from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 
 
@@ -29,8 +28,7 @@ class TestBugTrackerView(TestCaseWithFactory):
         tracker = self.factory.makeBugTracker()
         project_group = self.factory.makeProject() 
         product = self.factory.makeProduct()
-        admin = getUtility(ILaunchpadCelebrities).admin.teamowner
-        with person_logged_in(admin):
+        with admin_logged_in():
             project_group.bugtracker = tracker
             product.bugtracker = tracker
         view = create_initialized_view(tracker, name='+index')
@@ -41,8 +39,7 @@ class TestBugTrackerView(TestCaseWithFactory):
         tracker = self.factory.makeBugTracker()
         active_product = self.factory.makeProduct()
         inactive_product = self.factory.makeProduct()
-        admin = getUtility(ILaunchpadCelebrities).admin.teamowner
-        with person_logged_in(admin):
+        with admin_logged_in():
             active_product.bugtracker = tracker
             inactive_product.bugtracker = tracker
             inactive_product.active = False
@@ -62,12 +59,11 @@ class TestBugTrackerSetView(TestCaseWithFactory):
         self.assertThat(view.inactive_trackers, matcher)
 
     def test_page_is_batched(self):
-        active_tracker1 = self.factory.makeBugTracker()
-        active_tracker2 = self.factory.makeBugTracker()
+        self.factory.makeBugTracker()
+        self.factory.makeBugTracker()
         inactive_tracker1 = self.factory.makeBugTracker()
         inactive_tracker2 = self.factory.makeBugTracker()
-        admin = getUtility(ILaunchpadCelebrities).admin.teamowner
-        with person_logged_in(admin):
+        with admin_logged_in():
             inactive_tracker1.active = False
             inactive_tracker2.active = False
         trackers = getUtility(IBugTrackerSet)
@@ -83,3 +79,14 @@ class TestBugTrackerSetView(TestCaseWithFactory):
         #    find_tag_by_id(content, 'lower-batch-nav-batchnav-next')['class'])
         # Instead we check the string appears.
         self.assertTrue('upper-batch-nav-batchnav-next' in content)
+
+    def test_tracker_with_private_project(self):
+        tracker = self.factory.makeBugTracker()
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY, name='foobar')
+        with admin_logged_in():
+            product.bugtracker = tracker
+        url = canonical_url(getUtility(IBugTrackerSet))
+        browser = self.getUserBrowser(url)
+        self.assertIn(tracker.name, browser.contents)
+        self.assertNotIn('foobar', browser.contents)

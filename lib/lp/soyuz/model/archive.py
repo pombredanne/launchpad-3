@@ -417,15 +417,6 @@ class Archive(SQLBase):
         return dependencies
 
     @cachedproperty
-    def debug_archive(self):
-        """See `IArchive`."""
-        if self.purpose == ArchivePurpose.PRIMARY:
-            return getUtility(IArchiveSet).getByDistroPurpose(
-                self.distribution, ArchivePurpose.DEBUG)
-        else:
-            return self
-
-    @cachedproperty
     def default_component(self):
         """See `IArchive`."""
         if self.is_partner:
@@ -622,7 +613,7 @@ class Archive(SQLBase):
 
         if distroseries:
             clauses.append(
-                SourcePackagePublishingHistory.distroseriesID == 
+                SourcePackagePublishingHistory.distroseriesID ==
                     distroseries.id)
 
         if name:
@@ -2203,11 +2194,6 @@ class ArchiveSet:
         # Upon creation archives are enabled by default.
         if enabled == False:
             new_archive.disable()
-
-        if purpose == ArchivePurpose.DEBUG:
-            if distribution.main_archive is not None:
-                del get_property_cache(
-                    distribution.main_archive).debug_archive
 
         # Private teams cannot have public PPAs.
         if owner.visibility == PersonVisibility.PRIVATE:

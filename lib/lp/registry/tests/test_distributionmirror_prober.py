@@ -577,6 +577,17 @@ class TestRedirectAwareProberFactoryAndProtocol(TestCase):
         prober.redirect('http://foo.bar/baz/boo/notfound?file=package.deb')
         self.failUnless(prober.has_failed)
 
+    def test_does_not_raise_if_redirected_to_reencoded_file(self):
+        prober = self._createFactoryAndStubConnectAndTimeoutCall(
+            'http://foo.bar/baz/boo/package+foo.deb')
+
+        def failed(error):
+            prober.has_failed = True
+
+        prober.failed = failed
+        prober.redirect('http://foo.bar/baz/boo/package%2Bfoo.deb')
+        self.assertFalse(hasattr(prober, 'has_failed'))
+
     def test_connect_depends_on_localhost_only_config(self):
         # If localhost_only is True and the host to which we would connect is
         # not localhost, the connect() method is not called.

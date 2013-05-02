@@ -342,7 +342,7 @@ class SoyuzTestPublisher:
                     conflicts, replaces, provides, pre_depends, enhances,
                     breaks, BinaryPackageFormat.DDEB, version=version)
                 pub_binaries += self.publishBinaryInArchive(
-                    binarypackagerelease_ddeb, archive.debug_archive, status,
+                    binarypackagerelease_ddeb, archive, status,
                     pocket, scheduleddeletiondate, dateremoved,
                     phased_update_percentage)
             else:
@@ -1298,9 +1298,6 @@ class TestBinaryDomination(TestNativePublishingBase):
         will supersede themselves, and vanish entirely (bug #178102).  We
         check both DEBs and DDEBs.
         """
-        getUtility(IArchiveSet).new(
-            purpose=ArchivePurpose.DEBUG, owner=self.ubuntutest.owner,
-            distribution=self.ubuntutest)
         universe = getUtility(IComponentSet)['universe']
         games = getUtility(ISectionSet)['games']
         for name, override in (
@@ -1368,10 +1365,6 @@ class TestBinaryDomination(TestNativePublishingBase):
         DDEB publications should be superseded when their corresponding DEB
         is.
         """
-        getUtility(IArchiveSet).new(
-            purpose=ArchivePurpose.DEBUG, owner=self.ubuntutest.owner,
-            distribution=self.ubuntutest)
-
         # Each of these will return (i386 deb, i386 ddeb, hppa deb,
         # hppa ddeb).
         bins = self.getPubBinaries(architecturespecific=True, with_debug=True)
@@ -1394,10 +1387,6 @@ class TestBinaryDomination(TestNativePublishingBase):
         Since DDEBs are superseded when their DEBs are, there's no need to
         for them supersede anything themselves. Any such attempt is an error.
         """
-        getUtility(IArchiveSet).new(
-            purpose=ArchivePurpose.DEBUG, owner=self.ubuntutest.owner,
-            distribution=self.ubuntutest)
-
         # This will return (i386 deb, i386 ddeb, hppa deb, hppa ddeb).
         bins = self.getPubBinaries(architecturespecific=True, with_debug=True)
         self.assertRaises(AssertionError, bins[0].supersede, bins[1])
@@ -1632,39 +1621,21 @@ class TestPublishBinaries(TestCaseWithFactory):
         args['pocket'] = PackagePublishingPocket.RELEASE
         [another_bpph] = getUtility(IPublishingSet).publishBinaries(**args)
 
-    def test_ddebs_need_debug_archive(self):
+    def test_primary_ddebs_need_ddebs_enabled(self):
         debug = self.factory.makeBinaryPackageRelease(
             binpackageformat=BinaryPackageFormat.DDEB)
         args = self.makeArgs(
             [debug], debug.build.distro_arch_series.distroseries)
+
+        # ddebs are rejected with build_debug_symbols unset
         self.assertRaises(
             QueueInconsistentStateError,
             getUtility(IPublishingSet).publishBinaries, **args)
 
-    def test_ddebs_go_to_debug_archive(self):
-        # Normal packages go to the given archive, but debug packages go
-        # to the corresponding debug archive.
-        das = self.factory.makeDistroArchSeries()
-        self.factory.makeArchive(
-            purpose=ArchivePurpose.DEBUG,
-            distribution=das.distroseries.distribution)
-        build = self.factory.makeBinaryPackageBuild(distroarchseries=das)
-        normal = self.factory.makeBinaryPackageRelease(build=build)
-        debug = self.factory.makeBinaryPackageRelease(
-            build=build, binpackageformat=BinaryPackageFormat.DDEB)
-        args = self.makeArgs([normal, debug], das.distroseries)
-        bpphs = getUtility(IPublishingSet).publishBinaries(**args)
-        self.assertEqual(2, len(bpphs))
-        self.assertContentEqual(
-            (normal, debug), [bpph.binarypackagerelease for bpph in bpphs])
-        self.assertContentEqual(
-            (das.main_archive, das.main_archive.debug_archive),
-            [bpph.archive for bpph in bpphs])
-
-        # A second copy does nothing, because it checks in the debug
-        # archive too.
-        self.assertContentEqual(
-            [], getUtility(IPublishingSet).publishBinaries(**args))
+        # But accepted with build_debug_symbols set
+        archive = debug.build.distro_arch_series.distroseries.main_archive
+        archive.build_debug_symbols = True
+        getUtility(IPublishingSet).publishBinaries(**args)
 
 
 class TestChangeOverride(TestNativePublishingBase):
@@ -1719,9 +1690,6 @@ class TestChangeOverride(TestNativePublishingBase):
 
     def test_changes_ddeb(self):
         # BPPH.changeOverride changes the properties of DDEB publications.
-        getUtility(IArchiveSet).new(
-            purpose=ArchivePurpose.DEBUG, owner=self.ubuntutest.owner,
-            distribution=self.ubuntutest)
         self.assertCanOverride(
             ddeb=True,
             new_component="universe", new_section="misc", new_priority="extra",
