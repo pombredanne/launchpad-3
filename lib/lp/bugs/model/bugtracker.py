@@ -321,6 +321,8 @@ class BugTracker(SQLBase):
         storm_validator=validate_public_person, notNull=True)
     contactdetails = StringCol(notNull=False)
     has_lp_plugin = BoolCol(notNull=False, default=False)
+    products = SQLMultipleJoin(
+        'Product', joinColumn='bugtracker', orderBy='name')
     watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bugtracker', orderBy='-datecreated',
         prejoins=['bug'])
