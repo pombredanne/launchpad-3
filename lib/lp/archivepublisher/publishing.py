@@ -319,7 +319,7 @@ class Publisher(object):
                 # Make the source publications query.
                 source_query = " AND ".join(clauses)
                 sources = SourcePackagePublishingHistory.select(source_query)
-                if sources.count() > 0:
+                if not sources.is_empty():
                     self.markPocketDirty(distroseries, pocket)
                     # No need to check binaries if the pocket is already
                     # dirtied from a source.
@@ -334,7 +334,7 @@ class Publisher(object):
                 binary_query = " AND ".join(clauses)
                 binaries = BinaryPackagePublishingHistory.select(binary_query,
                     clauseTables=['DistroArchSeries'])
-                if binaries.count() > 0:
+                if not binaries.is_empty():
                     self.markPocketDirty(distroseries, pocket)
 
     def B_dominate(self, force_domination):

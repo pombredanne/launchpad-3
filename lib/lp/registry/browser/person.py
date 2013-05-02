@@ -778,7 +778,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
     @enabled_with_permission('launchpad.Special')
     def editsshkeys(self):
         target = '+editsshkeys'
-        if self.context.sshkeys.count() == 0:
+        if self.context.sshkeys.is_empty():
             text = 'Add an SSH key'
             icon = 'add'
         else:
@@ -812,7 +812,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
         # Only enable the link if the person has some subscriptions.
         subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
             self.context)
-        enabled = subscriptions.count() > 0
+        enabled = not subscriptions.is_empty()
 
         return Link(target, text, summary, enabled=enabled, icon='info')
 
@@ -1483,7 +1483,7 @@ class PersonKarmaView(LaunchpadView):
     @cachedproperty
     def has_expired_karma(self):
         """Did the person have karma?"""
-        return self.context.latestKarma().count() > 0
+        return not self.context.latestKarma().is_empty()
 
 
 class ContactViaWebLinksMixin:
@@ -1912,7 +1912,7 @@ class PersonView(LaunchpadView, FeedsMixin, ContactViaWebLinksMixin):
             return True
 
         # If the current user can view any PPA, show the section.
-        return self.visible_ppas.count() > 0
+        return not self.visible_ppas.is_empty()
 
     @cachedproperty
     def visible_ppas(self):
@@ -2249,7 +2249,7 @@ class PersonEditJabberIDsView(LaunchpadFormView):
 
     def setUpFields(self):
         super(PersonEditJabberIDsView, self).setUpFields()
-        if self.context.jabberids.count() > 0:
+        if not self.context.jabberids.is_empty():
             # Make the jabberid entry optional on the edit page if one or more
             # ids already exist, which allows the removal of ids without
             # filling out the new jabberid field.
@@ -2717,7 +2717,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         """
         # Defaults for the user's email addresses.
         validated = self.context.preferredemail
-        if validated is None and self.context.validatedemails.count() > 0:
+        if validated is None and not self.context.validatedemails.is_empty():
             validated = self.context.validatedemails[0]
         unvalidated = self.unvalidated_addresses
         if len(unvalidated) > 0:

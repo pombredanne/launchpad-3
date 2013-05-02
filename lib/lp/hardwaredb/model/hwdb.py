@@ -277,7 +277,7 @@ class HWSubmissionSet:
     def submissionIdExists(self, submission_key):
         """See `IHWSubmissionSet`."""
         rows = HWSubmission.selectBy(submission_key=submission_key)
-        return rows.count() > 0
+        return not rows.is_empty()
 
     def getByStatus(self, status, user=None):
         """See `IHWSubmissionSet`."""

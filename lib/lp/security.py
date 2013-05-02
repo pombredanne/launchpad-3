@@ -998,13 +998,13 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             # Grant visibility to people who can see branches owned by the
             # private team.
             team_branches = IBranchCollection(self.obj)
-            if team_branches.visibleByUser(user.person).count() > 0:
+            if not team_branches.visibleByUser(user.person).is_empty():
                 return True
 
             # Grant visibility to people who can see branches subscribed to
             # by the private team.
             team_branches = getUtility(IAllBranches).subscribedBy(self.obj)
-            if team_branches.visibleByUser(user.person).count() > 0:
+            if not team_branches.visibleByUser(user.person).is_empty():
                 return True
 
             # Grant visibility to branches visible to the user and which have
@@ -1012,7 +1012,7 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             branches = getUtility(IAllBranches)
             visible_branches = branches.visibleByUser(user.person)
             mp = visible_branches.getMergeProposalsForReviewer(self.obj)
-            if mp.count() > 0:
+            if not mp.is_empty():
                 return True
 
             # Grant visibility to users in a team that has the private team as

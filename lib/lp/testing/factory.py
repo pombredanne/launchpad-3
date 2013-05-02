@@ -2553,7 +2553,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             if parent_series is None:
                 dsp = getUtility(IDistroSeriesParentSet).getByDerivedSeries(
                     derived_series)
-                if dsp.count() == 0:
+                if dsp.is_empty():
                     new_dsp = self.makeDistroSeriesParent(
                         derived_series=derived_series,
                         parent_series=parent_series)
@@ -3339,7 +3339,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         `Message` table already.
         """
         msg_id = make_msgid('launchpad')
-        while Message.selectBy(rfc822msgid=msg_id).count() > 0:
+        while not Message.selectBy(rfc822msgid=msg_id).is_empty():
             msg_id = make_msgid('launchpad')
         return msg_id
 

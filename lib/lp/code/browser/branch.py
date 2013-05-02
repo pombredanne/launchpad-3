@@ -761,7 +761,7 @@ class BranchEditFormView(LaunchpadEditFormView):
                 params = BugTaskSearchParams(
                     user=self.user, linked_branches=self.context.id,
                     information_type=hidden_types)
-                if getUtility(IBugTaskSet).searchBugIds(params).count() > 0:
+                if not getUtility(IBugTaskSet).searchBugIds(params).is_empty():
                     shown_types += hidden_types
 
         # Now take the intersection of the allowed and shown types.

@@ -866,9 +866,7 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
 
         This is after any filtering or overriding of the sources() method.
         """
-        # Trying to use bool(self.filtered_sources) here resulted in bug
-        # 702425 :(
-        return self.filtered_sources.count() > 0
+        return not self.filtered_sources.is_empty()
 
 
 class ArchiveView(ArchiveSourcePackageListViewBase):
@@ -1178,7 +1176,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         to ensure that it only returns true if there are sources
         that can be deleted in this archive.
         """
-        return self.context.getSourcesForDeletion().count() > 0
+        return not self.context.getSourcesForDeletion().is_empty()
 
     def validate_delete(self, action, data):
         """Validate deletion parameters.
