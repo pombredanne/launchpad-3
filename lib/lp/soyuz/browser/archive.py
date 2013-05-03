@@ -1369,7 +1369,7 @@ def make_archive_vocabulary(archives):
     terms = []
     for archive in archives:
         token = '%s/%s' % (archive.owner.name, archive.name)
-        label = '%s (~%s)' % (archive.displayname, token)
+        label = '%s [~%s]' % (archive.displayname, token)
         terms.append(SimpleTerm(archive, token, label))
     return SimpleVocabulary(terms)
 
