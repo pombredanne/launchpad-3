@@ -1266,7 +1266,7 @@ options making it the default option, 'This PPA' rendered option.
 
     >>> for item in archive_widget.vocabulary:
     ...     print item.title
-    PPA for Ubuntu Team
+    PPA for Ubuntu Team [~ubuntu-team/ppa]
 
     >>> print archive_widget.getInputValue() == cprov.archive
     True
@@ -1316,8 +1316,8 @@ value is submitted.
 
     >>> for item in archive_widget.vocabulary:
     ...     print item.title
-    PPA for Celso Providelo
-    PPA for No Privileges Person
+    PPA for Celso Providelo [~cprov/ppa]
+    PPA for No Privileges Person [~no-priv/ppa]
 
     >>> print archive_widget.getInputValue()
     Traceback (most recent call last):
