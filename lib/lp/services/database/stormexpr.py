@@ -15,6 +15,7 @@ __all__ = [
     'fti_search',
     'Greatest',
     'get_where_for_reference',
+    'IsDistinctFrom',
     'NullCount',
     'rank_by_fti',
     'TryAdvisoryLock',
@@ -203,6 +204,12 @@ class ArrayIntersects(CompoundOper):
     """True iff the arrays have at least one element in common."""
     __slots__ = ()
     oper = "&&"
+
+
+class IsDistinctFrom(CompoundOper):
+    """True iff the left side is distinct from the right side."""
+    __slots__ = ()
+    oper = " IS DISTINCT FROM "
 
 
 def get_where_for_reference(reference, other):
