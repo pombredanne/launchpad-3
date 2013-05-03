@@ -17,7 +17,10 @@ __all__ = [
 
 from collections import defaultdict
 from datetime import datetime
-import operator
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 import os
 import re
 import sys
@@ -31,10 +34,13 @@ from sqlobject import (
 from storm.expr import (
     And,
     Desc,
+    Join,
     LeftJoin,
+    Not,
     Or,
     Sum,
     )
+from storm.info import ClassAlias
 from storm.store import Store
 from storm.zope import IResultSet
 from storm.zope.interfaces import ISQLObjectResultSet
@@ -61,6 +67,7 @@ from lp.services.database.lpstorm import (
     IStore,
     )
 from lp.services.database.sqlbase import SQLBase
+from lp.services.database.stormexpr import IsDistinctFrom
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.librarian.model import (
     LibraryFileAlias,
@@ -543,7 +550,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         publishing_set = getUtility(IPublishingSet)
         result_set = publishing_set.getUnpublishedBuildsForSources(
             self, build_states)
-        return DecoratedResultSet(result_set, operator.itemgetter(1))
+        return DecoratedResultSet(result_set, itemgetter(1))
 
     def getFileByName(self, name):
         """See `ISourcePackagePublishingHistory`."""
@@ -667,7 +674,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         # XXX cprov 20080710: UNIONs cannot be ordered appropriately.
         # See IPublishing.getFilesForSources().
-        return sorted(libraryfiles, key=operator.attrgetter('filename'))
+        return sorted(libraryfiles, key=attrgetter('filename'))
 
     @property
     def meta_sourcepackage(self):
@@ -1120,27 +1127,6 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 priority=self.priority,
                 phased_update_percentage=self.phased_update_percentage)
 
-    def _getCorrespondingDDEBPublications(self):
-        """Return remaining publications of the corresponding DDEB.
-
-        Only considers binary publications in the corresponding debug
-        archive with the same distroarchseries, pocket, component, section,
-        priority and phased-update-percentage.
-        """
-        return IMasterStore(BinaryPackagePublishingHistory).find(
-                BinaryPackagePublishingHistory,
-                BinaryPackagePublishingHistory.status.is_in(
-                    active_publishing_status),
-                BinaryPackagePublishingHistory.distroarchseries ==
-                    self.distroarchseries,
-                binarypackagerelease=self.binarypackagerelease.debug_package,
-                archive=self.archive,
-                pocket=self.pocket,
-                component=self.component,
-                section=self.section,
-                priority=self.priority,
-                phased_update_percentage=self.phased_update_percentage)
-
     def supersede(self, dominant=None, logger=None):
         """See `IBinaryPackagePublishingHistory`."""
         # At this point only PUBLISHED (ancient versions) or PENDING (
@@ -1186,7 +1172,9 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             # between releases.
             self.supersededby = dominant_build
 
-        for dominated in self._getCorrespondingDDEBPublications():
+        debug = getUtility(IPublishingSet).findCorrespondingDDEBPublications(
+            [self])
+        for dominated in debug:
             dominated.supersede(dominant, logger)
 
         # If this is architecture-independent, all publications with the same
@@ -2022,6 +2010,48 @@ class PublishingSet:
             removed_byID=removed_by_id,
             removal_comment=removal_comment)
 
+        # Find and mark any related debug packages.
+        if publication_class == BinaryPackagePublishingHistory:
+            debug_ids = [
+                pub.id for pub in self.findCorrespondingDDEBPublications(
+                    affected_pubs)]
+            IMasterStore(publication_class).find(
+                BinaryPackagePublishingHistory,
+                BinaryPackagePublishingHistory.id.is_in(debug_ids)).set(
+                    status=PackagePublishingStatus.DELETED,
+                    datesuperseded=UTC_NOW,
+                    removed_byID=removed_by_id,
+                    removal_comment=removal_comment)
+
+    def findCorrespondingDDEBPublications(self, pubs):
+        """See `IPublishingSet`."""
+        ids = [pub.id for pub in pubs]
+        deb_bpph = ClassAlias(BinaryPackagePublishingHistory)
+        debug_bpph = BinaryPackagePublishingHistory
+        origin = [
+            deb_bpph,
+            Join(
+                BinaryPackageRelease,
+                deb_bpph.binarypackagereleaseID ==
+                    BinaryPackageRelease.id),
+            Join(
+                debug_bpph,
+                debug_bpph.binarypackagereleaseID ==
+                    BinaryPackageRelease.debug_packageID)]
+        return IMasterStore(debug_bpph).using(*origin).find(
+            debug_bpph,
+            deb_bpph.id.is_in(ids),
+            debug_bpph.status.is_in(active_publishing_status),
+            deb_bpph.archiveID == debug_bpph.archiveID,
+            deb_bpph.distroarchseriesID == debug_bpph.distroarchseriesID,
+            deb_bpph.pocket == debug_bpph.pocket,
+            deb_bpph.componentID == debug_bpph.componentID,
+            deb_bpph.sectionID == debug_bpph.sectionID,
+            deb_bpph.priority == debug_bpph.priority,
+            Not(IsDistinctFrom(
+                deb_bpph.phased_update_percentage,
+                debug_bpph.phased_update_percentage)))
+
     def requestDeletion(self, pubs, removed_by, removal_comment=None):
         """See `IPublishingSet`."""
         pubs = list(pubs)
@@ -2098,7 +2128,7 @@ def get_current_source_releases(context_sourcepackagenames, archive_ids_func,
     for context, package_names in context_sourcepackagenames.items():
         clause = And(
             SourcePackagePublishingHistory.sourcepackagenameID.is_in(
-                map(operator.attrgetter('id'), package_names)),
+                map(attrgetter('id'), package_names)),
             SourcePackagePublishingHistory.archiveID.is_in(
                 archive_ids_func(context)),
             package_clause_func(context),

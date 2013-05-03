@@ -1287,6 +1287,10 @@ class IPublishingSet(Interface):
         This is a supporting operation for a deletion request.
         """
 
+    def findCorrespondingDDEBPublications(pubs):
+        """Find corresponding DDEB publications, given a list of publications.
+        """
+
     def requestDeletion(pub, removed_by, removal_comment=None):
         """Delete the source and binary publications specified.
 
