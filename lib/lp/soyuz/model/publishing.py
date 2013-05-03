@@ -1127,15 +1127,6 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 priority=self.priority,
                 phased_update_percentage=self.phased_update_percentage)
 
-    def _getCorrespondingDDEBPublications(self):
-        """Return remaining publications of the corresponding DDEB.
-
-        Only considers binary publications with the same distroarchseries,
-        pocket, component, section, priority and phased-update-percentage.
-        """
-        return getUtility(IPublishingSet).findCorrespondingDDEBPublications(
-            [self])
-
     def supersede(self, dominant=None, logger=None):
         """See `IBinaryPackagePublishingHistory`."""
         # At this point only PUBLISHED (ancient versions) or PENDING (
@@ -1181,7 +1172,9 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             # between releases.
             self.supersededby = dominant_build
 
-        for dominated in self._getCorrespondingDDEBPublications():
+        debug = getUtility(IPublishingSet).findCorrespondingDDEBPublications(
+            [self])
+        for dominated in debug:
             dominated.supersede(dominant, logger)
 
         # If this is architecture-independent, all publications with the same
