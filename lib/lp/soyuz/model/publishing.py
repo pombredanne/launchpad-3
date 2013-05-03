@@ -1243,6 +1243,23 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 "Cannot change overrides in suite '%s'" %
                 self.distroseries.getSuite(self.pocket))
 
+        # Search for related debug publications, and override them too.
+        debugs = getUtility(IPublishingSet).findCorrespondingDDEBPublications(
+            [self])
+        # We expect only one, but we will override all of them.
+        for debug in debugs:
+            BinaryPackagePublishingHistory(
+                binarypackagename=debug.binarypackagename,
+                binarypackagerelease=debug.binarypackagerelease,
+                distroarchseries=debug.distroarchseries,
+                status=PackagePublishingStatus.PENDING,
+                datecreated=UTC_NOW,
+                component=new_component,
+                section=new_section,
+                priority=new_priority,
+                archive=debug.archive,
+                phased_update_percentage=new_phased_update_percentage)
+
         # Append the modified package publishing entry
         return BinaryPackagePublishingHistory(
             binarypackagename=bpr.binarypackagename,

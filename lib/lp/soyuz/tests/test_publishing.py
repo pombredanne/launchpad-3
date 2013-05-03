@@ -1250,6 +1250,23 @@ class TestPublishingSetLite(TestCaseWithFactory):
         self.assertEqual(
             debug_non_match_bpph.status, PackagePublishingStatus.PENDING)
 
+    def test_changeOverride_also_overrides_debug_package(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            pocket=PackagePublishingPocket.RELEASE)
+        bpr = removeSecurityProxy(bpph.binarypackagerelease)
+        debug_bpph = self.factory.makeBinaryPackagePublishingHistory(
+            pocket=PackagePublishingPocket.RELEASE,
+            binpackageformat=BinaryPackageFormat.DDEB,
+            archive=bpph.archive, section_name=bpph.section,
+            distroarchseries=bpph.distroarchseries)
+        bpr.debug_package = debug_bpph.binarypackagerelease
+        new_section = self.factory.makeSection()
+        new_bpph = bpph.changeOverride(new_section=new_section)
+        publishing_set = getUtility(IPublishingSet)
+        [new_debug_bpph] = publishing_set.findCorrespondingDDEBPublications(
+            [new_bpph])
+        self.assertEqual(new_debug_bpph.section, new_section)
+
 
 class TestSourceDomination(TestNativePublishingBase):
     """Test SourcePackagePublishingHistory.supersede() operates correctly."""
