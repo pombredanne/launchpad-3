@@ -268,10 +268,7 @@ class Publisher(object):
 
         for distroseries in consider_series:
             for pocket in self.archive.getPockets():
-                allowed = (
-                    not self.allowed_suites or
-                    (distroseries.name, pocket) in self.allowed_suites)
-                if allowed:
+                if self.isAllowed(distroseries, pocket):
                     more_dirt = distroseries.publish(
                         self._diskpool, self.log, self.archive, pocket,
                         is_careful=force_publishing)
@@ -307,7 +304,8 @@ class Publisher(object):
         # Loop for each pocket in each distroseries:
         for distroseries in self.distro.series:
             for pocket in self.archive.getPockets():
-                if self.cannotModifySuite(distroseries, pocket):
+                if (self.cannotModifySuite(distroseries, pocket)
+                    or not self.isAllowed(distroseries, pocket)):
                     # We don't want to mark release pockets dirty in a
                     # stable distroseries, no matter what other bugs
                     # that precede here have dirtied it.
@@ -343,6 +341,8 @@ class Publisher(object):
         judgejudy = Dominator(self.log, self.archive)
         for distroseries in self.distro.series:
             for pocket in self.archive.getPockets():
+                if not self.isAllowed(distroseries, pocket):
+                    continue
                 if not force_domination:
                     if not self.isDirty(distroseries, pocket):
                         self.log.debug("Skipping domination for %s/%s" %
