@@ -1254,6 +1254,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 distroarchseries=debug.distroarchseries,
                 status=PackagePublishingStatus.PENDING,
                 datecreated=UTC_NOW,
+                pocket=debug.pocket,
                 component=new_component,
                 section=new_section,
                 priority=new_priority,
