@@ -3745,7 +3745,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                            pocket=None, archive=None,
                                            source_package_release=None,
                                            binpackageformat=None,
-                                           sourcepackagename=None):
+                                           sourcepackagename=None,
+                                           with_debug=False):
         """Make a `BinaryPackagePublishingHistory`."""
         if distroarchseries is None:
             if archive is None:
@@ -3799,6 +3800,20 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         naked_bpph.priority = priority
         if status == PackagePublishingStatus.PUBLISHED:
             naked_bpph.datepublished = UTC_NOW
+        if with_debug:
+            debug_bpph = self.makeBinaryPackagePublishingHistory(
+                distroarchseries=distroarchseries,
+                component=component, section_name=binarypackagerelease.section,
+                priority=priority, status=status,
+                scheduleddeletiondate=scheduleddeletiondate,
+                dateremoved=dateremoved, datecreated=datecreated,
+                pocket=pocket, archive=archive,
+                source_package_release=source_package_release,
+                binpackageformat=BinaryPackageFormat.DDEB,
+                sourcepackagename=sourcepackagename)
+            removeSecurityProxy(bpph.binarypackagerelease).debug_package = (
+                debug_bpph.binarypackagerelease)
+            return bpph, debug_bpph
         return bpph
 
     def makeSPPHForBPPH(self, bpph):
@@ -3870,6 +3885,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             binpackageformat = BinaryPackageFormat.DEB
         if component is None:
             component = build.source_package_release.component
+        if isinstance(section_name, basestring):
+            section_name = self.makeSection(section_name)
         section = section_name or build.source_package_release.section
         if priority is None:
             priority = PackagePublishingPriority.OPTIONAL
