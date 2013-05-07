@@ -1223,16 +1223,9 @@ class TestPublishingSetLite(TestCaseWithFactory):
                 DeletionError, message, pub.api_requestDeletion, self.person)
 
     def test_requestDeletion_marks_debug_as_deleted(self):
-        matching_bpph = self.factory.makeBinaryPackagePublishingHistory(
-            pocket=PackagePublishingPocket.RELEASE)
-        matching_bpr = removeSecurityProxy(matching_bpph.binarypackagerelease)
-        debug_matching_bpph = self.factory.makeBinaryPackagePublishingHistory(
-            pocket=PackagePublishingPocket.RELEASE,
-            binpackageformat=BinaryPackageFormat.DDEB,
-            archive=matching_bpph.archive,
-            section_name=matching_bpph.section,
-            distroarchseries=matching_bpph.distroarchseries)
-        debug_match_bpr = debug_matching_bpph.binarypackagerelease
+        matching_bpph, debug_matching_bpph = (
+            self.factory.makeBinaryPackagePublishingHistory(
+                pocket=PackagePublishingPocket.RELEASE, with_debug=True))
         non_match_bpph = self.factory.makeBinaryPackagePublishingHistory(
             pocket=PackagePublishingPocket.RELEASE)
         non_match_bpr = removeSecurityProxy(
@@ -1241,7 +1234,6 @@ class TestPublishingSetLite(TestCaseWithFactory):
             pocket=PackagePublishingPocket.RELEASE,
             binpackageformat=BinaryPackageFormat.DDEB)
         debug_non_match_bpr = debug_non_match_bpph.binarypackagerelease
-        matching_bpr.debug_package = debug_match_bpr
         non_match_bpr.debug_package = debug_non_match_bpr
         getUtility(IPublishingSet).requestDeletion(
             [matching_bpph, non_match_bpph], self.person)
@@ -1249,6 +1241,16 @@ class TestPublishingSetLite(TestCaseWithFactory):
             self.assertEqual(pub.status, PackagePublishingStatus.DELETED)
         self.assertEqual(
             debug_non_match_bpph.status, PackagePublishingStatus.PENDING)
+
+    def test_changeOverride_also_overrides_debug_package(self):
+        bpph, debug_bpph = self.factory.makeBinaryPackagePublishingHistory(
+            pocket=PackagePublishingPocket.RELEASE, with_debug=True)
+        new_section = self.factory.makeSection()
+        new_bpph = bpph.changeOverride(new_section=new_section)
+        publishing_set = getUtility(IPublishingSet)
+        [new_debug_bpph] = publishing_set.findCorrespondingDDEBPublications(
+            [new_bpph])
+        self.assertEqual(new_debug_bpph.section, new_section)
 
 
 class TestSourceDomination(TestNativePublishingBase):
