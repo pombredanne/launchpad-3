@@ -221,34 +221,6 @@ class IPublishingView(Interface):
             `IBinaryPackagePublishingHistory`.
         """
 
-    def getAncestry(archive=None, distroseries=None, pocket=None,
-                    status=None):
-        """Return the most recent publication of the same source or binary.
-
-        If a suitable ancestry could not be found, None is returned.
-
-        It optionally accepts parameters for adjusting the publishing
-        context, if not given they default to the current context.
-
-        :param archive: optional `IArchive`, defaults to the context archive.
-        :param distroseries: optional `IDistroSeries`, defaults to the
-            context distroseries.
-        :param pocket: optional `PackagePublishingPocket`, defaults to any
-            pocket.
-        :param status: optional `PackagePublishingStatus` or a collection of
-            them, defaults to `PackagePublishingStatus.PUBLISHED`
-        """
-
-    def overrideFromAncestry():
-        """Set the right published component from publishing ancestry.
-
-        Start with the publishing records and fall back to the original
-        uploaded package if necessary.
-
-        :raise: AssertionError if the context publishing record is not in
-            PENDING status.
-        """
-
 
 class IPublishingEdit(Interface):
     """Base interface for writeable Publishing classes."""
@@ -1341,34 +1313,6 @@ class IPublishingSet(Interface):
         for details. The call is just proxied here so that it can also be
         used with an ArchiveSourcePublication passed in as
         the source_package_pub, allowing the use of the cached results.
-        """
-
-    def getNearestAncestor(
-        package_name, archive, distroseries, pocket=None, status=None,
-        binary=False):
-        """Return the ancestor of the given parkage in a particular archive.
-
-        :param package_name: The package name for which we are checking for
-            an ancestor.
-        :type package_name: ``string``
-        :param archive: The archive in which we are looking for an ancestor.
-        :type archive: `IArchive`
-        :param distroseries: The particular series in which we are looking for
-            an ancestor.
-        :type distroseries: `IDistroSeries`
-        :param pocket: An optional pocket to restrict the search.
-        :type pocket: `PackagePublishingPocket`.
-        :param status: An optional status defaulting to PUBLISHED if not
-            provided.
-        :type status: `PackagePublishingStatus`
-        :param binary: An optional argument to look for a binary ancestor
-            instead of the default source.
-        :type binary: ``Boolean``
-
-        :return: The most recent publishing history for the given
-            arguments.
-        :rtype: `ISourcePackagePublishingHistory` or
-            `IBinaryPackagePublishingHistory` or None.
         """
 
 active_publishing_status = (
