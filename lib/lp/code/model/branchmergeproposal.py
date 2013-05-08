@@ -307,15 +307,19 @@ class BranchMergeProposal(SQLBase):
             raise WrongBranchMergeProposal
         return vote
 
-    @cachedproperty
-    def preview_diffs(self):
+    @property
+    def _preview_diffs(self):
         return Store.of(self).find(
             PreviewDiff, PreviewDiff.merge_proposal_id == self.id).order_by(
                 PreviewDiff.date_created)
 
-    @property
+    @cachedproperty
+    def preview_diffs(self):
+        return list(self._preview_diffs)
+
+    @cachedproperty
     def preview_diff(self):
-        diffs = list(self.preview_diffs)
+        diffs = self.preview_diffs
         if diffs:
             return diffs[-1]
         return None
@@ -976,7 +980,7 @@ class BranchMergeProposal(SQLBase):
             source_branch_ids.add(mp.source_branchID)
             person_ids.add(mp.registrantID)
             person_ids.add(mp.merge_reporterID)
-            get_property_cache(mp).preview_diffs = []
+            get_property_cache(mp)._preview_diffs = []
 
         branches = load_related(
             Branch, branch_merge_proposals, (
@@ -991,11 +995,11 @@ class BranchMergeProposal(SQLBase):
 
         # Pre-load PreviewDiffs and Diffs.
         preview_diffs = IStore(BranchMergeProposal).find(
-            PreviewDiff, PreviewDiff.merge_proposal_id.is_in(ids))
+            PreviewDiff, PreviewDiff.branch_merge_proposal_id.is_in(ids))
         load_related(Diff, preview_diffs, ['diff_id'])
         for previewdiff in preview_diffs:
             cache = get_property_cache(previewdiff.merge_proposal)
-            cache.preview_diffs.append(previewdiff)
+            cache._preview_diffs.append(previewdiff)
 
         # Add source branch owners' to the list of pre-loaded persons.
         person_ids.update(
