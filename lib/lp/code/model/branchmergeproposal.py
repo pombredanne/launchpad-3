@@ -310,7 +310,8 @@ class BranchMergeProposal(SQLBase):
     @property
     def _preview_diffs(self):
         return Store.of(self).find(
-            PreviewDiff, PreviewDiff.merge_proposal_id == self.id).order_by(
+            PreviewDiff,
+            PreviewDiff.branch_merge_proposal_id == self.id).order_by(
                 PreviewDiff.date_created)
 
     @cachedproperty
