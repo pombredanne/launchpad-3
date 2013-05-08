@@ -361,7 +361,7 @@ class PreviewDiff(Storm):
     prerequisite_revision_id = Unicode(name='dependent_revision_id')
 
     branch_merge_proposal_id = Int(name='branch_merge_proposal')
-    _new_branch_merge_proposal = Reference(
+    branch_merge_proposal = Reference(
         branch_merge_proposal_id, 'BranchMergeProposal.id')
 
     date_created = UtcDateTimeCol(dbName='date_created', default=UTC_NOW)
@@ -371,10 +371,6 @@ class PreviewDiff(Storm):
     @property
     def has_conflicts(self):
         return self.conflicts is not None and self.conflicts != ''
-
-    @property
-    def branch_merge_proposal(self):
-        return self._new_branch_merge_proposal
 
     @classmethod
     def fromBranchMergeProposal(cls, bmp):
