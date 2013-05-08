@@ -239,16 +239,6 @@ class IPublishingView(Interface):
             them, defaults to `PackagePublishingStatus.PUBLISHED`
         """
 
-    def overrideFromAncestry():
-        """Set the right published component from publishing ancestry.
-
-        Start with the publishing records and fall back to the original
-        uploaded package if necessary.
-
-        :raise: AssertionError if the context publishing record is not in
-            PENDING status.
-        """
-
 
 class IPublishingEdit(Interface):
     """Base interface for writeable Publishing classes."""

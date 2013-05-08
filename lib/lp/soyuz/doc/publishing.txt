@@ -1765,11 +1765,8 @@ IPublishing ancestry lookup and override
 have `SourcePackagePublishingHistory` and
 `BinaryPackagePublishingHistory`.
 
-This interface allows, among other features, easy ancestry lookup and
-pre-publication overrides via:
-
- * getAncestry
- * overrideFromAncestry
+This interface allows, among other features, easy ancestry lookup via
+getAncestry.
 
     # Setup a publishing scenario for illustrating ancestry lookup.
     >>> ubuntu_source_ancestry = test_publisher.getPubSource(
@@ -1841,32 +1838,3 @@ On the lack of ancestry, None is returned.
     >>> print_ancestries(status=inactive_publishing_status)
     None
     None
-
-`overrideFromAncestry` operates directly on top of the default
-behavior of `getAncestry`. It looks up the most recent ancestry for a
-publication and override it in place.  If there is no previous publication
-then the package's component is used.
-
-    >>> print test_source.component.name
-    universe
-
-    >>> test_source.overrideFromAncestry()
-    >>> print test_source.component.name
-    multiverse
-
-It works in the same way for binaries.
-
-    >>> multiverse = getUtility(IComponentSet)['multiverse']
-    >>> test_binary.binarypackagerelease.component = multiverse
-
-    >>> print test_binary.component.name
-    universe
-
-    >>> copied_binary = test_binary.copyTo(
-    ...     hoary_test, test_source.pocket, archive=test_binary.archive)[0]
-    >>> print copied_binary.component.name
-    universe
-
-    >>> copied_binary.overrideFromAncestry()
-    >>> print copied_binary.component.name
-    multiverse

@@ -859,29 +859,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             self.source_package_name, archive, distroseries, pocket,
             status)
 
-    def overrideFromAncestry(self):
-        """See `ISourcePackagePublishingHistory`."""
-        # We don't want to use changeOverride here because it creates a
-        # new publishing record. This code can be only executed for pending
-        # publishing records.
-        assert self.status == PackagePublishingStatus.PENDING, (
-            "Cannot override published records.")
-
-        # If there is published ancestry, use its component, otherwise
-        # use the original upload component. Since PPAs only use main,
-        # we don't need to check the ancestry.
-        if not self.archive.is_ppa:
-            ancestry = self.getAncestry()
-            if ancestry is not None:
-                component = ancestry.component
-            else:
-                component = self.sourcepackagerelease.component
-
-            self.component = component
-
-        assert self.component in (
-            self.archive.getComponentsForSeries(self.distroseries))
-
     def sourceFileUrls(self):
         """See `ISourcePackagePublishingHistory`."""
         source_urls = proxied_urls(
@@ -1291,24 +1268,6 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return getUtility(IPublishingSet).getNearestAncestor(
             self.binary_package_name, archive, distroseries, pocket,
             status, binary=True)
-
-    def overrideFromAncestry(self):
-        """See `IBinaryPackagePublishingHistory`."""
-        # We don't want to use changeOverride here because it creates a
-        # new publishing record. This code can be only executed for pending
-        # publishing records.
-        assert self.status == PackagePublishingStatus.PENDING, (
-            "Cannot override published records.")
-
-        # If there is an ancestry, use its component, otherwise use the
-        # original upload component.
-        ancestry = self.getAncestry()
-        if ancestry is not None:
-            component = ancestry.component
-        else:
-            component = self.binarypackagerelease.component
-
-        self.component = component
 
     def _getDownloadCountClauses(self, start_date=None, end_date=None):
         clauses = [
