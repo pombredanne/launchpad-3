@@ -3,8 +3,8 @@
 
 SET client_min_messages=ERROR;
 
-CREATE INDEX previewdiff__merge_proposal__idx
-    ON previewdiff (merge_proposal);
+CREATE INDEX previewdiff__branch_merge_proposal__date_created__idx
+    ON previewdiff (branch_merge_proposal, date_created);
 ALTER TABLE previewdiff ALTER COLUMN merge_proposal SET NOT NULL;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 44, 1);
