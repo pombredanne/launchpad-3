@@ -2055,8 +2055,9 @@ class TestWebservice(WebServiceTestCase):
             transaction.commit()
             target = ws_object(launchpad, mp.target_branch)
             mp = ws_object(launchpad, mp)
-        self.assertEqual([mp], list(target.getMergeProposals(
-            status=['Merged'], merged_revnos=[123])))
+        self.assertEqual(
+            [mp], list(target.getMergeProposals(
+                status=['Merged'], merged_revnos=[123])))
 
     def test_getRelatedBugTasks(self):
         """Test the getRelatedBugTasks API."""
@@ -2066,8 +2067,7 @@ class TestWebservice(WebServiceTestCase):
         transaction.commit()
         bmp = self.wsObject(db_bmp)
         bugtask = self.wsObject(db_bug.default_bugtask)
-        self.assertEqual(
-            [bugtask], list(bmp.getRelatedBugTasks()))
+        self.assertEqual([bugtask], list(bmp.getRelatedBugTasks()))
 
     def test_setStatus_invalid_transition(self):
         """Emit BadRequest when an invalid transition is requested."""
@@ -2085,6 +2085,6 @@ class TestWebservice(WebServiceTestCase):
         # A previewdiff with an empty diffstat doesn't crash when fetched.
         previewdiff = self.factory.makePreviewDiff()
         previewdiff.diff.diffstat = None
-        user = previewdiff.branch_merge_proposal.target_branch.owner
+        user = previewdiff.merge_proposal.target_branch.owner
         ws_previewdiff = self.wsObject(previewdiff, user=user)
         self.assertIsNone(ws_previewdiff.diffstat)
