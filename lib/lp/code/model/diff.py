@@ -409,17 +409,19 @@ class PreviewDiff(Storm):
         source_revision = source_branch.last_revision()
         target_branch = bmp.target_branch.getBzrBranch()
         target_revision = target_branch.last_revision()
-        preview = cls()
-        preview.source_revision_id = source_revision.decode('utf-8')
-        preview.target_revision_id = target_revision.decode('utf-8')
-        preview.merge_proposal = bmp
         if bmp.prerequisite_branch is not None:
             prerequisite_branch = bmp.prerequisite_branch.getBzrBranch()
         else:
             prerequisite_branch = None
-        preview.diff, conflicts = Diff.mergePreviewFromBranches(
+        diff, conflicts = Diff.mergePreviewFromBranches(
             source_branch, source_revision, target_branch,
             prerequisite_branch)
+
+        preview = cls()
+        preview.source_revision_id = source_revision.decode('utf-8')
+        preview.target_revision_id = target_revision.decode('utf-8')
+        preview.merge_proposal = bmp
+        preview.diff = diff
         preview.conflicts = u''.join(
             unicode(conflict) + '\n' for conflict in conflicts)
         return preview
@@ -438,16 +440,18 @@ class PreviewDiff(Storm):
         :param conflicts: The conflicts, as text.
         :return: A `PreviewDiff` with specified values.
         """
+        filename = str(uuid1()) + '.txt'
+        size = len(diff_content)
+        diff = Diff.fromFile(StringIO(diff_content), size, filename)
+
         preview = cls()
         preview.merge_proposal = bmp
         preview.source_revision_id = source_revision_id
         preview.target_revision_id = target_revision_id
         preview.prerequisite_revision_id = prerequisite_revision_id
         preview.conflicts = conflicts
+        preview.diff = diff
 
-        filename = str(uuid1()) + '.txt'
-        size = len(diff_content)
-        preview.diff = Diff.fromFile(StringIO(diff_content), size, filename)
         return preview
 
     @property

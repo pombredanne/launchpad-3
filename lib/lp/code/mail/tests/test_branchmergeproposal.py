@@ -52,20 +52,9 @@ class TestMergeProposalMailing(TestCaseWithFactory):
     def setUp(self):
         super(TestMergeProposalMailing, self).setUp('admin@canonical.com')
 
-    def makeProposalWithSubscriber(self, diff_text=None,
-                                   initial_comment=None,
-                                   prerequisite=False,
-                                   needs_review=True,
+    def makeProposalWithSubscriber(self, diff_text=None, initial_comment=None,
+                                   prerequisite=False, needs_review=True,
                                    reviewer=None):
-        if diff_text is not None:
-            preview_diff = PreviewDiff.create(
-                diff_text,
-                unicode(self.factory.getUniqueString('revid')),
-                unicode(self.factory.getUniqueString('revid')),
-                None, None)
-            transaction.commit()
-        else:
-            preview_diff = None
         registrant = self.factory.makePerson(
             name='bazqux', displayname='Baz Qux', email='baz.qux@example.com')
         product = self.factory.makeProduct(name='super-product')
@@ -81,8 +70,14 @@ class TestMergeProposalMailing(TestCaseWithFactory):
             registrant=registrant, product=product,
             set_state=initial_status,
             prerequisite_branch=prerequisite_branch,
-            preview_diff=preview_diff, initial_comment=initial_comment,
+            initial_comment=initial_comment,
             reviewer=reviewer)
+        if diff_text is not None:
+            removeSecurityProxy(bmp).preview_diff = PreviewDiff.create(
+                bmp, diff_text,
+                unicode(self.factory.getUniqueString('revid')),
+                unicode(self.factory.getUniqueString('revid')), None, None)
+            transaction.commit()
         subscriber = self.factory.makePerson(displayname='Baz Quxx',
             email='baz.quxx@example.com')
         bmp.source_branch.subscribe(subscriber,
