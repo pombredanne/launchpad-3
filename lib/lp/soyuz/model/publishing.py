@@ -847,18 +847,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return getUtility(
             IPublishingSet).getBuildStatusSummaryForSourcePublication(self)
 
-    def getAncestry(self, archive=None, distroseries=None, pocket=None,
-                    status=None):
-        """See `ISourcePackagePublishingHistory`."""
-        if archive is None:
-            archive = self.archive
-        if distroseries is None:
-            distroseries = self.distroseries
-
-        return getUtility(IPublishingSet).getNearestAncestor(
-            self.source_package_name, archive, distroseries, pocket,
-            status)
-
     def sourceFileUrls(self):
         """See `ISourcePackagePublishingHistory`."""
         source_urls = proxied_urls(
@@ -1256,18 +1244,6 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See `BinaryPackagePublishingHistory`."""
         return getUtility(IPublishingSet).copyBinariesTo(
             [self], distroseries, pocket, archive)
-
-    def getAncestry(self, archive=None, distroseries=None, pocket=None,
-                    status=None):
-        """See `IBinaryPackagePublishingHistory`."""
-        if archive is None:
-            archive = self.archive
-        if distroseries is None:
-            distroseries = self.distroarchseries.distroseries
-
-        return getUtility(IPublishingSet).getNearestAncestor(
-            self.binary_package_name, archive, distroseries, pocket,
-            status, binary=True)
 
     def _getDownloadCountClauses(self, start_date=None, end_date=None):
         clauses = [
