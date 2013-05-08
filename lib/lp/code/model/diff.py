@@ -360,8 +360,9 @@ class PreviewDiff(Storm):
 
     prerequisite_revision_id = Unicode(name='dependent_revision_id')
 
-    merge_proposal_id = Int(name='merge_proposal')
-    merge_proposal = Reference(merge_proposal_id, 'BranchMergeProposal.id')
+    branch_merge_proposal_id = Int(name='branch_merge_proposal')
+    _new_branch_merge_proposal = Reference(
+        branch_merge_proposal_id, 'BranchMergeProposal.id')
 
     date_created = UtcDateTimeCol(dbName='date_created', default=UTC_NOW)
 
@@ -373,7 +374,7 @@ class PreviewDiff(Storm):
 
     @property
     def branch_merge_proposal(self):
-        return self.merge_proposal
+        return self._new_branch_merge_proposal
 
     @classmethod
     def fromBranchMergeProposal(cls, bmp):
@@ -396,7 +397,7 @@ class PreviewDiff(Storm):
         preview = cls()
         preview.source_revision_id = source_revision.decode('utf-8')
         preview.target_revision_id = target_revision.decode('utf-8')
-        preview.merge_proposal = bmp
+        preview._new_branch_merge_proposal = bmp
         preview.diff = diff
         preview.conflicts = u''.join(
             unicode(conflict) + '\n' for conflict in conflicts)
@@ -422,7 +423,7 @@ class PreviewDiff(Storm):
         diff = Diff.fromFile(StringIO(diff_content), size, filename)
 
         preview = cls()
-        preview.merge_proposal = bmp
+        preview._new_branch_merge_proposal = bmp
         preview.source_revision_id = source_revision_id
         preview.target_revision_id = target_revision_id
         preview.prerequisite_revision_id = prerequisite_revision_id
