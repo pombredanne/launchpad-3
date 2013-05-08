@@ -1364,9 +1364,9 @@ class PopulatePreviewDiffMergeProposal(TunableLoop):
 
     def __call__(self, chunk_size):
         bmp_ids = list(self.findBranchMergeProposalIDs()[:chunk_size])
-        columns = dict(
-            [(PreviewDiff.merge_proposal_id, BranchMergeProposal.id),
-             (PreviewDiff.date_created, LibraryFileAlias.date_created)])
+        columns = {
+            PreviewDiff.merge_proposal_id: BranchMergeProposal.id,
+            PreviewDiff.date_created: LibraryFileAlias.date_created}
         self.store.execute(
             BulkUpdate(
                 columns, table=PreviewDiff,
