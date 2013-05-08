@@ -633,13 +633,12 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                 announce_from_person=announce_from_person,
                 previous_version=old_version)
         if not archive.private and has_restricted_files(source):
-            # Fix copies by overriding them according to the current
-            # ancestry and unrestrict files with privacy mismatch.  We must
-            # do this *after* calling notify (which only actually sends mail
-            # on commit), because otherwise the new changelog LFA won't be
-            # visible without a commit, which may not be safe here.
+            # Fix copies by unrestricting files with privacy mismatch.
+            # We must do this *after* calling notify (which only
+            # actually sends mail on commit), because otherwise the new
+            # changelog LFA won't be visible without a commit, which may
+            # not be safe here.
             for pub_record in sub_copies:
-                pub_record.overrideFromAncestry()
                 for changed_file in update_files_privacy(pub_record):
                     if logger is not None:
                         logger.info("Made %s public" % changed_file.filename)
