@@ -4,7 +4,7 @@
 SET client_min_messages=ERROR;
 
 ALTER TABLE previewdiff
-    ADD COLUMN merge_proposal integer REFERENCES branchmergeproposal,
+    ADD COLUMN branch_merge_proposal integer REFERENCES branchmergeproposal,
     ADD COLUMN date_created timestamp without time zone;
 ALTER TABLE previewdiff
     ALTER COLUMN date_created
