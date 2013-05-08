@@ -1354,7 +1354,7 @@ class PopulatePreviewDiffMergeProposal(TunableLoop):
 
     def findBranchMergeProposalIDs(self):
         return self.store.find(
-            (BranchMergeProposal.id),
+            BranchMergeProposal.id,
             BranchMergeProposal.preview_diff_id != None,
             BranchMergeProposal.id >= self.start_at).order_by(
                 BranchMergeProposal.id)
