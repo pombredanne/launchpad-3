@@ -38,6 +38,7 @@ from lp.soyuz.interfaces.publishing import (
 from lp.soyuz.interfaces.queue import IPackageUploadCustom
 from lp.soyuz.scripts.custom_uploads_copier import CustomUploadsCopier
 
+
 # XXX cprov 2009-06-12: this function should be incorporated in
 # IPublishing.
 def update_files_privacy(pub_record):
@@ -181,7 +182,7 @@ def check_copy_permissions(person, archive, series, pocket, sources):
         # implementations of ancestry lookup:
         # NascentUpload.getSourceAncestry,
         # PackageUploadSource.getSourceAncestryForDiffs, and
-        # PublishingSet.getNearestAncestor, none of which is obviously
+        # Archive.getPublishedSources, none of which is obviously
         # correct here.  Instead of adding a fourth, we should consolidate
         # these.
         ancestries = archive.getPublishedSources(
@@ -476,9 +477,10 @@ class CopyChecker:
         # published in the destination archive.
         self._checkArchiveConflicts(source, series)
 
-        ancestry = getUtility(IPublishingSet).getNearestAncestor(
-            source.source_package_name, self.archive, series, pocket,
-            active_publishing_status)
+        ancestry = self.archive.getPublishedSources(
+            name=source.source_package_name, exact_match=True,
+            distroseries=series, pocket=pocket,
+            status=active_publishing_status).first()
         if ancestry is not None:
             ancestry_version = ancestry.sourcepackagerelease.version
             copy_version = source.sourcepackagerelease.version

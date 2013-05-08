@@ -2044,27 +2044,6 @@ class PublishingSet:
                 BinaryPackagePublishingHistory, bpph_ids, removed_by,
                 removal_comment=removal_comment)
 
-    def getNearestAncestor(
-        self, package_name, archive, distroseries, pocket=None,
-        status=None, binary=False):
-        """See `IPublishingSet`."""
-        if status is None:
-            status = PackagePublishingStatus.PUBLISHED
-
-        if binary:
-            ancestries = archive.getAllPublishedBinaries(
-                name=package_name, exact_match=True, pocket=pocket,
-                status=status, distroarchseries=distroseries.architectures)
-        else:
-            ancestries = archive.getPublishedSources(
-                name=package_name, exact_match=True, pocket=pocket,
-                status=status, distroseries=distroseries)
-
-        try:
-            return ancestries[0]
-        except IndexError:
-            return None
-
 
 def get_current_source_releases(context_sourcepackagenames, archive_ids_func,
                                 package_clause_func, extra_clauses, key_col):
