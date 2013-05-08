@@ -176,7 +176,8 @@ After a preview diff is added, it has a line count.
     >>> from lp.code.model.diff import PreviewDiff
     >>> login('foo.bar@canonical.com')
     >>> removeSecurityProxy(proposal).preview_diff = PreviewDiff.create(
-    ...   'a\n\b\n', u'source-id', u'target-id', u'prereq-id', u'conflicts')
+    ...    proposal, 'a\n\b\n', u'source-id', u'target-id', u'prereq-id',
+    ...    u'conflicts')
     >>> logout()
     >>> browser.open(url)
     >>> print_tag_with_id(browser.contents, 'proposals')
