@@ -476,8 +476,9 @@ class CopyChecker:
         # published in the destination archive.
         self._checkArchiveConflicts(source, series)
 
-        ancestry = source.getAncestry(
-            self.archive, series, pocket, status=active_publishing_status)
+        ancestry = getUtility(IPublishingSet).getNearestAncestor(
+            source.source_package_name, self.archive, series, pocket,
+            active_publishing_status)
         if ancestry is not None:
             ancestry_version = ancestry.sourcepackagerelease.version
             copy_version = source.sourcepackagerelease.version
