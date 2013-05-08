@@ -847,41 +847,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return getUtility(
             IPublishingSet).getBuildStatusSummaryForSourcePublication(self)
 
-    def getAncestry(self, archive=None, distroseries=None, pocket=None,
-                    status=None):
-        """See `ISourcePackagePublishingHistory`."""
-        if archive is None:
-            archive = self.archive
-        if distroseries is None:
-            distroseries = self.distroseries
-
-        return getUtility(IPublishingSet).getNearestAncestor(
-            self.source_package_name, archive, distroseries, pocket,
-            status)
-
-    def overrideFromAncestry(self):
-        """See `ISourcePackagePublishingHistory`."""
-        # We don't want to use changeOverride here because it creates a
-        # new publishing record. This code can be only executed for pending
-        # publishing records.
-        assert self.status == PackagePublishingStatus.PENDING, (
-            "Cannot override published records.")
-
-        # If there is published ancestry, use its component, otherwise
-        # use the original upload component. Since PPAs only use main,
-        # we don't need to check the ancestry.
-        if not self.archive.is_ppa:
-            ancestry = self.getAncestry()
-            if ancestry is not None:
-                component = ancestry.component
-            else:
-                component = self.sourcepackagerelease.component
-
-            self.component = component
-
-        assert self.component in (
-            self.archive.getComponentsForSeries(self.distroseries))
-
     def sourceFileUrls(self):
         """See `ISourcePackagePublishingHistory`."""
         source_urls = proxied_urls(
@@ -1279,36 +1244,6 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See `BinaryPackagePublishingHistory`."""
         return getUtility(IPublishingSet).copyBinariesTo(
             [self], distroseries, pocket, archive)
-
-    def getAncestry(self, archive=None, distroseries=None, pocket=None,
-                    status=None):
-        """See `IBinaryPackagePublishingHistory`."""
-        if archive is None:
-            archive = self.archive
-        if distroseries is None:
-            distroseries = self.distroarchseries.distroseries
-
-        return getUtility(IPublishingSet).getNearestAncestor(
-            self.binary_package_name, archive, distroseries, pocket,
-            status, binary=True)
-
-    def overrideFromAncestry(self):
-        """See `IBinaryPackagePublishingHistory`."""
-        # We don't want to use changeOverride here because it creates a
-        # new publishing record. This code can be only executed for pending
-        # publishing records.
-        assert self.status == PackagePublishingStatus.PENDING, (
-            "Cannot override published records.")
-
-        # If there is an ancestry, use its component, otherwise use the
-        # original upload component.
-        ancestry = self.getAncestry()
-        if ancestry is not None:
-            component = ancestry.component
-        else:
-            component = self.binarypackagerelease.component
-
-        self.component = component
 
     def _getDownloadCountClauses(self, start_date=None, end_date=None):
         clauses = [
@@ -2108,27 +2043,6 @@ class PublishingSet:
             self.setMultipleDeleted(
                 BinaryPackagePublishingHistory, bpph_ids, removed_by,
                 removal_comment=removal_comment)
-
-    def getNearestAncestor(
-        self, package_name, archive, distroseries, pocket=None,
-        status=None, binary=False):
-        """See `IPublishingSet`."""
-        if status is None:
-            status = PackagePublishingStatus.PUBLISHED
-
-        if binary:
-            ancestries = archive.getAllPublishedBinaries(
-                name=package_name, exact_match=True, pocket=pocket,
-                status=status, distroarchseries=distroseries.architectures)
-        else:
-            ancestries = archive.getPublishedSources(
-                name=package_name, exact_match=True, pocket=pocket,
-                status=status, distroseries=distroseries)
-
-        try:
-            return ancestries[0]
-        except IndexError:
-            return None
 
 
 def get_current_source_releases(context_sourcepackagenames, archive_ids_func,
