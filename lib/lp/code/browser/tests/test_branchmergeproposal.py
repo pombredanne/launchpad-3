@@ -887,7 +887,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
 
     def setPreviewDiff(self, preview_diff_bytes):
         preview_diff = PreviewDiff.create(
-            preview_diff_bytes, u'a', u'b', None, u'')
+            self.bmp, preview_diff_bytes, u'a', u'b', None, u'')
         removeSecurityProxy(self.bmp).preview_diff = preview_diff
         return preview_diff
 
