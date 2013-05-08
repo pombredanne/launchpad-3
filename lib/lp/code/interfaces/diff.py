@@ -115,7 +115,7 @@ class IPreviewDiff(IDiff):
         title=_('Has conflicts'), readonly=True,
         description=_('The previewed merge produces conflicts.'))
 
-    merge_proposal_id = Int(
+    branch_merge_proposal_id = Int(
         title=_('The branch merge proposal for this diff.'), readonly=True)
 
     # The schema for the Reference gets patched in _schema_circular_imports.
