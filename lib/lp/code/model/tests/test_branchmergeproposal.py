@@ -2085,6 +2085,6 @@ class TestWebservice(WebServiceTestCase):
         # A previewdiff with an empty diffstat doesn't crash when fetched.
         previewdiff = self.factory.makePreviewDiff()
         previewdiff.diff.diffstat = None
-        user = previewdiff.merge_proposal.target_branch.owner
+        user = previewdiff._new_branch_merge_proposal.target_branch.owner
         ws_previewdiff = self.wsObject(previewdiff, user=user)
         self.assertIsNone(ws_previewdiff.diffstat)
