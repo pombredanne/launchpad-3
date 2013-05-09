@@ -1757,6 +1757,15 @@ Re-enable Celso's PPA.
     >>> login('foo.bar@canonical.com')
     >>> cprov_archive.enable()
 
+Commercial admins can manage the privacy and build settings of any PPA.
+
+    >>> login('celso.providelo@canonical.com')
+    >>> check_permission('launchpad.Admin', cprov_archive)
+    False
+    >>> login('commercial-member@canonical.com')
+    >>> check_permission('launchpad.Admin', cprov_archive)
+    True
+
 
 Rebuild archives
 ----------------
