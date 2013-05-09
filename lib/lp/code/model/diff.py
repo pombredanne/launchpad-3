@@ -360,11 +360,13 @@ class PreviewDiff(Storm):
 
     prerequisite_revision_id = Unicode(name='dependent_revision_id')
 
-    branch_merge_proposal_id = Int(name='branch_merge_proposal')
+    branch_merge_proposal_id = Int(
+        name='branch_merge_proposal', allow_none=False)
     branch_merge_proposal = Reference(
         branch_merge_proposal_id, 'BranchMergeProposal.id')
 
-    date_created = UtcDateTimeCol(dbName='date_created', default=UTC_NOW)
+    date_created = UtcDateTimeCol(
+        dbName='date_created', default=UTC_NOW, notNull=True)
 
     conflicts = Unicode()
 

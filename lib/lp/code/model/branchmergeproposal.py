@@ -20,6 +20,7 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
+    Asc,
     Desc,
     Join,
     LeftJoin,
@@ -320,10 +321,7 @@ class BranchMergeProposal(SQLBase):
 
     @cachedproperty
     def preview_diff(self):
-        diffs = self.preview_diffs
-        if diffs:
-            return diffs[-1]
-        return None
+        return self._preview_diffs.last()
 
     date_queued = UtcDateTimeCol(notNull=False, default=None)
 
@@ -981,7 +979,6 @@ class BranchMergeProposal(SQLBase):
             source_branch_ids.add(mp.source_branchID)
             person_ids.add(mp.registrantID)
             person_ids.add(mp.merge_reporterID)
-            get_property_cache(mp)._preview_diffs = []
 
         branches = load_related(
             Branch, branch_merge_proposals, (
@@ -996,11 +993,14 @@ class BranchMergeProposal(SQLBase):
 
         # Pre-load PreviewDiffs and Diffs.
         preview_diffs = IStore(BranchMergeProposal).find(
-            PreviewDiff, PreviewDiff.branch_merge_proposal_id.is_in(ids))
+            PreviewDiff,
+            PreviewDiff.branch_merge_proposal_id.is_in(ids)).order_by(
+                Asc(PreviewDiff.date_created)).config(
+                    distinct=PreviewDiff.branch_merge_proposal)
         load_related(Diff, preview_diffs, ['diff_id'])
         for previewdiff in preview_diffs:
-            cache = get_property_cache(previewdiff.merge_proposal)
-            cache._preview_diffs.append(previewdiff)
+            cache = get_property_cache(previewdiff.branch_merge_proposal)
+            cache.preview_diff = previewdiff
 
         # Add source branch owners' to the list of pre-loaded persons.
         person_ids.update(
