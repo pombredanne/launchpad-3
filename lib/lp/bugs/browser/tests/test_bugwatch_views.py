@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
@@ -68,7 +69,7 @@ class TestBugWatchEditView(TestCaseWithFactory):
         # We need to log in as an admin here as only admins can link a
         # watch to a comment.
         login(ADMIN_EMAIL)
-        self.bug_watch.addComment('comment-id', message)
+        removeSecurityProxy(self.bug_watch).addComment('comment-id', message)
         login_person(self.person)
         view = create_initialized_view(self.bug_watch, '+edit')
         self.assertFalse(view.bugWatchIsUnlinked(None))

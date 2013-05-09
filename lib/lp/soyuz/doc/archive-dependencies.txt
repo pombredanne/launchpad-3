@@ -95,6 +95,7 @@ A proper name for this "model" would be 'cross-component-dependency'.
     >>> ubuntu_components = [
     ...     'main', 'restricted', 'universe', 'multiverse', 'partner']
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.registry.interfaces.pocket import (
     ...      PackagePublishingPocket)
     >>> from lp.soyuz.adapters.archivedependencies import (
@@ -110,7 +111,8 @@ A proper name for this "model" would be 'cross-component-dependency'.
     ...     print "-----------+---------------"
     ...     for component in ubuntu_components:
     ...         component = getUtility(IComponentSet)[component]
-    ...         build.current_source_publication.component = component
+    ...         npub = removeSecurityProxy(build.current_source_publication)
+    ...         npub.component = component
     ...         flush_database_caches()
     ...         components_term = " ".join(
     ...             get_components_for_context(

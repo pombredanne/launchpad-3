@@ -220,7 +220,7 @@ source to another location within the PPA.
 Publishing the record will exclude Celso's PPA from pending-publication
 state:
 
-    >>> src_pub.status = PackagePublishingStatus.PUBLISHED
+    >>> src_pub.setPublished()
 
     >>> ubuntu.getPendingPublicationPPAs().count()
     0
@@ -239,15 +239,16 @@ source.
 If scheduleddeletiondate or dateremoved are set then the PPA is no
 longer pending. process-death-row will do the rest.
 
-    >>> login('mark@example.com')
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.services.database.constants import UTC_NOW
-    >>> src_pub.scheduleddeletiondate = UTC_NOW
+    >>> login('mark@example.com')
+    >>> removeSecurityProxy(src_pub).scheduleddeletiondate = UTC_NOW
     >>> ubuntu.getPendingPublicationPPAs().count()
     0
-    >>> src_pub.scheduleddeletiondate = None
+    >>> removeSecurityProxy(src_pub).scheduleddeletiondate = None
     >>> ubuntu.getPendingPublicationPPAs().count()
     1
-    >>> src_pub.dateremoved = UTC_NOW
+    >>> removeSecurityProxy(src_pub).dateremoved = UTC_NOW
     >>> ubuntu.getPendingPublicationPPAs().count()
     0
 
@@ -275,7 +276,7 @@ Publishing the binaries will exclude Celso's PPA from pending-
 publication results:
 
     >>> for pub in pending_binaries:
-    ...     pub.status = PackagePublishingStatus.PUBLISHED
+    ...     pub.setPublished()
 
     >>> ubuntu.getPendingPublicationPPAs().count()
     0
@@ -291,13 +292,13 @@ A binary deletion will also make Celso's PPA pending publication.
     True
 
     >>> login('mark@example.com')
-    >>> bin_pub.scheduleddeletiondate = UTC_NOW
+    >>> removeSecurityProxy(bin_pub).scheduleddeletiondate = UTC_NOW
     >>> ubuntu.getPendingPublicationPPAs().count()
     0
-    >>> bin_pub.scheduleddeletiondate = None
+    >>> removeSecurityProxy(bin_pub).scheduleddeletiondate = None
     >>> ubuntu.getPendingPublicationPPAs().count()
     1
-    >>> bin_pub.dateremoved = UTC_NOW
+    >>> removeSecurityProxy(bin_pub).dateremoved = UTC_NOW
     >>> ubuntu.getPendingPublicationPPAs().count()
     0
 

@@ -339,13 +339,11 @@ to reload the view.
 
     >>> login('celso.providelo@canonical.com')
     >>> view = create_initialized_view(cprov.archive, name="+index")
-    >>> from lp.services.database.constants import UTC_NOW
-    >>> login('foo.bar@canonical.com')
-    >>> view.filtered_sources[1].datepublished = UTC_NOW
+    >>> view.filtered_sources[1].setPublished()
     >>> login(ANONYMOUS)
     >>> print_latest_updates(view.latest_updates)
-    iceweasel - Successfully built
     cdrkit - Failed to build: i386
+    iceweasel - Successfully built
     pmount - Successfully built
 
 The ArchiveView also includes a helper method to return the number of
@@ -360,11 +358,13 @@ others will not.
 
     >>> from datetime import datetime, timedelta
     >>> import pytz
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.services.database.constants import UTC_NOW
     >>> thirtyone_days_ago = datetime.now(tz=pytz.UTC) - timedelta(31)
     >>> login('foo.bar@canonical.com')
-    >>> view.filtered_sources[0].datecreated = UTC_NOW
-    >>> view.filtered_sources[1].datecreated = UTC_NOW
-    >>> view.filtered_sources[2].datecreated = thirtyone_days_ago
+    >>> removeSecurityProxy(view.filtered_sources[0]).datecreated = UTC_NOW
+    >>> removeSecurityProxy(view.filtered_sources[1]).datecreated = UTC_NOW
+    >>> removeSecurityProxy(view.filtered_sources[2]).datecreated = thirtyone_days_ago
     >>> login(ANONYMOUS)
 
     >>> view.num_updates_over_last_days()

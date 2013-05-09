@@ -170,11 +170,12 @@ displaying their subscription.
 This page will include information about the signing key, if the archive
 has a signing key:
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.registry.interfaces.gpg import IGPGKeySet
     >>> login('foo.bar@canonical.com')
     >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> a_key = getUtility(IGPGKeySet).get(1)
-    >>> mark_private_ppa.signing_key = a_key
+    >>> removeSecurityProxy(mark_private_ppa).signing_key = a_key
     >>> logout()
 
     >>> joe_browser.reload()
