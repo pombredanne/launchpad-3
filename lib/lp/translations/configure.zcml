@@ -383,7 +383,7 @@
         class="lp.translations.model.translationtemplateitem.TranslationTemplateItem">
         <allow
             interface="lp.translations.interfaces.translationtemplateitem.ITranslationTemplateItem"/>
-        <require permission="launchpad.Admin" set_attributes="potmsgset"/>
+        <require permission="launchpad.InternalScriptsOnly" set_attributes="potmsgset"/>
     </class>
 
     <!-- ProductSeriesLanguage -->
@@ -512,7 +512,7 @@
              IPOTMsgSets outside of its usual security proxy environment. -->
 
         <require
-            permission="launchpad.Admin"
+            permission="launchpad.InternalScriptsOnly"
             set_attributes="commenttext sourcecomment filereferences flagscomment"/>
     </class>
 
