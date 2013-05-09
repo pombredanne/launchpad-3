@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 import pytz
 from storm.store import (
@@ -951,9 +954,12 @@ class TestBranchMergeProposals(TestCaseWithFactory):
             target_branch=target, source_branch=branch1)
         bmp2 = self.factory.makeBranchMergeProposal(
             target_branch=target, source_branch=branch2)
-        self.factory.makePreviewDiff(merge_proposal=bmp1)
+        old_date = datetime.now(pytz.UTC) - timedelta(hours=1)
+        self.factory.makePreviewDiff(
+            merge_proposal=bmp1, date_created=old_date)
         previewdiff1 = self.factory.makePreviewDiff(merge_proposal=bmp1)
-        self.factory.makePreviewDiff(merge_proposal=bmp2)
+        self.factory.makePreviewDiff(
+            merge_proposal=bmp2, date_created=old_date)
         previewdiff2 = self.factory.makePreviewDiff(merge_proposal=bmp2)
         Store.of(bmp1).flush()
         Store.of(bmp1).invalidate()

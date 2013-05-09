@@ -1566,7 +1566,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return ProxyFactory(
             Diff.fromFile(StringIO(diff_text), len(diff_text)))
 
-    def makePreviewDiff(self, conflicts=u'', merge_proposal=None):
+    def makePreviewDiff(self, conflicts=u'', merge_proposal=None,
+                        date_created=None):
         diff = self.makeDiff()
         if merge_proposal is None:
             merge_proposal = self.makeBranchMergeProposal()
@@ -1576,6 +1577,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         preview_diff.diff = diff
         preview_diff.source_revision_id = self.getUniqueUnicode()
         preview_diff.target_revision_id = self.getUniqueUnicode()
+        if date_created:
+            preview_diff.date_created = date_created
         return preview_diff
 
     def makeIncrementalDiff(self, merge_proposal=None, old_revision=None,

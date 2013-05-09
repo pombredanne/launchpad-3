@@ -996,7 +996,7 @@ class BranchMergeProposal(SQLBase):
             PreviewDiff.branch_merge_proposal_id.is_in(ids)).order_by(
                 PreviewDiff.branch_merge_proposal_id,
                 Desc(PreviewDiff.date_created)).config(
-                    distinct=PreviewDiff.branch_merge_proposal)
+                    distinct=[PreviewDiff.branch_merge_proposal_id])
         load_related(Diff, preview_diffs, ['diff_id'])
         for previewdiff in preview_diffs:
             cache = get_property_cache(previewdiff.branch_merge_proposal)
