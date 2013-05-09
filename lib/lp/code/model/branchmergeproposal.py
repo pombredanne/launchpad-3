@@ -994,6 +994,7 @@ class BranchMergeProposal(SQLBase):
         preview_diffs = IStore(BranchMergeProposal).find(
             PreviewDiff,
             PreviewDiff.branch_merge_proposal_id.is_in(ids)).order_by(
+                PreviewDiff.branch_merge_proposal_id,
                 Desc(PreviewDiff.date_created)).config(
                     distinct=PreviewDiff.branch_merge_proposal)
         load_related(Diff, preview_diffs, ['diff_id'])
