@@ -575,8 +575,9 @@ decreases.
     3
     >>> cdrkit = cprov_archive.getPublishedSources(name=u'cdrkit').first()
     >>> cdrkit.supersede()
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.services.database.constants import UTC_NOW
-    >>> cdrkit.scheduleddeletiondate = UTC_NOW
+    >>> removeSecurityProxy(cdrkit).scheduleddeletiondate = UTC_NOW
 
     >>> cprov_archive.number_of_sources
     2
@@ -659,7 +660,6 @@ series:
 The source publication is only excluded from 'deletion list' when it's
 scheduled deletion date is set.
 
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(removal_candidate).scheduleddeletiondate = UTC_NOW
     >>> cprov_archive.getSourcesForDeletion(name=u'ice').count()
     0

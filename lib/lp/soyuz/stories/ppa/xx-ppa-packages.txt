@@ -133,6 +133,7 @@ published, this will be indicated to the viewer:
     # record so that it is pending publication.
     >>> login('foo.bar@canonical.com')
     >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> cprov_ppa = cprov.archive
@@ -141,8 +142,9 @@ published, this will be indicated to the viewer:
     >>> print pmount_i386_pub.displayname
     pmount 0.1-1 in warty i386
     >>> from lp.soyuz.enums import PackagePublishingStatus
-    >>> pmount_i386_pub.status = PackagePublishingStatus.PENDING
-    >>> pmount_i386_pub.datepublished = None
+    >>> naked_pub = removeSecurityProxy(pmount_i386_pub)
+    >>> naked_pub.status = PackagePublishingStatus.PENDING
+    >>> naked_pub.datepublished = None
     >>> transaction.commit()
     >>> logout()
 
@@ -271,7 +273,7 @@ modify some publication in Celso's PPA to SUPERSEDED and DELETED
 states. Note, for consistency we have to create the binary publishing records
 for iceweasel before marking it as superseded.
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('celso.providelo@canonical.com')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> iceweasel_pub = cprov.archive.getPublishedSources(
     ...     name=u'iceweasel').first()
@@ -279,16 +281,11 @@ for iceweasel before marking it as superseded.
     ...     iceweasel_pub.getBuilds()[0], 'bar-bin')
     >>> pub_bins = test_publisher.publishBinaryInArchive(
     ...     bpr, cprov.archive, status=PackagePublishingStatus.PUBLISHED)
-    >>> iceweasel_pub.status = (
-    ...     PackagePublishingStatus.SUPERSEDED)
+    >>> iceweasel_pub.supersede()
     >>> pmount_pub = cprov.archive.getPublishedSources(name=u'pmount').first()
-    >>> pmount_pub.status = PackagePublishingStatus.DELETED
-    >>> pmount_pub.removed_by = cprov
-    >>> pmount_pub.removal_comment = 'nhack !'
+    >>> pmount_pub.requestDeletion(cprov, 'nhack !')
     >>> logout()
     >>> transaction.commit()
-    >>> from lp.services.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
 
 The default status filter is 'published', which means that, by
 default, PPA pages will only present PUBLISHED or PENDING packages.
@@ -360,7 +357,6 @@ in the list.
     >>> publishToTeamPPA(team_name="ubuntu-team")
     >>> logout()
     >>> transaction.commit()
-    >>> flush_database_updates()
 
 Access ubuntu-team's PPA page:
 
