@@ -1576,7 +1576,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         preview_diff.diff = diff
         preview_diff.source_revision_id = self.getUniqueUnicode()
         preview_diff.target_revision_id = self.getUniqueUnicode()
-        removeSecurityProxy(merge_proposal).preview_diff = preview_diff
         return preview_diff
 
     def makeIncrementalDiff(self, merge_proposal=None, old_revision=None,

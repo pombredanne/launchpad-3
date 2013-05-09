@@ -20,7 +20,6 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
-    Asc,
     Desc,
     Join,
     LeftJoin,
@@ -321,7 +320,7 @@ class BranchMergeProposal(SQLBase):
 
     @cachedproperty
     def preview_diff(self):
-        return self._preview_diffs.last()
+        return self._preview_diffs.first()
 
     date_queued = UtcDateTimeCol(notNull=False, default=None)
 
@@ -995,7 +994,7 @@ class BranchMergeProposal(SQLBase):
         preview_diffs = IStore(BranchMergeProposal).find(
             PreviewDiff,
             PreviewDiff.branch_merge_proposal_id.is_in(ids)).order_by(
-                Asc(PreviewDiff.date_created)).config(
+                Desc(PreviewDiff.date_created)).config(
                     distinct=PreviewDiff.branch_merge_proposal)
         load_related(Diff, preview_diffs, ['diff_id'])
         for previewdiff in preview_diffs:
