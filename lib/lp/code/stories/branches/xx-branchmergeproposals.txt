@@ -651,12 +651,7 @@ If no diff is present, nothing is shown.
 If the review diff is empty, then we say it is empty.
 
     >>> login('admin@canonical.com')
-<<<<<<< TREE
     >>> preview_diff = PreviewDiff.create(bmp, '', u'c', u'd', None, u'')
-=======
-    >>> removeSecurityProxy(bmp).preview_diff = PreviewDiff.create(
-    ...     bmp, '', u'c', u'd', None, u'')
->>>>>>> MERGE-SOURCE
     >>> logout()
     >>> print extract_text(get_review_diff())
     Preview Diff
