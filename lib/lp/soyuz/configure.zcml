@@ -40,7 +40,7 @@
                 permission="launchpad.Edit"
                 interface="lp.soyuz.interfaces.publishing.IBinaryPackagePublishingHistoryEdit"/>
             <require
-                permission="launchpad.Admin"
+                permission="launchpad.InternalScriptsOnly"
                 set_schema="lp.soyuz.interfaces.publishing.IBinaryPackagePublishingHistory"/>
         </class>
 
@@ -110,7 +110,7 @@
                 permission="launchpad.Edit"
                 interface="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistoryEdit"/>
             <require
-                permission="launchpad.Admin"
+                permission="launchpad.InternalScriptsOnly"
                 set_schema="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistory"/>
         </class>
 
@@ -231,7 +231,7 @@
         <allow
             interface="lp.soyuz.interfaces.queue.IPackageUploadCustom"/>
         <require
-            permission="launchpad.Admin" set_attributes="libraryfilealias"/>
+            permission="launchpad.InternalScriptsOnly" set_attributes="libraryfilealias"/>
     </class>
 
     <!-- PackageUploadSet -->
@@ -435,7 +435,10 @@
             set_schema="lp.soyuz.interfaces.archive.IArchiveRestricted"/>
         <require
             permission="launchpad.Admin"
-            set_attributes="distribution name signing_key"/>
+            set_attributes="name" />
+        <require
+            permission="launchpad.InternalScriptsOnly"
+            set_attributes="distribution signing_key"/>
     </class>
     <adapter
         for="lp.soyuz.interfaces.archive.IArchive"
@@ -641,7 +644,7 @@
         <allow
             interface="lp.soyuz.interfaces.distroarchseries.IPocketChroot"/>
         <require
-            permission="launchpad.Admin"
+            permission="launchpad.InternalScriptsOnly"
             set_schema="lp.soyuz.interfaces.distroarchseries.IPocketChroot"/>
     </class>
 

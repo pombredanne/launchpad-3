@@ -13,6 +13,7 @@ from datetime import (
 from pytz import utc
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.bugs.interfaces.bugwatch import (
     BugWatchActivityStatus,
@@ -34,8 +35,8 @@ class TestBugWatchScheduler(TestCaseWithFactory):
         # We'll make sure that all the other bug watches look like
         # they've been scheduled so that only our watch gets scheduled.
         for watch in getUtility(IBugWatchSet).search():
-            watch.next_check = datetime.now(utc)
-        self.bug_watch = self.factory.makeBugWatch()
+            removeSecurityProxy(watch).next_check = datetime.now(utc)
+        self.bug_watch = removeSecurityProxy(self.factory.makeBugWatch())
         self.scheduler = BugWatchScheduler(BufferLogger())
         transaction.commit()
 

@@ -774,7 +774,7 @@
         <allow
             interface="lp.bugs.interfaces.bugmessage.IBugMessage"/>
         <require
-            permission="launchpad.Admin"
+            permission="launchpad.InternalScriptsOnly"
             set_attributes="remote_comment_id bugwatch index"/>
     </class>
 
@@ -888,11 +888,13 @@
                 set_attributes="bugtracker remotebug"/>
             <require
                 permission="launchpad.Admin"
+                attributes="reset" />
+            <require
+                permission="launchpad.InternalScriptsOnly"
                 attributes="
                     addComment
                     updateImportance
                     updateStatus
-                    reset
                     "
                 set_attributes="
                     last_error_type

@@ -92,4 +92,13 @@
     title="The role of someone who created or otherwise owns an object."
     access_level="write" />
 
+  <!-- A permission that isn't held by anybody. Only used to let scripts
+       write to special attributes (in PermissiveSecurityPolicy a write
+       is allowed if any permission would allow it, as all permissions
+       are implicitly held). -->
+  <permission
+    id="launchpad.InternalScriptsOnly"
+    title="Special permission to allow only scripts to write."
+    access_level="write" />
+
 </configure>
