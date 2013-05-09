@@ -20,7 +20,7 @@
             permission="launchpad.AnyPerson"
             attributes="setVisible"/>
         <require
-            permission="launchpad.InternalScriptsOnly"
+            permission="launchpad.Admin"
             set_attributes="visible"/>
     </class>
 
