@@ -1926,13 +1926,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             bug, owner, bugtracker, str(remote_bug))
         if bug_task is not None:
             bug_task.bugwatch = bug_watch
-
-        # You need to be an admin to set next_check on a BugWatch.
-        def set_next_check(bug_watch):
-            bug_watch.next_check = datetime.now(pytz.timezone('UTC'))
-
-        person = getUtility(IPersonSet).getByName('name16')
-        run_with_login(person, set_next_check, bug_watch)
+        removeSecurityProxy(bug_watch).next_check = (
+            datetime.now(pytz.timezone('UTC')))
         return bug_watch
 
     def makeBugComment(self, bug=None, owner=None, subject=None, body=None,
