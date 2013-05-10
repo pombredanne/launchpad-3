@@ -257,7 +257,6 @@ class TestPPAExpiry(ArchiveExpiryTestBase, ArchiveExpiryCommonTests):
     def testPrivatePPAsNotExpired(self):
         """Test that private PPAs are not expired."""
         self.archive.private = True
-        self.archive.buildd_secret = "foo"
         source, binary = self._setUpExpirablePublications()
         self.runScript()
         self.assertSourceNotExpired(source)
