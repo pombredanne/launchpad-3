@@ -2033,7 +2033,6 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
         'suppress_subscription_notifications',
         'require_virtualized',
         'build_debug_symbols',
-        'buildd_secret',
         'authorized_size',
         'relative_build_score',
         'external_dependencies',
@@ -2046,25 +2045,8 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
     def label(self):
         return 'Administer %s' % self.context.displayname
 
-    def updateContextFromData(self, data):
-        """Update context from form data.
-
-        If the user did not specify a buildd secret but marked the
-        archive as private, generate a secret for them.
-        """
-        if data['private'] and data['buildd_secret'] is None:
-            # The buildd secret is auto-generated and set when 'private'
-            # is set to True
-            del(data['buildd_secret'])
-        super(ArchiveAdminView, self).updateContextFromData(data)
-
     def validate_save(self, action, data):
-        """Validate the save action on ArchiveAdminView.
-
-        buildd_secret can only, and must, be set for private archives.
-        If the archive is private and the buildd secret is not set it will be
-        generated.
-        """
+        """Validate the save action on ArchiveAdminView."""
         super(ArchiveAdminView, self).validate_save(action, data)
 
         if data.get('private') != self.context.private:
@@ -2079,10 +2061,6 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
             self.setFieldError(
                 'private',
                 'Private teams may not have public archives.')
-        elif data.get('buildd_secret') is not None and not data['private']:
-            self.setFieldError(
-                'buildd_secret',
-                'Do not specify for non-private archives')
 
         # Check the external_dependencies field.
         ext_deps = data.get('external_dependencies')
