@@ -60,6 +60,7 @@ from lp.bugs.scripts.checkwatches.scheduler import (
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.code.model.diff import PreviewDiff
 from lp.code.model.revision import (
     RevisionAuthor,
     RevisionCache,
@@ -392,6 +393,17 @@ class UnlinkedAccountPruner(BulkPruner):
         WHERE Person.id IS NULL
         """
 
+class PreviewDiffPruner(BulkPruner):
+    target_table_class = PreviewDiff
+    ids_to_prune_query = """
+        SELECT id
+            FROM
+            (SELECT PreviewDiff.id,
+                rank() OVER (PARTITION BY PreviewDiff.branch_merge_proposal
+                ORDER BY PreviewDiff.date_created DESC) AS pos
+            FROM previewdiff) AS ss
+        WHERE pos > 1
+        """
 
 class BugSummaryJournalRollup(TunableLoop):
     """Rollup BugSummaryJournal rows into BugSummary."""
@@ -1625,6 +1637,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnlinkedAccountPruner,
         UnusedAccessPolicyPruner,
         UnusedPOTMsgSetPruner,
+        PreviewDiffPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,
