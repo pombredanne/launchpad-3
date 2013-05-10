@@ -376,7 +376,6 @@ build on a virtualized builder.
     >>> admin_browser.getControl(name="field.private").value = True
     >>> admin_browser.getControl(
     ...     name="field.suppress_subscription_notifications").value = True
-    >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
     >>> admin_browser.getControl(
     ...     name="field.require_virtualized").value = True
     >>> admin_browser.getControl(name="field.authorized_size").value = '1'
@@ -417,20 +416,6 @@ a sources.list entry.  If the field fails validation an error is displayed.
     ...     print error
     There is 1 error.
     &#x27;deb not_a_url&#x27; is not a complete and valid sources.list entry
-
-
-Setting the buildd secret for non-private archives also generates an error:
-
-    >>> admin_browser.getControl(
-    ...     name="field.external_dependencies").value = ""
-    >>> admin_browser.getControl(name="field.private").value = False
-    >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
-    >>> admin_browser.getControl("Save").click()
-
-    >>> for error in get_feedback_messages(admin_browser.contents):
-    ...     print error
-    There is 1 error.
-    Do not specify for non-private archives
 
 
 There is a maximum value allowed for `IArchive.authorized_size`, it is

@@ -54,7 +54,6 @@ class TestArchiveSubscriptionBreadcrumb(BaseBreadcrumbTestCase):
         self.ppa = self.factory.makeArchive()
         login('foo.bar@canonical.com')
         self.ppa.private = True
-        self.ppa.buildd_secret = 'secret'
 
         owner = self.ppa.owner
         login_person(owner)

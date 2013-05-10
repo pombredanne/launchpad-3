@@ -57,7 +57,6 @@ class TestP3APackages(TestCaseWithFactory):
         super(TestP3APackages, self).setUp()
         self.private_ppa = self.factory.makeArchive(description='Foo')
         login('admin@canonical.com')
-        self.private_ppa.buildd_secret = 'blah'
         self.private_ppa.private = True
         self.joe = self.factory.makePerson(name='joe')
         self.fred = self.factory.makePerson(name='fred')

@@ -126,7 +126,6 @@ First, create a private copy archive:
     >>> naked_copy_location = remove_security_proxy_and_shout_at_engineer(
     ...     copy_location)
     >>> copy_archive = naked_copy_location.archive
-    >>> copy_archive.buildd_secret = 'really secret'
     >>> copy_archive.private = True
     >>> copy_archive.owner.displayname = "Harry Potter"
     >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(

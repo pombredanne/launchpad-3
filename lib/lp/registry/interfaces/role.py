@@ -100,6 +100,9 @@ class IPersonRoles(Interface):
     in_ppa_key_guard = Bool(
         title=_("True if this person is the ppa key guard."),
         required=True, readonly=True)
+    in_ppa_self_admins = Bool(
+        title=_("True if this person is a PPA self admin."),
+        required=True, readonly=True)
     in_registry_experts = Bool(
         title=_("True if this person is a registry expert."),
         required=True, readonly=True)

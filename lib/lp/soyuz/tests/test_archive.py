@@ -1052,7 +1052,7 @@ class TestBuilddSecret(TestCaseWithFactory):
         login(ANONYMOUS)
         e = self.assertRaises(
             Unauthorized, setattr, self.archive, "buildd_secret", "boing")
-        self.assertEqual("launchpad.Commercial", e.args[2])
+        self.assertEqual("launchpad.Admin", e.args[2])
 
     def test_commercial_admin_can_set_buildd_secret(self):
         with celebrity_logged_in("commercial_admin"):

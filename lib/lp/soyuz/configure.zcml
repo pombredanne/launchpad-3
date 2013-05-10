@@ -419,23 +419,20 @@
                             suppress_subscription_notifications"/>
         <!--
            NOTE: The 'private' permission controls who can turn a public
-           archive into a private one, and vice versa. The logic that says this
-           requires launchpad.Commercial permissions is duplicated in
-           validate_ppa.
+           archive into a private one, and vice versa. The logic that
+           says this requires launchpad.Admin permissions is duplicated
+           in validate_ppa.
           -->
         <require
-            permission="launchpad.Commercial"
-            interface="lp.soyuz.interfaces.archive.IArchiveCommercial"
-            set_attributes="authorized_size build_debug_symbols buildd_secret
-                            enabled_restricted_families
+            permission="launchpad.Admin"
+            interface="lp.soyuz.interfaces.archive.IArchiveAdmin"
+            set_attributes="name authorized_size build_debug_symbols
+                            buildd_secret enabled_restricted_families
                             external_dependencies private
                             require_virtualized"/>
         <require
             permission="launchpad.Moderate"
             set_schema="lp.soyuz.interfaces.archive.IArchiveRestricted"/>
-        <require
-            permission="launchpad.Admin"
-            set_attributes="name" />
         <require
             permission="launchpad.InternalScriptsOnly"
             set_attributes="distribution signing_key"/>
