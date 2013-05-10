@@ -437,7 +437,7 @@ class ArchiveMenuMixin:
         text = 'View PPA'
         return Link(canonical_url(self.context), text, icon='info')
 
-    @enabled_with_permission('launchpad.Commercial')
+    @enabled_with_permission('launchpad.Admin')
     def admin(self):
         text = 'Administer archive'
         return Link('+admin', text, icon='edit')

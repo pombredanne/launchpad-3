@@ -307,7 +307,7 @@ class TestProcessorFamilies(WebServiceTestCase):
         ws_archive = self.wsObject(archive, user=archive.owner)
         self.assertContentEqual([], ws_archive.enabled_restricted_families)
         expected_re = (
-            "(.|\n)*'launchpad\.Commercial'(.|\n)*")
+            "(.|\n)*'launchpad\.Admin'(.|\n)*")
         with ExpectedException(LRUnauthorized, expected_re):
             ws_archive.enableRestrictedFamily(family=ws_arm)
 
@@ -324,7 +324,7 @@ class TestProcessorFamilies(WebServiceTestCase):
         ws_archive = self.wsObject(archive, user=just_some_guy)
         self.assertContentEqual([], ws_archive.enabled_restricted_families)
         expected_re = (
-            "(.|\n)*'launchpad\.Commercial'(.|\n)*")
+            "(.|\n)*'launchpad\.Admin'(.|\n)*")
         with ExpectedException(LRUnauthorized, expected_re):
             ws_archive.enableRestrictedFamily(family=ws_arm)
 

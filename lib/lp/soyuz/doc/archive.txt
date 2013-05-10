@@ -88,7 +88,7 @@ Amending it as an unprivileged user results in failure:
     >>> cprov_archive.external_dependencies = "test"
     Traceback (most recent call last):
     ...
-    Unauthorized: (..., 'external_dependencies', 'launchpad.Commercial')
+    Unauthorized: (..., 'external_dependencies', 'launchpad.Admin')
 
 As a Launchpad admin, setting this property will work.
 
