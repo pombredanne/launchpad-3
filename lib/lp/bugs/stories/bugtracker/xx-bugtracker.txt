@@ -580,11 +580,13 @@ Scheduling any of the watches will change their "Next check" column.
 
     >>> from datetime import datetime
     >>> from pytz import utc
+    >>> from zope.security.proxy import removeSecurityProxy
 
     >>> login('foo.bar@canonical.com')
     >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
     >>> watch_15 = debbugs.watches[0]
-    >>> watch_15.next_check = datetime(2010, 4, 9, 9, 50, 0, tzinfo=utc)
+    >>> removeSecurityProxy(watch_15).next_check = datetime(
+    ...     2010, 4, 9, 9, 50, 0, tzinfo=utc)
     >>> logout()
 
     >>> anon_browser.open(

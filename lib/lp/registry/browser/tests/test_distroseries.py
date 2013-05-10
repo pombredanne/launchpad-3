@@ -1317,11 +1317,10 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             derived_series=derived_series)
 
         # Delete the publications.
-        with celebrity_logged_in("admin"):
-            difference.source_pub.status = (
-                PackagePublishingStatus.DELETED)
-            difference.parent_source_pub.status = (
-                PackagePublishingStatus.DELETED)
+        removeSecurityProxy(difference.source_pub).status = (
+            PackagePublishingStatus.DELETED)
+        removeSecurityProxy(difference.parent_source_pub).status = (
+            PackagePublishingStatus.DELETED)
         # Flush out the changes and invalidate caches (esp. property caches).
         flush_database_caches()
 

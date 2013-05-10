@@ -505,11 +505,12 @@ to download them directly from librarian and the links are below.
 Remove the just deleted publication from disk setting its
 'dateremoved' attribute.
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> login('foo.bar@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> deleted_pub = no_priv.archive.getPublishedSources(
     ...     status=PackagePublishingStatus.DELETED).first()
-    >>> deleted_pub.dateremoved = deleted_pub.datecreated
+    >>> removeSecurityProxy(deleted_pub).dateremoved = deleted_pub.datecreated
     >>> logout()
 
     >>> from lp.services.database.sqlbase import flush_database_updates

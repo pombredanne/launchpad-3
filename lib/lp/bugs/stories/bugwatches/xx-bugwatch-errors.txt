@@ -33,6 +33,7 @@ no existing bug watches.
 We can now alter the bug watch manually to check that the correct error
 messages are displayed.
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
     >>> from lp.bugs.interfaces.externalbugtracker import (
@@ -42,7 +43,7 @@ messages are displayed.
     >>> login('foo.bar@canonical.com')
     >>> tracker = getUtility(IBugTrackerSet).getByName('mozilla.org')
     >>> bug12 = getUtility(IBugSet).get(12)
-    >>> watch = bug12.getBugWatch(tracker, '900')
+    >>> watch = removeSecurityProxy(bug12.getBugWatch(tracker, '900'))
     >>> watch.last_error_type = BugWatchActivityStatus.BUG_NOT_FOUND
     >>> watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
     >>> logout()
@@ -114,10 +115,11 @@ We can observe this for each of the BugWatchActivityStatus failure values:
 Finally, if the error gets solved (or no error occurs), the error
 message will go away.
 
-    >>> login('foo.bar@canonical.com')
-    >>> watch.remotestatus = None
-    >>> watch.last_error_type = None
-    >>> watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
+    >>> login(ANONYMOUS)
+    >>> nwatch = removeSecurityProxy(watch)
+    >>> nwatch.remotestatus = None
+    >>> nwatch.last_error_type = None
+    >>> nwatch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
     >>> logout()
     >>> user_browser.open('http://bugs.launchpad.dev/thunderbird/+bug/12')
     >>> len(find_tags_by_class(user_browser.contents, 'error message'))

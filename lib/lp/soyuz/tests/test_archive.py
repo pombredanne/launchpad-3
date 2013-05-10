@@ -2894,8 +2894,7 @@ class TestSigningKeyPropagation(TestCaseWithFactory):
             owner=person, purpose=ArchivePurpose.PPA, name="ppa")
         self.assertEqual(ppa, person.archive)
         self.factory.makeGPGKey(person)
-        with celebrity_logged_in("admin"):
-            person.archive.signing_key = person.gpg_keys[0]
+        removeSecurityProxy(person.archive).signing_key = person.gpg_keys[0]
         ppa_with_key = self.factory.makeArchive(
             owner=person, purpose=ArchivePurpose.PPA)
         self.assertEqual(person.gpg_keys[0], ppa_with_key.signing_key)
