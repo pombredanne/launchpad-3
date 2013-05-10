@@ -426,16 +426,13 @@
         <require
             permission="launchpad.Admin"
             interface="lp.soyuz.interfaces.archive.IArchiveAdmin"
-            set_attributes="authorized_size build_debug_symbols buildd_secret
-                            enabled_restricted_families
+            set_attributes="name authorized_size build_debug_symbols
+                            buildd_secret enabled_restricted_families
                             external_dependencies private
                             require_virtualized"/>
         <require
             permission="launchpad.Moderate"
             set_schema="lp.soyuz.interfaces.archive.IArchiveRestricted"/>
-        <require
-            permission="launchpad.Admin"
-            set_attributes="name" />
         <require
             permission="launchpad.InternalScriptsOnly"
             set_attributes="distribution signing_key"/>
