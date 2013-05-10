@@ -56,6 +56,7 @@ class ILaunchpadCelebrities(Interface):
     launchpad_developers = Attribute("The Launchpad development team.")
     obsolete_junk = Attribute("The Obsolete Junk project.")
     ppa_key_guard = Attribute("The PPA signing keys owner.")
+    ppa_self_admins = Attribute("The Launchpad PPA Self Admins team.")
     registry_experts = Attribute("The Registry Administrators team.")
     rosetta_experts = Attribute("The Rosetta Experts team.")
     savannah_tracker = Attribute("The GNU Savannah Bug Tracker.")

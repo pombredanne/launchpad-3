@@ -1151,7 +1151,7 @@ Attempting to modify this flag without the necessary permissions will fail.
     >>> print modify_archive(user_webservice, mark_archive)
     HTTP/1.1 401 Unauthorized
     ...
-    (<Archive at ...>, 'authorized_size', 'launchpad.Commercial')
+    (<Archive at ...>, 'authorized_size', 'launchpad.Admin')
 
 Private archives
 ~~~~~~~~~~~~~~~~
@@ -1327,7 +1327,7 @@ admins and commercial admins.
     >>> print modify_archive(user_webservice, mark_archive)
     HTTP/1.1 401 Unauthorized
     ...
-    (<Archive at ...>, 'private', 'launchpad.Commercial')
+    (<Archive at ...>, 'private', 'launchpad.Admin')
 
 
 Copying private file to public archives

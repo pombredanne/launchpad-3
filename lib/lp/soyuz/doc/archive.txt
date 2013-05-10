@@ -88,7 +88,7 @@ Amending it as an unprivileged user results in failure:
     >>> cprov_archive.external_dependencies = "test"
     Traceback (most recent call last):
     ...
-    Unauthorized: (..., 'external_dependencies', 'launchpad.Commercial')
+    Unauthorized: (..., 'external_dependencies', 'launchpad.Admin')
 
 As a Launchpad admin, setting this property will work.
 
@@ -1756,6 +1756,27 @@ Re-enable Celso's PPA.
 
     >>> login('foo.bar@canonical.com')
     >>> cprov_archive.enable()
+
+Commercial admins can manage the privacy and build settings of any PPA.
+Additionally, a member of launchpad-ppa-self-admins can manage those
+settings on PPAs that they can otherwise edit.
+
+    >>> login('celso.providelo@canonical.com')
+    >>> check_permission('launchpad.Admin', cprov_archive)
+    False
+
+    >>> login('commercial-member@canonical.com')
+    >>> check_permission('launchpad.Admin', cprov_archive)
+    True
+    >>> celeb = getUtility(IPersonSet).getByName('launchpad-ppa-self-admins')
+    >>> celeb.addMember(person=cprov, reviewer=celeb.teamowner)
+    (True, ...)
+
+    >>> login('celso.providelo@canonical.com')
+    >>> check_permission('launchpad.Admin', cprov_archive)
+    True
+    >>> check_permission('launchpad.Admin', joes_ppa)
+    False
 
 
 Rebuild archives

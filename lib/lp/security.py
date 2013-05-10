@@ -2520,6 +2520,24 @@ class ModerateArchive(AuthorizationBase):
                 user.in_admin)
 
 
+class AdminArchive(AuthorizationBase):
+    """Restrict changing privacy and build settings on archives.
+
+    The security of the non-virtualised build farm depends on these
+    settings, so they can only be changed by commercial admins, or by
+    PPA self admins on PPAs that they can already edit.
+    """
+    permission = 'launchpad.Admin'
+    usedfor = IArchive
+
+    def checkAuthenticated(self, user):
+        if user.in_commercial_admin or user.in_admin:
+            return True
+        return (
+            user.in_ppa_self_admins
+            and EditArchive(self.obj).checkAuthenticated(user))
+
+
 class ViewArchiveAuthToken(AuthorizationBase):
     """Restrict viewing of archive tokens.
 

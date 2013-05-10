@@ -2015,12 +2015,12 @@ def validate_ppa(owner, proposed_name, private=False):
     creator = getUtility(ILaunchBag).user
     ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     if private:
-        # NOTE: This duplicates the policy in lp/soyuz/configure.zcml which
-        # says that one needs 'launchpad.Commercial' permission to set
-        # 'private', and the logic in `AdminByCommercialTeamOrAdmins` which
-        # determines who is granted launchpad.Commercial permissions. The
-        # difference is that here we grant ability to set 'private' to people
-        # with a commercial subscription.
+        # NOTE: This duplicates the policy in lp/soyuz/configure.zcml
+        # which says that one needs 'launchpad.Admin' permission to set
+        # 'private', and the logic in `AdminArchive` which determines
+        # who is granted launchpad.Admin permissions. The difference is
+        # that here we grant ability to set 'private' to people with a
+        # commercial subscription.
         if not (owner.private or creator.checkAllowVisibility()):
             return '%s is not allowed to make private PPAs' % creator.name
     elif owner.private:

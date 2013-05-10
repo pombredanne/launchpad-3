@@ -19,8 +19,8 @@ __all__ = [
     'CannotUploadToPocket',
     'FULL_COMPONENT_SUPPORT',
     'IArchive',
+    'IArchiveAdmin',
     'IArchiveAppend',
-    'IArchiveCommercial',
     'IArchiveEdit',
     'IArchiveEditDependenciesForm',
     'IArchiveSubscriberView',
@@ -1906,7 +1906,7 @@ class IArchiveEdit(Interface):
         """
 
 
-class IArchiveCommercial(Interface):
+class IArchiveAdmin(Interface):
     """Archive interface for operations restricted by commercial."""
 
     @operation_parameters(
@@ -1933,7 +1933,7 @@ class IArchiveRestricted(Interface):
 
 
 class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit,
-               IArchiveSubscriberView, IArchiveView, IArchiveCommercial,
+               IArchiveSubscriberView, IArchiveView, IArchiveAdmin,
                IArchiveRestricted):
     """Main Archive interface."""
     export_as_webservice_entry()

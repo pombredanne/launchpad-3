@@ -298,7 +298,7 @@
         name="+admin"
         for="lp.soyuz.interfaces.archive.IArchive"
         class="lp.soyuz.browser.archive.ArchiveAdminView"
-        permission="launchpad.Commercial"
+        permission="launchpad.Admin"
         template="../../app/templates/generic-edit.pt"/>
     <browser:pages
         for="lp.soyuz.interfaces.archive.IArchive"
