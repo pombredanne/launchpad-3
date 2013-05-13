@@ -914,7 +914,7 @@ class QuestionSearch:
                         self.sourcepackagename))
         elif self.project:
             constraints.append("""
-                Question.product = Product.id AND
+                Question.product = Product.id AND Product.active AND
                 Product.project = %s""" % sqlvalues(self.project))
 
         return constraints
