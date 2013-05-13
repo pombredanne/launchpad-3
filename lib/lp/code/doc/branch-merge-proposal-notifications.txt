@@ -25,7 +25,8 @@ notification they would like to receive.
     >>> import transaction
     >>> login('test@canonical.com')
     >>> diff_bytes = ''.join(unified_diff('', 'c'))
-    >>> preview_diff = PreviewDiff.create(diff_bytes, u'a', u'b', None, None)
+    >>> preview_diff = PreviewDiff.create(
+    ...     None, diff_bytes, u'a', u'b', None, None)
     >>> # Make Librarian happy.
     >>> transaction.commit()
     >>> target_owner = factory.makePerson(email='target_owner@example.com')
