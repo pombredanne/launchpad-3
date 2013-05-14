@@ -1843,8 +1843,7 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
             preview_diff_id,
             removeSecurityProxy(merge_proposal.preview_diff).id)
         self.assertNotEqual(
-            diff_id,
-            removeSecurityProxy(merge_proposal.preview_diff).diff_id)
+            diff_id, removeSecurityProxy(merge_proposal.preview_diff).diff_id)
 
 
 class TestNextPreviewDiffJob(TestCaseWithFactory):

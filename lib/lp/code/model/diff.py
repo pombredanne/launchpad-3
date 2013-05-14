@@ -395,11 +395,12 @@ class PreviewDiff(Storm):
         preview = cls()
         preview.source_revision_id = source_revision.decode('utf-8')
         preview.target_revision_id = target_revision.decode('utf-8')
-        preview._new_branch_merge_proposal = bmp
+        preview.branch_merge_proposal = bmp
         preview.diff = diff
         preview.conflicts = u''.join(
             unicode(conflict) + '\n' for conflict in conflicts)
         del get_property_cache(bmp).preview_diffs
+        del get_property_cache(bmp).preview_diff
         return preview
 
     @classmethod
@@ -421,7 +422,7 @@ class PreviewDiff(Storm):
         diff = Diff.fromFile(StringIO(diff_content), size, filename)
 
         preview = cls()
-        preview._new_branch_merge_proposal = bmp
+        preview.branch_merge_proposal = bmp
         preview.source_revision_id = source_revision_id
         preview.target_revision_id = target_revision_id
         preview.prerequisite_revision_id = prerequisite_revision_id

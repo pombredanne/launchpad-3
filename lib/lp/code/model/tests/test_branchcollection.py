@@ -9,6 +9,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+from operator import attrgetter
 
 import pytz
 from storm.store import (
@@ -138,8 +139,7 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct()
         branch = self.factory.makeProductBranch(
-            owner=owner,
-            product=product,
+            owner=owner, product=product,
             information_type=InformationType.USERDATA)
         someone = self.factory.makePerson()
         with person_logged_in(owner):
@@ -965,7 +965,8 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         Store.of(bmp1).invalidate()
         collection = self.all_branches.ownedBy(owner)
         [pre_bmp1, pre_bmp2] = sorted(
-            collection.getMergeProposals(eager_load=True))
+            collection.getMergeProposals(eager_load=True),
+            key=attrgetter('id'))
         with StormStatementRecorder() as recorder:
             self.assertEqual(
                 removeSecurityProxy(pre_bmp1.preview_diff).id, previewdiff1.id)
@@ -1196,8 +1197,7 @@ class TestSearch(TestCaseWithFactory):
         fooix = self.factory.makeProduct(name='fooix')
         branch = self.factory.makeProductBranch(product=fooix)
         run_with_login(
-            fooix.owner, setattr, fooix.development_focus,
-            'branch', branch)
+            fooix.owner, setattr, fooix.development_focus, 'branch', branch)
         self.factory.makeAnyBranch()
         search_results = self.collection.search('lp://dev/fooix')
         self.assertEqual([branch], list(search_results))
