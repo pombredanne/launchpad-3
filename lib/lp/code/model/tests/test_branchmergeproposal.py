@@ -1843,8 +1843,7 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
             preview_diff_id,
             removeSecurityProxy(merge_proposal.preview_diff).id)
         self.assertNotEqual(
-            diff_id,
-            removeSecurityProxy(merge_proposal.preview_diff).diff_id)
+            diff_id, removeSecurityProxy(merge_proposal.preview_diff).diff_id)
 
 
 class TestNextPreviewDiffJob(TestCaseWithFactory):
@@ -2085,6 +2084,6 @@ class TestWebservice(WebServiceTestCase):
         # A previewdiff with an empty diffstat doesn't crash when fetched.
         previewdiff = self.factory.makePreviewDiff()
         previewdiff.diff.diffstat = None
-        user = previewdiff._new_branch_merge_proposal.target_branch.owner
+        user = previewdiff.branch_merge_proposal.target_branch.owner
         ws_previewdiff = self.wsObject(previewdiff, user=user)
         self.assertIsNone(ws_previewdiff.diffstat)

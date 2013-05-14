@@ -573,13 +573,13 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         self.assertThat(iter1, MatchesSetwise(*(map(Equals, iter2))))
 
     def assertRaisesWithContent(self, exception, exception_content,
-                                func, *args):
+                                func, *args, **kwargs):
         """Check if the given exception is raised with given content.
 
         If the exception isn't raised or the exception_content doesn't
         match what was raised an AssertionError is raised.
         """
-        err = self.assertRaises(exception, func, *args)
+        err = self.assertRaises(exception, func, *args, **kwargs)
         self.assertEqual(exception_content, str(err))
 
     def assertBetween(self, lower_bound, variable, upper_bound):
