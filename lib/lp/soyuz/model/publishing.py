@@ -1162,8 +1162,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         bpr = self.binarypackagerelease
         if bpr.binpackageformat == BinaryPackageFormat.DDEB:
             raise AssertionError(
-                "Cannot override debug publications directly; please "
-                "override the publication.")
+                "Cannot override ddeb publications directly; override "
+                "the corresponding deb instead.")
 
         # Check there is a change to make
         if new_component is None:
