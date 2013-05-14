@@ -1159,6 +1159,12 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                                  "component, section, priority and/or "
                                  "phased_update_percentage.")
 
+        bpr = self.binarypackagerelease
+        if bpr.binpackageformat == BinaryPackageFormat.DDEB:
+            raise OverrideError(
+                "Cannot override ddeb publications directly; override "
+                "the corresponding deb instead.")
+
         # Check there is a change to make
         if new_component is None:
             new_component = self.component
@@ -1299,6 +1305,12 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             raise DeletionError(
                 "Cannot delete publications from suite '%s'" %
                 self.distroseries.getSuite(self.pocket))
+
+        bpr = self.binarypackagerelease
+        if bpr.binpackageformat == BinaryPackageFormat.DDEB:
+            raise DeletionError(
+                "Cannot delete ddeb publications directly; delete the "
+                "corresponding deb instead.")
 
         self.setDeleted(removed_by, removal_comment)
 

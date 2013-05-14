@@ -1056,6 +1056,22 @@ class TestPublishingSetLite(TestCaseWithFactory):
             [new_bpph])
         self.assertEqual(new_debug_bpph.section, new_section)
 
+    def test_requestDeletion_forbids_debug_package(self):
+        bpph, debug_bpph = self.factory.makeBinaryPackagePublishingHistory(
+            pocket=PackagePublishingPocket.RELEASE, with_debug=True)
+        self.assertRaisesWithContent(
+            DeletionError, "Cannot delete ddeb publications directly; delete "
+            "the corresponding deb instead.",
+            debug_bpph.requestDeletion, self.factory.makePerson())
+
+    def test_changeOverride_forbids_debug_package(self):
+        bpph, debug_bpph = self.factory.makeBinaryPackagePublishingHistory(
+            pocket=PackagePublishingPocket.RELEASE, with_debug=True)
+        self.assertRaisesWithContent(
+            OverrideError, "Cannot override ddeb publications directly; "
+            "override the corresponding deb instead.",
+            debug_bpph.changeOverride, new_phased_update_percentage=20)
+
 
 class TestSourceDomination(TestNativePublishingBase):
     """Test SourcePackagePublishingHistory.supersede() operates correctly."""
