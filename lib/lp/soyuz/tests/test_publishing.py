@@ -1153,10 +1153,9 @@ class TestBinaryDomination(TestNativePublishingBase):
             ("component", {"new_component": universe}),
             ("section", {"new_section": games}),
             ("priority", {"new_priority": PackagePublishingPriority.EXTRA}),
-            ("phase", {"new_phased_update_percentage": 50}),
-            ):
+            ("phase", {"new_phased_update_percentage": 50})):
             bins = self.getPubBinaries(
-                binaryname=name, architecturespecific=False, with_debug=True)
+                binaryname=name, architecturespecific=False)
 
             super_bins = []
             for bin in bins:
@@ -1533,16 +1532,8 @@ class TestChangeOverride(TestNativePublishingBase):
     def test_changes_binary(self):
         # BPPH.changeOverride changes the properties of binary publications.
         self.assertCanOverride(
-            binary=True,
-            new_component="universe", new_section="misc", new_priority="extra",
-            new_phased_update_percentage=90)
-
-    def test_changes_ddeb(self):
-        # BPPH.changeOverride changes the properties of DDEB publications.
-        self.assertCanOverride(
-            ddeb=True,
-            new_component="universe", new_section="misc", new_priority="extra",
-            new_phased_update_percentage=90)
+            binary=True, new_component="universe", new_section="misc",
+            new_priority="extra", new_phased_update_percentage=90)
 
     def test_set_and_clear_phased_update_percentage(self):
         # new_phased_update_percentage=<integer> sets a phased update
@@ -1555,11 +1546,12 @@ class TestChangeOverride(TestNativePublishingBase):
     def test_no_change(self):
         # changeOverride does not create a new publication if the existing
         # publication is already in the desired state.
-        self.assertIsNone(self.setUpOverride(
-            new_component="main", new_section="base"))
-        self.assertIsNone(self.setUpOverride(
-            binary=True,
-            new_component="main", new_section="base", new_priority="standard"))
+        self.assertIsNone(
+            self.setUpOverride(new_component="main", new_section="base"))
+        self.assertIsNone(
+            self.setUpOverride(
+                binary=True, new_component="main", new_section="base",
+                new_priority="standard"))
 
     def test_forbids_stable_RELEASE(self):
         # changeOverride is not allowed in the RELEASE pocket of a stable
