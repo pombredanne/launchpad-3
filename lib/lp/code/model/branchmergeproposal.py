@@ -320,7 +320,7 @@ class BranchMergeProposal(SQLBase):
 
     @cachedproperty
     def preview_diff(self):
-        return self._preview_diffs.first()
+        return self._preview_diffs.last()
 
     date_queued = UtcDateTimeCol(notNull=False, default=None)
 
@@ -723,7 +723,7 @@ class BranchMergeProposal(SQLBase):
         for job in BranchMergeProposalJob.selectBy(
             branch_merge_proposal=self.id):
             job.destroySelf()
-        self.preview_diffs.remove()
+        self._preview_diffs.remove()
         self.destroySelf()
 
     def getUnlandedSourceBranchRevisions(self):
