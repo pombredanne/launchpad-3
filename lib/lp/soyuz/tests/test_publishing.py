@@ -1064,6 +1064,14 @@ class TestPublishingSetLite(TestCaseWithFactory):
             "the corresponding deb instead.",
             debug_bpph.requestDeletion, self.factory.makePerson())
 
+    def test_changeOverride_forbids_debug_package(self):
+        bpph, debug_bpph = self.factory.makeBinaryPackagePublishingHistory(
+            pocket=PackagePublishingPocket.RELEASE, with_debug=True)
+        self.assertRaisesWithContent(
+            AssertionError, "Cannot override debug publications directly; "
+            "please override the publication.", debug_bpph.changeOverride,
+            new_phased_update_percentage=20)
+
 
 class TestSourceDomination(TestNativePublishingBase):
     """Test SourcePackagePublishingHistory.supersede() operates correctly."""

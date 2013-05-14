@@ -1159,6 +1159,12 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                                  "component, section, priority and/or "
                                  "phased_update_percentage.")
 
+        bpr = self.binarypackagerelease
+        if bpr.binpackageformat == BinaryPackageFormat.DDEB:
+            raise AssertionError(
+                "Cannot override debug publications directly; please "
+                "override the publication.")
+
         # Check there is a change to make
         if new_component is None:
             new_component = self.component
