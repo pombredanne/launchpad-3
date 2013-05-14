@@ -1056,6 +1056,13 @@ class TestPublishingSetLite(TestCaseWithFactory):
             [new_bpph])
         self.assertEqual(new_debug_bpph.section, new_section)
 
+    def test_requestDeletion_forbids_debug_package(self):
+        bpph, debug_bpph = self.factory.makeBinaryPackagePublishingHistory(
+            pocket=PackagePublishingPocket.RELEASE, with_debug=True)
+        self.assertRaisesWithContent(
+            DeletionError, 'Cannot delete ddebs directly.',
+            debug_bpph.requestDeletion, self.factory.makePerson())
+
 
 class TestSourceDomination(TestNativePublishingBase):
     """Test SourcePackagePublishingHistory.supersede() operates correctly."""

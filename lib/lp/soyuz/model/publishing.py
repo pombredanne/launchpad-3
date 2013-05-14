@@ -1300,6 +1300,10 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 "Cannot delete publications from suite '%s'" %
                 self.distroseries.getSuite(self.pocket))
 
+        bpr = self.binarypackagerelease
+        if bpr.binpackageformat == BinaryPackageFormat.DDEB:
+            raise DeletionError("Cannot delete ddebs directly.")
+
         self.setDeleted(removed_by, removal_comment)
 
     def binaryFileUrls(self, include_meta=False):
