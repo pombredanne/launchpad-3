@@ -1060,7 +1060,8 @@ class TestPublishingSetLite(TestCaseWithFactory):
         bpph, debug_bpph = self.factory.makeBinaryPackagePublishingHistory(
             pocket=PackagePublishingPocket.RELEASE, with_debug=True)
         self.assertRaisesWithContent(
-            DeletionError, 'Cannot delete ddebs directly.',
+            DeletionError, "Cannot delete ddeb publications directly; delete "
+            "the corresponding deb instead.",
             debug_bpph.requestDeletion, self.factory.makePerson())
 
 

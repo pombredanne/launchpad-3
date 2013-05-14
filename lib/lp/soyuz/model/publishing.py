@@ -1302,7 +1302,9 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         bpr = self.binarypackagerelease
         if bpr.binpackageformat == BinaryPackageFormat.DDEB:
-            raise DeletionError("Cannot delete ddebs directly.")
+            raise DeletionError(
+                "Cannot delete ddeb publications directly; delete the "
+                "corresponding deb instead.")
 
         self.setDeleted(removed_by, removal_comment)
 
