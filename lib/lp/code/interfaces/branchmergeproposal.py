@@ -174,6 +174,8 @@ class IBranchMergeProposalView(Interface):
     next_preview_diff_job = Attribute(
         'The next BranchMergeProposalJob that will update a preview diff.')
 
+    preview_diffs = Attribute('All preview diffs for this merge proposal.')
+
     preview_diff = exported(
         Reference(
             IPreviewDiff,

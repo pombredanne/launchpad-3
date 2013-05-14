@@ -1483,9 +1483,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, prerequisite_branch=None,
                                 product=None, initial_comment=None,
-                                source_branch=None, preview_diff=None,
-                                date_created=None, description=None,
-                                reviewer=None, merged_revno=None):
+                                source_branch=None, date_created=None,
+                                description=None, reviewer=None,
+                                merged_revno=None):
         """Create a proposal to merge based on anonymous branches."""
         if target_branch is not None:
             target_branch = removeSecurityProxy(target_branch)
@@ -1521,8 +1521,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         unsafe_proposal = removeSecurityProxy(proposal)
         unsafe_proposal.merged_revno = merged_revno
-        if preview_diff is not None:
-            unsafe_proposal.preview_diff = preview_diff
         if (set_state is None or
             set_state == BranchMergeProposalStatus.WORK_IN_PROGRESS):
             # The initial state is work in progress, so do nothing.
@@ -1568,17 +1566,19 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return ProxyFactory(
             Diff.fromFile(StringIO(diff_text), len(diff_text)))
 
-    def makePreviewDiff(self, conflicts=u'', merge_proposal=None):
+    def makePreviewDiff(self, conflicts=u'', merge_proposal=None,
+                        date_created=None):
         diff = self.makeDiff()
         if merge_proposal is None:
             merge_proposal = self.makeBranchMergeProposal()
         preview_diff = PreviewDiff()
-        preview_diff._new_branch_merge_proposal = merge_proposal
+        preview_diff.branch_merge_proposal = merge_proposal
         preview_diff.conflicts = conflicts
         preview_diff.diff = diff
         preview_diff.source_revision_id = self.getUniqueUnicode()
         preview_diff.target_revision_id = self.getUniqueUnicode()
-        removeSecurityProxy(merge_proposal).preview_diff = preview_diff
+        if date_created:
+            preview_diff.date_created = date_created
         return preview_diff
 
     def makeIncrementalDiff(self, merge_proposal=None, old_revision=None,
