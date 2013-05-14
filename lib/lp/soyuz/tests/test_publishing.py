@@ -1068,7 +1068,7 @@ class TestPublishingSetLite(TestCaseWithFactory):
         bpph, debug_bpph = self.factory.makeBinaryPackagePublishingHistory(
             pocket=PackagePublishingPocket.RELEASE, with_debug=True)
         self.assertRaisesWithContent(
-            AssertionError, "Cannot override ddeb publications directly; "
+            OverrideError, "Cannot override ddeb publications directly; "
             "override the corresponding deb instead.",
             debug_bpph.changeOverride, new_phased_update_percentage=20)
 

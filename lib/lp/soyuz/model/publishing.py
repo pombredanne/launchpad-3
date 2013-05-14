@@ -1161,7 +1161,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         bpr = self.binarypackagerelease
         if bpr.binpackageformat == BinaryPackageFormat.DDEB:
-            raise AssertionError(
+            raise OverrideError(
                 "Cannot override ddeb publications directly; override "
                 "the corresponding deb instead.")
 
