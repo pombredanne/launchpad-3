@@ -145,6 +145,15 @@ class TestFTPArchive(TestCaseWithFactory):
             self._logger, self._config, self._dp, self._distribution,
             self._publisher)
 
+    def _setUpSampleDataFTPArchiveHandler(self):
+        # Reconfigure FTPArchiveHandler to retrieve sampledata records.
+        fa = self._setUpFTPArchiveHandler()
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        fa.distro = ubuntu
+        fa.publisher.archive = hoary.main_archive
+        return fa, hoary
+
     def _publishDefaultOverrides(self, fa, component, section='misc',
                                  phased_update_percentage=None,
                                  binpackageformat=BinaryPackageFormat.DEB):
@@ -163,13 +172,7 @@ class TestFTPArchive(TestCaseWithFactory):
     def test_getSourcesForOverrides(self):
         # getSourcesForOverrides returns a list of tuples containing:
         # (sourcename, component, section)
-
-        # Reconfigure FTPArchiveHandler to retrieve sampledata overrides.
-        fa = self._setUpFTPArchiveHandler()
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        hoary = ubuntu.getSeries('hoary')
-        fa.publisher.archive = hoary.main_archive
-
+        fa, hoary = self._setUpSampleDataFTPArchiveHandler()
         published_sources = fa.getSourcesForOverrides(
             hoary, PackagePublishingPocket.RELEASE)
 
@@ -190,13 +193,7 @@ class TestFTPArchive(TestCaseWithFactory):
         # getBinariesForOverrides returns a list of tuples containing:
         # (sourcename, component, section, archtag, priority,
         # phased_update_percentage)
-
-        # Reconfigure FTPArchiveHandler to retrieve sampledata overrides.
-        fa = self._setUpFTPArchiveHandler()
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        hoary = ubuntu.getSeries('hoary')
-        fa.publisher.archive = hoary.main_archive
-
+        fa, hoary = self._setUpSampleDataFTPArchiveHandler()
         published_binaries = fa.getBinariesForOverrides(
             hoary, PackagePublishingPocket.RELEASE)
         expectedBinaries = [
@@ -259,7 +256,7 @@ class TestFTPArchive(TestCaseWithFactory):
                 "foo/i386\tPhased-Update-Percentage\t50",
                 result_file.read().splitlines())
 
-    def test_publishOverrides_debian_installer(self):
+    def test_publishOverrides_udebs(self):
         # udeb overrides appear in a separate file.
         fa = self._setUpFTPArchiveHandler()
         self._publishDefaultOverrides(
@@ -267,7 +264,7 @@ class TestFTPArchive(TestCaseWithFactory):
             binpackageformat=BinaryPackageFormat.UDEB)
 
         # The main override file is empty.
-        path = os.path.join(self._overdir, "override.hoary-test.extra.main")
+        path = os.path.join(self._overdir, "override.hoary-test.main")
         with open(path) as result_file:
             self.assertEqual('', result_file.read())
 
@@ -278,6 +275,41 @@ class TestFTPArchive(TestCaseWithFactory):
             self.assertEqual(
                 ["foo\textra\tdebian-installer"],
                 result_file.read().splitlines())
+
+    def test_publishOverrides_ddebs_disabled(self):
+        # ddebs aren't indexed if Archive.publish_debug_symbols is unset.
+        fa = self._setUpFTPArchiveHandler()
+        self.assertEqual(['debian-installer'], fa.subcomponents)
+        self._publishDefaultOverrides(
+            fa, 'main', binpackageformat=BinaryPackageFormat.DDEB)
+
+        # The main override file is empty, and there's no ddeb override
+        # file.
+        self.assertEqual(
+            0,
+            os.stat(os.path.join(self._overdir, "override.hoary-test.main")))
+        self.assertFalse(
+            os.path.exists(
+                os.path.join(self._overdir, "override.hoary-test.main.debug")))
+
+    def test_publishOverrides_ddebs(self):
+        # ddebs are indexed in a subcomponent if
+        # Archive.publish_debug_symbols is set.
+        fa = self._setUpFTPArchiveHandler()
+        self._archive.publish_debug_symbols = True
+        self.assertEqual(['debian-installer', 'debug'], fa.subcomponents)
+        self._publishDefaultOverrides(
+            fa, 'main', binpackageformat=BinaryPackageFormat.DDEB)
+
+        # The main override file is empty.
+        stat = os.stat(os.path.join(self._overdir, "override.hoary-test.main"))
+        self.assertEqual(0, stat.st_size)
+
+        # The binary shows up in the debug override file.
+        path = os.path.join(self._overdir, "override.hoary-test.main.debug")
+        with open(path) as result_file:
+            self.assertEqual(
+                ["foo\textra\tmisc"], result_file.read().splitlines())
 
     def test_generateOverrides(self):
         # generateOverrides generates all the overrides from start to finish.
@@ -308,14 +340,7 @@ class TestFTPArchive(TestCaseWithFactory):
     def test_getSourceFiles(self):
         # getSourceFiles returns a list of tuples containing:
         # (sourcename, filename, component)
-
-        # Reconfigure FTPArchiveHandler to retrieve sampledata records.
-        fa = self._setUpFTPArchiveHandler()
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        hoary = ubuntu.getSeries('hoary')
-        fa.distro = ubuntu
-        fa.publisher.archive = hoary.main_archive
-
+        fa, hoary = self._setUpSampleDataFTPArchiveHandler()
         sources_files = fa.getSourceFiles(
             hoary, PackagePublishingPocket.RELEASE)
         expected_files = [
@@ -328,18 +353,47 @@ class TestFTPArchive(TestCaseWithFactory):
     def test_getBinaryFiles(self):
         # getBinaryFiles returns a list of tuples containing:
         # (sourcename, filename, component, architecture)
-
-        # Reconfigure FTPArchiveHandler to retrieve sampledata records.
-        fa = self._setUpFTPArchiveHandler()
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        hoary = ubuntu.getSeries('hoary')
-        fa.distro = ubuntu
-        fa.publisher.archive = hoary.main_archive
-
+        fa, hoary = self._setUpSampleDataFTPArchiveHandler()
         binary_files = fa.getBinaryFiles(
             hoary, PackagePublishingPocket.RELEASE)
         expected_files = [
             ('pmount', 'pmount_1.9-1_all.deb', 'main', 'binary-hppa'),
+            ]
+        self.assertEqual(expected_files, list(binary_files))
+
+    def makeDDEBPub(self, series):
+        self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagename=u'foo', sourcepackagename='foo', version='666',
+            archive=series.main_archive, distroarchseries=series['hppa'],
+            pocket=PackagePublishingPocket.RELEASE,
+            component=u'main', with_debug=True, with_file=True,
+            status=PackagePublishingStatus.PUBLISHED)
+
+    def test_getBinaryFiles_ddebs_disabled(self):
+        # getBinaryFiles excludes ddebs unless publish_debug_symbols is
+        # enabled.
+        fa, hoary = self._setUpSampleDataFTPArchiveHandler()
+        self.makeDDEBPub(hoary)
+        binary_files = fa.getBinaryFiles(
+            hoary, PackagePublishingPocket.RELEASE)
+        expected_files = [
+            ('pmount', 'pmount_1.9-1_all.deb', 'main', 'binary-hppa'),
+            ('foo', 'foo_666_hppa.deb', 'main', 'binary-hppa'),
+            ]
+        self.assertEqual(expected_files, list(binary_files))
+
+    def test_getBinaryFiles_ddebs_enabled(self):
+        # getBinaryFiles includes ddebs if publish_debug_symbols is
+        # enabled.
+        fa, hoary = self._setUpSampleDataFTPArchiveHandler()
+        fa.publisher.archive.publish_debug_symbols = True
+        self.makeDDEBPub(hoary)
+        binary_files = fa.getBinaryFiles(
+            hoary, PackagePublishingPocket.RELEASE)
+        expected_files = [
+            ('pmount', 'pmount_1.9-1_all.deb', 'main', 'binary-hppa'),
+            ('foo', 'foo_666_hppa.deb', 'main', 'binary-hppa'),
+            ('foo', 'foo-dbgsym_666_hppa.ddeb', 'main', 'binary-hppa'),
             ]
         self.assertEqual(expected_files, list(binary_files))
 
