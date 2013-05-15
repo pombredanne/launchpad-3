@@ -151,7 +151,7 @@ class TestFTPArchive(TestCaseWithFactory):
         source_overrides = FakeSelectResult([('foo', component, section)])
         binary_overrides = FakeSelectResult([(
             'foo', component, section, 'i386', PackagePublishingPriority.EXTRA,
-            phased_update_percentage)])
+            binpackageformat, phased_update_percentage)])
         fa.publishOverrides('hoary-test', source_overrides, binary_overrides)
 
     def _publishDefaultFileLists(self, fa, component):
@@ -201,9 +201,10 @@ class TestFTPArchive(TestCaseWithFactory):
             hoary, PackagePublishingPocket.RELEASE)
         expectedBinaries = [
             ('pmount', 'main', 'base', 'hppa',
-             PackagePublishingPriority.EXTRA, None),
+             PackagePublishingPriority.EXTRA, BinaryPackageFormat.DEB, None),
             ('pmount', 'universe', 'editors', 'i386',
-             PackagePublishingPriority.IMPORTANT, None),
+             PackagePublishingPriority.IMPORTANT, BinaryPackageFormat.DEB,
+             None),
             ]
         self.assertEqual(expectedBinaries, list(published_binaries))
 

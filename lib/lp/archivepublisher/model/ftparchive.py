@@ -27,7 +27,10 @@ from lp.services.database.interfaces import (
 from lp.services.database.stormexpr import Concatenate
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.osutils import write_file
-from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.enums import (
+    BinaryPackageFormat,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
@@ -276,8 +279,9 @@ class FTPArchiveHandler:
         """Fetch override information about all published binaries.
 
         The override information consists of tuples with 'binaryname',
-        'component', 'section', 'architecture' and 'priority' strings and
-        'phased_update_percentage' integers, in this order.
+        'component', 'section', 'architecture' and 'priority' strings,
+        'binpackageformat' enum, 'phased_update_percentage' integer, in this
+        order.
 
         :param distroseries: target `IDistroSeries`
         :param pocket: target `PackagePublishingPocket`
@@ -310,6 +314,7 @@ class FTPArchiveHandler:
             (BinaryPackageName.name, Component.name, Section.name,
              DistroArchSeries.architecturetag,
              BinaryPackagePublishingHistory.priority,
+             BinaryPackageRelease.binpackageformat,
              BinaryPackagePublishingHistory.phased_update_percentage),
             BinaryPackagePublishingHistory.archive == self.publisher.archive,
             BinaryPackagePublishingHistory.distroarchseriesID.is_in(
@@ -362,7 +367,8 @@ class FTPArchiveHandler:
         overrides = defaultdict(lambda: defaultdict(set))
 
         def updateOverride(packagename, component, section, archtag=None,
-                           priority=None, phased_update_percentage=None):
+                           priority=None, binpackageformat=None,
+                           phased_update_percentage=None):
             """Generates and packs tuples of data required for overriding.
 
             If archtag is provided, it's a binary tuple; otherwise, it's a
@@ -387,7 +393,7 @@ class FTPArchiveHandler:
                 # do not need phased updates (and adding the
                 # phased_update_percentage would complicate
                 # generateOverrideForComponent).
-                if section.endswith("debian-installer"):
+                if binpackageformat == BinaryPackageFormat.UDEB:
                     override['d-i'].add((packagename, priority, section))
                 else:
                     package_arch = "%s/%s" % (packagename, archtag)
