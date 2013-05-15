@@ -28,6 +28,7 @@ from lp.services.log.logger import (
     DevNullLogger,
     )
 from lp.soyuz.enums import (
+    BinaryPackageFormat,
     PackagePublishingPriority,
     PackagePublishingStatus,
     )
@@ -144,11 +145,12 @@ class TestFTPArchive(TestCaseWithFactory):
             self._logger, self._config, self._dp, self._distribution,
             self._publisher)
 
-    def _publishDefaultOverrides(self, fa, component,
-                                 phased_update_percentage=None):
-        source_overrides = FakeSelectResult([('foo', component, 'misc')])
+    def _publishDefaultOverrides(self, fa, component, section='misc',
+                                 phased_update_percentage=None,
+                                 binpackageformat=BinaryPackageFormat.DEB):
+        source_overrides = FakeSelectResult([('foo', component, section)])
         binary_overrides = FakeSelectResult([(
-            'foo', component, 'misc', 'i386', PackagePublishingPriority.EXTRA,
+            'foo', component, section, 'i386', PackagePublishingPriority.EXTRA,
             phased_update_percentage)])
         fa.publishOverrides('hoary-test', source_overrides, binary_overrides)
 
@@ -254,6 +256,26 @@ class TestFTPArchive(TestCaseWithFactory):
         with open(path) as result_file:
             self.assertIn(
                 "foo/i386\tPhased-Update-Percentage\t50",
+                result_file.read().splitlines())
+
+    def test_publishOverrides_debian_installer(self):
+        # udeb overrides appear in a separate file.
+        fa = self._setUpFTPArchiveHandler()
+        self._publishDefaultOverrides(
+            fa, 'main', section='debian-installer',
+            binpackageformat=BinaryPackageFormat.UDEB)
+
+        # The main override file is empty.
+        path = os.path.join(self._overdir, "override.hoary-test.extra.main")
+        with open(path) as result_file:
+            self.assertEqual('', result_file.read())
+
+        # The binary shows up in the d-i override file.
+        path = os.path.join(
+            self._overdir, "override.hoary-test.main.debian-installer")
+        with open(path) as result_file:
+            self.assertEqual(
+                ["foo\textra\tdebian-installer"],
                 result_file.read().splitlines())
 
     def test_generateOverrides(self):
