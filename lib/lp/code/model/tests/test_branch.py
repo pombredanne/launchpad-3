@@ -160,7 +160,7 @@ from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
     AppServerLayer,
     CeleryBranchWriteJobLayer,
-    CeleryJobLayer,
+    CeleryBzrsyncdJobLayer,
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -331,7 +331,7 @@ class TestBranchChanged(TestCaseWithFactory):
 
 class TestBranchJobViaCelery(TestCaseWithFactory):
 
-    layer = CeleryJobLayer
+    layer = CeleryBzrsyncdJobLayer
 
     def test_branchChanged_via_celery(self):
         """Running a job via Celery succeeds and emits expected output."""

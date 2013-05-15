@@ -109,7 +109,7 @@ class BaseRunnableJob(BaseRunnableJobSource):
 
     retry_error_types = ()
 
-    task_queue = 'job'
+    task_queue = 'launchpad_job'
 
     celery_responses = None
 
