@@ -668,6 +668,33 @@ class TestNativePublishing(TestNativePublishingBase):
         pool_path = "%s/main/f/foo/foo-bin_666_all.deb" % self.pool_dir
         self.assertEqual(open(pool_path).read().strip(), 'Hello world')
 
+    def test_publish_ddeb_when_disabled_is_noop(self):
+        # Publishing a DDEB publication when
+        # Archive.publish_debug_symbols is false just sets PUBLISHED,
+        # without a file in the pool.
+        pubs = self.getPubBinaries(
+            binaryname='dbg', filecontent='Hello world', with_debug=True)
+
+        def publish_everything():
+            existence_map = {}
+            for pub in pubs:
+                pub.publish(self.disk_pool, self.logger)
+                self.assertEqual(PackagePublishingStatus.PUBLISHED, pub.status)
+                filename = pub.files[0].libraryfilealias.filename
+                path = "%s/main/d/dbg/%s" % (self.pool_dir, filename)
+                existence_map[filename] = os.path.exists(path)
+            return existence_map
+
+        self.assertEqual(
+            {u'dbg_666_all.deb': True, u'dbg-dbgsym_666_all.ddeb': False},
+            publish_everything())
+
+        pubs[0].archive.publish_debug_symbols = True
+
+        self.assertEqual(
+            {u'dbg_666_all.deb': True, u'dbg-dbgsym_666_all.ddeb': True},
+            publish_everything())
+
     def testPublishingOverwriteFileInPool(self):
         """Test if publishOne refuses to overwrite a file in pool.
 

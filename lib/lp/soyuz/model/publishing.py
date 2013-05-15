@@ -988,6 +988,15 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See `IBinaryPackagePublishingHistory`."""
         return self.archive.getPackageDownloadTotal(self.binarypackagerelease)
 
+    def publish(self, diskpool, log):
+        """See `IPublishing`."""
+        if (self.binarypackagerelease.binpackageformat ==
+                BinaryPackageFormat.DDEB
+            and not self.archive.publish_debug_symbols):
+            self.setPublished()
+        else:
+            super(BinaryPackagePublishingHistory, self).publish(diskpool, log)
+
     def buildIndexStanzaFields(self):
         """See `IPublishing`."""
         bpr = self.binarypackagerelease
