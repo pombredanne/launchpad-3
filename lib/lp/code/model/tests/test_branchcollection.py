@@ -5,10 +5,17 @@
 
 __metaclass__ = type
 
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from operator import attrgetter
 
 import pytz
-from storm.store import EmptyResultSet
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -36,11 +43,7 @@ from lp.code.tests.helpers import remove_all_sample_data_branches
 from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.lpstorm import IStore
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     person_logged_in,
@@ -48,7 +51,10 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import HasQueryCount
 
 
@@ -94,10 +100,9 @@ class TestGenericBranchCollection(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestGenericBranchCollection, self).setUp()
         remove_all_sample_data_branches()
-        self.store = getUtility(IStoreSelector).get(
-            MAIN_STORE, DEFAULT_FLAVOR)
+        self.store = IStore(Branch)
 
     def test_provides_branchcollection(self):
         # `GenericBranchCollection` provides the `IBranchCollection`
@@ -134,8 +139,7 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct()
         branch = self.factory.makeProductBranch(
-            owner=owner,
-            product=product,
+            owner=owner, product=product,
             information_type=InformationType.USERDATA)
         someone = self.factory.makePerson()
         with person_logged_in(owner):
@@ -879,7 +883,7 @@ class TestExtendedBranchRevisionDetails(TestCaseWithFactory):
 
 class TestBranchMergeProposals(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
@@ -939,6 +943,36 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         collection = self.all_branches.ownedBy(person)
         proposals = collection.getMergeProposals()
         self.assertEqual(sorted([mp1, mp2]), sorted(proposals))
+
+    def test_preloading_for_previewdiff(self):
+        product = self.factory.makeProduct()
+        target = self.factory.makeBranch(product=product)
+        owner = self.factory.makePerson()
+        branch1 = self.factory.makeBranch(product=product, owner=owner)
+        branch2 = self.factory.makeBranch(product=product, owner=owner)
+        bmp1 = self.factory.makeBranchMergeProposal(
+            target_branch=target, source_branch=branch1)
+        bmp2 = self.factory.makeBranchMergeProposal(
+            target_branch=target, source_branch=branch2)
+        old_date = datetime.now(pytz.UTC) - timedelta(hours=1)
+        self.factory.makePreviewDiff(
+            merge_proposal=bmp1, date_created=old_date)
+        previewdiff1 = self.factory.makePreviewDiff(merge_proposal=bmp1)
+        self.factory.makePreviewDiff(
+            merge_proposal=bmp2, date_created=old_date)
+        previewdiff2 = self.factory.makePreviewDiff(merge_proposal=bmp2)
+        Store.of(bmp1).flush()
+        Store.of(bmp1).invalidate()
+        collection = self.all_branches.ownedBy(owner)
+        [pre_bmp1, pre_bmp2] = sorted(
+            collection.getMergeProposals(eager_load=True),
+            key=attrgetter('id'))
+        with StormStatementRecorder() as recorder:
+            self.assertEqual(
+                removeSecurityProxy(pre_bmp1.preview_diff).id, previewdiff1.id)
+            self.assertEqual(
+                removeSecurityProxy(pre_bmp2.preview_diff).id, previewdiff2.id)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
 
     def test_merge_proposals_in_product(self):
         mp1 = self.factory.makeBranchMergeProposal()
@@ -1163,8 +1197,7 @@ class TestSearch(TestCaseWithFactory):
         fooix = self.factory.makeProduct(name='fooix')
         branch = self.factory.makeProductBranch(product=fooix)
         run_with_login(
-            fooix.owner, setattr, fooix.development_focus,
-            'branch', branch)
+            fooix.owner, setattr, fooix.development_focus, 'branch', branch)
         self.factory.makeAnyBranch()
         search_results = self.collection.search('lp://dev/fooix')
         self.assertEqual([branch], list(search_results))

@@ -59,13 +59,8 @@ from lp.bugs.scripts.checkwatches.scheduler import (
     MAX_SAMPLE_SIZE,
     )
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.code.model.diff import (
-    Diff,
-    PreviewDiff,
-    )
 from lp.code.model.revision import (
     RevisionAuthor,
     RevisionCache,
@@ -107,10 +102,7 @@ from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.job.model.job import Job
-from lp.services.librarian.model import (
-    LibraryFileAlias,
-    TimeLimitedToken,
-    )
+from lp.services.librarian.model import TimeLimitedToken
 from lp.services.log.logger import PrefixFilter
 from lp.services.looptuner import TunableLoop
 from lp.services.oauth.model import OAuthNonce
@@ -1344,43 +1336,6 @@ class UnusedAccessPolicyPruner(TunableLoop):
         transaction.commit()
 
 
-class PopulatePreviewDiffMergeProposal(TunableLoop):
-
-    maximum_chunk_size = 5000
-
-    def __init__(self, log, abort_time=None):
-        super(PopulatePreviewDiffMergeProposal, self).__init__(log, abort_time)
-        self.start_at = 1
-        self.store = IMasterStore(BranchMergeProposal)
-
-    def findBranchMergeProposalIDs(self):
-        return self.store.find(
-            BranchMergeProposal.id,
-            BranchMergeProposal.preview_diff_id != None,
-            BranchMergeProposal.id >= self.start_at).order_by(
-                BranchMergeProposal.id)
-
-    def isDone(self):
-        return self.findBranchMergeProposalIDs().is_empty()
-
-    def __call__(self, chunk_size):
-        bmp_ids = list(self.findBranchMergeProposalIDs()[:chunk_size])
-        columns = {
-            PreviewDiff.branch_merge_proposal_id: BranchMergeProposal.id,
-            PreviewDiff.date_created: LibraryFileAlias.date_created}
-        self.store.execute(
-            BulkUpdate(
-                columns, table=PreviewDiff,
-                values=[BranchMergeProposal, Diff, LibraryFileAlias],
-                where=And(
-                    BranchMergeProposal.id.is_in(bmp_ids),
-                    PreviewDiff.diff_id == Diff.id,
-                    Diff.diff_text == LibraryFileAlias.id,
-                    PreviewDiff.id == BranchMergeProposal.preview_diff_id)))
-        self.start_at = bmp_ids[-1] + 1
-        transaction.commit()
-
-
 class PopulateArchivePublishDebugSymbols(TunableLoop):
 
     maximum_chunk_size = 5000
@@ -1667,7 +1622,6 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         DuplicateSessionPruner,
         BugHeatUpdater,
         PopulateArchivePublishDebugSymbols,
-        PopulatePreviewDiffMergeProposal,
         ]
     experimental_tunable_loops = []
 

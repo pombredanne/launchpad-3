@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchMergeProposal mailings"""
@@ -67,15 +67,12 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         else:
             initial_status = BranchMergeProposalStatus.WORK_IN_PROGRESS
         bmp = self.factory.makeBranchMergeProposal(
-            registrant=registrant, product=product,
-            set_state=initial_status,
+            registrant=registrant, product=product, set_state=initial_status,
             prerequisite_branch=prerequisite_branch,
-            initial_comment=initial_comment,
-            reviewer=reviewer)
-        if diff_text is not None:
-            removeSecurityProxy(bmp).preview_diff = PreviewDiff.create(
-                bmp, diff_text,
-                unicode(self.factory.getUniqueString('revid')),
+            initial_comment=initial_comment, reviewer=reviewer)
+        if diff_text:
+            PreviewDiff.create(
+                bmp, diff_text, unicode(self.factory.getUniqueString('revid')),
                 unicode(self.factory.getUniqueString('revid')), None, None)
             transaction.commit()
         subscriber = self.factory.makePerson(displayname='Baz Quxx',

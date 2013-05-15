@@ -871,25 +871,23 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         # librarian content.
         text = ''.join(chr(x) for x in range(255))
         diff_bytes = ''.join(unified_diff('', text))
-        self.setPreviewDiff(diff_bytes)
+        preview_diff = self.setPreviewDiff(diff_bytes)
         transaction.commit()
 
         def fake_open(*args):
             raise LibrarianServerError
 
-        lfa = removeSecurityProxy(self.bmp.preview_diff).diff.diff_text
+        lfa = preview_diff.diff.diff_text
         with monkey_patch(lfa, open=fake_open):
-            view = create_initialized_view(self.bmp.preview_diff, '+diff')
+            view = create_initialized_view(preview_diff, '+diff')
             self.assertEqual('', view.preview_diff_text)
             self.assertFalse(view.diff_available)
             markup = view()
             self.assertIn('The diff is not available at this time.', markup)
 
     def setPreviewDiff(self, preview_diff_bytes):
-        preview_diff = PreviewDiff.create(
+        return PreviewDiff.create(
             self.bmp, preview_diff_bytes, u'a', u'b', None, u'')
-        removeSecurityProxy(self.bmp).preview_diff = preview_diff
-        return preview_diff
 
     def test_linked_bugs_excludes_mutual_bugs(self):
         """List bugs that are linked to the source only."""

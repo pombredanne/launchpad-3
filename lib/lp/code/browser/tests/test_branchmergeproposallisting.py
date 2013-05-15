@@ -207,7 +207,7 @@ class TestMerges(BrowserTestCase):
         with StormStatementRecorder() as recorder:
             self.getViewBrowser(
                 product, '+merges', rootsite='code', user=product.owner)
-        self.assertThat(recorder, HasQueryCount(Equals(40)))
+        self.assertThat(recorder, HasQueryCount(Equals(41)))
 
     def test_productseries(self):
         target = self.factory.makeBranch()

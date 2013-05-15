@@ -173,14 +173,11 @@ When a merge is initially proposed, it has no line count:
 
 After a preview diff is added, it has a line count.
 
-    >>> from lp.code.model.diff import PreviewDiff
     >>> login('foo.bar@canonical.com')
-    >>> removeSecurityProxy(proposal).preview_diff = PreviewDiff.create(
-    ...    proposal, 'a\n\b\n', u'source-id', u'target-id', u'prereq-id',
-    ...    u'conflicts')
+    >>> diff = factory.makePreviewDiff(merge_proposal=proposal)
     >>> logout()
     >>> browser.open(url)
     >>> print_tag_with_id(browser.contents, 'proposals')
     Other reviews I am not actively reviewing
     Branch Merge Proposal             Requested By    Lines Activity
-    lp://dev/...                      ...             2     None
+    lp://dev/...                      ...             14    None

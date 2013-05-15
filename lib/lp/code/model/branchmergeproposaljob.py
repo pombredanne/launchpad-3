@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Job classes related to BranchMergeProposals are in here.
@@ -371,10 +371,8 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         """See `IRunnableJob`."""
         self.checkReady()
         with server(get_ro_server(), no_replace=True):
-            preview = PreviewDiff.fromBranchMergeProposal(
-                self.branch_merge_proposal)
-        with BranchMergeProposalDelta.monitor(self.branch_merge_proposal):
-            self.branch_merge_proposal.preview_diff = preview
+            with BranchMergeProposalDelta.monitor(self.branch_merge_proposal):
+                PreviewDiff.fromBranchMergeProposal(self.branch_merge_proposal)
 
     def getOperationDescription(self):
         return ('generating the diff for a merge proposal')
