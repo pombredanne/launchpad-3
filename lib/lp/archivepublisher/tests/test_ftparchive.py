@@ -57,6 +57,7 @@ class SamplePublisher:
 
     def __init__(self, archive):
         self.archive = archive
+        self.subcomponents = ['debian-installer']
 
     def isAllowed(self, distroseries, pocket):
         return True
@@ -279,15 +280,13 @@ class TestFTPArchive(TestCaseWithFactory):
     def test_publishOverrides_ddebs_disabled(self):
         # ddebs aren't indexed if Archive.publish_debug_symbols is unset.
         fa = self._setUpFTPArchiveHandler()
-        self.assertEqual(['debian-installer'], fa.subcomponents)
         self._publishDefaultOverrides(
             fa, 'main', binpackageformat=BinaryPackageFormat.DDEB)
 
         # The main override file is empty, and there's no ddeb override
         # file.
-        self.assertEqual(
-            0,
-            os.stat(os.path.join(self._overdir, "override.hoary-test.main")))
+        stat = os.stat(os.path.join(self._overdir, "override.hoary-test.main"))
+        self.assertEqual(0, stat.st_size)
         self.assertFalse(
             os.path.exists(
                 os.path.join(self._overdir, "override.hoary-test.main.debug")))
@@ -296,8 +295,7 @@ class TestFTPArchive(TestCaseWithFactory):
         # ddebs are indexed in a subcomponent if
         # Archive.publish_debug_symbols is set.
         fa = self._setUpFTPArchiveHandler()
-        self._archive.publish_debug_symbols = True
-        self.assertEqual(['debian-installer', 'debug'], fa.subcomponents)
+        fa.publisher.subcomponents.append('debug')
         self._publishDefaultOverrides(
             fa, 'main', binpackageformat=BinaryPackageFormat.DDEB)
 

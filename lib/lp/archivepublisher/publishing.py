@@ -234,6 +234,15 @@ class Publisher(object):
         return (not self.allowed_suites or
                 (distroseries.name, pocket) in self.allowed_suites)
 
+    @property
+    def subcomponents(self):
+        subcomps = []
+        if self.archive.purpose != ArchivePurpose.PARTNER:
+            subcomps.append('debian-installer')
+        if self.archive.publish_debug_symbols:
+            subcomps.append('debug')
+        return subcomps
+
     def A_publish(self, force_publishing):
         """First step in publishing: actual package publishing.
 

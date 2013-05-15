@@ -34,6 +34,7 @@ from lp.archivepublisher.publishing import (
     )
 from lp.archivepublisher.utils import RepositoryIndexFile
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
@@ -1502,9 +1503,11 @@ class TestPublisherLite(TestCaseWithFactory):
         return self.factory.makeSourcePackagePublishingHistory(
             distroseries=series, status=PackagePublishingStatus.PENDING)
 
-    def makePublisher(self, series):
-        """Create a publisher for a given distroseries."""
-        return getPublisher(series.main_archive, None, DevNullLogger())
+    def makePublisher(self, archive_or_series):
+        """Create a publisher for a given archive or distroseries."""
+        if IDistroSeries.providedBy(archive_or_series):
+            archive_or_series = archive_or_series.main_archive
+        return getPublisher(archive_or_series, None, DevNullLogger())
 
     def makeFakeReleaseData(self):
         """Create a fake `debian.deb822.Release`.
@@ -1571,3 +1574,16 @@ class TestPublisherLite(TestCaseWithFactory):
         self.assertEqual(1, len(timestamps))
         # The filesystem may round off subsecond parts of timestamps.
         self.assertEqual(int(now), int(list(timestamps)[0]))
+
+    def test_subcomponents(self):
+        primary = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertEqual(
+            ['debian-installer'],
+            self.makePublisher(primary).subcomponents)
+        primary.publish_debug_symbols = True
+        self.assertEqual(
+            ['debian-installer', 'debug'],
+            self.makePublisher(primary).subcomponents)
+
+        partner = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
+        self.assertEqual([], self.makePublisher(partner).subcomponents)

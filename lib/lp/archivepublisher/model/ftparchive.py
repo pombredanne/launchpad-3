@@ -138,13 +138,6 @@ class FTPArchiveHandler:
         self.distro = distro
         self.publisher = publisher
 
-    @property
-    def subcomponents(self):
-        subcomps = ['debian-installer']
-        if self.publisher.archive.publish_debug_symbols:
-            subcomps.append('debug')
-        return subcomps
-
     def run(self, is_careful):
         """Do the entire generation and run process."""
         self.createEmptyPocketRequests(is_careful)
@@ -240,7 +233,7 @@ class FTPArchiveHandler:
             ("extra", comp),
             (comp, "src"),
             ]
-        for sub_comp in self.subcomponents:
+        for sub_comp in self.publisher.subcomponents:
             needed_paths.append((comp, sub_comp))
 
         for path in needed_paths:
@@ -260,7 +253,7 @@ class FTPArchiveHandler:
         for arch in arch_tags:
             # Touch more file lists for the archs.
             touch_list(comp, "binary-" + arch)
-            for sub_comp in self.subcomponents:
+            for sub_comp in self.publisher.subcomponents:
                 touch_list(comp, sub_comp, "binary-" + arch)
 
     #
@@ -434,7 +427,7 @@ class FTPArchiveHandler:
                     override['bin'].add((
                         package_arch, priority, section,
                         phased_update_percentage))
-                elif subcomp in self.subcomponents:
+                elif subcomp in self.publisher.subcomponents:
                     override[subcomp].add((packagename, priority, section))
             else:
                 override['src'].add((packagename, section))
@@ -537,7 +530,7 @@ class FTPArchiveHandler:
 
         _outputSimpleOverrides(source_override, src_overrides)
 
-        for subcomp in self.subcomponents:
+        for subcomp in self.publisher.subcomponents:
             sub_overrides = sorted(overrides[component][subcomp])
             if sub_overrides:
                 sub_path = os.path.join(
@@ -698,7 +691,7 @@ class FTPArchiveHandler:
             [(None, 'regular', '%s_%s_%s' % (dr_pocketed, component, arch))]
             + [(subcomp, subcomp,
                 '%s_%s_%s_%s' % (dr_pocketed, component, subcomp, arch))
-               for subcomp in self.subcomponents])
+               for subcomp in self.publisher.subcomponents])
         for subcomp, desc, filename in lists:
             self.log.debug(
                 "Writing %s file list for %s/%s/%s" % (
@@ -787,7 +780,7 @@ class FTPArchiveHandler:
 
         if archs:
             for component in comps:
-                for subcomp in self.subcomponents:
+                for subcomp in self.publisher.subcomponents:
                     apt_config.write(STANZA_TEMPLATE % {
                         "LISTPATH": self._config.overrideroot,
                         "DISTRORELEASEONDISK": "%s/%s" % (suite, component),
@@ -811,6 +804,6 @@ class FTPArchiveHandler:
                 safe_mkdir(os.path.join(component_path, "i18n"))
             for arch in archs:
                 safe_mkdir(os.path.join(component_path, "binary-" + arch))
-                for subcomp in self.subcomponents:
+                for subcomp in self.publisher.subcomponents:
                     safe_mkdir(os.path.join(
                         component_path, subcomp, "binary-" + arch))
