@@ -103,12 +103,6 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
 
 """
 
-
-FORMAT_TO_SUBCOMPONENT = {
-    BinaryPackageFormat.UDEB: 'debian-installer',
-    BinaryPackageFormat.DDEB: 'debug',
-    }
-
 EXT_TO_SUBCOMPONENT = {
     'udeb': 'debian-installer',
     'ddeb': 'debug',
@@ -390,6 +384,7 @@ class FTPArchiveHandler:
         """
         # This code is tested in soyuz-set-of-uploads, and in
         # test_ftparchive.
+        from lp.archivepublisher.publishing import FORMAT_TO_SUBCOMPONENT
 
         # overrides[component][src/bin] = sets of tuples
         overrides = defaultdict(lambda: defaultdict(set))
