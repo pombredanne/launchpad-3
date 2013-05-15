@@ -40,6 +40,7 @@ from storm.expr import (
     Or,
     Row,
     SQL,
+    Update,
     )
 from storm.info import ClassAlias
 from storm.store import EmptyResultSet
@@ -1380,6 +1381,37 @@ class PopulatePreviewDiffMergeProposal(TunableLoop):
         transaction.commit()
 
 
+class PopulateArchivePublishDebugSymbols(TunableLoop):
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(PopulateArchivePublishDebugSymbols, self).__init__(
+            log, abort_time)
+        self.start_at = 1
+        self.store = IMasterStore(Archive)
+
+    def findArchiveIDs(self):
+        return self.store.find(
+            Archive.id,
+            Archive.publish_debug_symbols == None,
+            Archive.id >= self.start_at).order_by(
+                Archive.id)
+
+    def isDone(self):
+        return self.findArchiveIDs().is_empty()
+
+    def __call__(self, chunk_size):
+        archive_ids = list(self.findArchiveIDs()[:chunk_size])
+        self.store.execute(
+            Update(
+                {Archive.publish_debug_symbols: False},
+                Archive.id.is_in(archive_ids),
+                Archive))
+        self.start_at = archive_ids[-1] + 1
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1634,6 +1666,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
+        PopulateArchivePublishDebugSymbols,
         PopulatePreviewDiffMergeProposal,
         ]
     experimental_tunable_loops = []

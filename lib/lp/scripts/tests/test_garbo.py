@@ -1288,6 +1288,14 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             'PopulateLatestPersonSourcePackageReleaseCache')
         self.assertEqual(spph_2.id, job_data['last_spph_id'])
 
+    def test_PopulateArchivePublishDebugSymbols(self):
+        switch_dbuser('testadmin')
+        archive = self.factory.makeArchive()
+        archive.publish_debug_symbols = None
+        self.runHourly()
+        self.assertIsNot(None, archive.publish_debug_symbols)
+        self.assertFalse(archive.publish_debug_symbols)
+
 
 class TestGarboTasks(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
