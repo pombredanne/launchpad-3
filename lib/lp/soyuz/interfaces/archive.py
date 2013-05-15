@@ -379,7 +379,7 @@ class IArchiveSubscriberView(Interface):
         "Tuple of packages building and waiting to build")
     publish = Bool(
         title=_("Publish"), required=False,
-        description=_("Whether or not to update the APT repository.  If "
+        description=_("Whether or not to update the apt repository.  If "
             "disabled, nothing will be published.  If the archive is "
             "private then additionally no builds will be dispatched."))
     series_with_sources = Attribute(
@@ -484,6 +484,10 @@ class IArchiveView(IHasBuildRecords):
         title=_("Build debug symbols"), required=False,
         description=_(
             "Create debug symbol packages for builds in the archive."))
+    publish_debug_symbols = Bool(
+        title=_("Publish debug symbols"), required=False,
+        description=_(
+            "Publish debug symbol packages in the apt repository."))
 
     authorized_size = exported(
         Int(

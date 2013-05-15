@@ -1904,7 +1904,25 @@ class CeleryJobLayer(AppServerLayer):
     @classmethod
     @profiled
     def setUp(cls):
-        cls.celeryd = celeryd('job')
+        cls.celeryd = celeryd('launchpad_job')
+        cls.celeryd.__enter__()
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        cls.celeryd.__exit__(None, None, None)
+        cls.celeryd = None
+
+
+class CeleryBzrsyncdJobLayer(AppServerLayer):
+    """Layer for tests that run jobs that read from branches via Celery."""
+
+    celeryd = None
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        cls.celeryd = celeryd('bzrsyncd_job')
         cls.celeryd.__enter__()
 
     @classmethod

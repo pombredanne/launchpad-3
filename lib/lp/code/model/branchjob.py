@@ -313,6 +313,8 @@ class BranchScanJob(BranchJobDerived):
 
     retry_error_types = (AdvisoryLockHeld,)
 
+    task_queue = 'bzrsyncd_job'
+
     config = config.branchscanner
 
     @classmethod
@@ -751,6 +753,8 @@ class RosettaUploadJob(BranchJobDerived):
     classProvides(IRosettaUploadJobSource)
 
     class_job_type = BranchJobType.ROSETTA_UPLOAD
+
+    task_queue = 'bzrsyncd_job'
 
     config = config.rosettabranches
 

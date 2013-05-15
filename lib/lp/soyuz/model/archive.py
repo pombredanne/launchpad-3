@@ -279,6 +279,8 @@ class Archive(SQLBase):
 
     build_debug_symbols = BoolCol(
         dbName='build_debug_symbols', notNull=True, default=False)
+    publish_debug_symbols = BoolCol(
+        dbName='publish_debug_symbols', notNull=False, default=False)
 
     authorized_size = IntCol(
         dbName='authorized_size', notNull=False, default=2048)

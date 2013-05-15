@@ -87,7 +87,7 @@ from lp.testing.dbuser import (
     switch_dbuser,
     )
 from lp.testing.layers import (
-    CeleryJobLayer,
+    CeleryBzrsyncdJobLayer,
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -1270,7 +1270,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
 
 class TestViaCelery(TestCaseWithFactory):
 
-    layer = CeleryJobLayer
+    layer = CeleryBzrsyncdJobLayer
 
     def test_RosettaUploadJob(self):
         """Ensure RosettaUploadJob can run under Celery."""
