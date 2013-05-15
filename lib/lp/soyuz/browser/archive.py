@@ -2033,6 +2033,7 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
         'suppress_subscription_notifications',
         'require_virtualized',
         'build_debug_symbols',
+        'publish_debug_symbols',
         'authorized_size',
         'relative_build_score',
         'external_dependencies',
