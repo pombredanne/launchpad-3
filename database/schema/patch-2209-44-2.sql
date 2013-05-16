@@ -4,7 +4,5 @@
 SET client_min_messages=ERROR;
 
 ALTER TABLE branchmergeproposal DROP COLUMN merge_diff;
-ALTER TABLE previewdiff ALTER COLUMN branch_merge_proposal SET NOT NULL,
-                        ALTER COLUMN date_created SET NOT NULL;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 44, 2);
