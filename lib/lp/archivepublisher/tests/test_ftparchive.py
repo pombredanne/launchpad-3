@@ -265,9 +265,8 @@ class TestFTPArchive(TestCaseWithFactory):
             binpackageformat=BinaryPackageFormat.UDEB)
 
         # The main override file is empty.
-        path = os.path.join(self._overdir, "override.hoary-test.main")
-        with open(path) as result_file:
-            self.assertEqual('', result_file.read())
+        stat = os.stat(os.path.join(self._overdir, "override.hoary-test.main"))
+        self.assertEqual(0, stat.st_size)
 
         # The binary shows up in the d-i override file.
         path = os.path.join(

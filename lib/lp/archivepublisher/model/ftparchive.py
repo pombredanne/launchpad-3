@@ -412,10 +412,6 @@ class FTPArchiveHandler:
             # duplicated overrides.
             if archtag:
                 priority = priority.title.lower()
-                # We pick up subcomponent packages here, although they
-                # do not need phased updates (and adding the
-                # phased_update_percentage would complicate
-                # generateOverrideForComponent).
                 subcomp = FORMAT_TO_SUBCOMPONENT.get(binpackageformat)
                 if subcomp is None:
                     package_arch = "%s/%s" % (packagename, archtag)
@@ -423,6 +419,10 @@ class FTPArchiveHandler:
                         package_arch, priority, section,
                         phased_update_percentage))
                 elif subcomp in self.publisher.subcomponents:
+                    # We pick up subcomponent packages here, although they
+                    # do not need phased updates (and adding the
+                    # phased_update_percentage would complicate
+                    # generateOverrideForComponent).
                     override[subcomp].add((packagename, priority, section))
             else:
                 override['src'].add((packagename, section))
