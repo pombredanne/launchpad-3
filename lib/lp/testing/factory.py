@@ -3742,7 +3742,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                            source_package_release=None,
                                            binpackageformat=None,
                                            sourcepackagename=None,
-                                           with_debug=False):
+                                           version=None,
+                                           with_debug=False, with_file=False):
         """Make a `BinaryPackagePublishingHistory`."""
         if distroarchseries is None:
             if archive is None:
@@ -3759,7 +3760,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 purpose=ArchivePurpose.PRIMARY)
 
         if pocket is None:
-            pocket = self.getAnyPocket() 
+            pocket = self.getAnyPocket()
         if status is None:
             status = PackagePublishingStatus.PENDING
 
@@ -3776,10 +3777,25 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 pocket=pocket, source_package_release=source_package_release,
                 sourcepackagename=sourcepackagename)
             binarypackagerelease = self.makeBinaryPackageRelease(
-                binarypackagename=binarypackagename,
+                binarypackagename=binarypackagename, version=version,
                 build=binarypackagebuild,
                 component=component, binpackageformat=binpackageformat,
                 section_name=section_name, priority=priority)
+            if with_file:
+                ext = {
+                    BinaryPackageFormat.DEB: 'deb',
+                    BinaryPackageFormat.UDEB: 'udeb',
+                    BinaryPackageFormat.DDEB: 'ddeb',
+                    }[binarypackagerelease.binpackageformat]
+                lfa = self.makeLibraryFileAlias(
+                    filename='%s_%s_%s.%s' % (
+                        binarypackagerelease.binarypackagename.name,
+                        binarypackagerelease.version,
+                        binarypackagebuild.distro_arch_series.architecturetag,
+                        ext))
+                self.makeBinaryPackageFile(
+                    binarypackagerelease=binarypackagerelease,
+                    library_file=lfa)
 
         if datecreated is None:
             datecreated = self.getUniqueDate()
@@ -3798,7 +3814,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_bpph.datepublished = UTC_NOW
         if with_debug:
             debug_bpph = self.makeBinaryPackagePublishingHistory(
-                distroarchseries=distroarchseries,
+                binarypackagename=(
+                    binarypackagerelease.binarypackagename.name + '-dbgsym'),
+                version=version, distroarchseries=distroarchseries,
                 component=component, section_name=binarypackagerelease.section,
                 priority=priority, status=status,
                 scheduleddeletiondate=scheduleddeletiondate,
@@ -3806,7 +3824,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 pocket=pocket, archive=archive,
                 source_package_release=source_package_release,
                 binpackageformat=BinaryPackageFormat.DDEB,
-                sourcepackagename=sourcepackagename)
+                sourcepackagename=sourcepackagename,
+                with_file=with_file)
             removeSecurityProxy(bpph.binarypackagerelease).debug_package = (
                 debug_bpph.binarypackagerelease)
             return bpph, debug_bpph
@@ -3881,6 +3900,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             binpackageformat = BinaryPackageFormat.DEB
         if component is None:
             component = build.source_package_release.component
+        elif isinstance(component, unicode):
+            component = getUtility(IComponentSet)[component]
         if isinstance(section_name, basestring):
             section_name = self.makeSection(section_name)
         section = section_name or build.source_package_release.section

@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
+    'FORMAT_TO_SUBCOMPONENT',
     'GLOBAL_PUBLISHER_LOCK',
     'Publisher',
     'getPublisher',
@@ -66,6 +67,12 @@ from lp.soyuz.model.publishing import (
 # archives in the filesystem.  In a Launchpad(Cron)Script, set
 # lockfilename to this value to make it use the shared lock.
 GLOBAL_PUBLISHER_LOCK = 'launchpad-publisher.lock'
+
+
+FORMAT_TO_SUBCOMPONENT = {
+    BinaryPackageFormat.UDEB: 'debian-installer',
+    BinaryPackageFormat.DDEB: 'debug',
+    }
 
 
 def reorder_components(components):
@@ -233,6 +240,15 @@ class Publisher(object):
         """
         return (not self.allowed_suites or
                 (distroseries.name, pocket) in self.allowed_suites)
+
+    @property
+    def subcomponents(self):
+        subcomps = []
+        if self.archive.purpose != ArchivePurpose.PARTNER:
+            subcomps.append('debian-installer')
+        if self.archive.publish_debug_symbols:
+            subcomps.append('debug')
+        return subcomps
 
     def A_publish(self, force_publishing):
         """First step in publishing: actual package publishing.
@@ -433,33 +449,33 @@ class Publisher(object):
 
             self.log.debug("Generating Packages for %s" % arch_path)
 
+            indices = {}
             package_index_root = os.path.join(
                 self._config.distsroot, suite_name, component.name, arch_path)
-            package_index = RepositoryIndexFile(
+            indices[None] = RepositoryIndexFile(
                 package_index_root, self._config.temproot, 'Packages')
 
-            di_index_root = os.path.join(
-                self._config.distsroot, suite_name, component.name,
-                'debian-installer', arch_path)
-            di_index = RepositoryIndexFile(
-                di_index_root, self._config.temproot, 'Packages')
+            for subcomp in self.subcomponents:
+                sub_index_root = os.path.join(
+                    self._config.distsroot, suite_name, component.name,
+                    subcomp, arch_path)
+                indices[subcomp] = RepositoryIndexFile(
+                    sub_index_root, self._config.temproot, 'Packages')
 
             for bpp in distroseries.getBinaryPackagePublishing(
                     arch.architecturetag, pocket, component, self.archive):
+                subcomp = FORMAT_TO_SUBCOMPONENT.get(
+                    bpp.binarypackagerelease.binpackageformat)
+                if subcomp not in indices:
+                    # Skip anything that we're not generating indices
+                    # for, eg. ddebs where publish_debug_symbols is
+                    # disabled.
+                    continue
                 stanza = bpp.getIndexStanza().encode('utf-8') + '\n\n'
-                if (bpp.binarypackagerelease.binpackageformat in
-                    (BinaryPackageFormat.DEB, BinaryPackageFormat.DDEB)):
-                    package_index.write(stanza)
-                elif (bpp.binarypackagerelease.binpackageformat ==
-                      BinaryPackageFormat.UDEB):
-                    di_index.write(stanza)
-                else:
-                    self.log.debug(
-                        "Cannot publish %s because it is not a DEB or "
-                        "UDEB file" % bpp.displayname)
+                indices[subcomp].write(stanza)
 
-            package_index.close()
-            di_index.close()
+            for index in indices.itervalues():
+                index.close()
 
     def cannotModifySuite(self, distroseries, pocket):
         """Return True if the distroseries is stable and pocket is release."""
@@ -659,14 +675,12 @@ class Publisher(object):
         """Write out a Release file for an architecture in a suite."""
         file_stub = 'Packages'
         arch_path = 'binary-' + arch_name
-        # Only the primary and PPA archives have debian-installer.
-        if self.archive.purpose != ArchivePurpose.PARTNER:
-            # Set up the debian-installer paths for main_archive.
-            # d-i paths are nested inside the component.
-            di_path = os.path.join(
-                component, "debian-installer", arch_path)
-            di_file_stub = os.path.join(di_path, file_stub)
-            all_series_files.update(get_suffixed_indices(di_file_stub))
+
+        for subcomp in self.subcomponents:
+            # Set up the subcomponent paths.
+            sub_path = os.path.join(component, subcomp, arch_path)
+            sub_file_stub = os.path.join(sub_path, file_stub)
+            all_series_files.update(get_suffixed_indices(sub_file_stub))
         self._writeSuiteArchOrSource(
             distroseries, pocket, component, 'Packages', arch_name, arch_path,
             all_series_files)

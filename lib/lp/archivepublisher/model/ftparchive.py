@@ -27,7 +27,10 @@ from lp.services.database.interfaces import (
 from lp.services.database.stormexpr import Concatenate
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.osutils import write_file
-from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.enums import (
+    BinaryPackageFormat,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
@@ -99,6 +102,16 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
 }
 
 """
+
+EXT_TO_SUBCOMPONENT = {
+    'udeb': 'debian-installer',
+    'ddeb': 'debug',
+    }
+
+SUBCOMPONENT_TO_EXT = {
+    'debian-installer': 'udeb',
+    'debug': 'ddeb',
+    }
 
 
 class AptFTPArchiveFailure(Exception):
@@ -209,12 +222,15 @@ class FTPArchiveHandler:
         suite = distroseries.getSuite(pocket)
 
         # Create empty override lists.
-        for path in (
-            (comp, ),
+        needed_paths = [
+            (comp,),
             ("extra", comp),
-            (comp, "debian-installer"),
             (comp, "src"),
-            ):
+            ]
+        for sub_comp in self.publisher.subcomponents:
+            needed_paths.append((comp, sub_comp))
+
+        for path in needed_paths:
             write_file(os.path.join(
                 self._config.overrideroot,
                 ".".join(("override", suite) + path)), "")
@@ -231,7 +247,8 @@ class FTPArchiveHandler:
         for arch in arch_tags:
             # Touch more file lists for the archs.
             touch_list(comp, "binary-" + arch)
-            touch_list(comp, "debian-installer", "binary-" + arch)
+            for sub_comp in self.publisher.subcomponents:
+                touch_list(comp, sub_comp, "binary-" + arch)
 
     #
     # Override Generation
@@ -276,8 +293,9 @@ class FTPArchiveHandler:
         """Fetch override information about all published binaries.
 
         The override information consists of tuples with 'binaryname',
-        'component', 'section', 'architecture' and 'priority' strings and
-        'phased_update_percentage' integers, in this order.
+        'component', 'section', 'architecture' and 'priority' strings,
+        'binpackageformat' enum, 'phased_update_percentage' integer, in this
+        order.
 
         :param distroseries: target `IDistroSeries`
         :param pocket: target `PackagePublishingPocket`
@@ -306,17 +324,26 @@ class FTPArchiveHandler:
         if len(architectures_ids) == 0:
             return EmptyResultSet()
 
-        result_set = store.using(*origins).find(
-            (BinaryPackageName.name, Component.name, Section.name,
-             DistroArchSeries.architecturetag,
-             BinaryPackagePublishingHistory.priority,
-             BinaryPackagePublishingHistory.phased_update_percentage),
+        conditions = [
             BinaryPackagePublishingHistory.archive == self.publisher.archive,
             BinaryPackagePublishingHistory.distroarchseriesID.is_in(
                 architectures_ids),
             BinaryPackagePublishingHistory.pocket == pocket,
             BinaryPackagePublishingHistory.status ==
-                PackagePublishingStatus.PUBLISHED)
+                PackagePublishingStatus.PUBLISHED,
+            ]
+        if not self.publisher.archive.publish_debug_symbols:
+            conditions.append(
+                BinaryPackageRelease.binpackageformat
+                    != BinaryPackageFormat.DDEB)
+
+        result_set = store.using(*origins).find(
+            (BinaryPackageName.name, Component.name, Section.name,
+             DistroArchSeries.architecturetag,
+             BinaryPackagePublishingHistory.priority,
+             BinaryPackageRelease.binpackageformat,
+             BinaryPackagePublishingHistory.phased_update_percentage),
+            *conditions)
 
         return result_set.order_by(Desc(BinaryPackagePublishingHistory.id))
 
@@ -357,12 +384,14 @@ class FTPArchiveHandler:
         """
         # This code is tested in soyuz-set-of-uploads, and in
         # test_ftparchive.
+        from lp.archivepublisher.publishing import FORMAT_TO_SUBCOMPONENT
 
         # overrides[component][src/bin] = sets of tuples
         overrides = defaultdict(lambda: defaultdict(set))
 
         def updateOverride(packagename, component, section, archtag=None,
-                           priority=None, phased_update_percentage=None):
+                           priority=None, binpackageformat=None,
+                           phased_update_percentage=None):
             """Generates and packs tuples of data required for overriding.
 
             If archtag is provided, it's a binary tuple; otherwise, it's a
@@ -383,17 +412,18 @@ class FTPArchiveHandler:
             # duplicated overrides.
             if archtag:
                 priority = priority.title.lower()
-                # We pick up debian-installer packages here, although they
-                # do not need phased updates (and adding the
-                # phased_update_percentage would complicate
-                # generateOverrideForComponent).
-                if section.endswith("debian-installer"):
-                    override['d-i'].add((packagename, priority, section))
-                else:
+                subcomp = FORMAT_TO_SUBCOMPONENT.get(binpackageformat)
+                if subcomp is None:
                     package_arch = "%s/%s" % (packagename, archtag)
                     override['bin'].add((
                         package_arch, priority, section,
                         phased_update_percentage))
+                elif subcomp in self.publisher.subcomponents:
+                    # We pick up subcomponent packages here, although they
+                    # do not need phased updates (and adding the
+                    # phased_update_percentage would complicate
+                    # generateOverrideForComponent).
+                    override[subcomp].add((packagename, priority, section))
             else:
                 override['src'].add((packagename, section))
 
@@ -419,7 +449,6 @@ class FTPArchiveHandler:
         """Generates overrides for a specific component."""
         src_overrides = sorted(overrides[component]['src'])
         bin_overrides = sorted(overrides[component]['bin'])
-        di_overrides = sorted(overrides[component]['d-i'])
 
         # Set up filepaths for the overrides we read
         extra_extra_overrides = os.path.join(self._config.miscroot,
@@ -433,9 +462,6 @@ class FTPArchiveHandler:
                                      "override.%s.%s" % (suite, component))
         ef_override = os.path.join(self._config.overrideroot,
                                    "override.%s.extra.%s" % (suite, component))
-        di_override = os.path.join(self._config.overrideroot,
-                                   "override.%s.%s.debian-installer" %
-                                   (suite, component))
         source_override = os.path.join(self._config.overrideroot,
                                        "override.%s.%s.src" %
                                        (suite, component))
@@ -498,8 +524,14 @@ class FTPArchiveHandler:
             sf.close()
 
         _outputSimpleOverrides(source_override, src_overrides)
-        if di_overrides:
-            _outputSimpleOverrides(di_override, di_overrides)
+
+        for subcomp in self.publisher.subcomponents:
+            sub_overrides = sorted(overrides[component][subcomp])
+            if sub_overrides:
+                sub_path = os.path.join(
+                    self._config.overrideroot,
+                    "override.%s.%s.%s" % (suite, component, subcomp))
+                _outputSimpleOverrides(sub_path, sub_overrides)
 
     #
     # File List Generation
@@ -571,6 +603,11 @@ class FTPArchiveHandler:
                 PackagePublishingStatus.PUBLISHED,
             ]
 
+        if not self.publisher.archive.publish_debug_symbols:
+            select_conditions.append(
+                BinaryPackageRelease.binpackageformat
+                    != BinaryPackageFormat.DDEB)
+
         result_set = store.find(
             columns, *(join_conditions + select_conditions))
         return result_set.order_by(
@@ -639,36 +676,26 @@ class FTPArchiveHandler:
     def writeFileList(self, arch, file_names, dr_pocketed, component):
         """Output file lists for a series and architecture.
 
-        This includes a debian-installer file list.
+        This includes the subcomponent file lists.
         """
-        files = []
-        di_files = []
-        f_path = os.path.join(self._config.overrideroot,
-                              "%s_%s_%s" % (dr_pocketed, component, arch))
-        f = file(f_path, "w")
+        files = defaultdict(list)
         for name in file_names:
-            if name.endswith(".udeb"):
-                # Note the name for output later
-                di_files.append(name)
-            else:
-                files.append(name)
-        files.sort(key=package_name)
-        f.write("\n".join(files))
-        f.write("\n")
-        f.close()
+            files[EXT_TO_SUBCOMPONENT.get(name.rsplit('.', 1)[1])].append(name)
 
-        # Once again, some d-i stuff to write out...
-        self.log.debug(
-            "Writing d-i file list for %s/%s/%s" % (
-                dr_pocketed, component, arch))
-        di_overrides = os.path.join(
-            self._config.overrideroot,
-            "%s_%s_debian-installer_%s" % (dr_pocketed, component, arch))
-        f = open(di_overrides, "w")
-        di_files.sort(key=package_name)
-        f.write("\n".join(di_files))
-        f.write("\n")
-        f.close()
+        lists = (
+            [(None, 'regular', '%s_%s_%s' % (dr_pocketed, component, arch))]
+            + [(subcomp, subcomp,
+                '%s_%s_%s_%s' % (dr_pocketed, component, subcomp, arch))
+               for subcomp in self.publisher.subcomponents])
+        for subcomp, desc, filename in lists:
+            self.log.debug(
+                "Writing %s file list for %s/%s/%s" % (
+                    desc, dr_pocketed, component, arch))
+            path = os.path.join(self._config.overrideroot, filename)
+            with open(path, "w") as f:
+                files[subcomp].sort(key=package_name)
+                f.write("\n".join(files[subcomp]))
+                f.write("\n")
 
     #
     # Config Generation
@@ -748,19 +775,20 @@ class FTPArchiveHandler:
 
         if archs:
             for component in comps:
-                apt_config.write(STANZA_TEMPLATE % {
-                    "LISTPATH": self._config.overrideroot,
-                    "DISTRORELEASEONDISK": "%s/%s" % (suite, component),
-                    "DISTRORELEASEBYFILE": "%s_%s" % (suite, component),
-                    "DISTRORELEASE": "%s.%s" % (suite, component),
-                    "ARCHITECTURES": " ".join(archs),
-                    "SECTIONS": "debian-installer",
-                    "EXTENSIONS": ".udeb",
-                    "CACHEINSERT": "debian-installer-",
-                    "DISTS": os.path.basename(self._config.distsroot),
-                    "HIDEEXTRA": "// ",
-                    "LONGDESCRIPTION": "true",
-                    })
+                for subcomp in self.publisher.subcomponents:
+                    apt_config.write(STANZA_TEMPLATE % {
+                        "LISTPATH": self._config.overrideroot,
+                        "DISTRORELEASEONDISK": "%s/%s" % (suite, component),
+                        "DISTRORELEASEBYFILE": "%s_%s" % (suite, component),
+                        "DISTRORELEASE": "%s.%s" % (suite, component),
+                        "ARCHITECTURES": " ".join(archs),
+                        "SECTIONS": subcomp,
+                        "EXTENSIONS": '.%s' % SUBCOMPONENT_TO_EXT[subcomp],
+                        "CACHEINSERT": "%s-" % subcomp,
+                        "DISTS": os.path.basename(self._config.distsroot),
+                        "HIDEEXTRA": "// ",
+                        "LONGDESCRIPTION": "true",
+                        })
 
         # XXX: 2006-08-24 kiko: Why do we do this directory creation here?
         for comp in comps:
@@ -771,5 +799,6 @@ class FTPArchiveHandler:
                 safe_mkdir(os.path.join(component_path, "i18n"))
             for arch in archs:
                 safe_mkdir(os.path.join(component_path, "binary-" + arch))
-                safe_mkdir(os.path.join(
-                    component_path, "debian-installer", "binary-" + arch))
+                for subcomp in self.publisher.subcomponents:
+                    safe_mkdir(os.path.join(
+                        component_path, subcomp, "binary-" + arch))
