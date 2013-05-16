@@ -648,23 +648,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             "SELECT COUNT(*) FROM %s" % table_name).get_one()[0]
         self.failUnless(num_unexpired > 0)
 
-    def test_PreviewDiffPruner(self):
-        switch_dbuser('testadmin')
-        mp1 = self.factory.makeBranchMergeProposal()
-        now = datetime.now(UTC)
-        self.factory.makePreviewDiff(
-            merge_proposal=mp1, date_created=now - timedelta(hours=2))
-        self.factory.makePreviewDiff(
-            merge_proposal=mp1, date_created=now - timedelta(hours=1))
-        mp1_diff = self.factory.makePreviewDiff(merge_proposal=mp1)
-        mp2 = self.factory.makeBranchMergeProposal()
-        mp2_diff = self.factory.makePreviewDiff(merge_proposal=mp2)
-        self.runDaily()
-        mp1_diff_ids = [removeSecurityProxy(p).id for p in mp1.preview_diffs]
-        mp2_diff_ids = [removeSecurityProxy(p).id for p in mp2.preview_diffs]
-        self.assertEqual([mp1_diff.id], mp1_diff_ids)
-        self.assertEqual([mp2_diff.id], mp2_diff_ids)
-
     def test_RevisionAuthorEmailLinker(self):
         switch_dbuser('testadmin')
         rev1 = self.factory.makeRevision('Author 1 <author-1@Example.Org>')
