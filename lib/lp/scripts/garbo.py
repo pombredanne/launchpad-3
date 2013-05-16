@@ -392,6 +392,7 @@ class UnlinkedAccountPruner(BulkPruner):
         WHERE Person.id IS NULL
         """
 
+
 class BugSummaryJournalRollup(TunableLoop):
     """Rollup BugSummaryJournal rows into BugSummary."""
     maximum_chunk_size = 5000
