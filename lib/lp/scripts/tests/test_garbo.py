@@ -14,6 +14,7 @@ import logging
 from StringIO import StringIO
 import time
 
+import pytz
 from pytz import UTC
 from storm.expr import (
     In,
@@ -1182,28 +1183,28 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         spr1 = self.factory.makeSourcePackageRelease(
             creator=creators[0], maintainer=maintainers[0],
             distroseries=distroseries, sourcepackagename=spn,
-            date_uploaded=datetime(2010, 12, 1, tzinfo=UTC))
+            date_uploaded=datetime(2010, 12, 1, tzinfo=pytz.UTC))
         self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED,
             sourcepackagerelease=spr1)
         spr2 = self.factory.makeSourcePackageRelease(
             creator=creators[0], maintainer=maintainers[1],
             distroseries=distroseries, sourcepackagename=spn,
-            date_uploaded=datetime(2010, 12, 2, tzinfo=UTC))
+            date_uploaded=datetime(2010, 12, 2, tzinfo=pytz.UTC))
         self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED,
             sourcepackagerelease=spr2)
         spr3 = self.factory.makeSourcePackageRelease(
             creator=creators[1], maintainer=maintainers[0],
             distroseries=distroseries, sourcepackagename=spn,
-            date_uploaded=datetime(2010, 12, 3, tzinfo=UTC))
+            date_uploaded=datetime(2010, 12, 3, tzinfo=pytz.UTC))
         self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED,
             sourcepackagerelease=spr3)
         spr4 = self.factory.makeSourcePackageRelease(
             creator=creators[1], maintainer=maintainers[1],
             distroseries=distroseries, sourcepackagename=spn,
-            date_uploaded=datetime(2010, 12, 4, tzinfo=UTC))
+            date_uploaded=datetime(2010, 12, 4, tzinfo=pytz.UTC))
         spph_1 = self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED,
             sourcepackagerelease=spr4)
@@ -1227,7 +1228,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             self.assertEqual(spr.creator, record.creator)
             self.assertIsNone(record.maintainer_id)
             self.assertEqual(
-                spr.dateuploaded, UTC.localize(record.dateuploaded))
+                spr.dateuploaded, pytz.UTC.localize(record.dateuploaded))
 
         def _assert_release_by_maintainer(maintainer, spr):
             release_records = store.find(
@@ -1238,7 +1239,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             self.assertEqual(spr.maintainer, record.maintainer)
             self.assertIsNone(record.creator_id)
             self.assertEqual(
-                spr.dateuploaded, UTC.localize(record.dateuploaded))
+                spr.dateuploaded, pytz.UTC.localize(record.dateuploaded))
 
         _assert_release_by_creator(creators[0], spr2)
         _assert_release_by_creator(creators[1], spr4)
@@ -1255,7 +1256,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         spr5 = self.factory.makeSourcePackageRelease(
             creator=creators[1], maintainer=maintainers[1],
             distroseries=distroseries, sourcepackagename=spn,
-            date_uploaded=datetime(2010, 12, 5, tzinfo=UTC))
+            date_uploaded=datetime(2010, 12, 5, tzinfo=pytz.UTC))
         spph_2 = self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED,
             sourcepackagerelease=spr5)
