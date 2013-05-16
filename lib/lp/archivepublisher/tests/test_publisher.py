@@ -34,6 +34,7 @@ from lp.archivepublisher.publishing import (
     )
 from lp.archivepublisher.utils import RepositoryIndexFile
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
@@ -653,6 +654,7 @@ class TestPublisher(TestPublisherBase):
         allowed_suites = []
 
         cprov = getUtility(IPersonSet).getByName('cprov')
+        cprov.archive.publish_debug_symbols = True
 
         archive_publisher = getPublisher(
             cprov.archive, allowed_suites, self.logger)
@@ -666,7 +668,8 @@ class TestPublisher(TestPublisherBase):
             pub_source=pub_source,
             description="   My leading spaces are normalised to a single "
                         "space but not trailing.  \n    It does nothing, "
-                        "though")[0]
+                        "though",
+            with_debug=True)
 
         # Ignored (deleted) source publication that will not be listed in
         # the index and a pending 'udeb' binary package.
@@ -764,6 +767,37 @@ class TestPublisher(TestPublisherBase):
              'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
              'Description: Foo app is great',
              ' nice udeb',
+             ''],
+            index_contents)
+
+        # 'debug' too, when publish_debug_symbols is enabled.
+        index_contents = self._checkCompressedFile(
+            archive_publisher,
+            os.path.join('debug', 'binary-i386', 'Packages.bz2'),
+            os.path.join('debug', 'binary-i386', 'Packages'))
+
+        index_contents = self._checkCompressedFile(
+            archive_publisher,
+            os.path.join('debug', 'binary-i386', 'Packages.gz'),
+            os.path.join('debug', 'binary-i386', 'Packages'))
+
+        self.assertEqual(
+            ['Package: foo-bin-dbgsym',
+             'Source: foo',
+             'Priority: standard',
+             'Section: base',
+             'Installed-Size: 100',
+             'Maintainer: Foo Bar <foo@bar.com>',
+             'Architecture: all',
+             'Version: 666',
+             'Filename: pool/main/f/foo/foo-bin-dbgsym_666_all.ddeb',
+             'Size: 18',
+             'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
+             'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             'Description: Foo app is great',
+             ' My leading spaces are normalised to a single space but not '
+             'trailing.  ',
+             ' It does nothing, though',
              ''],
             index_contents)
 
@@ -1502,9 +1536,11 @@ class TestPublisherLite(TestCaseWithFactory):
         return self.factory.makeSourcePackagePublishingHistory(
             distroseries=series, status=PackagePublishingStatus.PENDING)
 
-    def makePublisher(self, series):
-        """Create a publisher for a given distroseries."""
-        return getPublisher(series.main_archive, None, DevNullLogger())
+    def makePublisher(self, archive_or_series):
+        """Create a publisher for a given archive or distroseries."""
+        if IDistroSeries.providedBy(archive_or_series):
+            archive_or_series = archive_or_series.main_archive
+        return getPublisher(archive_or_series, None, DevNullLogger())
 
     def makeFakeReleaseData(self):
         """Create a fake `debian.deb822.Release`.
@@ -1571,3 +1607,16 @@ class TestPublisherLite(TestCaseWithFactory):
         self.assertEqual(1, len(timestamps))
         # The filesystem may round off subsecond parts of timestamps.
         self.assertEqual(int(now), int(list(timestamps)[0]))
+
+    def test_subcomponents(self):
+        primary = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertEqual(
+            ['debian-installer'],
+            self.makePublisher(primary).subcomponents)
+        primary.publish_debug_symbols = True
+        self.assertEqual(
+            ['debian-installer', 'debug'],
+            self.makePublisher(primary).subcomponents)
+
+        partner = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
+        self.assertEqual([], self.makePublisher(partner).subcomponents)
