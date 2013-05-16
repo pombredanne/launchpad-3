@@ -53,6 +53,7 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.code.model.diff import Diff
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
@@ -608,8 +609,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         pruner = OpenIDConsumerAssociationPruner
         table_name = pruner.table_name
         switch_dbuser('testadmin')
-        store_selector = getUtility(IStoreSelector)
-        store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         now = time.time()
         # Create some associations in the past with lifetimes
         for delta in range(0, 20):
@@ -632,7 +632,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.runFrequently()
 
         switch_dbuser('testadmin')
-        store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         # Confirm all the rows we know should have been expired have
         # been expired. These are the ones that would be expired using
         # the test start time as 'now'.
@@ -664,6 +664,13 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         mp2_diff_ids = [removeSecurityProxy(p).id for p in mp2.preview_diffs]
         self.assertEqual([mp1_diff.id], mp1_diff_ids)
         self.assertEqual([mp2_diff.id], mp2_diff_ids)
+
+    def test_DiffPruner(self):
+        switch_dbuser('testadmin')
+        diff_id = removeSecurityProxy(self.factory.makeDiff()).id
+        self.runDaily()
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.assertContentEqual([], store.find(Diff, Diff.id == diff_id))
 
     def test_RevisionAuthorEmailLinker(self):
         switch_dbuser('testadmin')
