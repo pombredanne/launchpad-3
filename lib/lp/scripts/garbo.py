@@ -382,6 +382,10 @@ class OAuthNoncePruner(BulkPruner):
 
 
 class PreviewDiffPruner(BulkPruner):
+    """A BulkPruner to remove old PreviewDiffs.
+
+    We remove all but the latest PreviewDiff for each BranchMergeProposal.
+    """
     target_table_class = PreviewDiff
     ids_to_prune_query = """
         SELECT id
@@ -395,6 +399,7 @@ class PreviewDiffPruner(BulkPruner):
 
 
 class DiffPruner(BulkPruner):
+    """A BulkPruner to remove all unreferenced Diffs."""
     target_table_class = Diff
     ids_to_prune_query = """
         SELECT id FROM diff EXCEPT (SELECT diff FROM previewdiff UNION ALL
