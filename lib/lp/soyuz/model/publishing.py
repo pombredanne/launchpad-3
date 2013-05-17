@@ -1494,13 +1494,6 @@ class PublishingSet:
               for (das, bpr, (component, section, priority)) in needed],
             get_objects=True)
 
-    def publishBinary(self, archive, binarypackagerelease, distroseries,
-                      component, section, priority, pocket):
-        """See `IPublishingSet`."""
-        return self.publishBinaries(
-            archive, distroseries, pocket,
-            {binarypackagerelease: (component, section, priority)})
-
     def newBinaryPublication(self, archive, binarypackagerelease,
                              distroarchseries, component, section, priority,
                              pocket):

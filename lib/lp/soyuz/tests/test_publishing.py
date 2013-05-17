@@ -1407,12 +1407,12 @@ class TestGetBuiltBinaries(TestNativePublishingBase):
 
 
 class TestPublishBinaries(TestCaseWithFactory):
-    """Test PublishingSet.publishBinary() works."""
+    """Test PublishingSet.publishBinaries() works."""
 
     layer = LaunchpadZopelessLayer
 
     def makeArgs(self, bprs, distroseries, archive=None):
-        """Create a dict of arguments for publishBinary."""
+        """Create a dict of arguments for publishBinaries."""
         if archive is None:
             archive = distroseries.main_archive
         return {
