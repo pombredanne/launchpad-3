@@ -186,7 +186,8 @@ class StructuralSubscription(Storm):
         return bug_filter
 
     def delete(self):
-        [bugfilter.delete() for bugfilter in self.bug_filters]
+        BugSubscriptionFilter.deleteMultiple(
+            [bf.id for bf in self.bug_filters])
         Store.of(self).remove(self)
 
 
@@ -560,8 +561,8 @@ def _get_structural_subscriptions(find, targets, *conditions):
     """
     targets = set(target for bugtask, target in targets)
     target_descriptions = [
-        IStructuralSubscriptionTargetHelper(target).join
-        for target in targets]
+        IStructuralSubscriptionTargetHelper(bugtarget).join
+        for bugtarget in targets]
     return IStore(StructuralSubscription).find(
         find, Or(*target_descriptions), *conditions)
 

@@ -21,7 +21,6 @@ from storm.locals import (
     DateTime,
     Int,
     Reference,
-    SQL,
     Store,
     Unicode,
     )
@@ -42,7 +41,6 @@ from lp.services import searchbuilder
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.lpstorm import IStore
-from lp.services.database.sqlbase import sqlvalues
 from lp.services.database.stormbase import StormBase
 
 
@@ -203,30 +201,21 @@ class BugSubscriptionFilter(StormBase):
         _get_information_types, _set_information_types, doc=(
             "A frozenset of information_types filtered on."))
 
-    def _has_other_filters(self):
-        """Are there other filters for parent `StructuralSubscription`?"""
-        store = Store.of(self)
-        # Avoid race conditions by locking all the rows
-        # that we do our check over.
-        store.execute(SQL(
-            """SELECT * FROM BugSubscriptionFilter
-                 WHERE structuralsubscription=%s
-                 FOR UPDATE""" % sqlvalues(self.structural_subscription_id)))
-        return bool(store.find(
-            BugSubscriptionFilter,
-            (BugSubscriptionFilter.structural_subscription ==
-             self.structural_subscription),
-            BugSubscriptionFilter.id != self.id).any())
-
     def delete(self):
         """See `IBugSubscriptionFilter`."""
-        # This clears up all of the linked sub-records in the associated
-        # tables.
-        self.importances = self.statuses = self.tags = ()
-        self.information_types = ()
+        BugSubscriptionFilter.deleteMultiple([self.id])
 
-        if self._has_other_filters():
-            Store.of(self).remove(self)
+    @classmethod
+    def deleteMultiple(cls, ids):
+        store = IStore(BugSubscriptionFilter)
+        kinds = [
+            BugSubscriptionFilterImportance, BugSubscriptionFilterStatus,
+            BugSubscriptionFilterTag, BugSubscriptionFilterInformationType]
+        for kind in kinds:
+            store.find(kind, kind.filter_id.is_in(ids)).remove()
+        store.find(
+            BugSubscriptionFilter,
+            BugSubscriptionFilter.id.is_in(ids)).remove()
 
     def isMuteAllowed(self, person):
         """See `IBugSubscriptionFilter`."""
