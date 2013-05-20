@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -227,10 +227,6 @@ class BugSubscriptionFilter(StormBase):
 
         if self._has_other_filters():
             Store.of(self).remove(self)
-        else:
-            # There are no other filters.  We can delete the parent
-            # subscription.
-            self.structural_subscription.delete()
 
     def isMuteAllowed(self, person):
         """See `IBugSubscriptionFilter`."""

@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -186,9 +186,8 @@ class StructuralSubscription(Storm):
         return bug_filter
 
     def delete(self):
-        store = Store.of(self)
-        self.bug_filters.remove()
-        store.remove(self)
+        [bugfilter.delete() for bugfilter in self.bug_filters]
+        Store.of(self).remove(self)
 
 
 class DistroSeriesTargetHelper:
