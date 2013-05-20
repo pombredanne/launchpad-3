@@ -60,6 +60,10 @@ from lp.bugs.scripts.checkwatches.scheduler import (
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.code.model.diff import (
+    Diff,
+    PreviewDiff,
+    )
 from lp.code.model.revision import (
     RevisionAuthor,
     RevisionCache,
@@ -374,6 +378,32 @@ class OAuthNoncePruner(BulkPruner):
         SELECT access_token, request_timestamp, nonce FROM OAuthNonce
         WHERE request_timestamp
             < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - CAST('1 day' AS interval)
+        """
+
+
+class PreviewDiffPruner(BulkPruner):
+    """A BulkPruner to remove old PreviewDiffs.
+
+    We remove all but the latest PreviewDiff for each BranchMergeProposal.
+    """
+    target_table_class = PreviewDiff
+    ids_to_prune_query = """
+        SELECT id
+            FROM
+            (SELECT PreviewDiff.id,
+                rank() OVER (PARTITION BY PreviewDiff.branch_merge_proposal
+                ORDER BY PreviewDiff.date_created DESC) AS pos
+            FROM previewdiff) AS ss
+        WHERE pos > 1
+        """
+
+
+class DiffPruner(BulkPruner):
+    """A BulkPruner to remove all unreferenced Diffs."""
+    target_table_class = Diff
+    ids_to_prune_query = """
+        SELECT id FROM diff EXCEPT (SELECT diff FROM previewdiff UNION ALL
+            SELECT diff FROM incrementaldiff)
         """
 
 
@@ -1625,6 +1655,8 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnlinkedAccountPruner,
         UnusedAccessPolicyPruner,
         UnusedPOTMsgSetPruner,
+        PreviewDiffPruner,
+        DiffPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,
