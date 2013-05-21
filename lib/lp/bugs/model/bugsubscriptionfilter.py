@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -211,6 +211,7 @@ class BugSubscriptionFilter(StormBase):
     def delete(self):
         """See `IBugSubscriptionFilter`."""
         BugSubscriptionFilter.deleteMultiple([self.id])
+        Store.of(self).remove(self)
 
     @classmethod
     def deleteMultiple(cls, ids):
