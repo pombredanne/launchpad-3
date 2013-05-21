@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -16,14 +16,20 @@ from itertools import chain
 
 from lazr.restful.declarations import error_status
 import pytz
-from storm.locals import (
+from storm.expr import (
+    Exists,
+    Not,
+    Select,
+    SQL,
+    )
+from storm.properties import (
     Bool,
     DateTime,
     Int,
-    Reference,
-    Store,
     Unicode,
     )
+from storm.reference import Reference
+from storm.store import Store
 from zope.interface import implements
 
 from lp.app.enums import InformationType
@@ -41,6 +47,7 @@ from lp.services import searchbuilder
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.lpstorm import IStore
+from lp.services.database.sqlbase import convert_storm_clause_to_string
 from lp.services.database.stormbase import StormBase
 
 
@@ -207,7 +214,12 @@ class BugSubscriptionFilter(StormBase):
 
     @classmethod
     def deleteMultiple(cls, ids):
+        from lp.bugs.model.structuralsubscription import StructuralSubscription
         store = IStore(BugSubscriptionFilter)
+        structsub_ids = list(
+            store.find(
+                BugSubscriptionFilter.structural_subscription_id,
+                BugSubscriptionFilter.id.is_in(ids)))
         kinds = [
             BugSubscriptionFilterImportance, BugSubscriptionFilterStatus,
             BugSubscriptionFilterTag, BugSubscriptionFilterInformationType]
@@ -216,6 +228,21 @@ class BugSubscriptionFilter(StormBase):
         store.find(
             BugSubscriptionFilter,
             BugSubscriptionFilter.id.is_in(ids)).remove()
+        # Now delete any structural subscriptions that have no filters.
+        # Take out a SHARE lock on the filters that we use as evidence
+        # for keeping structsubs, to ensure that they haven't been
+        # deleted under us.
+        filter_expr = Select(
+            1, tables=[BugSubscriptionFilter],
+            where=(
+                BugSubscriptionFilter.structural_subscription_id
+                    == StructuralSubscription.id))
+        locked_filter_expr = SQL(
+            convert_storm_clause_to_string(filter_expr) + ' FOR SHARE')
+        store.find(
+            StructuralSubscription,
+            StructuralSubscription.id.is_in(structsub_ids),
+            Not(Exists(locked_filter_expr))).remove()        
 
     def isMuteAllowed(self, person):
         """See `IBugSubscriptionFilter`."""

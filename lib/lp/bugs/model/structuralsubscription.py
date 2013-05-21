@@ -154,11 +154,7 @@ class StructuralSubscription(Storm):
             return self.milestone
         elif self.distribution is not None:
             if self.sourcepackagename is not None:
-                # XXX intellectronica 2008-01-15:
-                #   We're importing this pseudo db object
-                #   here because importing it from the top
-                #   doesn't play well with the loading
-                #   sequence.
+                # Circular imports.
                 from lp.registry.model.distributionsourcepackage import (
                     DistributionSourcePackage)
                 return DistributionSourcePackage(
