@@ -16,15 +16,20 @@ from itertools import chain
 
 from lazr.restful.declarations import error_status
 import pytz
-from storm.locals import (
+from storm.expr import (
+    Exists,
+    Not,
+    Select,
+    SQL,
+    )
+from storm.properties import (
     Bool,
     DateTime,
     Int,
-    Reference,
-    SQL,
-    Store,
     Unicode,
     )
+from storm.reference import Reference
+from storm.store import Store
 from zope.interface import implements
 
 from lp.app.enums import InformationType
@@ -42,7 +47,7 @@ from lp.services import searchbuilder
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.lpstorm import IStore
-from lp.services.database.sqlbase import sqlvalues
+from lp.services.database.sqlbase import convert_storm_clause_to_string
 from lp.services.database.stormbase import StormBase
 
 
@@ -203,34 +208,41 @@ class BugSubscriptionFilter(StormBase):
         _get_information_types, _set_information_types, doc=(
             "A frozenset of information_types filtered on."))
 
-    def _has_other_filters(self):
-        """Are there other filters for parent `StructuralSubscription`?"""
-        store = Store.of(self)
-        # Avoid race conditions by locking all the rows
-        # that we do our check over.
-        store.execute(SQL(
-            """SELECT * FROM BugSubscriptionFilter
-                 WHERE structuralsubscription=%s
-                 FOR UPDATE""" % sqlvalues(self.structural_subscription_id)))
-        return bool(store.find(
-            BugSubscriptionFilter,
-            (BugSubscriptionFilter.structural_subscription ==
-             self.structural_subscription),
-            BugSubscriptionFilter.id != self.id).any())
-
     def delete(self):
         """See `IBugSubscriptionFilter`."""
-        # This clears up all of the linked sub-records in the associated
-        # tables.
-        self.importances = self.statuses = self.tags = ()
-        self.information_types = ()
+        BugSubscriptionFilter.deleteMultiple([self.id])
 
-        if self._has_other_filters():
-            Store.of(self).remove(self)
-        else:
-            # There are no other filters.  We can delete the parent
-            # subscription.
-            self.structural_subscription.delete()
+    @classmethod
+    def deleteMultiple(cls, ids):
+        from lp.bugs.model.structuralsubscription import StructuralSubscription
+        store = IStore(BugSubscriptionFilter)
+        structsub_ids = list(
+            store.find(
+                BugSubscriptionFilter.structural_subscription_id,
+                BugSubscriptionFilter.id.is_in(ids)))
+        kinds = [
+            BugSubscriptionFilterImportance, BugSubscriptionFilterStatus,
+            BugSubscriptionFilterTag, BugSubscriptionFilterInformationType]
+        for kind in kinds:
+            store.find(kind, kind.filter_id.is_in(ids)).remove()
+        store.find(
+            BugSubscriptionFilter,
+            BugSubscriptionFilter.id.is_in(ids)).remove()
+        # Now delete any structural subscriptions that have no filters.
+        # Take out a SHARE lock on the filters that we use as evidence
+        # for keeping structsubs, to ensure that they haven't been
+        # deleted under us.
+        filter_expr = Select(
+            1, tables=[BugSubscriptionFilter],
+            where=(
+                BugSubscriptionFilter.structural_subscription_id
+                    == StructuralSubscription.id))
+        locked_filter_expr = SQL(
+            convert_storm_clause_to_string(filter_expr) + ' FOR SHARE')
+        store.find(
+            StructuralSubscription,
+            StructuralSubscription.id.is_in(structsub_ids),
+            Not(Exists(locked_filter_expr))).remove()        
 
     def isMuteAllowed(self, person):
         """See `IBugSubscriptionFilter`."""
