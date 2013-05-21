@@ -28,7 +28,7 @@ from storm.properties import (
     Int,
     Unicode,
     )
-from storm.reference import Reference
+from storm.references import Reference
 from storm.store import Store
 from zope.interface import implements
 
