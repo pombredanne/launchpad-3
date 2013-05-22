@@ -12,7 +12,10 @@ __metaclass__ = type
 
 __all__ = [
     'BinaryPackageData',
+    'DisplayNameDecodingError',
     'get_dsc_path',
+    'InvalidVersionError',
+    'MissingRequiredArguments',
     'PoolFileNotFound',
     'prioritymap',
     'SourcePackageData',
