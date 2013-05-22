@@ -277,7 +277,7 @@ class TestRunner(TestCaseWithFactory):
                 [p.source_package_version
                 for p in series.getPublishedSources('archive-copier')])
 
-        # Importing again with the feature flag removed grabs both.
+        # Importing again without the feature flag removed grabs both.
         import_sourcepackages(
             series.distribution.name, packages_map, archive_root,
             importer_handler)
