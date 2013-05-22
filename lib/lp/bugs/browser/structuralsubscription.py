@@ -250,8 +250,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
             self.request.response.addNotification(
                 'You have unsubscribed from "%s". You '
                 'will no longer automatically receive e-mail about '
-                'changes to its bugs.'
-                % target.displayname)
+                'changes to its bugs.' % target.displayname)
         else:
             # The subscription status did not change: nothing to do.
             pass
