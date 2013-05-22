@@ -10,6 +10,7 @@ import psycopg2
 from zope.component import getUtility
 
 from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.scripts import log
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.scripts.gina import ExecutionError
@@ -165,6 +166,13 @@ def import_sourcepackages(distro, packages_map, package_root,
 
 def do_one_sourcepackage(distro, source, package_root, importer_handler):
     source_data = SourcePackageData(**source)
+    skip_key = u'%s/%s/%s' % (distro, source_data.package, source_data.version)
+    skip_list = getFeatureFlag('soyuz.gina.skip_source_versions')
+    if skip_list is not None and skip_key in skip_list.split():
+        log.info(
+            "Skipping %s %s as requested by feature flag.",
+            source_data.package, source_data.version)
+        return
     if importer_handler.preimport_sourcecheck(source_data):
         # Don't bother reading package information if the source package
         # already exists in the database
