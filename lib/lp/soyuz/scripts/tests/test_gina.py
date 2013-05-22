@@ -262,29 +262,24 @@ class TestRunner(TestCaseWithFactory):
             transaction, series.distribution.name, series.name, archive_root,
             PackagePublishingPocket.RELEASE, None)
 
+        def import_and_get_versions():
+            import_sourcepackages(
+                series.distribution.name, packages_map, archive_root,
+                importer_handler)
+            return [
+                p.source_package_version
+                for p in series.getPublishedSources('archive-copier')]
+
         # Our test archive has archive-copier 0.1.5 and 0.3.6 With
         # soyuz.gina.skip_source_versions set to
         # '$distro/archive-copier/0.1.5', an import will grab only
         # 0.3.6.
-
         skiplist = '%s/archive-copier/0.1.5' % series.distribution.name
         with FeatureFixture({'soyuz.gina.skip_source_versions': skiplist}):
-            import_sourcepackages(
-                series.distribution.name, packages_map, archive_root,
-                importer_handler)
-            self.assertContentEqual(
-                ['0.3.6'],
-                [p.source_package_version
-                 for p in series.getPublishedSources('archive-copier')])
+            self.assertContentEqual(['0.3.6'], import_and_get_versions())
 
         # Importing again without the feature flag removed grabs both.
-        import_sourcepackages(
-            series.distribution.name, packages_map, archive_root,
-            importer_handler)
-        self.assertContentEqual(
-            ['0.1.5', '0.3.6'],
-            [p.source_package_version
-             for p in series.getPublishedSources('archive-copier')])
+        self.assertContentEqual(['0.1.5', '0.3.6'], import_and_get_versions())
 
 
 def test_suite():
