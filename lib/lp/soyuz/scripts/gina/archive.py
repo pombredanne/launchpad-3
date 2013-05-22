@@ -12,6 +12,7 @@ __metaclass__ = type
 __all__ = [
     'ArchiveFilesystemInfo',
     'ArchiveComponentItems',
+    'MangledArchiveError',
     'PackagesMap',
     ]
 
