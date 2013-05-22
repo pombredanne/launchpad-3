@@ -34,9 +34,6 @@ from lp.soyuz.scripts.gina.packages import (
     SourcePackageData,
     )
 
-# Set to non-zero if you'd like to be warned every so often
-COUNTDOWN = 0
-
 
 def run_gina(options, ztm, target_section):
     # Avoid circular imports.
@@ -164,8 +161,6 @@ def import_sourcepackages(distro, packages_map, package_root,
             count += 1
             attempt_source_package_import(
                 distro, source, package_root, importer_handler)
-            if COUNTDOWN and (count % COUNTDOWN == 0):
-                log.warn('%i/%i sourcepackages processed', count, npacks)
 
 
 def do_one_sourcepackage(distro, source, package_root, importer_handler):
@@ -233,10 +228,6 @@ def import_binarypackages(distro, packages_map, package_root,
                     "Failed to create Binary Package for %s", package_name)
                 nosource.append(binary)
                 continue
-
-            if COUNTDOWN and count % COUNTDOWN == 0:
-                # XXX kiko 2005-10-23: untested
-                log.warn('%i/%i binary packages processed', count, npacks)
 
         if nosource:
             # XXX kiko 2005-10-23: untested
