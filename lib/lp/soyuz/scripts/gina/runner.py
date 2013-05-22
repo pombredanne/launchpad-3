@@ -13,6 +13,7 @@ import psycopg2
 from zope.component import getUtility
 
 from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.scripts import log
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.scripts.gina import ExecutionError
@@ -36,9 +37,6 @@ from lp.soyuz.scripts.gina.packages import (
     PoolFileNotFound,
     SourcePackageData,
     )
-
-# Set to non-zero if you'd like to be warned every so often
-COUNTDOWN = 0
 
 
 def run_gina(options, ztm, target_section):
@@ -158,21 +156,24 @@ def attempt_source_package_import(distro, source, package_root,
 def import_sourcepackages(distro, packages_map, package_root,
                           importer_handler):
     # Goes over src_map importing the sourcepackages packages.
-    count = 0
     npacks = len(packages_map.src_map)
     log.info('%i Source Packages to be imported', npacks)
 
     for package in sorted(packages_map.src_map.iterkeys()):
         for source in packages_map.src_map[package]:
-            count += 1
             attempt_source_package_import(
                 distro, source, package_root, importer_handler)
-            if COUNTDOWN and (count % COUNTDOWN == 0):
-                log.warn('%i/%i sourcepackages processed', count, npacks)
 
 
 def do_one_sourcepackage(distro, source, package_root, importer_handler):
     source_data = SourcePackageData(**source)
+    skip_key = u'%s/%s/%s' % (distro, source_data.package, source_data.version)
+    skip_list = getFeatureFlag('soyuz.gina.skip_source_versions')
+    if skip_list is not None and skip_key in skip_list.split():
+        log.info(
+            "Skipping %s %s as requested by feature flag.",
+            source_data.package, source_data.version)
+        return
     if importer_handler.preimport_sourcecheck(source_data):
         # Don't bother reading package information if the source package
         # already exists in the database
@@ -190,14 +191,12 @@ def import_binarypackages(distro, packages_map, package_root,
 
     # Run over all the architectures we have
     for archtag in packages_map.bin_map.keys():
-        count = 0
         npacks = len(packages_map.bin_map[archtag])
         log.info(
             '%i Binary Packages to be imported for %s', npacks, archtag)
         # Go over binarypackages importing them for this architecture
         for package_name in sorted(packages_map.bin_map[archtag].iterkeys()):
             binary = packages_map.bin_map[archtag][package_name]
-            count += 1
             try:
                 try:
                     do_one_binarypackage(
@@ -236,10 +235,6 @@ def import_binarypackages(distro, packages_map, package_root,
                     "Failed to create Binary Package for %s", package_name)
                 nosource.append(binary)
                 continue
-
-            if COUNTDOWN and count % COUNTDOWN == 0:
-                # XXX kiko 2005-10-23: untested
-                log.warn('%i/%i binary packages processed', count, npacks)
 
         if nosource:
             # XXX kiko 2005-10-23: untested

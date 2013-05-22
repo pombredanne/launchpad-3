@@ -190,6 +190,13 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('soyuz.gina.skip_source_versions',
+     'space delimited',
+     ('List of source versions for gina to skip when importing into a '
+      'distribution, formatted as distro/package/version.'),
+     '',
+     '',
+     ''),
     ('auditor.enabled',
      'boolean',
      'If true, send audit data to an auditor instance.',

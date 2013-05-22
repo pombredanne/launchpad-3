@@ -7,25 +7,37 @@ import os
 from textwrap import dedent
 from unittest import TestLoader
 
+import transaction
+
 from lp.archiveuploader.tagfiles import parse_tagfile
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import DevNullLogger
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.scripts.gina import ExecutionError
 from lp.soyuz.scripts.gina.dominate import dominate_imported_source_packages
+from lp.soyuz.scripts.gina.archive import (
+    ArchiveComponentItems,
+    PackagesMap,
+    )
 import lp.soyuz.scripts.gina.handlers
 from lp.soyuz.scripts.gina.handlers import (
     BinaryPackagePublisher,
+    ImporterHandler,
     SourcePackagePublisher,
     )
 from lp.soyuz.scripts.gina.packages import (
     BinaryPackageData,
     SourcePackageData,
     )
+from lp.soyuz.scripts.gina.runner import import_sourcepackages
 from lp.testing import TestCaseWithFactory
 from lp.testing.faketransaction import FakeTransaction
-from lp.testing.layers import ZopelessDatabaseLayer
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 class FakePackagesMap:
@@ -229,6 +241,45 @@ class TestBinaryPackagePublisher(TestCaseWithFactory):
 
         [bpph] = series.main_archive.getAllPublishedBinaries()
         self.assertEqual(PackagePublishingStatus.PUBLISHED, bpph.status)
+
+
+class TestRunner(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_import_sourcepackages_skip(self):
+        # gina can be told to skip particular source versions by setting
+        # soyuz.gina.skip_source_versions to a space-separated list of
+        # $DISTRO/$NAME/$VERSION.
+        series = self.factory.makeDistroSeries()
+
+        archive_root = os.path.join(
+            os.path.dirname(__file__), 'gina_test_archive')
+        arch_component_items = ArchiveComponentItems(
+            archive_root, 'lenny', ['main'], [], True)
+        packages_map = PackagesMap(arch_component_items)
+        importer_handler = ImporterHandler(
+            transaction, series.distribution.name, series.name, archive_root,
+            PackagePublishingPocket.RELEASE, None)
+
+        def import_and_get_versions():
+            import_sourcepackages(
+                series.distribution.name, packages_map, archive_root,
+                importer_handler)
+            return [
+                p.source_package_version
+                for p in series.getPublishedSources('archive-copier')]
+
+        # Our test archive has archive-copier 0.1.5 and 0.3.6 With
+        # soyuz.gina.skip_source_versions set to
+        # '$distro/archive-copier/0.1.5', an import will grab only
+        # 0.3.6.
+        skiplist = '%s/archive-copier/0.1.5' % series.distribution.name
+        with FeatureFixture({'soyuz.gina.skip_source_versions': skiplist}):
+            self.assertContentEqual(['0.3.6'], import_and_get_versions())
+
+        # Importing again without the feature flag removed grabs both.
+        self.assertContentEqual(['0.1.5', '0.3.6'], import_and_get_versions())
 
 
 def test_suite():
