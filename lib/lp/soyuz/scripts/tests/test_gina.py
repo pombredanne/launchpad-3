@@ -275,7 +275,7 @@ class TestRunner(TestCaseWithFactory):
             self.assertContentEqual(
                 ['0.3.6'],
                 [p.source_package_version
-                for p in series.getPublishedSources('archive-copier')])
+                 for p in series.getPublishedSources('archive-copier')])
 
         # Importing again without the feature flag removed grabs both.
         import_sourcepackages(
