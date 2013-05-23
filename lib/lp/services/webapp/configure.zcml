@@ -261,14 +261,6 @@
         name="+opstats"
         />
 
-    <browser:page
-        for="*"
-        name="bag"
-        template="templates/launchbag-debug.pt"
-        permission="zope.Public"
-        class="lp.services.webapp.launchbag.LaunchBagView"
-        />
-
     <!-- Resource unnamed view, allowing Z3 preferred spelling
         /@@/launchpad-icon-small to access the images directory -->
     <browser:page

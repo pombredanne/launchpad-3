@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Browser code for the Launchpad root page."""
 
@@ -44,6 +44,7 @@ from lp.services.googlesearch.interfaces import (
     GoogleResponseError,
     ISearchService,
     )
+from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.propertycache import cachedproperty
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.timeout import urlfetch
@@ -157,13 +158,14 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
         launchpad.homepage_recent_posts_count. The posts are fetched
         from the feed specified in launchpad.homepage_recent_posts_feed.
 
-        Since the feed is parsed everytime, the template should cache this
-        through memcached.
-
         FeedParser takes care of sanitizing the HTML contained in the feed.
         """
-        # Use urlfetch which supports timeout
+        key = '%s:homepage-blog-posts' % config.instance_name
+        cached_data = getUtility(IMemcacheClient).get(key)
+        if cached_data:
+            return cached_data
         try:
+            # Use urlfetch which supports timeout
             data = urlfetch(config.launchpad.homepage_recent_posts_feed)
         except IOError:
             return []
@@ -178,6 +180,8 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
                 'link': entry.link,
                 'date': time.strftime('%d %b %Y', entry.updated_parsed),
                 })
+        # The cache of posts expires after an hour.
+        getUtility(IMemcacheClient).set(key, posts, time=3600)
         return posts
 
 

@@ -161,13 +161,6 @@ class LaunchBag:
         return self._store.time_zone
 
 
-class LaunchBagView(object):
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.bag = getUtility(ILaunchBag)
-
-
 def set_login_in_launchbag_when_principal_identified(event):
     """This IPrincipalIdentifiedEvent subscriber sets 'login' in launchbag.
     """
