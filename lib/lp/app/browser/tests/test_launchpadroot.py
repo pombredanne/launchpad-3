@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests related to ILaunchpadRoot."""
@@ -16,7 +16,9 @@ from zope.security.checker import selectChecker
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
+from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.testing import (
@@ -24,7 +26,10 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.publication import test_traverse
 from lp.testing.views import (
     create_initialized_view,
@@ -118,7 +123,7 @@ class TestLaunchpadRootNavigation(TestCaseWithFactory):
 
 class LaunchpadRootIndexViewTestCase(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(LaunchpadRootIndexViewTestCase, self).setUp()
@@ -164,8 +169,8 @@ class LaunchpadRootIndexViewTestCase(TestCaseWithFactory):
             return posts
 
         root = getUtility(ILaunchpadRoot)
-        with anonymous_logged_in() as user:
-            view = create_initialized_view(root, 'index.html', principle=user)
+        with anonymous_logged_in():
+            view = create_initialized_view(root, 'index.html')
             view.getRecentBlogPosts = _get_blog_posts
             result = view()
         markup = BeautifulSoup(result,
@@ -202,3 +207,21 @@ class LaunchpadRootIndexViewTestCase(TestCaseWithFactory):
         # column rather than blank space when the blog is not being displayed.
         self.assertTrue(view.show_whatslaunchpad)
         self.assertTrue(markup.find(True, 'homepage-whatslaunchpad'))
+
+    def test_blog_posts_with_memcache(self):
+        self.useFixture(FeatureFixture({'app.root_blog.enabled': True}))
+        posts = [
+            self._make_blog_post(1, "A post", "Post contents.", "2002"),
+            self._make_blog_post(2, "Another post", "More contents.", "2003"),
+            ]
+        key = '%s:homepage-blog-posts' % config.instance_name
+        getUtility(IMemcacheClient).set(key, posts)
+
+        root = getUtility(ILaunchpadRoot)
+        with anonymous_logged_in():
+            view = create_initialized_view(root, 'index.html')
+            result = view()
+        markup = BeautifulSoup(result,
+            parseOnlyThese=SoupStrainer(id='homepage-blogposts'))
+        items = markup.findAll('li', 'news')
+        self.assertEqual(3, len(items))
