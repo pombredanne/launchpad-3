@@ -169,8 +169,8 @@ class LaunchpadRootIndexViewTestCase(TestCaseWithFactory):
             return posts
 
         root = getUtility(ILaunchpadRoot)
-        with anonymous_logged_in() as user:
-            view = create_initialized_view(root, 'index.html', principle=user)
+        with anonymous_logged_in():
+            view = create_initialized_view(root, 'index.html')
             view.getRecentBlogPosts = _get_blog_posts
             result = view()
         markup = BeautifulSoup(result,
@@ -218,8 +218,8 @@ class LaunchpadRootIndexViewTestCase(TestCaseWithFactory):
         getUtility(IMemcacheClient).set(key, posts)
 
         root = getUtility(ILaunchpadRoot)
-        with anonymous_logged_in() as user:
-            view = create_initialized_view(root, 'index.html', principle=user)
+        with anonymous_logged_in():
+            view = create_initialized_view(root, 'index.html')
             result = view()
         markup = BeautifulSoup(result,
             parseOnlyThese=SoupStrainer(id='homepage-blogposts'))
