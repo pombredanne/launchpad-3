@@ -303,6 +303,7 @@ from lp.soyuz.model.files import (
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.testing import (
+    admin_logged_in,
     ANONYMOUS,
     celebrity_logged_in,
     launchpadlib_for,
@@ -3758,6 +3759,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             archive = self.makeArchive(
                 distribution=distroarchseries.distroseries.distribution,
                 purpose=ArchivePurpose.PRIMARY)
+            # XXX wgrant 2013-05-23: We need to set build_debug_symbols
+            # until the guard in publishBinaries is gone.
+            need_debug = (
+                with_debug or binpackageformat == BinaryPackageFormat.DDEB)
+            if archive.purpose == ArchivePurpose.PRIMARY and need_debug:
+                with admin_logged_in():
+                    archive.build_debug_symbols = True
 
         if pocket is None:
             pocket = self.getAnyPocket()

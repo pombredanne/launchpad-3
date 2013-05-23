@@ -150,7 +150,8 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
                 distroarchseries=das, processor=das.default_processor)
             bpr = self.factory.makeBinaryPackageRelease(
                 binarypackagename=package.name, build=build,
-                component=component, **kwargs)
+                component=component, architecturespecific=True,
+                **kwargs)
             lfa = self.factory.makeLibraryFileAlias(
                 filename="%s.deb" % package.name)
             transaction.commit()
