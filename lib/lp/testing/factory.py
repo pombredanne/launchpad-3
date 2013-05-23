@@ -3800,10 +3800,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if datecreated is None:
             datecreated = self.getUniqueDate()
 
-        bpph = getUtility(IPublishingSet).newBinaryPublication(
-            archive, binarypackagerelease, distroarchseries,
-            binarypackagerelease.component, binarypackagerelease.section,
-            priority, pocket)
+        bpph = getUtility(IPublishingSet).publishBinaries(
+            archive, distroarchseries.distroseries, pocket,
+            {binarypackagerelease: (
+                binarypackagerelease.component, binarypackagerelease.section,
+                priority)})[0]
         naked_bpph = removeSecurityProxy(bpph)
         naked_bpph.status = status
         naked_bpph.dateremoved = dateremoved
