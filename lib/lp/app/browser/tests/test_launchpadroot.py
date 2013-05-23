@@ -214,7 +214,7 @@ class LaunchpadRootIndexViewTestCase(TestCaseWithFactory):
             self._make_blog_post(1, "A post", "Post contents.", "2002"),
             self._make_blog_post(2, "Another post", "More contents.", "2003"),
             ]
-        key = '%s:cached-blog-entries' % config.instance_name
+        key = '%s:homepage-blog-posts' % config.instance_name
         getUtility(IMemcacheClient).set(key, posts)
 
         root = getUtility(ILaunchpadRoot)

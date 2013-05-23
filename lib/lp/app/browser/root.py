@@ -160,7 +160,7 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
 
         FeedParser takes care of sanitizing the HTML contained in the feed.
         """
-        key = '%s:cached-blog-entries' % config.instance_name
+        key = '%s:homepage-blog-posts' % config.instance_name
         cached_data = getUtility(IMemcacheClient).get(key)
         if cached_data:
             return cached_data
@@ -180,7 +180,8 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
                 'link': entry.link,
                 'date': time.strftime('%d %b %Y', entry.updated_parsed),
                 })
-        getUtility(IMemcacheClient).set(key, posts)
+        # The cache of posts expires after an hour.
+        getUtility(IMemcacheClient).set(key, posts, time=3600)
         return posts
 
 
