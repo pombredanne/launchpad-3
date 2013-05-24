@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -19,6 +19,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.bulk import load_related
 from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import sqlvalues
@@ -222,17 +223,21 @@ class BuildPackageJob(BuildFarmJobOld, Storm):
     def postprocessCandidate(job, logger):
         """See `IBuildFarmJob`."""
         # Mark build records targeted to old source versions as SUPERSEDED
-        # and build records target to SECURITY pocket as FAILEDTOBUILD.
+        # and build records target to SECURITY pocket or against an OBSOLETE
+        # distroseries without a flag as FAILEDTOBUILD.
         # Builds in those situation should not be built because they will
         # be wasting build-time.  In the former case, there is already a
         # newer source; the latter case needs an overhaul of the way
         # security builds are handled (by copying from a PPA) to avoid
         # creating duplicate builds.
-        build_set = getUtility(IBinaryPackageBuildSet)
-
-        build = build_set.getByQueueEntry(job)
-        if build.pocket == PackagePublishingPocket.SECURITY:
-            # We never build anything in the security pocket.
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
+        distroseries = build.distro_arch_series.distroseries
+        if (
+            build.pocket == PackagePublishingPocket.SECURITY or 
+            (distroseries.status == SeriesStatus.OBSOLETE and
+                not build.archive.permit_obsolete_series_uploads)):
+            # We never build anything in the security pocket, or for obsolete
+            # series without the flag set.
             logger.debug(
                 "Build %s FAILEDTOBUILD, queue item %s REMOVED"
                 % (build.id, job.id))
