@@ -3744,6 +3744,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                            binpackageformat=None,
                                            sourcepackagename=None,
                                            version=None,
+                                           architecturespecific=False,
                                            with_debug=False, with_file=False):
         """Make a `BinaryPackagePublishingHistory`."""
         if distroarchseries is None:
@@ -3788,7 +3789,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 binarypackagename=binarypackagename, version=version,
                 build=binarypackagebuild,
                 component=component, binpackageformat=binpackageformat,
-                section_name=section_name, priority=priority)
+                section_name=section_name, priority=priority,
+                architecturespecific=architecturespecific)
             if with_file:
                 ext = {
                     BinaryPackageFormat.DEB: 'deb',
@@ -3808,19 +3810,20 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if datecreated is None:
             datecreated = self.getUniqueDate()
 
-        bpph = getUtility(IPublishingSet).publishBinaries(
+        bpphs = getUtility(IPublishingSet).publishBinaries(
             archive, distroarchseries.distroseries, pocket,
             {binarypackagerelease: (
                 binarypackagerelease.component, binarypackagerelease.section,
-                priority)})[0]
-        naked_bpph = removeSecurityProxy(bpph)
-        naked_bpph.status = status
-        naked_bpph.dateremoved = dateremoved
-        naked_bpph.datecreated = datecreated
-        naked_bpph.scheduleddeletiondate = scheduleddeletiondate
-        naked_bpph.priority = priority
-        if status == PackagePublishingStatus.PUBLISHED:
-            naked_bpph.datepublished = UTC_NOW
+                priority)})
+        for bpph in bpphs:
+            naked_bpph = removeSecurityProxy(bpph)
+            naked_bpph.status = status
+            naked_bpph.dateremoved = dateremoved
+            naked_bpph.datecreated = datecreated
+            naked_bpph.scheduleddeletiondate = scheduleddeletiondate
+            naked_bpph.priority = priority
+            if status == PackagePublishingStatus.PUBLISHED:
+                naked_bpph.datepublished = UTC_NOW
         if with_debug:
             debug_bpph = self.makeBinaryPackagePublishingHistory(
                 binarypackagename=(
@@ -3837,8 +3840,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 with_file=with_file)
             removeSecurityProxy(bpph.binarypackagerelease).debug_package = (
                 debug_bpph.binarypackagerelease)
-            return bpph, debug_bpph
-        return bpph
+            return bpphs[0], debug_bpph
+        return bpphs[0]
 
     def makeSPPHForBPPH(self, bpph):
         """Produce a `SourcePackagePublishingHistory` to match `bpph`.

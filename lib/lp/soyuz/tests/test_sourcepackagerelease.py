@@ -152,18 +152,20 @@ class TestGetActiveArchSpecificPublications(TestCaseWithFactory):
         Since the tests need to create a pocket mismatch, it is guaranteed
         that the BPPHs are for the UPDATES pocket.
         """
+        das = self.factory.makeDistroArchSeries()
+        distroseries = das.distroseries
+        archive = distroseries.main_archive
+        pocket = PackagePublishingPocket.UPDATES
+
         bpbs = [
-            self.factory.makeBinaryPackageBuild(source_package_release=spr)
+            self.factory.makeBinaryPackageBuild(
+                source_package_release=spr, distroarchseries=das)
             for counter in range(number)]
         bprs = [
             self.factory.makeBinaryPackageRelease(
                 build=bpb, architecturespecific=True)
             for bpb in bpbs]
 
-        das = self.factory.makeDistroArchSeries()
-        distroseries = das.distroseries
-        archive = distroseries.main_archive
-        pocket = PackagePublishingPocket.UPDATES
         return [
             removeSecurityProxy(
                 self.factory.makeBinaryPackagePublishingHistory(
@@ -289,10 +291,11 @@ class TestFindBuildsByArchitecture(TestCaseWithFactory):
         # The series also has other architectures.
         self.factory.makeDistroArchSeries(distroseries=distroseries)
 
-        for das in distroseries.architectures:
-            self.factory.makeBinaryPackagePublishingHistory(
-                binarypackagerelease=bpr, distroarchseries=das,
-                archive=archive)
+        # makeBinaryPackagePublishingHistory will actually publish an
+        # arch-indep BPR everywhere.
+        self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr, archive=archive,
+            distroarchseries=distroseries.nominatedarchindep)
 
         naked_spr = removeSecurityProxy(spr)
         self.assertEqual(
