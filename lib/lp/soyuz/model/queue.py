@@ -1198,8 +1198,8 @@ class PackageUploadBuild(SQLBase):
             distroseries.distribution.name, distroseries.name,
             build_archtag))
 
-        # First up, publish everything in this build into that dar.
-        published_binaries = []
+        # Publish all of the build's binaries.
+        bins = {}
         for binary in self.build.binarypackages:
             debug(
                 logger, "... %s/%s (Arch %s)" % (
@@ -1207,16 +1207,10 @@ class PackageUploadBuild(SQLBase):
                 binary.version,
                 'Specific' if binary.architecturespecific else 'Independent',
                 ))
-            published_binaries.extend(
-                getUtility(IPublishingSet).publishBinary(
-                    archive=self.packageupload.archive,
-                    binarypackagerelease=binary,
-                    distroseries=distroseries,
-                    component=binary.component,
-                    section=binary.section,
-                    priority=binary.priority,
-                    pocket=self.packageupload.pocket))
-        return published_binaries
+            bins[binary] = (binary.component, binary.section, binary.priority)
+        return getUtility(IPublishingSet).publishBinaries(
+            self.packageupload.archive, distroseries,
+            self.packageupload.pocket, bins)
 
 
 class PackageUploadSource(SQLBase):
