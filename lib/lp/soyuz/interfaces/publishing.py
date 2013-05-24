@@ -1011,22 +1011,6 @@ class IPublishingSet(Interface):
         :return: A list of new `IBinaryPackagePublishingHistory` records.
         """
 
-    def newBinaryPublication(archive, binarypackagerelease, distroarchseries,
-                             component, section, priority, pocket):
-        """Create a new `BinaryPackagePublishingHistory`.
-
-        :param archive: An `IArchive`
-        :param binarypackagerelease: An `IBinaryPackageRelease`
-        :param distroarchseries: An `IDistroArchSeries`
-        :param component: An `IComponent`
-        :param section: An `ISection`
-        :param priority: A `PackagePublishingPriority`
-        :param pocket: A `PackagePublishingPocket`
-
-        datecreated will be UTC_NOW.
-        status will be PackagePublishingStatus.PENDING
-        """
-
     def newSourcePublication(archive, sourcepackagerelease, distroseries,
                              component, section, pocket, ancestor,
                              create_dsd_job=True):

@@ -1494,29 +1494,6 @@ class PublishingSet:
               for (das, bpr, (component, section, priority)) in needed],
             get_objects=True)
 
-    def newBinaryPublication(self, archive, binarypackagerelease,
-                             distroarchseries, component, section, priority,
-                             pocket):
-        """See `IPublishingSet`."""
-        assert distroarchseries.enabled, (
-            "Will not create new publications in a disabled architecture.")
-        return BinaryPackagePublishingHistory(
-            archive=archive,
-            binarypackagename=binarypackagerelease.binarypackagename,
-            binarypackagerelease=binarypackagerelease,
-            distroarchseries=distroarchseries,
-            component=get_component(
-                archive, distroarchseries.distroseries, component),
-            section=section,
-            priority=priority,
-            # We do not set the phased_update_percentage here, as in general
-            # it requires feedback on error statistics.  In any case,
-            # pockets that benefit from phased updates should not normally
-            # also be direct upload targets.
-            status=PackagePublishingStatus.PENDING,
-            datecreated=UTC_NOW,
-            pocket=pocket)
-
     def newSourcePublication(self, archive, sourcepackagerelease,
                              distroseries, component, section, pocket,
                              ancestor=None, create_dsd_job=True,

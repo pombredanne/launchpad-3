@@ -1010,7 +1010,6 @@ IPublishingSet
 
 This utility implements the following methods:
 
- * newBinaryPublication();
  * newSourcePublication();
 
 which create new publishing records, and:
@@ -1056,11 +1055,11 @@ publications.
 Creating new publication records
 --------------------------------
 
-newSourcePublication() and newBinaryPublication() will create source and
-binary publication records respectively.  They are already implicitly tested
-above via the copyTo methods which use them to create new records.  However,
-they have one extra feature which is important for PPAs - they will ensure
-that the published component is always 'main'.
+newSourcePublication() will create a source publication record. It is
+already implicitly tested above via the copyTo method which uses it to
+create new records.  However, it has one extra feature which is
+important for PPAs - it will ensure that the published component is
+always 'main'.
 
 When copying publications from non-main components in the primary archive,
 the PPA publication will always be main:
@@ -1074,22 +1073,6 @@ the PPA publication will always be main:
     ...     component=test_source_pub.component,
     ...     section=test_source_pub.section,
     ...     pocket=test_source_pub.pocket)
-    >>> print ppa_pub.component.name
-    main
-
-    >>> test_bin_pubs = test_publisher.getPubBinaries(
-    ...     pub_source=test_source_pub)
-    >>> test_bin_pub = test_bin_pubs[0]
-    >>> ppa_pub = publishing_set.newBinaryPublication(
-    ...     archive=mark.archive,
-    ...     binarypackagerelease=test_bin_pub.binarypackagerelease,
-    ...     distroarchseries=test_bin_pub.distroarchseries,
-    ...     component=test_bin_pub.component,
-    ...     section=test_bin_pub.section,
-    ...     priority=test_bin_pub.priority,
-    ...     pocket=test_bin_pub.pocket)
-    >>> print ppa_pub.binarypackagerelease.component.name
-    universe
     >>> print ppa_pub.component.name
     main
 
