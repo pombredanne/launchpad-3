@@ -996,10 +996,10 @@ class IPublishingSet(Interface):
     def publishBinaries(archive, distroseries, pocket, binaries):
         """Efficiently publish multiple BinaryPackageReleases in an Archive.
 
-        Creates `IBinaryPackagePublishingHistory` records for each binary,
-        handling architecture-independent and debug packages, avoiding
-        creation of duplicate publications, and leaving disabled
-        architectures alone.
+        Creates `IBinaryPackagePublishingHistory` records for each
+        binary, handling architecture-independent, avoiding creation of
+        duplicate publications, and leaving disabled architectures
+        alone.
 
         :param archive: The target `IArchive`.
         :param distroseries: The target `IDistroSeries`.
@@ -1009,43 +1009,6 @@ class IPublishingSet(Interface):
             `PackagePublishingPriority`) tuples.
 
         :return: A list of new `IBinaryPackagePublishingHistory` records.
-        """
-
-    def publishBinary(archive, binarypackagerelease, distroseries,
-                      component, section, priority, pocket):
-        """Publish a `BinaryPackageRelease` in an archive.
-
-        Creates one or more `IBinaryPackagePublishingHistory` records,
-        handling architecture-independent and DDEB publications transparently.
-
-        Note that binaries will only be copied if they don't already exist in
-        the target; this method cannot be used to change overrides.
-
-        :param archive: The target `IArchive`.
-        :param binarypackagerelease: The `IBinaryPackageRelease` to copy.
-        :param distroseries: An `IDistroSeries`.
-        :param component: The target `IComponent`.
-        :param section: The target `ISection`.
-        :param priority: The target `PackagePublishingPriority`.
-        :param pocket: The target `PackagePublishingPocket`.
-
-        :return: A list of new `IBinaryPackagePublishingHistory` records.
-        """
-
-    def newBinaryPublication(archive, binarypackagerelease, distroarchseries,
-                             component, section, priority, pocket):
-        """Create a new `BinaryPackagePublishingHistory`.
-
-        :param archive: An `IArchive`
-        :param binarypackagerelease: An `IBinaryPackageRelease`
-        :param distroarchseries: An `IDistroArchSeries`
-        :param component: An `IComponent`
-        :param section: An `ISection`
-        :param priority: A `PackagePublishingPriority`
-        :param pocket: A `PackagePublishingPocket`
-
-        datecreated will be UTC_NOW.
-        status will be PackagePublishingStatus.PENDING
         """
 
     def newSourcePublication(archive, sourcepackagerelease, distroseries,

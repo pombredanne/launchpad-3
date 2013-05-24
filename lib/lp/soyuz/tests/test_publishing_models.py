@@ -50,7 +50,8 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
 
     def test_getUnpublishedBuildsForSources_one_published(self):
         # If we publish a binary for a build, it is no longer returned.
-        bpr = self.factory.makeBinaryPackageRelease(build=self.builds[0])
+        bpr = self.factory.makeBinaryPackageRelease(
+            build=self.builds[0], architecturespecific=True)
         self.factory.makeBinaryPackagePublishingHistory(
             binarypackagerelease=bpr, archive=self.sources[0].archive,
             distroarchseries=self.builds[0].distro_arch_series,
@@ -69,7 +70,8 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
 
         # Publish the binaries for gedit as superseded, explicitly setting
         # the date published.
-        bpr = self.factory.makeBinaryPackageRelease(build=self.builds[0])
+        bpr = self.factory.makeBinaryPackageRelease(
+            build=self.builds[0], architecturespecific=True)
         bpph = self.factory.makeBinaryPackagePublishingHistory(
             binarypackagerelease=bpr, archive=self.sources[0].archive,
             distroarchseries=self.builds[0].distro_arch_series,

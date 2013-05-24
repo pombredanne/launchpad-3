@@ -1591,7 +1591,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.factory.makeBinaryPackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED, distroarchseries=das,
             pocket=PackagePublishingPocket.UPDATES, archive=archive,
-            source_package_release=spph.sourcepackagerelease)
+            source_package_release=spph.sourcepackagerelease,
+            architecturespecific=True)
         requester = self.factory.makePerson()
         with person_logged_in(archive.owner):
             archive.newComponentUploader(requester, 'multiverse')

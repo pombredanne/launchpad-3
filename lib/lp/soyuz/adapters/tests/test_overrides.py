@@ -247,8 +247,11 @@ class TestOverrides(TestCaseWithFactory):
         for i in xrange(3):
             distroarchseries = self.factory.makeDistroArchSeries(
                 distroseries=distroseries)
+            bpb = self.factory.makeBinaryPackageBuild(
+                distroarchseries=distroarchseries)
             bpr = self.factory.makeBinaryPackageRelease(
-                binarypackagename=bpn)
+                build=bpb, binarypackagename=bpn,
+                architecturespecific=True)
             bpph = self.factory.makeBinaryPackagePublishingHistory(
                 binarypackagerelease=bpr, distroarchseries=distroarchseries,
                 archive=distroseries.main_archive, pocket=pocket)
