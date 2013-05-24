@@ -29,6 +29,7 @@ from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.constants import UTC_NOW
 from lp.services.database.sqlbase import flush_database_caches
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
@@ -1191,10 +1192,14 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         target_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest, virtualized=False)
         # Manually copy the indep pub to just i386.
-        getUtility(IPublishingSet).newBinaryPublication(
-            target_archive, bin_i386.binarypackagerelease, nobby['i386'],
-            bin_i386.component, bin_i386.section, bin_i386.priority,
-            bin_i386.pocket)
+        BinaryPackagePublishingHistory(
+            archive=target_archive,
+            binarypackagename=bin_i386.binarypackagename,
+            binarypackagerelease=bin_i386.binarypackagerelease,
+            distroarchseries=nobby['i386'], pocket=bin_i386.pocket,
+            component=bin_i386.component, section=bin_i386.section,
+            priority=bin_i386.priority,
+            status=PackagePublishingStatus.PENDING, datecreated=UTC_NOW)
         # Now we can copy the package with binaries.
         copies = self.doCopy(
             source, target_archive, nobby, source.pocket, True)
