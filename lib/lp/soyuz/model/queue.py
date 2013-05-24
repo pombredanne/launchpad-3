@@ -1198,7 +1198,7 @@ class PackageUploadBuild(SQLBase):
             distroseries.distribution.name, distroseries.name,
             build_archtag))
 
-        # First up, publish everything in this build into that dar.
+        # Publish all of the build's binaries.
         bins = {}
         for binary in self.build.binarypackages:
             debug(
