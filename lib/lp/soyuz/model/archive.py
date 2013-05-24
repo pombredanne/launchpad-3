@@ -284,7 +284,7 @@ class Archive(SQLBase):
         dbName='publish_debug_symbols', notNull=False, default=False)
 
     permit_obsolete_series_uploads = BoolCol(
-        dbName='permit_obsolete_series_uploads', notNull=True, default=False)
+        dbName='permit_obsolete_series_uploads', default=False)
 
     authorized_size = IntCol(
         dbName='authorized_size', notNull=False, default=2048)

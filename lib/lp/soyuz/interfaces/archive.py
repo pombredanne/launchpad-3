@@ -502,8 +502,7 @@ class IArchiveView(IHasBuildRecords):
 
     permit_obsolete_series_uploads = Bool(
         title=_("Permit uploads to obsolete series"), required=False,
-        description=_(
-            "Allow uploads targeted to obsolete series."))
+        description=_("Allow uploads targeted to obsolete series."))
 
     authorized_size = exported(
         Int(
