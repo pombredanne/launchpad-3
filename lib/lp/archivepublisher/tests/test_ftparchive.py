@@ -364,7 +364,8 @@ class TestFTPArchive(TestCaseWithFactory):
             archive=series.main_archive, distroarchseries=series['hppa'],
             pocket=PackagePublishingPocket.RELEASE,
             component=u'main', with_debug=True, with_file=True,
-            status=PackagePublishingStatus.PUBLISHED)
+            status=PackagePublishingStatus.PUBLISHED,
+            architecturespecific=True)
 
     def test_getBinaryFiles_ddebs_disabled(self):
         # getBinaryFiles excludes ddebs unless publish_debug_symbols is

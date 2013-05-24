@@ -3837,6 +3837,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 source_package_release=source_package_release,
                 binpackageformat=BinaryPackageFormat.DDEB,
                 sourcepackagename=sourcepackagename,
+                architecturespecific=architecturespecific,
                 with_file=with_file)
             removeSecurityProxy(bpph.binarypackagerelease).debug_package = (
                 debug_bpph.binarypackagerelease)
