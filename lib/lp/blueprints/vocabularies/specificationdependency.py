@@ -9,9 +9,8 @@ __all__ = [
     'SpecificationDependenciesVocabulary',
     ]
 
-from operator import attrgetter
-
 from storm.locals import (
+    And,
     SQL,
     Store,
     )
@@ -23,6 +22,12 @@ from lp.blueprints.model.specification import (
     recursive_blocked_query,
     Specification,
     )
+from lp.blueprints.model.specificationdependency import (
+    SpecificationDependency,
+    )
+from lp.blueprints.model.specificationsearch import (
+    get_specification_privacy_filter,
+    )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.services.database.stormexpr import fti_search
 from lp.services.webapp import (
@@ -33,7 +38,6 @@ from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.vocabulary import (
     CountableIterator,
     IHugeVocabulary,
-    NamedSQLObjectVocabulary,
     SQLObjectVocabularyBase,
     )
 
@@ -196,14 +200,16 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         return self._is_valid_candidate(obj)
 
 
-class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
+class SpecificationDependenciesVocabulary(SQLObjectVocabularyBase):
     """List specifications on which the current specification depends."""
 
     _table = Specification
     _orderBy = 'title'
 
-    def __iter__(self):
+    @property
+    def _filter(self):
         user = getattr(getUtility(ILaunchBag), 'user', None)
-        for spec in sorted(
-            self.context.getDependencies(user), key=attrgetter('title')):
-            yield SimpleTerm(spec, spec.name, spec.title)
+        return And(
+            SpecificationDependency.specificationID == self.context.id,
+            SpecificationDependency.dependencyID == Specification.id,
+            *get_specification_privacy_filter(user))
