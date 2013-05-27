@@ -343,7 +343,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         self.test_publisher.prepareBreezyAutotest()
         upload, uploader = self.makeSourcePackageUpload()
         person = self.factory.makePerson()
-        upload.rejectFromQueue(user=person, rejection_comment='Because.')
+        upload.rejectFromQueue(user=person, comment='Because.')
         self.assertEqual(1, len(stub.test_emails))
         self.assertIn(
             'Rejected:\nRejected by %s: Because.' % person.displayname,

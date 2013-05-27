@@ -205,10 +205,7 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
         if not recipients:
             recipients = [default_recipient]
         debug(logger, "Sending rejection email.")
-        if summary_text is None:
-            summarystring = 'Rejected by archive administrator.'
-        else:
-            summarystring = summary_text
+        summarystring = summary_text
     else:
         summary = build_summary(spr, files, action)
         if summary_text:

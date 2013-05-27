@@ -605,7 +605,7 @@ class PackageUpload(SQLBase):
             client.send(self, 'packageupload-accepted', user)
 
     def rejectFromQueue(self, logger=None, dry_run=False, user=None,
-                        rejection_comment=None):
+                        comment=None):
         """See `IPackageUpload`."""
         self.setRejected()
         if self.package_copy_job is not None:
@@ -624,9 +624,10 @@ class PackageUpload(SQLBase):
             changes_file_object = None
         else:
             changes_file_object = StringIO.StringIO(self.changesfile.read())
-        if rejection_comment:
-            summary_text = "Rejected by %s: %s" % (
-                user.displayname, rejection_comment)
+        if user is None:
+            summary_text = None
+        elif comment:
+            summary_text = "Rejected by %s: %s" % (user.displayname, comment)
         else:
             summary_text = "Rejected by %s." % user.displayname
         # We allow unsigned uploads since they come from the librarian,
