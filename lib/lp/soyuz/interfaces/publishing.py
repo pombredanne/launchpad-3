@@ -975,22 +975,22 @@ class IBinaryPackagePublishingHistory(IBinaryPackagePublishingHistoryPublic,
 class IPublishingSet(Interface):
     """Auxiliary methods for dealing with sets of publications."""
 
-    def copyBinariesTo(binaries, distroseries, pocket, archive, policy=None):
+    def copyBinaries(archive, distroseries, pocket, bpphs, policy=None):
         """Copy multiple binaries to a given destination.
 
-        Processing multiple binaries in a batch allows certain
-        performance optimisations such as looking up the main
-        component once only, and getting all the BPPH records
-        with one query.
+        Efficiently copies the given `IBinaryPackagePublishingHistory`
+        records to a new archive and suite, optionally overriding the
+        original publications' component, section and priority using an
+        `IOverridePolicy`.
 
-        :param binaries: A list of binaries to copy.
-        :param distroseries: The target distroseries.
-        :param pocket: The target pocket.
-        :param archive: The target archive.
-        :param policy: The `IOverridePolicy` to apply to the copy.
+        :param archive: The target `IArchive`.
+        :param distroseries: The target `IDistroSeries`.
+        :param pocket: The target `PackagePublishingPocket`.
+        :param binaries: A list of `IBinaryPackagePublishingHistory`s to copy.
+        :param policy: An optional `IOverridePolicy` to apply to the copy.
 
-        :return: A result set of the created binary package
-            publishing histories.
+        :return: A result set of the created `IBinaryPackagePublishingHistory`
+            records.
         """
 
     def publishBinaries(archive, distroseries, pocket, binaries):

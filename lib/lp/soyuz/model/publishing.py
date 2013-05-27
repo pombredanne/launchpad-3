@@ -46,7 +46,10 @@ from storm.zope import IResultSet
 from storm.zope.interfaces import ISQLObjectResultSet
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    isinstance as zope_isinstance,
+    removeSecurityProxy,
+    )
 
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
@@ -1257,8 +1260,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def copyTo(self, distroseries, pocket, archive):
         """See `BinaryPackagePublishingHistory`."""
-        return getUtility(IPublishingSet).copyBinariesTo(
-            [self], distroseries, pocket, archive)
+        return getUtility(IPublishingSet).copyBinaries(
+            archive, distroseries, pocket, [self])
 
     def _getDownloadCountClauses(self, start_date=None, end_date=None):
         clauses = [
@@ -1377,25 +1380,23 @@ class PublishingSet:
 
     implements(IPublishingSet)
 
-    def copyBinariesTo(self, binaries, distroseries, pocket, archive,
-                       policy=None):
+    def copyBinaries(self, archive, distroseries, pocket, bpphs, policy=None):
         """See `IPublishingSet`."""
-        if binaries is None:
+        if bpphs is None:
             return
 
-        if type(removeSecurityProxy(binaries)) == list:
-            if len(binaries) == 0:
+        if zope_isinstance(bpphs, list):
+            if len(bpphs) == 0:
                 return
         else:
-            if ISQLObjectResultSet.providedBy(binaries):
-                # Adapt to ResultSet
-                binaries = IResultSet(binaries)
-            if binaries.is_empty():
+            if ISQLObjectResultSet.providedBy(bpphs):
+                bpphs = IResultSet(bpphs)
+            if bpphs.is_empty():
                 return
 
         if policy is not None:
             bpn_archtag = {}
-            for bpph in binaries:
+            for bpph in bpphs:
                 bpn_archtag[(
                     bpph.binarypackagerelease.binarypackagename,
                     bpph.distroarchseries.architecturetag)] = bpph
@@ -1416,7 +1417,7 @@ class PublishingSet:
         else:
             with_overrides = dict(
                 (bpph.binarypackagerelease, (bpph.component, bpph.section,
-                 bpph.priority)) for bpph in binaries)
+                 bpph.priority)) for bpph in bpphs)
         if not with_overrides:
             return list()
         return self.publishBinaries(
