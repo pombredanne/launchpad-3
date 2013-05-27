@@ -975,24 +975,6 @@ class IBinaryPackagePublishingHistory(IBinaryPackagePublishingHistoryPublic,
 class IPublishingSet(Interface):
     """Auxiliary methods for dealing with sets of publications."""
 
-    def copyBinaries(archive, distroseries, pocket, bpphs, policy=None):
-        """Copy multiple binaries to a given destination.
-
-        Efficiently copies the given `IBinaryPackagePublishingHistory`
-        records to a new archive and suite, optionally overriding the
-        original publications' component, section and priority using an
-        `IOverridePolicy`.
-
-        :param archive: The target `IArchive`.
-        :param distroseries: The target `IDistroSeries`.
-        :param pocket: The target `PackagePublishingPocket`.
-        :param binaries: A list of `IBinaryPackagePublishingHistory`s to copy.
-        :param policy: An optional `IOverridePolicy` to apply to the copy.
-
-        :return: A result set of the created `IBinaryPackagePublishingHistory`
-            records.
-        """
-
     def publishBinaries(archive, distroseries, pocket, binaries):
         """Efficiently publish multiple BinaryPackageReleases in an Archive.
 
@@ -1009,6 +991,24 @@ class IPublishingSet(Interface):
             `PackagePublishingPriority`) tuples.
 
         :return: A list of new `IBinaryPackagePublishingHistory` records.
+        """
+
+    def copyBinaries(archive, distroseries, pocket, bpphs, policy=None):
+        """Copy multiple binaries to a given destination.
+
+        Efficiently copies the given `IBinaryPackagePublishingHistory`
+        records to a new archive and suite, optionally overriding the
+        original publications' component, section and priority using an
+        `IOverridePolicy`.
+
+        :param archive: The target `IArchive`.
+        :param distroseries: The target `IDistroSeries`.
+        :param pocket: The target `PackagePublishingPocket`.
+        :param binaries: A list of `IBinaryPackagePublishingHistory`s to copy.
+        :param policy: An optional `IOverridePolicy` to apply to the copy.
+
+        :return: A result set of the created `IBinaryPackagePublishingHistory`
+            records.
         """
 
     def newSourcePublication(archive, sourcepackagerelease, distroseries,

@@ -1380,51 +1380,7 @@ class PublishingSet:
 
     implements(IPublishingSet)
 
-    def copyBinaries(self, archive, distroseries, pocket, bpphs, policy=None):
-        """See `IPublishingSet`."""
-        if bpphs is None:
-            return
-
-        if zope_isinstance(bpphs, list):
-            if len(bpphs) == 0:
-                return
-        else:
-            if ISQLObjectResultSet.providedBy(bpphs):
-                bpphs = IResultSet(bpphs)
-            if bpphs.is_empty():
-                return
-
-        if policy is not None:
-            bpn_archtag = {}
-            for bpph in bpphs:
-                bpn_archtag[(
-                    bpph.binarypackagerelease.binarypackagename,
-                    bpph.distroarchseries.architecturetag)] = bpph
-            with_overrides = {}
-            overrides = policy.calculateBinaryOverrides(
-                archive, distroseries, pocket, bpn_archtag.keys())
-            for override in overrides:
-                if override.distro_arch_series is None:
-                    continue
-                bpph = bpn_archtag[
-                    (override.binary_package_name,
-                     override.distro_arch_series.architecturetag)]
-                new_component = override.component or bpph.component
-                new_section = override.section or bpph.section
-                new_priority = override.priority or bpph.priority
-                calculated = (new_component, new_section, new_priority)
-                with_overrides[bpph.binarypackagerelease] = calculated
-        else:
-            with_overrides = dict(
-                (bpph.binarypackagerelease, (bpph.component, bpph.section,
-                 bpph.priority)) for bpph in bpphs)
-        if not with_overrides:
-            return list()
-        return self.publishBinaries(
-            archive, distroseries, pocket, with_overrides)
-
-    def publishBinaries(self, archive, distroseries, pocket,
-                        binaries):
+    def publishBinaries(self, archive, distroseries, pocket, binaries):
         """See `IPublishingSet`."""
         # Expand the dict of binaries into a list of tuples including the
         # architecture.
@@ -1494,6 +1450,49 @@ class PublishingSet:
               section, priority, PackagePublishingStatus.PENDING, UTC_NOW)
               for (das, bpr, (component, section, priority)) in needed],
             get_objects=True)
+
+    def copyBinaries(self, archive, distroseries, pocket, bpphs, policy=None):
+        """See `IPublishingSet`."""
+        if bpphs is None:
+            return
+
+        if zope_isinstance(bpphs, list):
+            if len(bpphs) == 0:
+                return
+        else:
+            if ISQLObjectResultSet.providedBy(bpphs):
+                bpphs = IResultSet(bpphs)
+            if bpphs.is_empty():
+                return
+
+        if policy is not None:
+            bpn_archtag = {}
+            for bpph in bpphs:
+                bpn_archtag[(
+                    bpph.binarypackagerelease.binarypackagename,
+                    bpph.distroarchseries.architecturetag)] = bpph
+            with_overrides = {}
+            overrides = policy.calculateBinaryOverrides(
+                archive, distroseries, pocket, bpn_archtag.keys())
+            for override in overrides:
+                if override.distro_arch_series is None:
+                    continue
+                bpph = bpn_archtag[
+                    (override.binary_package_name,
+                     override.distro_arch_series.architecturetag)]
+                new_component = override.component or bpph.component
+                new_section = override.section or bpph.section
+                new_priority = override.priority or bpph.priority
+                calculated = (new_component, new_section, new_priority)
+                with_overrides[bpph.binarypackagerelease] = calculated
+        else:
+            with_overrides = dict(
+                (bpph.binarypackagerelease, (bpph.component, bpph.section,
+                 bpph.priority)) for bpph in bpphs)
+        if not with_overrides:
+            return list()
+        return self.publishBinaries(
+            archive, distroseries, pocket, with_overrides)
 
     def newSourcePublication(self, archive, sourcepackagerelease,
                              distroseries, component, section, pocket,
