@@ -309,6 +309,7 @@ class QueueItemsView(LaunchpadView):
         # Retrieve the form data.
         accept = self.request.form.get('Accept', '')
         reject = self.request.form.get('Reject', '')
+        rejection_comment = self.request.form.get('rejection_comment', '')
         component_override = self.request.form.get('component_override', '')
         section_override = self.request.form.get('section_override', '')
         priority_override = self.request.form.get('priority_override', '')
@@ -316,6 +317,11 @@ class QueueItemsView(LaunchpadView):
 
         # If no boxes were checked, bail out.
         if (not accept and not reject) or not queue_ids:
+            return
+
+        # If we're asked to reject with no comment, bail.
+        if reject and not rejection_comment:
+            self.error = 'Rejection comment required.'
             return
 
         # Determine if there is a source override requested.
@@ -421,7 +427,11 @@ class QueueItemsView(LaunchpadView):
                     'priority'] = new_priority.title.lower()
 
             try:
-                getattr(self, 'queue_action_' + action)(queue_item)
+                if action == 'accept':
+                    queue_item.acceptFromQueue(user=self.user)
+                elif action == 'reject':
+                    queue_item.rejectFromQueue(
+                        user=self.user, comment=rejection_comment)
             except (QueueAdminUnauthorizedError,
                     QueueInconsistentStateError) as info:
                 failure.append('FAILED: %s (%s)' %
@@ -446,14 +456,6 @@ class QueueItemsView(LaunchpadView):
         # after the redirection)
         url = str(self.request.URL) + "?queue_state=%s" % self.state.value
         self.request.response.redirect(url)
-
-    def queue_action_accept(self, queue_item):
-        """Accept the queue item passed."""
-        queue_item.acceptFromQueue(user=self.user)
-
-    def queue_action_reject(self, queue_item):
-        """Reject the queue item passed."""
-        queue_item.rejectFromQueue(user=self.user)
 
     def sortedSections(self):
         """Possible sections for the context distroseries.

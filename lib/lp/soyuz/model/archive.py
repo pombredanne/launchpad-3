@@ -282,6 +282,9 @@ class Archive(SQLBase):
     publish_debug_symbols = BoolCol(
         dbName='publish_debug_symbols', notNull=False, default=False)
 
+    permit_obsolete_series_uploads = BoolCol(
+        dbName='permit_obsolete_series_uploads', default=False)
+
     authorized_size = IntCol(
         dbName='authorized_size', notNull=False, default=2048)
 

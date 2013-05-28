@@ -137,6 +137,7 @@ with pmount:
 Our user is also able to reject, let's reject alsa-utils:
 
     >>> motu_browser.getControl(name="QUEUE_ID").value = ['4']
+    >>> motu_browser.getControl(name='rejection_comment').value = 'Foo'
     >>> motu_browser.getControl(name="Reject").click()
     >>> for message in get_feedback_messages(motu_browser.contents):
     ...     print message
