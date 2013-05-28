@@ -184,6 +184,7 @@ Rejection an item from NEW queue:
 
   >>> request = LaunchpadTestRequest(
   ...     form={'queue_state': PackageUploadStatus.NEW.value,
+  ...           'rejection_comment': 'Foo',
   ...           'Reject': 'Reject',
   ...           'QUEUE_ID': '2'})
   >>> request.method = 'POST'
