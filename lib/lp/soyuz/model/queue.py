@@ -604,8 +604,7 @@ class PackageUpload(SQLBase):
             client = AuditorClient()
             client.send(self, 'packageupload-accepted', user)
 
-    def rejectFromQueue(self, logger=None, dry_run=False, user=None,
-                        comment=None):
+    def rejectFromQueue(self, user, logger=None, dry_run=False, comment=None):
         """See `IPackageUpload`."""
         self.setRejected()
         if self.package_copy_job is not None:
@@ -624,9 +623,7 @@ class PackageUpload(SQLBase):
             changes_file_object = None
         else:
             changes_file_object = StringIO.StringIO(self.changesfile.read())
-        if user is None:
-            summary_text = None
-        elif comment:
+        if comment:
             summary_text = "Rejected by %s: %s" % (user.displayname, comment)
         else:
             summary_text = "Rejected by %s." % user.displayname

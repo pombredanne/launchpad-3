@@ -369,7 +369,7 @@ class IPackageUpload(Interface):
         comment=TextLine(title=_("Rejection comment"), required=False))
     @call_with(user=REQUEST_USER)
     @operation_for_version("devel")
-    def rejectFromQueue(logger=None, dry_run=False, user=None, comment=None):
+    def rejectFromQueue(user, logger=None, dry_run=False, comment=None):
         """Call setRejected, do a syncUpdate, and send notification email."""
 
     def realiseUpload(logger=None):
