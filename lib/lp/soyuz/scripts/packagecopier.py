@@ -736,8 +736,8 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         # publication per binary package releases (i.e. excludes irrelevant
         # arch-indep publications) and IBPPH.copy is prepared to expand
         # arch-indep publications.
-        binary_copies = getUtility(IPublishingSet).copyBinariesTo(
-            source.getBuiltBinaries(), series, pocket, archive, policy=policy)
+        binary_copies = getUtility(IPublishingSet).copyBinaries(
+            archive, series, pocket, source.getBuiltBinaries(), policy=policy)
 
         if binary_copies is not None:
             copies.extend(binary_copies)

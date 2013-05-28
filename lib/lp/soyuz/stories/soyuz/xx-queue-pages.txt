@@ -547,7 +547,7 @@ and how that's stated in the notification email body.
     Content-Transfer-Encoding: quoted-printable
     <BLANKLINE>
     Rejected:
-    Rejected by archive administrator.
+    Rejected by Sample Person.
     ...
     You are receiving this email because you are the uploader, maintainer or
     signer of the above package.

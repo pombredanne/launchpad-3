@@ -604,7 +604,7 @@ class PackageUpload(SQLBase):
             client = AuditorClient()
             client.send(self, 'packageupload-accepted', user)
 
-    def rejectFromQueue(self, logger=None, dry_run=False, user=None):
+    def rejectFromQueue(self, user, logger=None, dry_run=False, comment=None):
         """See `IPackageUpload`."""
         self.setRejected()
         if self.package_copy_job is not None:
@@ -623,11 +623,15 @@ class PackageUpload(SQLBase):
             changes_file_object = None
         else:
             changes_file_object = StringIO.StringIO(self.changesfile.read())
+        if comment:
+            summary_text = "Rejected by %s: %s" % (user.displayname, comment)
+        else:
+            summary_text = "Rejected by %s." % user.displayname
         # We allow unsigned uploads since they come from the librarian,
         # which are now stored unsigned.
         self.notify(
             logger=logger, dry_run=dry_run,
-            changes_file_object=changes_file_object)
+            changes_file_object=changes_file_object, summary_text=summary_text)
         self.syncUpdate()
         if bool(getFeatureFlag('auditor.enabled')):
             client = AuditorClient()

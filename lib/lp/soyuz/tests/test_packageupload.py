@@ -308,14 +308,14 @@ class PackageUploadTestCase(TestCaseWithFactory):
         self.assertEqual("UNAPPROVED", upload_two.status.name)
 
         # Rejecting the second upload works.
-        upload_two.rejectFromQueue()
+        upload_two.rejectFromQueue(self.factory.makePerson())
         self.assertEqual("REJECTED", upload_two.status.name)
 
     def test_rejectFromQueue_source_sends_email(self):
         # Rejecting a source package sends an email to the uploader.
         self.test_publisher.prepareBreezyAutotest()
         upload, uploader = self.makeSourcePackageUpload()
-        upload.rejectFromQueue()
+        upload.rejectFromQueue(self.factory.makePerson())
         self.assertEqual(1, len(stub.test_emails))
         self.assertEmail([format_address_for_person(uploader)])
 
@@ -323,7 +323,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         # Rejecting a binary package sends an email to the uploader.
         self.test_publisher.prepareBreezyAutotest()
         upload, uploader = self.makeBuildPackageUpload()
-        upload.rejectFromQueue()
+        upload.rejectFromQueue(self.factory.makePerson())
         self.assertEqual(1, len(stub.test_emails))
         self.assertEmail([format_address_for_person(uploader)])
 
@@ -334,8 +334,20 @@ class PackageUploadTestCase(TestCaseWithFactory):
         upload, _ = self.makeSourcePackageUpload(
             pocket=PackagePublishingPocket.PROPOSED,
             section_name="translations")
-        upload.rejectFromQueue()
+        upload.rejectFromQueue(self.factory.makePerson())
         self.assertEqual(0, len(stub.test_emails))
+
+    def test_rejectFromQueue_source_with_reason(self):
+        # Rejecting a source package with a reason includes it in the email to
+        # the uploader.
+        self.test_publisher.prepareBreezyAutotest()
+        upload, uploader = self.makeSourcePackageUpload()
+        person = self.factory.makePerson()
+        upload.rejectFromQueue(user=person, comment='Because.')
+        self.assertEqual(1, len(stub.test_emails))
+        self.assertIn(
+            'Rejected:\nRejected by %s: Because.' % person.displayname,
+            stub.test_emails[0][-1])
 
 
 class TestPackageUploadPrivacy(TestCaseWithFactory):
@@ -445,7 +457,7 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
         # rejectFromQueue will reject the upload and fail the copy job.
         pu, pcj = self.makeUploadWithPackageCopyJob()
 
-        pu.rejectFromQueue()
+        pu.rejectFromQueue(self.factory.makePerson())
 
         self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
         self.assertEqual(JobStatus.FAILED, pcj.status)
@@ -472,13 +484,13 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
         self.factory.makeBinaryPackageRelease(build=build)
         upload.addBuild(build)
         name_array = [
-            build.build.binarypackages[0].name for build in upload.builds]
+            b.build.binarypackages[0].name for b in upload.builds]
         name_array.extend(
             [b.build.source_package_release.name for b in upload.builds])
         names = ' '.join(sorted(name_array))
         self.assertEqual(names, upload.searchable_names)
         self.assertContentEqual(
-            [build.build.binarypackages[0].version for build in upload.builds],
+            [b.build.binarypackages[0].version for b in upload.builds],
             upload.searchable_versions)
 
     def test_searchables_for_builds_duplication(self):
@@ -844,7 +856,7 @@ class TestPackageUploadSet(TestCaseWithFactory):
         # If the PackageUpload has no changesfile, we can still reject it.
         pu = self.factory.makePackageUpload()
         pu.changesfile = None
-        pu.rejectFromQueue()
+        pu.rejectFromQueue(self.factory.makePerson())
         self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
 
 
