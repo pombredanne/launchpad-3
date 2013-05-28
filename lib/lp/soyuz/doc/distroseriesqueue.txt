@@ -865,7 +865,7 @@ build once it was accepted, using 'queue-tool' or via the Web UI.
 Let's reject something in the queue:
 
     >>> try:
-    ...     items[3].rejectFromQueue()
+    ...     items[3].rejectFromQueue(factory.makePerson())
     ... except QueueInconsistentStateError as e:
     ...    print 'FAILED'
     ... else:

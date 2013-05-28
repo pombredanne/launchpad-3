@@ -201,6 +201,7 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         person = self.factory.makePerson()
         notify(
             person, None, [bpr], [], archive, distroseries, pocket,
+            summary_text="Rejected by archive administrator.",
             action='rejected')
         [notification] = pop_notifications()
         body = notification.get_payload()[0].get_payload()
