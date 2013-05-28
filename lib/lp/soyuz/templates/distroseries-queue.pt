@@ -183,15 +183,25 @@
              </select>
            </td>
            <td colspan="2" style="vertical-align: bottom">
+             <input value="Accept" name="Accept" type="submit"/>
+           </td>
+         </tr>
+         <tr tal:condition="view/availableActions">
+           <td colspan="4" style="text-align: right;
+                                  vertical-align: bottom;
+                                  padding-bottom: 5px">
+             <label>Rejection comment:</label>
+           </td>
+           <td colspan="3" style="vertical-align: bottom">
+             <input size="80" type="text" name="rejection_comment" />
+           </td>
+           <td style="vertical-align: bottom">
              <input
                tal:condition="view/state/enumvalue:REJECTED"
                disabled="true" value="Reject" name="Reject" type="submit"/>
              <input
                tal:condition="not:view/state/enumvalue:REJECTED"
                value="Reject" name="Reject" type="submit"/>
-             <br/>
-             <br/>
-             <input value="Accept" name="Accept" type="submit"/>
            </td>
          </tr>
        </tbody>

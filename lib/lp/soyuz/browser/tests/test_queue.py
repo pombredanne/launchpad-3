@@ -132,6 +132,11 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
         view.performQueueAction()
         return view
 
+    def assertStatus(self, package_upload_id, status):
+        self.assertEqual(
+            status,
+            getUtility(IPackageUploadSet).get(package_upload_id).status.name)
+
     def test_main_admin_can_accept_main_upload(self):
         # A person with queue admin access for main
         # can accept uploads to the main archive.
@@ -145,10 +150,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
         request = LaunchpadTestRequest(form=self.form)
         request.method = 'POST'
         self.setupQueueView(request)
-
-        self.assertEquals(
-            'DONE',
-            getUtility(IPackageUploadSet).get(package_upload_id).status.name)
+        self.assertStatus(package_upload_id, 'DONE')
 
     def test_main_admin_cannot_accept_partner_upload(self):
         # A person with queue admin access for main cannot necessarily
@@ -169,9 +171,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
                 "FAILED: partner-upload (You have no rights to accept "
                 "component(s) 'partner')"),
             view.request.response.notifications[0].message)
-        self.assertEquals(
-            'NEW',
-            getUtility(IPackageUploadSet).get(package_upload_id).status.name)
+        self.assertStatus(package_upload_id, 'NEW')
 
     def test_admin_can_accept_partner_upload(self):
         # An admin can always accept packages, even for the
@@ -183,10 +183,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
         request = LaunchpadTestRequest(form=self.form)
         request.method = 'POST'
         self.setupQueueView(request)
-
-        self.assertEquals(
-            'DONE',
-            getUtility(IPackageUploadSet).get(package_upload_id).status.name)
+        self.assertStatus(package_upload_id, 'DONE')
 
     def test_partner_admin_can_accept_partner_upload(self):
         # A person with queue admin access for partner
@@ -201,10 +198,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
         request = LaunchpadTestRequest(form=self.form)
         request.method = 'POST'
         self.setupQueueView(request)
-
-        self.assertEquals(
-            'DONE',
-            getUtility(IPackageUploadSet).get(package_upload_id).status.name)
+        self.assertStatus(package_upload_id, 'DONE')
 
     def test_partner_admin_cannot_accept_main_upload(self):
         # A person with queue admin access for partner cannot necessarily
@@ -225,9 +219,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
                 "FAILED: main-upload (You have no rights to accept "
                 "component(s) 'main')"),
             view.request.response.notifications[0].message)
-        self.assertEquals(
-            'NEW',
-            getUtility(IPackageUploadSet).get(package_upload_id).status.name)
+        self.assertStatus(package_upload_id, 'NEW')
 
     def test_proposed_admin_can_accept_proposed_upload(self):
         # A person with queue admin access for proposed can accept uploads
@@ -243,7 +235,6 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
                     self.proposed_queue_admin,
                     pocket=PackagePublishingPocket.PROPOSED,
                     distroseries=distroseries))
-        package_upload_set = getUtility(IPackageUploadSet)
 
         for spr in (self.proposed_spr, self.proposed_series_spr):
             package_upload_id = spr.package_upload.id
@@ -251,9 +242,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
             request = LaunchpadTestRequest(form=self.form)
             request.method = 'POST'
             self.setupQueueView(request, series=spr.upload_distroseries)
-
-            self.assertEqual(
-                'DONE', package_upload_set.get(package_upload_id).status.name)
+            self.assertStatus(package_upload_id, 'DONE')
 
     def test_proposed_admin_cannot_accept_release_upload(self):
         # A person with queue admin access for proposed cannot necessarly
@@ -275,9 +264,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
                 "FAILED: main-upload (You have no rights to accept "
                 "component(s) 'main')"),
             view.request.response.notifications[0].message)
-        self.assertEqual(
-            'NEW',
-            getUtility(IPackageUploadSet).get(package_upload_id).status.name)
+        self.assertStatus(package_upload_id, 'NEW')
 
     def test_proposed_series_admin_can_accept_that_series_upload(self):
         # A person with queue admin access for proposed for one series can
@@ -294,10 +281,7 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
         request = LaunchpadTestRequest(form=self.form)
         request.method = 'POST'
         self.setupQueueView(request, series=self.second_series)
-
-        self.assertEqual(
-            'DONE',
-            getUtility(IPackageUploadSet).get(package_upload_id).status.name)
+        self.assertStatus(package_upload_id, 'DONE')
 
     def test_proposed_series_admin_cannot_accept_other_series_upload(self):
         # A person with queue admin access for proposed for one series
@@ -317,9 +301,37 @@ class TestAcceptQueueUploads(TestCaseWithFactory):
 
         self.assertEqual(
             "You do not have permission to act on queue items.", view.error)
+        self.assertStatus(package_upload_id, 'NEW')
+
+
+class TestRejectQueueUploads(TestAcceptQueueUploads):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_cannot_reject_without_comment(self):
+        login_person(self.proposed_queue_admin)
+        package_upload_id = self.proposed_spr.package_upload.id
+        form = {
+            'Reject': 'Reject',
+            'QUEUE_ID': [package_upload_id]}
+        request = LaunchpadTestRequest(form=form)
+        request.method = 'POST'
+        view = self.setupQueueView(request)
         self.assertEqual(
-            'NEW',
-            getUtility(IPackageUploadSet).get(package_upload_id).status.name)
+            'Require a comment when rejecting queue items.', view.error)
+        self.assertStatus(package_upload_id, 'NEW')
+
+    def test_reject_with_comment(self):
+       login_person(self.proposed_queue_admin)
+       package_upload_id = self.proposed_spr.package_upload.id
+       form = {
+           'Reject': 'Reject',
+           'rejection_comment': 'Because I can.',
+           'QUEUE_ID': [package_upload_id]}
+       request = LaunchpadTestRequest(form=form)
+       request.method = 'POST'
+       self.setupQueueView(request)
+       self.assertStatus(package_upload_id, 'REJECTED')
 
 
 class TestQueueItemsView(TestCaseWithFactory):
