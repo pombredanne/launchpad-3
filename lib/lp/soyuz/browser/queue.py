@@ -321,7 +321,7 @@ class QueueItemsView(LaunchpadView):
 
         # If we're asked to reject with no comment, bail.
         if reject and not rejection_comment:
-            self.error = 'Require a comment when rejecting queue items.'
+            self.error = 'Rejection comment required.'
             return
 
         # Determine if there is a source override requested.
@@ -427,8 +427,11 @@ class QueueItemsView(LaunchpadView):
                     'priority'] = new_priority.title.lower()
 
             try:
-                getattr(self, 'queue_action_' + action)(
-                    queue_item, rejection_comment)
+                if action == 'accept':
+                    queue_item.acceptFromQueue(user=self.user)
+                elif action == 'reject':
+                    queue_item.rejectFromQueue(
+                        user=self.user, comment=rejection_comment)
             except (QueueAdminUnauthorizedError,
                     QueueInconsistentStateError) as info:
                 failure.append('FAILED: %s (%s)' %
@@ -453,14 +456,6 @@ class QueueItemsView(LaunchpadView):
         # after the redirection)
         url = str(self.request.URL) + "?queue_state=%s" % self.state.value
         self.request.response.redirect(url)
-
-    def queue_action_accept(self, queue_item, comment):
-        """Accept the queue item passed."""
-        queue_item.acceptFromQueue(user=self.user)
-
-    def queue_action_reject(self, queue_item, comment):
-        """Reject the queue item passed."""
-        queue_item.rejectFromQueue(user=self.user, comment=comment)
 
     def sortedSections(self):
         """Possible sections for the context distroseries.
