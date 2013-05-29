@@ -1293,7 +1293,7 @@ class Archive(SQLBase):
         # If the target series is OBSOLETE and permit_obsolete_series_uploads
         # is not set, reject.
         if (
-            distroseries.status == SeriesStatus.OBSOLETE and
+            distroseries and distroseries.status == SeriesStatus.OBSOLETE and
             not self.permit_obsolete_series_uploads):
             return CannotUploadToSeries(distroseries)
 
