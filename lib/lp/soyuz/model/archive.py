@@ -126,6 +126,7 @@ from lp.soyuz.interfaces.archive import (
     CannotSwitchPrivacy,
     CannotUploadToPocket,
     CannotUploadToPPA,
+    CannotUploadToSeries,
     ComponentNotFound,
     default_name_by_purpose,
     FULL_COMPONENT_SUPPORT,
@@ -1288,6 +1289,13 @@ class Archive(SQLBase):
                 return CannotUploadToPPA()
             else:
                 return None
+
+        # If the target series is OBSOLETE and permit_obsolete_series_uploads
+        # is not set, reject.
+        if (
+            distroseries and distroseries.status == SeriesStatus.OBSOLETE and
+            not self.permit_obsolete_series_uploads):
+            return CannotUploadToSeries(distroseries)
 
         # Users with pocket upload permissions may upload to anything in the
         # given pocket.

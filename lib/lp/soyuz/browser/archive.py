@@ -2034,6 +2034,7 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
         'require_virtualized',
         'build_debug_symbols',
         'publish_debug_symbols',
+        'permit_obsolete_series_uploads',
         'authorized_size',
         'relative_build_score',
         'external_dependencies',

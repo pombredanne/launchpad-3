@@ -1467,7 +1467,15 @@ class PublishingSet:
 
         if policy is not None:
             bpn_archtag = {}
+            ddebs = set()
             for bpph in bpphs:
+                # DDEBs just inherit their corresponding DEB's
+                # overrides, so don't ask for specific ones.
+                if (bpph.binarypackagerelease.binpackageformat
+                        == BinaryPackageFormat.DDEB):
+                    ddebs.add(bpph.binarypackagerelease)
+                    continue
+
                 bpn_archtag[(
                     bpph.binarypackagerelease.binarypackagename,
                     bpph.distroarchseries.architecturetag)] = bpph
@@ -1485,6 +1493,15 @@ class PublishingSet:
                 new_priority = override.priority or bpph.priority
                 calculated = (new_component, new_section, new_priority)
                 with_overrides[bpph.binarypackagerelease] = calculated
+
+                # If there is a corresponding DDEB then give it our
+                # overrides too. It should always be part of the copy
+                # already.
+                maybe_ddeb = bpph.binarypackagerelease.debug_package
+                if maybe_ddeb is not None:
+                    assert maybe_ddeb in ddebs
+                    ddebs.remove(maybe_ddeb)
+                    with_overrides[maybe_ddeb] = calculated
         else:
             with_overrides = dict(
                 (bpph.binarypackagerelease, (bpph.component, bpph.section,

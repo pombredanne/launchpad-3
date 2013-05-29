@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Archive features."""
@@ -59,6 +59,7 @@ from lp.soyuz.interfaces.archive import (
     CannotCopy,
     CannotUploadToPocket,
     CannotUploadToPPA,
+    CannotUploadToSeries,
     IArchiveSet,
     InsufficientUploadRights,
     InvalidPocketForPartnerArchive,
@@ -783,9 +784,25 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         # can upload basically whatever they want to that component, even if
         # the package doesn't exist yet.
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        person, component = self.makePersonWithComponentPermission(
-            archive)
+        person, component = self.makePersonWithComponentPermission(archive)
         self.assertCanUpload(archive, person, None, component=component)
+
+    def test_checkUpload_obsolete_series(self):
+        distroseries = self.factory.makeDistroSeries(
+            status=SeriesStatus.OBSOLETE)
+        self.assertCannotUpload(
+            CannotUploadToSeries, distroseries.distribution.main_archive,
+            self.factory.makePerson(), None, distroseries=distroseries)
+
+    def test_checkUpload_obsolete_series_with_flag(self):
+        distroseries = self.factory.makeDistroSeries(
+            status=SeriesStatus.OBSOLETE)
+        archive = distroseries.distribution.main_archive
+        person, component = self.makePersonWithComponentPermission(archive)
+        removeSecurityProxy(archive).permit_obsolete_series_uploads = True
+        self.assertCanUpload(
+            archive, person, None, distroseries=distroseries,
+            component=component)
 
     def makePackageToUpload(self, distroseries):
         sourcepackagename = self.factory.makeSourcePackageName()

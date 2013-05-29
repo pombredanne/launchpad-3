@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test BuildQueue features."""
@@ -13,17 +13,20 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.log.logger import DevNullLogger
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.soyuz.interfaces.buildpackagejob import (
     COPY_ARCHIVE_SCORE_PENALTY,
@@ -34,6 +37,7 @@ from lp.soyuz.interfaces.buildpackagejob import (
     SCORE_BY_URGENCY,
     )
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
@@ -475,3 +479,42 @@ class TestBuildPackageJobScore(TestCaseWithFactory):
         with anonymous_logged_in():
             self.assertScoreWriteableByTeam(
                 archive, getUtility(ILaunchpadCelebrities).commercial_admin)
+
+            
+class TestBuildPackageJobPostProcess(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeBuildJob(self, pocket="RELEASE"):
+        build = self.factory.makeBinaryPackageBuild(pocket=pocket)
+        return build.queueBuild()
+
+    def test_release_job(self):
+        job = self.makeBuildJob()
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
+        self.assertTrue(BuildPackageJob.postprocessCandidate(job, None))
+        self.assertEqual(BuildStatus.NEEDSBUILD, build.status)
+
+    def test_security_job_is_failed(self):
+        job = self.makeBuildJob(pocket="SECURITY")
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
+        BuildPackageJob.postprocessCandidate(job, DevNullLogger())
+        self.assertEqual(BuildStatus.FAILEDTOBUILD, build.status)
+
+    def test_obsolete_job_without_flag_is_failed(self):
+        job = self.makeBuildJob()
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
+        distroseries = build.distro_arch_series.distroseries
+        removeSecurityProxy(distroseries).status = SeriesStatus.OBSOLETE
+        BuildPackageJob.postprocessCandidate(job, DevNullLogger())
+        self.assertEqual(BuildStatus.FAILEDTOBUILD, build.status)
+
+    def test_obsolete_job_with_flag_is_not_failed(self):
+        job = self.makeBuildJob()
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
+        distroseries = build.distro_arch_series.distroseries
+        archive = build.archive
+        removeSecurityProxy(distroseries).status = SeriesStatus.OBSOLETE
+        removeSecurityProxy(archive).permit_obsolete_series_uploads = True
+        BuildPackageJob.postprocessCandidate(job, DevNullLogger())
+        self.assertEqual(BuildStatus.NEEDSBUILD, build.status)
