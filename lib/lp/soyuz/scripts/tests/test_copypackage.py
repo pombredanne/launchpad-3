@@ -1244,13 +1244,17 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
     def test_existing_publication_overrides(self):
         # When source/binaries are copied to a destination primary archive,
         # if that archive has existing publications, we respect their
-        # component and section when copying.
+        # component and section when copying. This even works for ddebs
+        # that are new in the target archive: they inherit their deb's
+        # overrides.
         nobby = self.createNobby(('i386', 'hppa'))
         archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest, virtualized=False)
+        archive.build_debug_symbols = True
         target_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest, virtualized=False,
             purpose=ArchivePurpose.PRIMARY)
+        target_archive.build_debug_symbols = True
         existing_source = self.test_publisher.getPubSource(
             archive=target_archive, version='1.0-1', distroseries=nobby,
             architecturehintlist='all')
@@ -1263,17 +1267,18 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
         source = self.test_publisher.getPubSource(
             archive=archive, version='1.0-2', architecturehintlist='all')
-        [bin_i386, bin_hppa] = self.test_publisher.getPubBinaries(
-            pub_source=source)
+        bins = self.test_publisher.getPubBinaries(
+            pub_source=source, with_debug=True)
+        [bin_i386, dbg_i386, bin_hppa, dbg_hppa] = bins
         # The package copier will want the changes files associated with the
         # upload.
         transaction.commit()
 
-        [copied_source, copied_bin_i386, copied_bin_hppa] = self.doCopy(
+        copied_pubs = self.doCopy(
             source, target_archive, nobby, source.pocket, True)
-        self.assertEqual(copied_source.component, existing_source.component)
-        self.assertOverrides(ebin_i386.component, ebin_i386, copied_bin_i386)
-        self.assertOverrides(ebin_hppa.component, ebin_hppa, copied_bin_hppa)
+        self.assertEqual(copied_pubs[0].component, existing_source.component)
+        for copied_bin in copied_pubs[1:]:
+            self.assertOverrides(ebin_i386.component, ebin_i386, copied_bin)
 
     def _setup_archive(self, version="1.0-2", use_nobby=False, **kwargs):
         archive = self.test_publisher.ubuntutest.main_archive
