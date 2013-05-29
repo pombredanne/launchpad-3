@@ -426,9 +426,11 @@
         <require
             permission="launchpad.Admin"
             interface="lp.soyuz.interfaces.archive.IArchiveAdmin"
-            set_attributes="name authorized_size build_debug_symbols
+            set_attributes="authorized_size build_debug_symbols
                             buildd_secret enabled_restricted_families
-                            external_dependencies private publish_debug_symbols
+                            external_dependencies name
+                            permit_obsolete_series_uploads
+                            private publish_debug_symbols
                             require_virtualized"/>
         <require
             permission="launchpad.Moderate"

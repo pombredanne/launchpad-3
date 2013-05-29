@@ -17,6 +17,7 @@ __all__ = [
     'CannotUploadToArchive',
     'CannotUploadToPPA',
     'CannotUploadToPocket',
+    'CannotUploadToSeries',
     'FULL_COMPONENT_SUPPORT',
     'IArchive',
     'IArchiveAdmin',
@@ -187,7 +188,7 @@ class CannotUploadToArchive(Exception):
 
     def __init__(self, **args):
         """Construct a `CannotUploadToArchive`."""
-        Exception.__init__(self, self._fmt % args)
+        super(CannotUploadToArchive, self).__init__(self._fmt % args)
 
 
 class InvalidPocketForPartnerArchive(CannotUploadToArchive):
@@ -201,7 +202,7 @@ class CannotUploadToPocket(Exception):
     """Returned when a pocket is closed for uploads."""
 
     def __init__(self, distroseries, pocket):
-        Exception.__init__(self,
+        super(CannotUploadToPocket, self).__init__(
             "Not permitted to upload to the %s pocket in a series in the "
             "'%s' state." % (pocket.name, distroseries.status.name))
 
@@ -249,7 +250,7 @@ class NoRightsForComponent(CannotUploadToArchive):
         "Signer is not permitted to upload to the component '%(component)s'.")
 
     def __init__(self, component):
-        CannotUploadToArchive.__init__(self, component=component.name)
+        super(NoRightsForComponent, self).__init__(component=component.name)
 
 
 class InvalidPocketForPPA(CannotUploadToArchive):
@@ -264,7 +265,17 @@ class ArchiveDisabled(CannotUploadToArchive):
     _fmt = ("%(archive_name)s is disabled.")
 
     def __init__(self, archive_name):
-        CannotUploadToArchive.__init__(self, archive_name=archive_name)
+        super(ArchiveDisabled, self).__init__(archive_name=archive_name)
+
+
+class CannotUploadToSeries(CannotUploadToArchive):
+    """Uploading to an obsolete series is not allowed."""
+
+    _fmt = ("%(distroseries)s is obsolete and will not accept new uploads.")
+
+    def __init__(self, distroseries):
+        super(CannotUploadToSeries, self).__init__(
+            distroseries=distroseries.name)
 
 
 @error_status(httplib.BAD_REQUEST)
