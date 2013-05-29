@@ -33,7 +33,7 @@
                  error view/error|nothing">
 
   <div class="error message" tal:condition="error">
-    <scan tal:content="error"></scan>
+    <span tal:content="error"></span>
   </div>
 
   <div class="top-portlet queue_list">
