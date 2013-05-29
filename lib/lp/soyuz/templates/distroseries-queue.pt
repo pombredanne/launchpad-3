@@ -32,7 +32,11 @@
                  message view/performQueueAction;
                  error view/error|nothing">
 
-  <div class="top-portlet queue_list" tal:condition="not: error">
+  <div class="error message" tal:condition="error">
+    <span tal:content="error"></span>
+  </div>
+
+  <div class="top-portlet queue_list">
 
     <tal:batch define="batch view/decoratedQueueBatch|nothing">
 
