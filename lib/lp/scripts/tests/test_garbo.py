@@ -1296,14 +1296,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             'PopulateLatestPersonSourcePackageReleaseCache')
         self.assertEqual(spph_2.id, job_data['last_spph_id'])
 
-    def test_PopulateArchivePermitObsoleteSeriesUploads(self):
-        switch_dbuser('testadmin')
-        archive = self.factory.makeArchive()
-        removeSecurityProxy(archive).permit_obsolete_series_uploads = None
-        transaction.commit()
-        self.runHourly()
-        self.assertIs(False, archive.permit_obsolete_series_uploads)
-
 
 class TestGarboTasks(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
