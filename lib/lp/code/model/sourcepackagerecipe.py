@@ -277,7 +277,7 @@ class SourcePackageRecipe(Storm):
             raise BuildNotAllowedForDistro(self, distroseries)
 
         reject_reason = archive.checkUpload(
-            requester, self.distroseries, None, archive.default_component,
+            requester, distroseries, None, archive.default_component,
             pocket)
         if reject_reason is not None:
             raise reject_reason
