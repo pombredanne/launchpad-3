@@ -871,6 +871,12 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         TextLine(
             title=_("Priority Name"),
             required=False, readonly=True))
+    is_debug = exported(
+        Bool(
+            title=_("Debug Package"),
+            description=_("Is this a debug package publication?"),
+            required=False, readonly=True),
+        as_of="devel")
 
     def supersede(dominant=None, logger=None):
         """Supersede this publication.

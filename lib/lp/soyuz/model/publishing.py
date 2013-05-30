@@ -973,6 +973,13 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return self.binarypackagerelease.architecturespecific
 
     @property
+    def is_debug(self):
+        """See `IBinaryPackagePublishingHistory`."""
+        return (
+            self.binarypackagerelease.binpackageformat
+            == BinaryPackageFormat.DDEB)
+
+    @property
     def priority_name(self):
         """See `IBinaryPackagePublishingHistory`"""
         return self.priority.name

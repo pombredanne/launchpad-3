@@ -9,7 +9,10 @@ from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.webapp.publisher import canonical_url
-from lp.soyuz.enums import BinaryPackageFileType
+from lp.soyuz.enums import (
+    BinaryPackageFileType,
+    BinaryPackageFormat,
+    )
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     PackagePublishingStatus,
@@ -208,3 +211,13 @@ class TestBinaryPackagePublishingHistory(TestCaseWithFactory):
 
         self.assertContentEqual(
             self.get_urls_for_bpph(bpph, include_meta=True), urls)
+
+    def test_is_debug_false_for_deb(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            binpackageformat=BinaryPackageFormat.DEB)
+        self.assertFalse(bpph.is_debug)
+
+    def test_is_debug_true_for_ddeb(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            binpackageformat=BinaryPackageFormat.DDEB)
+        self.assertTrue(bpph.is_debug)
