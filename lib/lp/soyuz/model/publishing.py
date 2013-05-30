@@ -973,6 +973,13 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return self.binarypackagerelease.architecturespecific
 
     @property
+    def is_debug(self):
+        """See `IBinaryPackagePublishingHistory`."""
+        return (
+            self.binarypackagerelease.binpackageformat
+            == BinaryPackageFormat.DDEB)
+
+    @property
     def priority_name(self):
         """See `IBinaryPackagePublishingHistory`"""
         return self.priority.name
@@ -993,9 +1000,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def publish(self, diskpool, log):
         """See `IPublishing`."""
-        if (self.binarypackagerelease.binpackageformat ==
-                BinaryPackageFormat.DDEB
-            and not self.archive.publish_debug_symbols):
+        if self.is_debug and not self.archive.publish_debug_symbols:
             self.setPublished()
         else:
             super(BinaryPackagePublishingHistory, self).publish(diskpool, log)
@@ -1125,9 +1130,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             # DDEBs cannot themselves be dominant; they are always dominated
             # by their corresponding DEB. Any attempt to dominate with a
             # dominant DDEB is a bug.
-            assert (
-                dominant.binarypackagerelease.binpackageformat !=
-                    BinaryPackageFormat.DDEB), (
+            assert not dominant.is_debug, (
                 "Should not dominate with %s (%s); DDEBs cannot dominate" % (
                     dominant.binarypackagerelease.title,
                     dominant.distroarchseries.architecturetag))
@@ -1171,8 +1174,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                                  "component, section, priority and/or "
                                  "phased_update_percentage.")
 
-        bpr = self.binarypackagerelease
-        if bpr.binpackageformat == BinaryPackageFormat.DDEB:
+        if self.is_debug:
             raise OverrideError(
                 "Cannot override ddeb publications directly; override "
                 "the corresponding deb instead.")
@@ -1318,8 +1320,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 "Cannot delete publications from suite '%s'" %
                 self.distroseries.getSuite(self.pocket))
 
-        bpr = self.binarypackagerelease
-        if bpr.binpackageformat == BinaryPackageFormat.DDEB:
+        if self.is_debug:
             raise DeletionError(
                 "Cannot delete ddeb publications directly; delete the "
                 "corresponding deb instead.")
@@ -1471,8 +1472,7 @@ class PublishingSet:
             for bpph in bpphs:
                 # DDEBs just inherit their corresponding DEB's
                 # overrides, so don't ask for specific ones.
-                if (bpph.binarypackagerelease.binpackageformat
-                        == BinaryPackageFormat.DDEB):
+                if bpph.is_debug:
                     ddebs.add(bpph.binarypackagerelease)
                     continue
 
