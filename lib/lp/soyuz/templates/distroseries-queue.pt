@@ -197,7 +197,7 @@
              <label>Rejection comment:</label>
            </td>
            <td colspan="3" style="vertical-align: bottom">
-             <input size="80" type="text" name="rejection_comment" />
+             <input style="width: 100%" type="text" name="rejection_comment" />
            </td>
            <td style="vertical-align: bottom">
              <input
