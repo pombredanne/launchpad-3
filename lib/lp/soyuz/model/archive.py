@@ -1283,19 +1283,19 @@ class Archive(SQLBase):
         if not self.enabled:
             return ArchiveDisabled(self.displayname)
 
-        # For PPAs...
-        if self.is_ppa:
-            if not self.checkArchivePermission(person):
-                return CannotUploadToPPA()
-            else:
-                return None
-
         # If the target series is OBSOLETE and permit_obsolete_series_uploads
         # is not set, reject.
         if (
             distroseries and distroseries.status == SeriesStatus.OBSOLETE and
             not self.permit_obsolete_series_uploads):
             return CannotUploadToSeries(distroseries)
+
+        # For PPAs...
+        if self.is_ppa:
+            if not self.checkArchivePermission(person):
+                return CannotUploadToPPA()
+            else:
+                return None
 
         # Users with pocket upload permissions may upload to anything in the
         # given pocket.
