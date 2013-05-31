@@ -51,7 +51,6 @@ from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.auditor.client import AuditorClient
-from lp.services.config import config
 from lp.services.database.bulk import (
     load_referencing,
     load_related,
@@ -124,7 +123,6 @@ from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.section import Section
-from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 
 # There are imports below in PackageUploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they
@@ -523,10 +521,7 @@ class PackageUpload(SQLBase):
 
         debug(logger, "Creating PENDING publishing record.")
         [pub_source] = self.realiseUpload()
-        pas_verify = BuildDaemonPackagesArchSpecific(
-            config.builddmaster.root, self.distroseries)
-        builds = pub_source.createMissingBuilds(
-            pas_verify=pas_verify, logger=logger)
+        builds = pub_source.createMissingBuilds(logger=logger)
         self._validateBuildsForSource(pub_source.sourcepackagerelease, builds)
         self._closeBugs(changesfile_path, logger)
         self._giveKarma()

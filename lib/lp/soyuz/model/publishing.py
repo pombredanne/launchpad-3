@@ -85,6 +85,7 @@ from lp.services.webapp.errorlog import (
     ScriptRequest,
     )
 from lp.services.worlddata.model.country import Country
+from lp.soyuz.adapters.buildarch import determineArchitecturesToBuild
 from lp.soyuz.enums import (
     ArchivePurpose,
     BinaryPackageFormat,
@@ -127,7 +128,6 @@ from lp.soyuz.model.files import (
     )
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.soyuz.pas import determineArchitecturesToBuild
 
 
 def makePoolPath(source_name, component_name):
@@ -606,12 +606,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                distroarch.processorfamily in
                     self.archive.enabled_restricted_families]
 
-    def createMissingBuilds(self, architectures_available=None,
-                            pas_verify=None, logger=None):
+    def createMissingBuilds(self, architectures_available=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
-        if self.archive.is_ppa:
-            pas_verify = None
-
         if architectures_available is None:
             architectures_available = list(
                 self.distroseries.buildable_architectures)
@@ -620,7 +616,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             architectures_available)
 
         build_architectures = determineArchitecturesToBuild(
-            self, architectures_available, self.distroseries, pas_verify)
+            self.binarypackagerelease.architecturehintlist, self.archive,
+            architectures_available, self.distroseries)
 
         builds = []
         for arch in build_architectures:
