@@ -156,6 +156,6 @@ class TestAddMissingBuilds(TestCaseWithFactory):
 
         script = self.getScript()
         script.add_missing_builds(
-            self.ppa, self.required_arches, None, self.stp.breezy_autotest,
+            self.ppa, self.required_arches, self.stp.breezy_autotest,
             PackagePublishingPocket.RELEASE)
         self.assertNoBuilds()
