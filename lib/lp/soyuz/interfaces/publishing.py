@@ -577,8 +577,7 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         :return: a result set of `IBuilds`.
         """
 
-    def createMissingBuilds(architectures_available=None, pas_verify=None,
-                            logger=None):
+    def createMissingBuilds(architectures_available=None, logger=None):
         """Create missing Build records for a published source.
 
         P-a-s should be used when accepting sources to the PRIMARY archive
@@ -589,8 +588,6 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             that should be considered for build creation; if not given
             it will be calculated in place, all architectures for the
             context distroseries with available chroot.
-        :param pas_verify: optional Package-architecture-specific (P-a-s)
-            object, to be used, when convinient, for creating builds;
         :param logger: optional context Logger object (used on DEBUG level).
 
         :return: a list of `Builds` created for this source publication.
