@@ -4,7 +4,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'determineArchitecturesToBuild',
+    'determine_architectures_to_build',
     ]
 
 
@@ -36,8 +36,8 @@ class DpkgArchitectureCache:
 dpkg_architecture = DpkgArchitectureCache()
 
 
-def determineArchitecturesToBuild(hintlist, archive, legal_archseries,
-                                  distroseries):
+def determine_architectures_to_build(hintlist, archive, distroseries,
+                                     legal_archseries):
     """Return a list of architectures for which this publication should build.
 
     This function answers the question: given a list of architectures and
@@ -51,9 +51,9 @@ def determineArchitecturesToBuild(hintlist, archive, legal_archseries,
     :param: hintlist: A string of the architectures this source package
         specifies it builds for.
     :param: archive: The `IArchive` we are building into.
+    :param: distroseries: the context `DistroSeries`.
     :param: legal_archseries: a list of all initialized `DistroArchSeries`
         to be considered.
-    :param: distroseries: the context `DistroSeries`.
     :return: a list of `DistroArchSeries` for which the source publication in
         question should be built.
     """

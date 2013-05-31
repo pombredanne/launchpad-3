@@ -1,7 +1,7 @@
 # Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from lp.soyuz.adapters.buildarch import determineArchitecturesToBuild
+from lp.soyuz.adapters.buildarch import determine_architectures_to_build
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
@@ -9,7 +9,8 @@ from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestDetermineArchitecturesToBuild(TestCaseWithFactory):
-    """Test that determineArchitecturesToBuild correctly interprets hints."""
+    """Test that determine_architectures_to_build correctly interprets hints.
+    """
 
     layer = LaunchpadZopelessLayer
 
@@ -32,9 +33,9 @@ class TestDetermineArchitecturesToBuild(TestCaseWithFactory):
             allowed_archs = [
                 arch for arch in self.publisher.breezy_autotest.architectures
                 if arch.architecturetag in allowed_arch_tags]
-        architectures = determineArchitecturesToBuild(
-            pub.binarypackagerelease.architecturehintlist, pub.archive,
-            allowed_archs, self.publisher.breezy_autotest)
+        architectures = determine_architectures_to_build(
+            pub.sourcepackagerelease.architecturehintlist, pub.archive,
+            self.publisher.breezy_autotest, allowed_archs)
         self.assertContentEqual(
             expected_arch_tags, [a.architecturetag for a in architectures])
 

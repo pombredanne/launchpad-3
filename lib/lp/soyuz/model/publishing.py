@@ -85,7 +85,7 @@ from lp.services.webapp.errorlog import (
     ScriptRequest,
     )
 from lp.services.worlddata.model.country import Country
-from lp.soyuz.adapters.buildarch import determineArchitecturesToBuild
+from lp.soyuz.adapters.buildarch import determine_architectures_to_build
 from lp.soyuz.enums import (
     ArchivePurpose,
     BinaryPackageFormat,
@@ -615,9 +615,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         architectures_available = self._getAllowedArchitectures(
             architectures_available)
 
-        build_architectures = determineArchitecturesToBuild(
-            self.binarypackagerelease.architecturehintlist, self.archive,
-            architectures_available, self.distroseries)
+        build_architectures = determine_architectures_to_build(
+            self.sourcepackagerelease.architecturehintlist, self.archive,
+            self.distroseries, architectures_available)
 
         builds = []
         for arch in build_architectures:
