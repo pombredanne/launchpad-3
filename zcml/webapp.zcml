@@ -5,6 +5,7 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
     <include file="common.zcml" />
+    <includeOverrides file="configure-normal.zcml" />
 
     <include file="summarizerequests.zcml" />
     <include package="zc.zservertracelog" />

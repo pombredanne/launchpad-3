@@ -12,17 +12,6 @@
 
     <include package="lp" />
 
-    <include files="package-includes/*-meta.zcml" />
-    <includeOverrides file="override-meta.zcml" />
-
-    <include files="package-includes/*-configure.zcml" />
-    <include files="package-includes/*-configure-normal.zcml" />
-
-    <!-- Provide local overrides of standard configurations-->
-    <includeOverrides files="override-includes/*-configure.zcml" />
-    <includeOverrides files="override-includes/*-configure-normal.zcml" />
-    <includeOverrides files="+config-overrides.zcml" />
-
     <include file="securitypolicy.zcml" />
 
 </configure>
