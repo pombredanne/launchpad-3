@@ -14,13 +14,17 @@
   <include package="zope.publisher" file="meta.zcml" />
   <include package="zope.browsermenu" file="meta.zcml" />
   <include package="zope.browserpage" file="meta.zcml" />
-  <includeOverrides package="z3c.ptcompat" file="meta.zcml" />
+  <include package="zope.securitypolicy" file="meta.zcml" />
+  <include package="zope.sendmail" file="meta.zcml" />
+  <include package="zope.app.publication" file="meta.zcml" />
   <include package="zope.app.publisher.xmlrpc" file="meta.zcml" />
+  <includeOverrides package="z3c.ptcompat" file="meta.zcml" />
 
   <!-- Note that we need to do this early, as later startup
        subscribers may break without fixups -->
 
   <include package="zope.component" />
+  <include package="zope.formlib" />
   <include package="zope.security" />
   <include package="zope.authentication" />
   <include package="zope.principalregistry" />
@@ -29,8 +33,8 @@
   <include package="zope.session" />
 
   <include package="zope.app.publisher.xmlrpc" />
+  <include package="z3c.pt" />
 
-  <include package="zope.app.publication" file="meta.zcml" />
 
   <!-- selected things from zope.traversing -->
 <adapter

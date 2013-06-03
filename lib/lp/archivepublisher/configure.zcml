@@ -10,9 +10,20 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
 
-    <include package="lp.archivepublisher.zcml"
-             file="archivesigningkey.zcml" />
+    <!-- ArchiveSigningKey -->
+    <class class="lp.archivepublisher.archivesigningkey.ArchiveSigningKey">
+        <allow interface="lp.archivepublisher.interfaces.archivesigningkey.IArchiveSigningKey"/>
+    </class>
 
+    <adapter
+        for="lp.soyuz.interfaces.archive.IArchive"
+        provides="lp.archivepublisher.interfaces.archivesigningkey.IArchiveSigningKey"
+        factory="lp.archivepublisher.archivesigningkey.ArchiveSigningKey"
+
+        />
+
+
+    <!-- PublisherConfig -->
     <securedutility
         class="lp.archivepublisher.model.publisherconfig.PublisherConfigSet"
         provides="lp.archivepublisher.interfaces.publisherconfig.IPublisherConfigSet">
