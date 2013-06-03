@@ -7,7 +7,13 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
     <include file="common.zcml" />
-    <includeOverrides file="configure-testing.zcml" />
+
+    <include files="package-includes/*-configure.zcml" />
+    <include files="package-includes/*-configure-testing.zcml" />
+
+    <includeOverrides files="override-includes/*-configure.zcml" />
+    <includeOverrides files="override-includes/*-configure-testing.zcml" />
+    <includeOverrides file="+config-overrides.zcml" />
 
     <include file="summarizerequests.zcml" />
 
