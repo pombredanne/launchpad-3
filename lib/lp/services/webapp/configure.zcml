@@ -12,6 +12,8 @@
     <include file="errorlog.zcml" />
     <include file="bug-5133.zcml" />
 
+    <browser:defaultView name="index.html" />
+
     <class class="lp.services.webapp.servers.LaunchpadBrowserRequest">
       <allow
         interface="

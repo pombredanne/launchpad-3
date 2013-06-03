@@ -54,6 +54,7 @@
     factory="zope.traversing.namespace.resource"
     />
   <!-- end of selected things from zope.traversing -->
+  <include package="zope.traversing.browser" />
 
   <!-- Views -->
   <include package="zope.app.http" />
