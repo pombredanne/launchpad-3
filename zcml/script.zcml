@@ -5,7 +5,14 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
     <include file="common.zcml" />
-    <includeOverrides file="configure-normal.zcml" />
+
+    <include files="package-includes/*-configure.zcml" />
+    <include files="package-includes/*-configure-normal.zcml" />
+
+    <includeOverrides files="override-includes/*-configure.zcml" />
+    <includeOverrides files="override-includes/*-configure-normal.zcml" />
+    <!-- No +config-overrides here, as the mail config can cause celery
+         tests to fail. -->
 
     <!-- Add a hook to configure the email stuff using ZCML stored outside
         of the launchpad tree -->
