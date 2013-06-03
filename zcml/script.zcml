@@ -31,8 +31,4 @@
         scripts which would be bad
     -->
     <!-- <includeOverrides file="override-configure-normal.zcml" /> -->
-    <!-- Make sure that the scripts have access to to the error
-         reporting utility.
-    -->
-    <includeOverrides file="override-includes/errorlog-configure.zcml" />
 </configure>

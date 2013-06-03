@@ -9,10 +9,7 @@
     i18n_domain="launchpad">
 
     <include file="servers.zcml" />
-    <!-- Included via override-includes, as we are overriding a default
-         Z3 component
     <include file="errorlog.zcml" />
-    -->
     <include file="bug-5133.zcml" />
 
     <class class="lp.services.webapp.servers.LaunchpadBrowserRequest">
