@@ -26,8 +26,9 @@
     <include files="zcml/package-includes/*-configure-normal.zcml" />
 
     <!-- Provide local overrides of standard configurations-->
-    <includeOverrides file="zcml/override-configure.zcml" />
-    <includeOverrides file="zcml/override-configure-normal.zcml" />
+    <includeOverrides files="override-includes/*-configure.zcml" />
+    <includeOverrides files="override-includes/*-configure-normal.zcml" />
+    <includeOverrides files="+config-overrides.zcml" />
 
     <include file="zcml/securitypolicy.zcml" />
 

@@ -21,8 +21,9 @@
 
     <include files="package-includes/*-configure.zcml" />
     <include files="package-includes/*-configure-testing.zcml" />
-    <includeOverrides file="override-configure.zcml" />
-    <includeOverrides file="override-configure-testing.zcml" />
+    <includeOverrides files="override-includes/*-configure.zcml" />
+    <includeOverrides files="override-includes/*-configure-testing.zcml" />
+    <includeOverrides files="+config-overrides.zcml" />
 
     <include file="securitypolicy.zcml" />
 

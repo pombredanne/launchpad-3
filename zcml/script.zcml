@@ -30,5 +30,9 @@
         handing the same mail queue as the Z3 instance or other
         scripts which would be bad
     -->
-    <!-- <includeOverrides file="override-configure-normal.zcml" /> -->
+    <!--
+    <includeOverrides files="override-includes/*-configure.zcml" />
+    <includeOverrides files="override-includes/*-configure-normal.zcml" />
+    <includeOverrides files="+config-overrides.zcml" />
+    -->
 </configure>
