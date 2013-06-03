@@ -9,7 +9,7 @@
 
     <include package="zope.sendmail"/>
 
-    <mail:stubMailer 
+    <mail:stubMailer
         name="stub" from_addr="root@localhost" to_addr="root@localhost"
         />
 
@@ -21,7 +21,7 @@
     -->
 
     <!-- Development configuration to avoid spamming innocent people -->
-    <mail:queuedDelivery name="Mail" permission="zope.SendMail"
-        queuePath="/var/tmp/launchpad_mailqueue" mailer="stub" />
+    <mail:directDelivery
+        name="Mail" permission="zope.SendMail" mailer="stub" />
 
 </configure>
