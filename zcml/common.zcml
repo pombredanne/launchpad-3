@@ -3,7 +3,15 @@
 -->
 
 <configure xmlns="http://namespaces.zope.org/zope">
-    <include package="storm.zope" />
 
+    <include file="zopeapp.zcml" />
+
+    <include package="storm.zope" file="meta.zcml"/>
+    <include package="storm.zope" />
     <store name="session" uri="launchpad-session:" />
+
+    <include package="lp" />
+
+    <include file="securitypolicy.zcml" />
+
 </configure>

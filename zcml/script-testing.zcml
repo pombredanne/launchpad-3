@@ -3,6 +3,8 @@
 -->
 
 <configure xmlns="http://namespaces.zope.org/zope">
-    <include file="script.zcml" />
-    <includeOverrides files="package-includes/*-configure-testing.zcml" />
+
+    <include file="common.zcml" />
+    <includeOverrides file="configure-testing.zcml" />
+
 </configure>

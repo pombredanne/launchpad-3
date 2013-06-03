@@ -4,27 +4,11 @@
 
 <!-- Used by the FunctionalLayer in lp.testing.layers. -->
 
-<configure
-    xmlns="http://namespaces.zope.org/zope"
-    xmlns:rdb="http://namespaces.zope.org/rdb"
-    xmlns:mail="http://namespaces.zope.org/mail">
+<configure xmlns="http://namespaces.zope.org/zope">
 
-    <include file="zopeapp.zcml" />
-
-    <!-- Browser Configurations -->
-    <include file="zopeappbrowser.zcml" />
-
-    <include package="lp" />
-
-    <include files="package-includes/*-meta.zcml" />
-    <includeOverrides file="override-meta.zcml" />
-
-    <include files="package-includes/*-configure.zcml" />
-    <include files="package-includes/*-configure-testing.zcml" />
-    <includeOverrides file="override-configure.zcml" />
-    <includeOverrides file="override-configure-testing.zcml" />
-
-    <include file="securitypolicy.zcml" />
+    <include file="common.zcml" />
+    <includeOverrides file="configure-testing.zcml" />
 
     <include file="summarizerequests.zcml" />
+
 </configure>
