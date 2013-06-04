@@ -11,11 +11,9 @@
 
     <includeOverrides files="override-includes/*-configure.zcml" />
     <includeOverrides files="override-includes/*-configure-normal.zcml" />
-    <!-- No +config-overrides here, as the mail config can cause celery
-         tests to fail. -->
+    <includeOverrides file="+config-overrides.zcml" />
 
-    <!-- Add a hook to configure the email stuff using ZCML stored outside
-        of the launchpad tree -->
-    <include files="../../+*.zcml" />
+    <include file="summarizerequests.zcml" />
+    <include package="zc.zservertracelog" />
 
 </configure>

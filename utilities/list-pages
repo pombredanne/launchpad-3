@@ -69,7 +69,7 @@ def load_zcml(zopeless=False):
     if zopeless:
         execute_zcml_for_scripts()
     else:
-        FunctionalTestSetup(os.path.join(ROOT, 'site.zcml')).setUp()
+        FunctionalTestSetup(os.path.join(ROOT, 'zcml', 'webapp.zcml')).setUp()
 
 
 def is_page_adapter(adapter):

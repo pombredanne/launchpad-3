@@ -13,6 +13,7 @@
     <includeOverrides
         package="lp.services.webapp"
         file="meta-overrides.zcml" />
+    <include package="lp.services.mail" file="meta.zcml" />
     <include package="lp.services.webapp" file="meta.zcml" />
     <include package="grokcore.component" file="meta.zcml" />
     <include package="lazr.enum" />
@@ -22,6 +23,7 @@
     <include package="lp.services" />
     <include package="lp.answers" />
     <include package="lp.app" />
+    <include package="lp.archivepublisher" />
     <include package="lp.blueprints" />
     <include package="lp.bugs" />
     <include package="lp.buildmaster" />
