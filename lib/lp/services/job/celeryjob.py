@@ -34,9 +34,7 @@ from lp.services.features import (
     install_feature_controller,
     make_script_feature_controller,
     )
-from lp.services.mail.sendmail import (
-    set_immediate_mail_delivery,
-    )
+from lp.services.mail.sendmail import set_immediate_mail_delivery
 from lp.services.job.model.job import (
     Job,
     UniversalJobSource,
