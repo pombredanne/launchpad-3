@@ -542,6 +542,7 @@ class PackageUpload(SQLBase):
         self.setAccepted()
         job = PlainPackageCopyJob.get(self.package_copy_job_id)
         job.resume()
+        job.celeryRunOnCommit()
         # The copy job will send emails as appropriate.  We don't
         # need to worry about closing bugs from syncs, although we
         # should probably give karma but that needs more work to
