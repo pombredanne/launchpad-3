@@ -59,7 +59,7 @@ from lp.soyuz.model.packagecopyjob import PackageCopyJob
 from lp.soyuz.model.queue import PackageUpload
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
-    celebrity_logged_in,
+    admin_logged_in,
     person_logged_in,
     run_script,
     TestCaseWithFactory,
@@ -87,7 +87,7 @@ def get_dsd_comments(dsd):
 def create_proper_job(factory):
     """Create a job that will complete successfully."""
     publisher = SoyuzTestPublisher()
-    with celebrity_logged_in('admin'):
+    with admin_logged_in():
         publisher.prepareBreezyAutotest()
     distroseries = publisher.breezy_autotest
 
@@ -1641,6 +1641,51 @@ class TestViaCelery(TestCaseWithFactory):
         # notification tests)
         emails = pop_remote_notifications()
         self.assertEqual(1, len(emails))
+
+    def test_resume_from_queue(self):
+        # Accepting a suspended copy from the queue sends it back
+        # through celery.
+        self.useFixture(FeatureFixture({
+            'jobs.celery.enabled_classes': 'PlainPackageCopyJob',
+        }))
+
+        source_pub = self.factory.makeSourcePackagePublishingHistory(
+            component=u"main", status=PackagePublishingStatus.PUBLISHED)
+        target_series = self.factory.makeDistroSeries()
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            target_series, SourcePackageFormat.FORMAT_1_0)
+        requester = self.factory.makePerson()
+        with person_logged_in(target_series.main_archive.owner):
+            target_series.main_archive.newComponentUploader(requester, u"main")
+        job = getUtility(IPlainPackageCopyJobSource).create(
+            package_name=source_pub.source_package_name,
+            package_version=source_pub.source_package_version,
+            source_archive=source_pub.archive,
+            target_archive=target_series.main_archive,
+            target_distroseries=target_series,
+            target_pocket=PackagePublishingPocket.PROPOSED,
+            include_binaries=False, requester=requester)
+
+        # Run the job once. There's no ancestry so it will be suspended
+        # and added to the queue.
+        with block_on_job(self):
+            transaction.commit()
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
+
+        # Approve its queue entry and rerun to completion.
+        pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+            [job.id]).one()
+        with admin_logged_in():
+            pu.acceptFromQueue()
+        self.assertEqual(JobStatus.WAITING, job.status)
+
+        with block_on_job(self):
+            transaction.commit()
+        self.assertEqual(JobStatus.COMPLETED, job.status)
+        self.assertEqual(
+            1,
+            target_series.main_archive.getPublishedSources(
+                name=source_pub.source_package_name).count())
 
 
 class TestPlainPackageCopyJobPermissions(TestCaseWithFactory):
