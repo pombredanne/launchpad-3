@@ -469,6 +469,7 @@ class CopyChecker:
                     if binary_file.libraryfile.expires is not None:
                         raise CannotCopy('source has expired binaries')
                     if (self.archive.is_main and
+                        not self.archive.build_debug_symbols and
                         binary_file.filetype == BinaryPackageFileType.DDEB):
                         raise CannotCopy(
                             "Cannot copy DDEBs to a primary archive")
