@@ -710,10 +710,10 @@ PRIVATE_TEAM 'myteam' is not included in the results.
 Valid teams do not include teams that have been merged.
 
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.registry.personmerge import merge_people
     >>> ignored = login_person(foo_bar)
     >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
-    >>> person_set.merge(
-    ...     ephemeral, registry_experts, reviewer=ephemeral.teamowner)
+    >>> merge_people(ephemeral, registry_experts, reviewer=ephemeral.teamowner)
     >>> ignored = login_person(sample_person)
     >>> sorted(person.name for person in vocab.search('team'))
     [u'hwdb-team', u'name18', u'name20', u'name21',
