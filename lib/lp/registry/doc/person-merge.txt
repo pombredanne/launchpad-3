@@ -10,6 +10,7 @@ using a different email address.
     >>> from zope.component import getUtility
     >>> from lp.services.database.sqlbase import sqlvalues
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.personmerge import merge_people
     >>> from lp.testing import login, ANONYMOUS
 
     >>> login(ANONYMOUS)
@@ -25,7 +26,7 @@ Sanity checks
 
 We can't merge an account that still has email addresses attached to it
 
-    >>> personset.merge(marilize, sample)
+    >>> merge_people(marilize, sample, None)
     Traceback (most recent call last):
     ...
     AssertionError: ...
@@ -123,7 +124,7 @@ Do the merge!
     >>> import transaction
     >>> transaction.commit()
 
-    >>> personset.merge(marilize, sample)
+    >>> merge_people(marilize, sample, None)
 
 
 Merge results
@@ -295,7 +296,8 @@ First, we will test a merge where there is no decoration.
     >>> print decorator_refs(store, winner, loser)
     <BLANKLINE>
 
-    >>> personset._merge_person_decoration(winner, loser, skip,
+    >>> from lp.registry.personmerge import _merge_person_decoration
+    >>> _merge_person_decoration(winner, loser, skip,
     ...     'PersonLocation', 'person', ['last_modified_by',])
 
 "Skip" should have been updated with the table and unique reference
@@ -317,7 +319,7 @@ but not the loser.
     >>> print decorator_refs(store, winner, loser)
     winner, winner,
 
-    >>> personset._merge_person_decoration(winner, loser, skip,
+    >>> _merge_person_decoration(winner, loser, skip,
     ...     'PersonLocation', 'person', ['last_modified_by',])
 
 There should now still be one decorator, with all columns pointing to
@@ -334,7 +336,7 @@ INTO another person, but nothing on the target person.
     >>> print decorator_refs(store, winner, loser)
     loser, loser,
 
-    >>> personset._merge_person_decoration(winner, loser, skip,
+    >>> _merge_person_decoration(winner, loser, skip,
     ...     'PersonLocation', 'person', ['last_modified_by',])
 
 There should now still be one decorator, with all columns pointing to
@@ -355,7 +357,7 @@ point to the winner, and the to_person will be unaffected.
     winner, winner,
     loser, loser,
 
-    >>> personset._merge_person_decoration(winner, loser, skip,
+    >>> _merge_person_decoration(winner, loser, skip,
     ...     'PersonLocation', 'person', ['last_modified_by',])
     >>> print decorator_refs(store, winner, loser)
     winner, winner,
