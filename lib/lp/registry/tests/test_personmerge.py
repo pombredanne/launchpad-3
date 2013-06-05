@@ -19,14 +19,21 @@ from lp.registry.interfaces.accesspolicy import (
     )
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.mailinglist import MailingListStatus
+from lp.registry.interfaces.mailinglistsubscription import (
+    MailingListAutoSubscribePolicy,
+    )
 from lp.registry.interfaces.person import (
     IPersonSet,
     TeamMembershipStatus,
     )
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
-from lp.registry.personmerge import merge_people
+from lp.registry.personmerge import (
+    merge_people,
+    _mergeMailingListSubscriptions,
+    )
 from lp.registry.tests.test_person import KarmaTestMixin
 from lp.services.config import config
+from lp.services.database.sqlbase import cursor
 from lp.services.identity.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
@@ -480,3 +487,34 @@ class TestMergePeople(TestCaseWithFactory, KarmaTestMixin):
             self._do_merge(dupe_team, test_team, test_team.teamowner)
             self.assertEqual(0, inviting_team.invited_member_count)
             self.assertEqual(0, proposed_team.proposed_member_count)
+
+
+class TestMergeMailingListSubscriptions(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        # Use the unsecured PersonSet so that private methods can be tested.
+        self.from_person = self.factory.makePerson()
+        self.to_person = self.factory.makePerson()
+        self.cur = cursor()
+
+    def test__mergeMailingListSubscriptions_no_subscriptions(self):
+        _mergeMailingListSubscriptions(
+            self.cur, self.from_person.id, self.to_person.id)
+        self.assertEqual(0, self.cur.rowcount)
+
+    def test__mergeMailingListSubscriptions_with_subscriptions(self):
+        naked_person = removeSecurityProxy(self.from_person)
+        naked_person.mailing_list_auto_subscribe_policy = (
+            MailingListAutoSubscribePolicy.ALWAYS)
+        self.team, self.mailing_list = self.factory.makeTeamAndMailingList(
+            'test-mailinglist', 'team-owner')
+        with person_logged_in(self.team.teamowner):
+            self.team.addMember(
+                self.from_person, reviewer=self.team.teamowner)
+        transaction.commit()
+        _mergeMailingListSubscriptions(
+            self.cur, self.from_person.id, self.to_person.id)
+        self.assertEqual(1, self.cur.rowcount)

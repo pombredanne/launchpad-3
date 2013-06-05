@@ -7,7 +7,6 @@ __metaclass__ = type
 
 
 from testtools.matchers import LessThan
-import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -16,9 +15,6 @@ from lp.registry.errors import (
     InvalidName,
     NameAlreadyTaken,
     )
-from lp.registry.interfaces.mailinglistsubscription import (
-    MailingListAutoSubscribePolicy,
-    )
 from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.registry.interfaces.person import (
     IPerson,
@@ -26,10 +22,7 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     TeamEmailAddressError,
     )
-from lp.registry.model.person import (
-    Person,
-    PersonSet,
-    )
+from lp.registry.model.person import Person
 from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
@@ -217,38 +210,6 @@ class TestPersonSet(TestCaseWithFactory):
         self.assertEqual([team_one], result)
         result = list(self.person_set.findTeam('TWO@example.com'))
         self.assertEqual([team_two], result)
-
-
-class TestPersonSetMergeMailingListSubscriptions(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        # Use the unsecured PersonSet so that private methods can be tested.
-        self.person_set = PersonSet()
-        self.from_person = self.factory.makePerson()
-        self.to_person = self.factory.makePerson()
-        self.cur = cursor()
-
-    def test__mergeMailingListSubscriptions_no_subscriptions(self):
-        self.person_set._mergeMailingListSubscriptions(
-            self.cur, self.from_person.id, self.to_person.id)
-        self.assertEqual(0, self.cur.rowcount)
-
-    def test__mergeMailingListSubscriptions_with_subscriptions(self):
-        naked_person = removeSecurityProxy(self.from_person)
-        naked_person.mailing_list_auto_subscribe_policy = (
-            MailingListAutoSubscribePolicy.ALWAYS)
-        self.team, self.mailing_list = self.factory.makeTeamAndMailingList(
-            'test-mailinglist', 'team-owner')
-        with person_logged_in(self.team.teamowner):
-            self.team.addMember(
-                self.from_person, reviewer=self.team.teamowner)
-        transaction.commit()
-        self.person_set._mergeMailingListSubscriptions(
-            self.cur, self.from_person.id, self.to_person.id)
-        self.assertEqual(1, self.cur.rowcount)
 
 
 class TestPersonSetCreateByOpenId(TestCaseWithFactory):
