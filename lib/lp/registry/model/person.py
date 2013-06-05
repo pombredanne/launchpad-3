@@ -3685,19 +3685,6 @@ class PersonSet:
             from_person=from_person, to_person=to_person, requester=requester,
             reviewer=reviewer, delete=delete)
 
-    def delete(self, from_person, reviewer):
-        """See `IPersonSet`."""
-        from lp.registry.personmerge import merge_people
-        # Deletes are implemented by merging into registry experts. Force
-        # the target to prevent any accidental misuse by calling code.
-        to_person = getUtility(ILaunchpadCelebrities).registry_experts
-        return merge_people(from_person, to_person, reviewer, True)
-
-    def merge(self, from_person, to_person, reviewer=None):
-        """See `IPersonSet`."""
-        from lp.registry.personmerge import merge_people
-        return merge_people(from_person, to_person, reviewer)
-
     def getValidPersons(self, persons):
         """See `IPersonSet.`"""
         person_ids = [person.id for person in persons]
