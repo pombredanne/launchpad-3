@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -6,6 +6,8 @@ __all__ = [
     'DistroArchSeries',
     'PocketChroot'
     ]
+
+from cStringIO import StringIO
 
 from sqlobject import (
     BoolCol,
@@ -39,12 +41,17 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.helpers import shortlist
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.webapp.publisher import (
+    get_raw_form_value_from_current_request,
+    )
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.distroarchseries import (
     IDistroArchSeries,
+    InvalidChrootUploaded,
     IPocketChroot,
     )
 from lp.soyuz.interfaces.publishing import ICanPublishPackages
@@ -165,6 +172,23 @@ class DistroArchSeries(SQLBase):
             pocket_chroot.chroot = chroot
 
         return pocket_chroot
+
+    def setChroot(self, data, sha1sum):
+        """See `IDistroArchSeries`."""
+        data = get_raw_form_value_from_current_request('data')
+        if isinstance(data, str):
+            filecontent = data
+        else:
+            filecontent = data.read()
+        filename = 'chroot-%s-%s-%s.tar.bz2' % (
+            self.distroseries.distribution.name, self.distroseries.name,
+            self.architecturetag)
+        lfa = getUtility(ILibraryFileAliasSet).create(
+            name=filename, size=len(filecontent), file=StringIO(filecontent),
+            contentType='application/octet-stream')
+        if lfa.content.sha1 != sha1sum:
+            raise InvalidChrootUploaded("Chroot upload checksums do not match")
+        self.addOrUpdateChroot(lfa)
 
     def searchBinaryPackages(self, text):
         """See `IDistroArchSeries`."""

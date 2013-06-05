@@ -617,14 +617,17 @@
         <class
             class="lp.soyuz.model.distroarchseries.DistroArchSeries">
             <allow
-                interface="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"/>
+                interface="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesPublic"/>
             <allow
                 interface="lp.soyuz.interfaces.buildrecords.IHasBuildRecords"/>
             <allow
                 interface="lp.soyuz.interfaces.publishing.ICanPublishPackages"/>
             <require
                 permission="launchpad.Admin"
-                set_schema="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"/>
+                set_schema="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesPublic"/>
+            <require
+                permission="launchpad.Edit"
+                interface="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesEdit"/>
         </class>
         <adapter
             for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
