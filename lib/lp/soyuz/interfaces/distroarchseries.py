@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Distribution architecture series interfaces."""
@@ -7,12 +7,19 @@ __metaclass__ = type
 
 __all__ = [
     'IDistroArchSeries',
+    'InvalidChrootUploaded',
     'IPocketChroot',
     ]
 
+import httplib
+
 from lazr.restful.declarations import (
+    error_status,
     export_as_webservice_entry,
+    export_write_operation,
     exported,
+    operation_for_version,
+    operation_parameters,
     )
 from lazr.restful.fields import Reference
 from zope.interface import (
@@ -21,8 +28,10 @@ from zope.interface import (
     )
 from zope.schema import (
     Bool,
+    Bytes,
     Choice,
     Int,
+    Text,
     TextLine,
     )
 
@@ -33,9 +42,13 @@ from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
 
 
-class IDistroArchSeries(IHasOwner):
-    """DistroArchSeries Table Interface"""
-    export_as_webservice_entry()
+@error_status(httplib.BAD_REQUEST)
+class InvalidChrootUploaded(Exception):
+    """Raised when the sha1sum of an uploaded chroot does not match."""
+
+
+class IDistroArchSeriesPublic(IHasOwner):
+    """Public attributes for a DistroArchSeries."""
 
     id = Attribute("Identifier")
     distroseries = exported(
@@ -185,18 +198,30 @@ class IDistroArchSeries(IHasOwner):
         this distro arch series.
         """
 
+class IDistroArchSeriesModerate(Interface):
+
+    @operation_parameters(data=Bytes(), sha1sum=Text())
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setChroot(data, sha1sum):
+        """Set the chroot tarball used for builds in this architecture.
+        
+        The SHA-1 checksum must match the chroot file.
+        """
+
+
+class IDistroArchSeries(IDistroArchSeriesPublic, IDistroArchSeriesModerate):
+    """An architecture for a distroseries."""
+    export_as_webservice_entry()
+
 
 class IPocketChroot(Interface):
     """PocketChroot Table Interface"""
     id = Attribute("Identifier")
-    distroarchseries = Attribute("The DistroArchSeries this chroot "
-                                  "belongs to.")
+    distroarchseries = Attribute(
+        "The DistroArchSeries this chroot belongs to.")
     pocket = Attribute("The Pocket this chroot is for.")
     chroot = Attribute("The file alias of the chroot.")
 
     def syncUpdate():
         """Commit changes to DB."""
-
-
-# Monkey patching circular import fixes is done in
-# _schema_circular_imports.py
