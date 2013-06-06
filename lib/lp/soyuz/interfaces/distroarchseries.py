@@ -204,9 +204,9 @@ class IDistroArchSeriesModerate(Interface):
     @export_write_operation()
     @operation_for_version("devel")
     def setChroot(data, sha1sum):
-        """Upload a new chroot, compare the computed checksum against the
-        provided value, and if they match, set the `IPocketChroot` to the new
-        value.
+        """Set the chroot tarball used for builds in this architecture.
+        
+        The SHA-1 checksum must match the chroot file.
         """
 
 
