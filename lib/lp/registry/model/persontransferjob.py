@@ -48,6 +48,7 @@ from lp.registry.interfaces.persontransferjob import (
     )
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.person import Person
+from lp.registry.personmerge import merge_people
 from lp.services.config import config
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
@@ -433,14 +434,14 @@ class PersonMergeJob(PersonTransferJobDerived):
         to_person_name = self.to_person.name
 
         from lp.services.scripts import log
-        personset = getUtility(IPersonSet)
         if self.metadata.get('delete', False):
             log.debug(
                 "%s is about to delete ~%s", self.log_name,
                 from_person_name)
-            personset.delete(
+            merge_people(
                 from_person=self.from_person,
-                reviewer=self.reviewer)
+                to_person=getUtility(ILaunchpadCelebrities).registry_experts,
+                reviewer=self.reviewer, delete=True)
             log.debug(
                 "%s has deleted ~%s", self.log_name,
                 from_person_name)
@@ -448,7 +449,7 @@ class PersonMergeJob(PersonTransferJobDerived):
             log.debug(
                 "%s is about to merge ~%s into ~%s", self.log_name,
                 from_person_name, to_person_name)
-            personset.merge(
+            merge_people(
                 from_person=self.from_person, to_person=self.to_person,
                 reviewer=self.reviewer)
             log.debug(

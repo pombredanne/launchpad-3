@@ -2290,38 +2290,6 @@ class IPersonSet(Interface):
         :return: A `PersonMergeJob` or None.
         """
 
-    def delete(from_person, reviewer):
-        """Delete a person/team.
-
-        The old team (from_person) will be left as an atavism.
-
-        Deleting a person is not supported at this time.
-
-        When deleting teams, from_person must have no IMailingLists
-        associated with and no active members. Any active team members will be
-        deactivated.
-
-        :param from_person: An IPerson or ITeam that is a duplicate.
-        :param reviewer: An IPerson who approved the ITeam merger.
-        """
-
-    def merge(from_person, to_person, reviewer=None):
-        """Merge a person/team into another.
-
-        The old person/team (from_person) will be left as an atavism.
-
-        When merging two person entries, from_person can't have email
-        addresses associated with.
-
-        When merging teams, from_person must have no IMailingLists
-        associated with it. If it has active members they will be deactivated
-        - and reviewer must be supplied.
-
-        :param from_person: An IPerson or ITeam that is a duplicate.
-        :param to_person: An IPerson or ITeam that is a master.
-        :param reviewer: An IPerson who approved the ITeam merger.
-        """
-
     def getValidPersons(persons):
         """Get all the Persons that are valid.
 

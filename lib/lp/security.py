@@ -1346,6 +1346,16 @@ class ViewDistroArchSeries(AnonymousAuthorization):
     usedfor = IDistroArchSeries
 
 
+class ModerateDistroArchSeries(AuthorizationBase):
+    permission = 'launchpad.Moderate'
+    usedfor = IDistroArchSeries
+
+    def checkAuthenticated(self, user):
+        return (
+            user.isOwner(self.obj.distroseries.distribution.main_archive)
+            or user.in_admin)
+
+
 class ViewAnnouncement(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IAnnouncement
