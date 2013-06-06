@@ -1346,8 +1346,8 @@ class ViewDistroArchSeries(AnonymousAuthorization):
     usedfor = IDistroArchSeries
 
 
-class EditDistroArchSeries(AuthorizationBase):
-    permission = 'launchpad.Edit'
+class ModerateDistroArchSeries(AuthorizationBase):
+    permission = 'launchpad.Moderate'
     usedfor = IDistroArchSeries
 
     def checkAuthenticated(self, user):

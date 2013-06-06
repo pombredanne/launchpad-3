@@ -198,7 +198,7 @@ class IDistroArchSeriesPublic(IHasOwner):
         this distro arch series.
         """
 
-class IDistroArchSeriesEdit(Interface):
+class IDistroArchSeriesModerate(Interface):
 
     @operation_parameters(data=Bytes(), sha1sum=Text())
     @export_write_operation()
@@ -210,7 +210,7 @@ class IDistroArchSeriesEdit(Interface):
         """
 
 
-class IDistroArchSeries(IDistroArchSeriesPublic, IDistroArchSeriesEdit):
+class IDistroArchSeries(IDistroArchSeriesPublic, IDistroArchSeriesModerate):
     """An architecture for a distroseries."""
     export_as_webservice_entry()
 

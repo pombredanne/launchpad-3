@@ -626,8 +626,8 @@
                 permission="launchpad.Admin"
                 set_schema="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesPublic"/>
             <require
-                permission="launchpad.Edit"
-                interface="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesEdit"/>
+                permission="launchpad.Moderate"
+                interface="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesModerate"/>
         </class>
         <adapter
             for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
