@@ -84,8 +84,9 @@ class Library:
 
     # the following methods are used for adding to the library
 
-    def add(self, digest, size, md5Digest):
-        lfc = LibraryFileContent(filesize=size, sha1=digest, md5=md5Digest)
+    def add(self, digest, size, md5_digest, sha256_digest):
+        lfc = LibraryFileContent(
+            filesize=size, sha1=digest, md5=md5_digest, sha256=sha256_digest)
         return lfc.id
 
     def addAlias(self, fileid, filename, mimetype, expires=None):
