@@ -30,7 +30,7 @@ class TestTransactionDecorators(unittest.TestCase):
         switch_dbuser('librarian')
         self.store = getUtility(IStoreSelector).get(
                 MAIN_STORE, DEFAULT_FLAVOR)
-        self.content_id = db.Library().add('deadbeef', 1234, 'abababab')
+        self.content_id = db.Library().add('deadbeef', 1234, 'abababab', 'ba')
         self.file_content = self._getTestFileContent()
         transaction.commit()
 
