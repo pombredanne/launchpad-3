@@ -79,8 +79,9 @@ class LibraryFileContent(SQLBase):
 
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     filesize = IntCol(notNull=True)
+    sha256 = StringCol()
     sha1 = StringCol(notNull=True)
-    md5 = StringCol()
+    md5 = StringCol(notNull=True)
 
 
 class LibraryFileAlias(SQLBase):

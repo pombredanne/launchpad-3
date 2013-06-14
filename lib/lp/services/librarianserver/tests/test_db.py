@@ -31,11 +31,11 @@ class DBTestCase(unittest.TestCase):
         self.assertEqual([], library.lookupBySHA1('deadbeef'))
 
         # Add a file, check it is found by lookupBySHA1
-        fileID = library.add('deadbeef', 1234, 'abababab')
+        fileID = library.add('deadbeef', 1234, 'abababab', 'babababa')
         self.assertEqual([fileID], library.lookupBySHA1('deadbeef'))
 
         # Add a new file with the same digest
-        newFileID = library.add('deadbeef', 1234, 'abababab')
+        newFileID = library.add('deadbeef', 1234, 'abababab', 'babababa')
         # Check it gets a new ID anyway
         self.assertNotEqual(fileID, newFileID)
         # Check it is found by lookupBySHA1
@@ -57,7 +57,7 @@ class TestLibrarianStuff(unittest.TestCase):
         switch_dbuser('librarian')
         self.store = getUtility(IStoreSelector).get(
                 MAIN_STORE, DEFAULT_FLAVOR)
-        self.content_id = db.Library().add('deadbeef', 1234, 'abababab')
+        self.content_id = db.Library().add('deadbeef', 1234, 'abababab', 'ba')
         self.file_content = self._getTestFileContent()
         transaction.commit()
 

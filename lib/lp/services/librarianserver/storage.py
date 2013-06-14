@@ -102,13 +102,15 @@ class LibraryFileUpload(object):
         tmpfile, tmpfilepath = tempfile.mkstemp(dir=self.storage.incoming)
         self.tmpfile = os.fdopen(tmpfile, 'w')
         self.tmpfilepath = tmpfilepath
-        self.shaDigester = hashlib.sha1()
-        self.md5Digester = hashlib.md5()
+        self.md5_digester = hashlib.md5()
+        self.sha1_digester = hashlib.sha1()
+        self.sha256_digester = hashlib.sha256()
 
     def append(self, data):
         self.tmpfile.write(data)
-        self.shaDigester.update(data)
-        self.md5Digester.update(data)
+        self.md5_digester.update(data)
+        self.sha1_digester.update(data)
+        self.sha256_digester.update(data)
 
     @write_transaction
     def store(self):
@@ -117,7 +119,7 @@ class LibraryFileUpload(object):
         self.tmpfile.close()
 
         # Verify the digest matches what the client sent us
-        dstDigest = self.shaDigester.hexdigest()
+        dstDigest = self.sha1_digester.hexdigest()
         if self.srcDigest is not None and dstDigest != self.srcDigest:
             # XXX: Andrew Bennetts 2004-09-20: Write test that checks that
             # the file really is removed or renamed, and can't possibly be
@@ -151,7 +153,8 @@ class LibraryFileUpload(object):
             # it to the client.
             if self.contentID is None:
                 contentID = self.storage.library.add(
-                        dstDigest, self.size, self.md5Digester.hexdigest())
+                        dstDigest, self.size, self.md5_digester.hexdigest(),
+                        self.sha256_digester.hexdigest())
                 aliasID = self.storage.library.addAlias(
                         contentID, self.filename, self.mimetype, self.expires)
                 self.debugLog.append('created contentID: %r, aliasID: %r.'

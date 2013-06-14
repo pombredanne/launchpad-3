@@ -1,6 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+import hashlib
 import os
 import shutil
 import tempfile
@@ -13,6 +14,7 @@ from lp.services.database.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.services.librarian.model import LibraryFileContent
 from lp.services.librarianserver import db
 from lp.services.librarianserver.storage import (
     _relFileLocation,
@@ -131,6 +133,21 @@ class LibrarianStorageTestCase(unittest.TestCase):
         # Did the files both get stored?
         self.failUnless(self.storage.hasFile(fileid1))
         self.failUnless(self.storage.hasFile(fileid2))
+
+    def test_hashes(self):
+        # Check that the MD5, SHA1 and SHA256 hashes are correct.
+        data = 'i am some data'
+        md5 = hashlib.md5(data).hexdigest()
+        sha1 = hashlib.sha1(data).hexdigest()
+        sha256 = hashlib.sha256(data).hexdigest()
+
+        newfile = self.storage.startAddFile('file', len(data))
+        newfile.append(data)
+        lfc_id, lfa_id = newfile.store()
+        lfc = LibraryFileContent.get(lfc_id)
+        self.assertEqual(md5, lfc.md5)
+        self.assertEqual(sha1, lfc.sha1)
+        self.assertEqual(sha256, lfc.sha256)
 
 
 class StubLibrary:

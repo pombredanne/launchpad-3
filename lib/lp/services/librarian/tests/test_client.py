@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from cStringIO import StringIO
+import hashlib
 import httplib
 import textwrap
 import unittest
@@ -155,6 +156,22 @@ class LibrarianClientTestCase(unittest.TestCase):
         # addFile() calls _sendHeader() three times and _sendLine()
         # twice.
         self.assertEqual(5, client.check_error_calls)
+
+    def test_addFile_hashes(self):
+        # addFile() sets the MD5, SHA-1 and SHA-256 hashes on the
+        # LibraryFileContent record.
+        data = 'i am some data'
+        md5 = hashlib.md5(data).hexdigest()
+        sha1 = hashlib.sha1(data).hexdigest()
+        sha256 = hashlib.sha256(data).hexdigest()
+
+        client = LibrarianClient()
+        lfa = LibraryFileAlias.get(
+            client.addFile('file', len(data), StringIO(data), 'text/plain'))
+
+        self.assertEqual(md5, lfa.content.md5)
+        self.assertEqual(sha1, lfa.content.sha1)
+        self.assertEqual(sha256, lfa.content.sha256)
 
     def test__getURLForDownload(self):
         # This protected method is used by getFileByAlias. It is supposed to

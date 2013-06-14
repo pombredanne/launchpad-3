@@ -183,8 +183,9 @@ class FileUploadClient:
             self._sendLine('', check_for_error_responses=(size > 0))
 
             # Prepare to the upload the file
-            shaDigester = hashlib.sha1()
-            md5Digester = hashlib.md5()
+            md5_digester = hashlib.md5()
+            sha1_digester = hashlib.sha1()
+            sha256_digester = hashlib.sha256()
             bytesWritten = 0
 
             # Read in and upload the file 64kb at a time, by using the two-arg
@@ -193,8 +194,9 @@ class FileUploadClient:
             for chunk in iter(lambda: file.read(1024 * 64), ''):
                 self.state.f.write(chunk)
                 bytesWritten += len(chunk)
-                shaDigester.update(chunk)
-                md5Digester.update(chunk)
+                md5_digester.update(chunk)
+                sha1_digester.update(chunk)
+                sha256_digester.update(chunk)
 
             assert bytesWritten == size, (
                 'size is %d, but %d were read from the file'
@@ -209,8 +211,9 @@ class FileUploadClient:
             # Add rows to DB
             content = LibraryFileContent(
                 id=contentID, filesize=size,
-                sha1=shaDigester.hexdigest(),
-                md5=md5Digester.hexdigest())
+                sha256=sha256_digester.hexdigest(),
+                sha1=sha1_digester.hexdigest(),
+                md5=md5_digester.hexdigest())
             LibraryFileAlias(
                 id=aliasID, content=content, filename=name.decode('UTF-8'),
                 mimetype=contentType, expires=expires,
