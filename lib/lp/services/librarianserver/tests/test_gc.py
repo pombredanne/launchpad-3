@@ -637,8 +637,8 @@ class TestBlobCollection(TestCase):
 
         # First a blob that has been unclaimed and expired.
         cur.execute("""
-            INSERT INTO LibraryFileContent (filesize, sha1, md5)
-            VALUES (666, 'whatever', 'whatever')
+            INSERT INTO LibraryFileContent (filesize, sha1, md5, sha256)
+            VALUES (666, 'whatever', 'whatever', 'whatever')
             """)
         cur.execute("""SELECT currval('libraryfilecontent_id_seq')""")
         self.expired_lfc_id = cur.fetchone()[0]
@@ -677,8 +677,8 @@ class TestBlobCollection(TestCase):
         # Next a blob that has expired, but claimed and now linked to
         # elsewhere in the database
         cur.execute("""
-            INSERT INTO LibraryFileContent (filesize, sha1, md5)
-            VALUES (666, 'whatever', 'whatever')
+            INSERT INTO LibraryFileContent (filesize, sha1, md5, sha256)
+            VALUES (666, 'whatever', 'whatever', 'whatever')
             """)
         cur.execute("""SELECT currval('libraryfilecontent_id_seq')""")
         self.expired2_lfc_id = cur.fetchone()[0]
@@ -713,8 +713,8 @@ class TestBlobCollection(TestCase):
 
         # And a non expired blob
         cur.execute("""
-            INSERT INTO LibraryFileContent (filesize, sha1, md5)
-            VALUES (666, 'whatever', 'whatever')
+            INSERT INTO LibraryFileContent (filesize, sha1, md5, sha256)
+            VALUES (666, 'whatever', 'whatever', 'whatever')
             """)
         cur.execute("""SELECT currval('libraryfilecontent_id_seq')""")
         self.unexpired_lfc_id = cur.fetchone()[0]
