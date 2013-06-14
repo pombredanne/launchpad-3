@@ -107,7 +107,8 @@ class IJob(Interface):
         title=_("Whether or not this job's status is such that it "
                 "could eventually complete."))
 
-    is_runnable = Bool(title=_("Whether or not this job is runnable."))
+    is_runnable = Bool(
+        title=_("Whether or not this job is ready to be run immediately."))
 
     def acquireLease(duration=300):
         """Acquire the lease for this Job, or raise LeaseHeld."""
