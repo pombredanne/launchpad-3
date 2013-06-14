@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces including and related to IJob."""
@@ -106,6 +106,8 @@ class IJob(Interface):
     is_pending = Bool(
         title=_("Whether or not this job's status is such that it "
                 "could eventually complete."))
+
+    is_runnable = Bool(title=_("Whether or not this job is runnable."))
 
     def acquireLease(duration=300):
         """Acquire the lease for this Job, or raise LeaseHeld."""

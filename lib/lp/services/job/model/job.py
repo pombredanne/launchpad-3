@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ORM object representing jobs."""
@@ -123,6 +123,11 @@ class Job(SQLBase):
     def is_pending(self):
         """See `IJob`."""
         return self.status in self.PENDING_STATUSES
+
+    @property
+    def is_runnable(self):
+        """See `IJob`."""
+        return self.status == JobStatus.WAITING
 
     @classmethod
     def createMultiple(self, store, num_jobs, requester=None):
