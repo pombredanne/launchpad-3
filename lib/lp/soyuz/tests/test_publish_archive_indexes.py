@@ -19,6 +19,11 @@ def get_field(stanza_fields, name):
 
 class TestNativeArchiveIndexes(TestNativePublishingBase):
 
+    deb_md5 = '008409e7feb1c24a6ccab9f6a62d24c5'
+    deb_sha1 = '30b7b4e583fa380772c5a40e428434628faef8cf'
+    deb_sha256 = (
+        '006ca0f356f54b1916c24c282e6fd19961f4356441401f4b0966f2a00bb3e945')
+
     def setUp(self):
         """Setup global attributes."""
         TestNativePublishingBase.setUp(self)
@@ -118,8 +123,9 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Breaks: old-foo',
              u'Filename: pool/main/f/foo/foo-bin_666_all.deb',
              u'Size: 18',
-             u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
-             u'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             u'MD5sum: ' + self.deb_md5,
+             u'SHA1: ' + self.deb_sha1,
+             u'SHA256: ' + self.deb_sha256,
              u'Phased-Update-Percentage: 50',
              u'Description: Foo app is great',
              u' Well ...',
@@ -157,8 +163,9 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Breaks: old-foo',
              u'Filename: pool/main/f/foo/foo-bin_666_all.deb',
              u'Size: 18',
-             u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
-             u'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             u'MD5sum: ' + self.deb_md5,
+             u'SHA1: ' + self.deb_sha1,
+             u'SHA256: ' + self.deb_sha256,
              u'Description: Foo app is great',
              u' Well ...',
              u' it does nothing, though',
@@ -203,8 +210,9 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Version: 666',
              u'Filename: pool/main/f/foo/foo-bin_666_all.deb',
              u'Size: 18',
-             u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
-             u'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             u'MD5sum: ' + self.deb_md5,
+             u'SHA1: ' + self.deb_sha1,
+             u'SHA256: ' + self.deb_sha256,
              u'Description: Foo app is great',
              u' Normal',
              u' Normal',
@@ -239,8 +247,9 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Version: 666',
              u'Filename: pool/main/f/foo/foo-bin_666_all.deb',
              u'Size: 18',
-             u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
-             u'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             u'MD5sum: ' + self.deb_md5,
+             u'SHA1: ' + self.deb_sha1,
+             u'SHA256: ' + self.deb_sha256,
              u'Description: Foo app is great',
              u' Using non-ascii as: \xe7\xe3\xe9\xf3',
              ],

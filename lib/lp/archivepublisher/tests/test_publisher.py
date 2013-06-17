@@ -732,6 +732,8 @@ class TestPublisher(TestPublisherBase):
              'Size: 18',
              'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
              'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             'SHA256: 006ca0f356f54b1916c24c282e6fd19961f4356441401f4b0966f2a'
+             '00bb3e945',
              'Description: Foo app is great',
              ' My leading spaces are normalised to a single space but not '
              'trailing.  ',
@@ -765,6 +767,8 @@ class TestPublisher(TestPublisherBase):
              'Size: 18',
              'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
              'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             'SHA256: 006ca0f356f54b1916c24c282e6fd19961f4356441401f4b0966f2a'
+             '00bb3e945',
              'Description: Foo app is great',
              ' nice udeb',
              ''],
@@ -794,6 +798,8 @@ class TestPublisher(TestPublisherBase):
              'Size: 18',
              'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
              'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             'SHA256: 006ca0f356f54b1916c24c282e6fd19961f4356441401f4b0966f2a'
+             '00bb3e945',
              'Description: Foo app is great',
              ' My leading spaces are normalised to a single space but not '
              'trailing.  ',

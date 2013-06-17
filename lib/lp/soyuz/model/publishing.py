@@ -1013,6 +1013,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         bin_size = bin_file.libraryfile.content.filesize
         bin_md5 = bin_file.libraryfile.content.md5
         bin_sha1 = bin_file.libraryfile.content.sha1
+        bin_sha256 = bin_file.libraryfile.content.sha256
         bin_filepath = os.path.join(
             makePoolPath(spr.name, self.component.name), bin_filename)
         # description field in index is an association of summary and
@@ -1066,6 +1067,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append('Size', bin_size)
         fields.append('MD5sum', bin_md5)
         fields.append('SHA1', bin_sha1)
+        fields.append('SHA256', bin_sha256)
         fields.append(
             'Phased-Update-Percentage', self.phased_update_percentage)
         fields.append('Description', bin_description)
