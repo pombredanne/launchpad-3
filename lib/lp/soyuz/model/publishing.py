@@ -761,6 +761,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append('Files', self._formatFileList(files_list))
         fields.append('Checksums-Sha1', self._formatFileList(sha1_list))
         fields.append('Checksums-Sha256', self._formatFileList(sha256_list))
+        fields.append('Homepage', spr.homepage)
         if spr.user_defined_fields:
             fields.extend(spr.user_defined_fields)
 
