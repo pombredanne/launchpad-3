@@ -250,9 +250,11 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         "Build-Depends-Indep",
         "Build-Conflicts",
         "Build-Conflicts-Indep",
+        "Checksums-Sha1",
+        "Checksums-Sha256",
         "Format",
-        "Standards-Version",
         "Homepage",
+        "Standards-Version",
         ]))
 
     # Note that files is actually only set inside verify().

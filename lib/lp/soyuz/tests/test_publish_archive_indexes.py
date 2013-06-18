@@ -23,6 +23,10 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
     deb_sha1 = '30b7b4e583fa380772c5a40e428434628faef8cf'
     deb_sha256 = (
         '006ca0f356f54b1916c24c282e6fd19961f4356441401f4b0966f2a00bb3e945')
+    dsc_md5 = '5913c3ad52c14a62e6ae7eef51f9ef42'
+    dsc_sha1 = 'e35e29b2ea94bbaa831882e11d1f456690f04e69'
+    dsc_sha256 = (
+        'ac512102db9724bee18f26945efeeb82fdab89819e64e120fbfda755ca50c2c6')
 
     def setUp(self):
         """Setup global attributes."""
@@ -60,7 +64,12 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Format: 1.0',
              u'Directory: pool/main/f/foo',
              u'Files:',
-             u' 5913c3ad52c14a62e6ae7eef51f9ef42 28 foo_666.dsc'],
+             u' %s 28 foo_666.dsc' % self.dsc_md5,
+             u'Checksums-Sha1:',
+             u' %s 28 foo_666.dsc' % self.dsc_sha1,
+             u'Checksums-Sha256:',
+             u' %s 28 foo_666.dsc' % self.dsc_sha256,
+             ],
             pub_source.getIndexStanza().splitlines())
 
     def testSourceStanzaCustomFields(self):
@@ -87,7 +96,11 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Format: 1.0',
              u'Directory: pool/main/f/foo',
              u'Files:',
-             u' 5913c3ad52c14a62e6ae7eef51f9ef42 28 foo_666.dsc',
+             u' %s 28 foo_666.dsc' % self.dsc_md5,
+             u'Checksums-Sha1:',
+             u' %s 28 foo_666.dsc' % self.dsc_sha1,
+             u'Checksums-Sha256:',
+             u' %s 28 foo_666.dsc' % self.dsc_sha256,
              u'Python-Version: < 1.5'],
             pub_source.getIndexStanza().splitlines())
 

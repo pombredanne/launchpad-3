@@ -391,8 +391,8 @@ class IndexStanzaFields:
             if not value:
                 continue
 
-            # do not add separation space for the special field 'Files'
-            if name != 'Files':
+            # do not add separation space for the special file list fields.
+            if name not in ('Files', 'Checksums-Sha1', 'Checksums-Sha256'):
                 value = ' %s' % value
 
             # XXX Michael Nelson 20090930 bug=436182. We have an issue
@@ -721,16 +721,23 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         name = release.sourcepackagename.name
         return "%s %s in %s" % (name, release.version, self.distroseries.name)
 
+    def _formatFileList(self, l):
+        return ''.join('\n %s %s %s' % ((h,) + f) for (h, f) in l)
+
     def buildIndexStanzaFields(self):
         """See `IPublishing`."""
         # Special fields preparation.
         spr = self.sourcepackagerelease
         pool_path = makePoolPath(spr.name, self.component.name)
-        files_subsection = ''.join(
-            ['\n %s %s %s' % (spf.libraryfile.content.md5,
-                              spf.libraryfile.content.filesize,
-                              spf.libraryfile.filename)
-             for spf in spr.files])
+        files_list = []
+        sha1_list = []
+        sha256_list = []
+        for spf in spr.files:
+            common = (
+                spf.libraryfile.content.filesize, spf.libraryfile.filename)
+            files_list.append((spf.libraryfile.content.md5, common))
+            sha1_list.append((spf.libraryfile.content.sha1, common))
+            sha256_list.append((spf.libraryfile.content.sha256, common))
         # Filling stanza options.
         fields = IndexStanzaFields()
         fields.append('Package', spr.name)
@@ -746,7 +753,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append('Standards-Version', spr.dsc_standards_version)
         fields.append('Format', spr.dsc_format)
         fields.append('Directory', pool_path)
-        fields.append('Files', files_subsection)
+        fields.append('Files', self._formatFileList(files_list))
+        fields.append('Checksums-Sha1', self._formatFileList(sha1_list))
+        fields.append('Checksums-Sha256', self._formatFileList(sha256_list))
         if spr.user_defined_fields:
             fields.extend(spr.user_defined_fields)
 
