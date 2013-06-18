@@ -366,6 +366,7 @@ class IndexStanzaFields:
     """Store and format ordered Index Stanza fields."""
 
     def __init__(self):
+        self._names_lower = set()
         self.fields = []
 
     def append(self, name, value):
@@ -373,12 +374,16 @@ class IndexStanzaFields:
 
         Then we can use the FIFO-like behaviour in makeOutput().
         """
+        if name.lower() in self._names_lower:
+            return
+        self._names_lower.add(name.lower())
         self.fields.append((name, value))
 
     def extend(self, entries):
         """Extend the internal list with the key-value pairs in entries.
         """
-        self.fields.extend(entries)
+        for name, value in entries:
+            self.append(name, value)
 
     def makeOutput(self):
         """Return a line-by-line aggregation of appended fields.

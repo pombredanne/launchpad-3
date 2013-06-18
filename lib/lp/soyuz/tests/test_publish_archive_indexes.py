@@ -75,11 +75,17 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
     def testSourceStanzaCustomFields(self):
         """Check just-created source publication Index stanza
         with custom fields (Python-Version).
+
+        A field is excluded if its key case-insensitively matches one that's
+        already there. This mostly affects sources that were uploaded before
+        Homepage, Checksums-Sha1 or Checksums-Sha256 were excluded.
         """
         pub_source = self.getPubSource(
             builddepends='fooish', builddependsindep='pyfoo',
             build_conflicts='bar', build_conflicts_indep='pybar',
-            user_defined_fields=[("Python-Version", "< 1.5")])
+            user_defined_fields=[
+                ("Python-Version", "< 1.5"),
+                ("CHECKSUMS-SHA1", "BLAH")])
 
         self.assertEqual(
             [u'Package: foo',
@@ -446,7 +452,6 @@ class TestIndexStanzaFieldsHelper(unittest.TestCase):
         fields.append('one', 'um')
         fields.append('three', 'tres')
         fields.append('two', 'dois')
-        fields.append(None, None)
 
         self.assertEqual(
             ['one: um', 'three: tres', 'two: dois',
