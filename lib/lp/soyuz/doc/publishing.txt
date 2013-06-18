@@ -349,6 +349,11 @@ The archive index is also available in in compressed formats.
     Directory: pool/main/a/alsa-utils
     Files:
      01234567890123456789012345678925 3 alsa-utils_1.0.8-1ubuntu1.dsc
+    Checksums-Sha1:
+     a10856bfea3f0bdb09550dd41f3c5bc275da8a33 3 alsa-utils_1.0.8-1ubuntu1.dsc
+    Checksums-Sha256:
+     0123456789012345678901234567890123456789012345678901234567890123 3 alsa-utils_1.0.8-1ubuntu1.dsc
+
 
 Empty fields like are suppressed, like 'Build-Depends' or
 'Build-Depends-Indep' to avoid extra charge on download.
@@ -940,6 +945,7 @@ Generating respective "Packages" stanzas:
     Size: 3
     MD5sum: 01234567890123456789012345678926
     SHA1: 5a04c7b5ea3f0fdbc95d0dd47f3c5bc275da8a33
+    SHA256: 0123456789012345678901234567890123456789012345678901234567890123
     Description: Mozilla Firefox Web Browser
      Mozilla Firefox Web Browser is .....
 

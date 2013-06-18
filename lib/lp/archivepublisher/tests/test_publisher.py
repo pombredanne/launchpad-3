@@ -706,6 +706,12 @@ class TestPublisher(TestPublisherBase):
              'Directory: pool/main/f/foo',
              'Files:',
              ' 3e25960a79dbc69b674cd4ec67a72c62 11 foo_1.dsc',
+             'Checksums-Sha1:',
+             ' 7b502c3a1f48c8609ae212cdfb639dee39673f5e 11 foo_1.dsc',
+             'Checksums-Sha256:',
+             ' 64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f'
+             '3c 11 foo_1.dsc',
+
              ''],
             index_contents)
 
