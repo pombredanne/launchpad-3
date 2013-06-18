@@ -25,3 +25,21 @@ class TestAuditorClient(TestCaseWithFactory):
             u'comment': u'', u'details': u'', u'actor': actor,
             u'operation': u'packageupload-accepted', u'object': pu}]
         self.assertContentEqual(expected, result)
+
+    def test_multiple_receive(self):
+        # We can ask AuditorClient for a number of operations.
+        actor = self.factory.makePerson()
+        client = AuditorClient()
+        client.send(actor, 'person-deleted', actor)
+        client.send(actor, 'person-undeleted', actor)
+        result = client.receive(
+            obj=actor, operation=('person-deleted', 'person-undeleted'))
+        self.assertEqual(2, len(result))
+        for r in result:
+            del r['date'] # Ignore the date.
+        expected = [
+            {u'comment': u'', u'details': u'', u'actor': actor,
+            u'operation': u'person-deleted', u'object': actor},
+            {u'comment': u'', u'details': u'', u'actor': actor,
+            u'operation': u'person-undeleted', u'object': actor}]
+        self.assertContentEqual(expected, result)
