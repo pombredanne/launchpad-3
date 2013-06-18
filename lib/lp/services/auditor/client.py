@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Client that will send and receive audit logs to an auditor instance."""
@@ -28,11 +28,17 @@ class AuditorClient(Client):
             object_to_enterpriseid(obj), operation,
             object_to_enterpriseid(actorobj), comment, details)
 
+    def _convert_to_enterpriseid(self, obj):
+        if isinstance(obj, (list, tuple)):
+            return [object_to_enterpriseid(o) for o in obj]
+        else:
+            return object_to_enterpriseid(obj)
+
     def receive(self, obj=None, operation=None, actorobj=None, limit=None):
         if obj:
-            obj = object_to_enterpriseid(obj)
+            obj = self._convert_to_enterpriseid(obj)
         if actorobj:
-            actorobj = object_to_enterpriseid(actorobj)
+            actorobj = self._convert_to_enterpriseid(actorobj)
         logs = super(AuditorClient, self).receive(
             obj, operation, actorobj, limit)
         # Process the actors and objects back from enterprise ids.
