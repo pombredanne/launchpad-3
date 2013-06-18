@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -29,11 +29,13 @@ class TestAuditorClient(TestCaseWithFactory):
     def test_multiple_receive(self):
         # We can ask AuditorClient for a number of operations.
         actor = self.factory.makePerson()
+        actor2 = self.factory.makePerson()
         client = AuditorClient()
         client.send(actor, 'person-deleted', actor)
-        client.send(actor, 'person-undeleted', actor)
+        client.send(actor2, 'person-undeleted', actor)
         result = client.receive(
-            obj=actor, operation=('person-deleted', 'person-undeleted'))
+            obj=(actor, actor2),
+            operation=('person-deleted', 'person-undeleted'))
         self.assertEqual(2, len(result))
         for r in result:
             del r['date'] # Ignore the date.
@@ -41,5 +43,5 @@ class TestAuditorClient(TestCaseWithFactory):
             {u'comment': u'', u'details': u'', u'actor': actor,
             u'operation': u'person-deleted', u'object': actor},
             {u'comment': u'', u'details': u'', u'actor': actor,
-            u'operation': u'person-undeleted', u'object': actor}]
+            u'operation': u'person-undeleted', u'object': actor2}]
         self.assertContentEqual(expected, result)
