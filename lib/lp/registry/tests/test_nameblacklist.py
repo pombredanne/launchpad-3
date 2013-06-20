@@ -14,7 +14,7 @@ from lp.registry.interfaces.nameblacklist import (
     INameBlacklist,
     INameBlacklistSet,
     )
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.webapp.authorization import check_permission
 from lp.testing import (
     ANONYMOUS,

@@ -54,15 +54,13 @@ from lp.services.config import (
     )
 from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
+    IMasterObject,
+    IMasterStore,
     IRequestExpired,
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
     SLAVE_FLAVOR,
-    )
-from lp.services.database.lpstorm import (
-    IMasterObject,
-    IMasterStore,
     )
 from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.database.postgresql import ConnectionString

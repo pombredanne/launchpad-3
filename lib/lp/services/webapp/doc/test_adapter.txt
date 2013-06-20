@@ -172,8 +172,7 @@ the Postgres statement timeout (a value of zero means no timeout):
     ...     zstorm.remove(store)
     ...     transaction.abort()
     ...     store.close()
-    ...     store = getUtility(IStoreSelector).get(
-    ...         MAIN_STORE, MASTER_FLAVOR)
+    ...     store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
     >>> set_request_started()
     >>> print current_statement_timeout(store)

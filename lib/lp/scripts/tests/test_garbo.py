@@ -85,12 +85,7 @@ from lp.services.database.constants import (
     THIRTY_DAYS_AGO,
     UTC_NOW,
     )
-from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 from lp.services.features.model import FeatureFlag
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
@@ -172,7 +167,7 @@ class TestBulkPruner(TestCase):
     def setUp(self):
         super(TestBulkPruner, self).setUp()
 
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store = IMasterStore(CommercialSubscription)
         self.store.execute("CREATE TABLE BulkFoo (id serial PRIMARY KEY)")
 
         for i in range(10):
@@ -609,7 +604,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         pruner = OpenIDConsumerAssociationPruner
         table_name = pruner.table_name
         switch_dbuser('testadmin')
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        store = IMasterStore(CommercialSubscription)
         now = time.time()
         # Create some associations in the past with lifetimes
         for delta in range(0, 20):
@@ -632,7 +627,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.runFrequently()
 
         switch_dbuser('testadmin')
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        store = IMasterStore(CommercialSubscription)
         # Confirm all the rows we know should have been expired have
         # been expired. These are the ones that would be expired using
         # the test start time as 'now'.
@@ -669,7 +664,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         switch_dbuser('testadmin')
         diff_id = removeSecurityProxy(self.factory.makeDiff()).id
         self.runDaily()
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        store = IMasterStore(Diff)
         self.assertContentEqual([], store.find(Diff, Diff.id == diff_id))
 
     def test_RevisionAuthorEmailLinker(self):
@@ -1000,8 +995,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         template = self.factory.makePOTemplate()
         self.runDaily()
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        count, = store.execute("""
+        count, = IMasterStore(CommercialSubscription).execute("""
             SELECT count(*)
             FROM SuggestivePOTemplate
             WHERE potemplate = %s
@@ -1011,7 +1005,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
 
     def test_BugSummaryJournalRollup(self):
         switch_dbuser('testadmin')
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        store = IMasterStore(CommercialSubscription)
 
         # Generate a load of entries in BugSummaryJournal.
         store.execute("UPDATE BugTask SET status=42")
@@ -1031,7 +1025,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
 
     def test_VoucherRedeemer(self):
         switch_dbuser('testadmin')
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
         voucher_proxy = TestSalesforceVoucherProxy()
         self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
@@ -1048,15 +1041,14 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.runFrequently()
 
         # There should now be 0 pending vouchers in Launchpad.
-        num_rows = store.find(
+        num_rows = IMasterStore(CommercialSubscription).find(
             CommercialSubscription,
             Like(CommercialSubscription.sales_system_id, u'pending-%')
             ).count()
         self.assertThat(num_rows, Equals(0))
         # Salesforce should also now have redeemed the voucher.
         unredeemed_ids = [
-            voucher.voucher_id
-            for voucher in voucher_proxy.getUnredeemedVouchers(mark)]
+            v.voucher_id for v in voucher_proxy.getUnredeemedVouchers(mark)]
         self.assertNotIn(redeemed_id, unredeemed_ids)
 
     def test_UnusedPOTMsgSetPruner_removes_obsolete_message_sets(self):

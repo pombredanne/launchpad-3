@@ -12,7 +12,7 @@ import transaction
 
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.log.logger import BufferLogger
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.enums import (

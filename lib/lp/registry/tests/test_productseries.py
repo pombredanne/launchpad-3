@@ -34,7 +34,7 @@ from lp.registry.interfaces.productseries import (
     IProductSeriesSet,
     )
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.testing import (
     ANONYMOUS,
     celebrity_logged_in,

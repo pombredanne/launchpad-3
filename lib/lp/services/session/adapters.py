@@ -10,7 +10,7 @@ __all__ = []
 from zope.component import adapter
 from zope.interface import implementer
 
-from lp.services.database.lpstorm import (
+from lp.services.database.interfaces import (
     IMasterStore,
     ISlaveStore,
     IStore,

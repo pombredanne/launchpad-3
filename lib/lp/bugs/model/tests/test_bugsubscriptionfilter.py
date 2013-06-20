@@ -7,10 +7,7 @@ __metaclass__ = type
 
 from storm.store import Store
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import (
-    ProxyFactory,
-    removeSecurityProxy,
-    )
+from zope.security.proxy import ProxyFactory
 
 from lp.app.enums import InformationType
 from lp.bugs.enums import BugNotificationLevel
@@ -27,7 +24,7 @@ from lp.bugs.model.bugsubscriptionfilter import (
     )
 from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.services import searchbuilder
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.testing import (
     anonymous_logged_in,
     login_person,

@@ -171,7 +171,7 @@ from lp.registry.interfaces.teammembership import (
 from lp.registry.interfaces.wikiname import IWikiName
 from lp.registry.model.person import Person
 from lp.services.config import config
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.identity.interfaces.account import IAccount
 from lp.services.identity.interfaces.emailaddress import IEmailAddress
 from lp.services.librarian.interfaces import ILibraryFileAliasWithParent

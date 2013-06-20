@@ -7,17 +7,13 @@ __metaclass__ = type
 
 from datetime import datetime
 
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.config import config
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
 from lp.soyuz.enums import PackageDiffStatus
+from lp.soyuz.model.archive import Archive
 from lp.soyuz.tests.soyuz import TestPackageDiffsBase
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import dbuser
@@ -41,7 +37,7 @@ class TestPackageDiffs(TestPackageDiffsBase, TestCaseWithFactory):
         """Expire the files associated with the given source package in the
         librarian."""
         assert expire or delete
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(Archive)
         query = """
             UPDATE LibraryFileAlias lfa
             SET

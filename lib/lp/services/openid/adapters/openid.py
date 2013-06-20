@@ -20,7 +20,7 @@ from zope.interface import (
     )
 
 from lp.registry.interfaces.person import IPerson
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.identity.interfaces.account import IAccount
 from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 from lp.services.openid.model.openididentifier import OpenIdIdentifier

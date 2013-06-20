@@ -10,14 +10,9 @@ from sqlobject import (
     StringCol,
     )
 from storm.locals import Bool
-from zope.component import getUtility
 from zope.interface import implements
 
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import SQLBase
 from lp.soyuz.interfaces.processor import (
     IProcessor,
@@ -48,16 +43,15 @@ class ProcessorSet:
 
     def getByName(self, name):
         """See `IProcessorSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        processor = store.find(Processor, Processor.name == name).one()
+        processor = IStore(Processor).find(
+            Processor, Processor.name == name).one()
         if processor is None:
             raise ProcessorNotFound(name)
         return processor
 
     def getAll(self):
         """See `IProcessorSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(Processor)
+        return IStore(Processor).find(Processor)
 
 
 class ProcessorFamily(SQLBase):
@@ -88,25 +82,23 @@ class ProcessorFamilySet:
         # Please note that ProcessorFamily.name is unique i.e. the database
         # will return a result set that's either empty or contains just one
         # ProcessorFamily row.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        rset = store.find(ProcessorFamily, ProcessorFamily.name == name)
-        return rset.one()
+        return IStore(ProcessorFamily).find(
+            ProcessorFamily, ProcessorFamily.name == name).one()
 
     def getRestricted(self):
         """See `IProcessorFamilySet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(ProcessorFamily, ProcessorFamily.restricted == True)
+        return IStore(ProcessorFamily).find(
+            ProcessorFamily, ProcessorFamily.restricted == True)
 
     def getByProcessorName(self, name):
         """Please see `IProcessorFamilySet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        rset = store.find(
-            ProcessorFamily,
-            Processor.name == name, Processor.family == ProcessorFamily.id)
         # Each `Processor` is associated with exactly one `ProcessorFamily`
         # but there is also the possibility that the user specified a name for
         # a non-existent processor.
-        return rset.one()
+        return IStore(ProcessorFamily).find(
+            ProcessorFamily,
+            Processor.name == name,
+            Processor.family == ProcessorFamily.id).one()
 
     def new(self, name, title, description, restricted=False):
         """See `IProcessorFamily`."""

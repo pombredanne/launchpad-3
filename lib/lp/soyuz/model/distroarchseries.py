@@ -31,11 +31,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import DEFAULT
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -197,7 +193,6 @@ class DistroArchSeries(SQLBase):
         """See `IDistroArchSeries`."""
         from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
         origin = [
             BinaryPackageRelease,
             Join(
@@ -236,7 +231,7 @@ class DistroArchSeries(SQLBase):
                 Or(
                     SQL("BinaryPackageRelease.fti @@ ftq(?)", params=(text,)),
                     BinaryPackageName.name.contains_string(text.lower())))
-        result = store.using(*origin).find(
+        result = IStore(BinaryPackageName).using(*origin).find(
             find_spec, *clauses).config(distinct=True)
 
         if text:

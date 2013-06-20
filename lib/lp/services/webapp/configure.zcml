@@ -193,17 +193,17 @@
          to the correct Store for that tables replication set.
       -->
     <adapter
-        provides="lp.services.database.lpstorm.IStore"
+        provides="lp.services.database.interfaces.IStore"
         for="zope.interface.Interface"
         factory="lp.services.webapp.adapter.get_store"
         />
     <adapter
-        provides="lp.services.database.lpstorm.IMasterStore"
+        provides="lp.services.database.interfaces.IMasterStore"
         for="zope.interface.Interface"
         factory="lp.services.webapp.adapter.get_master_store"
         />
     <adapter
-        provides="lp.services.database.lpstorm.ISlaveStore"
+        provides="lp.services.database.interfaces.ISlaveStore"
         for="zope.interface.Interface"
         factory="lp.services.webapp.adapter.get_slave_store"
         />
@@ -211,17 +211,17 @@
          We have no way of specifying that all subclasses of
          storm.locals.Storm implement an Interface. -->
     <adapter
-        provides="lp.services.database.lpstorm.IMasterObject"
+        provides="lp.services.database.interfaces.IMasterObject"
         for="zope.interface.Interface"
         trusted="yes"
         factory="lp.services.webapp.adapter.get_object_from_master_store"
         />
     <class class="storm.store.Store">
-        <implements interface="lp.services.database.lpstorm.IStore" />
+        <implements interface="lp.services.database.interfaces.IStore" />
         <allow attributes="get" />
     </class>
     <class class="lp.services.database.sqlbase.SQLBase">
-        <implements interface="lp.services.database.lpstorm.IDBObject" />
+        <implements interface="lp.services.database.interfaces.IDBObject" />
     </class>
 
     <!-- Default favicon -->

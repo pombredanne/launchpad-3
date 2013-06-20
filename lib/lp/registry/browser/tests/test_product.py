@@ -41,7 +41,7 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.model.product import Product
 from lp.services.config import config
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     BrowserTestCase,

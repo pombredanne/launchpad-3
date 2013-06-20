@@ -31,7 +31,7 @@ from lp.bugs.interfaces.bugtasksearch import (
 from lp.bugs.model.bugtask import BugTaskSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 
 
 class HasBugsBase:

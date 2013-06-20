@@ -8,18 +8,13 @@ import os
 import shutil
 
 import transaction
-from zope.component import getUtility
 
 from lp.code.model.branchjob import (
     BranchJob,
     BranchJobType,
     )
 from lp.services.config import config
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.scripts.tests import run_script
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import ZopelessAppServerLayer
@@ -53,9 +48,7 @@ class TestReclaimBranchSpaceScript(TestCaseWithFactory):
         self.assertTrue(
             os.path.exists(mirrored_path))
         # Now pretend that the branch was deleted 8 days ago.
-        store = getUtility(IStoreSelector).get(
-            MAIN_STORE, DEFAULT_FLAVOR)
-        reclaim_job = store.find(
+        reclaim_job = IStore(BranchJob).find(
             BranchJob,
             BranchJob.job_type == BranchJobType.RECLAIM_BRANCH_SPACE).one()
         reclaim_job.job.scheduled_start -= datetime.timedelta(days=8)
@@ -88,9 +81,7 @@ class TestReclaimBranchSpaceScript(TestCaseWithFactory):
         self.addCleanup(lambda: os.chmod(mirrored_path, 0777))
         db_branch.destroySelf()
         # Now pretend that the branch was deleted 8 days ago.
-        store = getUtility(IStoreSelector).get(
-            MAIN_STORE, DEFAULT_FLAVOR)
-        reclaim_job = store.find(
+        reclaim_job = IStore(BranchJob).find(
             BranchJob,
             BranchJob.job_type == BranchJobType.RECLAIM_BRANCH_SPACE).one()
         reclaim_job.job.scheduled_start -= datetime.timedelta(days=8)

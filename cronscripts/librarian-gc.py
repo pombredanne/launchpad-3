@@ -17,7 +17,7 @@ import _pythonpath
 import logging
 
 from lp.services.config import config
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.librarianserver import librariangc
 from lp.services.scripts.base import LaunchpadCronScript

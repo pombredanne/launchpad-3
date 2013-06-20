@@ -221,13 +221,9 @@ from lp.services.database.constants import (
     UTC_NOW,
     )
 from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
+    IStoreSelector,
     )
 from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.database.sqlbase import flush_database_updates
@@ -2894,13 +2890,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 sourcename=sourcename)
         recipe_build_job = recipe_build.makeJob()
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         bq = BuildQueue(
             job=recipe_build_job.job, lastscore=score,
             job_type=BuildFarmJobType.RECIPEBRANCHBUILD,
             estimated_duration=timedelta(seconds=estimated_duration),
             virtualized=virtualized)
-        store.add(bq)
+        IStore(BuildQueue).add(bq)
         return bq
 
     def makeTranslationTemplatesBuildJob(self, branch=None):

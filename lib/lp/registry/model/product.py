@@ -189,12 +189,7 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -2059,20 +2054,16 @@ class ProductSet:
         """See `IProductSet`."""
         # Circular.
         from lp.bugs.model.bugtracker import BugTracker
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         conditions = [Product.remote_product == None]
         if bugtracker_type is not None:
             conditions.extend([
                 Product.bugtracker == BugTracker.id,
                 BugTracker.bugtrackertype == bugtracker_type,
                 ])
-        return store.find(Product, And(*conditions))
+        return IStore(Product).find(Product, And(*conditions))
 
     def getSFLinkedProductsWithNoneRemoteProduct(self):
         """See `IProductSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        conditions = And(
-            Product.remote_product == None,
-            Product.sourceforgeproject != None)
-
-        return store.find(Product, conditions)
+        return IStore(Product).find(
+            Product,
+            Product.remote_product == None, Product.sourceforgeproject != None)

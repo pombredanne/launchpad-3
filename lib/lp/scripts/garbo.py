@@ -80,12 +80,7 @@ from lp.services.database.bulk import (
     dbify_value,
     )
 from lp.services.database.constants import UTC_NOW
-from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 from lp.services.database.sqlbase import (
     cursor,
     session_store,
@@ -146,8 +141,7 @@ ONE_DAY_IN_SECONDS = 24 * 60 * 60
 # provide convenient access to that state data.
 def load_garbo_job_state(job_name):
     # Load the json state data for the given job name.
-    store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-    job_data = store.execute(
+    job_data = IMasterStore(Person).execute(
         "SELECT json_data FROM GarboJobState WHERE name = ?",
         params=(unicode(job_name),)).get_one()
     if job_data:
@@ -157,7 +151,7 @@ def load_garbo_job_state(job_name):
 
 def save_garbo_job_state(job_name, job_data):
     # Save the json state data for the given job name.
-    store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    store = IMasterStore(Person)
     json_data = simplejson.dumps(job_data, ensure_ascii=False)
     result = store.execute(
         "UPDATE GarboJobState SET json_data = ? WHERE name = ?",
@@ -429,7 +423,7 @@ class BugSummaryJournalRollup(TunableLoop):
 
     def __init__(self, log, abort_time=None):
         super(BugSummaryJournalRollup, self).__init__(log, abort_time)
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store = IMasterStore(Bug)
 
     def isDone(self):
         has_more = self.store.execute(
@@ -455,7 +449,7 @@ class VoucherRedeemer(TunableLoop):
 
     def __init__(self, log, abort_time=None):
         super(VoucherRedeemer, self).__init__(log, abort_time)
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store = IMasterStore(CommercialSubscription)
 
     @cachedproperty
     def _salesforce_proxy(self):
@@ -521,7 +515,7 @@ class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
     def __init__(self, log, abort_time=None):
         super_cl = super(PopulateLatestPersonSourcePackageReleaseCache, self)
         super_cl.__init__(log, abort_time)
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store = IMasterStore(LatestPersonSourcePackageReleaseCache)
         # Keep a record of the processed source package release id and data
         # type (creator or maintainer) so we know where to job got up to.
         self.last_spph_id = 0
@@ -680,7 +674,7 @@ class OpenIDConsumerNoncePruner(TunableLoop):
 
     def __init__(self, log, abort_time=None):
         super(OpenIDConsumerNoncePruner, self).__init__(log, abort_time)
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store = IMasterStore(OpenIDConsumerNonce)
         self.earliest_timestamp = self.store.find(
             Min(OpenIDConsumerNonce.timestamp)).one()
         utc_now = int(time.mktime(time.gmtime()))
@@ -716,7 +710,7 @@ class OpenIDConsumerAssociationPruner(TunableLoop):
 
     def __init__(self, log, abort_time=None):
         super(OpenIDConsumerAssociationPruner, self).__init__(log, abort_time)
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store = IMasterStore(OpenIDConsumerNonce)
 
     def __call__(self, chunksize):
         result = self.store.execute("""

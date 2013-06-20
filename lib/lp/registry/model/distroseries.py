@@ -96,12 +96,7 @@ from lp.services.database.constants import (
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
-    )
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     flush_database_caches,
     flush_database_updates,
@@ -1073,8 +1068,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def searchPackages(self, text):
         """See `IDistroSeries`."""
-
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
         find_spec = (
             DistroSeriesPackageCache,
             BinaryPackageName,
@@ -1090,7 +1083,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Note: When attempting to convert the query below into straight
         # Storm expressions, a 'tuple index out-of-range' error was always
         # raised.
-        package_caches = store.using(*origin).find(
+        package_caches = IStore(BinaryPackageName).using(*origin).find(
             find_spec,
             DistroSeriesPackageCache.distroseries == self,
             DistroSeriesPackageCache.archiveID.is_in(
@@ -1487,15 +1480,12 @@ class DistroSeriesSet:
 
     def translatables(self):
         """See `IDistroSeriesSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
         # Join POTemplate distinctly to only get entries with available
         # translations.
-        result_set = store.using((DistroSeries, POTemplate)).find(
+        return IStore(DistroSeries).using((DistroSeries, POTemplate)).find(
             DistroSeries,
             DistroSeries.hide_all_translations == False,
-            DistroSeries.id == POTemplate.distroseriesID)
-        result_set = result_set.config(distinct=True)
-        return result_set
+            DistroSeries.id == POTemplate.distroseriesID).config(distinct=True)
 
     def queryByName(self, distribution, name):
         """See `IDistroSeriesSet`."""

@@ -19,7 +19,7 @@ from lp.code.model.branchmergequeue import BranchMergeQueue
 from lp.code.model.branchmergequeuecollection import (
     GenericBranchMergeQueueCollection,
     )
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 

@@ -44,14 +44,12 @@ from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     DisallowedStore,
     IDatabasePolicy,
+    IMasterStore,
+    ISlaveStore,
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
     SLAVE_FLAVOR,
-    )
-from lp.services.database.lpstorm import (
-    IMasterStore,
-    ISlaveStore,
     )
 from lp.services.database.sqlbase import StupidCache
 

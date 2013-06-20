@@ -44,12 +44,7 @@ from lp.registry.interfaces.productrelease import (
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -172,7 +167,7 @@ class ProductRelease(SQLBase):
             name=filename, size=file_size, file=file_obj,
             contentType=content_type)
         if signature_filename is not None and signature_content is not None:
-            # XXX: StevenK 2013-02-06 bug=1116954: We should not need to 
+            # XXX: StevenK 2013-02-06 bug=1116954: We should not need to
             # refetch the file content from the request, since the passed in
             # one has been wrongly encoded.
             if from_api:
@@ -270,13 +265,12 @@ class ProductReleaseSet(object):
         from lp.registry.model.milestone import Milestone
         if len(list(series)) == 0:
             return EmptyResultSet()
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         series_ids = [s.id for s in series]
-        result = store.find(
+        return IStore(ProductRelease).find(
             ProductRelease,
             And(ProductRelease.milestone == Milestone.id),
-                Milestone.productseriesID.is_in(series_ids))
-        return result.order_by(Desc(ProductRelease.datereleased))
+                Milestone.productseriesID.is_in(series_ids)).order_by(
+                    Desc(ProductRelease.datereleased))
 
     def getFilesForReleases(self, releases):
         """See `IProductReleaseSet`."""

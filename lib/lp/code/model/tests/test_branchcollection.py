@@ -43,7 +43,7 @@ from lp.code.tests.helpers import remove_all_sample_data_branches
 from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     person_logged_in,

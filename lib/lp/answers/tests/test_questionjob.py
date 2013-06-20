@@ -25,7 +25,7 @@ from lp.answers.model.questionjob import (
     QuestionEmailJob,
     QuestionJob,
     )
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.tests import (

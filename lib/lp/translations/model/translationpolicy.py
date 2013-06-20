@@ -16,7 +16,7 @@ from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.model.person import Person
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.model.translationgroup import TranslationGroup

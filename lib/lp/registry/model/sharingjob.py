@@ -77,7 +77,7 @@ from lp.registry.model.product import Product
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import (
     EnumeratedSubclass,

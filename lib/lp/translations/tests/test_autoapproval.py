@@ -26,7 +26,7 @@ from lp.registry.model.sourcepackagename import (
     SourcePackageName,
     SourcePackageNameSet,
     )
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 from lp.services.worlddata.model.language import (
     Language,
     LanguageSet,

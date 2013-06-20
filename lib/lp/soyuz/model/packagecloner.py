@@ -18,11 +18,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import UTC_NOW
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     quote,
     sqlvalues,
@@ -30,6 +26,7 @@ from lp.services.database.sqlbase import (
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
+from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
 
 def clone_packages(origin, destination, distroarchseries_list=None):
@@ -170,7 +167,6 @@ class PackageCloner:
             the copy to
         @type sourcepackagenames: Iterable
         """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         use_names = (sourcepackagenames and len(sourcepackagenames) > 0)
         clause_tables = "FROM BinaryPackagePublishingHistory AS bpph"
         if use_names:
@@ -225,7 +221,7 @@ class PackageCloner:
                 AND spn.name IN %s
             """ % sqlvalues(sourcepackagenames)
 
-        store.execute(query)
+        IStore(BinaryPackagePublishingHistory).execute(query)
 
     def mergeCopy(self, origin, destination):
         """Please see `IPackageCloner`."""
@@ -234,7 +230,7 @@ class PackageCloner:
         self.packageSetDiff(origin, destination)
 
         # Now copy the fresher or new packages.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(BinaryPackagePublishingHistory)
         store.execute("""
             INSERT INTO SourcePackagePublishingHistory (
                 sourcepackagerelease, distroseries, status, component,
@@ -286,7 +282,7 @@ class PackageCloner:
         This means finding out which packages in a given source archive are
         fresher or new with respect to a target archive.
         """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(BinaryPackagePublishingHistory)
         # The query below will find all packages in the source archive that
         # are fresher than their counterparts in the target archive.
         find_newer_packages = """
@@ -373,7 +369,7 @@ class PackageCloner:
         table that lists what packages exist in the target archive
         (additionally considering the distroseries, pocket and component).
         """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(BinaryPackagePublishingHistory)
         # Use a temporary table to hold the data needed for the package set
         # delta computation. This will prevent multiple, parallel delta
         # calculations from interfering with each other.
@@ -449,7 +445,7 @@ class PackageCloner:
         @param sourcepackagenames: List of source packages to restrict
             the copy to
         """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(BinaryPackagePublishingHistory)
         query = '''
             INSERT INTO SourcePackagePublishingHistory (
                 sourcepackagerelease, distroseries, status, component,
@@ -510,7 +506,7 @@ class PackageCloner:
     def packageSetDiff(self, origin, destination, logger=None):
         """Please see `IPackageCloner`."""
         # Find packages that are obsolete or missing in the target archive.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(BinaryPackagePublishingHistory)
         self._init_packageset_delta(destination)
         self._compute_packageset_delta(origin)
 

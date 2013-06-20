@@ -61,11 +61,6 @@ from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
@@ -1556,7 +1551,7 @@ class PublishingSet:
         if build_states is not None:
             extra_exprs.append(BinaryPackageBuild.status.is_in(build_states))
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(SourcePackagePublishingHistory)
 
         # We'll be looking for builds in the same distroseries as the
         # SPPH for the same release.
@@ -1696,7 +1691,7 @@ class PublishingSet:
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(SourcePackagePublishingHistory)
         published_builds = store.find(
             (SourcePackagePublishingHistory, BinaryPackageBuild,
                 DistroArchSeries),
@@ -1722,7 +1717,7 @@ class PublishingSet:
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(SourcePackagePublishingHistory)
         binary_result = store.find(
             (SourcePackagePublishingHistory, LibraryFileAlias,
              LibraryFileContent),
@@ -1746,7 +1741,7 @@ class PublishingSet:
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(SourcePackagePublishingHistory)
         source_result = store.find(
             (SourcePackagePublishingHistory, LibraryFileAlias,
              LibraryFileContent),
@@ -1769,8 +1764,7 @@ class PublishingSet:
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result_set = store.find(
+        result_set = IStore(SourcePackagePublishingHistory).find(
             (SourcePackagePublishingHistory, BinaryPackagePublishingHistory,
              BinaryPackageRelease, BinaryPackageName, DistroArchSeries),
             self._getSourceBinaryJoinForSources(source_publication_ids))
@@ -1787,7 +1781,7 @@ class PublishingSet:
         """See `PublishingSet`."""
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(SourcePackagePublishingHistory)
         origin = (
             SourcePackagePublishingHistory,
             PackageDiff,
@@ -1817,8 +1811,7 @@ class PublishingSet:
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result_set = store.find(
+        result_set = IStore(SourcePackagePublishingHistory).find(
             (SourcePackagePublishingHistory, PackageUpload,
              SourcePackageRelease, LibraryFileAlias, LibraryFileContent),
             LibraryFileContent.id == LibraryFileAlias.contentID,
@@ -1843,16 +1836,14 @@ class PublishingSet:
         # Avoid circular imports.
         from lp.soyuz.model.queue import PackageUpload, PackageUploadSource
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result_set = store.find(
+        return IStore(SourcePackagePublishingHistory).find(
             LibraryFileAlias,
             LibraryFileAlias.id == PackageUpload.changes_file_id,
             PackageUpload.status == PackageUploadStatus.DONE,
             PackageUpload.distroseriesID == spr.upload_distroseries.id,
             PackageUpload.archiveID == spr.upload_archive.id,
             PackageUpload.id == PackageUploadSource.packageuploadID,
-            PackageUploadSource.sourcepackagereleaseID == spr.id)
-        return result_set.one()
+            PackageUploadSource.sourcepackagereleaseID == spr.id).one()
 
     def getBuildStatusSummariesForSourceIdsAndArchive(self, source_ids,
         archive):
@@ -1861,7 +1852,7 @@ class PublishingSet:
         if not source_ids:
             return {}
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(SourcePackagePublishingHistory)
         # Find relevant builds while also getting PackageBuilds and
         # BuildFarmJobs into the cache. They're used later.
         build_info = list(

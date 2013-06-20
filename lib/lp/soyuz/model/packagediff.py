@@ -25,12 +25,7 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -152,7 +147,6 @@ class PackageDiff(SQLBase):
     def _countDeletedLFAs(self):
         """How many files associated with either source package have been
         deleted from the librarian?"""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         query = """
             SELECT COUNT(lfa.id)
             FROM
@@ -164,7 +158,7 @@ class PackageDiff(SQLBase):
                 AND sprf.libraryfile = lfa.id
                 AND lfa.content IS NULL
             """ % sqlvalues((self.from_source.id, self.to_source.id))
-        result = store.execute(query).get_one()
+        result = IStore(LibraryFileAlias).execute(query).get_one()
         return (0 if result is None else result[0])
 
     def performDiff(self):
@@ -271,11 +265,10 @@ class PackageDiffSet:
         return PackageDiff.get(diff_id)
 
     def getPendingDiffs(self, limit=None):
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result = store.find(
-            PackageDiff, PackageDiff.status == PackageDiffStatus.PENDING)
-        result.order_by(PackageDiff.id)
-        return result.config(limit=limit)
+        return IStore(PackageDiff).find(
+            PackageDiff,
+            PackageDiff.status == PackageDiffStatus.PENDING).order_by(
+                PackageDiff.id).config(limit=limit)
 
     def getDiffsToReleases(self, sprs, preload_for_display=False):
         """See `IPackageDiffSet`."""
@@ -284,9 +277,8 @@ class PackageDiffSet:
         from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
         if len(sprs) == 0:
             return EmptyResultSet()
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         spr_ids = [spr.id for spr in sprs]
-        result = store.find(
+        result = IStore(PackageDiff).find(
             PackageDiff, PackageDiff.to_sourceID.is_in(spr_ids))
         result.order_by(PackageDiff.to_sourceID,
                         Desc(PackageDiff.date_requested))

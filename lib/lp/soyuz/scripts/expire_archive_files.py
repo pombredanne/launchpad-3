@@ -3,16 +3,11 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from zope.component import getUtility
-
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.model.archive import Archive
 
 # PPA owners that we never want to expire.
 BLACKLISTED_PPAS = """
@@ -180,8 +175,7 @@ class ArchiveExpirer(LaunchpadCronScript):
         num_days = self.options.num_days
         self.logger.info("Expiring files up to %d days ago" % num_days)
 
-        self.store = getUtility(IStoreSelector).get(
-            MAIN_STORE, DEFAULT_FLAVOR)
+        self.store = IStore(Archive)
 
         lfa_ids = self.determineSourceExpirables(num_days)
         lfa_ids.extend(self.determineBinaryExpirables(num_days))
@@ -211,4 +205,3 @@ class ArchiveExpirer(LaunchpadCronScript):
             self.txn.commit()
 
         self.logger.info('Finished PPA binary expiration')
-

@@ -8,14 +8,11 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from lp.app.enums import ServiceUsage
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import ZopelessDatabaseLayer
 from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.model.pofile import POFile
 
 
 class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
@@ -32,8 +29,7 @@ class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
 
     def _readCache(self):
         """Read cache contents, in deterministic order."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result = store.execute(
+        result = IStore(POFile).execute(
             "SELECT * FROM SuggestivePOTemplate ORDER BY potemplate")
         return [id for id, in result.get_all()]
 

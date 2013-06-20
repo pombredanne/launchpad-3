@@ -9,21 +9,13 @@ from storm.locals import (
     Int,
     Storm,
     )
-from zope.component import getUtility
 
+from lp.registry.model.person import Person
 from lp.services.database.collection import Collection
-from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
+from lp.services.database.interfaces import IStore
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import ZopelessDatabaseLayer
-
-
-def get_store():
-    return getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
 
 class FakeStore:
@@ -38,7 +30,7 @@ def make_table(range_start, range_end, table_name=None):
     assert range_start < range_end, "Invalid range."
     if table_name is None:
         table_name = "TestTable"
-    get_store().execute("""
+    IStore(Person).execute("""
        CREATE TEMP TABLE %s AS
        SELECT generate_series AS id
        FROM generate_series(%d, %d)
@@ -69,7 +61,7 @@ class CollectionTest(TestCaseWithFactory):
 
     def test_make_table(self):
         TestTable = make_table(1, 5)
-        result = get_store().find(TestTable).order_by(TestTable.id)
+        result = IStore(Person).find(TestTable).order_by(TestTable.id)
         self.assertEqual(range(1, 5), get_ids(result))
 
     def test_select_one(self):

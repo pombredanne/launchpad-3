@@ -6,7 +6,7 @@ they have no creation interface and Launchpad cannot create or modify them.
 
 == Interfaces ==
 
-    >>> from lp.services.database.lpstorm import IStore
+    >>> from lp.services.database.interfaces import IStore
     >>> from lp.testing import verifyObject
     >>> from lp.code.interfaces.revision import (
     ...     IRevision, IRevisionAuthor, IRevisionParent, IRevisionSet)

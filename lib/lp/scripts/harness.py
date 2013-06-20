@@ -40,20 +40,14 @@ from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.projectgroup import ProjectGroup
 from lp.services.config import dbconfig
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    SLAVE_FLAVOR,
-    )
+from lp.services.database.interfaces import IMasterStore
 from lp.services.scripts import execute_zcml_for_scripts
 from lp.services.webapp import canonical_url
 from lp.testing.factory import LaunchpadObjectFactory
 
 # Silence unused name warnings
 (utc, transaction, verifyObject, removeSecurityProxy, canonical_url,
- SLAVE_FLAVOR, DEFAULT_FLAVOR)
+ getUtility, rlcompleter)
 
 
 def _get_locals():
@@ -69,8 +63,7 @@ def _get_locals():
     startup = os.environ.get('PYTHONSTARTUP')
     if startup:
         execfile(startup)
-    store_selector = getUtility(IStoreSelector)
-    store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
+    store = IMasterStore(Person)
 
     if dbuser == 'launchpad':
         # Create a few variables "in case they come in handy."

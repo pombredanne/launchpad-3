@@ -17,7 +17,7 @@ from lp.buildmaster.interfaces.buildfarmjob import (
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.buildrecords import (

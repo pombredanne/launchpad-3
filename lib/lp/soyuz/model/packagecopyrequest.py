@@ -15,17 +15,12 @@ from storm.locals import (
     Storm,
     Unicode,
     )
-from zope.component import getUtility
 from zope.interface import implements
 
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import UTC_NOW
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.soyuz.enums import PackageCopyStatus
 from lp.soyuz.interfaces.packagecopyrequest import (
     IPackageCopyRequest,
@@ -166,10 +161,8 @@ class PackageCopyRequestSet:
     """See `IPackageCopyRequestSet`."""
     implements(IPackageCopyRequestSet)
 
-    def new(
-        self, source, target, requester, copy_binaries=False, reason=None):
+    def new(self, source, target, requester, copy_binaries=False, reason=None):
         """See `IPackageCopyRequestSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         pcr = PackageCopyRequest()
         for location_data in ((source, 'source'), (target, 'target')):
             _set_location_data(pcr, *location_data)
@@ -180,37 +173,33 @@ class PackageCopyRequestSet:
             pcr.reason = reason
 
         pcr.status = PackageCopyStatus.NEW
-        store.add(pcr)
+        IStore(PackageCopyRequest).add(pcr)
         return pcr
 
     def getByPersonAndStatus(self, requester, status=None):
         """See `IPackageCopyRequestSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         base_clauses = (PackageCopyRequest.requester == requester,)
         if status is not None:
             optional_clauses = (PackageCopyRequest.status == status,)
         else:
             optional_clauses = ()
-        return store.find(
+        return IStore(PackageCopyRequest).find(
             PackageCopyRequest, *(base_clauses + optional_clauses))
 
     def getByTargetDistroSeries(self, distroseries):
         """See `IPackageCopyRequestSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
+        return IStore(PackageCopyRequest).find(
             PackageCopyRequest,
             PackageCopyRequest.target_distroseries == distroseries)
 
     def getBySourceDistroSeries(self, distroseries):
         """See `IPackageCopyRequestSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
+        return IStore(PackageCopyRequest).find(
             PackageCopyRequest,
             PackageCopyRequest.source_distroseries == distroseries)
 
     def getByTargetArchive(self, archive):
         """See `IPackageCopyRequestSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
+        return IStore(PackageCopyRequest).find(
             PackageCopyRequest,
             PackageCopyRequest.target_archive == archive)

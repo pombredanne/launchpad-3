@@ -28,7 +28,7 @@ from lp.bugs.browser.structuralsubscription import (
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.person import Person
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.webapp.authorization import clear_cache
 from lp.services.webapp.publisher import canonical_url

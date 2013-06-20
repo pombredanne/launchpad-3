@@ -9,7 +9,6 @@ __all__ = [
     ]
 
 
-from zope.component import getUtility
 from zope.interface import implements
 
 from lp.code.interfaces.branch import IBranchListingQueryOptimiser
@@ -19,11 +18,7 @@ from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 
 
 class BranchListingQueryOptimiser:
@@ -40,9 +35,8 @@ class BranchListingQueryOptimiser:
         # extra queries here by loading both the product and product series
         # objects.  These objects are then in the object cache, and not
         # queried again, but we only return the product series objects.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return [
-            series for product, series in store.find(
+            series for product, series in IStore(Product).find(
                 (Product, ProductSeries),
                 ProductSeries.branchID.is_in(branch_ids),
                 ProductSeries.product == Product.id).order_by(
@@ -55,12 +49,11 @@ class BranchListingQueryOptimiser:
         # traverse through the distro_series, distribution and
         # sourcepackagename objects.  For this reason, we get them all in the
         # one query, and only return the SeriesSourcePackageBranch objects.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         realise_objects = (
             Distribution, DistroSeries, SourcePackageName,
             SeriesSourcePackageBranch)
         return [
-            link for distro, ds, spn, link in store.find(
+            link for distro, ds, spn, link in IStore(Product).find(
                 realise_objects,
                 SeriesSourcePackageBranch.branchID.is_in(branch_ids),
                 SeriesSourcePackageBranch.sourcepackagename ==

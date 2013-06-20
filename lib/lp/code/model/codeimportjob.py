@@ -43,11 +43,7 @@ from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -145,8 +141,7 @@ class CodeImportJobSet(object):
 
     def getReclaimableJobs(self):
         """See `ICodeImportJobSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
+        return IStore(CodeImportJob).find(
             CodeImportJob,
             "state = %s and heartbeat < %s + '-%s seconds'"
             % sqlvalues(CodeImportJobState.RUNNING, UTC_NOW,

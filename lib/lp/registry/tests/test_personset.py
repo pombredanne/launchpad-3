@@ -23,7 +23,7 @@ from lp.registry.interfaces.person import (
     TeamEmailAddressError,
     )
 from lp.registry.model.person import Person
-from lp.services.database.lpstorm import (
+from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )

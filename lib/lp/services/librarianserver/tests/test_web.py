@@ -18,7 +18,7 @@ import transaction
 from zope.component import getUtility
 
 from lp.services.config import config
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 from lp.services.database.sqlbase import (
     cursor,
     flush_database_updates,

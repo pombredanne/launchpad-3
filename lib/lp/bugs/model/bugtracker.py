@@ -77,7 +77,7 @@ from lp.registry.model.product import (
     )
 from lp.registry.model.projectgroup import ProjectGroup
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     flush_database_updates,
     SQLBase,

@@ -116,11 +116,9 @@ And then delete it.
 
 Populate the 'umbrella' package set with source packages.
 
-    >>> from lp.services.database.interfaces import (
-    ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    >>> from lp.services.database.interfaces import IStore
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
-    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    >>> all_spns = store.find(SourcePackageName)
+    >>> all_spns = IStore(SourcePackageName).find(SourcePackageName)
     >>> response = webservice.named_post(
     ...     '/package-sets/hoary/umbrella', 'addSources', {},
     ...     names=[spn.name for spn in all_spns])

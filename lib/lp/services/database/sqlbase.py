@@ -57,15 +57,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.services.config import dbconfig
 from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
     DisallowedStore,
-    ISQLBase,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from lp.services.database.lpstorm import (
     IMasterObject,
     IMasterStore,
+    ISQLBase,
     IStore,
     )
 from lp.services.propertycache import clear_property_cache
@@ -120,7 +115,8 @@ class StupidCache:
 
 def _get_sqlobject_store():
     """Return the store used by the SQLObject compatibility layer."""
-    return getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    from lp.services.librarian.model import LibraryFileAlias
+    return IStore(LibraryFileAlias)
 
 
 class LaunchpadStyle(storm.sqlobject.SQLObjectStyle):

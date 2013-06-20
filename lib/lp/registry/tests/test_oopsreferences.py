@@ -13,7 +13,7 @@ from datetime import (
 from pytz import utc
 
 from lp.registry.model.oopsreferences import referenced_oops
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.messages.model.message import (
     Message,
     MessageSet,

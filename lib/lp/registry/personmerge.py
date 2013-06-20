@@ -25,7 +25,7 @@ from lp.registry.interfaces.teammembership import (
     TeamMembershipStatus,
     )
 from lp.services.database import postgresql
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     cursor,
     sqlvalues,

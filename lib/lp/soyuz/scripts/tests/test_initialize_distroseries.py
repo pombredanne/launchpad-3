@@ -15,7 +15,7 @@ from lp.registry.interfaces.distroseriesdifference import (
     )
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadStatus,
