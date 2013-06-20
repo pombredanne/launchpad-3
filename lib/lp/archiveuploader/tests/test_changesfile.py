@@ -116,7 +116,7 @@ class ChangesFileTests(TestCase):
             "size": "1791",
             "section": "python",
             "priority": "optional",
-            "name": "dulwich_0.4.1-1.dsc"}]
+            "name": "dulwich_0.4.1-1_i386.deb"}]
         return contents
 
     def test_newline_in_Binary_field(self):
@@ -205,12 +205,6 @@ class ChangesFileTests(TestCase):
     def test_processFiles(self):
         # processFiles sets self.files to a list of NascentUploadFiles.
         contents = self.getBaseChanges()
-        contents["Files"] = [{
-            "md5sum": "d2bd347b3fed184fe28e112695be491c",
-            "size": "1791",
-            "section": "python",
-            "priority": "optional",
-            "name": "dulwich_0.4.1-1_i386.deb"}]
         changes = self.createChangesFile("mypkg_0.1_i386.changes", contents)
         self.assertEqual([], list(changes.processFiles()))
         [file] = changes.files
