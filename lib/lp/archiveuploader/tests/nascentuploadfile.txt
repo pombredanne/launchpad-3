@@ -407,7 +407,7 @@ disk:
 
     >>> errors = ed_broken_dsc.verify()
     >>> [str(err) for err in errors]
-    ['File ed_0.2-20.dsc mentioned in the changes has a checksum mismatch.
+    ['File ed_0.2-20.dsc mentioned in the changes has a MD5 mismatch.
     de8b206f8fc57bd931f6226feac6644a != e31eeb0b6b3b87e1ea79378df864ffff']
 
 It also verifies the file size when the checksum matches.
@@ -447,7 +447,7 @@ The DSCUploadedFile also inherit the ability to verify file sanity:
     ...     modified_insecure_policy, DevNullLogger())
     >>> errors = ed_broken_dsc_file.verify()
     >>> [str(err) for err in errors]
-    ['File ed_0.2-20.diff.gz mentioned in the changes has a checksum mismatch.
+    ['File ed_0.2-20.diff.gz mentioned in the changes has a MD5 mismatch.
     8343836094fb01ee9b9a1067b23365f1 != f9e1e5f13725f581919e9bfd6227ffff']
 
 

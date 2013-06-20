@@ -178,9 +178,9 @@ class ChangesFile(SignableTagFile):
             # files lines from a changes file are always of the form:
             # CHECKSUM SIZE [COMPONENT/]SECTION PRIORITY FILENAME
             try:
-                digest, size, component_and_section, priority_name, filename = (
+                md5, size, component_and_section, priority_name, filename = (
                     fileline.strip().split())
-            except ValueError as e:
+            except ValueError:
                 yield UploadError(
                     "Wrong number of fields in Files line in .changes.")
                 continue
@@ -191,7 +191,7 @@ class ChangesFile(SignableTagFile):
                     # otherwise the tarballs in custom uploads match
                     # with source_match.
                     file_instance = CustomUploadFile(
-                        filepath, digest, size, component_and_section,
+                        filepath, md5, size, component_and_section,
                         priority_name, self.policy, self.logger)
                 else:
                     try:
@@ -203,7 +203,7 @@ class ChangesFile(SignableTagFile):
                         continue
 
                     file_instance = cls(
-                        filepath, digest, size, component_and_section,
+                        filepath, md5, size, component_and_section,
                         priority_name, package, self.version, self,
                         self.policy, self.logger)
 

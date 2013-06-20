@@ -122,7 +122,6 @@ class NascentUploadFile:
     The filename, along with information about it, is kept here.
     """
     new = False
-    sha_digest = None
 
     # Files need their content type for creating in the librarian.
     # This maps endings of filenames onto content types we may encounter
@@ -135,10 +134,10 @@ class NascentUploadFile:
         ".tar.gz": "application/gzipped-tar",
         }
 
-    def __init__(self, filepath, digest, size, component_and_section,
+    def __init__(self, filepath, md5, size, component_and_section,
                  priority_name, policy, logger):
         self.filepath = filepath
-        self.digest = digest
+        self.md5 = md5
         self.priority_name = priority_name
         self.policy = policy
         self.logger = logger
@@ -209,11 +208,8 @@ class NascentUploadFile:
     def checkSizeAndCheckSum(self):
         """Check the md5sum and size of the nascent file.
 
-        Raise UploadError if the digest or size does not match or if the
+        Raise UploadError if the MD5 or size does not match or if the
         file is not found on the disk.
-
-        Populate self.sha_digest with the calculated sha1 digest of the
-        file on disk.
         """
         if not self.exists_on_disk:
             raise UploadError(
@@ -222,30 +218,24 @@ class NascentUploadFile:
 
         # Read in the file and compute its md5 and sha1 checksums and remember
         # the size of the file as read-in.
-        digest = hashlib.md5()
-        sha_cksum = hashlib.sha1()
+        md5_digester = hashlib.md5()
         ckfile = open(self.filepath, "r")
         size = 0
         for chunk in filechunks(ckfile):
-            digest.update(chunk)
-            sha_cksum.update(chunk)
+            md5_digester.update(chunk)
             size += len(chunk)
         ckfile.close()
 
         # Check the size and checksum match what we were told in __init__
-        if digest.hexdigest() != self.digest:
+        if md5_digester.hexdigest() != self.md5:
             raise UploadError(
-                "File %s mentioned in the changes has a checksum mismatch. "
-                "%s != %s" % (self.filename, digest.hexdigest(), self.digest))
+                "File %s mentioned in the changes has a MD5 mismatch. "
+                "%s != %s" % (
+                    self.filename, md5_digester.hexdigest(), self.md5))
         if size != self.size:
             raise UploadError(
                 "File %s mentioned in the changes has a size mismatch. "
                 "%s != %s" % (self.filename, size, self.size))
-
-        # The sha_digest is used later when verifying packages mentioned
-        # in the DSC file; it's used to compare versus files in the
-        # Librarian.
-        self.sha_digest = sha_cksum.hexdigest()
 
 
 class CustomUploadFile(NascentUploadFile):
@@ -327,7 +317,7 @@ class CustomUploadFile(NascentUploadFile):
 class PackageUploadFile(NascentUploadFile):
     """Base class to model sources and binary files contained in a upload. """
 
-    def __init__(self, filepath, digest, size, component_and_section,
+    def __init__(self, filepath, md5, size, component_and_section,
                  priority_name, package, version, changes, policy, logger):
         """Check presence of the component and section from an uploaded_file.
 
@@ -336,7 +326,7 @@ class PackageUploadFile(NascentUploadFile):
         Even if they might be overridden in the future.
         """
         super(PackageUploadFile, self).__init__(
-            filepath, digest, size, component_and_section, priority_name,
+            filepath, md5, size, component_and_section, priority_name,
             policy, logger)
         self.package = package
         self.version = version
@@ -480,11 +470,11 @@ class BaseBinaryUploadFile(PackageUploadFile):
     source_name = None
     source_version = None
 
-    def __init__(self, filepath, digest, size, component_and_section,
+    def __init__(self, filepath, md5, size, component_and_section,
                  priority_name, package, version, changes, policy, logger):
 
         PackageUploadFile.__init__(
-            self, filepath, digest, size, component_and_section,
+            self, filepath, md5, size, component_and_section,
             priority_name, package, version, changes, policy, logger)
 
         if self.priority_name not in self.priority_map:

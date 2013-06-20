@@ -55,7 +55,7 @@ class NascentUploadFileTestCase(TestCaseWithFactory):
 
         :param filename: Filename to use
         :param contents: Contents of the file
-        :return: Tuple with path, digest and size
+        :return: Tuple with path, md5 and size
         """
         path = os.path.join(self.makeTemporaryDirectory(), filename)
         f = open(path, 'w')
@@ -85,7 +85,7 @@ class TestNascentUploadFile(NascentUploadFileTestCase):
             path, 'deadbeef', size, 'main/devel', None, None, None)
         self.assertRaisesWithContent(
             UploadError,
-            'File foo mentioned in the changes has a checksum mismatch. '
+            'File foo mentioned in the changes has a MD5 mismatch. '
             '37b51d194a7513e45b56f6524f2d51f2 != deadbeef',
             nuf.checkSizeAndCheckSum)
 
@@ -98,9 +98,9 @@ class CustomUploadFileTests(NascentUploadFileTestCase):
     def createCustomUploadFile(self, filename, contents,
                                component_and_section, priority_name):
         """Simple wrapper to create a CustomUploadFile."""
-        (path, digest, size) = self.writeUploadFile(filename, contents)
+        (path, md5, size) = self.writeUploadFile(filename, contents)
         uploadfile = CustomUploadFile(
-            path, digest, size, component_and_section, priority_name,
+            path, md5, size, component_and_section, priority_name,
             self.policy, self.logger)
         return uploadfile
 
@@ -213,11 +213,11 @@ class DSCFileTests(PackageUploadFileTestCase):
 
     def createDSCFile(self, filename, dsc, component_and_section,
                       priority_name, package, version, changes):
-        (path, digest, size) = self.writeUploadFile(filename, dsc.dump())
+        (path, md5, size) = self.writeUploadFile(filename, dsc.dump())
         if changes:
             self.assertEquals([], list(changes.processAddresses()))
         return DSCFile(
-            path, digest, size, component_and_section, priority_name, package,
+            path, md5, size, component_and_section, priority_name, package,
             version, changes, self.policy, self.logger)
 
     def test_filetype(self):
@@ -360,9 +360,9 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
             data = self.createDeb(filename, data_format)
         else:
             data = "DUMMY DATA"
-        (path, digest, size) = self.writeUploadFile(filename, data)
+        (path, md5, size) = self.writeUploadFile(filename, data)
         return DebBinaryUploadFile(
-            path, digest, size, component_and_section, priority_name, package,
+            path, md5, size, component_and_section, priority_name, package,
             version, changes, self.policy, self.logger)
 
     def test_unknown_priority(self):
