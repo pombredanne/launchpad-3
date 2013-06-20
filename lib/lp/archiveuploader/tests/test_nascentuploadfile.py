@@ -58,11 +58,8 @@ class NascentUploadFileTestCase(TestCaseWithFactory):
         :return: Tuple with path, md5 and size
         """
         path = os.path.join(self.makeTemporaryDirectory(), filename)
-        f = open(path, 'w')
-        try:
+        with open(path, 'w') as f:
             f.write(contents)
-        finally:
-            f.close()
         return (path, hashlib.md5(contents).hexdigest(), len(contents))
 
 
@@ -184,11 +181,8 @@ class PackageUploadFileTestCase(NascentUploadFileTestCase):
     def createChangesFile(self, filename, changes):
         tempdir = self.makeTemporaryDirectory()
         path = os.path.join(tempdir, filename)
-        changes_fd = open(path, "w")
-        try:
+        with open(path, "w") as changes_fd:
             changes.dump(changes_fd)
-        finally:
-            changes_fd.close()
         return ChangesFile(path, self.policy, self.logger)
 
 
