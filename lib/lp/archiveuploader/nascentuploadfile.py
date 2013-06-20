@@ -134,10 +134,10 @@ class NascentUploadFile:
         ".tar.gz": "application/gzipped-tar",
         }
 
-    def __init__(self, filepath, md5, size, component_and_section,
+    def __init__(self, filepath, checksums, size, component_and_section,
                  priority_name, policy, logger):
         self.filepath = filepath
-        self.md5 = md5
+        self.checksums = checksums
         self.priority_name = priority_name
         self.policy = policy
         self.logger = logger
@@ -206,9 +206,9 @@ class NascentUploadFile:
                 "Invalid character(s) in filename: '%s'." % self.filename)
 
     def checkSizeAndCheckSum(self):
-        """Check the md5sum and size of the nascent file.
+        """Check the size and checksums of the nascent file.
 
-        Raise UploadError if the MD5 or size does not match or if the
+        Raise UploadError if the size or checksums do not match or if the
         file is not found on the disk.
         """
         if not self.exists_on_disk:
@@ -218,20 +218,23 @@ class NascentUploadFile:
 
         # Read in the file and compute its md5 and sha1 checksums and remember
         # the size of the file as read-in.
-        md5_digester = hashlib.md5()
+        digesters = dict((n, hashlib.new(n)) for n in self.checksums.keys())
         ckfile = open(self.filepath, "r")
         size = 0
         for chunk in filechunks(ckfile):
-            md5_digester.update(chunk)
+            for digester in digesters.itervalues():
+                digester.update(chunk)
             size += len(chunk)
         ckfile.close()
 
         # Check the size and checksum match what we were told in __init__
-        if md5_digester.hexdigest() != self.md5:
-            raise UploadError(
-                "File %s mentioned in the changes has a MD5 mismatch. "
-                "%s != %s" % (
-                    self.filename, md5_digester.hexdigest(), self.md5))
+        for n in sorted(self.checksums.keys()):
+            if digesters[n].hexdigest() != self.checksums[n]:
+                raise UploadError(
+                    "File %s mentioned in the changes has a %s mismatch. "
+                    "%s != %s" % (
+                        self.filename, n, digesters[n].hexdigest(),
+                        self.checksums[n]))
         if size != self.size:
             raise UploadError(
                 "File %s mentioned in the changes has a size mismatch. "

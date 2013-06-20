@@ -191,7 +191,7 @@ class ChangesFile(SignableTagFile):
                     # otherwise the tarballs in custom uploads match
                     # with source_match.
                     file_instance = CustomUploadFile(
-                        filepath, md5, size, component_and_section,
+                        filepath, dict(MD5=md5), size, component_and_section,
                         priority_name, self.policy, self.logger)
                 else:
                     try:
@@ -203,7 +203,7 @@ class ChangesFile(SignableTagFile):
                         continue
 
                     file_instance = cls(
-                        filepath, md5, size, component_and_section,
+                        filepath, dict(MD5=md5), size, component_and_section,
                         priority_name, package, self.version, self,
                         self.policy, self.logger)
 

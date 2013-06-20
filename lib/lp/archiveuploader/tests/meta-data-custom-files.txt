@@ -13,7 +13,7 @@ PackageUploadCustomFormat.META_DATA.
 
     >>> from lp.archiveuploader.nascentuploadfile import CustomUploadFile
     >>> custom_upload_file = CustomUploadFile(
-    ...     filepath="", md5="", size=1, priority_name="", policy=None,
+    ...     filepath="", checksums={}, size=1, priority_name="", policy=None,
     ...     component_and_section="main/raw-meta-data", logger=None)
 
     >>> print custom_upload_file.custom_type.name

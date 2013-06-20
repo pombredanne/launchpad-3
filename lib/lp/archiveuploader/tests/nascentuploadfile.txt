@@ -343,7 +343,7 @@ the given version of source.
 
     >>> ed_source_dsc = DSCFile(
     ...     datadir('ed_0.2-20.dsc'),
-    ...     'de8b206f8fc57bd931f6226feac6644a', 578, 'editors',
+    ...     dict(MD5='de8b206f8fc57bd931f6226feac6644a'), 578, 'editors',
     ...     'important', 'ed', '0.2-20', ed_source_changes,
     ...     modified_insecure_policy, DevNullLogger())
 
@@ -401,7 +401,7 @@ disk:
 
     >>> ed_broken_dsc = DSCFile(
     ...     datadir('ed_0.2-20.dsc'),
-    ...     'e31eeb0b6b3b87e1ea79378df864ffff', 500, 'editors',
+    ...     dict(MD5='e31eeb0b6b3b87e1ea79378df864ffff'), 500, 'editors',
     ...     'important', 'ed', '0.2-20', ed_source_changes,
     ...     modified_insecure_policy, DevNullLogger())
 
@@ -414,7 +414,7 @@ It also verifies the file size when the checksum matches.
 
     >>> ed_broken_dsc = DSCFile(
     ...     datadir('ed_0.2-20.dsc'),
-    ...     'de8b206f8fc57bd931f6226feac6644a', 500, 'editors',
+    ...     dict(MD5='de8b206f8fc57bd931f6226feac6644a'), 500, 'editors',
     ...     'important', 'ed', '0.2-20', ed_source_changes,
     ...     modified_insecure_policy, DevNullLogger())
 
@@ -443,7 +443,7 @@ The DSCUploadedFile also inherit the ability to verify file sanity:
 
     >>> ed_broken_dsc_file = DSCUploadedFile(
     ...     datadir('ed_0.2-20.diff.gz'),
-    ...     'f9e1e5f13725f581919e9bfd6227ffff', 500,
+    ...     dict(MD5='f9e1e5f13725f581919e9bfd6227ffff'), 500,
     ...     modified_insecure_policy, DevNullLogger())
     >>> errors = ed_broken_dsc_file.verify()
     >>> [str(err) for err in errors]
@@ -460,7 +460,7 @@ DebBinaryUploadFile models a binary .deb file.
     ...    DebBinaryUploadFile)
     >>> ed_deb_path = datadir('ed_0.2-20_i386.deb')
     >>> ed_binary_deb = DebBinaryUploadFile(
-    ...     ed_deb_path, 'e31eeb0b6b3b87e1ea79378df864ffff', 15,
+    ...     ed_deb_path, dict(MD5='e31eeb0b6b3b87e1ea79378df864ffff'), 15,
     ...     'main/editors', 'important', 'foo', '1.2', ed_binary_changes,
     ...     modified_insecure_policy, DevNullLogger())
 
@@ -473,8 +473,8 @@ Verification checks that the specified section matches the section in the
 changes file:
 
     >>> ed_binary_deb = DebBinaryUploadFile(
-    ...     ed_deb_path, 'e31eeb0b6b3b87e1ea79378df864ffff', 15, 'main/net',
-    ...     'important', 'foo', '1.2', ed_binary_changes,
+    ...     ed_deb_path, dict(MD5='e31eeb0b6b3b87e1ea79378df864ffff'), 15,
+    ...     'main/net', 'important', 'foo', '1.2', ed_binary_changes,
     ...     modified_insecure_policy, DevNullLogger())
     >>> list(ed_binary_deb.verify())
     [UploadError('ed_0.2-20_i386.deb
@@ -484,7 +484,7 @@ changes file:
 It also checks the priority against the changes file:
 
     >>> ed_binary_deb = DebBinaryUploadFile(
-    ...     ed_deb_path, 'e31eeb0b6b3b87e1ea79378df864ffff', 15,
+    ...     ed_deb_path, dict(MD5='e31eeb0b6b3b87e1ea79378df864ffff'), 15,
     ...     'main/editors', 'extra', 'foo', '1.2', ed_binary_changes,
     ...     modified_insecure_policy, DevNullLogger())
     >>> list(ed_binary_deb.verify())
@@ -501,7 +501,7 @@ being too new:
     >>> old_only_policy.future_time_grace = -20 * 365 * 24 * 60 * 60
 
     >>> ed_binary_deb = DebBinaryUploadFile(
-    ...     ed_deb_path, 'e31eeb0b6b3b87e1ea79378df864ffff', 15,
+    ...     ed_deb_path, dict(MD5='e31eeb0b6b3b87e1ea79378df864ffff'), 15,
     ...     'main/editors', 'important', 'foo', '1.2', ed_binary_changes,
     ...     old_only_policy, DevNullLogger())
     >>> list(ed_binary_deb.verifyDebTimestamp())
@@ -516,7 +516,7 @@ being too new:
     >>> new_only_policy.accepted_type = ArchiveUploadType.BINARY_ONLY
     >>> new_only_policy.earliest_year = 2010
     >>> ed_binary_deb = DebBinaryUploadFile(
-    ...     ed_deb_path, 'e31eeb0b6b3b87e1ea79378df864ffff', 15,
+    ...     ed_deb_path, dict(MD5='e31eeb0b6b3b87e1ea79378df864ffff'), 15,
     ...     'main/editors', 'important', 'foo', '1.2', ed_binary_changes,
     ...     new_only_policy, DevNullLogger())
     >>> list(ed_binary_deb.verify())
