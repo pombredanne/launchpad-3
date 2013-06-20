@@ -124,7 +124,7 @@ class TestOverrides(TestCaseWithFactory):
             BinaryOverride(
                 bpph.binarypackagerelease.binarypackagename,
                 bpph.distroarchseries, bpph.component, bpph.section,
-                bpph.priority)]
+                bpph.priority, None)]
         self.assertEqual(expected, overrides)
 
     def test_binary_overrides_constant_query_count(self):
@@ -203,7 +203,7 @@ class TestOverrides(TestCaseWithFactory):
         expected = [
             BinaryOverride(
                 bpph.binarypackagerelease.binarypackagename,
-                bpph.distroarchseries, universe, None, None)]
+                bpph.distroarchseries, universe, None, None, None)]
         self.assertEqual(expected, overrides)
 
     def test_ubuntu_override_policy_sources(self):
@@ -259,13 +259,14 @@ class TestOverrides(TestCaseWithFactory):
             expected.append(
                 BinaryOverride(
                     bpn, distroarchseries, bpph.component, bpph.section,
-                    bpph.priority))
+                    bpph.priority, None))
         for i in xrange(2):
             distroarchseries = self.factory.makeDistroArchSeries(
                 distroseries=distroseries)
             bpns.append((bpn, distroarchseries.architecturetag))
             expected.append(
-                BinaryOverride(bpn, distroarchseries, universe, None, None))
+                BinaryOverride(
+                    bpn, distroarchseries, universe, None, None, None))
         distroseries.nominatedarchindep = distroarchseries
         policy = UbuntuOverridePolicy()
         overrides = policy.calculateBinaryOverrides(
@@ -294,3 +295,43 @@ class TestOverrides(TestCaseWithFactory):
             distroseries.main_archive, distroseries, pocket, ((bpn, 'i386'),))
 
         self.assertEqual([], overrides)
+
+    def test_phased_update_percentage(self):
+        # A policy with a phased_update_percentage applies it to new binary
+        # overrides.
+        universe = getUtility(IComponentSet)['universe']
+        distroseries = self.factory.makeDistroSeries()
+        pocket = self.factory.getAnyPocket()
+        bpn = self.factory.makeBinaryPackageName()
+        bpns = []
+        expected = []
+        distroarchseries = self.factory.makeDistroArchSeries(
+            distroseries=distroseries)
+        bpb = self.factory.makeBinaryPackageBuild(
+            distroarchseries=distroarchseries)
+        bpr = self.factory.makeBinaryPackageRelease(
+            build=bpb, binarypackagename=bpn, architecturespecific=True)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr, distroarchseries=distroarchseries,
+            archive=distroseries.main_archive, pocket=pocket)
+        bpns.append((bpn, distroarchseries.architecturetag))
+        expected.append(
+            BinaryOverride(
+                bpn, distroarchseries, bpph.component, bpph.section,
+                bpph.priority, 50))
+        distroarchseries = self.factory.makeDistroArchSeries(
+            distroseries=distroseries)
+        bpns.append((bpn, distroarchseries.architecturetag))
+        expected.append(
+            BinaryOverride(bpn, distroarchseries, universe, None, None, 50))
+        distroseries.nominatedarchindep = distroarchseries
+        policy = UbuntuOverridePolicy(phased_update_percentage=50)
+        overrides = policy.calculateBinaryOverrides(
+            distroseries.main_archive, distroseries, pocket, bpns)
+        self.assertEqual(2, len(overrides))
+        key = attrgetter("binary_package_name.name",
+            "distro_arch_series.architecturetag",
+            "component.name")
+        sorted_expected = sorted(expected, key=key)
+        sorted_overrides = sorted(overrides, key=key)
+        self.assertEqual(sorted_expected, sorted_overrides)

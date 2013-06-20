@@ -3814,7 +3814,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             archive, distroarchseries.distroseries, pocket,
             {binarypackagerelease: (
                 binarypackagerelease.component, binarypackagerelease.section,
-                priority)})
+                priority, None)})
         for bpph in bpphs:
             naked_bpph = removeSecurityProxy(bpph)
             naked_bpph.status = status

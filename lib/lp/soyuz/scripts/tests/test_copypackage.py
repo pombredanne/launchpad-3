@@ -1380,6 +1380,27 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             section=override.section)
         self.assertThat(copied_source, matcher)
 
+    def test_copy_with_phased_update_percentage(self):
+        # Test the phased_update_percentage parameter for do_copy.
+        nobby, archive, source = self._setup_archive(
+            use_nobby=True, pocket=PackagePublishingPocket.PROPOSED)
+        [bin_i386, bin_hppa] = self.test_publisher.getPubBinaries(
+            pub_source=source, distroseries=nobby,
+            pocket=PackagePublishingPocket.PROPOSED)
+        transaction.commit()
+        switch_dbuser('archivepublisher')
+        [copied_source, copied_bin_i386, copied_bin_hppa] = do_copy(
+            [source], archive, nobby, PackagePublishingPocket.UPDATES,
+            include_binaries=True, check_permissions=False)
+        self.assertIsNone(copied_bin_i386.phased_update_percentage)
+        self.assertIsNone(copied_bin_hppa.phased_update_percentage)
+        [copied_source, copied_bin_i386, copied_bin_hppa] = do_copy(
+            [source], archive, nobby, PackagePublishingPocket.BACKPORTS,
+            include_binaries=True, check_permissions=False,
+            phased_update_percentage=50)
+        self.assertEqual(50, copied_bin_i386.phased_update_percentage)
+        self.assertEqual(50, copied_bin_hppa.phased_update_percentage)
+
     def test_copy_ppa_generates_notification(self):
         # When a copy into a PPA is performed, a notification is sent.
         nobby, archive, source = self._setup_archive()

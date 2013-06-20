@@ -2157,7 +2157,8 @@ class TestCopyPackage(TestCaseWithFactory):
             target_archive.copyPackage(
                 source_name, version, source_archive, to_pocket.name,
                 to_series=to_series.name, include_binaries=False,
-                person=target_archive.owner, sponsored=sponsored)
+                person=target_archive.owner, sponsored=sponsored,
+                phased_update_percentage=30)
 
         # The source should not be published yet in the target_archive.
         published = target_archive.getPublishedSources(
@@ -2178,7 +2179,8 @@ class TestCopyPackage(TestCaseWithFactory):
             target_pocket=to_pocket,
             include_binaries=False,
             sponsored=sponsored,
-            copy_policy=PackageCopyPolicy.INSECURE))
+            copy_policy=PackageCopyPolicy.INSECURE,
+            phased_update_percentage=30))
 
     def test_copyPackage_disallows_non_primary_archive_uploaders(self):
         # If copying to a primary archive and you're not an uploader for
