@@ -19,6 +19,7 @@ from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
     CustomUploadFile,
     DebBinaryUploadFile,
+    NascentUploadFile,
     UploadError,
     )
 from lp.archiveuploader.tests import AbsolutelyAnythingGoesUploadPolicy
@@ -31,7 +32,10 @@ from lp.soyuz.enums import (
     PackageUploadCustomFormat,
     )
 from lp.testing import TestCaseWithFactory
-from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 class NascentUploadFileTestCase(TestCaseWithFactory):
@@ -59,7 +63,31 @@ class NascentUploadFileTestCase(TestCaseWithFactory):
             f.write(contents)
         finally:
             f.close()
-        return (path, hashlib.sha1(contents), len(contents))
+        return (path, hashlib.md5(contents).hexdigest(), len(contents))
+
+
+class TestNascentUploadFile(NascentUploadFileTestCase):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_checkSizeAndCheckSum_validates_size(self):
+        (path, md5, size) = self.writeUploadFile('foo', 'bar')
+        nuf = NascentUploadFile(
+            path, md5, size - 1, 'main/devel', None, None, None)
+        self.assertRaisesWithContent(
+            UploadError,
+            'File foo mentioned in the changes has a size mismatch. 3 != 2',
+            nuf.checkSizeAndCheckSum)
+
+    def test_checkSizeAndCheckSum_validates_md5(self):
+        (path, md5, size) = self.writeUploadFile('foo', 'bar')
+        nuf = NascentUploadFile(
+            path, 'deadbeef', size, 'main/devel', None, None, None)
+        self.assertRaisesWithContent(
+            UploadError,
+            'File foo mentioned in the changes has a checksum mismatch. '
+            '37b51d194a7513e45b56f6524f2d51f2 != deadbeef',
+            nuf.checkSizeAndCheckSum)
 
 
 class CustomUploadFileTests(NascentUploadFileTestCase):
