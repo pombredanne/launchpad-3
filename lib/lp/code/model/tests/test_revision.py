@@ -28,11 +28,7 @@ from lp.code.model.revision import (
     RevisionSet,
     )
 from lp.registry.model.karma import Karma
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import cursor
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.testing import (
@@ -79,8 +75,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         # Use an administrator to set branch privacy easily.
         TestCaseWithFactory.setUp(self, "admin@canonical.com")
         # Exclude sample data from the test results.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        store.execute(
+        IStore(RevisionCache).execute(
             "UPDATE Revision SET karma_allocated = TRUE "
             "WHERE karma_allocated IS FALSE")
 
@@ -736,8 +731,7 @@ class RevisionCacheTestCase(TestCaseWithFactory):
     def setUp(self):
         # Login as an admin as we don't care about permissions here.
         TestCaseWithFactory.setUp(self, 'admin@canonical.com')
-        self.store = getUtility(IStoreSelector).get(
-            MAIN_STORE, DEFAULT_FLAVOR)
+        self.store = IStore(RevisionCache)
         # There should be no RevisionCache entries in the test data.
         assert self.store.find(RevisionCache).count() == 0
 

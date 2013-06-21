@@ -43,7 +43,7 @@ from lp.codehosting.bzrutils import (
 from lp.codehosting.safe_open import SafeBranchOpener
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.services.config import config
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import (

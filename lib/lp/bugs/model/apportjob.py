@@ -39,12 +39,7 @@ from lp.bugs.utilities.filebugdataparser import (
     )
 from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import (
     EnumeratedSubclass,
@@ -107,8 +102,7 @@ class ApportJob(StormBase):
     @classmethod
     def get(cls, key):
         """Return the instance of this class whose key is supplied."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        instance = store.get(cls, key)
+        instance = IStore(cls).get(cls, key)
         if instance is None:
             raise SQLObjectNotFound(
                 'No occurrence of %s has key %s' % (cls.__name__, key))
@@ -155,8 +149,7 @@ class ApportJobDerived(BaseRunnableJob):
     @classmethod
     def iterReady(cls):
         """Iterate through all ready ApportJobs."""
-        store = IStore(ApportJob)
-        jobs = store.find(
+        jobs = IStore(ApportJob).find(
             ApportJob,
             And(ApportJob.job_type == cls.class_job_type,
                 ApportJob.job == Job.id,
@@ -192,8 +185,7 @@ class ProcessApportBlobJob(ApportJobDerived):
         # We also include jobs which have been completed when checking
         # for exisiting jobs, since a BLOB should only be processed
         # once.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        job_for_blob = store.find(
+        job_for_blob = IStore(ApportJob).find(
             ApportJob,
             ApportJob.blob == blob,
             ApportJob.job_type == cls.class_job_type,

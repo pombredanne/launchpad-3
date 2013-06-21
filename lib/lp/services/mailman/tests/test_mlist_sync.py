@@ -20,7 +20,7 @@ from Mailman.Utils import list_names
 from transaction import commit
 
 from lp.services.config import config
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.identity.model.emailaddress import EmailAddressSet
 from lp.services.mailman.tests import MailmanTestCase
 from lp.testing import person_logged_in

@@ -9,11 +9,11 @@ from psycopg2 import InternalError
 import transaction
 
 from lp.registry.model.person import Person
+from lp.services.database.interfaces import IStore
 from lp.services.database.isolation import (
     check_no_transaction,
     TransactionInProgress,
     )
-from lp.services.database.lpstorm import IStore
 from lp.services.database.transaction_policy import DatabaseTransactionPolicy
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import ZopelessDatabaseLayer

@@ -16,11 +16,11 @@ from lp.services.log.logger import DevNullLogger
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.scripts.gina import ExecutionError
-from lp.soyuz.scripts.gina.dominate import dominate_imported_source_packages
 from lp.soyuz.scripts.gina.archive import (
     ArchiveComponentItems,
     PackagesMap,
     )
+from lp.soyuz.scripts.gina.dominate import dominate_imported_source_packages
 import lp.soyuz.scripts.gina.handlers
 from lp.soyuz.scripts.gina.handlers import (
     BinaryPackagePublisher,

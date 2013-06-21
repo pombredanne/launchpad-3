@@ -24,7 +24,7 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet,
     )
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.services.database.lpstorm import (
+from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )

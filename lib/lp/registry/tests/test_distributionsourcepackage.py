@@ -17,7 +17,7 @@ from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackageInDatabase,
     )
 from lp.registry.model.karma import KarmaTotalCache
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import flush_database_updates
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher

@@ -343,11 +343,10 @@ immediately deleted in case of reported ToS violation.
 
     # Attach an existing file (the 'test-pkg_1.0.dsc') to a deleted
     # LibraryFileContent.
-    >>> from lp.services.database.interfaces import (
-    ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    >>> from lp.soyuz.model.archive import Archive
+    >>> from lp.services.database.interfaces import IMasterStore
     >>> login('foo.bar@canonical.com')
-    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-    >>> store.commit()
+    >>> IMasterStore(Archive).commit()
     >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(dsc_file).content = None
     >>> transaction.commit()

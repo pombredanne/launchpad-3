@@ -12,7 +12,7 @@ from zope.interface import implements
 
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.model.distroseries import DistroSeries
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 from lp.services.looptuner import (
     DBLoopTuner,
     ITunableLoop,

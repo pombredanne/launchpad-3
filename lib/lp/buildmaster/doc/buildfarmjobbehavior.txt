@@ -65,10 +65,8 @@ finds itself with a binary package build behavior which defines binary-build
 specific information.
 
     >>> from lp.buildmaster.model.builder import Builder
-    >>> from lp.services.database.interfaces import (
-    ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    >>> bob = store.find(Builder, Builder.name == 'bob').one()
+    >>> from lp.services.database.interfaces import IStore
+    >>> bob = IStore(Builder).find(Builder, Builder.name == 'bob').one()
 
 Once the builder has the relevant behavior, it is able to provide both general
 builder functionality of its own accord, while delegating any build-type

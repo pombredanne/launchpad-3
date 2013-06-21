@@ -61,11 +61,7 @@ from lp.buildmaster.tests.mock_slaves import (
     WaitingSlave,
     )
 from lp.services.config import config
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import flush_database_updates
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
@@ -804,8 +800,7 @@ class TestFindRecipeBuildCandidates(TestFindBuildCandidateBase):
 
     def clearBuildQueue(self):
         """Delete all `BuildQueue`, XXXJOb and `Job` instances."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        for bq in store.find(BuildQueue):
+        for bq in IStore(BuildQueue).find(BuildQueue):
             bq.destroySelf()
 
     def setUp(self):

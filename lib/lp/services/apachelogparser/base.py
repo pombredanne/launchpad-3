@@ -15,11 +15,7 @@ from zope.component import getUtility
 
 from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
 from lp.services.config import config
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.geoip.interfaces import IGeoIP
 
 
@@ -34,7 +30,7 @@ def get_files_to_parse(file_paths):
 
     :param file_paths: The paths to the files.
     """
-    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    store = IStore(ParsedApacheLog)
     for file_path in file_paths:
         fd, file_size = get_fd_and_file_size(file_path)
         first_line = unicode(fd.readline())
@@ -179,8 +175,8 @@ def parse_file(fd, start_position, logger, get_download_key, parsed_lines=0):
 def create_or_update_parsedlog_entry(first_line, parsed_bytes):
     """Create or update the ParsedApacheLog with the given first_line."""
     first_line = unicode(first_line)
-    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    parsed_file = store.find(ParsedApacheLog, first_line=first_line).one()
+    parsed_file = IStore(ParsedApacheLog).find(
+        ParsedApacheLog, first_line=first_line).one()
     if parsed_file is None:
         ParsedApacheLog(first_line, parsed_bytes)
     else:

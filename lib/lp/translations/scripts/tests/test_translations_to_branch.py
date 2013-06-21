@@ -21,7 +21,7 @@ from lp.registry.interfaces.teammembership import (
     )
 from lp.registry.model.productseries import ProductSeries
 from lp.services.config import config
-from lp.services.database.lpstorm import ISlaveStore
+from lp.services.database.interfaces import ISlaveStore
 from lp.services.log.logger import BufferLogger
 from lp.services.scripts.tests import run_script
 from lp.testing import (

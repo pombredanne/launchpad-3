@@ -55,12 +55,7 @@ from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import DBEnum
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -1161,7 +1156,6 @@ class BinaryPackageBuildSet:
             return
 
         build_ids = [build.id for build in results]
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = (
             BinaryPackageBuild,
             Join(
@@ -1178,7 +1172,7 @@ class BinaryPackageBuildSet:
                      LibraryFileContent.id == LibraryFileAlias.contentID),
             LeftJoin(Builder, Builder.id == BinaryPackageBuild.builder_id),
             )
-        result_set = store.using(*origin).find(
+        result_set = IStore(BinaryPackageBuild).using(*origin).find(
             (SourcePackageRelease, LibraryFileAlias, SourcePackageName,
              LibraryFileContent, Builder),
             BinaryPackageBuild.id.is_in(build_ids))
@@ -1192,19 +1186,14 @@ class BinaryPackageBuildSet:
 
     def getByQueueEntry(self, queue_entry):
         """See `IBinaryPackageBuildSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result_set = store.find(
+        return IStore(BinaryPackageBuild).find(
             BinaryPackageBuild,
             BuildPackageJob.build == BinaryPackageBuild.id,
             BuildPackageJob.job == BuildQueue.jobID,
-            BuildQueue.job == queue_entry.job)
-
-        return result_set.one()
+            BuildQueue.job == queue_entry.job).one()
 
     def getQueueEntriesForBuildIDs(self, build_ids):
         """See `IBinaryPackageBuildSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-
         origin = (
             BuildPackageJob,
             Join(BuildQueue, BuildPackageJob.job == BuildQueue.jobID),
@@ -1215,8 +1204,6 @@ class BinaryPackageBuildSet:
                 Builder,
                 BuildQueue.builderID == Builder.id),
             )
-        result_set = store.using(*origin).find(
+        return IStore(BinaryPackageBuild).using(*origin).find(
             (BuildQueue, Builder, BuildPackageJob),
             BinaryPackageBuild.id.is_in(build_ids))
-
-        return result_set

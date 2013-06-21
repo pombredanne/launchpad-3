@@ -27,10 +27,7 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from zope.component import (
-    getSiteManager,
-    getUtility,
-    )
+from zope.component import getSiteManager
 from zope.interface import implements
 
 from lp.app.errors import NotFoundError
@@ -46,11 +43,7 @@ from lp.buildmaster.interfaces.buildqueue import (
 from lp.services.database.bulk import load_related
 from lp.services.database.constants import DEFAULT
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -87,13 +80,12 @@ def specific_job_classes():
 
 def get_builder_data():
     """How many working builders are there, how are they configured?"""
-    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     builder_data = """
         SELECT processor, virtualized, COUNT(id) FROM builder
         WHERE builderok = TRUE AND manual = FALSE
         GROUP BY processor, virtualized;
     """
-    results = store.execute(builder_data).get_all()
+    results = IStore(BuildQueue).execute(builder_data).get_all()
     builders_in_total = virtualized_total = 0
 
     builder_stats = defaultdict(int)
@@ -262,8 +254,7 @@ class BuildQueue(SQLBase):
             query += """
                 AND processor = %s
             """ % sqlvalues(processor)
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result_set = store.execute(query)
+        result_set = IStore(BuildQueue).execute(query)
         free_builders = result_set.get_one()[0]
         return free_builders
 
@@ -334,8 +325,7 @@ class BuildQueue(SQLBase):
                 AND Builder.processor = %s
                 """ % sqlvalues(head_job_processor)
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result_set = store.execute(delay_query)
+        result_set = IStore(BuildQueue).execute(delay_query)
         head_job_delay = result_set.get_one()[0]
         return (0 if head_job_delay is None else int(head_job_delay))
 
@@ -384,7 +374,6 @@ class BuildQueue(SQLBase):
         :return: A (processor, virtualized) tuple which is the head job's
         platform or None if the JOI is the head job.
         """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         my_platform = (
             getattr(self.processor, 'id', None),
             normalize_virtualization(self.virtualized))
@@ -400,7 +389,7 @@ class BuildQueue(SQLBase):
         query += """
             ORDER BY lastscore DESC, job LIMIT 1
             """
-        result = store.execute(query).get_one()
+        result = IStore(BuildQueue).execute(query).get_one()
         return (my_platform if result is None else result)
 
     def _estimateJobDelay(self, builder_stats):
@@ -433,7 +422,6 @@ class BuildQueue(SQLBase):
                 # virtualization settings.
                 return a == b
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         my_platform = (
             getattr(self.processor, 'id', None),
             normalize_virtualization(self.virtualized))
@@ -454,7 +442,7 @@ class BuildQueue(SQLBase):
             GROUP BY BuildQueue.processor, BuildQueue.virtualized
             """
 
-        delays_by_platform = store.execute(query).get_all()
+        delays_by_platform = IStore(BuildQueue).execute(query).get_all()
 
         # This will be used to capture per-platform delay totals.
         delays = defaultdict(int)
@@ -566,8 +554,7 @@ class BuildQueueSet(object):
 
     def getByJob(self, job):
         """See `IBuildQueueSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(BuildQueue, BuildQueue.job == job).one()
+        return IStore(BuildQueue).find(BuildQueue, BuildQueue.job == job).one()
 
     def count(self):
         """See `IBuildQueueSet`."""
@@ -579,8 +566,7 @@ class BuildQueueSet(object):
 
     def getActiveBuildJobs(self):
         """See `IBuildQueueSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result_set = store.find(
+        return IStore(BuildQueue).find(
             BuildQueue,
             BuildQueue.job == Job.id,
             # XXX Michael Nelson 2010-02-22 bug=499421
@@ -589,4 +575,3 @@ class BuildQueueSet(object):
             # status is a property. Let's use _status.
             Job._status == JobStatus.RUNNING,
             Job.date_started != None)
-        return result_set

@@ -16,7 +16,7 @@ from lp.archivepublisher.interfaces.publisherconfig import (
     IPublisherConfigSet,
     )
 from lp.archivepublisher.model.publisherconfig import PublisherConfig
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.testing import (
     ANONYMOUS,
     login,

@@ -23,7 +23,7 @@ from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.packaging import Packaging
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.orderingcheck import OrderingCheck
 from lp.services.scripts.base import (
     LaunchpadScript,

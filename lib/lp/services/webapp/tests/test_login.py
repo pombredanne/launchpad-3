@@ -41,8 +41,10 @@ from zope.session.interfaces import ISession
 from zope.testbrowser.testing import Browser as TestBrowser
 
 from lp.registry.interfaces.person import IPerson
-from lp.services.database.interfaces import IStoreSelector
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import (
+    IStore,
+    IStoreSelector,
+    )
 from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.identity.interfaces.account import (
     AccountStatus,

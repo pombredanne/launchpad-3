@@ -40,10 +40,8 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
 from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    SLAVE_FLAVOR,
+    IMasterStore,
+    ISlaveStore,
     )
 from lp.services.scripts.base import LaunchpadScript
 from lp.soyuz.enums import SourcePackageFormat
@@ -76,18 +74,13 @@ def get_max_id(store, table_name):
         return max_id[0]
 
 
-def get_store(flavor=MASTER_FLAVOR):
-    """Obtain an ORM store."""
-    return getUtility(IStoreSelector).get(MAIN_STORE, flavor)
-
-
 def check_preconditions(options):
     """Try to ensure that it's safe to run.
 
     This script must not run on a production server, or anything
     remotely like it.
     """
-    store = get_store(SLAVE_FLAVOR)
+    store = ISlaveStore(ComponentSelection)
 
     # Just a guess, but dev systems aren't likely to have ids this high
     # in this table.  Production data does.
@@ -153,13 +146,12 @@ def add_architecture(distroseries, architecture_name):
     # Avoid circular import.
     from lp.soyuz.model.distroarchseries import DistroArchSeries
 
-    store = get_store(MASTER_FLAVOR)
     family = getUtility(IProcessorFamilySet).getByName(architecture_name)
     archseries = DistroArchSeries(
         distroseries=distroseries, processorfamily=family,
         owner=distroseries.owner, official=True,
         architecturetag=architecture_name)
-    store.add(archseries)
+    IMasterStore(DistroArchSeries).add(archseries)
 
 
 def create_sections(distroseries):
@@ -253,9 +245,8 @@ def create_sample_series(original_series, log):
 def add_series_component(series):
     """Permit a component in the given series."""
     component = getUtility(IComponentSet)['main']
-    get_store(MASTER_FLAVOR).add(
-        ComponentSelection(
-            distroseries=series, component=component))
+    IMasterStore(ComponentSelection).add(
+        ComponentSelection(distroseries=series, component=component))
 
 
 def clean_up(distribution, log):

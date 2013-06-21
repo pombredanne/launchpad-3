@@ -71,7 +71,7 @@ from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.bulk import load
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.stormexpr import ColumnSelect
 from lp.services.searchbuilder import any
 from lp.services.webapp.authorization import (

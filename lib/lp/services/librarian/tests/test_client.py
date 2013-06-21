@@ -14,7 +14,7 @@ from urllib2 import (
 import transaction
 
 from lp.services.config import config
-from lp.services.database.lpstorm import ISlaveStore
+from lp.services.database.interfaces import ISlaveStore
 from lp.services.database.policy import SlaveDatabasePolicy
 from lp.services.database.sqlbase import block_implicit_flushes
 from lp.services.librarian import client as client_module

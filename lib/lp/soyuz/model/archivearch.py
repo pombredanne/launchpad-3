@@ -13,14 +13,9 @@ from storm.locals import (
     Reference,
     Storm,
     )
-from zope.component import getUtility
 from zope.interface import implements
 
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.soyuz.interfaces.archivearch import (
     IArchiveArch,
     IArchiveArchSet,
@@ -46,16 +41,14 @@ class ArchiveArchSet:
 
     def new(self, archive, processorfamily):
         """See `IArchiveArchSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         archivearch = ArchiveArch()
         archivearch.archive = archive
         archivearch.processorfamily = processorfamily
-        store.add(archivearch)
+        IStore(ArchiveArch).add(archivearch)
         return archivearch
 
     def getByArchive(self, archive, processorfamily=None):
         """See `IArchiveArchSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         base_clauses = (ArchiveArch.archive == archive,)
         if processorfamily is not None:
             optional_clauses = (
@@ -63,23 +56,18 @@ class ArchiveArchSet:
         else:
             optional_clauses = ()
 
-        results = store.find(
-            ArchiveArch, *(base_clauses + optional_clauses))
-        results = results.order_by(ArchiveArch.id)
-
-        return results
+        return IStore(ArchiveArch).find(
+            ArchiveArch, *(base_clauses + optional_clauses)).order_by(
+                ArchiveArch.id)
 
     def getRestrictedFamilies(self, archive):
         """See `IArchiveArchSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = (
             ProcessorFamily,
             LeftJoin(
                 ArchiveArch,
                 And(ArchiveArch.archive == archive.id,
                     ArchiveArch.processorfamily == ProcessorFamily.id)))
-        result_set = store.using(*origin).find(
+        return IStore(ArchiveArch).using(*origin).find(
             (ProcessorFamily, ArchiveArch),
-            (ProcessorFamily.restricted == True))
-
-        return result_set.order_by(ProcessorFamily.name)
+            ProcessorFamily.restricted == True).order_by(ProcessorFamily.name)

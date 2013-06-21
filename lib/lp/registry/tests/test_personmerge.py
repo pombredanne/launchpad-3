@@ -28,8 +28,8 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.personmerge import (
-    merge_people,
     _mergeMailingListSubscriptions,
+    merge_people,
     )
 from lp.registry.tests.test_person import KarmaTestMixin
 from lp.services.config import config

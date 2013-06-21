@@ -7,13 +7,7 @@ import shutil
 import tempfile
 import unittest
 
-from zope.component import getUtility
-
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.librarian.model import LibraryFileContent
 from lp.services.librarianserver import db
 from lp.services.librarianserver.storage import (
@@ -33,8 +27,7 @@ class LibrarianStorageTestCase(unittest.TestCase):
         self.storage = LibrarianStorage(self.directory, db.Library())
 
         # Hook the commit and rollback methods of the store.
-        self.store = getUtility(IStoreSelector).get(
-                MAIN_STORE, DEFAULT_FLAVOR)
+        self.store = IStore(LibraryFileContent)
         self.committed = self.rolledback = False
         self.orig_commit = self.store.commit
         self.orig_rollback = self.store.rollback

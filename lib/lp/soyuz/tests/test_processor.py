@@ -5,11 +5,7 @@
 
 from zope.component import getUtility
 
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.soyuz.interfaces.processor import (
     IProcessor,
     IProcessorFamily,
@@ -17,6 +13,7 @@ from lp.soyuz.interfaces.processor import (
     IProcessorSet,
     ProcessorNotFound,
     )
+from lp.soyuz.model.processor import Processor
 from lp.testing import (
     ExpectedException,
     logout,
@@ -78,7 +75,7 @@ class ProcessorSetTests(TestCaseWithFactory):
     def test_getAll(self):
         processor_set = getUtility(IProcessorSet)
         # Make it easy to filter out sample data
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(Processor)
         store.execute("UPDATE Processor SET name = 'sample_data_' || name")
         self.factory.makeProcessorFamily(name='q1')
         self.factory.makeProcessorFamily(name='i686')
@@ -109,7 +106,7 @@ class ProcessorSetWebServiceTests(TestCaseWithFactory):
 
     def test_default_collection(self):
         # Make it easy to filter out sample data
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(Processor)
         store.execute("UPDATE Processor SET name = 'sample_data_' || name")
         self.factory.makeProcessorFamily(name='q1')
         self.factory.makeProcessorFamily(name='i686')

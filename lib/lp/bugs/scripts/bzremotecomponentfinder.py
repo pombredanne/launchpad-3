@@ -25,7 +25,7 @@ from lp.bugs.interfaces.bugtracker import (
     )
 from lp.bugs.model.bugtracker import BugTrackerComponent
 from lp.services.database import bulk
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.scripts.logger import log as default_log
 
 

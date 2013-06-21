@@ -65,7 +65,7 @@ from lp.registry.interfaces.milestone import (
     )
 from lp.registry.model.productrelease import ProductRelease
 from lp.services.database.decoratedresultset import DecoratedResultSet
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import SQLBase
 from lp.services.propertycache import get_property_cache
 from lp.services.webapp.sorting import expand_numbers
@@ -142,7 +142,7 @@ class MultipleProductReleases(Exception):
 @error_status(httplib.BAD_REQUEST)
 class InvalidTags(Exception):
     """Raised when tags are invalid."""
-    
+
     def __init__(self, msg='Tags are invalid.'):
         super(InvalidTags, self).__init__(msg)
 

@@ -99,16 +99,14 @@ from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
+    IMasterStore,
+    IStore,
     )
 from lp.services.database.locking import (
     AdvisoryLockHeld,
     LockType,
     try_advisory_lock,
     )
-from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import SQLBase
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import (
@@ -264,8 +262,7 @@ class BranchJobDerived(BaseRunnableJob):
     @classmethod
     def iterReady(cls):
         """See `IRevisionMailJobSource`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        jobs = store.find(
+        jobs = IMasterStore(Branch).find(
             (BranchJob),
             And(BranchJob.job_type == cls.class_job_type,
                 BranchJob.job == Job.id,
@@ -957,8 +954,7 @@ class RosettaUploadJob(BranchJobDerived):
     @staticmethod
     def iterReady():
         """See `IRosettaUploadJobSource`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        jobs = store.using(BranchJob, Job, Branch).find(
+        jobs = IMasterStore(BranchJob).using(BranchJob, Job, Branch).find(
             (BranchJob),
             And(BranchJob.job_type == BranchJobType.ROSETTA_UPLOAD,
                 BranchJob.job == Job.id,
@@ -970,7 +966,7 @@ class RosettaUploadJob(BranchJobDerived):
     @staticmethod
     def findUnfinishedJobs(branch, since=None):
         """See `IRosettaUploadJobSource`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        store = IMasterStore(BranchJob)
         match = And(
             Job.id == BranchJob.jobID,
             BranchJob.branch == branch,

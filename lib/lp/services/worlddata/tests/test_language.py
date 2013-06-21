@@ -9,7 +9,7 @@ from zope.component import getUtility
 
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.model.karma import KarmaCategory
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.worlddata.interfaces.language import (
     ILanguage,
     ILanguageSet,

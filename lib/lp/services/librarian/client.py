@@ -32,18 +32,13 @@ from urlparse import (
 
 from lazr.restful.utils import get_current_browser_request
 from storm.store import Store
-from zope.component import getUtility
 from zope.interface import implements
 
 from lp.services.config import (
     config,
     dbconfig,
     )
-from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
+from lp.services.database.interfaces import IMasterStore
 from lp.services.database.postgresql import ConnectionString
 from lp.services.librarian.interfaces.client import (
     DownloadFailed,
@@ -155,7 +150,7 @@ class FileUploadClient:
             # Get the name of the database the client is using, so that
             # the server can check that the client is using the same
             # database as the server.
-            store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+            store = IMasterStore(LibraryFileAlias)
             databaseName = self._getDatabaseName(store)
 
             # Generate new content and alias IDs.

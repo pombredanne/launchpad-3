@@ -55,7 +55,7 @@ from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.bulk import create
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import DBEnum
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
 
 

@@ -9,7 +9,6 @@ __all__ = [
     ]
 
 from sqlobject import ForeignKey
-from zope.component import getUtility
 from zope.interface import implements
 
 from lp.registry.interfaces.person import validate_public_person
@@ -17,14 +16,9 @@ from lp.services.database.constants import DEFAULT
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
-from lp.services.database.lpstorm import (
     IMasterStore,
     ISlaveStore,
+    IStore,
     )
 from lp.services.database.sqlbase import (
     quote,
@@ -47,12 +41,10 @@ class POExportRequestSet:
     @property
     def entry_count(self):
         """See `IPOExportRequestSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(POExportRequest, True).count()
+        return IStore(POExportRequest).find(POExportRequest, True).count()
 
     def estimateBacklog(self):
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        row = store.execute(
+        row = IStore(POExportRequest).execute(
             "SELECT now() - min(date_created) FROM POExportRequest").get_one()
         if row is None:
             return None
@@ -87,7 +79,7 @@ class POExportRequestSet:
             'pofiles': pofile_ids,
             }
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        store = IMasterStore(POExportRequest)
 
         if potemplates:
             # Create requests for all these templates, insofar as the same
@@ -204,4 +196,3 @@ class POExportRequest(SQLBase):
     pofile = ForeignKey(dbName='pofile', foreignKey='POFile')
     format = EnumCol(dbName='format', schema=TranslationFileFormat,
         default=TranslationFileFormat.PO, notNull=True)
-

@@ -59,14 +59,12 @@ from lp.services.config import dbconfig
 from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     DisallowedStore,
-    ISQLBase,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from lp.services.database.lpstorm import (
     IMasterObject,
     IMasterStore,
+    ISQLBase,
     IStore,
+    IStoreSelector,
+    MAIN_STORE,
     )
 from lp.services.propertycache import clear_property_cache
 

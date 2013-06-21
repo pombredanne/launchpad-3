@@ -110,16 +110,13 @@ from lp.services.config.fixture import (
     ConfigFixture,
     ConfigUseFixture,
     )
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import session_store
 from lp.services.googlesearch.tests.googleserviceharness import (
     GoogleServiceTestSetup,
     )
 from lp.services.job.tests import celeryd
+from lp.services.librarian.model import LibraryFileAlias
 from lp.services.librarianserver.testing.server import LibrarianServerFixture
 from lp.services.mail.mailbox import (
     IMailBox,
@@ -221,7 +218,7 @@ def reconnect_stores(reset=False):
     if reset:
         dbconfig.reset()
 
-    main_store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    main_store = IStore(LibraryFileAlias)
     assert main_store is not None, 'Failed to reconnect'
 
     # Confirm that SQLOS is again talking to the database (it connects

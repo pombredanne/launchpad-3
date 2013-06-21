@@ -55,7 +55,7 @@ from lp.registry.model.sourcepackage import (
     SourcePackageQuestionTargetMixin,
     )
 from lp.services.database.decoratedresultset import DecoratedResultSet
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import (

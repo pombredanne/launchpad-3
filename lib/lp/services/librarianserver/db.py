@@ -13,7 +13,7 @@ from storm.expr import (
     SQL,
     )
 
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import session_store
 from lp.services.librarian.model import (
     LibraryFileAlias,
@@ -48,9 +48,9 @@ class Library:
         :param token: The token for the file. If None no token is present.
             When a token is supplied, it is looked up with path.
         :param path: The path the request is for, unused unless a token
-            is supplied; when supplied it must match the token. The 
+            is supplied; when supplied it must match the token. The
             value of path is expected to be that from a twisted request.args
-            e.g. /foo/bar. 
+            e.g. /foo/bar.
         """
         restricted = self.restricted
         if token and path:
@@ -59,7 +59,7 @@ class Library:
             store = session_store()
             token_found = store.find(TimeLimitedToken,
                 SQL("age(created) < interval '1 day'"),
-                TimeLimitedToken.token==token,
+                TimeLimitedToken.token == token,
                 TimeLimitedToken.path==path).is_empty()
             store.reset()
             if token_found:
@@ -94,7 +94,6 @@ class Library:
 
         If a matching alias already exists, it will return that ID instead.
         """
-        return LibraryFileAlias(contentID=fileid, filename=filename,
-                                mimetype=mimetype, expires=expires,
-                                restricted=self.restricted).id
-
+        return LibraryFileAlias(
+            contentID=fileid, filename=filename, mimetype=mimetype,
+            expires=expires, restricted=self.restricted).id

@@ -22,7 +22,7 @@ from storm.properties import (
     Unicode,
     )
 
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 
 
 class BaseStormOpenIDAssociation:

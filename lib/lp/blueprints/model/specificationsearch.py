@@ -45,7 +45,7 @@ from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.bulk import load_referencing
 from lp.services.database.decoratedresultset import DecoratedResultSet
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.stormexpr import (
     Array,
     ArrayAgg,

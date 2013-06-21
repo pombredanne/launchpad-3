@@ -87,10 +87,8 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
+    IMasterStore,
+    IStore,
     )
 from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import JobStatus
@@ -206,8 +204,7 @@ class BranchMergeProposalJob(StormBase):
         BranchMergeProposalJob whose property "foo" is equal to "bar"'.
         """
         assert len(kwargs) > 0
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(klass, **kwargs)
+        return IStore(klass).find(klass, **kwargs)
 
     @classmethod
     def get(klass, key):
@@ -215,8 +212,7 @@ class BranchMergeProposalJob(StormBase):
 
         :raises: SQLObjectNotFound
         """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        instance = store.get(klass, key)
+        instance = IStore(klass).get(klass, key)
         if instance is None:
             raise SQLObjectNotFound(
                 'No occurrence of %s has key %s' % (klass.__name__, key))
@@ -277,8 +273,7 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
     def iterReady(klass):
         """Iterate through all ready BranchMergeProposalJobs."""
         from lp.code.model.branch import Branch
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        jobs = store.find(
+        jobs = IMasterStore(Branch).find(
             (BranchMergeProposalJob),
             And(BranchMergeProposalJob.job_type == klass.class_job_type,
                 BranchMergeProposalJob.job == Job.id,
@@ -665,7 +660,6 @@ class BranchMergeProposalJobSource(BaseRunnableJobSource):
     @staticmethod
     def iterReady(job_type=None):
         from lp.code.model.branch import Branch
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         SourceBranch = ClassAlias(Branch)
         TargetBranch = ClassAlias(Branch)
         clauses = [
@@ -678,7 +672,7 @@ class BranchMergeProposalJobSource(BaseRunnableJobSource):
             ]
         if job_type is not None:
             clauses.append(BranchMergeProposalJob.job_type == job_type)
-        jobs = store.find(
+        jobs = IMasterStore(Branch).find(
             (BranchMergeProposalJob, Job, BranchMergeProposal,
              SourceBranch, TargetBranch), And(*clauses))
         # Order by the job status first (to get running before waiting), then

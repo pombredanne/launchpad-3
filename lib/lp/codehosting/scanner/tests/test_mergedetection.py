@@ -30,7 +30,7 @@ from lp.codehosting.scanner.tests.test_bzrsync import (
     run_as_db_user,
     )
 from lp.services.config import config
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.osutils import override_environ
 from lp.testing import (
     TestCase,

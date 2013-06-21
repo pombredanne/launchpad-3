@@ -46,7 +46,7 @@ from lp.registry.interfaces.person import validate_person
 from lp.services import searchbuilder
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.enumcol import DBEnum
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import convert_storm_clause_to_string
 from lp.services.database.stormbase import StormBase
 
@@ -243,7 +243,7 @@ class BugSubscriptionFilter(StormBase):
         store.find(
             StructuralSubscription,
             StructuralSubscription.id.is_in(structsub_ids),
-            Not(Exists(locked_filter_expr))).remove()        
+            Not(Exists(locked_filter_expr))).remove()
 
     def isMuteAllowed(self, person):
         """See `IBugSubscriptionFilter`."""

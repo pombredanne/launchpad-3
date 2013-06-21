@@ -43,11 +43,7 @@ from lp.registry.interfaces.product import (
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.model.featuredproject import FeaturedProject
 from lp.services.config import config
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -88,9 +84,8 @@ class PillarNameSet:
 
     def __contains__(self, name):
         """See `IPillarNameSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         name = ensure_unicode(name)
-        result = store.execute("""
+        result = IStore(PillarName).execute("""
             SELECT TRUE
             FROM PillarName
             WHERE (id IN (SELECT alias_for FROM PillarName WHERE name=?)
@@ -120,7 +115,6 @@ class PillarNameSet:
         # works better with SQLObject too.
 
         # Retrieve information out of the PillarName table.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         query = """
             SELECT id, product, project, distribution
             FROM PillarName
@@ -134,7 +128,7 @@ class PillarNameSet:
         else:
             query %= ""
         name = ensure_unicode(name)
-        result = store.execute(query, [name, name])
+        result = IStore(PillarName).execute(query, [name, name])
         row = result.get_one()
         if row is None:
             return None
@@ -185,12 +179,12 @@ class PillarNameSet:
                  lower(Distribution.title) = lower(%(text)s)
                 )
             ''' % sqlvalues(text=ensure_unicode(text)))
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         columns = [
             PillarName, OtherPillarName, Product, ProjectGroup, Distribution]
         for column in extra_columns:
             columns.append(column)
-        return store.using(*origin).find(tuple(columns), conditions)
+        return IStore(PillarName).using(*origin).find(
+            tuple(columns), conditions)
 
     def count_search_matches(self, text):
         result = self.build_search_query(text)

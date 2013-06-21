@@ -30,7 +30,7 @@ from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.constants import DEFAULT
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
-from lp.services.database.lpstorm import (
+from lp.services.database.interfaces import (
     ISlaveStore,
     IStore,
     )

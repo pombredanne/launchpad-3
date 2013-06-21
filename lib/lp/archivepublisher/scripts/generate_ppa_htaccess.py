@@ -21,7 +21,7 @@ from lp.archivepublisher.htaccess import (
     )
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.mail.helpers import get_email_template
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.sendmail import (

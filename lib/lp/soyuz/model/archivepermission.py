@@ -42,11 +42,6 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
@@ -239,8 +234,7 @@ class ArchivePermissionSet:
 
     def permissionsForPerson(self, archive, person):
         """See `IArchivePermissionSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
+        return IStore(ArchivePermission).find(
             ArchivePermission, """
             ArchivePermission.archive = %s AND
             EXISTS (SELECT TeamParticipation.person

@@ -51,7 +51,7 @@ from lp.services.database.bulk import (
     load_related,
     )
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.propertycache import (
     cachedproperty,
     clear_property_cache,

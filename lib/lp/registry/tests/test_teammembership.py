@@ -51,7 +51,7 @@ from lp.registry.scripts.teamparticipation import (
     fix_teamparticipation_consistency,
     )
 from lp.services.config import config
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     cursor,
     flush_database_caches,

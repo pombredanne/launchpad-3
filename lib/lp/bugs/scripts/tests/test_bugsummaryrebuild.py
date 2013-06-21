@@ -27,7 +27,7 @@ from lp.bugs.scripts.bugsummaryrebuild import (
     rebuild_bugsummary_for_target,
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.log.logger import BufferLogger
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import dbuser

@@ -19,15 +19,10 @@ from storm.locals import (
     Unicode,
     )
 from storm.store import Store
-from zope.component import getUtility
 from zope.interface import implements
 
 from lp.services.database.constants import UTC_NOW
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.soyuz.interfaces.archiveauthtoken import (
     IArchiveAuthToken,
     IArchiveAuthTokenSet,
@@ -75,15 +70,12 @@ class ArchiveAuthTokenSet:
 
     def get(self, token_id):
         """See `IArchiveAuthTokenSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.get(ArchiveAuthToken, token_id)
+        return IStore(ArchiveAuthToken).get(ArchiveAuthToken, token_id)
 
     def getByToken(self, token):
         """See `IArchiveAuthTokenSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
-            ArchiveAuthToken,
-            ArchiveAuthToken.token == token).one()
+        return IStore(ArchiveAuthToken).find(
+            ArchiveAuthToken, ArchiveAuthToken.token == token).one()
 
     def getByArchive(self, archive):
         """See `IArchiveAuthTokenSet`."""

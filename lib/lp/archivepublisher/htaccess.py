@@ -19,7 +19,7 @@ from operator import itemgetter
 import os
 
 from lp.registry.model.person import Person
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 
 

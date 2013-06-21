@@ -10,7 +10,6 @@ from storm.expr import (
     Join,
     )
 from storm.store import EmptyResultSet
-from zope.component import getUtility
 
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -19,11 +18,7 @@ from lp.services.command_spawner import (
     OutputLineHandler,
     ReturnCodeReceiver,
     )
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.database.stormexpr import Concatenate
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.osutils import write_file
@@ -264,7 +259,6 @@ class FTPArchiveHandler:
 
         :return: a `ResultSet` with the source override information tuples
         """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origins = (
             SourcePackagePublishingHistory,
             Join(Component,
@@ -279,15 +273,14 @@ class FTPArchiveHandler:
                      SourcePackageRelease.sourcepackagenameID),
             )
 
-        result_set = store.using(*origins).find(
+        return IStore(SourcePackageName).using(*origins).find(
             (SourcePackageName.name, Component.name, Section.name),
             SourcePackagePublishingHistory.archive == self.publisher.archive,
             SourcePackagePublishingHistory.distroseries == distroseries,
             SourcePackagePublishingHistory.pocket == pocket,
             SourcePackagePublishingHistory.status ==
-                PackagePublishingStatus.PUBLISHED)
-
-        return result_set.order_by(Desc(SourcePackagePublishingHistory.id))
+                PackagePublishingStatus.PUBLISHED).order_by(
+                    Desc(SourcePackagePublishingHistory.id))
 
     def getBinariesForOverrides(self, distroseries, pocket):
         """Fetch override information about all published binaries.
@@ -302,7 +295,6 @@ class FTPArchiveHandler:
 
         :return: a `ResultSet` with the binary override information tuples
         """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origins = (
             BinaryPackagePublishingHistory,
             Join(Component,
@@ -337,7 +329,7 @@ class FTPArchiveHandler:
                 BinaryPackageRelease.binpackageformat
                     != BinaryPackageFormat.DDEB)
 
-        result_set = store.using(*origins).find(
+        result_set = IStore(BinaryPackageName).using(*origins).find(
             (BinaryPackageName.name, Component.name, Section.name,
              DistroArchSeries.architecturetag,
              BinaryPackagePublishingHistory.priority,
@@ -547,7 +539,7 @@ class FTPArchiveHandler:
 
         :return: a `ResultSet` with the source files information tuples.
         """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(SourcePackagePublishingHistory)
         result_set = store.using(SourcePackageFilePublishing).find(
             (SourcePackageFilePublishing.sourcepackagename,
              SourcePackageFilePublishing.libraryfilealiasfilename,
@@ -572,8 +564,6 @@ class FTPArchiveHandler:
 
         :return: a `ResultSet` with the binary files information tuples.
         """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-
         columns = (
             SourcePackageName.name,
             LibraryFileAlias.filename,
@@ -608,7 +598,7 @@ class FTPArchiveHandler:
                 BinaryPackageRelease.binpackageformat
                     != BinaryPackageFormat.DDEB)
 
-        result_set = store.find(
+        result_set = IStore(SourcePackageRelease).find(
             columns, *(join_conditions + select_conditions))
         return result_set.order_by(
             BinaryPackagePublishingHistory.id, BinaryPackageFile.id)
