@@ -1639,6 +1639,13 @@ class Archive(SQLBase):
                     phased_update_percentage=None):
         """See `IArchive`."""
         # Asynchronously copy a package using the job system.
+        if phased_update_percentage is not None:
+            if phased_update_percentage < 0 or phased_update_percentage > 100:
+                raise ValueError(
+                    "phased_update_percentage must be between 0 and 100 "
+                    "(inclusive).")
+            elif phased_update_percentage == 100:
+                phased_update_percentage = None
         pocket = self._text_to_pocket(to_pocket)
         series = self._text_to_series(to_series)
         if from_pocket:
