@@ -28,7 +28,7 @@ from lp.services.config import (
     config,
     dbconfig,
     )
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 from lp.services.messaging import rabbit
 from lp.services.webapp.errorlog import (
     globalErrorUtility,

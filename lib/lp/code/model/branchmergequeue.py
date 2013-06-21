@@ -26,7 +26,7 @@ from lp.code.interfaces.branchmergequeue import (
     )
 from lp.code.model.branch import Branch
 from lp.services.database.datetimecol import UtcDateTimeCol
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 
 
 class BranchMergeQueue(Storm):

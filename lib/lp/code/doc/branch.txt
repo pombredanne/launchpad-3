@@ -172,10 +172,8 @@ database.  We don't want any of the branches in the sample data to mess
 up our tests, so we clear the last_scanned data in all existing
 branches.
 
-    >>> from lp.services.database.interfaces import (
-    ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    >>> store.find(Branch).set(last_scanned=None)
+    >>> from lp.services.database.interfaces import IStore
+    >>> IStore(Branch).find(Branch).set(last_scanned=None)
 
     >>> list(branchset.getRecentlyChangedBranches(5))
     []

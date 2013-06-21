@@ -9,15 +9,10 @@ import os
 import shutil
 import tempfile
 
-from zope.component import getUtility
-
+from lp.registry.model.product import Product
 from lp.services.config import dbconfig
 from lp.services.database import write_transaction
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.database.postgresql import ConnectionString
 
 
@@ -139,9 +134,7 @@ class LibraryFileUpload(object):
                 config_dbname = ConnectionString(
                     dbconfig.rw_main_master).dbname
 
-                store = getUtility(IStoreSelector).get(
-                        MAIN_STORE, DEFAULT_FLAVOR)
-                result = store.execute("SELECT current_database()")
+                result = IStore(Product).execute("SELECT current_database()")
                 real_dbname = result.get_one()[0]
                 if self.databaseName not in (config_dbname, real_dbname):
                     raise WrongDatabaseError(

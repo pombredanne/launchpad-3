@@ -16,7 +16,7 @@ from lp.registry.interfaces.productrelease import (
     IProductReleaseSet,
     UpstreamFileType,
     )
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,

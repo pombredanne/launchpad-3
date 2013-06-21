@@ -171,7 +171,7 @@ out of date.
 
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.bugs.model.bug import Bug
-    >>> from lp.services.database.lpstorm import IStore
+    >>> from lp.services.database.interfaces import IStore
     >>> IStore(Bug).find(Bug).set(
     ...     heat_last_updated=datetime.now(timezone('UTC')))
 

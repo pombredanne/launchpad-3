@@ -62,10 +62,8 @@ from lp.buildmaster.model.buildqueue import (
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.config import config
 from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
+    ISlaveStore,
+    IStore,
     )
 from lp.services.database.sqlbase import (
     SQLBase,
@@ -778,7 +776,7 @@ class Builder(SQLBase):
             extra_queries.append(qualify_subquery(job_type, query))
         query = ' AND '.join([general_query] + extra_queries) + order_clause
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(self.__class__)
         candidate_jobs = store.execute(query).get_all()
 
         for (candidate_id,) in candidate_jobs:
@@ -842,8 +840,7 @@ class Builder(SQLBase):
         """See `IBuilder`."""
         # Return a single BuildQueue for the builder provided it's
         # currently running a job.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
+        return IStore(BuildQueue).find(
             BuildQueue,
             BuildQueue.job == Job.id,
             BuildQueue.builder == self.id,
@@ -898,8 +895,7 @@ class BuilderSet(object):
 
     def getBuildQueueSizes(self):
         """See `IBuilderSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
-        results = store.find((
+        results = ISlaveStore(BuildQueue).find((
             Count(),
             Sum(BuildQueue.estimated_duration),
             Processor,

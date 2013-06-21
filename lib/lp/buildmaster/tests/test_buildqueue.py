@@ -31,11 +31,7 @@ from lp.buildmaster.model.buildqueue import (
     BuildQueue,
     get_builder_data,
     )
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.job.model.job import Job
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -366,11 +362,10 @@ class SingleArchBuildsBase(TestBuildQueueBase):
         # p=processor, v=virtualized, e=estimated_duration, s=score
 
         # First mark all builds in the sample data as already built.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        sample_data = store.find(BinaryPackageBuild)
+        sample_data = IStore(BinaryPackageBuild).find(BinaryPackageBuild)
         for build in sample_data:
             build.buildstate = BuildStatus.FULLYBUILT
-        store.flush()
+        IStore(BinaryPackageBuild).flush()
 
         # We test builds that target a primary archive.
         self.non_ppa = self.factory.makeArchive(
@@ -706,11 +701,10 @@ class MultiArchBuildsBase(TestBuildQueueBase):
         # p=processor, v=virtualized, e=estimated_duration, s=score
 
         # First mark all builds in the sample data as already built.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        sample_data = store.find(BinaryPackageBuild)
+        sample_data = IStore(BinaryPackageBuild).find(BinaryPackageBuild)
         for build in sample_data:
             build.buildstate = BuildStatus.FULLYBUILT
-        store.flush()
+        IStore(BinaryPackageBuild).flush()
 
         # We test builds that target a primary archive.
         self.non_ppa = self.factory.makeArchive(
@@ -913,11 +907,10 @@ class TestJobClasses(TestCaseWithFactory):
         self.publisher.prepareBreezyAutotest()
 
         # First mark all builds in the sample data as already built.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        sample_data = store.find(BinaryPackageBuild)
+        sample_data = IStore(BinaryPackageBuild).find(BinaryPackageBuild)
         for build in sample_data:
             build.buildstate = BuildStatus.FULLYBUILT
-        store.flush()
+        IStore(BinaryPackageBuild).flush()
 
         # We test builds that target a primary archive.
         self.non_ppa = self.factory.makeArchive(
@@ -999,11 +992,10 @@ class TestPlatformData(TestCaseWithFactory):
         self.publisher.prepareBreezyAutotest()
 
         # First mark all builds in the sample data as already built.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        sample_data = store.find(BinaryPackageBuild)
+        sample_data = IStore(BinaryPackageBuild).find(BinaryPackageBuild)
         for build in sample_data:
             build.buildstate = BuildStatus.FULLYBUILT
-        store.flush()
+        IStore(BinaryPackageBuild).flush()
 
         # We test builds that target a primary archive.
         self.non_ppa = self.factory.makeArchive(

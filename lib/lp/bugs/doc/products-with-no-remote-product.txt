@@ -8,9 +8,9 @@ method to get all the Products needing updating.
 IProductSet.getProductsWithNoneRemoteProduct() is used for this.
 
 
-    >>> from lp.services.database.interfaces import (
-    ...     IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE)
-    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    >>> from lp.registry.model.product import Product
+    >>> from lp.services.database.interfaces import IStore
+    >>> store = IStore(Product)
     >>> store.execute("UPDATE Product SET remote_product = 'not-None'")
     <storm...>
     >>> from lp.registry.interfaces.product import IProductSet

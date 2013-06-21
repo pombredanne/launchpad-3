@@ -18,11 +18,7 @@ from lp.code.interfaces.branchjob import IBranchJob
 from lp.code.model.branchjob import BranchJob
 from lp.code.model.directbranchcommit import DirectBranchCommit
 from lp.codehosting.scanner import events
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.job.model.job import Job
 from lp.testing import (
     TestCaseWithFactory,
@@ -277,7 +273,7 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
 
         self.jobsource.scheduleTranslationTemplatesBuild(branch)
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(BranchJob)
         branchjobs = list(store.find(BranchJob, BranchJob.branch == branch))
         self.assertEqual(1, len(branchjobs))
         self.assertEqual(branch, branchjobs[0].branch)

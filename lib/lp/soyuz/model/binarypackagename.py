@@ -19,7 +19,7 @@ from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
 from lp.app.errors import NotFoundError
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,

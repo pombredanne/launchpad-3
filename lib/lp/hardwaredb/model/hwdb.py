@@ -108,11 +108,7 @@ from lp.services.database.constants import (
     )
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -235,8 +231,7 @@ class HWSubmissionSet:
 
     def getBySubmissionKey(self, submission_key, user=None):
         """See `IHWSubmissionSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
+        return IStore(HWSubmission).find(
             HWSubmission,
             And(HWSubmission.submission_key == submission_key,
                 _userCanAccessSubmissionStormClause(user))).one()
@@ -281,22 +276,19 @@ class HWSubmissionSet:
 
     def getByStatus(self, status, user=None):
         """See `IHWSubmissionSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result_set = store.find(HWSubmission,
-                                HWSubmission.status == status,
-                                _userCanAccessSubmissionStormClause(user))
         # Provide a stable order. Sorting by id, to get the oldest
         # submissions first. When date_submitted has an index, we could
         # sort by that first.
-        result_set.order_by(HWSubmission.id)
-        return result_set
+        return IStore(HWSubmission).find(
+            HWSubmission, HWSubmission.status == status,
+            _userCanAccessSubmissionStormClause(user)).order_by(
+                HWSubmission.id)
 
     def search(self, user=None, device=None, driver=None, distribution=None,
                distroseries=None, architecture=None, owner=None,
                created_before=None, created_after=None,
                submitted_before=None, submitted_after=None):
         """See `IHWSubmissionSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         args = []
         if device is not None:
             args.append(HWDeviceDriverLink.device == HWDevice.id)
@@ -339,19 +331,16 @@ class HWSubmissionSet:
         if submitted_after is not None:
             args.append(HWSubmission.date_submitted > submitted_after)
 
-        result_set = store.find(
-            HWSubmission,
-            _userCanAccessSubmissionStormClause(user),
-            *args)
         # Many devices are associated with more than one driver, even
         # for one submission, hence we may have more than one
         # HWSubmissionDevice record and more than one HWDeviceDriverLink
         # for one device and one submission matching the WHERE clause
         # defined above. This leads to duplicate results without a
         # DISTINCT clause.
-        result_set.config(distinct=True)
-        result_set.order_by(HWSubmission.id)
-        return result_set
+        return IStore(HWSubmission).find(
+            HWSubmission,
+            _userCanAccessSubmissionStormClause(user),
+            *args).config(distinct=True).order_by(HWSubmission.id)
 
     def _submissionsSubmitterSelects(
         self, target_column, bus, vendor_id, product_id, driver_name,
@@ -404,7 +393,7 @@ class HWSubmissionSet:
         self, bus=None, vendor_id=None, product_id=None, driver_name=None,
         package_name=None, distro_target=None):
         """See `IHWSubmissionSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(HWSubmission)
         submissions_with_device_select, all_submissions_select = (
             self._submissionsSubmitterSelects(
                 Count(), bus, vendor_id, product_id, driver_name,
@@ -419,7 +408,7 @@ class HWSubmissionSet:
         self, bus=None, vendor_id=None, product_id=None, driver_name=None,
         package_name=None, distro_target=None):
         """See `IHWSubmissionSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(HWSubmission)
         submitters_with_device_select, all_submitters_select = (
             self._submissionsSubmitterSelects(
                 HWSubmission.raw_emailaddress, bus, vendor_id, product_id,
@@ -442,7 +431,7 @@ class HWSubmissionSet:
         package_name=None, bug_ids=None, bug_tags=None, affected_by_bug=False,
         subscribed_to_bug=False, user=None):
         """See `IHWSubmissionSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(HWSubmission)
         tables, clauses = make_submission_device_statistics_clause(
                 bus, vendor_id, product_id, driver_name, package_name, False)
         tables.append(HWSubmission)
@@ -512,8 +501,6 @@ class HWSubmissionSet:
         self, bug_ids=None, bug_tags=None, affected_by_bug=False,
         subscribed_to_bug=False, user=None):
         """See `IHWSubmissionSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-
         if ((bug_ids is None or len(bug_ids) == 0) and
             (bug_tags is None or len(bug_tags) == 0)):
             raise ParameterError('bug_ids or bug_tags must be supplied.')
@@ -564,7 +551,7 @@ class HWSubmissionSet:
         return [
             (person_name, HWBus.items[bus_id], vendor_id, product_id)
              for person_name, bus_id, vendor_id, product_id
-             in store.execute(query)]
+             in IStore(HWSubmission).execute(query)]
 
 
 class HWSystemFingerprint(SQLBase):
@@ -746,15 +733,12 @@ class HWVendorIDSet:
 
     def get(self, id):
         """See `IHWVendorIDSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(HWVendorID, HWVendorID.id == id).one()
+        return IStore(HWVendorID).find(HWVendorID, HWVendorID.id == id).one()
 
     def idsForBus(self, bus):
         """See `IHWVendorIDSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result_set = store.find(HWVendorID, bus=bus)
-        result_set.order_by(HWVendorID.vendor_id_for_bus)
-        return result_set
+        return IStore(HWVendorID).find(HWVendorID, bus=bus).order_by(
+            HWVendorID.vendor_id_for_bus)
 
 
 class HWDevice(SQLBase):
@@ -812,27 +796,22 @@ class HWDevice(SQLBase):
     @property
     def drivers(self):
         """See `IHWDevice.`"""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result_set = store.find(HWDriver,
-                                HWDeviceDriverLink.driver == HWDriver.id,
-                                HWDeviceDriverLink.device == self)
-        result_set.order_by((HWDriver.package_name, HWDriver.name))
-        return result_set
+        return IStore(HWDriver).find(
+            HWDriver, HWDeviceDriverLink.driver == HWDriver.id,
+            HWDeviceDriverLink.device == self).order_by(
+                HWDriver.package_name, HWDriver.name)
 
     @property
     def classes(self):
         """See `IHWDevice.`"""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result_set = store.find(
+        return IStore(HWDeviceClass).find(
             HWDeviceClass,
-            HWDeviceClass.device == self.id)
-        result_set.order_by(HWDeviceClass.main_class, HWDeviceClass.sub_class)
-        return result_set
+            HWDeviceClass.device == self.id).order_by(
+                HWDeviceClass.main_class, HWDeviceClass.sub_class)
 
     def getOrCreateDeviceClass(self, main_class, sub_class=None):
         """See `IHWDevice.`"""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result_set = store.find(
+        result_set = IStore(HWDeviceClass).find(
             HWDeviceClass,
             HWDeviceClass.device == self.id,
             HWDeviceClass.main_class == main_class,
@@ -845,7 +824,7 @@ class HWDevice(SQLBase):
 
     def removeDeviceClass(self, main_class, sub_class=None):
         """See `IHWDevice.`"""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(HWDeviceClass)
         result_set = store.find(
             HWDeviceClass,
             HWDeviceClass.device == self.id,
@@ -905,13 +884,11 @@ class HWDeviceSet:
 
     def getByID(self, id):
         """See `IHWDeviceSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(HWDevice, HWDevice.id == id).one()
+        return IStore(HWDevice).find(HWDevice, HWDevice.id == id).one()
 
     def search(self, bus, vendor_id, product_id=None):
         """See `IHWDeviceSet`."""
         bus_vendor = HWVendorIDSet().getByBusAndVendorID(bus, vendor_id)
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         args = []
         if product_id is not None:
             if not isValidProductID(bus, product_id):
@@ -919,10 +896,9 @@ class HWDeviceSet:
                     '%s is not a valid product ID for %s'
                     % (repr(product_id), bus.title))
             args.append(HWDevice.bus_product_id == product_id)
-        result_set = store.find(
-            HWDevice, HWDevice.bus_vendor == bus_vendor, *args)
-        result_set.order_by(HWDevice.id)
-        return result_set
+        return IStore(HWDevice).find(
+            HWDevice, HWDevice.bus_vendor == bus_vendor, *args).order_by(
+                HWDevice.id)
 
 
 class HWDeviceNameVariant(SQLBase):
@@ -991,7 +967,7 @@ class HWDriverSet:
 
     def getByPackageAndName(self, package_name, name):
         """See `IHWDriverSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(HWDriver)
         if package_name in (None, ''):
             return store.find(
                 HWDriver,
@@ -1019,7 +995,6 @@ class HWDriverSet:
 
     def search(self, package_name=None, name=None):
         """See `IHWDriverSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         args = []
         if package_name is not None:
             if len(package_name) == 0:
@@ -1029,28 +1004,23 @@ class HWDriverSet:
                 args.append(HWDriver.package_name == package_name)
         if name != None:
             args.append(HWDriver.name == name)
-        result_set = store.find(HWDriver, *args)
-        return result_set.order_by(HWDriver.id)
+        return IStore(HWDriver).find(HWDriver, *args).order_by(HWDriver.id)
 
     def getByID(self, id):
         """See `IHWDriverSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(HWDriver, HWDriver.id == id).one()
+        return IStore(HWDriver).find(HWDriver, HWDriver.id == id).one()
 
     def all_driver_names(self):
         """See `IHWDriverSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result = store.find(HWDriverName)
-        result.order_by(HWDriverName.name)
-        return result
+        return IStore(HWDriverName).find(
+            HWDriverName).order_by(HWDriverName.name)
 
     def all_package_names(self):
         """See `IHWDriverSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         # XXX Abel Deuring 2009-06-19 The clause package_name != None
         # can be removed once bug #306265 is fixed.
-        result = store.find(HWDriverPackageName,
-                            HWDriverPackageName.package_name != None)
+        result = IStore(HWDriverPackageName).find(
+            HWDriverPackageName, HWDriverPackageName.package_name != None)
         result.order_by(HWDriverPackageName.package_name)
         return result
 
@@ -1124,8 +1094,8 @@ class HWDeviceClassSet:
 
     def get(self, id):
         """See `IHWDeviceClassSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(HWDeviceClass, HWDeviceClass.id == id).one()
+        return IStore(HWDeviceClass).find(
+            HWDeviceClass, HWDeviceClass.id == id).one()
 
 
 class HWSubmissionDevice(SQLBase):
@@ -1174,16 +1144,13 @@ class HWSubmissionDeviceSet:
 
     def get(self, id):
         """See `IHWSubmissionDeviceSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
+        return IStore(HWSubmissionDevice).find(
             HWSubmissionDevice, HWSubmissionDevice.id == id).one()
 
     def numDevicesInSubmissions(
         self, bus=None, vendor_id=None, product_id=None, driver_name=None,
         package_name=None, distro_target=None):
         """See `IHWSubmissionDeviceSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-
         tables, where_clauses = make_submission_device_statistics_clause(
             bus, vendor_id, product_id, driver_name, package_name, False)
 
@@ -1195,7 +1162,7 @@ class HWSubmissionDeviceSet:
             where_clauses.append(
                 HWSubmissionDevice.submission == HWSubmission.id)
 
-        result = store.execute(
+        result = IStore(HWSubmissionDevice).execute(
             Select(
                 columns=[Count()], tables=tables, where=And(*where_clauses)))
         return result.get_one()[0]

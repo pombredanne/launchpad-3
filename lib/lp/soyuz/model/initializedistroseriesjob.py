@@ -14,7 +14,7 @@ from zope.interface import (
 
 from lp.registry.model.distroseries import DistroSeries
 from lp.services.config import config
-from lp.services.database.lpstorm import (
+from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )

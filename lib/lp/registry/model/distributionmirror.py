@@ -68,12 +68,7 @@ from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -655,7 +650,7 @@ class DistributionMirrorSet:
         if limit is not None:
             query += " LIMIT %d" % limit
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(MirrorDistroArchSeries)
         ids = ", ".join(str(id)
                         for (id, date_created) in store.execute(query))
         query = '1 = 2'

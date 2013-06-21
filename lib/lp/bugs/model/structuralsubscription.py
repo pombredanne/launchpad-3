@@ -80,7 +80,7 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.constants import UTC_NOW
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import quote
 from lp.services.database.stormexpr import (
     ArrayAgg,

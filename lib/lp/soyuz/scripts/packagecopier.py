@@ -38,7 +38,6 @@ from lp.soyuz.interfaces.publishing import (
 from lp.soyuz.interfaces.queue import IPackageUploadCustom
 from lp.soyuz.scripts.custom_uploads_copier import CustomUploadsCopier
 
-
 # XXX cprov 2009-06-12: this function should be incorporated in
 # IPublishing.
 def update_files_privacy(pub_record):

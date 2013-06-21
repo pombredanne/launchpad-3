@@ -168,14 +168,11 @@ records.
     >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.services.log.logger import FakeLogger
     >>> from lp.testing.dbuser import switch_dbuser
-    >>> from lp.services.database.interfaces import (
-    ...     IStoreSelector,
-    ...     MAIN_STORE,
-    ...     MASTER_FLAVOR,
-    ...     )
+    >>> from lp.soyuz.model.archive import Archive
+    >>> from lp.services.database.interfaces import IMasterStore
 
     >>> def update_cached_records(delete_all=False):
-    ...     store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    ...     store = IMasterStore(Archive)
     ...     if delete_all:
     ...         store.execute(
     ...             "delete from latestpersonsourcepackagereleasecache")

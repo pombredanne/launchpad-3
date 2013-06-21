@@ -21,7 +21,7 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.bulk import load_related
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
 from lp.soyuz.enums import (
     ArchivePurpose,

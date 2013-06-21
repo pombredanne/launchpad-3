@@ -23,7 +23,7 @@ from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.config import config
 from lp.services.database import bulk
-from lp.services.database.lpstorm import (
+from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )

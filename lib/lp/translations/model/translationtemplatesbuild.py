@@ -39,7 +39,7 @@ from lp.registry.model.product import Product
 from lp.services.database.bulk import load_related
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import DBEnum
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuild,
     ITranslationTemplatesBuildSource,

@@ -60,7 +60,7 @@ from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.mailinglist import IMailingListApplication
 from lp.registry.interfaces.product import IProductSet
 from lp.services.config import config
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.feeds.interfaces.application import IFeedsApplication
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.webapp.interfaces import (

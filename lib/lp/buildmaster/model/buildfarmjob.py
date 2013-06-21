@@ -43,7 +43,7 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.services.database.enumcol import DBEnum
-from lp.services.database.lpstorm import (
+from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )

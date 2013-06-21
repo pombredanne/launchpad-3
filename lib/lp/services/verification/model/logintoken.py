@@ -25,11 +25,7 @@ from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
+from lp.services.database.interfaces import IMasterStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -286,8 +282,7 @@ class LoginTokenSet:
 
         # It's important to always use the MASTER_FLAVOR store here
         # because we don't want replication lag to cause a 404 error.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        return store.find(LoginToken, conditions)
+        return IMasterStore(LoginToken).find(LoginToken, conditions)
 
     def deleteByEmailRequesterAndType(self, email, requester, type):
         """See ILoginTokenSet."""
@@ -314,8 +309,7 @@ class LoginTokenSet:
 
         # It's important to always use the MASTER_FLAVOR store here
         # because we don't want replication lag to cause a 404 error.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        return store.find(LoginToken, conditions)
+        return IMasterStore(LoginToken).find(LoginToken, conditions)
 
     def getPendingGPGKeys(self, requesterid=None):
         """See ILoginTokenSet."""

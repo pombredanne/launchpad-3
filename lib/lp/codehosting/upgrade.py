@@ -38,7 +38,7 @@ from lp.code.model.branch import Branch
 from lp.codehosting.bzrutils import read_locked
 from lp.codehosting.safe_open import safe_open
 from lp.codehosting.vfs.branchfs import get_real_branch_path
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 
 
 class AlreadyUpgraded(Exception):

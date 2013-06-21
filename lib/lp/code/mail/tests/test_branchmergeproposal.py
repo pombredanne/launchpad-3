@@ -31,7 +31,7 @@ from lp.code.model.branchmergeproposaljob import (
 from lp.code.model.codereviewvote import CodeReviewVoteReference
 from lp.code.model.diff import PreviewDiff
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.webapp import canonical_url
 from lp.testing import (
     person_logged_in,

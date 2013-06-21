@@ -28,13 +28,8 @@ import _pythonpath
 from optparse import OptionParser
 
 from storm.locals import Not
-from zope.component import getUtility
 
-from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
-    )
+from lp.services.database.interfaces import ISlaveStore
 from lp.services.scripts import execute_zcml_for_scripts
 
 
@@ -42,8 +37,7 @@ def get_stacked_branches():
     """Iterate over all branches that, according to the db, are stacked."""
     # Avoiding circular import.
     from lp.code.model.branch import Branch
-    store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
-    return store.find(Branch, Not(Branch.stacked_on == None))
+    return ISlaveStore(Branch).find(Branch, Not(Branch.stacked_on == None))
 
 
 def main():

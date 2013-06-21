@@ -5,7 +5,7 @@ __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     login_person,

@@ -72,12 +72,7 @@ from lp.services.database.bulk import (
     load_related,
     )
 from lp.services.database.decoratedresultset import DecoratedResultSet
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import quote
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
@@ -146,12 +141,12 @@ class GenericBranchCollection:
     @property
     def store(self):
         # Although you might think we could set the default value for store in
-        # the constructor, we can't. The IStoreSelector utility is not
+        # the constructor, we can't. The IStore utility is not
         # available at the time that the branchcollection.zcml is parsed,
         # which means we get an error if this code is in the constructor.
         # -- JonathanLange 2009-02-17.
         if self._store is None:
-            return getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+            return IStore(BugTask)
         else:
             return self._store
 

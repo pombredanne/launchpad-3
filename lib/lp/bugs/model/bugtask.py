@@ -131,12 +131,7 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.nl_search import nl_phrase_search
 from lp.services.database.sqlbase import (
     block_implicit_flushes,
@@ -1362,7 +1357,7 @@ class BugTaskSet:
     def getBugTasks(self, bug_ids):
         """See `IBugTaskSet`."""
         from lp.bugs.model.bug import Bug
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(Bug)
         origin = [BugTask, Join(Bug, BugTask.bug == Bug.id)]
         columns = (Bug, BugTask)
         result = store.using(*origin).find(columns, Bug.id.is_in(bug_ids))

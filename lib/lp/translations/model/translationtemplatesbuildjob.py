@@ -32,7 +32,7 @@ from lp.code.model.branchjob import (
     )
 from lp.services.config import config
 from lp.services.database.bulk import load_related
-from lp.services.database.lpstorm import (
+from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )

@@ -41,7 +41,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -183,7 +183,7 @@ class KarmaCacheManager:
         Return None if it's not found.
         """
         return IStore(KarmaCache).find(
-            KarmaCache, 
+            KarmaCache,
             KarmaCache.personID == person_id,
             KarmaCache.categoryID == category_id,
             KarmaCache.productID == product_id,

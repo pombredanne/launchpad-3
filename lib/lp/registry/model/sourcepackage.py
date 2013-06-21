@@ -59,7 +59,7 @@ from lp.registry.model.packaging import (
     PackagingUtil,
     )
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     flush_database_updates,
     sqlvalues,

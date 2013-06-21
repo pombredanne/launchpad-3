@@ -34,11 +34,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import clear_property_cache
@@ -77,7 +73,10 @@ from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
-from lp.soyuz.model.archive import validate_ppa
+from lp.soyuz.model.archive import (
+    Archive,
+    validate_ppa,
+    )
 from lp.soyuz.model.archivepermission import (
     ArchivePermission,
     ArchivePermissionSet,
@@ -305,8 +304,7 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
                 AND Job.status = %s;
         """ % sqlvalues(archive, BuildStatus.NEEDSBUILD, status)
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.execute(query).get_one()[0]
+        return IStore(Archive).execute(query).get_one()[0]
 
     def assertNoBuildJobsHaveStatus(self, archive, status):
         # Check that that the jobs attached to this archive do not have this
@@ -900,8 +898,7 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
         self.publisher = SoyuzTestPublisher()
         self.publisher.prepareBreezyAutotest()
 
-        self.store = getUtility(IStoreSelector).get(
-            MAIN_STORE, DEFAULT_FLAVOR)
+        self.store = IStore(Archive)
 
         self.archive = self.factory.makeArchive()
         self.bpr_1 = self.publisher.getPubBinaries(

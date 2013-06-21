@@ -29,7 +29,6 @@ from storm.locals import (
     Int,
     Reference,
     )
-from zope.component import getUtility
 from zope.interface import implements
 
 from lp.registry.interfaces.distribution import IDistribution
@@ -41,13 +40,10 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
+from lp.services.database.interfaces import IMasterStore
 from lp.services.database.sqlbase import SQLBase
 from lp.services.database.stormbase import StormBase
+from lp.services.librarian.model import LibraryFileAlias
 from lp.services.oauth.interfaces import (
     ClockSkew,
     IOAuthAccessToken,
@@ -104,7 +100,7 @@ class OAuthBase:
         authorization exchange, since it will be done across applications that
         won't share the session cookies.
         """
-        return getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        return IMasterStore(LibraryFileAlias)
 
     getStore = _get_store
 

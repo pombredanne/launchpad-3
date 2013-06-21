@@ -24,7 +24,7 @@ from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment,
     )
 from lp.services.config import config
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import JobRunner

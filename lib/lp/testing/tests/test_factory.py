@@ -25,7 +25,7 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.suitesourcepackage import ISuiteSourcePackage
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.soyuz.enums import (

@@ -91,7 +91,7 @@ from lp.registry.model.product import (
     UnDeactivateable,
     )
 from lp.registry.model.productlicense import ProductLicense
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.escaping import html_escape
 from lp.testing import (

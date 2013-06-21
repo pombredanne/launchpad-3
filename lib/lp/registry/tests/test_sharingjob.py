@@ -35,7 +35,7 @@ from lp.registry.model.sharingjob import (
     SharingJobDerived,
     SharingJobType,
     )
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.tests import block_on_job

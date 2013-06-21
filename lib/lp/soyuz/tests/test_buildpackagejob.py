@@ -15,11 +15,7 @@ from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.log.logger import DevNullLogger
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.soyuz.enums import (
@@ -157,7 +153,7 @@ class TestBuildPackageJob(TestBuildJobBase):
         # j=job, p=processor, v=virtualized, e=estimated_duration, s=score
 
         # First mark all builds in the sample data as already built.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(BinaryPackageBuild)
         sample_data = store.find(BinaryPackageBuild)
         for build in sample_data:
             build.buildstate = BuildStatus.FULLYBUILT
@@ -480,7 +476,7 @@ class TestBuildPackageJobScore(TestCaseWithFactory):
             self.assertScoreWriteableByTeam(
                 archive, getUtility(ILaunchpadCelebrities).commercial_admin)
 
-            
+
 class TestBuildPackageJobPostProcess(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer

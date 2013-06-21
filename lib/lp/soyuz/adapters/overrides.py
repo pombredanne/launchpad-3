@@ -31,7 +31,7 @@ from zope.interface import (
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database import bulk
 from lp.services.database.decoratedresultset import DecoratedResultSet
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagename import BinaryPackageName

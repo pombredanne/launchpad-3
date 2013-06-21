@@ -16,17 +16,12 @@ import sys
 import time
 
 import transaction
-from zope.component import getUtility
 from zope.interface import (
     implements,
     Interface,
     )
 
-from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
+from lp.services.database.interfaces import IMasterStore
 import lp.services.scripts
 
 
@@ -288,7 +283,8 @@ class DBLoopTuner(LoopTuner):
     def _blockWhenLagged(self):
         """When database replication lag is high, block until it drops."""
         # Lag is most meaningful on the master.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        from lp.services.librarian.model import LibraryFileAlias
+        store = IMasterStore(LibraryFileAlias)
         msg_counter = 0
         while not self._isTimedOut():
             lag = store.execute("SELECT replication_lag()").get_one()[0]
@@ -311,7 +307,8 @@ class DBLoopTuner(LoopTuner):
         bloat worse."""
         if self.long_running_transaction is None:
             return
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        from lp.services.librarian.model import LibraryFileAlias
+        store = IMasterStore(LibraryFileAlias)
         msg_counter = 0
         while not self._isTimedOut():
             results = list(store.execute("""

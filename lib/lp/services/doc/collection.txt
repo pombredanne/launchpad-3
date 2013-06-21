@@ -14,10 +14,10 @@ Kumquats are very simple things.  All they have is a key to identify
 them.
 
     >>> from storm.locals import Count, Int, Storm
-    >>> from lp.services.database.interfaces import (
-    ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    >>> from lp.registry.model.product import Product
+    >>> from lp.services.database.interfaces import IMasterStore
 
-    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    >>> store = IMasterStore(Product)
     >>> ok = store.execute("CREATE TEMP TABLE Kumquat(id integer UNIQUE)")
     >>> class Kumquat(Storm):
     ...     __storm_table__ = 'Kumquat'

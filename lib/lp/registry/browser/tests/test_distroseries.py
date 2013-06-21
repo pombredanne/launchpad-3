@@ -54,11 +54,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
-from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import flush_database_caches
 from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
@@ -530,9 +526,9 @@ class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
                 "member of Team Teamy Team Team may be able to help."))
 
     def load_afresh(self, thing):
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         naked_thing = removeSecurityProxy(thing)
-        naked_thing = store.get(naked_thing.__class__, naked_thing.id)
+        naked_thing = IStore(naked_thing.__class__).get(
+            naked_thing.__class__, naked_thing.id)
         return ProxyFactory(naked_thing)
 
     def fail_job_with_error(self, job, error):

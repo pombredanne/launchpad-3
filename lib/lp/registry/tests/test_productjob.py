@@ -51,7 +51,7 @@ from lp.registry.model.productjob import (
     SevenDayCommercialExpirationJob,
     ThirtyDayCommercialExpirationJob,
     )
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
 from lp.services.propertycache import clear_property_cache

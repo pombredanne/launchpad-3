@@ -6,7 +6,7 @@ First, set all the bugs to private.
 
     >>> from zope.security.interfaces import Unauthorized
     >>> from BeautifulSoup import BeautifulStoneSoup as BSS
-    >>> from lp.services.database.lpstorm import IStore
+    >>> from lp.services.database.interfaces import IStore
     >>> import transaction
     >>> from lp.bugs.model.bug import Bug
     >>> from lp.app.enums import InformationType

@@ -13,15 +13,12 @@ from storm.locals import (
     Reference,
     Storm,
     )
-from zope.component import getUtility
 from zope.interface import implements
 
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
+    IMasterStore,
+    IStore,
     )
 from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.sourcepackageformat import (
@@ -52,15 +49,13 @@ class SourcePackageFormatSelectionSet:
 
     def getBySeriesAndFormat(self, distroseries, format):
         """See `ISourcePackageFormatSelection`."""
-        return getUtility(IStoreSelector).get(
-            MAIN_STORE, DEFAULT_FLAVOR).find(
-                SourcePackageFormatSelection, distroseries=distroseries,
-                format=format).one()
+        return IStore(SourcePackageFormatSelection).find(
+            SourcePackageFormatSelection, distroseries=distroseries,
+            format=format).one()
 
     def add(self, distroseries, format):
         """See `ISourcePackageFormatSelection`."""
         spfs = SourcePackageFormatSelection()
         spfs.distroseries = distroseries
         spfs.format = format
-        return getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR).add(
-            spfs)
+        return IMasterStore(SourcePackageFormatSelection).add(spfs)

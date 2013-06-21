@@ -33,7 +33,7 @@ from lp.registry.model.karma import (
     )
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.lpstorm import (
+from lp.services.database.interfaces import (
     ISlaveStore,
     IStore,
     )
