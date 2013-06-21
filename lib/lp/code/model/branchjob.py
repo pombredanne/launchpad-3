@@ -262,7 +262,7 @@ class BranchJobDerived(BaseRunnableJob):
     @classmethod
     def iterReady(cls):
         """See `IRevisionMailJobSource`."""
-        jobs = IMasterStore(cls).find(
+        jobs = IMasterStore(Branch).find(
             (BranchJob),
             And(BranchJob.job_type == cls.class_job_type,
                 BranchJob.job == Job.id,

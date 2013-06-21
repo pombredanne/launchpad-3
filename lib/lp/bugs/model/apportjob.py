@@ -185,7 +185,7 @@ class ProcessApportBlobJob(ApportJobDerived):
         # We also include jobs which have been completed when checking
         # for exisiting jobs, since a BLOB should only be processed
         # once.
-        job_for_blob = IStore(cls).find(
+        job_for_blob = IStore(ApportJob).find(
             ApportJob,
             ApportJob.blob == blob,
             ApportJob.job_type == cls.class_job_type,

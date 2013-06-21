@@ -329,7 +329,7 @@ class FTPArchiveHandler:
                 BinaryPackageRelease.binpackageformat
                     != BinaryPackageFormat.DDEB)
 
-        result_set = IStore.using(*origins).find(
+        result_set = IStore(BinaryPackageName).using(*origins).find(
             (BinaryPackageName.name, Component.name, Section.name,
              DistroArchSeries.architecturetag,
              BinaryPackagePublishingHistory.priority,
@@ -539,7 +539,8 @@ class FTPArchiveHandler:
 
         :return: a `ResultSet` with the source files information tuples.
         """
-        result_set = IStore.using(SourcePackageFilePublishing).find(
+        store = IStore(SourcePackagePublishingHistory)
+        result_set = store.using(SourcePackageFilePublishing).find(
             (SourcePackageFilePublishing.sourcepackagename,
              SourcePackageFilePublishing.libraryfilealiasfilename,
              SourcePackageFilePublishing.componentname),
@@ -597,7 +598,7 @@ class FTPArchiveHandler:
                 BinaryPackageRelease.binpackageformat
                     != BinaryPackageFormat.DDEB)
 
-        result_set = IStore.find(
+        result_set = IStore(SourcePackageRelease).find(
             columns, *(join_conditions + select_conditions))
         return result_set.order_by(
             BinaryPackagePublishingHistory.id, BinaryPackageFile.id)

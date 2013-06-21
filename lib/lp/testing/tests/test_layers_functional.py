@@ -233,7 +233,9 @@ class BaseTestCase(testtools.TestCase):
                     want_librarian_working,
                     'Librarian should be fully operational'
                     )
-        except (AttributeError, ComponentLookupError):
+        # Since we use IMasterStore that doesn't throw either AttributeError
+        # or ComponentLookupError.
+        except TypeError:
             self.failIf(
                     want_librarian_working,
                     'Librarian not operational as component architecture '
