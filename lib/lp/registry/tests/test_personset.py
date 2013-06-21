@@ -22,12 +22,16 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     TeamEmailAddressError,
     )
+from lp.registry.model.codeofconduct import SignedCodeOfConduct
 from lp.registry.model.person import Person
 from lp.services.database.lpstorm import (
     IMasterStore,
     IStore,
     )
-from lp.services.database.sqlbase import cursor
+from lp.services.database.sqlbase import (
+    cursor,
+    flush_database_caches,
+    )
 from lp.services.identity.interfaces.account import (
     AccountCreationRationale,
     AccountStatus,
@@ -105,9 +109,7 @@ class TestPersonSet(TestCaseWithFactory):
         # The getPrecachedPersonsFromIDs() method should only make one
         # query to load all the extraneous data. Accessing the
         # attributes should then cause zero queries.
-        person_ids = [
-            self.factory.makePerson().id
-            for i in range(3)]
+        person_ids = [self.factory.makePerson().id for i in range(3)]
 
         with StormStatementRecorder() as recorder:
             persons = list(self.person_set.getPrecachedPersonsFromIDs(
@@ -125,6 +127,20 @@ class TestPersonSet(TestCaseWithFactory):
                 person.archive
                 person.preferredemail
         self.assertThat(recorder, HasQueryCount(LessThan(1)))
+
+    def test_getPrecachedPersonsFromIDs_is_ubuntu_coc_signer(self):
+        # getPrecachedPersonsFromIDs() sets is_ubuntu_coc_signer
+        # correctly.
+        person_ids = [self.factory.makePerson().id for i in range(3)]
+        SignedCodeOfConduct(owner=person_ids[0], active=True)
+        flush_database_caches()
+
+        persons = list(
+            self.person_set.getPrecachedPersonsFromIDs(
+                person_ids, need_ubuntu_coc=True))
+        self.assertContentEqual(
+            zip(person_ids, [True, False, False]),
+            [(p.id, p.is_ubuntu_coc_signer) for p in persons])
 
     def test_getByOpenIDIdentifier_returns_person(self):
         # getByOpenIDIdentifier takes a full OpenID identifier and
