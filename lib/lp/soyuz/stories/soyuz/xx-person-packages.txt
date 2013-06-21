@@ -192,9 +192,11 @@ records.
 Create some new source packages, source1 and source2, both created by cprov
 so that they appear in his +packages page.
 
+    >>> from storm.expr import SQL
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.services.database.constants import UTC_NOW
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> from lp.soyuz.enums import PackagePublishingStatus
 
@@ -210,7 +212,8 @@ so that they appear in his +packages page.
     >>> source1 = test_publisher.getPubSource(
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     sourcename='source1',
-    ...     archive=cprov.archive)
+    ...     archive=cprov.archive,
+    ...     date_uploaded=UTC_NOW - SQL("INTERVAL '1 second'"))
     >>> source1.sourcepackagerelease.creator=cprov
     >>> source1_mark = source1.copyTo(
     ...     source1.distroseries, source1.pocket, mark.archive)
@@ -263,16 +266,16 @@ both packages:
     >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> nopriv_browser.open("http://launchpad.dev/~cprov/+related-packages")
     >>> print_ppa_rows(nopriv_browser)
-    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
-        ...ago None
     source2 PPA named p3a for No Priv... Ubuntutest Breezy-autotest 666
+        ...ago None
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-packages")
     >>> print_ppa_rows(admin_browser)
-    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
-        ...ago None
     source2 PPA named p3a for No Priv... Ubuntutest Breezy-autotest 666
+        ...ago None
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None
 
 Let's move the publication of source1 from mark's public archive to his
