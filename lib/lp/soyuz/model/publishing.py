@@ -366,6 +366,7 @@ class IndexStanzaFields:
     """Store and format ordered Index Stanza fields."""
 
     def __init__(self):
+        self._names_lower = set()
         self.fields = []
 
     def append(self, name, value):
@@ -373,12 +374,16 @@ class IndexStanzaFields:
 
         Then we can use the FIFO-like behaviour in makeOutput().
         """
+        if name.lower() in self._names_lower:
+            return
+        self._names_lower.add(name.lower())
         self.fields.append((name, value))
 
     def extend(self, entries):
         """Extend the internal list with the key-value pairs in entries.
         """
-        self.fields.extend(entries)
+        for name, value in entries:
+            self.append(name, value)
 
     def makeOutput(self):
         """Return a line-by-line aggregation of appended fields.
@@ -391,8 +396,8 @@ class IndexStanzaFields:
             if not value:
                 continue
 
-            # do not add separation space for the special field 'Files'
-            if name != 'Files':
+            # do not add separation space for the special file list fields.
+            if name not in ('Files', 'Checksums-Sha1', 'Checksums-Sha256'):
                 value = ' %s' % value
 
             # XXX Michael Nelson 20090930 bug=436182. We have an issue
@@ -721,16 +726,23 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         name = release.sourcepackagename.name
         return "%s %s in %s" % (name, release.version, self.distroseries.name)
 
+    def _formatFileList(self, l):
+        return ''.join('\n %s %s %s' % ((h,) + f) for (h, f) in l)
+
     def buildIndexStanzaFields(self):
         """See `IPublishing`."""
         # Special fields preparation.
         spr = self.sourcepackagerelease
         pool_path = makePoolPath(spr.name, self.component.name)
-        files_subsection = ''.join(
-            ['\n %s %s %s' % (spf.libraryfile.content.md5,
-                              spf.libraryfile.content.filesize,
-                              spf.libraryfile.filename)
-             for spf in spr.files])
+        files_list = []
+        sha1_list = []
+        sha256_list = []
+        for spf in spr.files:
+            common = (
+                spf.libraryfile.content.filesize, spf.libraryfile.filename)
+            files_list.append((spf.libraryfile.content.md5, common))
+            sha1_list.append((spf.libraryfile.content.sha1, common))
+            sha256_list.append((spf.libraryfile.content.sha256, common))
         # Filling stanza options.
         fields = IndexStanzaFields()
         fields.append('Package', spr.name)
@@ -746,7 +758,10 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append('Standards-Version', spr.dsc_standards_version)
         fields.append('Format', spr.dsc_format)
         fields.append('Directory', pool_path)
-        fields.append('Files', files_subsection)
+        fields.append('Files', self._formatFileList(files_list))
+        fields.append('Checksums-Sha1', self._formatFileList(sha1_list))
+        fields.append('Checksums-Sha256', self._formatFileList(sha256_list))
+        fields.append('Homepage', spr.homepage)
         if spr.user_defined_fields:
             fields.extend(spr.user_defined_fields)
 
@@ -1013,6 +1028,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         bin_size = bin_file.libraryfile.content.filesize
         bin_md5 = bin_file.libraryfile.content.md5
         bin_sha1 = bin_file.libraryfile.content.sha1
+        bin_sha256 = bin_file.libraryfile.content.sha256
         bin_filepath = os.path.join(
             makePoolPath(spr.name, self.component.name), bin_filename)
         # description field in index is an association of summary and
@@ -1066,6 +1082,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append('Size', bin_size)
         fields.append('MD5sum', bin_md5)
         fields.append('SHA1', bin_sha1)
+        fields.append('SHA256', bin_sha256)
         fields.append(
             'Phased-Update-Percentage', self.phased_update_percentage)
         fields.append('Description', bin_description)
