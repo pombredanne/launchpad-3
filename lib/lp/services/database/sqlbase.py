@@ -62,8 +62,8 @@ from lp.services.database.interfaces import (
     IMasterObject,
     IMasterStore,
     ISQLBase,
-    IStoreSelector,
     IStore,
+    IStoreSelector,
     MAIN_STORE,
     )
 from lp.services.propertycache import clear_property_cache
