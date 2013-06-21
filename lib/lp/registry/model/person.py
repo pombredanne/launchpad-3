@@ -3791,14 +3791,15 @@ class PersonSet:
                     KarmaTotalCache.person == Person.id))
             columns.append(KarmaTotalCache)
         if need_ubuntu_coc:
-            columns.append(Alias(Exists(
-                Select(
-                    SignedCodeOfConduct,
-                    tables=[SignedCodeOfConduct],
-                    where=And(
-                        Person._is_ubuntu_coc_signer_condition(),
-                        SignedCodeOfConduct.ownerID == Person.id))),
-                name='is_ubuntu_coc_signer'))
+            columns.append(
+                Alias(
+                    Exists(Select(
+                        SignedCodeOfConduct,
+                        tables=[SignedCodeOfConduct],
+                        where=And(
+                            Person._is_ubuntu_coc_signer_condition(),
+                            SignedCodeOfConduct.ownerID == Person.id))),
+                    name='is_ubuntu_coc_signer'))
         if need_location:
             # New people have no location rows
             origin.append(
