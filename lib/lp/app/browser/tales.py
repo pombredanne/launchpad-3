@@ -1749,7 +1749,8 @@ class PackageBuildFormatterAPI(ObjectFormatterAPI):
 
     def link(self, view_name, rootsite=None):
         build = self._context
-        if not check_permission('launchpad.View', build):
+        if (not check_permission('launchpad.View', build) or
+            not check_permission('launchpad.View', build.archive.owner)):
             return 'private job'
 
         url = self.url(view_name=view_name, rootsite=rootsite)

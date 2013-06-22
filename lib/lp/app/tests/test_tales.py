@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """tales.py doctests."""
@@ -28,6 +28,7 @@ from lp.app.browser.tales import (
 from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.webapp.authorization import (
+    check_permission,
     clear_cache,
     precache_permission_for_objects,
     )
@@ -474,3 +475,35 @@ class TestDateTimeFormatterAPI(TestCase):
         """Values in seconds are reported as "less than a minute."""
         self.assertEqual('less than a minute',
             self.getDurationsince(timedelta(0, 59)))
+
+
+class TestPackageBuildFormatterAPI(TestCaseWithFactory):
+    """Tests for PackageBuildFormatterAPI."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def _make_public_build_for_private_team(self):
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        team_owner = self.factory.makePerson()
+        private_team = self.factory.makeTeam(
+            owner=team_owner, visibility=PersonVisibility.PRIVATE)
+        p3a = self.factory.makeArchive(owner=private_team, private=True)
+        build = self.factory.makeBinaryPackageBuild(
+            source_package_release=spph.sourcepackagerelease, archive=p3a)
+        return build, p3a, team_owner
+
+    def test_public_build_private_team_no_permission(self):
+        # A `PackageBuild` for a public `SourcePackageRelease` in an archive
+        # for a private team is rendered gracefully when the user has no
+        # permission.
+        build, _, _ = self._make_public_build_for_private_team()
+        # Make sure this is a valid test; the build itself must be public.
+        self.assertTrue(check_permission('launchpad.View', build))
+        self.assertEqual('private job', format_link(build))
+
+    def test_public_build_private_team_with_permission(self):
+        # Members of a private team can see their builds.
+        build, p3a, team_owner = self._make_public_build_for_private_team()
+        login_person(team_owner)
+        self.assertIn(
+            "[%s/%s]" % (p3a.owner.name, p3a.name), format_link(build))
