@@ -58,14 +58,15 @@ class TestDistroArchSeriesWebservice(TestCaseWithFactory):
         #See note above regarding testing of length of .entries
         self.assertEqual(1, len(ws_distroseries.architectures.entries))
 
-    def test_setChroot_random_user(self):
-        # Random users are not allowed to set chroots.
+    def test_setChroot_removeChroot_random_user(self):
+        # Random users are not allowed to set or remove chroots.
         das = self.factory.makeDistroArchSeries()
         user = self.factory.makePerson()
         webservice = launchpadlib_for("testing", user, version='devel')
         ws_das = ws_object(webservice, das)
         self.assertRaises(
             Unauthorized, ws_das.setChroot, data='xyz',sha1sum='0')
+        self.assertRaises(Unauthorized, ws_das.removeChroot)
 
     def test_setChroot_wrong_sha1sum(self):
         # If the sha1sum calculated is different, the chroot is not set.
@@ -76,7 +77,7 @@ class TestDistroArchSeriesWebservice(TestCaseWithFactory):
         self.assertRaises(
             BadRequest, ws_das.setChroot, data='zyx', sha1sum='x')
 
-    def test_setChroot(self):
+    def test_setChroot_removeChroot(self):
         das = self.factory.makeDistroArchSeries()
         user = das.distroseries.distribution.main_archive.owner
         expected_file = 'chroot-%s-%s-%s.tar.bz2' % (
@@ -87,3 +88,5 @@ class TestDistroArchSeriesWebservice(TestCaseWithFactory):
         sha1 = hashlib.sha1('abcxyz').hexdigest()
         ws_das.setChroot(data='abcxyz', sha1sum=sha1)
         self.assertTrue(ws_das.chroot_url.endswith(expected_file))
+        ws_das.removeChroot()
+        self.assertIsNone(ws_das.chroot_url)

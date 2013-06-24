@@ -209,6 +209,11 @@ class IDistroArchSeriesModerate(Interface):
         The SHA-1 checksum must match the chroot file.
         """
 
+    @export_write_operation()
+    @operation_for_version("devel")
+    def removeChroot():
+        """Remove the chroot tarball used for builds in this architecture."""
+
 
 class IDistroArchSeries(IDistroArchSeriesPublic, IDistroArchSeriesModerate):
     """An architecture for a distroseries."""
