@@ -65,7 +65,7 @@ class TestDistroArchSeriesWebservice(TestCaseWithFactory):
         webservice = launchpadlib_for("testing", user, version='devel')
         ws_das = ws_object(webservice, das)
         self.assertRaises(
-            Unauthorized, ws_das.setChroot, data='xyz',sha1sum='0')
+            Unauthorized, ws_das.setChroot, data='xyz', sha1sum='0')
         self.assertRaises(Unauthorized, ws_das.removeChroot)
 
     def test_setChroot_wrong_sha1sum(self):
