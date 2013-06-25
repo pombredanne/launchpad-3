@@ -1287,7 +1287,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1_malformed_section")
         self.processUpload(uploadprocessor, upload_dir)
         expected = (
-            'Wrong number of fields in Files line in .changes.\n'
+            'Wrong number of fields in Files field line.\n'
             'Further error processing not possible because of a '
             'critical previous error.')
         self.assertEqual(

@@ -82,14 +82,13 @@ class TestDetermineFileClassAndName(TestCase):
 
 class TestMergeFileLists(TestCase):
 
-    def test_merge_file_lists(self):
+    def test_all_hashes(self):
         # merge_file_lists returns a dict mapping filename to
         # ({algo: hash}, size, component_and_section, priority).
         files = [
             ('a', '1', 'd', 'e', 'foo.deb'), ('b', '2', 's', 'o', 'bar.dsc')]
         checksums_sha1 = [('aa', '1', 'foo.deb'), ('bb', '2', 'bar.dsc')]
         checksums_sha256 = [('aaa', '1', 'foo.deb'), ('bbb', '2', 'bar.dsc')]
-
         self.assertEqual(
             [("foo.deb",
               {'MD5': 'a', 'SHA1': 'aa', 'SHA256': 'aaa'}, '1', 'd', 'e'),
@@ -97,16 +96,48 @@ class TestMergeFileLists(TestCase):
               {'MD5': 'b', 'SHA1': 'bb', 'SHA256': 'bbb'}, '2', 's', 'o')],
              merge_file_lists(files, checksums_sha1, checksums_sha256))
 
-    def test_merge_file_lists_with_just_md5(self):
-        # merge_file_lists copies with the omission of SHA1 or SHA256
+    def test_just_md5(self):
+        # merge_file_lists copes with the omission of SHA1 or SHA256
         # hashes.
         files = [
             ('a', '1', 'd', 'e', 'foo.deb'), ('b', '2', 's', 'o', 'bar.dsc')]
-
         self.assertEqual(
             [("foo.deb", {'MD5': 'a'}, '1', 'd', 'e'),
              ("bar.dsc", {'MD5': 'b'}, '2', 's', 'o')],
              merge_file_lists(files, None, None))
+
+    def test_duplicate_filename_is_rejected(self):
+        # merge_file_lists rejects fields with duplicated filenames.
+        files = [
+            ('a', '1', 'd', 'e', 'foo.deb'), ('b', '2', 's', 'o', 'foo.deb')]
+        self.assertRaisesWithContent(
+            UploadError, "Duplicate filenames in Files field.",
+            merge_file_lists, files, None, None)
+
+    def test_differing_file_lists_are_rejected(self):
+        # merge_file_lists rejects Checksums-* fields which are present
+        # but have a different set of filenames.
+        files = [
+            ('a', '1', 'd', 'e', 'foo.deb'), ('b', '2', 's', 'o', 'bar.dsc')]
+        sha1s = [('aa', '1', 'foo.deb')]
+        sha256s = [('aaa', '1', 'foo.deb')]
+        self.assertRaisesWithContent(
+            UploadError, "Mismatch between Checksums-Sha1 and Files fields.",
+            merge_file_lists, files, sha1s, None)
+        self.assertRaisesWithContent(
+            UploadError, "Mismatch between Checksums-Sha256 and Files fields.",
+            merge_file_lists, files, None, sha256s)
+
+    def test_differing_file_sizes_are_rejected(self):
+        # merge_file_lists rejects Checksums-* fields which are present
+        # but have a different set of filenames.
+        files = [('a', '1', 'd', 'e', 'foo.deb')]
+        sha1s = [('aa', '1', 'foo.deb')]
+        sha1s_bad_size = [('aa', '2', 'foo.deb')]
+        self.assertEqual(1, len(merge_file_lists(files, sha1s, None)))
+        self.assertRaisesWithContent(
+            UploadError, "Mismatch between Checksums-Sha1 and Files fields.",
+            merge_file_lists, files, sha1s_bad_size, None)
 
 
 class ChangesFileTests(TestCase):
