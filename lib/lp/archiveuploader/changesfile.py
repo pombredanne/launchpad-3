@@ -13,8 +13,10 @@ __all__ = [
     'CannotDetermineFileTypeError',
     'ChangesFile',
     'determine_file_class_and_name',
+    'merge_file_lists',
     ]
 
+from collections import defaultdict
 import os
 
 from lp.archiveuploader.dscfile import (
@@ -48,6 +50,34 @@ from lp.soyuz.enums import BinaryPackageFileType
 
 class CannotDetermineFileTypeError(Exception):
     """The type of the given file could not be determined."""
+
+
+def parse_file_list(s):
+    # files lines from a changes file are always of the form:
+    # CHECKSUM SIZE [COMPONENT/]SECTION PRIORITY FILENAME
+    processed = []
+    for line in s.strip().split('\n'):
+        split = line.strip().split()
+        if len(split) != 5:
+            raise UploadError(
+                "Wrong number of fields in Files line in .changes")
+        processed.append(split)
+    return processed
+
+
+def merge_file_lists(files, checksums_sha1, checksums_sha256):
+    hash_map = defaultdict(dict)
+    for sha1, size, filename in checksums_sha1:
+        hash_map[filename]['SHA1'] = sha1
+    for sha256, size, filename in checksums_sha256:
+        hash_map[filename]['SHA256'] = sha256
+
+    complete_files = []
+    for md5, size, section, priority, filename in files:
+        hash_map[filename]['MD5'] = md5
+        complete_files.append(
+            (filename, hash_map[filename], size, section, priority))
+    return complete_files
 
 
 class ChangesFile(SignableTagFile):
@@ -173,17 +203,12 @@ class ChangesFile(SignableTagFile):
         all exceptions that are generated while processing all mentioned
         files.
         """
+        files_lines = parse_file_list(self._dict['Files'])
+        raw_files = merge_file_lists(files_lines, [], [])
+
         files = []
-        for fileline in self._dict['Files'].strip().split("\n"):
-            # files lines from a changes file are always of the form:
-            # CHECKSUM SIZE [COMPONENT/]SECTION PRIORITY FILENAME
-            try:
-                md5, size, component_and_section, priority_name, filename = (
-                    fileline.strip().split())
-            except ValueError:
-                yield UploadError(
-                    "Wrong number of fields in Files line in .changes.")
-                continue
+        for attr in raw_files:
+            filename, hashes, size, component_and_section, priority_name = attr
             filepath = os.path.join(self.dirname, filename)
             try:
                 if self.isCustom(component_and_section):
@@ -191,7 +216,7 @@ class ChangesFile(SignableTagFile):
                     # otherwise the tarballs in custom uploads match
                     # with source_match.
                     file_instance = CustomUploadFile(
-                        filepath, dict(MD5=md5), size, component_and_section,
+                        filepath, hashes, size, component_and_section,
                         priority_name, self.policy, self.logger)
                 else:
                     try:
@@ -203,7 +228,7 @@ class ChangesFile(SignableTagFile):
                         continue
 
                     file_instance = cls(
-                        filepath, dict(MD5=md5), size, component_and_section,
+                        filepath, hashes, size, component_and_section,
                         priority_name, package, self.version, self,
                         self.policy, self.logger)
 

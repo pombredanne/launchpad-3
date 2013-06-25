@@ -15,6 +15,7 @@ from lp.archiveuploader.changesfile import (
     CannotDetermineFileTypeError,
     ChangesFile,
     determine_file_class_and_name,
+    merge_file_lists,
     )
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
@@ -77,6 +78,24 @@ class TestDetermineFileClassAndName(TestCase):
             CannotDetermineFileTypeError,
             determine_file_class_and_name,
             'foo')
+
+
+class TestMergeFileLists(TestCase):
+
+    def test_merge_file_lists(self):
+        # merge_file_lists returns a dict mapping filename to
+        # ({algo: hash}, size, component_and_section, priority).
+        files = [
+            ('a', '1', 'd', 'e', 'foo.deb'), ('b', '2', 's', 'o', 'bar.dsc')]
+        checksums_sha1 = [('aa', '1', 'foo.deb'), ('bb', '2', 'bar.dsc')]
+        checksums_sha256 = [('aaa', '1', 'foo.deb'), ('bbb', '2', 'bar.dsc')]
+
+        self.assertEqual(
+            [("foo.deb",
+              {'MD5': 'a', 'SHA1': 'aa', 'SHA256': 'aaa'}, '1', 'd', 'e'),
+             ("bar.dsc",
+              {'MD5': 'b', 'SHA1': 'bb', 'SHA256': 'bbb'}, '2', 's', 'o')],
+             merge_file_lists(files, checksums_sha1, checksums_sha256))
 
 
 class ChangesFileTests(TestCase):
