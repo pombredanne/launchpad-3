@@ -52,15 +52,15 @@ class CannotDetermineFileTypeError(Exception):
     """The type of the given file could not be determined."""
 
 
-def parse_file_list(s):
+def parse_file_list(s, field_name, count):
     # files lines from a changes file are always of the form:
     # CHECKSUM SIZE [COMPONENT/]SECTION PRIORITY FILENAME
     processed = []
     for line in s.strip().split('\n'):
         split = line.strip().split()
-        if len(split) != 5:
+        if len(split) != count:
             raise UploadError(
-                "Wrong number of fields in Files line in .changes")
+                "Wrong number of fields in %s line in .changes." % field_name)
         processed.append(split)
     return processed
 
@@ -203,7 +203,11 @@ class ChangesFile(SignableTagFile):
         all exceptions that are generated while processing all mentioned
         files.
         """
-        files_lines = parse_file_list(self._dict['Files'])
+        try:
+            files_lines = parse_file_list(self._dict['Files'], 'Files', 5)
+        except UploadError as e:
+            yield e
+            return
         raw_files = merge_file_lists(files_lines, [], [])
 
         files = []

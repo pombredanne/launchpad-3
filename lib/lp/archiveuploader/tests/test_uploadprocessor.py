@@ -1286,10 +1286,12 @@ class TestUploadProcessor(TestUploadProcessorBase):
         uploadprocessor = self.setupBreezyAndGetUploadProcessor()
         upload_dir = self.queueUpload("bar_1.0-1_malformed_section")
         self.processUpload(uploadprocessor, upload_dir)
-        self.assertRejectionMessage(
-            uploadprocessor,
-            'Wrong number of fields in Files line in .changes.',
-            with_file=False)
+        expected = (
+            'Wrong number of fields in Files line in .changes.\n'
+            'Further error processing not possible because of a '
+            'critical previous error.')
+        self.assertEqual(
+            expected, uploadprocessor.last_processed_upload.rejection_message)
 
     def testUploadWithUnknownComponentIsRejected(self):
         uploadprocessor = self.setupBreezyAndGetUploadProcessor()
