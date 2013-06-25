@@ -198,6 +198,7 @@ class IDistroArchSeriesPublic(IHasOwner):
         this distro arch series.
         """
 
+
 class IDistroArchSeriesModerate(Interface):
 
     @operation_parameters(data=Bytes(), sha1sum=Text())
@@ -205,9 +206,14 @@ class IDistroArchSeriesModerate(Interface):
     @operation_for_version("devel")
     def setChroot(data, sha1sum):
         """Set the chroot tarball used for builds in this architecture.
-        
+
         The SHA-1 checksum must match the chroot file.
         """
+
+    @export_write_operation()
+    @operation_for_version("devel")
+    def removeChroot():
+        """Remove the chroot tarball used for builds in this architecture."""
 
 
 class IDistroArchSeries(IDistroArchSeriesPublic, IDistroArchSeriesModerate):

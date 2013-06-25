@@ -189,6 +189,10 @@ class DistroArchSeries(SQLBase):
             raise InvalidChrootUploaded("Chroot upload checksums do not match")
         self.addOrUpdateChroot(lfa)
 
+    def removeChroot(self):
+        """See `IDistroArchSeries`."""
+        self.addOrUpdateChroot(None)
+
     def searchBinaryPackages(self, text):
         """See `IDistroArchSeries`."""
         from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
