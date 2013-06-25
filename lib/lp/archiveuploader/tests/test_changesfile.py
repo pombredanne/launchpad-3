@@ -278,6 +278,52 @@ class ChangesFileTests(TestCase):
                 size=1791, priority_name="optional",
                 component_name="main", section_name="python"))
 
+    def test_processFiles_additional_checksums(self):
+        # processFiles parses the Checksums-Sha1 and Checksums-Sha256
+        # fields if present.
+        contents = self.getBaseChanges()
+        md5 = "d2bd347b3fed184fe28e112695be491c"
+        sha1 = "378b3498ead213d35a82033a6e9196014a5ef25c"
+        sha256 = (
+            "39bb3bad01bf931b34f3983536c0f331e4b4e3e38fb78abfc75e5b09"
+            "efd6507f")
+        contents["Checksums-Sha1"] = [{
+            "sha1": sha1, "size": "1791",
+            "name": "dulwich_0.4.1-1_i386.deb"}]
+        contents["Checksums-Sha256"] = [{
+            "sha256": sha256, "size": "1791",
+            "name": "dulwich_0.4.1-1_i386.deb"}]
+        changes = self.createChangesFile("mypkg_0.1_i386.changes", contents)
+        self.assertEqual([], list(changes.processFiles()))
+        [file] = changes.files
+        self.assertEqual(DebBinaryUploadFile, type(file))
+        self.assertThat(
+            file,
+            MatchesStructure.byEquality(
+                filepath=changes.dirname + "/dulwich_0.4.1-1_i386.deb",
+                checksums=dict(MD5=md5, SHA1=sha1, SHA256=sha256),
+                size=1791, priority_name="optional",
+                component_name="main", section_name="python"))
+
+    def test_processFiles_additional_checksums_must_match(self):
+        # processFiles ensures that Files, Checksums-Sha1 and
+        # Checksums-Sha256 all list the same files.
+        contents = self.getBaseChanges()
+        contents["Checksums-Sha1"] = [{
+            "sha1": "aaa", "size": "1791", "name": "doesnotexist.deb"}]
+        changes = self.createChangesFile("mypkg_0.1_i386.changes", contents)
+        [error] = list(changes.processFiles())
+        self.assertEqual(
+            "Mismatch between Checksums-Sha1 and Files fields.", error[0])
+
+    def test_processFiles_rejects_duplicate_filenames(self):
+        # processFiles ensures that Files lists each file only once.
+        contents = self.getBaseChanges()
+        contents['Files'].append(contents['Files'][0])
+        changes = self.createChangesFile("mypkg_0.1_i386.changes", contents)
+        [error] = list(changes.processFiles())
+        self.assertEqual("Duplicate filenames in Files field.", error[0])
+
 
 class TestSignatureVerification(TestCase):
 

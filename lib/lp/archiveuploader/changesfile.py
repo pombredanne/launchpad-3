@@ -55,6 +55,8 @@ class CannotDetermineFileTypeError(Exception):
 def parse_file_list(s, field_name, count):
     # files lines from a changes file are always of the form:
     # CHECKSUM SIZE [COMPONENT/]SECTION PRIORITY FILENAME
+    if s is None:
+        return None
     processed = []
     for line in s.strip().split('\n'):
         split = line.strip().split()
@@ -236,12 +238,18 @@ class ChangesFile(SignableTagFile):
         all exceptions that are generated while processing all mentioned
         files.
         """
+        sha1_lines = None
+        sha256_lines = None
         try:
             files_lines = parse_file_list(self._dict['Files'], 'Files', 5)
+            sha1_lines = parse_file_list(
+                self._dict.get('Checksums-Sha1'), 'Checksums-Sha1', 3)
+            sha256_lines = parse_file_list(
+                self._dict.get('Checksums-Sha256'), 'Checksums-Sha256', 3)
+            raw_files = merge_file_lists(files_lines, sha1_lines, sha256_lines)
         except UploadError as e:
             yield e
             return
-        raw_files = merge_file_lists(files_lines, [], [])
 
         files = []
         for attr in raw_files:
