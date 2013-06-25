@@ -67,10 +67,12 @@ def parse_file_list(s, field_name, count):
 
 def merge_file_lists(files, checksums_sha1, checksums_sha256):
     hash_map = defaultdict(dict)
-    for sha1, size, filename in checksums_sha1:
-        hash_map[filename]['SHA1'] = sha1
-    for sha256, size, filename in checksums_sha256:
-        hash_map[filename]['SHA256'] = sha256
+    if checksums_sha1 is not None:
+        for sha1, size, filename in checksums_sha1:
+            hash_map[filename]['SHA1'] = sha1
+    if checksums_sha256 is not None:
+        for sha256, size, filename in checksums_sha256:
+            hash_map[filename]['SHA256'] = sha256
 
     complete_files = []
     for md5, size, section, priority, filename in files:

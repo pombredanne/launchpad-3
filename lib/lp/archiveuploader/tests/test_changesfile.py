@@ -97,6 +97,17 @@ class TestMergeFileLists(TestCase):
               {'MD5': 'b', 'SHA1': 'bb', 'SHA256': 'bbb'}, '2', 's', 'o')],
              merge_file_lists(files, checksums_sha1, checksums_sha256))
 
+    def test_merge_file_lists_with_just_md5(self):
+        # merge_file_lists copies with the omission of SHA1 or SHA256
+        # hashes.
+        files = [
+            ('a', '1', 'd', 'e', 'foo.deb'), ('b', '2', 's', 'o', 'bar.dsc')]
+
+        self.assertEqual(
+            [("foo.deb", {'MD5': 'a'}, '1', 'd', 'e'),
+             ("bar.dsc", {'MD5': 'b'}, '2', 's', 'o')],
+             merge_file_lists(files, None, None))
+
 
 class ChangesFileTests(TestCase):
     """Tests for ChangesFile."""
