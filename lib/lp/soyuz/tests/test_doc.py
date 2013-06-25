@@ -107,12 +107,6 @@ def uploadQueueTearDown(test):
     logout()
 
 
-def manageChrootSetup(test):
-    """Set up the manage-chroot.txt test."""
-    setUp(test)
-    switch_dbuser("fiera")
-
-
 special = {
     'package-cache.txt': LayeredDocFileSuite(
         '../doc/package-cache.txt',
@@ -151,11 +145,6 @@ special = {
         ),
     'sourcepackagerelease-build-lookup.txt': LayeredDocFileSuite(
         '../doc/sourcepackagerelease-build-lookup.txt',
-        layer=LaunchpadZopelessLayer,
-        ),
-    'manage-chroot.txt': LayeredDocFileSuite(
-        '../doc/manage-chroot.txt',
-        setUp=manageChrootSetup,
         layer=LaunchpadZopelessLayer,
         ),
     }
