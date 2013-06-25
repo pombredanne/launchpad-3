@@ -17,6 +17,7 @@ __all__ = [
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
+    export_operation_as,
     export_write_operation,
     exported,
     mutator_for,
@@ -70,6 +71,7 @@ from lp.blueprints.interfaces.specificationworkitem import (
     )
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.bugs.interfaces.buglink import IBugLinkTarget
+from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.code.interfaces.branchlink import IHasLinkedBranches
 from lp.registry.interfaces.milestone import IMilestone
 from lp.registry.interfaces.person import IPerson
@@ -476,20 +478,38 @@ class ISpecificationView(IHasOwner, IHasLinkedBranches):
         """Return the list of email addresses that receive notifications."""
 
     # goal management
+    @call_with(proposer=REQUEST_USER)
+    @operation_parameters(
+        goal=Reference(schema=IBugTarget, title=_('Target')))
+    @export_write_operation()
+    @operation_for_version("devel")
     def proposeGoal(goal, proposer):
         """Propose this spec for a series or distroseries."""
 
+    @call_with(decider=REQUEST_USER)
+    @export_operation_as('acceptGoal')
+    @export_write_operation()
+    @operation_for_version("devel")
     def acceptBy(decider):
         """Mark the spec as being accepted for its current series goal."""
 
+    @call_with(decider=REQUEST_USER)
+    @export_operation_as('declineGoal')
+    @export_write_operation()
+    @operation_for_version("devel")
     def declineBy(decider):
         """Mark the spec as being declined as a goal for the proposed
         series.
         """
 
-    has_accepted_goal = Attribute('Is true if this specification has been '
-        'proposed as a goal for a specific series, '
-        'and the drivers of that series have accepted the goal.')
+    has_accepted_goal = exported(
+        Bool(title=_('Series goal is accepted'),
+             readonly=True, required=True,
+             description=_(
+                'Is true if this specification has been '
+                'proposed as a goal for a specific series, '
+                'and the drivers of that series have accepted the goal.')),
+        as_of="devel")
 
     # lifecycle management
     def updateLifecycleStatus(user):
