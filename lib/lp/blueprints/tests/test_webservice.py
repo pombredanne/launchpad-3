@@ -424,6 +424,7 @@ class TestSpecificationGoalHandling(SpecificationWebserviceTestCase):
             spec = ws_object(launchpad, db_spec)
             series = ws_object(launchpad, self.series)
             spec.proposeGoal(goal=series)
+            transaction.commit()
             self.assertEqual(db_spec.goal, self.series)
             self.assertFalse(spec.has_accepted_goal)
 
@@ -432,6 +433,7 @@ class TestSpecificationGoalHandling(SpecificationWebserviceTestCase):
             launchpad = self.factory.makeLaunchpadService(person=self.driver)
             spec = ws_object(launchpad, db_spec)
             spec.acceptGoal()
+            transaction.commit()
             self.assertTrue(spec.has_accepted_goal)
 
     def test_goal_propose_decline_and_clear(self):
@@ -444,6 +446,7 @@ class TestSpecificationGoalHandling(SpecificationWebserviceTestCase):
             spec = ws_object(launchpad, db_spec)
             series = ws_object(launchpad, self.series)
             spec.proposeGoal(goal=series)
+            transaction.commit()
             self.assertEqual(db_spec.goal, self.series)
             self.assertFalse(spec.has_accepted_goal)
 
@@ -452,9 +455,11 @@ class TestSpecificationGoalHandling(SpecificationWebserviceTestCase):
             launchpad = self.factory.makeLaunchpadService(person=self.driver)
             spec = ws_object(launchpad, db_spec)
             spec.declineGoal()
+            transaction.commit()
             self.assertFalse(spec.has_accepted_goal)
             self.assertEqual(db_spec.goal, self.series)
 
             # Clear series goal as a driver
             spec.proposeGoal(goal=None)
+            transaction.commit()
             self.assertIsNone(db_spec.goal)

@@ -204,10 +204,6 @@
   <subscriber
       for="lp.blueprints.interfaces.specification.ISpecification
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
-      handler="lp.blueprints.subscribers.specification_goalstatus"/>
-  <subscriber
-      for="lp.blueprints.interfaces.specification.ISpecification
-           lazr.lifecycle.interfaces.IObjectModifiedEvent"
       handler="lp.blueprints.mail.notifications.notify_specification_modified"/>
 
   <!-- SpecificationSet -->

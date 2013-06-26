@@ -9,17 +9,6 @@ from lp.registry.interfaces.person import IPerson
 from lp.services.database.sqlbase import block_implicit_flushes
 
 
-@block_implicit_flushes
-def specification_goalstatus(spec, event):
-    """Update goalstatus if productseries or distroseries is changed."""
-    delta = spec.getDelta(
-        event.object_before_modification, IPerson(event.user))
-    if delta is None:
-        return
-    if delta.productseries is not None or delta.distroseries is not None:
-        spec.goalstatus = SpecificationGoalStatus.PROPOSED
-
-
 def specification_update_lifecycle_status(spec, event):
     """Mark the specification as started and/or complete if appropriate.
 

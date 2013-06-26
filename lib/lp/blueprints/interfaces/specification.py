@@ -480,7 +480,8 @@ class ISpecificationView(IHasOwner, IHasLinkedBranches):
     # goal management
     @call_with(proposer=REQUEST_USER)
     @operation_parameters(
-        goal=Reference(schema=IBugTarget, title=_('Target')))
+        goal=Reference(schema=IBugTarget, title=_('Target'),
+        required=False, default=None))
     @export_write_operation()
     @operation_for_version("devel")
     def proposeGoal(goal, proposer):
