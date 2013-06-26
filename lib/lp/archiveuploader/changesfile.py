@@ -13,10 +13,8 @@ __all__ = [
     'CannotDetermineFileTypeError',
     'ChangesFile',
     'determine_file_class_and_name',
-    'merge_file_lists',
     ]
 
-from collections import defaultdict
 import os
 
 from lp.archiveuploader.dscfile import (
@@ -31,15 +29,17 @@ from lp.archiveuploader.nascentuploadfile import (
     SourceUploadFile,
     splitComponentAndSection,
     UdebBinaryUploadFile,
-    UploadError,
-    UploadWarning,
     )
 from lp.archiveuploader.utils import (
     determine_binary_file_type,
     determine_source_file_type,
+    merge_file_lists,
+    parse_file_list,
     re_changes_file_name,
     re_isadeb,
     re_issource,
+    UploadError,
+    UploadWarning,
     )
 from lp.registry.interfaces.sourcepackage import (
     SourcePackageFileType,
@@ -50,79 +50,6 @@ from lp.soyuz.enums import BinaryPackageFileType
 
 class CannotDetermineFileTypeError(Exception):
     """The type of the given file could not be determined."""
-
-
-def parse_file_list(s, field_name, count):
-    # files lines from a changes file are always of the form:
-    # CHECKSUM SIZE [COMPONENT/]SECTION PRIORITY FILENAME
-    if s is None:
-        return None
-    processed = []
-    for line in s.strip().split('\n'):
-        split = line.strip().split()
-        if len(split) != count:
-            raise UploadError(
-                "Wrong number of fields in %s field line." % field_name)
-        processed.append(split)
-    return processed
-
-
-def merge_file_lists(files, checksums_sha1, checksums_sha256, changes=True):
-    """Merge Files, Checksums-Sha1 and Checksums-Sha256 fields.
-
-    Turns lists of (MD5, size, [extras, ...,] filename),
-    (SHA1, size, filename) and (SHA256, size, filename) into a list of
-    (filename, {algo: hash}, size, [extras, ...], filename).
-
-    Duplicate filenames, size conflicts, and files with missing hashes
-    will cause an UploadError.
-
-    'extras' is (section, priority) if changes=True, otherwise it is omitted.
-    """
-    # Preprocess the additional hashes, counting each (filename, size)
-    # that we see.
-    file_hashes = defaultdict(dict)
-    hash_files = defaultdict(lambda: defaultdict(int))
-    for (algo, checksums) in [
-            ('SHA1', checksums_sha1), ('SHA256', checksums_sha256)]:
-        if checksums is None:
-            continue
-        for hash, size, filename in checksums:
-            file_hashes[filename][algo] = hash
-            hash_files[algo][(filename, size)] += 1
-
-    # Produce a file list containing all of the present hashes, counting
-    # each filename and (filename, size) that we see. We'll throw away
-    # the complete list later if we discover that there are duplicates
-    # or mismatches with the Checksums-* fields.
-    complete_files = []
-    file_counter = defaultdict(int)
-    for attrs in files:
-        if changes:
-            md5, size, section, priority, filename = attrs
-        else:
-            md5, size, filename = attrs
-        file_hashes[filename]['MD5'] = md5
-        file_counter[filename] += 1
-        hash_files['MD5'][(filename, size)] += 1
-        if changes:
-            complete_files.append(
-                (filename, file_hashes[filename], size, section, priority))
-        else:
-            complete_files.append(
-                (filename, file_hashes[filename], size))
-
-    # Ensure that each filename was only listed in Files once.
-    if set(file_counter.itervalues()) - set([1]):
-        raise UploadError("Duplicate filenames in Files field.")
-
-    # Ensure that the Checksums-Sha1 and Checksums-Sha256 fields, if
-    # present, list the same filenames and sizes as the Files field.
-    for field, algo in [
-            ('Checksums-Sha1', 'SHA1'), ('Checksums-Sha256', 'SHA256')]:
-        if algo in hash_files and hash_files[algo] != hash_files['MD5']:
-            raise UploadError("Mismatch between %s and Files fields." % field)
-    return complete_files
 
 
 class ChangesFile(SignableTagFile):

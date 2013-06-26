@@ -14,8 +14,6 @@ __all__ = [
     'PackageUploadFile',
     'SourceUploadFile',
     'UdebBinaryUploadFile',
-    'UploadError',
-    'UploadWarning',
     'splitComponentAndSection',
     ]
 
@@ -46,6 +44,7 @@ from lp.archiveuploader.utils import (
     re_taint_free,
     re_valid_pkg_name,
     re_valid_version,
+    UploadError,
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.services.encoding import guess as guess_encoding
@@ -63,14 +62,6 @@ from lp.soyuz.model.files import SourceFileMixin
 
 
 apt_pkg.init_system()
-
-
-class UploadError(Exception):
-    """All upload errors are returned in this form."""
-
-
-class UploadWarning(Warning):
-    """All upload warnings are returned in this form."""
 
 
 class TarFileDateChecker:
