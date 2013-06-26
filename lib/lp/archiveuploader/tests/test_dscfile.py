@@ -172,7 +172,7 @@ class TestDscFileLibrarian(TestCaseWithFactory):
         policy.distroseries = self.factory.makeDistroSeries()
         policy.archive = self.factory.makeArchive()
         policy.distro = policy.distroseries.distribution
-        return DSCFile(dsc_path, 'digest', 0, 'main/editors',
+        return DSCFile(dsc_path, {}, 0, 'main/editors',
             'priority', 'package', 'version', Changes, policy, logger)
 
     def test_ReadOnlyCWD(self):

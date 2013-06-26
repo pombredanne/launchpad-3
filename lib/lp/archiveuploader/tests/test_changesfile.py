@@ -8,6 +8,7 @@ __metaclass__ = type
 import os
 
 from debian.deb822 import Changes
+from testtools.matchers import MatchesStructure
 from zope.component import getUtility
 
 from lp.archiveuploader.changesfile import (
@@ -115,7 +116,7 @@ class ChangesFileTests(TestCase):
             "size": "1791",
             "section": "python",
             "priority": "optional",
-            "name": "dulwich_0.4.1-1.dsc"}]
+            "name": "dulwich_0.4.1-1_i386.deb"}]
         return contents
 
     def test_newline_in_Binary_field(self):
@@ -200,6 +201,21 @@ class ChangesFileTests(TestCase):
         self.assertRaises(
             UploadError,
             self.createChangesFile, "mypkg_0.1_i386.changes", contents)
+
+    def test_processFiles(self):
+        # processFiles sets self.files to a list of NascentUploadFiles.
+        contents = self.getBaseChanges()
+        changes = self.createChangesFile("mypkg_0.1_i386.changes", contents)
+        self.assertEqual([], list(changes.processFiles()))
+        [file] = changes.files
+        self.assertEqual(DebBinaryUploadFile, type(file))
+        self.assertThat(
+            file,
+            MatchesStructure.byEquality(
+                filepath=changes.dirname + "/dulwich_0.4.1-1_i386.deb",
+                checksums=dict(MD5="d2bd347b3fed184fe28e112695be491c"),
+                size=1791, priority_name="optional",
+                component_name="main", section_name="python"))
 
 
 class TestSignatureVerification(TestCase):

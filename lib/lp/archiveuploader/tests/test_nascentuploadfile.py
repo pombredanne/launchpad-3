@@ -19,6 +19,7 @@ from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
     CustomUploadFile,
     DebBinaryUploadFile,
+    NascentUploadFile,
     UploadError,
     )
 from lp.archiveuploader.tests import AbsolutelyAnythingGoesUploadPolicy
@@ -31,7 +32,10 @@ from lp.soyuz.enums import (
     PackageUploadCustomFormat,
     )
 from lp.testing import TestCaseWithFactory
-from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 class NascentUploadFileTestCase(TestCaseWithFactory):
@@ -51,15 +55,49 @@ class NascentUploadFileTestCase(TestCaseWithFactory):
 
         :param filename: Filename to use
         :param contents: Contents of the file
-        :return: Tuple with path, digest and size
+        :return: Tuple with path, md5 and size
         """
         path = os.path.join(self.makeTemporaryDirectory(), filename)
-        f = open(path, 'w')
-        try:
+        with open(path, 'w') as f:
             f.write(contents)
-        finally:
-            f.close()
-        return (path, hashlib.sha1(contents), len(contents))
+        return (
+            path, hashlib.md5(contents).hexdigest(),
+            hashlib.sha1(contents).hexdigest(), len(contents))
+
+
+class TestNascentUploadFile(NascentUploadFileTestCase):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_checkSizeAndCheckSum_validates_size(self):
+        (path, md5, sha1, size) = self.writeUploadFile('foo', 'bar')
+        nuf = NascentUploadFile(
+            path, dict(MD5=md5), size - 1, 'main/devel', None, None, None)
+        self.assertRaisesWithContent(
+            UploadError,
+            'File foo mentioned in the changes has a size mismatch. 3 != 2',
+            nuf.checkSizeAndCheckSum)
+
+    def test_checkSizeAndCheckSum_validates_md5(self):
+        (path, md5, sha1, size) = self.writeUploadFile('foo', 'bar')
+        nuf = NascentUploadFile(
+            path, dict(MD5='deadbeef'), size, 'main/devel', None, None, None)
+        self.assertRaisesWithContent(
+            UploadError,
+            'File foo mentioned in the changes has a MD5 mismatch. '
+            '37b51d194a7513e45b56f6524f2d51f2 != deadbeef',
+            nuf.checkSizeAndCheckSum)
+
+    def test_checkSizeAndCheckSum_validates_sha1(self):
+        (path, md5, sha1, size) = self.writeUploadFile('foo', 'bar')
+        nuf = NascentUploadFile(
+            path, dict(MD5=md5, SHA1='foobar'), size, 'main/devel', None,
+            None, None)
+        self.assertRaisesWithContent(
+            UploadError,
+            'File foo mentioned in the changes has a SHA1 mismatch. '
+            '62cdb7020ff920e5aa642c3d4066950dd1f01f4d != foobar',
+            nuf.checkSizeAndCheckSum)
 
 
 class CustomUploadFileTests(NascentUploadFileTestCase):
@@ -70,9 +108,9 @@ class CustomUploadFileTests(NascentUploadFileTestCase):
     def createCustomUploadFile(self, filename, contents,
                                component_and_section, priority_name):
         """Simple wrapper to create a CustomUploadFile."""
-        (path, digest, size) = self.writeUploadFile(filename, contents)
+        (path, md5, sha1, size) = self.writeUploadFile(filename, contents)
         uploadfile = CustomUploadFile(
-            path, digest, size, component_and_section, priority_name,
+            path, dict(MD5=md5), size, component_and_section, priority_name,
             self.policy, self.logger)
         return uploadfile
 
@@ -156,11 +194,8 @@ class PackageUploadFileTestCase(NascentUploadFileTestCase):
     def createChangesFile(self, filename, changes):
         tempdir = self.makeTemporaryDirectory()
         path = os.path.join(tempdir, filename)
-        changes_fd = open(path, "w")
-        try:
+        with open(path, "w") as changes_fd:
             changes.dump(changes_fd)
-        finally:
-            changes_fd.close()
         return ChangesFile(path, self.policy, self.logger)
 
 
@@ -185,12 +220,12 @@ class DSCFileTests(PackageUploadFileTestCase):
 
     def createDSCFile(self, filename, dsc, component_and_section,
                       priority_name, package, version, changes):
-        (path, digest, size) = self.writeUploadFile(filename, dsc.dump())
+        (path, md5, sha1, size) = self.writeUploadFile(filename, dsc.dump())
         if changes:
             self.assertEquals([], list(changes.processAddresses()))
         return DSCFile(
-            path, digest, size, component_and_section, priority_name, package,
-            version, changes, self.policy, self.logger)
+            path, dict(MD5=md5), size, component_and_section, priority_name,
+            package, version, changes, self.policy, self.logger)
 
     def test_filetype(self):
         # The filetype attribute is set based on the file extension.
@@ -332,10 +367,10 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
             data = self.createDeb(filename, data_format)
         else:
             data = "DUMMY DATA"
-        (path, digest, size) = self.writeUploadFile(filename, data)
+        (path, md5, sha1, size) = self.writeUploadFile(filename, data)
         return DebBinaryUploadFile(
-            path, digest, size, component_and_section, priority_name, package,
-            version, changes, self.policy, self.logger)
+            path, dict(MD5=md5), size, component_and_section, priority_name,
+            package, version, changes, self.policy, self.logger)
 
     def test_unknown_priority(self):
         # Unknown priorities automatically get changed to 'extra'.
