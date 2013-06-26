@@ -149,6 +149,4 @@ rejected.
     >>> bin.is_rejected
     True
     >>> print bin.rejection_message
-    Duplicated debug packages: debug-bin-dbgsym 1.0-1 (i386)
     Orphaned debug packages: not-debug-bin-dbgsym 1.0-1 (i386)
-
