@@ -11,8 +11,7 @@ __all__ = [
     'DpkgSourceError',
     'extract_dpkg_source',
     'get_source_file_extension',
-    'merge_file_lists',
-    'parse_file_list',
+    'parse_and_merge_file_lists',
     'ParseMaintError',
     'prefix_multi_line_string',
     're_taint_free',
@@ -377,3 +376,14 @@ def merge_file_lists(files, checksums_sha1, checksums_sha256, changes=True):
         if algo in hash_files and hash_files[algo] != hash_files['MD5']:
             raise UploadError("Mismatch between %s and Files fields." % field)
     return complete_files
+
+
+def parse_and_merge_file_lists(tag_dict, changes=True):
+    files_lines = parse_file_list(
+        tag_dict['Files'], 'Files', 5 if changes else 3)
+    sha1_lines = parse_file_list(
+        tag_dict.get('Checksums-Sha1'), 'Checksums-Sha1', 3)
+    sha256_lines = parse_file_list(
+        tag_dict.get('Checksums-Sha256'), 'Checksums-Sha256', 3)
+    return merge_file_lists(
+        files_lines, sha1_lines, sha256_lines, changes=changes)

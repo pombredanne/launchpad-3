@@ -43,8 +43,7 @@ from lp.archiveuploader.utils import (
     DpkgSourceError,
     extract_dpkg_source,
     get_source_file_extension,
-    merge_file_lists,
-    parse_file_list,
+    parse_and_merge_file_lists,
     ParseMaintError,
     re_is_component_orig_tar_ext,
     re_issource,
@@ -350,16 +349,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         except UploadError as error:
             yield error
 
-        sha1_lines = None
-        sha256_lines = None
         try:
-            files_lines = parse_file_list(self._dict['Files'], 'Files', 3)
-            sha1_lines = parse_file_list(
-                self._dict.get('Checksums-Sha1'), 'Checksums-Sha1', 3)
-            sha256_lines = parse_file_list(
-                self._dict.get('Checksums-Sha256'), 'Checksums-Sha256', 3)
-            raw_files = merge_file_lists(
-                files_lines, sha1_lines, sha256_lines, changes=False)
+            raw_files = parse_and_merge_file_lists(self._dict, changes=False)
         except UploadError as e:
             yield e
             return

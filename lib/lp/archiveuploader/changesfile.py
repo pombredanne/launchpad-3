@@ -33,8 +33,7 @@ from lp.archiveuploader.nascentuploadfile import (
 from lp.archiveuploader.utils import (
     determine_binary_file_type,
     determine_source_file_type,
-    merge_file_lists,
-    parse_file_list,
+    parse_and_merge_file_lists,
     re_changes_file_name,
     re_isadeb,
     re_issource,
@@ -175,15 +174,8 @@ class ChangesFile(SignableTagFile):
         all exceptions that are generated while processing all mentioned
         files.
         """
-        sha1_lines = None
-        sha256_lines = None
         try:
-            files_lines = parse_file_list(self._dict['Files'], 'Files', 5)
-            sha1_lines = parse_file_list(
-                self._dict.get('Checksums-Sha1'), 'Checksums-Sha1', 3)
-            sha256_lines = parse_file_list(
-                self._dict.get('Checksums-Sha256'), 'Checksums-Sha256', 3)
-            raw_files = merge_file_lists(files_lines, sha1_lines, sha256_lines)
+            raw_files = parse_and_merge_file_lists(self._dict, changes=True)
         except UploadError as e:
             yield e
             return

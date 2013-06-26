@@ -15,7 +15,6 @@ from lp.archiveuploader.changesfile import (
     CannotDetermineFileTypeError,
     ChangesFile,
     determine_file_class_and_name,
-    merge_file_lists,
     )
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
@@ -29,6 +28,7 @@ from lp.archiveuploader.tests import (
     AbsolutelyAnythingGoesUploadPolicy,
     datadir,
     )
+from lp.archiveuploader.utils import merge_file_lists
 from lp.archiveuploader.uploadpolicy import InsecureUploadPolicy
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.log.logger import BufferLogger
