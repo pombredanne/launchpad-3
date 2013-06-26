@@ -28,6 +28,7 @@ from lp.archiveuploader.tests import (
     AbsolutelyAnythingGoesUploadPolicy,
     datadir,
     )
+from lp.archiveuploader.utils import merge_file_lists
 from lp.archiveuploader.uploadpolicy import InsecureUploadPolicy
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.log.logger import BufferLogger
@@ -77,6 +78,79 @@ class TestDetermineFileClassAndName(TestCase):
             CannotDetermineFileTypeError,
             determine_file_class_and_name,
             'foo')
+
+
+class TestMergeFileLists(TestCase):
+
+    def test_all_hashes(self):
+        # merge_file_lists returns a list of
+        # (filename, {algo: hash}, size, component_and_section, priority).
+        files = [
+            ('a', '1', 'd', 'e', 'foo.deb'), ('b', '2', 's', 'o', 'bar.dsc')]
+        checksums_sha1 = [('aa', '1', 'foo.deb'), ('bb', '2', 'bar.dsc')]
+        checksums_sha256 = [('aaa', '1', 'foo.deb'), ('bbb', '2', 'bar.dsc')]
+        self.assertEqual(
+            [("foo.deb",
+              {'MD5': 'a', 'SHA1': 'aa', 'SHA256': 'aaa'}, '1', 'd', 'e'),
+             ("bar.dsc",
+              {'MD5': 'b', 'SHA1': 'bb', 'SHA256': 'bbb'}, '2', 's', 'o')],
+             merge_file_lists(files, checksums_sha1, checksums_sha256))
+
+    def test_all_hashes_for_dsc(self):
+        # merge_file_lists in DSC mode returns a list of
+        # (filename, {algo: hash}, size).
+        files = [
+            ('a', '1', 'foo.deb'), ('b', '2', 'bar.dsc')]
+        checksums_sha1 = [('aa', '1', 'foo.deb'), ('bb', '2', 'bar.dsc')]
+        checksums_sha256 = [('aaa', '1', 'foo.deb'), ('bbb', '2', 'bar.dsc')]
+        self.assertEqual(
+            [("foo.deb", {'MD5': 'a', 'SHA1': 'aa', 'SHA256': 'aaa'}, '1'),
+             ("bar.dsc", {'MD5': 'b', 'SHA1': 'bb', 'SHA256': 'bbb'}, '2')],
+             merge_file_lists(
+                 files, checksums_sha1, checksums_sha256, changes=False))
+
+    def test_just_md5(self):
+        # merge_file_lists copes with the omission of SHA1 or SHA256
+        # hashes.
+        files = [
+            ('a', '1', 'd', 'e', 'foo.deb'), ('b', '2', 's', 'o', 'bar.dsc')]
+        self.assertEqual(
+            [("foo.deb", {'MD5': 'a'}, '1', 'd', 'e'),
+             ("bar.dsc", {'MD5': 'b'}, '2', 's', 'o')],
+             merge_file_lists(files, None, None))
+
+    def test_duplicate_filename_is_rejected(self):
+        # merge_file_lists rejects fields with duplicated filenames.
+        files = [
+            ('a', '1', 'd', 'e', 'foo.deb'), ('b', '2', 's', 'o', 'foo.deb')]
+        self.assertRaisesWithContent(
+            UploadError, "Duplicate filenames in Files field.",
+            merge_file_lists, files, None, None)
+
+    def test_differing_file_lists_are_rejected(self):
+        # merge_file_lists rejects Checksums-* fields which are present
+        # but have a different set of filenames.
+        files = [
+            ('a', '1', 'd', 'e', 'foo.deb'), ('b', '2', 's', 'o', 'bar.dsc')]
+        sha1s = [('aa', '1', 'foo.deb')]
+        sha256s = [('aaa', '1', 'foo.deb')]
+        self.assertRaisesWithContent(
+            UploadError, "Mismatch between Checksums-Sha1 and Files fields.",
+            merge_file_lists, files, sha1s, None)
+        self.assertRaisesWithContent(
+            UploadError, "Mismatch between Checksums-Sha256 and Files fields.",
+            merge_file_lists, files, None, sha256s)
+
+    def test_differing_file_sizes_are_rejected(self):
+        # merge_file_lists rejects Checksums-* fields which are present
+        # but have a different set of filenames.
+        files = [('a', '1', 'd', 'e', 'foo.deb')]
+        sha1s = [('aa', '1', 'foo.deb')]
+        sha1s_bad_size = [('aa', '2', 'foo.deb')]
+        self.assertEqual(1, len(merge_file_lists(files, sha1s, None)))
+        self.assertRaisesWithContent(
+            UploadError, "Mismatch between Checksums-Sha1 and Files fields.",
+            merge_file_lists, files, sha1s_bad_size, None)
 
 
 class ChangesFileTests(TestCase):
@@ -216,6 +290,52 @@ class ChangesFileTests(TestCase):
                 checksums=dict(MD5="d2bd347b3fed184fe28e112695be491c"),
                 size=1791, priority_name="optional",
                 component_name="main", section_name="python"))
+
+    def test_processFiles_additional_checksums(self):
+        # processFiles parses the Checksums-Sha1 and Checksums-Sha256
+        # fields if present.
+        contents = self.getBaseChanges()
+        md5 = "d2bd347b3fed184fe28e112695be491c"
+        sha1 = "378b3498ead213d35a82033a6e9196014a5ef25c"
+        sha256 = (
+            "39bb3bad01bf931b34f3983536c0f331e4b4e3e38fb78abfc75e5b09"
+            "efd6507f")
+        contents["Checksums-Sha1"] = [{
+            "sha1": sha1, "size": "1791",
+            "name": "dulwich_0.4.1-1_i386.deb"}]
+        contents["Checksums-Sha256"] = [{
+            "sha256": sha256, "size": "1791",
+            "name": "dulwich_0.4.1-1_i386.deb"}]
+        changes = self.createChangesFile("mypkg_0.1_i386.changes", contents)
+        self.assertEqual([], list(changes.processFiles()))
+        [file] = changes.files
+        self.assertEqual(DebBinaryUploadFile, type(file))
+        self.assertThat(
+            file,
+            MatchesStructure.byEquality(
+                filepath=changes.dirname + "/dulwich_0.4.1-1_i386.deb",
+                checksums=dict(MD5=md5, SHA1=sha1, SHA256=sha256),
+                size=1791, priority_name="optional",
+                component_name="main", section_name="python"))
+
+    def test_processFiles_additional_checksums_must_match(self):
+        # processFiles ensures that Files, Checksums-Sha1 and
+        # Checksums-Sha256 all list the same files.
+        contents = self.getBaseChanges()
+        contents["Checksums-Sha1"] = [{
+            "sha1": "aaa", "size": "1791", "name": "doesnotexist.deb"}]
+        changes = self.createChangesFile("mypkg_0.1_i386.changes", contents)
+        [error] = list(changes.processFiles())
+        self.assertEqual(
+            "Mismatch between Checksums-Sha1 and Files fields.", error[0])
+
+    def test_processFiles_rejects_duplicate_filenames(self):
+        # processFiles ensures that Files lists each file only once.
+        contents = self.getBaseChanges()
+        contents['Files'].append(contents['Files'][0])
+        changes = self.createChangesFile("mypkg_0.1_i386.changes", contents)
+        [error] = list(changes.processFiles())
+        self.assertEqual("Duplicate filenames in Files field.", error[0])
 
 
 class TestSignatureVerification(TestCase):

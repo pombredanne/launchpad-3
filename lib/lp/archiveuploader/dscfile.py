@@ -33,8 +33,6 @@ from lp.app.errors import NotFoundError
 from lp.archiveuploader.nascentuploadfile import (
     NascentUploadFile,
     SourceUploadFile,
-    UploadError,
-    UploadWarning,
     )
 from lp.archiveuploader.tagfiles import (
     parse_tagfile_content,
@@ -45,12 +43,15 @@ from lp.archiveuploader.utils import (
     DpkgSourceError,
     extract_dpkg_source,
     get_source_file_extension,
+    parse_and_merge_file_lists,
     ParseMaintError,
     re_is_component_orig_tar_ext,
     re_issource,
     re_valid_pkg_name,
     re_valid_version,
     safe_fix_maintainer,
+    UploadError,
+    UploadWarning,
     )
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import (
@@ -350,10 +351,15 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         except UploadError as error:
             yield error
 
+        try:
+            raw_files = parse_and_merge_file_lists(self._dict, changes=False)
+        except UploadError as e:
+            yield e
+            return
+
         files = []
-        for fileline in self._dict['Files'].strip().split("\n"):
-            # DSC lines are always of the form: CHECKSUM SIZE FILENAME
-            md5, size, filename = fileline.strip().split()
+        for attr in raw_files:
+            filename, hashes, size = attr
             if not re_issource.match(filename):
                 # DSC files only really hold on references to source
                 # files; they are essentially a description of a source
@@ -364,7 +370,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             filepath = os.path.join(self.dirname, filename)
             try:
                 file_instance = DSCUploadedFile(
-                    filepath, dict(MD5=md5), size, self.policy, self.logger)
+                    filepath, hashes, size, self.policy, self.logger)
             except UploadError as error:
                 yield error
             else:

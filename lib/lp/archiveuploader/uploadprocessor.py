@@ -60,12 +60,12 @@ from lp.app.errors import NotFoundError
 from lp.archiveuploader.nascentupload import (
     EarlyReturnUploadError,
     NascentUpload,
-    UploadError,
     )
 from lp.archiveuploader.uploadpolicy import (
     BuildDaemonUploadPolicy,
     UploadPolicyError,
     )
+from lp.archiveuploader.utils import UploadError
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import ISpecificBuildFarmJobSource
 from lp.code.interfaces.sourcepackagerecipebuild import (
