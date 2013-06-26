@@ -33,10 +33,12 @@ from lp.archiveuploader.nascentuploadfile import (
     DebBinaryUploadFile,
     SourceUploadFile,
     UdebBinaryUploadFile,
+    )
+from lp.archiveuploader.utils import (
+    determine_source_file_type,
     UploadError,
     UploadWarning,
     )
-from lp.archiveuploader.utils import determine_source_file_type
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType

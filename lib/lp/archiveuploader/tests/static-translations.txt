@@ -11,7 +11,7 @@ PackageUploadCustomFormat.STATIC_TRANSLATIONS.
 
     >>> from lp.archiveuploader.nascentuploadfile import CustomUploadFile
     >>> custom_upload_file = CustomUploadFile(
-    ...     filepath="", digest="", size=1, priority_name="", policy=None,
+    ...     filepath="", checksums={}, size=1, priority_name="", policy=None,
     ...     component_and_section="main/raw-translations-static", logger=None)
 
     >>> print custom_upload_file.custom_type.name

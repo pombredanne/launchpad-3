@@ -33,8 +33,6 @@ from lp.app.errors import NotFoundError
 from lp.archiveuploader.nascentuploadfile import (
     NascentUploadFile,
     SourceUploadFile,
-    UploadError,
-    UploadWarning,
     )
 from lp.archiveuploader.tagfiles import (
     parse_tagfile_content,
@@ -45,12 +43,15 @@ from lp.archiveuploader.utils import (
     DpkgSourceError,
     extract_dpkg_source,
     get_source_file_extension,
+    parse_and_merge_file_lists,
     ParseMaintError,
     re_is_component_orig_tar_ext,
     re_issource,
     re_valid_pkg_name,
     re_valid_version,
     safe_fix_maintainer,
+    UploadError,
+    UploadWarning,
     )
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import (
@@ -263,7 +264,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
     copyright = None
     changelog = None
 
-    def __init__(self, filepath, digest, size, component_and_section,
+    def __init__(self, filepath, checksums, size, component_and_section,
                  priority, package, version, changes, policy, logger):
         """Construct a DSCFile instance.
 
@@ -276,7 +277,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         from lp.archiveuploader.nascentupload import EarlyReturnUploadError
 
         SourceUploadFile.__init__(
-            self, filepath, digest, size, component_and_section, priority,
+            self, filepath, checksums, size, component_and_section, priority,
             package, version, changes, policy, logger)
         self.parse(verify_signature=not policy.unsigned_dsc_ok)
 
@@ -350,10 +351,15 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         except UploadError as error:
             yield error
 
+        try:
+            raw_files = parse_and_merge_file_lists(self._dict, changes=False)
+        except UploadError as e:
+            yield e
+            return
+
         files = []
-        for fileline in self._dict['Files'].strip().split("\n"):
-            # DSC lines are always of the form: CHECKSUM SIZE FILENAME
-            digest, size, filename = fileline.strip().split()
+        for attr in raw_files:
+            filename, hashes, size = attr
             if not re_issource.match(filename):
                 # DSC files only really hold on references to source
                 # files; they are essentially a description of a source
@@ -364,7 +370,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             filepath = os.path.join(self.dirname, filename)
             try:
                 file_instance = DSCUploadedFile(
-                    filepath, digest, size, self.policy, self.logger)
+                    filepath, hashes, size, self.policy, self.logger)
             except UploadError as error:
                 yield error
             else:
@@ -521,7 +527,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 # dismiss. It prevents us from having scary duplicated
                 # filenames in Librarian and misapplied files in archive,
                 # fixes bug # 38636 and friends.
-                if sub_dsc_file.digest != library_file.content.md5:
+                if sub_dsc_file.checksums['MD5'] != library_file.content.md5:
                     yield UploadError(
                         "File %s already exists in %s, but uploaded version "
                         "has different contents. See more information about "
@@ -721,10 +727,10 @@ class DSCUploadedFile(NascentUploadFile):
           store_in_database() method.
     """
 
-    def __init__(self, filepath, digest, size, policy, logger):
+    def __init__(self, filepath, checksums, size, policy, logger):
         component_and_section = priority = "--no-value--"
         NascentUploadFile.__init__(
-            self, filepath, digest, size, component_and_section,
+            self, filepath, checksums, size, component_and_section,
             priority, policy, logger)
 
     def verify(self):
