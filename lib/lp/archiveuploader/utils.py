@@ -377,5 +377,3 @@ def merge_file_lists(files, checksums_sha1, checksums_sha256, changes=True):
         if algo in hash_files and hash_files[algo] != hash_files['MD5']:
             raise UploadError("Mismatch between %s and Files fields." % field)
     return complete_files
-
-
