@@ -83,8 +83,8 @@ class TestDetermineFileClassAndName(TestCase):
 class TestMergeFileLists(TestCase):
 
     def test_all_hashes(self):
-        # merge_file_lists returns a dict mapping filename to
-        # ({algo: hash}, size, component_and_section, priority).
+        # merge_file_lists returns a list of
+        # (filename, {algo: hash}, size, component_and_section, priority).
         files = [
             ('a', '1', 'd', 'e', 'foo.deb'), ('b', '2', 's', 'o', 'bar.dsc')]
         checksums_sha1 = [('aa', '1', 'foo.deb'), ('bb', '2', 'bar.dsc')]
@@ -95,6 +95,19 @@ class TestMergeFileLists(TestCase):
              ("bar.dsc",
               {'MD5': 'b', 'SHA1': 'bb', 'SHA256': 'bbb'}, '2', 's', 'o')],
              merge_file_lists(files, checksums_sha1, checksums_sha256))
+
+    def test_all_hashes_for_dsc(self):
+        # merge_file_lists in DSC mode returns a list of
+        # (filename, {algo: hash}, size).
+        files = [
+            ('a', '1', 'foo.deb'), ('b', '2', 'bar.dsc')]
+        checksums_sha1 = [('aa', '1', 'foo.deb'), ('bb', '2', 'bar.dsc')]
+        checksums_sha256 = [('aaa', '1', 'foo.deb'), ('bbb', '2', 'bar.dsc')]
+        self.assertEqual(
+            [("foo.deb", {'MD5': 'a', 'SHA1': 'aa', 'SHA256': 'aaa'}, '1'),
+             ("bar.dsc", {'MD5': 'b', 'SHA1': 'bb', 'SHA256': 'bbb'}, '2')],
+             merge_file_lists(
+                 files, checksums_sha1, checksums_sha256, changes=False))
 
     def test_just_md5(self):
         # merge_file_lists copes with the omission of SHA1 or SHA256

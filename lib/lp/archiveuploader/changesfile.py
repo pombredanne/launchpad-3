@@ -67,15 +67,17 @@ def parse_file_list(s, field_name, count):
     return processed
 
 
-def merge_file_lists(files, checksums_sha1, checksums_sha256):
+def merge_file_lists(files, checksums_sha1, checksums_sha256, changes=True):
     """Merge Files, Checksums-Sha1 and Checksums-Sha256 fields.
 
-    Turns lists of (MD5, size, section, priority, filename),
+    Turns lists of (MD5, size, [extras, ...,] filename),
     (SHA1, size, filename) and (SHA256, size, filename) into a list of
-    (filename, {algo: hash}, size, section, priority, filename).
+    (filename, {algo: hash}, size, [extras, ...], filename).
 
     Duplicate filenames, size conflicts, and files with missing hashes
     will cause an UploadError.
+
+    'extras' is (section, priority) if changes=True, otherwise it is omitted.
     """
     # Preprocess the additional hashes, counting each (filename, size)
     # that we see.
@@ -95,12 +97,20 @@ def merge_file_lists(files, checksums_sha1, checksums_sha256):
     # or mismatches with the Checksums-* fields.
     complete_files = []
     file_counter = defaultdict(int)
-    for md5, size, section, priority, filename in files:
+    for attrs in files:
+        if changes:
+            md5, size, section, priority, filename = attrs
+        else:
+            md5, size, filename = attrs
         file_hashes[filename]['MD5'] = md5
         file_counter[filename] += 1
         hash_files['MD5'][(filename, size)] += 1
-        complete_files.append(
-            (filename, file_hashes[filename], size, section, priority))
+        if changes:
+            complete_files.append(
+                (filename, file_hashes[filename], size, section, priority))
+        else:
+            complete_files.append(
+                (filename, file_hashes[filename], size))
 
     # Ensure that each filename was only listed in Files once.
     if set(file_counter.itervalues()) - set([1]):
