@@ -57,9 +57,9 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import (
+    GoalProposeError,
     ISpecification,
     ISpecificationSet,
-    GoalProposeError,
     )
 from lp.blueprints.model.specificationbranch import SpecificationBranch
 from lp.blueprints.model.specificationbug import SpecificationBug
@@ -507,14 +507,16 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
             # we are clearing goals
             self.productseries = None
             self.distroseries = None
-        elif IProductSeries.providedBy(goal):
+        elif (IProductSeries.providedBy(goal) and
+              goal.product == self.target):
             # set the product series as a goal
             self.productseries = goal
             self.goal_proposer = proposer
             self.date_goal_proposed = UTC_NOW
             # and make sure there is no leftover distroseries goal
             self.distroseries = None
-        elif IDistroSeries.providedBy(goal):
+        elif (IDistroSeries.providedBy(goal) and
+              goal.distribution == self.target):
             # set the distroseries goal
             self.distroseries = goal
             self.goal_proposer = proposer

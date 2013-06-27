@@ -6,12 +6,12 @@
 __metaclass__ = type
 
 __all__ = [
+    'GoalProposeError',
     'ISpecification',
     'ISpecificationDelta',
     'ISpecificationPublic',
     'ISpecificationSet',
     'ISpecificationView',
-    'GoalProposeError',
     ]
 
 import httplib
