@@ -1,16 +1,23 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Enterprise ID utilities."""
 
 __metaclass__ = type
 
+from testtools.matchers import Equals
+
+from lp.services.database.interfaces import IStore
 from lp.services.enterpriseid import (
-    enterpriseid_to_object,
+    enterpriseids_to_objects,
     object_to_enterpriseid,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    StormStatementRecorder,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.matchers import HasQueryCount
 
 
 class TestEnterpriseId(TestCaseWithFactory):
@@ -22,8 +29,14 @@ class TestEnterpriseId(TestCaseWithFactory):
         expected = 'lp-development:Person:%d' % person.id
         self.assertEqual(expected, eid)
 
-    def test_enterpriseid_to_object(self):
-        person = self.factory.makePerson()
-        eid = 'lp-development:Person:%d' % person.id
-        obj = enterpriseid_to_object(eid)
-        self.assertEqual(person, obj)
+    def test_enterpriseids_to_objects(self):
+        expected = {}
+        for x in range(10):
+            person = self.factory.makePerson()
+            expected['lp-development:Person:%d' % person.id] = person
+        IStore(expected.values()[0].__class__).invalidate()
+        with StormStatementRecorder() as recorder:
+            objects = enterpriseids_to_objects(expected.keys())
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        self.assertContentEqual(expected.keys(), objects.keys())
+        self.assertContentEqual(expected.values(), objects.values())
