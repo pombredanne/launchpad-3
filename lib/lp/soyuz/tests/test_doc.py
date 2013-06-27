@@ -21,7 +21,6 @@ from lp.testing.layers import (
 from lp.testing.pages import PageTestSuite
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
-    setGlobs,
     setUp,
     tearDown,
     )
@@ -56,14 +55,6 @@ def uploaderSetUp(test):
     """setup the package uploader script tests."""
     setUp(test)
     switch_dbuser('uploader')
-
-
-def builddmasterSetUp(test):
-    """Setup the connection for the build master tests."""
-    test_dbuser = config.builddmaster.dbuser
-    test.globs['test_dbuser'] = test_dbuser
-    switch_dbuser(test_dbuser)
-    setGlobs(test)
 
 
 def statisticianSetUp(test):
