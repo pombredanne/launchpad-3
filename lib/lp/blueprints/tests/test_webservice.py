@@ -415,7 +415,7 @@ class TestSpecificationGoalHandling(SpecificationWebserviceTestCase):
         self.series = self.factory.makeProductSeries(product=self.product)
 
     def test_goal_propose_and_accept(self):
-        # Create spec
+        # Webservice clients can propose and accept spec series goals.
         db_spec = self.factory.makeBlueprint(product=self.product,
                                              owner=self.proposer)
         # Propose for series goal
@@ -437,7 +437,7 @@ class TestSpecificationGoalHandling(SpecificationWebserviceTestCase):
             self.assertTrue(spec.has_accepted_goal)
 
     def test_goal_propose_decline_and_clear(self):
-        # Create spec
+        # Webservice clients can decline and clear spec series goals.
         db_spec = self.factory.makeBlueprint(product=self.product,
                                              owner=self.proposer)
         # Propose for series goal

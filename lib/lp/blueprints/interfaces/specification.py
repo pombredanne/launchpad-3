@@ -11,11 +11,14 @@ __all__ = [
     'ISpecificationPublic',
     'ISpecificationSet',
     'ISpecificationView',
+    'GoalProposeError',
     ]
 
+import httplib
 
 from lazr.restful.declarations import (
     call_with,
+    error_status,
     export_as_webservice_entry,
     export_operation_as,
     export_write_operation,
@@ -86,6 +89,11 @@ from lp.services.fields import (
     )
 from lp.services.webapp import canonical_url
 from lp.services.webapp.escaping import structured
+
+
+@error_status(httplib.BAD_REQUEST)
+class GoalProposeError(Exception):
+    """Invalid series goal for this specification."""
 
 
 class SpecNameField(ContentNameField):
@@ -480,8 +488,9 @@ class ISpecificationView(IHasOwner, IHasLinkedBranches):
     # goal management
     @call_with(proposer=REQUEST_USER)
     @operation_parameters(
-        goal=Reference(schema=IBugTarget, title=_('Target'),
-        required=False, default=None))
+        goal=Reference(
+            schema=IBugTarget, title=_('Target'),
+            required=False, default=None))
     @export_write_operation()
     @operation_for_version("devel")
     def proposeGoal(goal, proposer):

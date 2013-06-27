@@ -59,6 +59,7 @@ from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import (
     ISpecification,
     ISpecificationSet,
+    GoalProposeError,
     )
 from lp.blueprints.model.specificationbranch import SpecificationBranch
 from lp.blueprints.model.specificationbug import SpecificationBug
@@ -521,7 +522,7 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
             # and make sure there is no leftover distroseries goal
             self.productseries = None
         else:
-            raise AssertionError('Inappropriate goal.')
+            raise GoalProposeError('Inappropriate goal.')
         # record who made the proposal, and when
         self.goal_proposer = proposer
         self.date_goal_proposed = UTC_NOW
