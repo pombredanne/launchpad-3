@@ -45,5 +45,5 @@ class TestEnterpriseId(TestCaseWithFactory):
 
     def test_enterpriseids_to_objects_non_existent_id(self):
         objects = enterpriseids_to_objects(
-            ['lp-development:PackageUpload:10000']))
+            ['lp-development:PackageUpload:10000'])
         self.assertEqual({}, objects)
