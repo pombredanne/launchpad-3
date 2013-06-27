@@ -38,23 +38,17 @@ def _known_types():
 
 
 def enterpriseids_to_objects(eids):
-    """Given a list of SOA Enterprise IDs, return a dict that maps the ID to
-    its concrete object."""
-    map_id_to_obj = {}
+    """Dereference multiple SOA Enterprise IDs."""
     obj_id_to_eid = defaultdict(dict)
-    type_ids = _known_types()
-    for kind in type_ids:
-        type_ids[kind] = []
     for eid in eids:
         if not eid.startswith('lp'):
             raise TypeError
-        map_id_to_obj[eid] = None
         scheme = eid.split(':')
-        type_ids[scheme[1]].append(int(scheme[2]))
         obj_id_to_eid[scheme[1]][int(scheme[2])] = eid
     types = _known_types()
-    for kind in types:
-        objs = load(types[kind], type_ids[kind])
+    map_id_to_obj = {}
+    for kind in obj_id_to_eid:
+        objs = load(types[kind], obj_id_to_eid[kind].keys())
         for obj in objs:
             map_id_to_obj[obj_id_to_eid[kind][obj.id]] = obj
     return map_id_to_obj

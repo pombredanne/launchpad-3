@@ -42,11 +42,11 @@ class AuditorClient(Client):
         logs = super(AuditorClient, self).receive(
             obj, operation, actorobj, limit)
         # Process the actors and objects back from enterprise ids.
-        eids = []
+        eids = set()
         for entry in logs['log-entries']:
-            eids.extend([entry['actor'], entry['object']])
+            eids |= set([entry['actor'], entry['object']])
         map_eids_to_obj = enterpriseids_to_objects(eids)
         for entry in logs['log-entries']:
-            entry['actor'] = map_eids_to_obj[entry['actor']]
-            entry['object'] = map_eids_to_obj[entry['object']]
+            entry['actor'] = map_eids_to_obj.get(entry['actor'], None)
+            entry['object'] = map_eids_to_obj.get(entry['object'], None)
         return logs['log-entries']

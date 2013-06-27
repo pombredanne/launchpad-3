@@ -16,12 +16,12 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 
 
 class TestEnterpriseId(TestCaseWithFactory):
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_object_to_enterpriseid(self):
         person = self.factory.makePerson()
@@ -31,12 +31,19 @@ class TestEnterpriseId(TestCaseWithFactory):
 
     def test_enterpriseids_to_objects(self):
         expected = {}
-        for x in range(10):
+        for x in range(5):
             person = self.factory.makePerson()
+            upload = self.factory.makePackageUpload()
             expected['lp-development:Person:%d' % person.id] = person
+            expected['lp-development:PackageUpload:%d' % upload.id] = upload
         IStore(expected.values()[0].__class__).invalidate()
         with StormStatementRecorder() as recorder:
             objects = enterpriseids_to_objects(expected.keys())
-        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        self.assertThat(recorder, HasQueryCount(Equals(2)))
         self.assertContentEqual(expected.keys(), objects.keys())
         self.assertContentEqual(expected.values(), objects.values())
+
+    def test_enterpriseids_to_objects_non_existent_id(self):
+        objects = enterpriseids_to_objects(
+            ['lp-development:PackageUpload:10000']))
+        self.assertEqual({}, objects)
