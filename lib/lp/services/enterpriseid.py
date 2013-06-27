@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Enterprise ID utilities."""
@@ -6,12 +6,14 @@
 __metaclass__ = type
 __all__ = [
     'object_to_enterpriseid',
-    'enterpriseid_to_object',
+    'enterpriseids_to_objects',
     ]
 
+from collections import defaultdict
 import os
 
 from lp.services.config import config
+from lp.services.database.bulk import load
 
 
 def object_to_enterpriseid(obj):
@@ -25,17 +27,28 @@ def object_to_enterpriseid(obj):
     return '%s:%s:%d' % (instance, otype, obj.id)
 
 
-def enterpriseid_to_object(eid):
-    """Given an SOA Enterprise ID, return the object that it references."""
+def _known_types():
     # Circular imports.
     from lp.registry.model.person import Person
     from lp.soyuz.model.queue import PackageUpload
-    scheme = eid.split(':')
-    if not scheme[0].startswith('lp'):
-        raise TypeError
-    known_types = {
+    return {
         'PackageUpload': PackageUpload,
         'Person': Person,
     }
-    klass = known_types[scheme[1]]
-    return klass.get(scheme[2])
+
+
+def enterpriseids_to_objects(eids):
+    """Dereference multiple SOA Enterprise IDs."""
+    dbid_to_eid = defaultdict(dict)
+    for eid in eids:
+        if not eid.startswith('lp'):
+            raise TypeError
+        instance, cls, id = eid.split(':')
+        dbid_to_eid[cls][int(id)] = eid
+    types = _known_types()
+    eid_to_obj = {}
+    for kind in dbid_to_eid:
+        objs = load(types[kind], dbid_to_eid[kind].keys())
+        for obj in objs:
+            eid_to_obj[dbid_to_eid[kind][obj.id]] = obj
+    return eid_to_obj

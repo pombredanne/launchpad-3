@@ -12,7 +12,7 @@ from auditorclient.client import Client
 
 from lp.services.config import config
 from lp.services.enterpriseid import (
-    enterpriseid_to_object,
+    enterpriseids_to_objects,
     object_to_enterpriseid,
     )
 
@@ -42,7 +42,11 @@ class AuditorClient(Client):
         logs = super(AuditorClient, self).receive(
             obj, operation, actorobj, limit)
         # Process the actors and objects back from enterprise ids.
+        eids = set()
         for entry in logs['log-entries']:
-            entry['actor'] = enterpriseid_to_object(entry['actor'])
-            entry['object'] = enterpriseid_to_object(entry['object'])
+            eids |= set([entry['actor'], entry['object']])
+        map_eids_to_obj = enterpriseids_to_objects(eids)
+        for entry in logs['log-entries']:
+            entry['actor'] = map_eids_to_obj.get(entry['actor'], None)
+            entry['object'] = map_eids_to_obj.get(entry['object'], None)
         return logs['log-entries']
