@@ -57,14 +57,14 @@ class AuditorClient(Client):
         try:
             logs = super(AuditorClient, self).receive(
                 obj, operation, actorobj, limit)
-            # Process the actors and objects back from enterprise ids.
-            eids = set()
-            for entry in logs['log-entries']:
-                eids |= set([entry['actor'], entry['object']])
-            map_eids_to_obj = enterpriseids_to_objects(eids)
-            for entry in logs['log-entries']:
-                entry['actor'] = map_eids_to_obj.get(entry['actor'], None)
-                entry['object'] = map_eids_to_obj.get(entry['object'], None)
-            return logs['log-entries']
         finally:
             action.finish()
+        # Process the actors and objects back from enterprise ids.
+        eids = set()
+        for entry in logs['log-entries']:
+            eids |= set([entry['actor'], entry['object']])
+        map_eids_to_obj = enterpriseids_to_objects(eids)
+        for entry in logs['log-entries']:
+            entry['actor'] = map_eids_to_obj.get(entry['actor'], None)
+            entry['object'] = map_eids_to_obj.get(entry['object'], None)
+        return logs['log-entries']
