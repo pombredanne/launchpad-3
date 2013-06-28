@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'GoalProposeError',
     'ISpecification',
     'ISpecificationDelta',
     'ISpecificationPublic',
@@ -13,10 +14,13 @@ __all__ = [
     'ISpecificationView',
     ]
 
+import httplib
 
 from lazr.restful.declarations import (
     call_with,
+    error_status,
     export_as_webservice_entry,
+    export_operation_as,
     export_write_operation,
     exported,
     mutator_for,
@@ -70,6 +74,7 @@ from lp.blueprints.interfaces.specificationworkitem import (
     )
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.bugs.interfaces.buglink import IBugLinkTarget
+from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.code.interfaces.branchlink import IHasLinkedBranches
 from lp.registry.interfaces.milestone import IMilestone
 from lp.registry.interfaces.person import IPerson
@@ -84,6 +89,11 @@ from lp.services.fields import (
     )
 from lp.services.webapp import canonical_url
 from lp.services.webapp.escaping import structured
+
+
+@error_status(httplib.BAD_REQUEST)
+class GoalProposeError(Exception):
+    """Invalid series goal for this specification."""
 
 
 class SpecNameField(ContentNameField):
@@ -410,7 +420,7 @@ class ISpecificationView(IHasOwner, IHasLinkedBranches):
             value_type=Reference(schema=Interface),  # ISpecificationBranch
             readonly=True),
         as_of="devel")
-    
+
     def getDependencies():
         """Specs on which this one depends."""
 
@@ -475,21 +485,14 @@ class ISpecificationView(IHasOwner, IHasLinkedBranches):
     def notificationRecipientAddresses():
         """Return the list of email addresses that receive notifications."""
 
-    # goal management
-    def proposeGoal(goal, proposer):
-        """Propose this spec for a series or distroseries."""
-
-    def acceptBy(decider):
-        """Mark the spec as being accepted for its current series goal."""
-
-    def declineBy(decider):
-        """Mark the spec as being declined as a goal for the proposed
-        series.
-        """
-
-    has_accepted_goal = Attribute('Is true if this specification has been '
-        'proposed as a goal for a specific series, '
-        'and the drivers of that series have accepted the goal.')
+    has_accepted_goal = exported(
+        Bool(title=_('Series goal is accepted'),
+             readonly=True, required=True,
+             description=_(
+                'Is true if this specification has been '
+                'proposed as a goal for a specific series, '
+                'and the drivers of that series have accepted the goal.')),
+        as_of="devel")
 
     # lifecycle management
     def updateLifecycleStatus(user):
@@ -638,9 +641,40 @@ class ISpecificationEditRestricted(Interface):
     def transitionToInformationType(information_type, who):
         """Change the information type of the Specification."""
 
+    @call_with(proposer=REQUEST_USER)
+    @operation_parameters(
+        goal=Reference(
+            schema=IBugTarget, title=_('Target'),
+            required=False, default=None))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def proposeGoal(goal, proposer):
+        """Propose this spec for a series or distroseries."""
+
+
+class ISpecificationDriverRestricted(Interface):
+    """Specification bits protected with launchpad.Driver."""
+
+    @call_with(decider=REQUEST_USER)
+    @export_operation_as('acceptGoal')
+    @export_write_operation()
+    @operation_for_version("devel")
+    def acceptBy(decider):
+        """Mark the spec as being accepted for its current series goal."""
+
+    @call_with(decider=REQUEST_USER)
+    @export_operation_as('declineGoal')
+    @export_write_operation()
+    @operation_for_version("devel")
+    def declineBy(decider):
+        """Mark the spec as being declined as a goal for the proposed
+        series.
+        """
+
 
 class ISpecification(ISpecificationPublic, ISpecificationView,
-                     ISpecificationEditRestricted, IBugLinkTarget):
+                     ISpecificationEditRestricted,
+                     ISpecificationDriverRestricted, IBugLinkTarget):
     """A Specification."""
 
     export_as_webservice_entry(as_of="beta")

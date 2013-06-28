@@ -86,7 +86,10 @@ class SpecificationTests(TestCaseWithFactory):
         productseries = self.factory.makeProductSeries(product=product)
         removeSecurityProxy(productseries).driver = proposer
         specification = self.factory.makeSpecification(product=product)
-        specification.proposeGoal(productseries, proposer)
+        with person_logged_in(specification.owner):
+            specification.assignee = proposer
+        with person_logged_in(proposer):
+            specification.proposeGoal(productseries, proposer)
         self.assertEqual(
             SpecificationGoalStatus.ACCEPTED, specification.goalstatus)
 
@@ -96,7 +99,10 @@ class SpecificationTests(TestCaseWithFactory):
         proposer = self.factory.makePerson()
         productseries = self.factory.makeProductSeries(product=product)
         specification = self.factory.makeSpecification(product=product)
-        specification.proposeGoal(productseries, proposer)
+        with person_logged_in(specification.owner):
+            specification.assignee = proposer
+        with person_logged_in(proposer):
+            specification.proposeGoal(productseries, proposer)
         self.assertEqual(
             SpecificationGoalStatus.PROPOSED, specification.goalstatus)
 
@@ -153,15 +159,14 @@ class SpecificationTests(TestCaseWithFactory):
             CheckerPublic: set((
                 'id', 'information_type', 'private', 'userCanView')),
             'launchpad.LimitedView': set((
-                'acceptBy', 'all_blocked', 'all_deps', 'approver',
-                'approverID', 'assignee', 'assigneeID', 'bug_links', 'bugs',
-                'completer', 'createDependency', 'date_completed',
-                'date_goal_decided', 'date_goal_proposed', 'date_started',
-                'datecreated', 'declineBy', 'definition_status',
-                'dependencies', 'direction_approved', 'distribution',
-                'distroseries', 'drafter', 'drafterID', 'getBranchLink',
-                'getDelta', 'getAllowedInformationTypes', 'getDependencies',
-                'getBlockedSpecs', 'getLinkedBugTasks',
+                'all_blocked', 'all_deps', 'approver', 'approverID',
+                'assignee', 'assigneeID', 'bug_links', 'bugs', 'completer',
+                'createDependency', 'date_completed', 'date_goal_decided',
+                'date_goal_proposed', 'date_started', 'datecreated',
+                'definition_status', 'dependencies', 'direction_approved',
+                'distribution', 'distroseries', 'drafter', 'drafterID',
+                'getBranchLink', 'getDelta', 'getAllowedInformationTypes',
+                'getDependencies', 'getBlockedSpecs', 'getLinkedBugTasks',
                 'getSprintSpecification', 'getSubscriptionByName', 'goal',
                 'goal_decider', 'goal_proposer', 'goalstatus',
                 'has_accepted_goal', 'implementation_status', 'informational',
@@ -169,17 +174,18 @@ class SpecificationTests(TestCaseWithFactory):
                 'is_started', 'lifecycle_status', 'linkBranch', 'linkSprint',
                 'linked_branches', 'man_days', 'milestone', 'name',
                 'notificationRecipientAddresses', 'owner', 'priority',
-                'product', 'productseries', 'proposeGoal', 'removeDependency',
-                'specurl', 'sprint_links', 'sprints', 'starter', 'subscribe',
+                'product', 'productseries', 'removeDependency', 'specurl',
+                'sprint_links', 'sprints', 'starter', 'subscribe',
                 'subscribers', 'subscription', 'subscriptions', 'summary',
                 'superseded_by', 'target', 'title', 'unlinkBranch',
                 'unlinkSprint', 'unsubscribe', 'updateLifecycleStatus',
                 'validateMove', 'whiteboard', 'work_items',
                 'workitems_text')),
             'launchpad.Edit': set((
-                'newWorkItem', 'retarget', 'setDefinitionStatus',
-                'setImplementationStatus', 'setTarget',
+                'newWorkItem', 'proposeGoal', 'retarget',
+                'setDefinitionStatus', 'setImplementationStatus', 'setTarget',
                 'transitionToInformationType', 'updateWorkItems')),
+            'launchpad.Driver': set(('acceptBy', 'declineBy')),
             'launchpad.AnyAllowedPerson': set((
                 'unlinkBug', 'linkBug', 'setWorkItems')),
             }
