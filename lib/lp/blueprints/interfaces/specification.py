@@ -420,7 +420,7 @@ class ISpecificationView(IHasOwner, IHasLinkedBranches):
             value_type=Reference(schema=Interface),  # ISpecificationBranch
             readonly=True),
         as_of="devel")
-    
+
     def getDependencies():
         """Specs on which this one depends."""
 
@@ -484,33 +484,6 @@ class ISpecificationView(IHasOwner, IHasLinkedBranches):
 
     def notificationRecipientAddresses():
         """Return the list of email addresses that receive notifications."""
-
-    # goal management
-    @call_with(proposer=REQUEST_USER)
-    @operation_parameters(
-        goal=Reference(
-            schema=IBugTarget, title=_('Target'),
-            required=False, default=None))
-    @export_write_operation()
-    @operation_for_version("devel")
-    def proposeGoal(goal, proposer):
-        """Propose this spec for a series or distroseries."""
-
-    @call_with(decider=REQUEST_USER)
-    @export_operation_as('acceptGoal')
-    @export_write_operation()
-    @operation_for_version("devel")
-    def acceptBy(decider):
-        """Mark the spec as being accepted for its current series goal."""
-
-    @call_with(decider=REQUEST_USER)
-    @export_operation_as('declineGoal')
-    @export_write_operation()
-    @operation_for_version("devel")
-    def declineBy(decider):
-        """Mark the spec as being declined as a goal for the proposed
-        series.
-        """
 
     has_accepted_goal = exported(
         Bool(title=_('Series goal is accepted'),
@@ -668,9 +641,40 @@ class ISpecificationEditRestricted(Interface):
     def transitionToInformationType(information_type, who):
         """Change the information type of the Specification."""
 
+    @call_with(proposer=REQUEST_USER)
+    @operation_parameters(
+        goal=Reference(
+            schema=IBugTarget, title=_('Target'),
+            required=False, default=None))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def proposeGoal(goal, proposer):
+        """Propose this spec for a series or distroseries."""
+
+
+class ISpecificationDriverRestricted(Interface):
+    """Specification bits protected with launchpad.Driver."""
+
+    @call_with(decider=REQUEST_USER)
+    @export_operation_as('acceptGoal')
+    @export_write_operation()
+    @operation_for_version("devel")
+    def acceptBy(decider):
+        """Mark the spec as being accepted for its current series goal."""
+
+    @call_with(decider=REQUEST_USER)
+    @export_operation_as('declineGoal')
+    @export_write_operation()
+    @operation_for_version("devel")
+    def declineBy(decider):
+        """Mark the spec as being declined as a goal for the proposed
+        series.
+        """
+
 
 class ISpecification(ISpecificationPublic, ISpecificationView,
-                     ISpecificationEditRestricted, IBugLinkTarget):
+                     ISpecificationEditRestricted,
+                     ISpecificationDriverRestricted, IBugLinkTarget):
     """A Specification."""
 
     export_as_webservice_entry(as_of="beta")
