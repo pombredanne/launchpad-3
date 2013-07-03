@@ -4,6 +4,6 @@
 SET client_min_messages=ERROR;
 
 ALTER TABLE job ADD COLUMN json_data TEXT;
-ALTER TABLE job ADD COLUMN type INTEGER;
+ALTER TABLE job ADD COLUMN jobtype INTEGER;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 47, 0);
