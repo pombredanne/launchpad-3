@@ -8,7 +8,6 @@ __all__ = [
     'EnumeratedSubclass',
     'InvalidTransition',
     'Job',
-    'JobStatus',
     'UniversalJobSource',
     ]
 
@@ -19,10 +18,7 @@ import time
 
 from lazr.jobrunner.jobrunner import LeaseHeld
 import pytz
-from sqlobject import (
-    IntCol,
-    StringCol,
-    )
+from sqlobject import StringCol
 from storm.expr import (
     And,
     Or,
@@ -30,6 +26,7 @@ from storm.expr import (
     )
 from storm.locals import (
     Int,
+    JSON,
     Reference,
     )
 import transaction
@@ -44,6 +41,7 @@ from lp.services.database.sqlbase import SQLBase
 from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
+    JobType,
     )
 
 
@@ -80,15 +78,20 @@ class Job(SQLBase):
 
     log = StringCol()
 
-    _status = EnumCol(enum=JobStatus, notNull=True, default=JobStatus.WAITING,
-                      dbName='status')
+    _status = EnumCol(
+        enum=JobStatus, notNull=True, default=JobStatus.WAITING,
+        dbName='status')
 
-    attempt_count = IntCol(default=0)
+    attempt_count = Int(default=0)
 
-    max_retries = IntCol(default=0)
+    max_retries = Int(default=0)
 
     requester_id = Int(name='requester', allow_none=True)
     requester = Reference(requester_id, 'Person.id')
+
+    base_json_data = JSON(name='json_data')
+
+    base_job_type = EnumCol(enum=JobType, dbName='job_type')
 
     # Mapping of valid target states from a given state.
     _valid_transitions = {
@@ -273,6 +276,11 @@ class UniversalJobSource:
         if factory is not None:
             return factory(job_id)
         store = IStore(db_class)
+        # If the class backs onto Job, it is a fake class, so grab the
+        # Job and return it wrapped in the class.
+        if getattr(db_class, '__storm_table__', None) == 'Job':
+            db_job = store.find(Job, Job.id == job_id).one()
+            return db_class(db_job)
         db_job = store.find(db_class, db_class.job == job_id).one()
         if db_job is None:
             return None

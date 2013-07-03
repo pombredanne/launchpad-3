@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -68,6 +68,7 @@ from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
+from lp.soyuz.interfaces.packagediffjob import IPackageDiffJobSource
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
@@ -586,9 +587,11 @@ class SourcePackageRelease(SQLBase):
 
         Store.of(to_sourcepackagerelease).flush()
         del get_property_cache(to_sourcepackagerelease).package_diffs
-        return PackageDiff(
+        packagediff = PackageDiff(
             from_source=self, to_source=to_sourcepackagerelease,
             requester=requester, status=status)
+        getUtility(IPackageDiffJobSource).create(packagediff)
+        return packagediff
 
     def aggregate_changelog(self, since_version):
         """See `ISourcePackagePublishingHistory`."""

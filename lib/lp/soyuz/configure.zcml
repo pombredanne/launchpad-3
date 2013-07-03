@@ -983,6 +983,18 @@
       <allow interface=".interfaces.processacceptedbugsjob.IProcessAcceptedBugsJob" />
     </class>
 
+    <!-- PackageDiffJobSource -->
+    <securedutility
+      component=".model.packagediffjob.PackageDiffJob"
+      provides=".interfaces.packagediffjob.IPackageDiffJobSource">
+      <allow interface=".interfaces.packagediffjob.IPackageDiffJobSource" />
+    </securedutility>
+
+    <!-- PackageDiffJob -->
+    <class class=".model.packagediffjob.PackageDiffJob">
+      <allow interface=".interfaces.packagediffjob.IPackageDiffJob" />
+    </class>
+
     <webservice:register module="lp.soyuz.interfaces.webservice" />
 
 </configure>
