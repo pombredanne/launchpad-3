@@ -186,13 +186,10 @@ class IReclaimBranchSpaceJob(IRunnableJob):
         title=_('The id of the now-deleted branch.'))
 
 
-class IReclaimBranchSpaceJobSource(Interface):
+class IReclaimBranchSpaceJobSource(IJobSource):
 
     def create(branch_id):
         """Construct a new object that implements IReclaimBranchSpaceJob.
 
         :param branch_id: The id of the branch to remove from disk.
         """
-
-    def iterReady():
-        """Iterate through ready IReclaimBranchSpaceJobs."""
