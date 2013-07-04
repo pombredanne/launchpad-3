@@ -26,12 +26,13 @@ class TestMergeProposalJobScript(TestCaseWithFactory):
         job = make_runnable_incremental_diff_job(self)
         transaction.commit()
         retcode, stdout, stderr = run_script(
-            'cronscripts/merge-proposal-jobs.py', ['--log-twisted'])
+            'cronscripts/process-job-source.py',
+            ['--log-twisted', 'IBranchMergeProposalJobSource'])
         self.assertEqual(0, retcode)
         self.assertEqual('', stdout)
         matches_expected = MatchesRegex(
-            'INFO    Creating lockfile:'
-            ' /var/lock/launchpad-merge-proposal-jobs.lock\n'
+            'INFO    Creating lockfile: /var/lock/launchpad-process-job-'
+            'source-IBranchMergeProposalJobSource.lock\n'
             'INFO    Running through Twisted.\n'
             'Log opened.\n'
             'INFO    Log opened.\n'
