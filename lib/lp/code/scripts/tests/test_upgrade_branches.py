@@ -36,7 +36,7 @@ class TestUpgradeBranches(TestCaseWithFactory):
         transaction.commit()
 
         retcode, stdout, stderr = run_script(
-            'cronscripts/upgrade_branches.py', [],
+            'cronscripts/process-job-source.py', ['IBranchUpgradeJobSource'],
             expect_returncode=0)
         self.assertEqual('', stdout)
         self.assertIn(
@@ -64,7 +64,7 @@ class TestUpgradeBranches(TestCaseWithFactory):
         transaction.commit()
 
         retcode, stdout, stderr = run_script(
-            'cronscripts/upgrade_branches.py', [],
+            'cronscripts/process-job-source.py', ['IBranchUpgradeJobSource'],
             expect_returncode=0)
         self.assertEqual('', stdout)
         self.assertIn(
