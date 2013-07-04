@@ -451,13 +451,8 @@ Note that the iteration over all PackageDiffs is sorted by descending
 database ID, i.e. newest first, and getPendingDiffs() results are
 ordered by ascending database IDs, oldest first.
 
-getPendingDiffs() results can optionally be limited.
-
     >>> packagediff_set.getPendingDiffs().count()
     7
-
-    >>> packagediff_set.getPendingDiffs(limit=2).count()
-    2
 
 All package diffs targeting a set of source package releases can also
 be requested.  The results are ordered by the source package release
