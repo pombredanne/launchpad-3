@@ -17,7 +17,6 @@ from lp.codehosting.scanner import events
 from lp.codehosting.scanner.buglinks import BugBranchLinker
 from lp.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.config import config
 from lp.services.osutils import override_environ
 from lp.testing import (
     TestCase,
@@ -261,7 +260,7 @@ class TestSubscription(TestCaseWithFactory):
         self.useBzrBranches(direct_database=True)
         db_branch, tree = self.create_branch_and_tree()
         bug = self.factory.makeBug()
-        switch_dbuser(config.branchscanner.dbuser)
+        switch_dbuser("branchscanner")
         # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
         # required to generate the revision-id.
         with override_environ(BZR_EMAIL='me@example.com'):

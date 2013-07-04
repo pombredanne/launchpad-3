@@ -160,7 +160,7 @@ class TestBranchScanJob(TestCaseWithFactory):
             LaunchpadZopelessLayer.commit()
 
             job = BranchScanJob.create(db_branch)
-            with dbuser(config.branchscanner.dbuser):
+            with dbuser("branchscanner"):
                 job.run()
 
             self.assertEqual(db_branch.revision_count, 3)
@@ -169,7 +169,7 @@ class TestBranchScanJob(TestCaseWithFactory):
             bzr_tree.commit('Fifth commit', rev_id='rev5')
 
         job = BranchScanJob.create(db_branch)
-        with dbuser(config.branchscanner.dbuser):
+        with dbuser("branchscanner"):
             job.run()
 
         self.assertEqual(db_branch.revision_count, 5)
@@ -191,7 +191,7 @@ class TestBranchScanJob(TestCaseWithFactory):
         job = BranchScanJob.create(db_branch)
         db_branch.destroySelf()
         with self.expectedLog(expected_message):
-            with dbuser(config.branchscanner.dbuser):
+            with dbuser("branchscanner"):
                 job.run()
 
     def test_run_with_private_linked_bug(self):
@@ -206,7 +206,7 @@ class TestBranchScanJob(TestCaseWithFactory):
             bzr_tree.commit(
                 'First commit', rev_id='rev1', revprops={'bugs': bug_line})
         job = BranchScanJob.create(db_branch)
-        with dbuser(config.branchscanner.dbuser):
+        with dbuser("branchscanner"):
             job.run()
         self.assertEqual(db_branch.revision_count, 1)
         self.assertTrue(private_bug.hasBranch(db_branch))
