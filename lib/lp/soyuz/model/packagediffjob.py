@@ -37,9 +37,9 @@ class PackageDiffJobDerived(BaseRunnableJob):
     delegates(IPackageDiffJob)
     classProvides(IPackageDiffJobSource)
     config = config.IPackageDiffJobSource
-    __storm_table__ = 'Job'
 
     def __init__(self, job):
+        assert job.base_job_type == JobType.GENERATE_PACKAGE_DIFF
         self.job = job
         self.context = self
 

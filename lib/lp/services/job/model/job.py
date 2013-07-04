@@ -272,13 +272,20 @@ class UniversalJobSource:
         factory = getattr(db_class, 'makeInstance', None)
         if factory is not None:
             return factory(job_id)
-        store = IStore(db_class)
-        # If the class backs onto Job, it is a fake class, so grab the
-        # Job and return it wrapped in the class.
-        if getattr(db_class, '__storm_table__', None) == 'Job':
-            db_job = store.find(Job, Job.id == job_id).one()
+        # This method can be called with two distinct types of Jobs:
+        # - Jobs that are backed by a DB table with a foreign key onto Job.
+        # - Jobs that have no backing, and are only represented by a row in
+        #   the Job table, but the class name we are given is the abstract 
+        #   job class.
+        # If there is no __storm_table__, it is the second type, and we have
+        # to look it up via the Job table.
+        if getattr(db_class, '__storm_table__', None) is None:
+            db_job = IStore(Job).find(Job, Job.id == job_id).one()
+            # Job.makeDerived() would be a mess of circular imports, so it is
+            # cleaner to just return the bare Job wrapped in the class.
             return db_class(db_job)
-        db_job = store.find(db_class, db_class.job == job_id).one()
+        # Otherwise, we have the concrete DB class, so use its FK.
+        db_job = IStore(db_class).find(db_class, db_class.job == job_id).one()
         if db_job is None:
             return None
         return db_job.makeDerived()
