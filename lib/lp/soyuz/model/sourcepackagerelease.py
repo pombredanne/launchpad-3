@@ -590,7 +590,8 @@ class SourcePackageRelease(SQLBase):
         packagediff = PackageDiff(
             from_source=self, to_source=to_sourcepackagerelease,
             requester=requester, status=status)
-        getUtility(IPackageDiffJobSource).create(packagediff)
+        if status == PackageDiffStatus.PENDING:
+            getUtility(IPackageDiffJobSource).create(packagediff)
         return packagediff
 
     def aggregate_changelog(self, since_version):

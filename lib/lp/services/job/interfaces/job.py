@@ -75,7 +75,7 @@ class JobType(DBEnumeratedType):
     GENERATE_PACKAGE_DIFF = DBItem(0, """
         Generate Package Diff
 
-        Job to generate the diff between two SPRs.
+        Job to generate the diff between two SourcePackageReleases.
         """)
 
 
