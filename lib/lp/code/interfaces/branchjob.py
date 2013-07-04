@@ -144,7 +144,7 @@ class IRosettaUploadJob(IRunnableJob):
         """
 
 
-class IRosettaUploadJobSource(Interface):
+class IRosettaUploadJobSource(IJobSource):
 
     def create(branch, from_revision_id, force_translations_upload):
         """Construct a new object that implements IRosettaUploadJob.
@@ -154,9 +154,6 @@ class IRosettaUploadJobSource(Interface):
         :param force_translations_upload: Flag to override the settings in the
             product series and upload all translation files.
         """
-
-    def iterReady():
-        """Iterate through ready IRosettaUploadJobs."""
 
     def findUnfinishedJobs(branch, since=None):
         """Find any `IRosettaUploadJob`s for `branch` that haven't run yet.

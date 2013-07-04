@@ -756,7 +756,7 @@ class RosettaUploadJob(BranchJobDerived):
 
     task_queue = 'bzrsyncd_job'
 
-    config = config.rosettabranches
+    config = config.IRosettaUploadJobSource
 
     def __init__(self, branch_job):
         super(RosettaUploadJob, self).__init__(branch_job)
