@@ -22,7 +22,7 @@ target = os.path.join(icing, 'combo.css')
 names = [
     'ubuntu-webfonts.css',
     'style.css',
-    'yui/cssreset/reset.css',
+    'yui/cssreset/cssreset.css',
     'yui/assets/skins/sam/calendar-base.css',
     'yui/assets/skins/sam/calendar.css',
     'yui/assets/skins/sam/calendarnavigator.css',

@@ -113,7 +113,10 @@ from lp.services.job.model.job import (
     EnumeratedSubclass,
     Job,
     )
-from lp.services.job.runner import BaseRunnableJob
+from lp.services.job.runner import (
+    BaseRunnableJob,
+    BaseRunnableJobSource,
+    )
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.webapp import (
     canonical_url,
@@ -753,7 +756,7 @@ class RosettaUploadJob(BranchJobDerived):
 
     task_queue = 'bzrsyncd_job'
 
-    config = config.rosettabranches
+    config = config.IRosettaUploadJobSource
 
     def __init__(self, branch_job):
         super(RosettaUploadJob, self).__init__(branch_job)
@@ -979,7 +982,7 @@ class RosettaUploadJob(BranchJobDerived):
         return jobs
 
 
-class ReclaimBranchSpaceJob(BranchJobDerived):
+class ReclaimBranchSpaceJob(BranchJobDerived, BaseRunnableJobSource):
     """Reclaim the disk space used by a branch that's deleted from the DB."""
 
     implements(IReclaimBranchSpaceJob)
@@ -990,7 +993,7 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
 
     task_queue = 'branch_write_job'
 
-    config = config.reclaimbranchspace
+    config = config.IReclaimBranchSpaceJobSource
 
     def __repr__(self):
         return '<RECLAIM_BRANCH_SPACE branch job (%(id)s) for %(branch)s>' % {
