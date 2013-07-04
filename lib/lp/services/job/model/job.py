@@ -254,10 +254,7 @@ Job.ready_jobs = Select(
 
 
 class UniversalJobSource:
-    """Returns the RunnableJob associated with a Job.id.
-
-    Only BranchJobs are supported at present.
-    """
+    """Returns the RunnableJob associated with a Job.id."""
 
     memory_limit = 2 * (1024 ** 3)
 
