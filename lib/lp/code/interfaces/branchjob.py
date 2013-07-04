@@ -102,28 +102,22 @@ class IRevisionMailJob(IRunnableJob):
     subject = Text(title=u'The subject of the email to send.')
 
 
-class IRevisionMailJobSource(Interface):
+class IRevisionMailJobSource(IJobSource):
     """A utility to create and retrieve RevisionMailJobs."""
 
     def create(db_branch, revno, email_from, message, subject):
         """Create and return a new object that implements IRevisionMailJob."""
-
-    def iterReady():
-        """Iterate through ready IRevisionMailJobs."""
 
 
 class IRevisionsAddedJob(IRunnableJob):
     """A Job to send emails about revisions added to a branch."""
 
 
-class IRevisionsAddedJobSource(Interface):
+class IRevisionsAddedJobSource(IJobSource):
     """A utility to create and retrieve RevisionMailJobs."""
 
     def create(branch, last_scanned_id, last_revision_id, from_address):
         """Create and return a new object that implements IRevisionMailJob."""
-
-    def iterReady():
-        """Iterate through ready IRevisionsAddedJobSource."""
 
 
 class IRosettaUploadJob(IRunnableJob):
