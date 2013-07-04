@@ -10,6 +10,7 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.packagediffjob import (
     IPackageDiffJob,
     IPackageDiffJobSource,
@@ -105,6 +106,7 @@ class TestPackageDiffJob(TestCaseWithFactory):
         self.addDetail("stdout", text_content(out))
         self.addDetail("stderr", text_content(err))
         self.assertEqual(0, exit_code)
+        self.assertEqual(PackageDiffStatus.COMPLETED, diff.status)
         self.assertIsNot(None, diff.diff_content)
 
 
@@ -121,4 +123,5 @@ class TestViaCelery(TestCaseWithFactory):
         diff = create_proper_job(self.factory)
         with block_on_job(self):
             transaction.commit()
+        self.assertEqual(PackageDiffStatus.COMPLETED, diff.status)
         self.assertIsNot(None, diff.diff_content)
