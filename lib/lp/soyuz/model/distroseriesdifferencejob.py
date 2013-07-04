@@ -159,7 +159,7 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
 
     class_job_type = DistributionJobType.DISTROSERIESDIFFERENCE
 
-    config = config.distroseriesdifferencejob
+    config = config.IDistroSeriesDifferenceJobSource
 
     @classmethod
     def createForPackagePublication(cls, derived_series, sourcepackagename,

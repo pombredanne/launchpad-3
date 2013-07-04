@@ -352,7 +352,8 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
 
     def test_cronscript(self):
         run_script(
-            'cronscripts/run_jobs.py', ['-v', 'initializedistroseries'])
+            'cronscripts/process-job-source.py',
+            ['IInitializeDistroSeriesJobSource'])
         DatabaseLayer.force_dirty_database()
 
 
