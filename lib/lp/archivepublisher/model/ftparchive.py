@@ -138,15 +138,6 @@ class FTPArchiveHandler:
         apt_config_filename = self.generateConfig(is_careful)
         self.runApt(apt_config_filename)
 
-    def _getArchitectureTags(self):
-        """List tags of all architectures enabled in this distro."""
-        archs = set()
-        for series in self.distro.series:
-            archs.update(set([
-                distroarchseries.architecturetag
-                for distroarchseries in series.enabled_architectures]))
-        return archs
-
     def runApt(self, apt_config_filename):
         """Run apt-ftparchive in subprocesses.
 
