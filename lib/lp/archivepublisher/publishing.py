@@ -250,6 +250,29 @@ class Publisher(object):
             subcomps.append('debug')
         return subcomps
 
+    @property
+    def consider_series(self):
+        if self.archive.purpose in (
+            ArchivePurpose.PRIMARY,
+            ArchivePurpose.PARTNER,
+            ):
+            # For PRIMARY and PARTNER archives, skip OBSOLETE and FUTURE
+            # series.  We will never want to publish anything in them, so it
+            # isn't worth thinking about whether they have pending
+            # publications.
+            return [
+                series
+                for series in self.distro.series
+                if series.status not in (
+                    SeriesStatus.OBSOLETE,
+                    SeriesStatus.FUTURE,
+                    )]
+        else:
+            # Other archives may have reasons to continue building at least
+            # for OBSOLETE series.  For example, a PPA may be continuing to
+            # provide custom builds for users who haven't upgraded yet.
+            return self.distro.series
+
     def A_publish(self, force_publishing):
         """First step in publishing: actual package publishing.
 
@@ -261,28 +284,7 @@ class Publisher(object):
         """
         self.log.debug("* Step A: Publishing packages")
 
-        if self.archive.purpose in (
-            ArchivePurpose.PRIMARY,
-            ArchivePurpose.PARTNER,
-            ):
-            # For PRIMARY and PARTNER archives, skip OBSOLETE and FUTURE
-            # series.  We will never want to publish anything in them, so it
-            # isn't worth thinking about whether they have pending
-            # publications.
-            consider_series = [
-                series
-                for series in self.distro.series
-                if series.status not in (
-                    SeriesStatus.OBSOLETE,
-                    SeriesStatus.FUTURE,
-                    )]
-        else:
-            # Other archives may have reasons to continue building at least
-            # for OBSOLETE series.  For example, a PPA may be continuing to
-            # provide custom builds for users who haven't upgraded yet.
-            consider_series = self.distro.series
-
-        for distroseries in consider_series:
+        for distroseries in self.consider_series:
             for pocket in self.archive.getPockets():
                 if self.isAllowed(distroseries, pocket):
                     more_dirt = distroseries.publish(
