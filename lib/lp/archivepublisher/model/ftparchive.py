@@ -746,6 +746,25 @@ class FTPArchiveHandler:
             comp.name for comp in
             self.publisher.archive.getComponentsForSeries(distroseries)]
 
+        self.writeAptConfig(
+            apt_config, suite, comps, archs,
+            distroseries.include_long_descriptions)
+
+        # XXX: 2006-08-24 kiko: Why do we do this directory creation here?
+        for comp in comps:
+            component_path = os.path.join(
+                self._config.distsroot, suite, comp)
+            safe_mkdir(os.path.join(component_path, "source"))
+            if not distroseries.include_long_descriptions:
+                safe_mkdir(os.path.join(component_path, "i18n"))
+            for arch in archs:
+                safe_mkdir(os.path.join(component_path, "binary-" + arch))
+                for subcomp in self.publisher.subcomponents:
+                    safe_mkdir(os.path.join(
+                        component_path, subcomp, "binary-" + arch))
+
+    def writeAptConfig(self, apt_config, suite, comps, archs,
+                       include_long_descriptions):
         self.log.debug("Generating apt config for %s" % suite)
         apt_config.write(STANZA_TEMPLATE % {
                          "LISTPATH": self._config.overrideroot,
@@ -759,8 +778,7 @@ class FTPArchiveHandler:
                          "DISTS": os.path.basename(self._config.distsroot),
                          "HIDEEXTRA": "",
                          "LONGDESCRIPTION":
-                             "true" if distroseries.include_long_descriptions
-                                    else "false",
+                             "true" if include_long_descriptions else "false",
                          })
 
         if archs:
@@ -779,16 +797,3 @@ class FTPArchiveHandler:
                         "HIDEEXTRA": "// ",
                         "LONGDESCRIPTION": "true",
                         })
-
-        # XXX: 2006-08-24 kiko: Why do we do this directory creation here?
-        for comp in comps:
-            component_path = os.path.join(
-                self._config.distsroot, suite, comp)
-            safe_mkdir(os.path.join(component_path, "source"))
-            if not distroseries.include_long_descriptions:
-                safe_mkdir(os.path.join(component_path, "i18n"))
-            for arch in archs:
-                safe_mkdir(os.path.join(component_path, "binary-" + arch))
-                for subcomp in self.publisher.subcomponents:
-                    safe_mkdir(os.path.join(
-                        component_path, subcomp, "binary-" + arch))
