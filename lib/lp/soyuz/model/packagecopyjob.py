@@ -12,6 +12,7 @@ import logging
 
 from lazr.delegates import delegates
 from lazr.jobrunner.jobrunner import SuspendJobException
+from psycopg2.extensions import TransactionRollbackError
 from storm.locals import (
     Int,
     JSON,
@@ -267,6 +268,10 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     classProvides(IPlainPackageCopyJobSource)
     config = config.IPlainPackageCopyJobSource
     user_error_types = (CannotCopy,)
+    # Raised when closing bugs ends up hitting another process and
+    # deadlocking.
+    retry_error_types = (TransactionRollbackError,)
+    max_retries = 5
 
     @classmethod
     def _makeMetadata(cls, target_pocket, package_version,
