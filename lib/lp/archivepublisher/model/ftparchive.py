@@ -731,9 +731,8 @@ class FTPArchiveHandler:
         apt_config.close()
 
         apt_config_filename = os.path.join(self._config.miscroot, "apt.conf")
-        fp = file(apt_config_filename, "w")
-        fp.write(s)
-        fp.close()
+        with open(apt_config_filename, "w") as fp:
+            fp.write(s)
         return apt_config_filename
 
     def generateConfigForPocket(self, apt_config, distroseries, pocket):
