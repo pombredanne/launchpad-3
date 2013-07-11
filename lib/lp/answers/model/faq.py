@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """FAQ document models."""
@@ -38,7 +38,6 @@ from lp.services.database.constants import DEFAULT
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.nl_search import nl_phrase_search
 from lp.services.database.sqlbase import (
-    quote,
     SQLBase,
     sqlvalues,
     )
@@ -230,7 +229,7 @@ class FAQSearch:
         constraints = []
 
         if self.search_text:
-            constraints.append('FAQ.fti @@ ftq(%s)' % quote(self.search_text))
+            constraints.append(fti_search(FAQ, self.search_text))
 
         if self.owner:
             constraints.append('FAQ.owner = %s' % sqlvalues(self.owner))

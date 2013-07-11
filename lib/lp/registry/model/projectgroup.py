@@ -95,6 +95,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.database.stormexpr import fti_search
 from lp.services.helpers import shortlist
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp.authorization import check_permission
@@ -588,11 +589,9 @@ class ProjectGroupSet:
         if text:
             if search_products:
                 clauseTables.add('Product')
-                product_query = "Product.fti @@ ftq(%s)" % sqlvalues(text)
-                queries.append(product_query)
+                queries.append(fti_search(Product, text))
             else:
-                project_query = "Project.fti @@ ftq(%s)" % sqlvalues(text)
-                queries.append(project_query)
+                queries.append(fti_search(ProjectGroup, text))
 
         if 'Product' in clauseTables:
             queries.append('Product.project=Project.id')

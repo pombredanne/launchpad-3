@@ -20,7 +20,6 @@ from sqlobject import (
 from storm.locals import (
     Join,
     Or,
-    SQL,
     )
 from storm.store import EmptyResultSet
 from zope.component import getUtility
@@ -35,6 +34,10 @@ from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
+    )
+from lp.services.database.stormexpr import (
+    fti_search,
+    rank_by_fti,
     )
 from lp.services.helpers import shortlist
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
@@ -214,9 +217,7 @@ class DistroArchSeries(SQLBase):
             find_spec = (
                 BinaryPackageRelease,
                 BinaryPackageName,
-                SQL("rank(BinaryPackageRelease.fti, ftq(%s)) AS rank" %
-                    sqlvalues(text))
-                )
+                rank_by_fti(BinaryPackageRelease, text))
         else:
             find_spec = (
                 BinaryPackageRelease,
@@ -233,7 +234,7 @@ class DistroArchSeries(SQLBase):
         if text:
             clauses.append(
                 Or(
-                    SQL("BinaryPackageRelease.fti @@ ftq(?)", params=(text,)),
+                    fti_search(BinaryPackageRelease, text),
                     BinaryPackageName.name.contains_string(text.lower())))
         result = IStore(BinaryPackageName).using(*origin).find(
             find_spec, *clauses).config(distinct=True)
