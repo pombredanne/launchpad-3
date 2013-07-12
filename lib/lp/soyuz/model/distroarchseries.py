@@ -18,6 +18,7 @@ from sqlobject import (
     StringCol,
     )
 from storm.locals import (
+    Desc,
     Join,
     Or,
     )
@@ -229,20 +230,16 @@ class DistroArchSeries(SQLBase):
         clauses = [
             BinaryPackagePublishingHistory.distroarchseries == self,
             BinaryPackagePublishingHistory.archiveID.is_in(archives),
-            BinaryPackagePublishingHistory.dateremoved == None,
-            ]
+            BinaryPackagePublishingHistory.dateremoved == None]
+        order_by = [BinaryPackageName.name]
         if text:
             clauses.append(
                 Or(
                     fti_search(BinaryPackageRelease, text),
                     BinaryPackageName.name.contains_string(text.lower())))
+            order_by.insert(0, Desc(rank_by_fti(BinaryPackageRelease, text)))
         result = IStore(BinaryPackageName).using(*origin).find(
-            find_spec, *clauses).config(distinct=True)
-
-        if text:
-            result = result.order_by("rank DESC, BinaryPackageName.name")
-        else:
-            result = result.order_by("BinaryPackageName.name")
+            find_spec, *clauses).config(distinct=True).order_by(*order_by)
 
         # import here to avoid circular import problems
         from lp.soyuz.model.distroarchseriesbinarypackagerelease import (

@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Question models."""
@@ -102,13 +102,11 @@ from lp.services.database.enumcol import EnumCol
 from lp.services.database.nl_search import nl_phrase_search
 from lp.services.database.sqlbase import (
     cursor,
+    quote,
     SQLBase,
     sqlvalues,
     )
-from lp.services.database.stormexpr import (
-    fti_search,
-    rank_by_fti,
-    )
+from lp.services.database.stormexpr import rank_by_fti
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.messages.interfaces.message import IMessage
 from lp.services.messages.model.message import (
@@ -954,9 +952,12 @@ class QuestionSearch:
         constraints = self.getTargetConstraints()
 
         if self.search_text is not None:
-            constraints.append(
-                fti_search(
-                    Question, self.search_text, not self.nl_phrase_used))
+            if self.nl_phrase_used:
+                constraints.append(
+                    'Question.fti @@ %s' % quote(self.search_text))
+            else:
+                constraints.append(
+                    'Question.fti @@ ftq(%s)' % quote(self.search_text))
 
         if self.status:
             constraints.append('Question.status IN %s' % sqlvalues(
