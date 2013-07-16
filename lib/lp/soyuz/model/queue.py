@@ -1207,7 +1207,8 @@ class PackageUploadBuild(SQLBase):
                 binary.version,
                 'Specific' if binary.architecturespecific else 'Independent',
                 ))
-            bins[binary] = (binary.component, binary.section, binary.priority)
+            bins[binary] = (
+                binary.component, binary.section, binary.priority, None)
         return getUtility(IPublishingSet).publishBinaries(
             self.packageupload.archive, distroseries,
             self.packageupload.pocket, bins)

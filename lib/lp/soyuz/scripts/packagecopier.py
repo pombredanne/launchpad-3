@@ -506,7 +506,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             person=None, check_permissions=True, overrides=None,
             send_email=False, strict_binaries=True, close_bugs=True,
             create_dsd_job=True, announce_from_person=None, sponsored=None,
-            packageupload=None, unembargo=False, logger=None):
+            packageupload=None, unembargo=False, phased_update_percentage=None,
+            logger=None):
     """Perform the complete copy of the given sources incrementally.
 
     Verifies if each copy can be performed using `CopyChecker` and
@@ -553,6 +554,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
     :param unembargo: If True, allow copying restricted files from a private
         archive to a public archive, and unrestrict their library files when
         doing so.
+    :param phased_update_percentage: The phased update percentage to apply
+        to the copied publication.
     :param logger: An optional logger.
 
     :raise CannotCopy when one or more copies were not allowed. The error
@@ -628,7 +631,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             source, archive, destination_series, pocket, include_binaries,
             override, close_bugs=close_bugs, create_dsd_job=create_dsd_job,
             close_bugs_since_version=old_version, creator=creator,
-            sponsor=sponsor, packageupload=packageupload, logger=logger)
+            sponsor=sponsor, packageupload=packageupload,
+            phased_update_percentage=phased_update_percentage, logger=logger)
         if send_email:
             notify(
                 person, source.sourcepackagerelease, [], [], archive,
@@ -655,7 +659,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
 def _do_direct_copy(source, archive, series, pocket, include_binaries,
                     override=None, close_bugs=True, create_dsd_job=True,
                     close_bugs_since_version=None, creator=None,
-                    sponsor=None, packageupload=None, logger=None):
+                    sponsor=None, packageupload=None,
+                    phased_update_percentage=None, logger=None):
     """Copy publishing records to another location.
 
     Copy each item of the given list of `SourcePackagePublishingHistory`
@@ -685,6 +690,8 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
     :param sponsor: the sponsor `IPerson`, if this copy is being sponsored.
     :param packageupload: The `IPackageUpload` that caused this publication
         to be created.
+    :param phased_update_percentage: The phased update percentage to apply
+        to the copied publication.
     :param logger: An optional logger.
 
     :return: a list of `ISourcePackagePublishingHistory` and
@@ -703,7 +710,8 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         version=source.sourcepackagerelease.version,
         status=active_publishing_status,
         distroseries=series, pocket=pocket)
-    policy = archive.getOverridePolicy()
+    policy = archive.getOverridePolicy(
+        phased_update_percentage=phased_update_percentage)
     if source_in_destination.is_empty():
         # If no manual overrides were specified and the archive has an
         # override policy then use that policy to get overrides.

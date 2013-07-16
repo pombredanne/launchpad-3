@@ -206,7 +206,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             target_pocket=PackagePublishingPocket.RELEASE,
             package_version="1.0-1", include_binaries=False,
             copy_policy=PackageCopyPolicy.MASS_SYNC,
-            requester=requester, sponsored=sponsored)
+            requester=requester, sponsored=sponsored,
+            phased_update_percentage=20)
         self.assertProvides(job, IPackageCopyJob)
         self.assertEqual(archive1.id, job.source_archive_id)
         self.assertEqual(archive1, job.source_archive)
@@ -220,6 +221,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual(PackageCopyPolicy.MASS_SYNC, job.copy_policy)
         self.assertEqual(requester, job.requester)
         self.assertEqual(sponsored, job.sponsored)
+        self.assertEqual(20, job.phased_update_percentage)
 
     def test_createMultiple_creates_one_job_per_copy(self):
         mother = self.factory.makeDistroSeriesParent()
