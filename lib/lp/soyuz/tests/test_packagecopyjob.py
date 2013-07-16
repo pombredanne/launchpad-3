@@ -1411,6 +1411,45 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             [custom_file],
             [custom.libraryfilealias for custom in upload.customfiles])
 
+    def test_copy_phased_update_percentage(self):
+        # The copier applies any requested phased_update_percentage.
+        self.distroseries.status = SeriesStatus.CURRENT
+        archive = self.factory.makeArchive(
+            self.distroseries.distribution, purpose=ArchivePurpose.PRIMARY)
+
+        # Publish a test package.
+        spph = self.publisher.getPubSource(
+            distroseries=self.distroseries,
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.PROPOSED)
+        self.publisher.getPubBinaries(
+            binaryname="copyme", pub_source=spph,
+            distroseries=self.distroseries,
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.PROPOSED)
+
+        # Create and run the job.
+        requester = self.factory.makePerson()
+        with person_logged_in(archive.owner):
+            archive.newPocketQueueAdmin(
+                requester, PackagePublishingPocket.UPDATES)
+        job = self.createCopyJobForSPPH(
+            spph, archive, archive,
+            target_pocket=PackagePublishingPocket.UPDATES,
+            include_binaries=True, requester=requester,
+            auto_approve=True, phased_update_percentage=0)
+        self.assertEqual(0, job.phased_update_percentage)
+        self.runJob(job)
+        self.assertEqual(JobStatus.COMPLETED, job.status)
+
+        # Make sure packages were copied with the correct
+        # phased_update_percentage.
+        copied_binaries = archive.getAllPublishedBinaries(
+            name=u"copyme", pocket=PackagePublishingPocket.UPDATES)
+        self.assertNotEqual(0, copied_binaries.count())
+        for binary in copied_binaries:
+            self.assertEqual(0, binary.phased_update_percentage)
+
     def test_findMatchingDSDs_matches_all_DSDs_for_job(self):
         # findMatchingDSDs finds matching DSDs for any of the packages
         # in the job.
