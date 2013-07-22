@@ -628,8 +628,10 @@ class Archive(SQLBase):
             SourcePackagePublishingHistory, *clauses).order_by(
                 SourcePackageName.name, Desc(SourcePackageRelease.version),
                 Desc(SourcePackagePublishingHistory.id))
-        load_related(SourcePackageRelease, sources, ['sourcepackagereleaseID'])
-        return sources
+        def eager_load(rows):
+            load_related(
+                SourcePackageRelease, rows, ['sourcepackagereleaseID'])
+        return DecoratedResultSet(sources, pre_iter_hook=eager_load)
 
     @property
     def number_of_sources(self):
