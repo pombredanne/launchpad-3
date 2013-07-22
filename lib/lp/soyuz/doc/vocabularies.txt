@@ -214,15 +214,15 @@ PPA vocabulary searches consider the owner FTI and the PPA FTI.
     ...         term = vocabulary.toTerm(archive)
     ...         print '%s: %s' % (term.token, term.title)
 
-    >>> cprov_search = vocabulary.search('cprov')
+    >>> cprov_search = vocabulary.search(u'cprov')
     >>> print_search_results(cprov_search)
     cprov/ppa: packages to help my friends.
 
-    >>> celso_search = vocabulary.search('celso')
+    >>> celso_search = vocabulary.search(u'celso')
     >>> print_search_results(celso_search)
     cprov/ppa: packages to help my friends.
 
-    >>> friends_search = vocabulary.search('friends')
+    >>> friends_search = vocabulary.search(u'friends')
     >>> print_search_results(friends_search)
     cprov/ppa: packages to help my friends.
 
@@ -240,7 +240,7 @@ We will create an additional PPA for Celso named 'testing'
 Now, a search for 'cprov' will return 2 ppas and the result is ordered
 by PPA name.
 
-    >>> cprov_search = vocabulary.search('cprov')
+    >>> cprov_search = vocabulary.search(u'cprov')
     >>> print_search_results(cprov_search)
     cprov/ppa: packages to help my friends.
     cprov/testing: testing packages.
@@ -248,7 +248,7 @@ by PPA name.
 The vocabulary search also supports specific named PPA lookups
 follwing the same combined syntax used to build unique tokens.
 
-    >>> named_search = vocabulary.search('cprov/testing')
+    >>> named_search = vocabulary.search(u'cprov/testing')
     >>> print_search_results(named_search)
     cprov/testing: testing packages.
 
@@ -280,6 +280,6 @@ PPAs with empty description are identified and have a title saying so.
 
 Queries on empty strings also results in a valid SelectResults.
 
-    >>> empty_search = vocabulary.search('')
+    >>> empty_search = vocabulary.search(u'')
     >>> empty_search.count() == 0
     True
