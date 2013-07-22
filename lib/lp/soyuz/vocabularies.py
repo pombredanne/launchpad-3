@@ -69,7 +69,7 @@ class FilteredDistroArchSeriesVocabulary(SQLObjectVocabularyBase):
             results = IStore(DistroSeries).find(
                 self._table,
                 DistroSeries.id == DistroArchSeries.distroseriesID,
-                DistroSeries.distributionID == distribution.id).orderBy(
+                DistroSeries.distributionID == distribution.id).order_by(
                     *self._orderBy)
             for distroarchseries in results:
                 yield self.toTerm(distroarchseries)

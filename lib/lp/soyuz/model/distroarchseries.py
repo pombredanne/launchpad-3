@@ -18,7 +18,6 @@ from sqlobject import (
     StringCol,
     )
 from storm.locals import (
-    Desc,
     Join,
     Or,
     )
@@ -206,25 +205,13 @@ class DistroArchSeries(SQLBase):
             Join(
                 BinaryPackagePublishingHistory,
                 BinaryPackagePublishingHistory.binarypackagerelease ==
-                    BinaryPackageRelease.id
-                ),
+                    BinaryPackageRelease.id),
             Join(
                 BinaryPackageName,
                 BinaryPackageRelease.binarypackagename ==
-                    BinaryPackageName.id
-                )
-            ]
-        if text:
-            find_spec = (
-                BinaryPackageRelease,
-                BinaryPackageName,
-                rank_by_fti(BinaryPackageRelease, text))
-        else:
-            find_spec = (
-                BinaryPackageRelease,
-                BinaryPackageName,
-                BinaryPackageName,  # dummy value
-                )
+                    BinaryPackageName.id)]
+
+        find_spec = [BinaryPackageRelease, BinaryPackageName]
         archives = self.distroseries.distribution.getArchiveIDList()
 
         clauses = [
@@ -233,28 +220,29 @@ class DistroArchSeries(SQLBase):
             BinaryPackagePublishingHistory.dateremoved == None]
         order_by = [BinaryPackageName.name]
         if text:
+            ranking = rank_by_fti(BinaryPackageRelease, text)
+            find_spec.append(ranking)
             clauses.append(
                 Or(
                     fti_search(BinaryPackageRelease, text),
                     BinaryPackageName.name.contains_string(text.lower())))
-            order_by.insert(0, Desc(rank_by_fti(BinaryPackageRelease, text)))
+            order_by.insert(0, ranking)
         result = IStore(BinaryPackageName).using(*origin).find(
-            find_spec, *clauses).config(distinct=True).order_by(*order_by)
+            tuple(find_spec), *clauses).config(distinct=True).order_by(
+                *order_by)
 
         # import here to avoid circular import problems
         from lp.soyuz.model.distroarchseriesbinarypackagerelease import (
             DistroArchSeriesBinaryPackageRelease)
 
         # Create a function that will decorate the results, converting
-        # them from the find_spec above into DASBPRs:
-        def result_to_dasbpr(
-            (binary_package_release, binary_package_name, rank)):
+        # them from the find_spec above into DASBPRs.
+        def result_to_dasbpr(row):
             return DistroArchSeriesBinaryPackageRelease(
-                distroarchseries=self,
-                binarypackagerelease=binary_package_release)
+                distroarchseries=self, binarypackagerelease=row[0])
 
         # Return the decorated result set so the consumer of these
-        # results will only see DSPs
+        # results will only see DSPs.
         return DecoratedResultSet(result, result_to_dasbpr)
 
     def getBinaryPackage(self, name):

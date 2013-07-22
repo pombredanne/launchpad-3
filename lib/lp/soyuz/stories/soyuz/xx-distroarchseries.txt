@@ -55,9 +55,9 @@ More details are available by clicking on the binary package name.
     ...     find_tag_by_id(anon_browser.contents, 'search-results'))
     1 &rarr; 3 of 3 results
     First &bull; Previous &bull; Next &bull; Last
+    mozilla-firefox: ff from iceweasel
     mozilla-firefox: Mozilla Firefox Web Browser
     mozilla-firefox-data: Mozilla Firefox Data
-    mozilla-firefox: ff from iceweasel
     1 &rarr; 3 of 3 results
     First &bull; Previous &bull; Next &bull; Last
 
