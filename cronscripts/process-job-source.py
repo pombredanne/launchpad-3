@@ -9,20 +9,27 @@ __metaclass__ = type
 
 import _pythonpath
 
+from collections import defaultdict
 import sys
 
 from twisted.python import log
+from zope.component import getUtility
 
+from lp.services.config import config
 from lp.services.job import runner
-from lp.services.job.runner import JobCronScript
+from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.webapp import errorlog
 
 
-class ProcessJobSource(JobCronScript):
+class ProcessJobSource(LaunchpadCronScript):
     """Run jobs for a specified job source class."""
     usage = (
         "Usage: %prog [options] JOB_SOURCE\n\n"
         "For more help, run:\n"
         "    cronscripts/process-job-source-groups.py --help")
+
+    description = (
+        "Takes pending jobs of the given type off the queue and runs them.")
 
     def __init__(self):
         super(ProcessJobSource, self).__init__()
@@ -37,6 +44,14 @@ class ProcessJobSource(JobCronScript):
         return self.job_source_name
 
     @property
+    def config_section(self):
+        return getattr(config, self.config_name)
+
+    @property
+    def dbuser(self):
+        return self.config_section.dbuser
+
+    @property
     def name(self):
         return 'process-job-source-%s' % self.job_source_name
 
@@ -48,7 +63,9 @@ class ProcessJobSource(JobCronScript):
         return getattr(runner, runner_class_name)
 
     def add_my_options(self):
-        self.add_log_twisted_option()
+        self.parser.add_option(
+            '--log-twisted', action='store_true', default=False,
+            help='Enable extra Twisted logging.')
 
     def handle_options(self):
         if len(self.args) != 1:
@@ -57,10 +74,27 @@ class ProcessJobSource(JobCronScript):
         self.job_source_name = self.args[0]
         super(ProcessJobSource, self).handle_options()
 
+    def job_counts(self, jobs):
+        """Return a list of tuples containing the job name and counts."""
+        counts = defaultdict(lambda: 0)
+        for job in jobs:
+            counts[job.__class__.__name__] += 1
+        return sorted(counts.items())
+
     def main(self):
         if self.options.verbose:
             log.startLogging(sys.stdout)
-        super(ProcessJobSource, self).main()
+        errorlog.globalErrorUtility.configure(self.config_name)
+        job_source = getUtility(self.source_interface)
+        kwargs = {}
+        if getattr(self.options, 'log_twisted', False):
+            kwargs['_log_twisted'] = True
+        runner = self.runner_class.runFromSource(
+            job_source, self.dbuser, self.logger, **kwargs)
+        for name, count in self.job_counts(runner.completed_jobs):
+            self.logger.info('Ran %d %s jobs.', count, name)
+        for name, count in self.job_counts(runner.incomplete_jobs):
+            self.logger.info('%d %s jobs did not complete.', count, name)
 
 
 if __name__ == '__main__':
