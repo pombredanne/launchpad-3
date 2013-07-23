@@ -31,6 +31,8 @@ uploaded into the system.
     >>> from lp.services.database.constants import UTC_NOW
     >>> from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 
+    >>> from lp.soyuz.model.translationsuploadjob import TranslationsUploadJob
+
 # Login as an admin.
     >>> login('foo.bar@canonical.com')
 
@@ -157,6 +159,15 @@ An upload to the RELEASE pocket will add items to the import queue:
     ...     status=PackageUploadStatus.NEW)[0]
     >>> queue_item.customfiles[0].publish()
 
+When publish() runs, it creates a TranslationsUploadJob that will effectively
+process the translation files. We need to find and run it to be able to
+verify the imported files.
+    >>> def runPendingTranslationUploadJob():
+    ...     job = list(TranslationsUploadJob.iterReady())[0]
+    ...     job.run()
+
+    >>> runPendingTranslationUploadJob()
+
 As we can see from the translation import queue content.
 
     >>> for entry in translation_import_queue.getAllEntries(target=ubuntu):
@@ -206,6 +217,7 @@ But an upload to the UPDATE pocket will add items to the import queue:
     >>> queue_item = dapper.getPackageUploads(PackageUploadStatus.NEW)[0]
     >>> queue_item.pocket = PackagePublishingPocket.UPDATES
     >>> queue_item.customfiles[0].publish()
+    >>> runPendingTranslationUploadJob()
 
 As we can see from the translation import queue content.
 
@@ -239,6 +251,7 @@ Uploads to restricted component are accepted too.
     >>> queue_item.builds[0].build.source_package_release.override(
     ...     component=restricted_component)
     >>> queue_item.customfiles[0].publish()
+    >>> runPendingTranslationUploadJob()
 
 As we can see from the translation import queue content.
 
@@ -339,154 +352,6 @@ Translations coming from rebuilt packages are also ignored.
 # And this time, we see that there are no entries imported in the queue.
     >>> translation_import_queue.getAllEntries(target=ubuntu).count()
     0
-
-
-Translations importer: publishRosettaTranslations
--------------------------------------------------
-
-We create mock objects for SourcePackageRelease, PackageUpload and
-PackageUploadCustom: these will emulate everything we need to document
-different interpretations of "importer" in attachTranslationFiles.
-
-    >>> from zope.interface import implements
-    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-    >>> from lp.soyuz.model.queue import PackageUploadCustom
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     IArchive, ArchivePurpose)
-    >>> from lp.soyuz.interfaces.queue import (
-    ...     IPackageUpload, IPackageUploadCustom)
-    >>> from lp.registry.interfaces.person import IPerson
-    >>> from lp.soyuz.enums import PackageUploadCustomFormat
-    >>> from lp.soyuz.interfaces.component import IComponentSet
-    >>> from lp.soyuz.interfaces.sourcepackagerelease import (
-    ...     ISourcePackageRelease)
-    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-
-    >>> class MockArchive:
-    ...       implements(IArchive)
-    ...       def __init__(self, purpose):
-    ...           self.purpose = purpose
-
-    >>> class MockDistroSeries:
-    ...     implements(IDistroSeries)
-    ...     def __init__(self, version):
-    ...         self.version = version
-
-    >>> class MockSourcePackageRelease:
-    ...       implements(ISourcePackageRelease)
-    ...       def __init__(self, component, creator, upload_distroseries):
-    ...           self.component = getUtility(IComponentSet)[component]
-    ...           self.upload_distroseries = upload_distroseries
-    ...           self.creator = creator
-    ...           self.packageupload = 1
-    ...
-    ...       def attachTranslationFiles(self, file, imported, importer):
-    ...           if (importer is not None and
-    ...               not IPerson.providedBy(importer)):
-    ...               print "`importer` not a person!"
-    ...           print "Imported by: %s" % (
-    ...               getattr(importer, "name", "None"))
-
-    >>> class MockPackageUpload:
-    ...     implements(IPackageUpload)
-    ...     def __init__(self, pocket, auto_sync, sourcepackagerelease,
-    ...                  archive):
-    ...         self.id = 1
-    ...         self.pocket = pocket
-    ...         self.auto_sync = auto_sync
-    ...         self.sourcepackagerelease = sourcepackagerelease
-    ...         self.archive = archive
-    ...
-    ...     def isAutoSyncUpload(self, changed_by_email=None):
-    ...         return self.auto_sync
-
-    >>> class MockPackageUploadCustom(PackageUploadCustom):
-    ...     implements(IPackageUploadCustom)
-    ...     packageupload = None
-    ...
-    ...     def __init__(self):
-    ...         self.customformat = (
-    ...             PackageUploadCustomFormat.ROSETTA_TRANSLATIONS)
-
-For translations from auto-synced packages we consider the importer to be
-'katie' (archive@ubuntu.com).
-
-    >>> katie = getUtility(ILaunchpadCelebrities).katie
-    >>> release_pocket = PackagePublishingPocket.RELEASE
-    >>> archive = MockArchive(ArchivePurpose.PRIMARY)
-
-    >>> distro_series = MockDistroSeries(u'9.04')
-    >>> katie_sourcepackagerelease = MockSourcePackageRelease(
-    ...     'main', katie, distro_series)
-    >>> sync_package_upload = MockPackageUpload(
-    ...     release_pocket, True, katie_sourcepackagerelease, archive)
-    >>> sync_package_upload.isAutoSyncUpload()
-    True
-    >>> translations_upload = MockPackageUploadCustom()
-    >>> translations_upload.packageupload = sync_package_upload
-    >>> translations_upload.publishRosettaTranslations()
-    Imported by: katie
-
-Non-auto-sync uploads by 'katie' still indicate 'katie' as the uploader.
-
-    >>> non_sync_package_upload = MockPackageUpload(
-    ...     release_pocket, False, katie_sourcepackagerelease, archive)
-    >>> non_sync_package_upload.isAutoSyncUpload()
-    False
-    >>> translations_upload.packageupload = non_sync_package_upload
-    >>> translations_upload.publishRosettaTranslations()
-    Imported by: katie
-
-Uploads by anyone else are treated as if importer is the packager.
-
-    >>> person_set = getUtility(IPersonSet)
-    >>> carlos = person_set.getByName('carlos')
-    >>> carlos_sourcepackagerelease = MockSourcePackageRelease(
-    ...     'main', carlos, distro_series)
-    >>> carlos_package_upload = MockPackageUpload(
-    ...     release_pocket, False, carlos_sourcepackagerelease, archive)
-    >>> carlos_package_upload.isAutoSyncUpload()
-    False
-    >>> translations_upload.packageupload = carlos_package_upload
-    >>> translations_upload.publishRosettaTranslations()
-    Imported by: carlos
-
-Uploads for distroseries before Oneiric or later may not be targeted
-to any component but 'main' and 'restricted'.  The upload attempt is ignored.
-
-    >>> katie_sourcepackagerelease = MockSourcePackageRelease(
-    ...     'universe', katie, distro_series)
-    >>> sync_package_upload = MockPackageUpload(
-    ...     release_pocket, True, katie_sourcepackagerelease, archive)
-    >>> translations_upload = MockPackageUploadCustom()
-    >>> translations_upload.packageupload = sync_package_upload
-    >>> translations_upload.publishRosettaTranslations()
-
-For Oneiric the import succeeds for 'universe'.
-
-    >>> distro_series = MockDistroSeries(u'11.10')
-    >>> katie_sourcepackagerelease = MockSourcePackageRelease(
-    ...     'universe', katie, distro_series)
-    >>> sync_package_upload = MockPackageUpload(
-    ...     release_pocket, True, katie_sourcepackagerelease, archive)
-    >>> translations_upload = MockPackageUploadCustom()
-    >>> translations_upload.packageupload = sync_package_upload
-    >>> translations_upload.publishRosettaTranslations()
-    Imported by: katie
-
-And for the 12.04 release the import succeeds for 'universe'.
-
-    >>> distro_series = MockDistroSeries(u'12.04')
-    >>> katie_sourcepackagerelease = MockSourcePackageRelease(
-    ...     'universe', katie, distro_series)
-    >>> sync_package_upload = MockPackageUpload(
-    ...     release_pocket, True, katie_sourcepackagerelease, archive)
-    >>> translations_upload = MockPackageUploadCustom()
-    >>> translations_upload.packageupload = sync_package_upload
-    >>> translations_upload.publishRosettaTranslations()
-    Imported by: katie
-
-
 
 Translations tarball
 ~~~~~~~~~~~~~~~~~~~~
