@@ -20,12 +20,6 @@ class IPackageDiffJobSource(IJobSource):
     def create(packagediff):
         """Create a new diff generation job for a package diff."""
 
-    def get(packagediff):
-        """Retrieve the diff generation job for a package diff.
-
-        :return: `None` or an `IPackageDiffJob`.
-        """ 
-
 
 class IPackageDiffJob(IRunnableJob):
     """A `Job` that generates diffs for a given `IPackageDiff`s."""
