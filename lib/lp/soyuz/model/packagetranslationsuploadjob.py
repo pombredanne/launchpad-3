@@ -40,14 +40,14 @@ class PackageTranslationsUploadJobDerived(BaseRunnableJob):
     config = config.IPackageTranslationsUploadJobSource
 
     def __init__(self, job):
-        assert job.base_job_type == JobType.UPLOAD_TRANSLATIONS_FILES
+        assert job.base_job_type == JobType.UPLOAD_PACKAGE_TRANSLATIONS
         self.job = job
         self.context = self
 
     @classmethod
     def create(cls, sourcepackagerelease, libraryfilealias):
         job = Job(
-            base_job_type=JobType.UPLOAD_TRANSLATIONS_FILES,
+            base_job_type=JobType.UPLOAD_PACKAGE_TRANSLATIONS,
             requester=sourcepackagerelease.creator,
             base_json_data=simplejson.dumps(
                 {'sourcepackagerelease': sourcepackagerelease.id,
