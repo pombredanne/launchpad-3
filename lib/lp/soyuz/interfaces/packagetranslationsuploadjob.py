@@ -4,8 +4,8 @@
 __metaclass__ = type
 
 __all__ = [
-    "ITranslationsUploadJob",
-    "ITranslationsUploadJobSource",
+    "IPackageTranslationsUploadJob",
+    "IPackageTranslationsUploadJobSource",
     ]
 
 from lp.services.job.interfaces.job import (
@@ -14,8 +14,8 @@ from lp.services.job.interfaces.job import (
     )
 
 
-class ITranslationsUploadJobSource(IJobSource):
-    """An interface for acquiring ITranslationsUploadJob."""
+class IPackageTranslationsUploadJobSource(IJobSource):
+    """An interface for acquiring IPackageTranslationsUploadJob."""
 
     def create(sourcepackagerelease, libraryfilealias):
         """Create new translations upload job for a source package release."""
@@ -23,9 +23,9 @@ class ITranslationsUploadJobSource(IJobSource):
     def get(sourcepackagerelease, libraryfilealias):
         """Retrieve the translation's upload job for a source package release.
 
-        :return: `None` or an `ITranslationsUploadJob`.
+        :return: `None` or an `IPackageTranslationsUploadJob`.
         """ 
 
 
-class ITranslationsUploadJob(IRunnableJob):
+class IPackageTranslationsUploadJob(IRunnableJob):
     """A `Job` that uploads and attaches files to a `ISourcePackageRelease`."""

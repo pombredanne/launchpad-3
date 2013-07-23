@@ -8,11 +8,13 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.soyuz.interfaces.translationsuploadjob import (
-    ITranslationsUploadJob,
-    ITranslationsUploadJobSource,
+from lp.soyuz.interfaces.packagetranslationsuploadjob import (
+    IPackageTranslationsUploadJob,
+    IPackageTranslationsUploadJobSource,
     )
-from lp.soyuz.model.translationsuploadjob import TranslationsUploadJob
+from lp.soyuz.model.packagetranslationsuploadjob import (
+    PackageTranslationsUploadJob,
+    )
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.testing import (
@@ -48,7 +50,7 @@ class LocalTestHelper(TestCaseWithFactory):
         if libraryfilealias is None:
             libraryfilealias = self.makeTranslationsLFA()
         return (sourcepackagerelease,
-                getUtility(ITranslationsUploadJobSource).create(
+                getUtility(IPackageTranslationsUploadJobSource).create(
                     sourcepackagerelease, libraryfilealias))
 
     def makeTranslationsLFA(self):
@@ -62,23 +64,24 @@ class LocalTestHelper(TestCaseWithFactory):
         return self.factory.makeLibraryFileAlias(content=tarfile_content)
 
 
-class TestTranslationsUploadJob(LocalTestHelper):
+class TestPackageTranslationsUploadJob(LocalTestHelper):
 
     layer = LaunchpadZopelessLayer
 
-    def test_job_implements_ITranslationsUploadJob(self):
+    def test_job_implements_IPackageTranslationsUploadJob(self):
         _, job = self.makeJob()
-        self.assertTrue(verifyObject(ITranslationsUploadJob, job))
+        self.assertTrue(verifyObject(IPackageTranslationsUploadJob, job))
 
-    def test_job_source_implements_ITranslationsUploadJobSource(self):
-        job_source = getUtility(ITranslationsUploadJobSource)
-        self.assertTrue(verifyObject(ITranslationsUploadJobSource, job_source))
+    def test_job_source_implements_IPackageTranslationsUploadJobSource(self):
+        job_source = getUtility(IPackageTranslationsUploadJobSource)
+        self.assertTrue(verifyObject(IPackageTranslationsUploadJobSource,
+            job_source))
 
     def test_iterReady(self):
         _, job1 = self.makeJob()
         removeSecurityProxy(job1).job._status = JobStatus.COMPLETED
         _, job2 = self.makeJob()
-        jobs = list(TranslationsUploadJob.iterReady())
+        jobs = list(PackageTranslationsUploadJob.iterReady())
         self.assertEqual(1, len(jobs))
 
     def test_importer_is_creator(self):
@@ -105,7 +108,7 @@ class TestTranslationsUploadJob(LocalTestHelper):
         transaction.commit()
         out, err, exit_code = run_script(
             "LP_DEBUG_SQL=1 cronscripts/process-job-source.py -vv %s" % (
-                ITranslationsUploadJobSource.getName()))
+                IPackageTranslationsUploadJobSource.getName()))
 
         self.addDetail("stdout", text_content(out))
         self.addDetail("stderr", text_content(err))
@@ -118,13 +121,13 @@ class TestTranslationsUploadJob(LocalTestHelper):
 
 
 class TestViaCelery(LocalTestHelper):
-    """TranslationsUploadJob runs under Celery."""
+    """PackageTranslationsUploadJob runs under Celery."""
 
     layer = CeleryJobLayer
 
     def test_run(self):
         self.useFixture(FeatureFixture({
-            'jobs.celery.enabled_classes': 'TranslationsUploadJob',
+            'jobs.celery.enabled_classes': 'PackageTranslationsUploadJob',
         }))
 
         spr, job = self.makeJob()

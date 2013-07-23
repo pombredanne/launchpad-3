@@ -103,8 +103,8 @@ from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     name_priority_map,
     )
-from lp.soyuz.interfaces.translationsuploadjob import (
-    ITranslationsUploadJobSource,
+from lp.soyuz.interfaces.packagetranslationsuploadjob import (
+    IPackageTranslationsUploadJobSource,
     )
 from lp.soyuz.interfaces.queue import (
     IPackageUpload,
@@ -1455,7 +1455,7 @@ class PackageUploadCustom(SQLBase):
             # packages in main.
             return None
 
-        getUtility(ITranslationsUploadJobSource).create(
+        getUtility(IPackageTranslationsUploadJobSource).create(
             sourcepackagerelease, self.libraryfilealias)
 
     def publishStaticTranslations(self, logger=None):

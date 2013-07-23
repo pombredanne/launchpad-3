@@ -995,17 +995,17 @@
       <allow interface=".interfaces.packagediffjob.IPackageDiffJob" />
     </class>
 
-    <!-- TranslationsUploadJobSource -->
+    <!-- PackageTranslationsUploadJobSource -->
     <securedutility
-      component=".model.translationsuploadjob.TranslationsUploadJob"
-      provides=".interfaces.translationsuploadjob.ITranslationsUploadJobSource">
-      <allow interface=".interfaces.translationsuploadjob.ITranslationsUploadJobSource" />
+      component=".model.packagetranslationsuploadjob.PackageTranslationsUploadJob"
+      provides=".interfaces.packagetranslationsuploadjob.IPackageTranslationsUploadJobSource">
+      <allow interface=".interfaces.packagetranslationsuploadjob.IPackageTranslationsUploadJobSource" />
     </securedutility>
 
-    <!-- TranslationsUploadJob -->
-    <class class=".model.translationsuploadjob.TranslationsUploadJob">
+    <!-- PackageTranslationsUploadJob -->
+    <class class=".model.packagetranslationsuploadjob.PackageTranslationsUploadJob">
       <allow
-      interface=".interfaces.translationsuploadjob.ITranslationsUploadJob" />
+      interface=".interfaces.packagetranslationsuploadjob.IPackageTranslationsUploadJob" />
     </class>
     <webservice:register module="lp.soyuz.interfaces.webservice" />
 

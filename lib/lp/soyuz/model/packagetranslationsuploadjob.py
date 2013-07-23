@@ -4,7 +4,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'TranslationsUploadJob',
+    'PackageTranslationsUploadJob',
     ]
 
 from lazr.delegates import delegates
@@ -24,20 +24,20 @@ from lp.services.job.model.job import (
     )
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
-from lp.soyuz.interfaces.translationsuploadjob import (
-    ITranslationsUploadJob,
-    ITranslationsUploadJobSource,
+from lp.soyuz.interfaces.packagetranslationsuploadjob import (
+    IPackageTranslationsUploadJob,
+    IPackageTranslationsUploadJobSource,
     )
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
-class TranslationsUploadJobDerived(BaseRunnableJob):
+class PackageTranslationsUploadJobDerived(BaseRunnableJob):
 
     __metaclass__ = EnumeratedSubclass
 
-    delegates(ITranslationsUploadJob)
-    classProvides(ITranslationsUploadJobSource)
-    config = config.ITranslationsUploadJobSource
+    delegates(IPackageTranslationsUploadJob)
+    classProvides(IPackageTranslationsUploadJobSource)
+    config = config.IPackageTranslationsUploadJobSource
 
     def __init__(self, job):
         assert job.base_job_type == JobType.UPLOAD_TRANSLATIONS_FILES
@@ -60,14 +60,14 @@ class TranslationsUploadJobDerived(BaseRunnableJob):
     def iterReady(cls):
         jobs = IStore(Job).find(
             Job, Job.id.is_in(Job.ready_jobs),
-            Job.base_job_type == JobType.UPLOAD_TRANSLATIONS_FILES)
+            Job.base_job_type == JobType.UPLOAD_PACKAGE_TRANSLATIONS)
         return [cls(job) for job in jobs]
 
 
-class TranslationsUploadJob(TranslationsUploadJobDerived):
+class PackageTranslationsUploadJob(PackageTranslationsUploadJobDerived):
 
-    implements(ITranslationsUploadJob)
-    classProvides(ITranslationsUploadJobSource)
+    implements(IPackageTranslationsUploadJob)
+    classProvides(IPackageTranslationsUploadJobSource)
 
     @property
     def sourcepackagerelease_id(self):
