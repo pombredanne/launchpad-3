@@ -3,26 +3,19 @@
 
 __metaclass__ = type
 
-import os.path
-
 from testtools.content import text_content
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.soyuz.enums import (
-    PackageDiffStatus,
-    )
 from lp.soyuz.interfaces.translationsuploadjob import (
     ITranslationsUploadJob,
     ITranslationsUploadJobSource,
     )
 from lp.soyuz.model.translationsuploadjob import TranslationsUploadJob
-from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.testing import (
-    admin_logged_in,
     run_script,
     TestCaseWithFactory,
     verifyObject,
