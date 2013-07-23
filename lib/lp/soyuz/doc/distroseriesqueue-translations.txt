@@ -30,7 +30,8 @@ uploaded into the system.
     >>> from lp.services.database.constants import UTC_NOW
     >>> from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 
-    >>> from lp.soyuz.model.translationsuploadjob import TranslationsUploadJob
+    >>> from lp.soyuz.model.packagetranslationsuploadjob import (
+    ...     PackageTranslationsUploadJob)
 
 # Login as an admin.
     >>> login('foo.bar@canonical.com')
@@ -158,14 +159,14 @@ An upload to the RELEASE pocket will add items to the import queue:
     ...     status=PackageUploadStatus.NEW)[0]
     >>> queue_item.customfiles[0].publish()
 
-When publish() runs, it creates a TranslationsUploadJob that will effectively
-process the translation files. We need to find and run it to be able to
+When publish() runs, it creates a PackageTranslationsUploadJob that will
+process the package translation files. We need to find and run it to be able to
 verify the imported files.
-    >>> def runPendingTranslationUploadJob():
-    ...     job = list(TranslationsUploadJob.iterReady())[0]
+    >>> def runPendingPackageTranslationsUploadJob():
+    ...     job = list(PackageTranslationsUploadJob.iterReady())[0]
     ...     job.run()
 
-    >>> runPendingTranslationUploadJob()
+    >>> runPendingPackageTranslationsUploadJob()
 
 As we can see from the translation import queue content.
 
@@ -216,7 +217,7 @@ But an upload to the UPDATE pocket will add items to the import queue:
     >>> queue_item = dapper.getPackageUploads(PackageUploadStatus.NEW)[0]
     >>> queue_item.pocket = PackagePublishingPocket.UPDATES
     >>> queue_item.customfiles[0].publish()
-    >>> runPendingTranslationUploadJob()
+    >>> runPendingPackageTranslationsUploadJob()
 
 As we can see from the translation import queue content.
 
@@ -250,7 +251,7 @@ Uploads to restricted component are accepted too.
     >>> queue_item.builds[0].build.source_package_release.override(
     ...     component=restricted_component)
     >>> queue_item.customfiles[0].publish()
-    >>> runPendingTranslationUploadJob()
+    >>> runPendingPackageTranslationsUploadJob()
 
 As we can see from the translation import queue content.
 
