@@ -995,6 +995,18 @@
       <allow interface=".interfaces.packagediffjob.IPackageDiffJob" />
     </class>
 
+    <!-- TranslationsUploadJobSource -->
+    <securedutility
+      component=".model.translationsuploadjob.TranslationsUploadJob"
+      provides=".interfaces.translationsuploadjob.ITranslationsUploadJobSource">
+      <allow interface=".interfaces.translationsuploadjob.ITranslationsUploadJobSource" />
+    </securedutility>
+
+    <!-- TranslationsUploadJob -->
+    <class class=".model.translationsuploadjob.TranslationsUploadJob">
+      <allow
+      interface=".interfaces.translationsuploadjob.ITranslationsUploadJob" />
+    </class>
     <webservice:register module="lp.soyuz.interfaces.webservice" />
 
 </configure>
