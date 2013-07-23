@@ -73,7 +73,6 @@ from lp.services.database.stormexpr import (
     )
 from lp.services.features import getFeatureFlag
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
-from lp.services.librarian.interfaces.client import DownloadFailed
 from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,

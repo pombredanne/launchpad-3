@@ -24,7 +24,7 @@ class IPackageTranslationsUploadJobSource(IJobSource):
         """Retrieve the translation's upload job for a source package release.
 
         :return: `None` or an `IPackageTranslationsUploadJob`.
-        """ 
+        """
 
 
 class IPackageTranslationsUploadJob(IRunnableJob):
