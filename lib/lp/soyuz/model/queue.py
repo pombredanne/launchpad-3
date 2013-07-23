@@ -103,6 +103,9 @@ from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     name_priority_map,
     )
+from lp.soyuz.interfaces.translationsuploadjob import (
+    ITranslationsUploadJobSource,
+    )
 from lp.soyuz.interfaces.queue import (
     IPackageUpload,
     IPackageUploadBuild,
@@ -1450,19 +1453,10 @@ class PackageUploadCustom(SQLBase):
             # Ubuntu's MOTU told us that they are not able to handle
             # translations like we do in main. We are going to import only
             # packages in main.
-            return
+            return None
 
-        # Set the importer to package creator.
-        importer = sourcepackagerelease.creator
-
-        # Attach the translation tarball. It's always published.
-        try:
-            sourcepackagerelease.attachTranslationFiles(
-                self.libraryfilealias, True, importer=importer)
-        except DownloadFailed:
-            if logger is not None:
-                debug(logger, "Unable to fetch %s to import it into Rosetta" %
-                    self.libraryfilealias.http_url)
+        getUtility(ITranslationsUploadJobSource).create(
+            sourcepackagerelease, self.libraryfilealias)
 
     def publishStaticTranslations(self, logger=None):
         """See `IPackageUploadCustom`."""
