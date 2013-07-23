@@ -676,7 +676,7 @@ class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
                 expected_config = errorlog.ErrorReportingUtility()
                 expected_config.configure('merge_proposal_jobs')
                 self.assertEqual(
-                    'T-merge_proposal_jobs',
+                    'T-IBranchMergeProposalJobSource',
                     errorlog.globalErrorUtility.oops_prefix)
                 return cls()
 
@@ -684,7 +684,7 @@ class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
             incomplete_jobs = []
 
         class JobCronScriptSubclass(JobCronScript):
-            config_name = 'merge_proposal_jobs'
+            config_name = 'IBranchMergeProposalJobSource'
             source_interface = IUpdatePreviewDiffJobSource
 
             def __init__(self):
