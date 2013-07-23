@@ -1452,7 +1452,7 @@ class PackageUploadCustom(SQLBase):
             # Ubuntu's MOTU told us that they are not able to handle
             # translations like we do in main. We are going to import only
             # packages in main.
-            return None
+            return
 
         getUtility(IPackageTranslationsUploadJobSource).create(
             sourcepackagerelease, self.libraryfilealias)
