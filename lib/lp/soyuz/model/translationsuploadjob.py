@@ -57,13 +57,6 @@ class TranslationsUploadJobDerived(BaseRunnableJob):
         return derived
 
     @classmethod
-    def get(cls, sourcepackagerelease, libraryfilealias):
-        metadata = simplejson.dumps(
-            {'sourcepackagerelease': sourcepackagerelease.id,
-             'libraryfilealias': libraryfilealias.id})
-        return cls(IStore(Job).find(Job, Job.base_json_data == metadata).one())
-
-    @classmethod
     def iterReady(cls):
         jobs = IStore(Job).find(
             Job, Job.id.is_in(Job.ready_jobs),
