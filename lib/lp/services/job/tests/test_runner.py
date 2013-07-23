@@ -18,7 +18,6 @@ from testtools.testcase import ExpectedException
 import transaction
 from zope.interface import implements
 
-from lp.code.interfaces.branchmergeproposal import IUpdatePreviewDiffJobSource
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import (
@@ -29,14 +28,10 @@ from lp.services.job.model.job import Job
 from lp.services.job.runner import (
     BaseRunnableJob,
     celery_enabled,
-    JobCronScript,
     JobRunner,
     TwistedJobRunner,
     )
-from lp.services.log.logger import (
-    BufferLogger,
-    DevNullLogger,
-    )
+from lp.services.log.logger import BufferLogger
 from lp.services.webapp import errorlog
 from lp.testing import (
     TestCaseWithFactory,
@@ -660,65 +655,6 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         self.assertIn('Could not acquire lease', logger.getLogBuffer())
         self.assertEqual(
             (0, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
-
-
-class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
-
-    layer = LaunchpadZopelessLayer
-
-    def test_configures_oops_handler(self):
-        """JobCronScript.main should configure the global error utility."""
-
-        class DummyRunner:
-
-            @classmethod
-            def runFromSource(cls, source, dbuser, logger):
-                expected_config = errorlog.ErrorReportingUtility()
-                expected_config.configure('merge_proposal_jobs')
-                self.assertEqual(
-                    'T-IBranchMergeProposalJobSource',
-                    errorlog.globalErrorUtility.oops_prefix)
-                return cls()
-
-            completed_jobs = []
-            incomplete_jobs = []
-
-        class JobCronScriptSubclass(JobCronScript):
-            config_name = 'IBranchMergeProposalJobSource'
-            source_interface = IUpdatePreviewDiffJobSource
-
-            def __init__(self):
-                super(JobCronScriptSubclass, self).__init__(
-                    DummyRunner, test_args=[])
-                self.logger = DevNullLogger()
-
-        old_errorlog = errorlog.globalErrorUtility
-        try:
-            errorlog.globalErrorUtility = errorlog.ErrorReportingUtility()
-            cronscript = JobCronScriptSubclass()
-            cronscript.main()
-        finally:
-            errorlog.globalErrorUtility = old_errorlog
-
-    def test_log_twisted_option_for_twisted_runner(self):
-        """TwistedJobRunner creates --log-twisted flag."""
-        jcs = JobCronScript(TwistedJobRunner, test_args=[])
-        self.assertIsNot(None, getattr(jcs.options, 'log_twisted', None))
-
-    def test_no_log_twisted_option_for_plain_runner(self):
-        """JobRunner has no --log-twisted flag."""
-        jcs = JobCronScript(JobRunner, test_args=[])
-        self.assertIs(None, getattr(jcs.options, 'log_twisted', None))
-
-    def test_log_twisted_flag(self):
-        """--log-twisted sets JobCronScript.log_twisted True."""
-        jcs = JobCronScript(TwistedJobRunner, test_args=['--log-twisted'])
-        self.assertTrue(jcs.log_twisted)
-
-    def test_no_log_twisted_flag(self):
-        """No --log-twisted sets JobCronScript.log_twisted False."""
-        jcs = JobCronScript(TwistedJobRunner, test_args=[])
-        self.assertFalse(jcs.log_twisted)
 
 
 class TestCeleryEnabled(TestCaseWithFactory):
