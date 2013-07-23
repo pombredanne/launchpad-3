@@ -7,14 +7,14 @@ __metaclass__ = type
 
 from datetime import datetime
 
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.config import config
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
+from lp.services.job.interfaces.job import JobType
+from lp.services.job.model.job import Job
 from lp.soyuz.enums import PackageDiffStatus
-from lp.soyuz.interfaces.packagediffjob import IPackageDiffJobSource
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.tests.soyuz import TestPackageDiffsBase
 from lp.testing import TestCaseWithFactory
@@ -128,8 +128,7 @@ class TestPackageDiffs(TestPackageDiffsBase, TestCaseWithFactory):
         self.assertFalse(diff.private)
 
     def test_job_created(self):
-        ppa = self.factory.makeArchive()
-        from_spr = self.factory.makeSourcePackageRelease(archive=ppa)
-        to_spr = self.factory.makeSourcePackageRelease(archive=ppa)
-        diff = from_spr.requestDiffTo(ppa.owner, to_spr)
-        self.assertIsNot(None, getUtility(IPackageDiffJobSource).get(diff))
+        # The setup code already creates a packagediff.
+        [job] = IStore(Job).find(
+            Job, Job.base_job_type == JobType.GENERATE_PACKAGE_DIFF)
+        self.assertIsNot(None, job)

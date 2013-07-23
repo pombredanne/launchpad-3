@@ -10,6 +10,9 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.services.database.interfaces import IStore
+from lp.services.job.interfaces.job import JobType
+from lp.services.job.model.job import Job
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.packagediffjob import (
     IPackageDiffJob,
@@ -72,7 +75,10 @@ class TestPackageDiffJob(TestCaseWithFactory):
         from_spr = self.factory.makeSourcePackageRelease(archive=ppa)
         to_spr = self.factory.makeSourcePackageRelease(archive=ppa)
         diff = from_spr.requestDiffTo(ppa.owner, to_spr)
-        return diff, getUtility(IPackageDiffJobSource).get(diff)
+        job = IStore(Job).find(
+            Job, Job.base_job_type == JobType.GENERATE_PACKAGE_DIFF).order_by(
+                Job.id).last()
+        return diff, PackageDiffJob(job)
 
     def test_job_implements_IPackageDiffJob(self):
         _, job = self.makeJob()

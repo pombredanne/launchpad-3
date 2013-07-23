@@ -54,11 +54,6 @@ class PackageDiffJobDerived(BaseRunnableJob):
         return derived
 
     @classmethod
-    def get(cls, packagediff):
-        metadata = simplejson.dumps({'packagediff': packagediff.id})
-        return cls(IStore(Job).find(Job, Job.base_json_data == metadata).one())
-
-    @classmethod
     def iterReady(cls):
         jobs = IStore(Job).find(
             Job, Job.id.is_in(Job.ready_jobs),
