@@ -37,7 +37,8 @@ from lp.translations.interfaces.translationimportqueue import (
 class LocalTestHelper(TestCaseWithFactory):
 
     def makeJob(self, spr_creator=None, archive=None,
-                sourcepackagerelease=None, libraryfilealias=None):
+                sourcepackagerelease=None, libraryfilealias=None,
+                tar_content=None):
         if spr_creator is None:
             creator = self.factory.makePerson()
         else:
@@ -48,19 +49,20 @@ class LocalTestHelper(TestCaseWithFactory):
             sourcepackagerelease = self.factory.makeSourcePackageRelease(
                 archive=archive, creator=creator)
         if libraryfilealias is None:
-            libraryfilealias = self.makeTranslationsLFA()
+            libraryfilealias = self.makeTranslationsLFA(tar_content)
         return (sourcepackagerelease,
                 getUtility(IPackageTranslationsUploadJobSource).create(
                     sourcepackagerelease, libraryfilealias))
 
-    def makeTranslationsLFA(self):
+    def makeTranslationsLFA(self, tar_content=None):
         """Create an LibraryFileAlias containing dummy translation data."""
-        test_tar_content = {
-            'source/po/foo.pot': 'Foo template',
-            'source/po/eo.po': 'Foo translation',
-            }
+        if tar_content is None:
+            tar_content = {
+                'source/po/foo.pot': 'Foo template',
+                'source/po/eo.po': 'Foo translation',
+                }
         tarfile_content = LaunchpadWriteTarFile.files_to_string(
-            test_tar_content)
+            tar_content)
         return self.factory.makeLibraryFileAlias(content=tarfile_content)
 
 
@@ -104,7 +106,10 @@ class TestPackageTranslationsUploadJob(LocalTestHelper):
         self.assertEqual(method.call_count, 1)
 
     def test_smoke(self):
-        spr, job = self.makeJob()
+        tar_content = {
+            'source/po/foobar.pot': 'FooBar template',
+        }
+        spr, job = self.makeJob(tar_content=tar_content)
         transaction.commit()
         out, err, exit_code = run_script(
             "LP_DEBUG_SQL=1 cronscripts/process-job-source.py -vv %s" % (
@@ -116,8 +121,11 @@ class TestPackageTranslationsUploadJob(LocalTestHelper):
         self.assertEqual(0, exit_code)
         translation_import_queue = getUtility(ITranslationImportQueue)
         entries_in_queue = translation_import_queue.getAllEntries(
-                target=spr.sourcepackage).count()
-        self.assertEqual(2, entries_in_queue)
+            target=spr.sourcepackage)
+
+        self.assertEqual(1, entries_in_queue.count())
+        # Check if the file in tar_content is queued:
+        self.assertTrue("po/foobar.pot", entries_in_queue[0].path)
 
 
 class TestViaCelery(LocalTestHelper):
