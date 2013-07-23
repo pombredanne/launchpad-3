@@ -20,12 +20,6 @@ class IPackageTranslationsUploadJobSource(IJobSource):
     def create(sourcepackagerelease, libraryfilealias):
         """Create new translations upload job for a source package release."""
 
-    def get(sourcepackagerelease, libraryfilealias):
-        """Retrieve the translation's upload job for a source package release.
-
-        :return: `None` or an `IPackageTranslationsUploadJob`.
-        """
-
 
 class IPackageTranslationsUploadJob(IRunnableJob):
     """A `Job` that uploads and attaches files to a `ISourcePackageRelease`."""
