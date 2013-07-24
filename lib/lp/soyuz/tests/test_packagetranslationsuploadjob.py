@@ -104,6 +104,9 @@ class TestPackageTranslationsUploadJob(LocalTestHelper):
         spr, job = self.makeJob()
         email = format_address_for_person(job.requester)
         self.assertEquals([email], job.getErrorRecipients())
+        removeSecurityProxy(job).requester = None
+        self.assertEquals([], job.getErrorRecipients())
+
 
     def test_run(self):
         archive = self.factory.makeArchive()
