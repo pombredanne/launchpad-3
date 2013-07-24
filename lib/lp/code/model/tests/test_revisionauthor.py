@@ -14,7 +14,6 @@ from lp.code.model.revision import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.scripts.garbo import RevisionAuthorEmailLinker
-from lp.services.config import config
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.log.logger import DevNullLogger
 from lp.testing import TestCase
@@ -39,7 +38,7 @@ class TestRevisionEmailExtraction(TestCase):
 
     def setUp(self):
         super(TestRevisionEmailExtraction, self).setUp()
-        switch_dbuser(config.branchscanner.dbuser)
+        switch_dbuser("branchscanner")
 
     def test_email_extracted_from_name(self):
         # Check that a valid email address is extracted from the name.
@@ -91,7 +90,7 @@ class TestRevisionAuthorMatching(MakeHarryTestCase):
     """
 
     def _createRevisionAuthor(self):
-        switch_dbuser(config.branchscanner.dbuser)
+        switch_dbuser("branchscanner")
         return RevisionSet()._createRevisionAuthor(
             '"Harry Potter" <harry@canonical.com>')
 
@@ -138,7 +137,7 @@ class TestNewlyValidatedEmailsLinkRevisionAuthors(MakeHarryTestCase):
     def setUp(self):
         # Create a revision author that doesn't have a user yet.
         super(TestNewlyValidatedEmailsLinkRevisionAuthors, self).setUp()
-        with dbuser(config.branchscanner.dbuser):
+        with dbuser("branchscanner"):
             self.author = RevisionSet()._createRevisionAuthor(
                 '"Harry Potter" <harry@canonical.com>')
         # Reget the revision author as we have crossed a transaction boundary.
@@ -175,7 +174,7 @@ class TestRevisionAuthor(TestCase):
 
     def setUp(self):
         super(TestRevisionAuthor, self).setUp()
-        switch_dbuser(config.branchscanner.dbuser)
+        switch_dbuser("branchscanner")
 
     def testGetNameWithoutEmailReturnsNamePart(self):
         # name_without_email is equal to the 'name' part of the revision

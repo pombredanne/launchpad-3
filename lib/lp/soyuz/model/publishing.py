@@ -1445,20 +1445,18 @@ class PublishingSet:
             return []
 
         BPPH = BinaryPackagePublishingHistory
-        # XXX cjwatson 2013-02-13: We do not currently set the
-        # phased_update_percentage here.  However, it might be useful in
-        # future to be able to copy a package from PROPOSED to UPDATES and
-        # immediately set its phased_update_percentage to zero; this should
-        # perhaps be an option.
         return bulk.create(
             (BPPH.archive, BPPH.distroarchseries, BPPH.pocket,
              BPPH.binarypackagerelease, BPPH.binarypackagename,
-             BPPH.component, BPPH.section, BPPH.priority, BPPH.status,
-             BPPH.datecreated),
+             BPPH.component, BPPH.section, BPPH.priority,
+             BPPH.phased_update_percentage, BPPH.status, BPPH.datecreated),
             [(archive, das, pocket, bpr, bpr.binarypackagename,
               get_component(archive, das.distroseries, component),
-              section, priority, PackagePublishingStatus.PENDING, UTC_NOW)
-              for (das, bpr, (component, section, priority)) in needed],
+              section, priority, phased_update_percentage,
+              PackagePublishingStatus.PENDING, UTC_NOW)
+              for (das, bpr,
+                   (component, section, priority,
+                    phased_update_percentage)) in needed],
             get_objects=True)
 
     def copyBinaries(self, archive, distroseries, pocket, bpphs, policy=None):
@@ -1500,7 +1498,14 @@ class PublishingSet:
                 new_component = override.component or bpph.component
                 new_section = override.section or bpph.section
                 new_priority = override.priority or bpph.priority
-                calculated = (new_component, new_section, new_priority)
+                # No "or bpph.phased_update_percentage" here; if the
+                # override doesn't specify one then we leave it at None
+                # (a.k.a. 100% of users).
+                new_phased_update_percentage = (
+                    override.phased_update_percentage)
+                calculated = (
+                    new_component, new_section, new_priority,
+                    new_phased_update_percentage)
                 with_overrides[bpph.binarypackagerelease] = calculated
 
                 # If there is a corresponding DDEB then give it our
@@ -1514,7 +1519,7 @@ class PublishingSet:
         else:
             with_overrides = dict(
                 (bpph.binarypackagerelease, (bpph.component, bpph.section,
-                 bpph.priority)) for bpph in bpphs)
+                 bpph.priority, None)) for bpph in bpphs)
         if not with_overrides:
             return list()
         return self.publishBinaries(

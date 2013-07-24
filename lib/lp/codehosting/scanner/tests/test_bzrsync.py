@@ -84,7 +84,7 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
         self.disable_directory_isolation()
         self.useBzrBranches(direct_database=True)
         self.makeFixtures()
-        switch_dbuser(config.branchscanner.dbuser)
+        switch_dbuser("branchscanner")
         # Catch both constraints and permissions for the db user.
         self.addCleanup(Store.of(self.db_branch).flush)
 
@@ -672,7 +672,7 @@ class TestUpdatePreviewDiffJob(BzrSyncTestCase):
         bmp.next_preview_diff_job.start()
         bmp.next_preview_diff_job.complete()
         self.assertIs(None, bmp.next_preview_diff_job)
-        switch_dbuser(config.branchscanner.dbuser)
+        switch_dbuser("branchscanner")
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         self.assertIsNot(None, bmp.next_preview_diff_job)
 
@@ -703,7 +703,7 @@ class TestGenerateIncrementalDiffJob(BzrSyncTestCase):
         revision_id = commit_file(self.db_branch, 'foo', 'baz')
         removeSecurityProxy(bmp).target_branch.last_scanned_id = 'rev'
         self.assertEqual([], self.getPending())
-        switch_dbuser(config.branchscanner.dbuser)
+        switch_dbuser("branchscanner")
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         (job,) = self.getPending()
         self.assertEqual(revision_id, job.new_revision_id)
@@ -719,7 +719,7 @@ class TestSetRecipeStale(BzrSyncTestCase):
         recipe = self.factory.makeSourcePackageRecipe(
             branches=[self.db_branch])
         removeSecurityProxy(recipe).is_stale = False
-        switch_dbuser(config.branchscanner.dbuser)
+        switch_dbuser("branchscanner")
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         self.assertEqual(True, recipe.is_stale)
 
@@ -729,7 +729,7 @@ class TestSetRecipeStale(BzrSyncTestCase):
         recipe = self.factory.makeSourcePackageRecipe(
             branches=[self.factory.makeBranch(), self.db_branch])
         removeSecurityProxy(recipe).is_stale = False
-        switch_dbuser(config.branchscanner.dbuser)
+        switch_dbuser("branchscanner")
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         self.assertEqual(True, recipe.is_stale)
 
@@ -738,7 +738,7 @@ class TestSetRecipeStale(BzrSyncTestCase):
         """On tip unrelated recipes are left alone."""
         recipe = self.factory.makeSourcePackageRecipe()
         removeSecurityProxy(recipe).is_stale = False
-        switch_dbuser(config.branchscanner.dbuser)
+        switch_dbuser("branchscanner")
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         self.assertEqual(False, recipe.is_stale)
 

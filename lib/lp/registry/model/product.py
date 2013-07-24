@@ -194,6 +194,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.database.stormexpr import fti_search
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -1995,11 +1996,9 @@ class ProductSet:
     @classmethod
     def search(cls, user=None, text=None):
         """See lp.registry.interfaces.product.IProductSet."""
-        conditions = [Product.active,
-                      cls.getProductPrivacyFilter(user)]
+        conditions = [Product.active, cls.getProductPrivacyFilter(user)]
         if text:
-            conditions.append(
-                SQL("Product.fti @@ ftq(%s) " % sqlvalues(text)))
+            conditions.append(fti_search(Product, text))
         result = IStore(Product).find(Product, *conditions)
 
         def eager_load(products):

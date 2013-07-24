@@ -174,13 +174,6 @@ class SharingJobDerived(BaseRunnableJob):
     delegates(ISharingJob)
     classProvides(ISharingJobSource)
 
-    @staticmethod
-    @contextlib.contextmanager
-    def contextManager():
-        """See `IJobSource`."""
-        errorlog.globalErrorUtility.configure('ISharingJobSource')
-        yield
-
     def __init__(self, job):
         self.context = job
 
