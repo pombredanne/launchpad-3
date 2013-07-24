@@ -34,6 +34,7 @@ from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
 
+
 class LocalTestHelper(TestCaseWithFactory):
 
     def makeJob(self, spr_creator=None, archive=None,
@@ -81,7 +82,7 @@ class TestPackageTranslationsUploadJob(LocalTestHelper):
     def test_job_source_implements_IPackageTranslationsUploadJobSource(self):
         job_source = getUtility(IPackageTranslationsUploadJobSource)
         self.assertTrue(verifyObject(IPackageTranslationsUploadJobSource,
-            job_source))
+                                     job_source))
 
     def test_iterReady(self):
         _, job1 = self.makeJob()
@@ -152,5 +153,5 @@ class TestViaCelery(LocalTestHelper):
             transaction.commit()
         translation_import_queue = getUtility(ITranslationImportQueue)
         entries_in_queue = translation_import_queue.getAllEntries(
-                target=spr.sourcepackage).count()
+            target=spr.sourcepackage).count()
         self.assertEqual(2, entries_in_queue)
