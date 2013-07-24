@@ -326,14 +326,16 @@ class PackageUpload(SQLBase):
 
     def setNew(self):
         """See `IPackageUpload`."""
-        if self.status == PackageUploadStatus.NEW:
-            raise QueueInconsistentStateError('Queue item already new')
+        if self.status != PackageUploadStatus.NEW:
+            raise QueueInconsistentStateError(
+                'Can not set modified queue items to NEW.')
         self.status = PassthroughStatusValue(PackageUploadStatus.NEW)
 
     def setUnapproved(self):
         """See `IPackageUpload`."""
-        if self.status == PackageUploadStatus.UNAPPROVED:
-            raise QueueInconsistentStateError('Queue item already unapproved')
+        if self.status != PackageUploadStatus.NEW:
+            raise QueueInconsistentStateError(
+                'Can not set modified queue items to UNAPPROVED.')
         self.status = PassthroughStatusValue(PackageUploadStatus.UNAPPROVED)
 
     def setAccepted(self):
@@ -345,8 +347,11 @@ class PackageUpload(SQLBase):
             "series in the '%s' state." % (
             self.pocket.name, self.distroseries.status.name))
 
-        if self.status == PackageUploadStatus.ACCEPTED:
-            raise QueueInconsistentStateError('Queue item already accepted')
+        if self.status not in (
+                PackageUploadStatus.NEW, PackageUploadStatus.UNAPPROVED,
+                PackageUploadStatus.REJECTED):
+            raise QueueInconsistentStateError(
+                'Unable to accept queue item due to status.')
 
         for source in self.sources:
             source.verifyBeforeAccept()
@@ -437,8 +442,11 @@ class PackageUpload(SQLBase):
 
     def setRejected(self):
         """See `IPackageUpload`."""
-        if self.status == PackageUploadStatus.REJECTED:
-            raise QueueInconsistentStateError('Queue item already rejected')
+        if self.status not in (
+                PackageUploadStatus.NEW, PackageUploadStatus.UNAPPROVED,
+                PackageUploadStatus.ACCEPTED):
+            raise QueueInconsistentStateError(
+                'Unable to reject queue item due to status.')
         self.status = PassthroughStatusValue(PackageUploadStatus.REJECTED)
 
     def _closeBugs(self, changesfile_path, logger=None):
