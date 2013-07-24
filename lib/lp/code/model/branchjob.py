@@ -315,7 +315,7 @@ class BranchScanJob(BranchJobDerived):
 
     task_queue = 'bzrsyncd_job'
 
-    config = config.branchscanner
+    config = config.IBranchScanJobSource
 
     @classmethod
     def create(cls, branch):
@@ -342,13 +342,6 @@ class BranchScanJob(BranchJobDerived):
                 log.warning('Skipping branch %s because it has been deleted.'
                     % self._cached_branch_name)
 
-    @classmethod
-    @contextlib.contextmanager
-    def contextManager(cls):
-        """See `IBranchScanJobSource`."""
-        errorlog.globalErrorUtility.configure('branchscanner')
-        yield
-
 
 class BranchUpgradeJob(BranchJobDerived):
     """A Job that upgrades branches to the current stable format."""
@@ -362,7 +355,7 @@ class BranchUpgradeJob(BranchJobDerived):
 
     task_queue = 'branch_write_job'
 
-    config = config.upgrade_branches
+    config = config.IBranchUpgradeJobSource
 
     def getOperationDescription(self):
         return 'upgrading a branch'
@@ -374,13 +367,6 @@ class BranchUpgradeJob(BranchJobDerived):
         branch_job = BranchJob(
             branch, cls.class_job_type, {}, requester=requester)
         return cls(branch_job)
-
-    @staticmethod
-    @contextlib.contextmanager
-    def contextManager():
-        """See `IBranchUpgradeJobSource`."""
-        errorlog.globalErrorUtility.configure('upgrade_branches')
-        yield
 
     def run(self, _check_transaction=False):
         """See `IBranchUpgradeJob`."""
@@ -448,7 +434,7 @@ class RevisionMailJob(BranchJobDerived):
 
     class_job_type = BranchJobType.REVISION_MAIL
 
-    config = config.sendbranchmail
+    config = config.IRevisionMailJobSource
 
     @classmethod
     def create(cls, branch, revno, from_address, body, subject):
@@ -495,7 +481,7 @@ class RevisionsAddedJob(BranchJobDerived):
 
     class_job_type = BranchJobType.REVISIONS_ADDED_MAIL
 
-    config = config.sendbranchmail
+    config = config.IRevisionsAddedJobSource
 
     @classmethod
     def create(cls, branch, last_scanned_id, last_revision_id,

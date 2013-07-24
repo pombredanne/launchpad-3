@@ -10,7 +10,6 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
-from lp.services.config import config
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
@@ -39,7 +38,7 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         # The branch scanner creates TranslationTemplatesBuilds.  It has
         # the database privileges it needs for that.
         branch = self.factory.makeBranch()
-        switch_dbuser(config.branchscanner.dbuser)
+        switch_dbuser("branchscanner")
         build = getUtility(ITranslationTemplatesBuildSource).create(branch)
 
         # Writing the new objects to the database violates no access

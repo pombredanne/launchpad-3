@@ -309,7 +309,7 @@ class MergeProposalNeedsReviewEmailJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_NEEDS_REVIEW
 
-    config = config.merge_proposal_jobs
+    config = config.IBranchMergeProposalJobSource
 
     def run(self):
         """See `IMergeProposalNeedsReviewEmailJob`."""
@@ -338,7 +338,7 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF
 
-    config = config.merge_proposal_jobs
+    config = config.IBranchMergeProposalJobSource
 
     user_error_types = (UpdatePreviewDiffNotReady, )
 
@@ -390,7 +390,7 @@ class CodeReviewCommentEmailJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.CODE_REVIEW_COMMENT_EMAIL
 
-    config = config.merge_proposal_jobs
+    config = config.IBranchMergeProposalJobSource
 
     def run(self):
         """See `IRunnableJob`."""
@@ -443,7 +443,7 @@ class ReviewRequestedEmailJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.REVIEW_REQUEST_EMAIL
 
-    config = config.merge_proposal_jobs
+    config = config.IBranchMergeProposalJobSource
 
     def run(self):
         """See `IRunnableJob`."""
@@ -510,7 +510,7 @@ class MergeProposalUpdatedEmailJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_UPDATED
 
-    config = config.merge_proposal_jobs
+    config = config.IBranchMergeProposalJobSource
 
     def run(self):
         """See `IRunnableJob`."""
@@ -577,7 +577,7 @@ class GenerateIncrementalDiffJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.GENERATE_INCREMENTAL_DIFF
 
-    config = config.merge_proposal_jobs
+    config = config.IBranchMergeProposalJobSource
 
     def acquireLease(self, duration=600):
         return self.job.acquireLease(duration)
@@ -637,13 +637,6 @@ class BranchMergeProposalJobSource(BaseRunnableJobSource):
     """
 
     classProvides(IBranchMergeProposalJobSource)
-
-    @staticmethod
-    @contextlib.contextmanager
-    def contextManager():
-        """See `IJobSource`."""
-        errorlog.globalErrorUtility.configure('merge_proposal_jobs')
-        yield
 
     @staticmethod
     def get(job_id):
