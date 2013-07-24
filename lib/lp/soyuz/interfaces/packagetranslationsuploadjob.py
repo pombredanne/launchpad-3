@@ -17,9 +17,12 @@ from lp.services.job.interfaces.job import (
 class IPackageTranslationsUploadJobSource(IJobSource):
     """An interface for acquiring IPackageTranslationsUploadJob."""
 
-    def create(sourcepackagerelease, libraryfilealias):
+    def create(sourcepackagerelease, libraryfilealias, requester):
         """Create new translations upload job for a source package release."""
 
 
 class IPackageTranslationsUploadJob(IRunnableJob):
     """A `Job` that uploads and attaches files to a `ISourcePackageRelease`."""
+
+    def getErrorRecipients():
+        """Return a list of email-ids to notify about upload errors."""

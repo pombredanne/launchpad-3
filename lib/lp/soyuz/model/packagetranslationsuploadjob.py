@@ -24,6 +24,7 @@ from lp.services.job.model.job import (
     )
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.mail.sendmail import format_address_for_person
 from lp.soyuz.interfaces.packagetranslationsuploadjob import (
     IPackageTranslationsUploadJob,
     IPackageTranslationsUploadJobSource,
@@ -45,10 +46,10 @@ class PackageTranslationsUploadJobDerived(BaseRunnableJob):
         self.context = self
 
     @classmethod
-    def create(cls, sourcepackagerelease, libraryfilealias):
+    def create(cls, sourcepackagerelease, libraryfilealias, requester):
         job = Job(
             base_job_type=JobType.UPLOAD_PACKAGE_TRANSLATIONS,
-            requester=sourcepackagerelease.creator,
+            requester=requester,
             base_json_data=simplejson.dumps(
                 {'sourcepackagerelease': sourcepackagerelease.id,
                  'libraryfilealias': libraryfilealias.id}))
@@ -62,6 +63,11 @@ class PackageTranslationsUploadJobDerived(BaseRunnableJob):
             Job, Job.id.is_in(Job.ready_jobs),
             Job.base_job_type == JobType.UPLOAD_PACKAGE_TRANSLATIONS)
         return [cls(job) for job in jobs]
+
+    def getErrorRecipients(self):
+        if self.requester is not None:
+            return [format_address_for_person(self.requester)]
+        return []
 
 
 class PackageTranslationsUploadJob(PackageTranslationsUploadJobDerived):
@@ -87,8 +93,7 @@ class PackageTranslationsUploadJob(PackageTranslationsUploadJobDerived):
 
     def run(self):
         sourcepackagerelease = self.sourcepackagerelease
-        if sourcepackagerelease is not None:
-            libraryfilealias = self.libraryfilealias
-            importer = sourcepackagerelease.creator
-            sourcepackagerelease.attachTranslationFiles(
-                libraryfilealias, True, importer=importer)
+        libraryfilealias = self.libraryfilealias
+        importer = sourcepackagerelease.creator
+        sourcepackagerelease.attachTranslationFiles(libraryfilealias, True,
+                                                    importer=importer)

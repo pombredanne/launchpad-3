@@ -28,21 +28,25 @@ from lp.testing.layers import (
     CeleryJobLayer,
     LaunchpadZopelessLayer,
     )
+from lp.services.mail.sendmail import format_address_for_person
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
 
-
 class LocalTestHelper(TestCaseWithFactory):
 
     def makeJob(self, spr_creator=None, archive=None,
                 sourcepackagerelease=None, libraryfilealias=None,
-                tar_content=None):
+                job_requester=None, tar_content=None):
         if spr_creator is None:
             creator = self.factory.makePerson()
         else:
             creator = self.factory.makePerson(name=spr_creator)
+        if job_requester is None:
+            requester = self.factory.makePerson()
+        else:
+            requester = self.factory.makePerson(name=job_requester)
         if archive is None:
             archive = self.factory.makeArchive()
         if sourcepackagerelease is None:
@@ -52,7 +56,7 @@ class LocalTestHelper(TestCaseWithFactory):
             libraryfilealias = self.makeTranslationsLFA(tar_content)
         return (sourcepackagerelease,
                 getUtility(IPackageTranslationsUploadJobSource).create(
-                    sourcepackagerelease, libraryfilealias))
+                    sourcepackagerelease, libraryfilealias, requester))
 
     def makeTranslationsLFA(self, tar_content=None):
         """Create an LibraryFileAlias containing dummy translation data."""
@@ -94,6 +98,11 @@ class TestPackageTranslationsUploadJob(LocalTestHelper):
         entries_in_queue = translation_import_queue.getAllEntries(
             target=spr.sourcepackage)
         self.assertEqual(entries_in_queue[0].importer.name, "foobar")
+
+    def test_getErrorRecipients_requester(self):
+        spr, job = self.makeJob()
+        email = format_address_for_person(job.requester)
+        self.assertEquals([email], job.getErrorRecipients())
 
     def test_run(self):
         archive = self.factory.makeArchive()
