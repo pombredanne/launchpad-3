@@ -58,7 +58,7 @@ class PackageDiffJobDerived(BaseRunnableJob):
         jobs = IStore(Job).find(
             Job, Job.id.is_in(Job.ready_jobs),
             Job.base_job_type == JobType.GENERATE_PACKAGE_DIFF)
-        return [cls(job) for job in jobs]
+        return (cls(job) for job in jobs)
 
 
 class PackageDiffJob(PackageDiffJobDerived):
