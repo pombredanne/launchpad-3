@@ -1455,8 +1455,9 @@ class PackageUploadCustom(SQLBase):
             # packages in main.
             return
 
+        blamee = self.packageupload.findPersonToNotify()
         getUtility(IPackageTranslationsUploadJobSource).create(
-            sourcepackagerelease, self.libraryfilealias)
+            sourcepackagerelease, self.libraryfilealias, blamee)
 
     def publishStaticTranslations(self, logger=None):
         """See `IPackageUploadCustom`."""
