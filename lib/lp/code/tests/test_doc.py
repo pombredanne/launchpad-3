@@ -9,7 +9,6 @@ import os
 
 from zope.security.management import setSecurityPolicy
 
-from lp.services.config import config
 from lp.services.testing import build_test_suite
 from lp.services.webapp.authorization import LaunchpadSecurityPolicy
 from lp.testing.dbuser import switch_dbuser
@@ -30,7 +29,7 @@ here = os.path.dirname(os.path.realpath(__file__))
 
 def branchscannerSetUp(test):
     """Setup the user for the branch scanner tests."""
-    switch_dbuser(config.branchscanner.dbuser)
+    switch_dbuser("branchscanner")
     setUp(test)
 
 

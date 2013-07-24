@@ -12,6 +12,7 @@ import logging
 
 from lazr.delegates import delegates
 from lazr.jobrunner.jobrunner import SuspendJobException
+from psycopg2.extensions import TransactionRollbackError
 from storm.locals import (
     Int,
     JSON,
@@ -267,12 +268,16 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     classProvides(IPlainPackageCopyJobSource)
     config = config.IPlainPackageCopyJobSource
     user_error_types = (CannotCopy,)
+    # Raised when closing bugs ends up hitting another process and
+    # deadlocking.
+    retry_error_types = (TransactionRollbackError,)
+    max_retries = 5
 
     @classmethod
     def _makeMetadata(cls, target_pocket, package_version,
                       include_binaries, sponsored=None, unembargo=False,
                       auto_approve=False, source_distroseries=None,
-                      source_pocket=None):
+                      source_pocket=None, phased_update_percentage=None):
         """Produce a metadata dict for this job."""
         return {
             'target_pocket': target_pocket.value,
@@ -284,6 +289,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             'source_distroseries':
                 source_distroseries.name if source_distroseries else None,
             'source_pocket': source_pocket.value if source_pocket else None,
+            'phased_update_percentage': phased_update_percentage,
         }
 
     @classmethod
@@ -292,13 +298,15 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
                include_binaries=False, package_version=None,
                copy_policy=PackageCopyPolicy.INSECURE, requester=None,
                sponsored=None, unembargo=False, auto_approve=False,
-               source_distroseries=None, source_pocket=None):
+               source_distroseries=None, source_pocket=None,
+               phased_update_percentage=None):
         """See `IPlainPackageCopyJobSource`."""
         assert package_version is not None, "No package version specified."
         assert requester is not None, "No requester specified."
         metadata = cls._makeMetadata(
             target_pocket, package_version, include_binaries, sponsored,
-            unembargo, auto_approve, source_distroseries, source_pocket)
+            unembargo, auto_approve, source_distroseries, source_pocket,
+            phased_update_percentage)
         job = PackageCopyJob(
             job_type=cls.class_job_type,
             source_archive=source_archive,
@@ -450,6 +458,10 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         if name is None:
             return None
         return PackagePublishingPocket.items[name]
+
+    @property
+    def phased_update_percentage(self):
+        return self.metadata.get('phased_update_percentage')
 
     def _createPackageUpload(self, unapproved=False):
         pu = self.target_distroseries.createQueueEntry(
@@ -646,7 +658,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             person=self.requester, overrides=[override],
             send_email=send_email, announce_from_person=self.requester,
             sponsored=self.sponsored, packageupload=pu,
-            unembargo=self.unembargo)
+            unembargo=self.unembargo,
+            phased_update_percentage=self.phased_update_percentage)
 
         # Add a PackageDiff for this new upload if it has ancestry.
         if copied_publications and not ancestry.is_empty():

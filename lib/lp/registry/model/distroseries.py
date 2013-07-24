@@ -103,6 +103,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.database.stormexpr import fti_search
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.mail.signedmessage import signed_message_from_string
@@ -1089,7 +1090,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             DistroSeriesPackageCache.archiveID.is_in(
                 self.distribution.all_distro_archive_ids),
             Or(
-                SQL("DistroSeriesPackageCache.fti @@ ftq(?)", params=(text,)),
+                fti_search(DistroSeriesPackageCache, text),
                 DistroSeriesPackageCache.name.contains_string(text.lower())),
             ).config(distinct=True)
 

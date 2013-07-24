@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the GNU
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the GNU
 # Affero General Public License version 3 (see the file LICENSE).
 
 """Soyuz vocabularies."""
@@ -14,17 +14,18 @@ __all__ = [
     'ProcessorVocabulary',
     ]
 
-from sqlobject import AND
-from storm.expr import SQL
+from storm.locals import (
+    And,
+    Or,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person
-from lp.services.database.sqlbase import (
-    quote,
-    sqlvalues,
-    )
+from lp.services.database.interfaces import IStore
+from lp.services.database.stormexpr import fti_search
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.vocabulary import (
     IHugeVocabulary,
@@ -56,7 +57,6 @@ class FilteredDistroArchSeriesVocabulary(SQLObjectVocabularyBase):
 
     _table = DistroArchSeries
     _orderBy = ['DistroSeries.version', 'architecturetag', 'id']
-    _clauseTables = ['DistroSeries']
 
     def toTerm(self, obj):
         name = "%s %s (%s)" % (obj.distroseries.distribution.name,
@@ -66,12 +66,11 @@ class FilteredDistroArchSeriesVocabulary(SQLObjectVocabularyBase):
     def __iter__(self):
         distribution = getUtility(ILaunchBag).distribution
         if distribution:
-            query = """
-                DistroSeries.id = DistroArchSeries.distroseries AND
-                DistroSeries.distribution = %s
-                """ % sqlvalues(distribution.id)
-            results = self._table.select(
-                query, orderBy=self._orderBy, clauseTables=self._clauseTables)
+            results = IStore(DistroSeries).find(
+                self._table,
+                DistroSeries.id == DistroArchSeries.distroseriesID,
+                DistroSeries.distributionID == distribution.id).order_by(
+                    *self._orderBy)
             for distroarchseries in results:
                 yield self.toTerm(distroarchseries)
 
@@ -92,7 +91,7 @@ class PPAVocabulary(SQLObjectVocabularyBase):
     _table = Archive
     _orderBy = ['Person.name, Archive.name']
     _clauseTables = ['Person']
-    _filter = AND(
+    _filter = And(
         Person.q.id == Archive.q.ownerID,
         Archive.q.purpose == ArchivePurpose.PPA)
     displayname = 'Select a PPA'
@@ -117,7 +116,7 @@ class PPAVocabulary(SQLObjectVocabularyBase):
         except ValueError:
             raise LookupError(token)
 
-        clause = AND(
+        clause = And(
             self._filter,
             Person.name == owner_name,
             Archive.name == archive_name)
@@ -143,14 +142,12 @@ class PPAVocabulary(SQLObjectVocabularyBase):
         try:
             owner_name, archive_name = query.split('/')
         except ValueError:
-            clause = AND(
+            clause = And(
                 self._filter,
-                SQL("(Archive.fti @@ ftq(%s) OR Person.fti @@ ftq(%s))"
-                    % (quote(query), quote(query))))
+                Or(fti_search(Archive, query), fti_search(Person, query)))
         else:
-            clause = AND(
-                self._filter,
-                Person.name == owner_name,
+            clause = And(
+                self._filter, Person.name == owner_name,
                 Archive.name == archive_name)
 
         return self._table.select(

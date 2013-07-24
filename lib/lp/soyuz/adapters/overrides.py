@@ -70,6 +70,8 @@ class IBinaryOverride(IOverride):
         "The IDistroArchSeries for the publication")
     priority = Attribute(
         "The PackagePublishingPriority that's being overridden")
+    phased_update_percentage = Attribute(
+        "The phased update percentage that's being overridden")
 
 
 class Override:
@@ -109,11 +111,12 @@ class BinaryOverride(Override):
     implements(IBinaryOverride)
 
     def __init__(self, binary_package_name, distro_arch_series, component,
-                 section, priority):
+                 section, priority, phased_update_percentage):
         super(BinaryOverride, self).__init__(component, section)
         self.binary_package_name = binary_package_name
         self.distro_arch_series = distro_arch_series
         self.priority = priority
+        self.phased_update_percentage = phased_update_percentage
 
     def __eq__(self, other):
         return (
@@ -121,13 +124,16 @@ class BinaryOverride(Override):
             self.distro_arch_series == other.distro_arch_series and
             self.component == other.component and
             self.section == other.section and
-            self.priority == other.priority)
+            self.priority == other.priority and
+            self.phased_update_percentage == other.phased_update_percentage)
 
     def __repr__(self):
         return ("<BinaryOverride at %x component=%r section=%r "
-            "binary_package_name=%r distro_arch_series=%r priority=%r>" %
+            "binary_package_name=%r distro_arch_series=%r priority=%r "
+            "phased_update_percentage=%r>" %
             (id(self), self.component, self.section, self.binary_package_name,
-             self.distro_arch_series, self.priority))
+             self.distro_arch_series, self.priority,
+             self.phased_update_percentage))
 
 
 class IOverridePolicy(Interface):
@@ -139,6 +145,9 @@ class IOverridePolicy(Interface):
     For example, an implementation might allow existing publications to
     keep the same component and section as their ancestor publications.
     """
+
+    phased_update_percentage = Attribute(
+        "The phased update percentage to apply to binary publications.")
 
     def calculateSourceOverrides(archive, distroseries, pocket, sources,
                                  source_component=None):
@@ -172,6 +181,10 @@ class IOverridePolicy(Interface):
 class BaseOverridePolicy:
 
     implements(IOverridePolicy)
+
+    def __init__(self, phased_update_percentage=None):
+        super(BaseOverridePolicy, self).__init__()
+        self.phased_update_percentage = phased_update_percentage
 
     def calculateSourceOverrides(self, archive, distroseries, pocket,
                                  sources, source_component=None):
@@ -245,6 +258,8 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             for bpn, das in expanded if das is not None]
         if len(candidates) == 0:
             return []
+        # Do not copy phased_update_percentage from existing publications;
+        # it is too context-dependent to copy.
         already_published = DecoratedResultSet(
             store.find(
                 (BinaryPackagePublishingHistory.binarypackagenameID,
@@ -269,7 +284,9 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 None)),
             pre_iter_hook=eager_load)
         return [
-            BinaryOverride(name, das, component, section, priority)
+            BinaryOverride(
+                name, das, component, section, priority,
+                self.phased_update_percentage)
             for name, das, component, section, priority in already_published]
 
 
@@ -324,7 +341,9 @@ class UnknownOverridePolicy(BaseOverridePolicy):
         default_component = archive.default_component or getUtility(
             IComponentSet)['universe']
         return [
-            BinaryOverride(binary, das, default_component, None, None)
+            BinaryOverride(
+                binary, das, default_component, None, None,
+                self.phased_update_percentage)
             for binary, das in calculate_target_das(distroseries, binaries)]
 
 
