@@ -194,7 +194,8 @@
                 components
                 searchable_names
                 searchable_versions
-                changes_file_id"/>
+                changes_file_id
+                findPersonToNotify"/>
         <require
             permission="launchpad.Edit"
             attributes="

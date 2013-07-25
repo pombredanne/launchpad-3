@@ -978,7 +978,7 @@ class NascentUpload:
             if ancestry is not None:
                 to_sourcepackagerelease = ancestry.sourcepackagerelease
                 diff = to_sourcepackagerelease.requestDiffTo(
-                    sourcepackagerelease.creator, sourcepackagerelease)
+                    self.queue_root.findPersonToNotify(), sourcepackagerelease)
                 self.logger.debug(
                     '%s %s requested' % (
                         diff.from_source.name, diff.title))
