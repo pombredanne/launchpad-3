@@ -343,6 +343,14 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
         copier = CustomUploadsCopier(target_series)
         self.assertTrue(copier.isForValidDAS(source_upload))
 
+    def test_isForValidDAS_returns_True_for_DDTP(self):
+        source_series = self.factory.makeDistroSeries()
+        source_upload = self.makeUpload(
+            source_series, custom_type=PackageUploadCustomFormat.DDTP_TARBALL)
+        target_series = self.factory.makeDistroSeries()
+        copier = CustomUploadsCopier(target_series)
+        self.assertTrue(copier.isForValidDAS(source_upload))
+
     def test_copyUpload_creates_upload(self):
         # copyUpload creates a new upload that's very similar to the
         # original, but for the target series.

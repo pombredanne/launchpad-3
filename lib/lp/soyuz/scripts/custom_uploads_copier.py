@@ -121,9 +121,11 @@ class CustomUploadsCopier:
 
         :param upload: A `PackageUploadCustom` from the source series.
         """
-        _, _, arch = self.copyable_types[upload.customformat].parsePath(
-            upload.libraryfilealias.filename)
-        return arch in [
+        concrete = self.copyable_types[upload.customformat]()
+        concrete.setComponents(upload.libraryfilealias.filename)
+        if concrete.arch is None:
+            return True
+        return concrete.arch in [
             das.architecturetag for das in self.target_series.architectures]
 
     def copyUpload(self, original_upload):
