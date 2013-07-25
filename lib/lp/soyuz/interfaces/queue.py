@@ -60,7 +60,7 @@ class QueueStateWriteProtectedError(Exception):
     """This exception prevent directly set operation in queue state.
 
     The queue state machine is controlled by its specific provided methods,
-    like: setNew, setAccepted and so on.
+    like: setAccepted, setDone and so on.
     """
 
 
@@ -326,9 +326,6 @@ class IPackageUpload(Interface):
 
         :return the corresponding `ILibraryFileAlias` if the file was found.
         """
-
-    def setNew():
-        """Set queue state to NEW."""
 
     def setUnapproved():
         """Set queue state to UNAPPROVED."""
