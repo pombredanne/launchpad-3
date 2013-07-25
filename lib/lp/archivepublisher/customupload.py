@@ -123,7 +123,7 @@ class CustomUpload:
         raise NotImplementedError
 
     def setComponents(tarfile_path):
-        """Set self.version and self.arch (if applicable)."""
+        """Set instance variables based on decomposing the filename."""
         raise NotImplementedError
 
     def setTargetDirectory(self, pubconf, tarfile_path, distroseries):

@@ -334,6 +334,15 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
         copier = CustomUploadsCopier(target_series)
         self.assertFalse(copier.isForValidDAS(source_upload))
 
+    def test_isForValidDAS_returns_False_with_disabled_arch(self):
+        source_series = self.factory.makeDistroSeries()
+        source_upload = self.makeUpload(source_series, arch='alpha')
+        target_series = self.factory.makeDistroSeries()
+        self.factory.makeDistroArchSeries(
+            distroseries=target_series, architecturetag='alpha', enabled=False)
+        copier = CustomUploadsCopier(target_series)
+        self.assertFalse(copier.isForValidDAS(source_upload))
+
     def test_isForValidDAS_returns_True(self):
         source_series = self.factory.makeDistroSeries()
         source_upload = self.makeUpload(source_series, arch='alpha')

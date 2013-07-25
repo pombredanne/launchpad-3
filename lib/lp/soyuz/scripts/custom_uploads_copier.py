@@ -126,7 +126,8 @@ class CustomUploadsCopier:
         if concrete.arch is None:
             return True
         return concrete.arch in [
-            das.architecturetag for das in self.target_series.architectures]
+            das.architecturetag
+            for das in self.target_series.enabled_architectures]
 
     def copyUpload(self, original_upload):
         """Copy `original_upload` into `self.target_series`."""
