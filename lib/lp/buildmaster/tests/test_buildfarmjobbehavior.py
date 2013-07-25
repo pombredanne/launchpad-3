@@ -321,6 +321,28 @@ class TestHandleStatusMixin:
     def test_handleStatus_PACKAGEFAIL_notifies(self):
         return self._test_handleStatus_notifies("PACKAGEFAIL")
 
+    def test_handleStatus_ABORTED_cancels_cancelling(self):
+        self.build.updateStatus(BuildStatus.CANCELLING)
+
+        def got_status(ignored):
+            self.assertEqual(
+                0, len(pop_notifications()), "Notifications received")
+            self.assertEqual(BuildStatus.CANCELLED, self.build.status)
+
+        d = self.behavior.handleStatus("ABORTED", None, {})
+        return d.addCallback(got_status)
+
+    def test_handleStatus_ABORTED_retries_building(self):
+        self.build.updateStatus(BuildStatus.BUILDING)
+
+        def got_status(ignored):
+            self.assertEqual(
+                0, len(pop_notifications()), "Notifications received")
+            self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
+
+        d = self.behavior.handleStatus("ABORTED", None, {})
+        return d.addCallback(got_status)
+
     def test_date_finished_set(self):
         # The date finished is updated during handleStatus_OK.
         self.assertEqual(None, self.build.date_finished)
