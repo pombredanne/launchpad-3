@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The processing of UEFI boot loader images.
@@ -58,6 +58,10 @@ class UefiUpload(CustomUpload):
             raise ValueError("%s is not TYPE_VERSION_ARCH" % tarfile_base)
         return bits[0], bits[1], bits[2].split(".")[0]
 
+    def setComponents(self, tarfile_path):
+        self.loader_type, self.version, self.arch = self.parsePath(
+            tarfile_path)
+
     def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
         if pubconf.uefiroot is None:
             if self.logger is not None:
@@ -78,10 +82,10 @@ class UefiUpload(CustomUpload):
                         "UEFI certificate %s not readable" % self.cert)
                 self.cert = None
 
-        loader_type, self.version, self.arch = self.parsePath(tarfile_path)
+        self.setComponents(tarfile_path)
         self.targetdir = os.path.join(
             pubconf.archiveroot, "dists", distroseries, "main", "uefi",
-            "%s-%s" % (loader_type, self.arch))
+            "%s-%s" % (self.loader_type, self.arch))
 
     @classmethod
     def getSeriesKey(cls, tarfile_path):
