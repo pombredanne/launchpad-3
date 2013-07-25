@@ -297,16 +297,16 @@ Upload a new "bar" source so we can accept it later.
     ...     version='1.0-1', component='universe', section='devel',
     ...     changes_file_content=changes_file_content)
 
-    >>> bar_src.package_upload.setNew()
+    >>> from lp.soyuz.enums import PackageUploadStatus
+    >>> from lp.soyuz.model.queue import PassthroughStatusValue
+    >>> removeSecurityProxy(bar_src.package_upload).status = (
+    ...     PassthroughStatusValue(PackageUploadStatus.NEW))
     >>> bar_queue_id = bar_src.package_upload.id
 
 Swallow any email generated at the upload:
 
     >>> from lp.services.mail import stub
-    >>> from lp.testing.mail_helpers import (
-    ...     pop_notifications,
-    ...     sort_addresses,
-    ...     )
+    >>> from lp.testing.mail_helpers import pop_notifications, sort_addresses
     >>> swallow = pop_notifications()
 
 Set up a second browser on the same page to simulate accidentally posting to
@@ -365,7 +365,7 @@ a double post.
     >>> for message in get_feedback_messages(
     ...     duplicate_submission_browser.contents):
     ...     print message
-    FAILED: bar (The source bar - 1.0-1 is already accepted...
+    FAILED: bar (Unable to accept queue item due to status.)
 
 No emails are sent in this case:
 

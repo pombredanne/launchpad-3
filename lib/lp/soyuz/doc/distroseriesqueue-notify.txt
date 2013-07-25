@@ -207,7 +207,10 @@ demonstrates this usage:
     >>> changes_file = open(changes_file_path,"r")
     >>> fillLibrarianFile(1, content=changes_file.read())
     >>> changes_file.close()
-    >>> netapplet_upload.setNew()
+    >>> from lp.soyuz.enums import PackageUploadStatus
+    >>> from lp.soyuz.model.queue import PassthroughStatusValue
+    >>> removeSecurityProxy(netapplet_upload).status = PassthroughStatusValue(
+    ...     PackageUploadStatus.NEW)
     >>> netapplet_upload.notify(logger=FakeLogger())
     DEBUG Building recipients list.
     ...

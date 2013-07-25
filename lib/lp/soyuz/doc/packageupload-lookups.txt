@@ -137,10 +137,12 @@ The `PackageUpload` lookups are not restricted to the status of the
 upload, i.e., new, rejected, unapproved or accepted items are returned
 as well.
 
-    # Modify the `PackageUpload` records status in place.
     >>> login('foo.bar@canonical.com')
-    >>> original_source_upload.setRejected()
-    >>> original_build_upload.setNew()
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.soyuz.enums import PackageUploadStatus
+    >>> from lp.soyuz.model.queue import PassthroughStatusValue
+    >>> removeSecurityProxy(original_build_upload).status = (
+    ...     PassthroughStatusValue(PackageUploadStatus.NEW))
     >>> transaction.commit()
     >>> login(ANONYMOUS)
 

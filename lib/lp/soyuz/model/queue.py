@@ -324,13 +324,6 @@ class PackageUpload(SQLBase):
 
         raise NotFoundError(filename)
 
-    def setNew(self):
-        """See `IPackageUpload`."""
-        if self.status != PackageUploadStatus.NEW:
-            raise QueueInconsistentStateError(
-                'Can not set modified queue items to NEW.')
-        self.status = PassthroughStatusValue(PackageUploadStatus.NEW)
-
     def setUnapproved(self):
         """See `IPackageUpload`."""
         if self.status != PackageUploadStatus.NEW:
