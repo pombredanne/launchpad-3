@@ -106,7 +106,7 @@ class PackageDiff(SQLBase):
     date_requested = UtcDateTimeCol(notNull=False, default=UTC_NOW)
 
     requester = ForeignKey(
-        dbName='requester', foreignKey='Person', notNull=True)
+        dbName='requester', foreignKey='Person', notNull=False)
 
     from_source = ForeignKey(
         dbName="from_source", foreignKey='SourcePackageRelease', notNull=True)
