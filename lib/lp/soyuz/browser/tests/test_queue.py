@@ -47,6 +47,21 @@ class TestAcceptRejectQueueUploads(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
+    def makeSPR(self, sourcename, component, archive, changes_file_content,
+                pocket=None, distroseries=None):
+        if pocket is None:
+            pocket = PackagePublishingPocket.RELEASE
+        if distroseries is None:
+            distroseries = self.test_publisher.distroseries
+        spr = self.factory.makeSourcePackageRelease(
+            sourcepackagename=sourcename, component=component, archive=archive,
+            distroseries=distroseries)
+        packageupload = self.factory.makePackageUpload(
+            archive=archive, pocket=pocket, distroseries=distroseries,
+            changes_file_content=changes_file_content)
+        packageupload.addSource(spr)
+        return spr
+
     def setUp(self):
         """Create two new uploads in the new state and a person with
         permission to upload to the partner archive."""
@@ -62,31 +77,24 @@ class TestAcceptRejectQueueUploads(TestCaseWithFactory):
         self.partner_archive = distribution.getArchiveByComponent('partner')
 
         # Get some sample changes file content for the new uploads.
-        changes_file = open(
-            datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'))
-        changes_file_content = changes_file.read()
-        changes_file.close()
+        with open(datadir('suite/bar_1.0-1/bar_1.0-1_source.changes')) as cf:
+            changes_file_content = cf.read()
 
-        self.partner_spr = self.test_publisher.getPubSource(
-            sourcename='partner-upload', spr_only=True,
-            component='partner', changes_file_content=changes_file_content,
-            archive=self.partner_archive)
-        self.partner_spr.package_upload.setNew()
-        self.main_spr = self.test_publisher.getPubSource(
-            sourcename='main-upload', spr_only=True,
-            component='main', changes_file_content=changes_file_content)
-        self.main_spr.package_upload.setNew()
-        self.proposed_spr = self.test_publisher.getPubSource(
-            sourcename='proposed-upload', spr_only=True,
-            component='main', changes_file_content=changes_file_content,
-            pocket=PackagePublishingPocket.PROPOSED)
-        self.proposed_spr.package_upload.setNew()
-        self.proposed_series_spr = self.test_publisher.getPubSource(
-            sourcename='proposed-series-upload', spr_only=True,
-            component='main', changes_file_content=changes_file_content,
+        self.partner_spr = self.makeSPR(
+            'partner-upload', 'partner', self.partner_archive,
+            changes_file_content,
+            distroseries=self.test_publisher.distroseries)
+        self.main_spr = self.makeSPR(
+            'main-upload', 'main', self.main_archive, changes_file_content,
+            distroseries=self.test_publisher.distroseries)
+        self.proposed_spr = self.makeSPR(
+            'proposed-upload', 'main', self.main_archive, changes_file_content,
             pocket=PackagePublishingPocket.PROPOSED,
+            distroseries=self.test_publisher.distroseries)
+        self.proposed_series_spr = self.makeSPR(
+            'proposed-series-upload', 'main', self.main_archive,
+            changes_file_content, pocket=PackagePublishingPocket.PROPOSED,
             distroseries=self.second_series)
-        self.proposed_series_spr.package_upload.setNew()
 
         # Define the form that will be used to post to the view.
         self.form = {
