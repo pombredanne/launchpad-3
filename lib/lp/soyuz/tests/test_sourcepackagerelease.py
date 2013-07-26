@@ -326,7 +326,7 @@ class TestSourcePackageReleaseTranslationFiles(TestCaseWithFactory):
         self.assertFalse(spr.sourcepackage.has_sharing_translation_templates)
         lfa = self.makeTranslationsLFA()
         transaction.commit()
-        with dbuser('queued'):
+        with dbuser('upload_package_translations_job'):
             spr.attachTranslationFiles(lfa, True, spr.maintainer)
         translation_import_queue = getUtility(ITranslationImportQueue)
         entries_in_queue = translation_import_queue.getAllEntries(
@@ -347,7 +347,7 @@ class TestSourcePackageReleaseTranslationFiles(TestCaseWithFactory):
         self.assertTrue(sourcepackage.has_sharing_translation_templates)
         lfa = self.makeTranslationsLFA()
         transaction.commit()
-        with dbuser('queued'):
+        with dbuser('upload_package_translations_job'):
             spr.attachTranslationFiles(lfa, True, spr.maintainer)
         translation_import_queue = getUtility(ITranslationImportQueue)
         entries = translation_import_queue.getAllEntries(
