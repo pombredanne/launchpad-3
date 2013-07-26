@@ -62,7 +62,7 @@ class PackageTranslationsUploadJobDerived(BaseRunnableJob):
         jobs = IStore(Job).find(
             Job, Job.id.is_in(Job.ready_jobs),
             Job.base_job_type == JobType.UPLOAD_PACKAGE_TRANSLATIONS)
-        return [cls(job) for job in jobs]
+        return (cls(job) for job in jobs)
 
     def getErrorRecipients(self):
         if self.requester is not None:
