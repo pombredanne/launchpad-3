@@ -78,6 +78,13 @@ class JobType(DBEnumeratedType):
         Job to generate the diff between two SourcePackageReleases.
         """)
 
+    UPLOAD_PACKAGE_TRANSLATIONS = DBItem(1, """
+        Upload Package Translations
+
+        Job to upload package translations files and attach them to a
+        SourcePackageRelease.
+        """)
+
 
 class IJob(Interface):
     """Basic attributes of a job."""
