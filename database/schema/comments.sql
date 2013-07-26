@@ -1639,6 +1639,7 @@ COMMENT ON COLUMN Distribution.homepage_content IS 'A home page for this distrib
 COMMENT ON COLUMN Distribution.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to a distribution.';
 COMMENT ON COLUMN Distribution.mugshot IS 'The library file alias of a mugshot image to display as the branding of a distribution, on its home page.';
 COMMENT ON COLUMN Distribution.logo IS 'The library file alias of a smaller version of this distributions''s mugshot.';
+COMMENT ON COLUMN Distribution.development_series_alias IS 'If set, an alias for the current development series in this distribution.';
 
 -- DistroSeries
 
