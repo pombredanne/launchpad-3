@@ -213,28 +213,30 @@ class TestCanSetStatusPOFile(TestCanSetStatusBase, TestCaseWithFactory):
             productseries=self.productseries, pofile=self.pofile)
 
 
-class TestCanSetStatusPOTemplateWithQueuedUser(TestCanSetStatusPOTemplate):
-    """Test handling of the status of a queue entry with 'queued' db user.
+class TestCanSetStatusPOTemplateWithUPTJUser(TestCanSetStatusPOTemplate):
+    """Test handling of the status of an upload queue entry as 'uptj' db user.
 
     The archive uploader needs to set (and therefore check) the status of a
-    queue entry. It connects as a different database user and therefore we
-    need to make sure that setStatus stays within this user's permissions.
+    translations upload queue entry. It connects as a different database user
+    ('upload_package_translations_job') and therefore we need to make sure
+    that setStatus stays within the correct user's permissions.
     This is the version for POTemplate entries.
     """
 
-    dbuser = 'queued'
+    dbuser = 'upload_package_translations_job'
 
 
-class TestCanSetStatusPOFileWithQueuedUser(TestCanSetStatusPOFile):
-    """Test handling of the status of a queue entry with 'queued' db user.
+class TestCanSetStatusPOFileWithUPTJUser(TestCanSetStatusPOFile):
+    """Test handling of the status of an upload queue entry as 'uptj' db user.
 
     The archive uploader needs to set (and therefore check) the status of a
-    queue entry. It connects as a different database user and therefore we
-    need to make sure that setStatus stays within this user's permissions.
+    translations upload queue entry. It connects as a different database user
+    ('upload_package_translations_job') and therefore we need to make sure
+    that setStatus stays within the correct user's permissions.
     This is the version for POFile entries.
     """
 
-    dbuser = 'queued'
+    dbuser = 'upload_package_translations_job'
 
 
 class TestGetGuessedPOFile(TestCaseWithFactory):
