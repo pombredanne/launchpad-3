@@ -424,15 +424,12 @@ class BuildFarmJobBehaviorBase:
         Otherwise, it was probably being rescued, so try it again.
         """
         if self.build.status == BuildStatus.CANCELLING:
-            status = BuildStatus.CANCELLED
+            builder = self.build.buildqueue_record.builder
+            self.build.buildqueue_record.cancel()
+            transaction.commit()
+            yield builder.cleanSlave()
         else:
-            status = BuildStatus.NEEDSBUILD
-        self.build.updateStatus(
-            status, builder=self.build.buildqueue_record.builder,
-            slave_status=slave_status)
-        transaction.commit()
-        yield self.build.buildqueue_record.builder.cleanSlave()
-        self.build.buildqueue_record.destroySelf()
+            self.build.buildqueue_record.reset()
         transaction.commit()
 
     @defer.inlineCallbacks
