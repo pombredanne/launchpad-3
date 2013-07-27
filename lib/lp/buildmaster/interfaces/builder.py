@@ -309,8 +309,11 @@ class IBuilder(IHasOwner):
             explaining what went wrong.
         """
 
-    def handleTimeout(logger, error_message):
-        """Handle buildd slave communication timeout situations.
+    def handleFailure(logger, failure):
+        """Handle buildd slave failures.
+
+        Increment builder and job failure counts, and do whatever we can to
+        recover the builder.
 
         In case of a virtualized/PPA buildd slave an attempt will be made
         to reset it first (using `resumeSlaveHost`). Only if that fails
@@ -320,7 +323,7 @@ class IBuilder(IHasOwner):
         failed straightaway.
 
         :param logger: The logger object to be used for logging.
-        :param error_message: The error message to be used for logging.
+        :param failure: A Failure to be used for logging.
         :return: A Deferred that fires after the virtual slave was resumed
             or immediately if it's a non-virtual slave.
         """

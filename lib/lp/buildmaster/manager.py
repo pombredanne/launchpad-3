@@ -161,33 +161,22 @@ class SlaveScanner:
                 self.builder_name, failure.getErrorMessage(),
                 failure.getTraceback()))
 
-        # Decide if we need to terminate the job or fail the
-        # builder.
-        try:
-            builder = get_builder(self.builder_name)
-            builder.gotFailure()
-            if builder.currentjob is not None:
-                build_farm_job = builder.getCurrentBuildFarmJob()
-                build_farm_job.gotFailure()
-                self.logger.info(
-                    "builder %s failure count: %s, "
-                    "job '%s' failure count: %s" % (
-                        self.builder_name,
-                        builder.failure_count,
-                        build_farm_job.title,
-                        build_farm_job.failure_count))
-            else:
-                self.logger.info(
-                    "Builder %s failed a probe, count: %s" % (
-                        self.builder_name, builder.failure_count))
+        def handled_failure(ignored):
             assessFailureCounts(builder, failure.getErrorMessage())
             transaction.commit()
-        except:
+
+        # Decide if we need to terminate the job or fail the builder.
+        builder = get_builder(self.builder_name)
+        try:
+            d = builder.handleFailure(self.logger, failure)
+            return d.addCallback(handled_failure).addErrback(log.err)
+        except Exception:
             # Catastrophic code failure! Not much we can do.
             self.logger.error(
-                "Miserable failure when trying to examine failure counts:\n",
+                "Miserable failure when trying to handle failure:\n",
                 exc_info=True)
             transaction.abort()
+            return defer.succeed(None)
 
     def checkCancellation(self, builder):
         """See if there is a pending cancellation request.

@@ -191,7 +191,13 @@ class TestBuilder(TestCaseWithFactory):
         d = builder.resumeSlaveHost()
         return assert_fails_with(d, CannotResumeHost)
 
-    def test_handleTimeout_resume_failure(self):
+    def test_handleFailure_increments_failure_count(self):
+        builder = self.factory.makeBuilder(virtualized=False)
+        builder.builderok = True
+        builder.handleFailure(BufferLogger(), Failure(Exception()))
+        self.assertEqual(1, builder.failure_count)
+
+    def test_handleFailure_resume_failure(self):
         reset_fail_config = """
             [builddmaster]
             vm_resume_command: /bin/false"""
@@ -199,7 +205,7 @@ class TestBuilder(TestCaseWithFactory):
         self.addCleanup(config.pop, 'reset fail')
         builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
         builder.builderok = True
-        d = builder.handleTimeout(BufferLogger(), 'blah')
+        d = builder.handleFailure(BufferLogger(), Failure(Exception()))
         return assert_fails_with(d, CannotResumeHost)
 
     def _setupBuilder(self):
