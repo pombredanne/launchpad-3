@@ -194,7 +194,7 @@ class TestBuilder(TestCaseWithFactory):
     def test_handleFailure_increments_failure_count(self):
         builder = self.factory.makeBuilder(virtualized=False)
         builder.builderok = True
-        builder.handleFailure(BufferLogger(), Failure(Exception()))
+        builder.handleFailure(BufferLogger(), Exception())
         self.assertEqual(1, builder.failure_count)
 
     def test_handleFailure_resume_failure(self):
@@ -205,7 +205,7 @@ class TestBuilder(TestCaseWithFactory):
         self.addCleanup(config.pop, 'reset fail')
         builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
         builder.builderok = True
-        d = builder.handleFailure(BufferLogger(), Failure(Exception()))
+        d = builder.handleFailure(BufferLogger(), Exception())
         return assert_fails_with(d, CannotResumeHost)
 
     def _setupBuilder(self):

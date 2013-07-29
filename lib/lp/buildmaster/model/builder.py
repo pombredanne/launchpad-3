@@ -37,7 +37,6 @@ from twisted.internet import (
     defer,
     reactor as default_reactor,
     )
-from twisted.python import log
 from twisted.web import xmlrpc
 from twisted.web.client import downloadPage
 from zope.component import getUtility
@@ -804,7 +803,7 @@ class Builder(SQLBase):
         d = defer.maybeDeferred(self.startBuild, candidate, logger)
         return d
 
-    def handleFailure(self, logger, failure):
+    def handleFailure(self, logger, exception):
         """See IBuilder."""
         self.gotFailure()
         if self.currentjob is not None:
@@ -819,12 +818,12 @@ class Builder(SQLBase):
                 "Builder %s failure count: %s" % (
                     self.name, self.failure_count))
 
-        error_message = failure.getErrorMessage()
+        error_message = str(exception)
         if self.virtualized:
             # Virtualized/PPA builder: attempt a reset, unless the failure
             # was itself a failure to reset.  (In that case, the slave
             # scanner will try again until we reach the failure threshold.)
-            if not failure.check(CannotResumeHost):
+            if not isinstance(exception, CannotResumeHost):
                 logger.warn(
                     "Resetting builder: %s -- %s" % (self.url, error_message),
                     exc_info=True)

@@ -168,7 +168,7 @@ class SlaveScanner:
         # Decide if we need to terminate the job or fail the builder.
         builder = get_builder(self.builder_name)
         try:
-            d = builder.handleFailure(self.logger, failure)
+            d = builder.handleFailure(self.logger, failure.value)
             return d.addCallback(handled_failure).addErrback(log.err)
         except Exception:
             # Catastrophic code failure! Not much we can do.
