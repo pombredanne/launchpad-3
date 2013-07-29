@@ -421,15 +421,21 @@ class BuildFarmJobBehaviorBase:
         """Handle aborted builds.
 
         If the build was explicitly cancelled, then mark it as such.
-        Otherwise, it was probably being rescued, so try it again.
+        Otherwise, the build has failed in some unexpected way.
         """
+        builder = self.build.buildqueue_record.builder
         if self.build.status == BuildStatus.CANCELLING:
-            builder = self.build.buildqueue_record.builder
             self.build.buildqueue_record.cancel()
             transaction.commit()
             yield builder.cleanSlave()
         else:
             self.build.buildqueue_record.reset()
+            try:
+                yield builder.handleFailure(logger, BuildSlaveFailure(
+                    "Builder unexpectedly returned ABORTED"))
+            except Exception as e:
+                # We've already done our best to mark the builder as failed.
+                logger.error("Failed to rescue from ABORTED: %s" % e)
         transaction.commit()
 
     @defer.inlineCallbacks
