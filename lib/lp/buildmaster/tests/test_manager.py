@@ -111,14 +111,14 @@ class TestSlaveScannerScan(TestCase):
         self.assertEqual(build.status, BuildStatus.BUILDING)
         self.assertEqual(job.logtail, logtail)
 
-    def _getScanner(self, builder_name=None):
+    def _getScanner(self, builder_name=None, clock=None):
         """Instantiate a SlaveScanner object.
 
         Replace its default logging handler by a testing version.
         """
         if builder_name is None:
             builder_name = BOB_THE_BUILDER_NAME
-        scanner = SlaveScanner(builder_name, BufferLogger())
+        scanner = SlaveScanner(builder_name, BufferLogger(), clock=clock)
         scanner.logger.name = 'slave-scanner'
 
         return scanner
@@ -394,19 +394,14 @@ class TestSlaveScannerScan(TestCase):
 
         return d.addCallback(check)
 
+    @defer.inlineCallbacks
     def test_cancelling_a_build(self):
         # When scanning an in-progress build, if its state is CANCELLING
-        # then the build should be stopped and moved to the CANCELLED state.
+        # then the build should be aborted, and eventually stopped and moved
+        # to the CANCELLED state if it does not abort by itself.
 
-        # Set up a building slave with a fake resume method so we can see
-        # if it got called later.
-        slave = BuildingSlave(build_id="8-1")
-        call_counter = FakeMethod()
-
-        def fake_resume():
-            call_counter()
-            return defer.succeed((None, None, 0))
-        slave.resume = fake_resume
+        # Set up a mock building slave.
+        slave = BuildingSlave()
 
         # Set the sample data builder building with the slave from above.
         builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
@@ -419,6 +414,7 @@ class TestSlaveScannerScan(TestCase):
         transaction.commit()
         login(ANONYMOUS)
         buildqueue = builder.currentjob
+        slave.build_id = buildqueue.specific_job.generateSlaveBuildCookie()
         self.assertBuildingJob(buildqueue, builder)
 
         # Now set the build to CANCELLING.
@@ -427,18 +423,28 @@ class TestSlaveScannerScan(TestCase):
 
         # Run 'scan' and check its results.
         switch_dbuser(config.builddmaster.dbuser)
-        scanner = self._getScanner()
-        d = scanner.scan()
+        clock = task.Clock()
+        scanner = self._getScanner(clock=clock)
+        yield scanner.scan()
 
-        # The build state should be cancelled and we should have also
-        # called the resume() method on the slave that resets the virtual
-        # machine.
-        def check_cancelled(ignore, builder, buildqueue):
-            self.assertEqual(1, call_counter.call_count)
-            self.assertEqual(BuildStatus.CANCELLED, build.status)
+        # An abort request should be sent.
+        self.assertEqual(1, slave.call_log.count("abort"))
+        self.assertEqual(BuildStatus.CANCELLING, build.status)
 
-        d.addCallback(check_cancelled, builder, buildqueue)
-        return d
+        # Advance time a little.  Nothing much should happen.
+        clock.advance(1)
+        yield scanner.scan()
+        self.assertEqual(1, slave.call_log.count("abort"))
+        self.assertEqual(BuildStatus.CANCELLING, build.status)
+
+        # Advance past the timeout.  The build state should be cancelled and
+        # we should have also called the resume() method on the slave that
+        # resets the virtual machine.
+        clock.advance(SlaveScanner.CANCEL_TIMEOUT)
+        yield scanner.scan()
+        self.assertEqual(1, slave.call_log.count("abort"))
+        self.assertEqual(1, slave.call_log.count("resume"))
+        self.assertEqual(BuildStatus.CANCELLED, build.status)
 
 
 class TestCancellationChecking(TestCaseWithFactory):
@@ -452,14 +458,17 @@ class TestCancellationChecking(TestCaseWithFactory):
         builder_name = BOB_THE_BUILDER_NAME
         self.builder = getUtility(IBuilderSet)[builder_name]
         self.builder.virtualized = True
-        self.scanner = SlaveScanner(builder_name, BufferLogger())
-        self.scanner.builder = self.builder
-        self.scanner.logger.name = 'slave-scanner'
+
+    def _getScanner(self, clock=None):
+        scanner = SlaveScanner(None, BufferLogger(), clock=clock)
+        scanner.builder = self.builder
+        scanner.logger.name = 'slave-scanner'
+        return scanner
 
     def test_ignores_nonvirtual(self):
         # If the builder is nonvirtual make sure we return False.
         self.builder.virtualized = False
-        d = self.scanner.checkCancellation(self.builder)
+        d = self._getScanner().checkCancellation(self.builder)
         return d.addCallback(self.assertFalse)
 
     def test_ignores_no_buildqueue(self):
@@ -467,37 +476,37 @@ class TestCancellationChecking(TestCaseWithFactory):
         # make sure we return False.
         buildqueue = self.builder.currentjob
         buildqueue.reset()
-        d = self.scanner.checkCancellation(self.builder)
+        d = self._getScanner().checkCancellation(self.builder)
         return d.addCallback(self.assertFalse)
 
     def test_ignores_build_not_cancelling(self):
         # If the active build is not in a CANCELLING state, ignore it.
-        d = self.scanner.checkCancellation(self.builder)
+        d = self._getScanner().checkCancellation(self.builder)
         return d.addCallback(self.assertFalse)
 
+    @defer.inlineCallbacks
     def test_cancelling_build_is_cancelled(self):
-        # If a build is CANCELLING, make sure True is returned and the
-        # slave was resumed.
-        call_counter = FakeMethod()
-
-        def fake_resume():
-            call_counter()
-            return defer.succeed((None, None, 0))
+        # If a build is CANCELLING and the cancel timeout expires, make sure
+        # True is returned and the slave was resumed.
         slave = OkSlave()
-        slave.resume = fake_resume
         self.builder.vm_host = "fake_vm_host"
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         buildqueue = self.builder.currentjob
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
         build.updateStatus(BuildStatus.CANCELLING)
+        clock = task.Clock()
+        scanner = self._getScanner(clock=clock)
 
-        def check(result):
-            self.assertEqual(1, call_counter.call_count)
-            self.assertTrue(result)
-            self.assertEqual(BuildStatus.CANCELLED, build.status)
+        result = yield scanner.checkCancellation(self.builder)
+        self.assertNotIn("resume", slave.call_log)
+        self.assertFalse(result)
+        self.assertEqual(BuildStatus.CANCELLING, build.status)
 
-        d = self.scanner.checkCancellation(self.builder)
-        return d.addCallback(check)
+        clock.advance(SlaveScanner.CANCEL_TIMEOUT)
+        result = yield scanner.checkCancellation(self.builder)
+        self.assertEqual(1, slave.call_log.count("resume"))
+        self.assertTrue(result)
+        self.assertEqual(BuildStatus.CANCELLED, build.status)
 
 
 class TestBuilddManager(TestCase):

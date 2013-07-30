@@ -310,21 +310,19 @@ class TestBuilder(TestCaseWithFactory):
         return d.addCallback(check_slave_calls)
 
     def test_recovery_of_aborted_nonvirtual_slave(self):
-        # Nonvirtual slaves in the ABORTED state cannot be reliably
-        # cleaned since the sbuild process doesn't properly kill the
-        # build job.  We test that the builder is marked failed.
+        # If a nonvirtual slave is in the ABORTED state,
+        # rescueBuilderIfLost should clean it if we don't think it's
+        # currently building anything.
         aborted_slave = AbortedSlave()
         builder = MockBuilder("mock_builder", aborted_slave)
         builder.currentjob = None
         builder.virtualized = False
-        builder.builderok = True
         d = builder.rescueIfLost()
 
-        def check_failed(ignored):
-            self.assertFalse(builder.builderok)
-            self.assertNotIn('clean', aborted_slave.call_log)
+        def check_slave_calls(ignored):
+            self.assertIn('clean', aborted_slave.call_log)
 
-        return d.addCallback(check_failed)
+        return d.addCallback(check_slave_calls)
 
     def test_recover_ok_slave(self):
         # An idle slave is not rescued.
@@ -895,10 +893,7 @@ class TestSlave(TestCase):
         super(TestSlave, self).setUp()
         self.slave_helper = self.useFixture(SlaveTestHelpers())
 
-    # XXX 2010-10-06 Julian bug=655559
-    # This is failing on buildbot but not locally; it's trying to abort
-    # before the build has started.
-    def disabled_test_abort(self):
+    def test_abort(self):
         slave = self.slave_helper.getClientSlave()
         # We need to be in a BUILDING state before we can abort.
         d = self.slave_helper.triggerGoodBuild(slave)

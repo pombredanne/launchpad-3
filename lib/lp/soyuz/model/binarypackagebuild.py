@@ -382,8 +382,6 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         """See `IBuild`."""
         if not self.buildqueue_record:
             return False
-        if self.buildqueue_record.virtualized is False:
-            return False
 
         cancellable_statuses = [
             BuildStatus.BUILDING,

@@ -116,13 +116,25 @@ class SlaveScanner:
     # algorithm for polling.
     SCAN_INTERVAL = 15
 
-    def __init__(self, builder_name, logger):
+    # The time before deciding that a cancelling builder has failed, in
+    # seconds.  This should normally be a multiple of SCAN_INTERVAL, and
+    # greater than abort_timeout in launchpad-buildd's slave BuildManager.
+    CANCEL_TIMEOUT = 180
+
+    def __init__(self, builder_name, logger, clock=None):
         self.builder_name = builder_name
         self.logger = logger
+        # Use the clock if provided, so that tests can advance it.  Use the
+        # reactor by default.
+        if clock is None:
+            clock = reactor
+        self._clock = clock
+        self.date_cancel = None
 
     def startCycle(self):
         """Scan the builder and dispatch to it or deal with failures."""
         self.loop = LoopingCall(self.singleCycle)
+        self.loop.clock = self._clock
         self.stopping_deferred = self.loop.start(self.SCAN_INTERVAL)
         return self.stopping_deferred
 
@@ -184,26 +196,46 @@ class SlaveScanner:
         If the current build is in status CANCELLING then terminate it
         immediately.
 
-        :return: A deferred whose value is True if we cancelled the build.
+        :return: A deferred whose value is True if we recovered the builder
+            by resuming a slave host, so that there is no need to update its
+            status.
         """
-        if not builder.virtualized:
-            return defer.succeed(False)
         buildqueue = self.builder.getBuildQueue()
         if not buildqueue:
+            self.date_cancel = None
             return defer.succeed(False)
         build = buildqueue.specific_job.build
         if build.status != BuildStatus.CANCELLING:
+            self.date_cancel = None
             return defer.succeed(False)
 
         def resume_done(ignored):
             return defer.succeed(True)
 
+        if self.date_cancel is not None:
+            # The BuildFarmJob will normally set the build's status to
+            # something other than CANCELLING once the builder responds to
+            # the cancel request.  This timeout is in case it doesn't.
+            if self._clock.seconds() >= self.date_cancel:
+                self.logger.info("Build '%s' failed to cancel" % build.title)
+                self.date_cancel = None
+                buildqueue.cancel()
+                transaction.commit()
+                if builder.virtualized:
+                    d = builder.resumeSlaveHost()
+                    d.addCallback(resume_done)
+                    return d
+                else:
+                    builder.failBuilder("Build failed to cancel")
+            else:
+                self.logger.info(
+                    "Waiting for build '%s' to cancel" % build.title)
+            return defer.succeed(False)
+
         self.logger.info("Cancelling build '%s'" % build.title)
-        buildqueue.cancel()
-        transaction.commit()
-        d = builder.resumeSlaveHost()
-        d.addCallback(resume_done)
-        return d
+        builder.requestAbort()
+        self.date_cancel = self._clock.seconds() + self.CANCEL_TIMEOUT
+        return defer.succeed(False)
 
     def scan(self):
         """Probe the builder and update/dispatch/collect as appropriate.
