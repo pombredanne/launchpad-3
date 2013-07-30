@@ -73,7 +73,6 @@ from lp.services.database.stormexpr import (
     )
 from lp.services.features import getFeatureFlag
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
-from lp.services.librarian.interfaces.client import DownloadFailed
 from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
@@ -102,6 +101,9 @@ from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     name_priority_map,
+    )
+from lp.soyuz.interfaces.packagetranslationsuploadjob import (
+    IPackageTranslationsUploadJobSource,
     )
 from lp.soyuz.interfaces.queue import (
     IPackageUpload,
@@ -1454,17 +1456,9 @@ class PackageUploadCustom(SQLBase):
             # packages in main.
             return
 
-        # Set the importer to package creator.
-        importer = sourcepackagerelease.creator
-
-        # Attach the translation tarball. It's always published.
-        try:
-            sourcepackagerelease.attachTranslationFiles(
-                self.libraryfilealias, True, importer=importer)
-        except DownloadFailed:
-            if logger is not None:
-                debug(logger, "Unable to fetch %s to import it into Rosetta" %
-                    self.libraryfilealias.http_url)
+        blamee = self.packageupload.findPersonToNotify()
+        getUtility(IPackageTranslationsUploadJobSource).create(
+            sourcepackagerelease, self.libraryfilealias, blamee)
 
     def publishStaticTranslations(self, logger=None):
         """See `IPackageUploadCustom`."""

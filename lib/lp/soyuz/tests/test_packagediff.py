@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test source package diffs."""
@@ -12,6 +12,8 @@ from zope.security.proxy import removeSecurityProxy
 from lp.services.config import config
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
+from lp.services.job.interfaces.job import JobType
+from lp.services.job.model.job import Job
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.tests.soyuz import TestPackageDiffsBase
@@ -124,3 +126,9 @@ class TestPackageDiffs(TestPackageDiffsBase, TestCaseWithFactory):
         to_spr = self.factory.makeSourcePackageRelease(archive=ppa)
         diff = from_spr.requestDiffTo(ppa.owner, to_spr)
         self.assertFalse(diff.private)
+
+    def test_job_created(self):
+        # The setup code already creates a packagediff.
+        [job] = IStore(Job).find(
+            Job, Job.base_job_type == JobType.GENERATE_PACKAGE_DIFF)
+        self.assertIsNot(None, job)
