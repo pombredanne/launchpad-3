@@ -6,7 +6,9 @@
 __metaclass__ = type
 
 from datetime import datetime
+import os.path
 
+import transaction
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.config import config
@@ -16,13 +18,44 @@ from lp.services.job.interfaces.job import JobType
 from lp.services.job.model.job import Job
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.model.archive import Archive
-from lp.soyuz.tests.soyuz import TestPackageDiffsBase
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
-class TestPackageDiffs(TestPackageDiffsBase, TestCaseWithFactory):
+def create_proper_job(factory):
+    archive = factory.makeArchive()
+    foo_dash1 = factory.makeSourcePackageRelease(archive=archive)
+    foo_dash15 = factory.makeSourcePackageRelease(archive=archive)
+    suite_dir = 'lib/lp/archiveuploader/tests/data/suite'
+    files = {
+        '%s/foo_1.0-1/foo_1.0-1.diff.gz' % suite_dir: None,
+        '%s/foo_1.0-1/foo_1.0-1.dsc' % suite_dir: None,
+        '%s/foo_1.0-1/foo_1.0.orig.tar.gz' % suite_dir: None,
+        '%s/foo_1.0-1.5/foo_1.0-1.5.diff.gz' % suite_dir: None,
+        '%s/foo_1.0-1.5/foo_1.0-1.5.dsc' % suite_dir: None}
+    for name in files:
+        filename = os.path.split(name)[-1]
+        with open(name, 'r') as content:
+            files[name] = factory.makeLibraryFileAlias(
+                filename=filename, content=content.read())
+    transaction.commit()
+    dash1_files = (
+        '%s/foo_1.0-1/foo_1.0-1.diff.gz' % suite_dir,
+        '%s/foo_1.0-1/foo_1.0-1.dsc' % suite_dir,
+        '%s/foo_1.0-1/foo_1.0.orig.tar.gz' % suite_dir)
+    dash15_files = (
+        '%s/foo_1.0-1/foo_1.0.orig.tar.gz' % suite_dir,
+        '%s/foo_1.0-1.5/foo_1.0-1.5.diff.gz' % suite_dir,
+        '%s/foo_1.0-1.5/foo_1.0-1.5.dsc' % suite_dir)
+    for name in dash1_files:
+        foo_dash1.addFile(files[name])
+    for name in dash15_files:
+        foo_dash15.addFile(files[name])
+    return foo_dash1.requestDiffTo(factory.makePerson(), foo_dash15)
+
+
+class TestPackageDiffs(TestCaseWithFactory):
     """Test package diffs."""
     layer = LaunchpadZopelessLayer
     dbuser = config.uploader.dbuser
@@ -30,7 +63,7 @@ class TestPackageDiffs(TestPackageDiffsBase, TestCaseWithFactory):
     def test_packagediff_working(self):
         # Test the case where none of the files required for the diff are
         # expired in the librarian and where everything works as expected.
-        [diff] = self.getPendingDiffs()
+        diff = create_proper_job(self.factory)
         self.assertEqual(0, removeSecurityProxy(diff)._countDeletedLFAs())
         diff.performDiff()
         self.assertEqual(PackageDiffStatus.COMPLETED, diff.status)
@@ -39,11 +72,7 @@ class TestPackageDiffs(TestPackageDiffsBase, TestCaseWithFactory):
         """Expire the files associated with the given source package in the
         librarian."""
         assert expire or delete
-        store = IStore(Archive)
-        query = """
-            UPDATE LibraryFileAlias lfa
-            SET
-            """
+        query = "UPDATE LibraryFileAlias lfa SET "
         if expire:
             query += "expires = %s" % sqlvalues(datetime.utcnow())
         if expire and delete:
@@ -59,45 +88,36 @@ class TestPackageDiffs(TestPackageDiffsBase, TestCaseWithFactory):
                 AND sprf.libraryfile = lfa.id
             """ % sqlvalues(source.id)
         with dbuser('launchpad'):
-            store.execute(query)
+            IStore(Archive).execute(query)
 
     def test_packagediff_with_expired_and_deleted_lfas(self):
         # Test the case where files required for the diff are expired *and*
         # deleted in the librarian causing a package diff failure.
-        [diff] = self.getPendingDiffs()
-        # Expire and delete the files associated with the 'from_source'
-        # package.
+        diff = create_proper_job(self.factory)
         self.expireLFAsForSource(diff.from_source)
-        # The helper method now finds 3 expired files.
-        self.assertEqual(3, removeSecurityProxy(diff)._countDeletedLFAs())
+        self.assertEqual(4, removeSecurityProxy(diff)._countDeletedLFAs())
         diff.performDiff()
-        # The diff fails due to the presence of expired files.
         self.assertEqual(PackageDiffStatus.FAILED, diff.status)
 
     def test_packagediff_with_expired_but_not_deleted_lfas(self):
         # Test the case where files required for the diff are expired but
         # not deleted in the librarian still allowing the package diff to be
         # performed.
-        [diff] = self.getPendingDiffs()
+        diff = create_proper_job(self.factory)
         # Expire but don't delete the files associated with the 'from_source'
         # package.
         self.expireLFAsForSource(diff.from_source, expire=True, delete=False)
-        # The helper method now finds no expired files.
         self.assertEqual(0, removeSecurityProxy(diff)._countDeletedLFAs())
         diff.performDiff()
-        # The diff succeeds as expected.
         self.assertEqual(PackageDiffStatus.COMPLETED, diff.status)
 
     def test_packagediff_with_deleted_but_not_expired_lfas(self):
         # Test the case where files required for the diff have been
         # deleted explicitly, not through expiry.
-        [diff] = self.getPendingDiffs()
-        # Delete the files associated with the 'from_source' package.
+        diff = create_proper_job(self.factory)
         self.expireLFAsForSource(diff.from_source, expire=False, delete=True)
-        # The helper method now finds 3 expired files.
-        self.assertEqual(3, removeSecurityProxy(diff)._countDeletedLFAs())
+        self.assertEqual(4, removeSecurityProxy(diff)._countDeletedLFAs())
         diff.performDiff()
-        # The diff fails due to the presence of expired files.
         self.assertEqual(PackageDiffStatus.FAILED, diff.status)
 
     def test_packagediff_private_with_copied_spr(self):
@@ -128,7 +148,11 @@ class TestPackageDiffs(TestPackageDiffsBase, TestCaseWithFactory):
         self.assertFalse(diff.private)
 
     def test_job_created(self):
-        # The setup code already creates a packagediff.
+        # Requesting a package diff creates a PackageDiffJob.
+        ppa = self.factory.makeArchive()
+        from_spr = self.factory.makeSourcePackageRelease(archive=ppa)
+        to_spr = self.factory.makeSourcePackageRelease(archive=ppa)
+        from_spr.requestDiffTo(ppa.owner, to_spr)
         [job] = IStore(Job).find(
             Job, Job.base_job_type == JobType.GENERATE_PACKAGE_DIFF)
         self.assertIsNot(None, job)
