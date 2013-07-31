@@ -15,6 +15,8 @@ import time
 from fixtures import FunctionFixture
 from s4 import hollow
 from swiftclient import client as swiftclient
+import testtools.content
+import testtools.content_type
 from txfixtures.tachandler import TacTestFixture
 
 from lp.services.config import config
@@ -23,31 +25,47 @@ from lp.services.config import config
 class SwiftFixture(TacTestFixture):
 
     tacfile = os.path.join(os.path.dirname(__file__), 'hollow.tac')
-    pidfile = os.path.join(os.path.dirname(__file__), 'hollow.pid')
-    logfile = os.path.join(os.path.dirname(__file__), 'hollow.log')
+    pidfile = None
+    logfile = None
     root = None
     daemon_port = None
 
     def setUp(self, spew=False, umask=None):
-        super(SwiftFixture, self).setUp(
-            spew, umask,
-            os.path.join(config.root, 'bin', 'py'),
-            os.path.join(config.root, 'bin', 'twistd'))
-
-    def setUpRoot(self):
         # Pick a random, free port.
         if self.daemon_port is None:
             sock = socket.socket()
             sock.bind(('', 0))
             self.daemon_port = sock.getsockname()[1]
             sock.close()
+            self.logfile = os.path.join(
+                config.root, 'logs', 'hollow-{}.log'.format(self.daemon_port))
+            self.pidfile = os.path.join(
+                config.root, 'logs', 'hollow-{}.pid'.format(self.daemon_port))
         assert self.daemon_port is not None
 
-        # Create a root directory
-        root_fixture = FunctionFixture(tempfile.mkdtemp, shutil.rmtree)
-        self.useFixture(root_fixture)
-        self.root = root_fixture.fn_result
-        os.chmod(self.root, 0o700)
+        super(SwiftFixture, self).setUp(
+            spew, umask,
+            os.path.join(config.root, 'bin', 'py'),
+            os.path.join(config.root, 'bin', 'twistd'))
+
+    def cleanUp(self):
+        if self.logfile is not None and os.path.exists(self.logfile):
+            self.addDetail(
+                'log-file', testtools.content.content_from_stream(
+                    open(self.logfile, 'r'), testtools.content_type.UTF8_TEXT))
+            os.unlink(self.logfile)
+        super(SwiftFixture, self).cleanUp()
+
+    def setUpRoot(self):
+        # Create a root directory.
+        if self.root is None or not os.path.isdir(self.root):
+            root_fixture = FunctionFixture(tempfile.mkdtemp, shutil.rmtree)
+            self.useFixture(root_fixture)
+            self.root = root_fixture.fn_result
+            os.chmod(self.root, 0o700)
+        assert os.path.isdir(self.root)
+
+        # Pass on options to the daemon.
         os.environ['HOLLOW_ROOT'] = self.root
         os.environ['HOLLOW_PORT'] = str(self.daemon_port)
 
