@@ -19,6 +19,7 @@ from txfixtures.tachandler import TacTestFixture
 
 from lp.services.config import config
 
+
 class SwiftFixture(TacTestFixture):
 
     tacfile = os.path.join(os.path.dirname(__file__), 'hollow.tac')
@@ -35,10 +36,11 @@ class SwiftFixture(TacTestFixture):
 
     def setUpRoot(self):
         # Pick a random, free port.
-        sock = socket.socket()
-        sock.bind(('', 0))
-        self.daemon_port = sock.getsockname()[1]
-        sock.close()
+        if self.daemon_port is None:
+            sock = socket.socket()
+            sock.bind(('', 0))
+            self.daemon_port = sock.getsockname()[1]
+            sock.close()
         assert self.daemon_port is not None
 
         # Create a root directory
@@ -60,6 +62,9 @@ class SwiftFixture(TacTestFixture):
             user=username, key=password,
             retries=0, insecure=True)
         return client
+
+    def startup(self):
+        self.setUp()
 
     def shutdown(self):
         self.cleanUp()
