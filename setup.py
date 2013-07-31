@@ -32,6 +32,7 @@ setup(
         'BeautifulSoup',
         'bzr',
         'cssutils',
+        'd2to1',  # For pbr
         # Required for pydkim
         'dnspython',
         'fixtures',
@@ -41,7 +42,9 @@ setup(
         'html5browser',
         'pygpgme',
         'python-debian',
+        'python-keystoneclient',  # For python-swiftclient
         'python-subunit',
+        'python-swiftclient',
         'launchpadlib',
         'lazr.batchnavigator',
         'lazr.config',
@@ -64,8 +67,12 @@ setup(
         'oops_timeline',
         'oops_twisted',
         'oops_wsgi',
+        'oslo.config',  # For python-keystoneclient
         'paramiko',
+        'pbr',  # For python-swiftclient
+        'pip',  # For d2to1
         'pgbouncer',
+        'prettytable',  # For requests
         'psycopg2',
         'python-memcached',
         'pyasn1',
@@ -74,8 +81,12 @@ setup(
         'python-openid',
         'pytz',
         'rabbitfixture',
+        'requests',  # For six
+        's4',
         'setproctitle',
         'setuptools',
+        'setuptools-git',  # For pip
+        'six',  # For oslo.config
         'Sphinx',
         'soupmatchers',
         'sourcecodegen',
