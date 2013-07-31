@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import os.path
-
 from testtools.content import text_content
 import transaction
 from zope.component import getUtility
@@ -19,6 +17,7 @@ from lp.soyuz.interfaces.packagediffjob import (
     IPackageDiffJobSource,
     )
 from lp.soyuz.model.packagediffjob import PackageDiffJob
+from lp.soyuz.tests.test_packagediff import create_proper_job
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.testing import (
@@ -32,38 +31,6 @@ from lp.testing.layers import (
     CeleryJobLayer,
     LaunchpadZopelessLayer,
     )
-
-
-def create_proper_job(factory):
-    archive = factory.makeArchive()
-    foo_dash1 = factory.makeSourcePackageRelease(archive=archive)
-    foo_dash15 = factory.makeSourcePackageRelease(archive=archive)
-    suite_dir = 'lib/lp/archiveuploader/tests/data/suite'
-    files = {
-        '%s/foo_1.0-1/foo_1.0-1.diff.gz' % suite_dir: None,
-        '%s/foo_1.0-1/foo_1.0-1.dsc' % suite_dir: None,
-        '%s/foo_1.0-1/foo_1.0.orig.tar.gz' % suite_dir: None,
-        '%s/foo_1.0-1.5/foo_1.0-1.5.diff.gz' % suite_dir: None,
-        '%s/foo_1.0-1.5/foo_1.0-1.5.dsc' % suite_dir: None}
-    for name in files:
-        filename = os.path.split(name)[-1]
-        with open(name, 'r') as content:
-            files[name] = factory.makeLibraryFileAlias(
-                filename=filename, content=content.read())
-    transaction.commit()
-    dash1_files = (
-        '%s/foo_1.0-1/foo_1.0-1.diff.gz' % suite_dir,
-        '%s/foo_1.0-1/foo_1.0-1.dsc' % suite_dir,
-        '%s/foo_1.0-1/foo_1.0.orig.tar.gz' % suite_dir)
-    dash15_files = (
-        '%s/foo_1.0-1/foo_1.0.orig.tar.gz' % suite_dir,
-        '%s/foo_1.0-1.5/foo_1.0-1.5.diff.gz' % suite_dir,
-        '%s/foo_1.0-1.5/foo_1.0-1.5.dsc' % suite_dir)
-    for name in dash1_files:
-        foo_dash1.addFile(files[name])
-    for name in dash15_files:
-        foo_dash15.addFile(files[name])
-    return foo_dash1.requestDiffTo(factory.makePerson(), foo_dash15)
 
 
 class TestPackageDiffJob(TestCaseWithFactory):

@@ -264,12 +264,6 @@ class PackageDiffSet:
         """See `IPackageDiffSet`."""
         return PackageDiff.get(diff_id)
 
-    def getPendingDiffs(self, limit=None):
-        return IStore(PackageDiff).find(
-            PackageDiff,
-            PackageDiff.status == PackageDiffStatus.PENDING).order_by(
-                PackageDiff.id).config(limit=limit)
-
     def getDiffsToReleases(self, sprs, preload_for_display=False):
         """See `IPackageDiffSet`."""
         from lp.registry.model.distribution import Distribution
