@@ -824,6 +824,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return getUtility(
             IArchiveSet).getByDistroAndName(self, name)
 
+    def resolveSeriesAlias(self, name):
+        """See `IDistribution`."""
+        if self.development_series_alias == name:
+            currentseries = self.currentseries
+            if currentseries is not None:
+                return currentseries
+        raise NoSuchDistroSeries(name)
+
     def getSeries(self, name_or_version, follow_aliases=False):
         """See `IDistribution`."""
         distroseries = Store.of(self).find(DistroSeries,
@@ -833,10 +841,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         if distroseries:
             return distroseries
         if follow_aliases:
-            if self.development_series_alias == name_or_version:
-                currentseries = self.currentseries
-                if currentseries is not None:
-                    return currentseries
+            return self.resolveSeriesAlias(name_or_version)
         raise NoSuchDistroSeries(name_or_version)
 
     def getDevelopmentSeries(self):
@@ -975,11 +980,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 try:
                     return self[left], suffixpocket[suffix]
                 except KeyError:
-                    if (follow_aliases and
-                        self.development_series_alias == left):
-                        currentseries = self.currentseries
-                        if currentseries is not None:
-                            return currentseries, suffixpocket[suffix]
+                    if follow_aliases:
+                        try:
+                            resolved = self.resolveSeriesAlias(left)
+                            return resolved, suffixpocket[suffix]
+                        except NoSuchDistroSeries:
+                            pass
                     # Swallow KeyError to continue round the loop.
 
         raise NotFoundError(distroseries_name)

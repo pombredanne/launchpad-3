@@ -55,6 +55,7 @@ from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
+from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import (
     DerivationError,
     IDistroSeries,
@@ -1493,8 +1494,11 @@ class DistroSeriesSet:
         series = DistroSeries.selectOneBy(distribution=distribution, name=name)
         if series is not None:
             return series
-        if follow_aliases and distribution.development_series_alias == name:
-            return distribution.currentseries
+        if follow_aliases:
+            try:
+                return distribution.resolveSeriesAlias(name)
+            except NoSuchDistroSeries:
+                pass
         return None
 
     def queryByVersion(self, distribution, version):

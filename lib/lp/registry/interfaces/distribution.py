@@ -404,6 +404,13 @@ class IDistributionPublic(
     def getDevelopmentSeries():
         """Return the DistroSeries which are marked as in development."""
 
+    def resolveSeriesAlias(name):
+        """Resolve a series alias.
+
+        :param name: The name to resolve.
+        :raises NoSuchDistroSeries: If there is no match.
+        """
+
     @operation_parameters(
         name_or_version=TextLine(title=_("Name or version"), required=True))
     # Really IDistroSeries, see _schema_circular_imports.py.
