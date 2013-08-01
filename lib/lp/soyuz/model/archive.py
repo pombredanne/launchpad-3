@@ -1749,7 +1749,7 @@ class Archive(SQLBase):
             distribution = self.distribution
         if to_series is not None:
             result = getUtility(IDistroSeriesSet).queryByName(
-                distribution, to_series)
+                distribution, to_series, follow_aliases=True)
             if result is None:
                 raise NoSuchDistroSeries(to_series)
             series = result

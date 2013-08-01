@@ -1713,6 +1713,7 @@
                 bug_reported_acknowledgement
                 bug_reporting_guidelines
                 description
+                development_series_alias
                 displayname
                 driver
                 enable_bug_expiration

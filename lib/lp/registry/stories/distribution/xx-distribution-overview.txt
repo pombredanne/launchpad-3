@@ -8,7 +8,7 @@ system.
 
 == Distribution listings ==
 
-There is a listing of all distributions at /distributions/:
+There is a listing of all distributions at /distros/:
 
     >>> anon_browser.open('http://launchpad.dev/distros/')
     >>> print anon_browser.title
@@ -113,9 +113,31 @@ not there.
    No derivatives.
 
 
- == Registration information ==
+If there is a development series alias, it becomes a redirect.
 
-The distroseries pages presents the registeration information.
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.testing import celebrity_logged_in
+    >>> from zope.component import getUtility
+
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/devel")
+    Traceback (most recent call last):
+    ...
+    NotFound: Object: <Distribution ...>, name: u'devel'
+
+    >>> with celebrity_logged_in("admin"):
+    ...     ubuntu = getUtility(IDistributionSet).getByName(u"ubuntu")
+    ...     ubuntu.development_series_alias = "devel"
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/devel")
+    >>> print anon_browser.url
+    http://launchpad.dev/ubuntu/hoary
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/devel/+builds")
+    >>> print anon_browser.url
+    http://launchpad.dev/ubuntu/hoary/+builds
+
+
+== Registration information ==
+
+The distroseries pages presents the registration information.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu')
 

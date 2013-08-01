@@ -248,6 +248,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     active = True
     package_derivatives_email = StringCol(notNull=False, default=None)
     redirect_release_uploads = BoolCol(notNull=True, default=False)
+    development_series_alias = StringCol(notNull=False, default=None)
 
     def __repr__(self):
         displayname = self.displayname.encode('ASCII', 'backslashreplace')
@@ -823,15 +824,20 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return getUtility(
             IArchiveSet).getByDistroAndName(self, name)
 
-    def getSeries(self, name_or_version):
+    def getSeries(self, name_or_version, follow_aliases=False):
         """See `IDistribution`."""
         distroseries = Store.of(self).find(DistroSeries,
                Or(DistroSeries.name == name_or_version,
                DistroSeries.version == name_or_version),
             DistroSeries.distribution == self).one()
-        if not distroseries:
-            raise NoSuchDistroSeries(name_or_version)
-        return distroseries
+        if distroseries:
+            return distroseries
+        if follow_aliases:
+            if self.development_series_alias == name_or_version:
+                currentseries = self.currentseries
+                if currentseries is not None:
+                    return currentseries
+        raise NoSuchDistroSeries(name_or_version)
 
     def getDevelopmentSeries(self):
         """See `IDistribution`."""
@@ -954,7 +960,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             search_text=search_text, owner=owner, sort=sort,
             distribution=self).getResults()
 
-    def getDistroSeriesAndPocket(self, distroseries_name):
+    def getDistroSeriesAndPocket(self, distroseries_name,
+                                 follow_aliases=False):
         """See `IDistribution`."""
         # Get the list of suffixes.
         suffixes = [suffix for suffix, ignored in suffixpocket.items()]
@@ -963,13 +970,17 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         for suffix in suffixes:
             if distroseries_name.endswith(suffix):
+                left_size = len(distroseries_name) - len(suffix)
+                left = distroseries_name[:left_size]
                 try:
-                    left_size = len(distroseries_name) - len(suffix)
-                    return (self[distroseries_name[:left_size]],
-                            suffixpocket[suffix])
+                    return self[left], suffixpocket[suffix]
                 except KeyError:
+                    if (follow_aliases and
+                        self.development_series_alias == left):
+                        currentseries = self.currentseries
+                        if currentseries is not None:
+                            return currentseries, suffixpocket[suffix]
                     # Swallow KeyError to continue round the loop.
-                    pass
 
         raise NotFoundError(distroseries_name)
 

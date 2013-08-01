@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces including and related to IDistroSeries."""
@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'DerivationError',
+    'DistroSeriesNameField',
     'IDistroSeries',
     'IDistroSeriesEditRestricted',
     'IDistroSeriesPublic',
@@ -997,11 +998,12 @@ class IDistroSeriesSet(Interface):
         """Return a set of distroseriess that can be translated in
         rosetta."""
 
-    def queryByName(distribution, name):
+    def queryByName(distribution, name, follow_aliases=False):
         """Query a DistroSeries by name.
 
         :distribution: An IDistribution.
         :name: A string.
+        :follow_aliases: If True, follow series aliases.
 
         Returns the matching DistroSeries, or None if not found.
         """

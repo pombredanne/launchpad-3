@@ -1488,9 +1488,14 @@ class DistroSeriesSet:
             DistroSeries.hide_all_translations == False,
             DistroSeries.id == POTemplate.distroseriesID).config(distinct=True)
 
-    def queryByName(self, distribution, name):
+    def queryByName(self, distribution, name, follow_aliases=False):
         """See `IDistroSeriesSet`."""
-        return DistroSeries.selectOneBy(distribution=distribution, name=name)
+        series = DistroSeries.selectOneBy(distribution=distribution, name=name)
+        if series is not None:
+            return series
+        if follow_aliases and distribution.development_series_alias == name:
+            return distribution.currentseries
+        return None
 
     def queryByVersion(self, distribution, version):
         """See `IDistroSeriesSet`."""

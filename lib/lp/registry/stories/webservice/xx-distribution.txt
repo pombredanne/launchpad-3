@@ -32,6 +32,7 @@ And for every distribution we publish most of its attributes.
     date_created: u'2006-10-16T18:31:43.415195+00:00'
     derivatives_collection_link: u'http://.../ubuntu/derivatives'
     description: u'Ubuntu is a new approach...'
+    development_series_alias: None
     display_name: u'Ubuntu'
     domain_name: u'ubuntulinux.org'
     driver_link: None
