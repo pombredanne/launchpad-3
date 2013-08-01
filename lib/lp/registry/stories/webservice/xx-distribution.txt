@@ -166,7 +166,8 @@ packages matching (substring) the given text.
 "getCountryMirror" returns the country DNS mirror for a given country;
 returning None if there isn't one.
 
-    >>> # Prepare stuff.
+Prepare stuff.
+
     >>> from zope.component import getUtility
     >>> from lp.testing.pages import webservice_for_person
     >>> from lp.services.webapp.interfaces import OAuthPermission
@@ -188,7 +189,8 @@ returning None if there isn't one.
     ...     permission=OAuthPermission.WRITE_PUBLIC)
     >>> logout()
 
-    >>> # Mark new mirror as official and a country mirror.
+Mark new mirror as official and a country mirror.
+
     >>> patch = {
     ...     u'status': 'Official',
     ...     u'country_dns_mirror': True

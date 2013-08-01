@@ -628,9 +628,11 @@ class Archive(SQLBase):
             SourcePackagePublishingHistory, *clauses).order_by(
                 SourcePackageName.name, Desc(SourcePackageRelease.version),
                 Desc(SourcePackagePublishingHistory.id))
+
         def eager_load(rows):
             load_related(
                 SourcePackageRelease, rows, ['sourcepackagereleaseID'])
+
         return DecoratedResultSet(sources, pre_iter_hook=eager_load)
 
     @property
