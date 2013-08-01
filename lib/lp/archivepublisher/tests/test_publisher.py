@@ -1185,10 +1185,19 @@ class TestPublisher(TestPublisherBase):
         publisher.A_publish(False)
         publisher.C_writeIndexes(False)
         publisher.createSeriesAliases()
+        self.assertTrue(os.path.exists(os.path.join(
+            self.config.distsroot, expected)))
         for pocket, suffix in pocketsuffix.items():
             path = os.path.join(self.config.distsroot, "devel%s" % suffix)
-            self.assertTrue(os.path.islink(path))
-            self.assertEqual(expected + suffix, os.readlink(path))
+            expected_path = os.path.join(
+                self.config.distsroot, expected + suffix)
+            # A symlink for the RELEASE pocket exists.  Symlinks for other
+            # pockets only exist if the respective targets exist.
+            if not suffix or os.path.exists(expected_path):
+                self.assertTrue(os.path.islink(path))
+                self.assertEqual(expected + suffix, os.readlink(path))
+            else:
+                self.assertFalse(os.path.islink(path))
 
     def testCreateSeriesAliasesChangesAlias(self):
         """createSeriesAliases tracks the latest published series."""

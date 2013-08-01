@@ -486,6 +486,10 @@ class Publisher(object):
                 else:
                     alias_suite = "%s%s" % (alias, pocketsuffix[pocket])
                 current_suite = current.getSuite(pocket)
+                current_suite_path = os.path.join(
+                    self._config.distsroot, current_suite)
+                if not os.path.isdir(current_suite_path):
+                    continue
                 alias_suite_path = os.path.join(
                     self._config.distsroot, alias_suite)
                 if os.path.islink(alias_suite_path):
