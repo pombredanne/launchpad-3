@@ -188,7 +188,7 @@ them properly, see doc/package-archive.txt.
 
     >>> from zope.component import getUtility
 
-    >>> from lp.services.database.sqlbase import flush_database_updates
+    >>> import transaction
     >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> login(ANONYMOUS)
@@ -196,7 +196,7 @@ them properly, see doc/package-archive.txt.
     >>> for archive in ubuntu.getAllPPAs():
     ...     archive.updateArchiveCache()
     >>> logout()
-    >>> flush_database_updates()
+    >>> transaction.commit()
 
 In the three sample data PPAs, only one matches the search string "Celso".
 
@@ -225,14 +225,18 @@ specified.
 
 Let's start by adding an extra package to Celso's archive:
 
-    >>> import transaction
-    >>> from lp.soyuz.tests.ppa import publishToPPA
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> def publishToPPA(person_name, distroseries_name, name, version):
+    ...     person = getUtility(IPersonSet).getByName(person_name)
+    ...     distroseries = person.archive.distribution[distroseries_name]
+    ...     ign = factory.makeSourcePackagePublishingHistory(
+    ...         distroseries=distroseries, archive=person.archive,
+    ...         sourcepackagename=name, version=version)
 
     >>> login(ANONYMOUS)
     >>> publishToPPA("cprov", "warty", "commercialpackage", "1.0-1")
     >>> logout()
     >>> transaction.commit()
-    >>> flush_database_updates()
 
 And now on to the page itself. In the table rows, the PPA
 'displayname' is a link to its corresponding page:
