@@ -9,13 +9,15 @@ __metaclass__ = type
 __all__ = ['lfc_to_swift']
 
 import os.path
+import sys
 
 from swiftclient import client as swiftclient
 
+from lp.services.config import config
 from lp.services.librarianserver.storage import _relFileLocation
 
 
-def to_swift(log, start_lfc_id, end_lfc_id, remove=False):
+def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
     '''Copy a range of Librarian files from disk into Swift.
 
     start and end identify the range of LibraryFileContent.id to 
@@ -25,13 +27,25 @@ def to_swift(log, start_lfc_id, end_lfc_id, remove=False):
     Swift.
     '''
     swift_connection = swiftclient.Connection(
-        authurl=os.environ['OS_AUTH_URL'],
+        authurl=os.environ.get('OS_AUTH_URL', None),
+        user=os.environ.get('OS_USERNAME', None),
+        key=os.environ.get('OS_PASSWORD', None),
+        tenant_name=os.environ.get('OS_TENANT_NAME', None),
         auth_version='2.0',
-        tenant_name=os.environ['OS_TENANT_NAME'],
-        username=os.environ['OS_USERNAME'],
-        key=os.environ['OS_PASSWORD']
         )
     fs_root = os.path.abspath(config.librarian_server.root)
+
+    if start_lfc_id is None:
+        start_lfc_id = 1
+    if end_lfc_id is None:
+        end_lfc_id = sys.maxint
+        end_str = 'MAXINT'
+    else:
+        end_str = str(end_lfc_id)
+
+    log.info("Walking disk store {} from {} to {}, inclusive".format(
+        fs_root, start_lfc_id, end_str))
+
     start_fs_path = _fs_path(start_lfc_id)
     end_fs_path = _fs_path(end_lfc_id)
 

@@ -9,6 +9,8 @@ __metaclass__ = type
 
 import _pythonpath
 
+import sys
+
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.librarianserver import feedswift
 
@@ -36,12 +38,11 @@ class LibrarianFeedSwift(LaunchpadCronScript):
                 "Cannot specify both individual file(s) and range")
         elif self.options.ids:
             for lfc in self.options.ids:
-                feedswift.to_swift(self.logger, lfc, lfc, options.remove)
+                feedswift.to_swift(self.logger, lfc, lfc, self.options.remove)
         else:
-            start = options.start or 1
-            end = options.end or sys.maxint
             feedswift.to_swift(
-                self.logger, options.start, options.end, options.remove)
+                self.logger, self.options.start, self.options.end,
+                self.options.remove)
 
 
 if __name__ == '__main__':
