@@ -3,10 +3,8 @@
 
 """Move files from Librarian disk storage into Swift."""
 
-import _pythonpath
-
 __metaclass__ = type
-__all__ = ['lfc_to_swift']
+__all__ = ['to_swift', 'filesystem_path', 'swift_location']
 
 import os.path
 import sys
@@ -20,7 +18,7 @@ from lp.services.librarianserver.storage import _relFileLocation
 def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
     '''Copy a range of Librarian files from disk into Swift.
 
-    start and end identify the range of LibraryFileContent.id to 
+    start and end identify the range of LibraryFileContent.id to
     migrate (inclusive).
 
     If remove is True, files are removed from disk after being copied into
@@ -46,8 +44,8 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
     log.info("Walking disk store {} from {} to {}, inclusive".format(
         fs_root, start_lfc_id, end_str))
 
-    start_fs_path = _fs_path(start_lfc_id)
-    end_fs_path = _fs_path(end_lfc_id)
+    start_fs_path = filesystem_path(start_lfc_id)
+    end_fs_path = filesystem_path(end_lfc_id)
 
     # Walk the Librarian on disk file store, searching for matching
     # files that may need to be copied into Swift. We need to follow
@@ -88,10 +86,32 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
 
             container, obj_name = swift_location(lfc)
 
-            swift_connection.put_container(container)
-            swift_connection.put_object(
-                container, obj_name,
-                open(fs_path, 'rb'), os.path.getsize(fs_path))
+            try:
+                swift_connection.head_container(container)
+                log.debug2('{} container already exists'.format(container))
+            except swiftclient.ClientException as x:
+                if x.http_status != 404:
+                    raise
+                log.info('Creating {} container'.format(container))
+                swift_connection.put_container(container)
+
+            try:
+                swift_connection.head_object(container, obj_name)
+                log.debug(
+                    "{} already exists in Swift({}, {})".format(
+                        lfc, container, obj_name))
+            except swiftclient.ClientException as x:
+                if x.http_status != 404:
+                    raise
+                log.info(
+                    'Putting {} into Swift ({}, {})'.format(
+                        lfc, container, obj_name))
+                swift_connection.put_object(
+                    container, obj_name,
+                    open(fs_path, 'rb'), os.path.getsize(fs_path))
+
+            if remove:
+                os.unlink(fs_path)
 
 
 def swift_location(lfc_id):
@@ -113,6 +133,6 @@ def swift_location(lfc_id):
     return ('librarian_{}'.format(container_num), str(lfc_id))
 
 
-def _fs_path(lfc_id):
+def filesystem_path(lfc_id):
     return os.path.join(
         config.librarian_server.root, _relFileLocation(lfc_id))
