@@ -8,6 +8,8 @@ __metaclass__ = type
 from cStringIO import StringIO
 import os.path
 
+from mock import patch
+
 from lp.services.database.interfaces import IStore
 from lp.services.librarian.client import LibrarianClient
 from lp.services.librarian.model import LibraryFileAlias
@@ -67,10 +69,13 @@ class TestFeedSwift(TestCase):
             headers, obj = swift.get_object(container, name)
             self.assertEqual(contents, obj, 'Did not round trip')
 
-        # Running again does nothing, but we need to confirm that things
-        # do not fail when the files exist both on disk and already in
-        # Swift.
-        feedswift.to_swift(log)  # remove == False
+        # Running again does nothing, in particular does not reupload
+        # the files to Swift.
+        con_patch = patch.object(
+            feedswift.swiftclient.Connection, 'put_object',
+            side_effect=AssertionError('do not call'))
+        with con_patch:
+            feedswift.to_swift(log)  # remove == False
 
 
     def test_move_to_swift(self):

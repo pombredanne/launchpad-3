@@ -60,6 +60,7 @@ setup(
         'Markdown',
         'mechanize',
         'meliae',
+        'mock',  # Backport from Python 3.3
         'oauth',
         'oops',
         'oops_amqp',
