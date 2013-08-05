@@ -44,7 +44,36 @@ class TestFeedSwift(TestCase):
                 for lfa_id in self.lfa_ids]
         self.lfcs = [lfa.content for lfa in self.lfas]
 
-    def test_to_swift(self):
+    def test_copy_to_swift(self):
+        log = BufferLogger()
+
+        # Confirm that files exist on disk where we expect to find them.
+        for lfc in self.lfcs:
+            path = feedswift.filesystem_path(lfc.id)
+            self.assert_(os.path.exists(path))
+
+        # Copy all the files into Swift.
+        feedswift.to_swift(log)  # remove == False
+
+        # Confirm that files exist on disk where we expect to find them.
+        for lfc in self.lfcs:
+            path = feedswift.filesystem_path(lfc.id)
+            self.assert_(os.path.exists(path))
+
+        # Confirm all the files are also in Swift.
+        swift = self.swift_fixture.connect()
+        for lfc, contents in zip(self.lfcs, self.contents):
+            container, name = feedswift.swift_location(lfc.id)
+            headers, obj = swift.get_object(container, name)
+            self.assertEqual(contents, obj, 'Did not round trip')
+
+        # Running again does nothing, but we need to confirm that things
+        # do not fail when the files exist both on disk and already in
+        # Swift.
+        feedswift.to_swift(log)  # remove == False
+
+
+    def test_move_to_swift(self):
         log = BufferLogger()
 
         # Confirm that files exist on disk where we expect to find them.
