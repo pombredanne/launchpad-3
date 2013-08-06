@@ -574,8 +574,7 @@ class SourcePackageRelease(SQLBase):
 
         if candidate is not None:
             raise PackageDiffAlreadyRequested(
-                "%s was already requested by %s"
-                % (candidate.title, candidate.requester.displayname))
+                "%s has already been requested" % candidate.title)
 
         if self.sourcepackagename.name == 'udev':
             # XXX 2009-11-23 Julian bug=314436

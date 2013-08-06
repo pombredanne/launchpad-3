@@ -104,8 +104,8 @@ error:
     ...     requester=cprov, to_sourcepackagerelease=pmount_to)
     Traceback (most recent call last):
     ...
-    PackageDiffAlreadyRequested: diff from 0.1-1 to 0.1-2 was already
-    requested by Celso Providelo
+    PackageDiffAlreadyRequested: diff from 0.1-1 to 0.1-2 has already
+    been requested
 
 
 Diff request for source uploads
