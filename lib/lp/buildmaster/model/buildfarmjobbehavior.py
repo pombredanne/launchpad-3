@@ -431,7 +431,8 @@ class BuildFarmJobBehaviorBase:
         else:
             self.build.buildqueue_record.reset()
             try:
-                yield builder.handleFailure(logger, BuildSlaveFailure(
+                builder.handleFailure(logger)
+                yield builder.resetOrFail(logger, BuildSlaveFailure(
                     "Builder unexpectedly returned ABORTED"))
             except Exception as e:
                 # We've already done our best to mark the builder as failed.

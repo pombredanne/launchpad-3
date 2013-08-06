@@ -803,7 +803,7 @@ class Builder(SQLBase):
         d = defer.maybeDeferred(self.startBuild, candidate, logger)
         return d
 
-    def handleFailure(self, logger, exception):
+    def handleFailure(self, logger):
         """See IBuilder."""
         self.gotFailure()
         if self.currentjob is not None:
@@ -818,6 +818,8 @@ class Builder(SQLBase):
                 "Builder %s failure count: %s" % (
                     self.name, self.failure_count))
 
+    def resetOrFail(self, logger, exception):
+        """See IBuilder."""
         error_message = str(exception)
         if self.virtualized:
             # Virtualized/PPA builder: attempt a reset, unless the failure
