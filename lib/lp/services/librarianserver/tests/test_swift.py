@@ -9,6 +9,7 @@ from cStringIO import StringIO
 import os.path
 
 from mock import patch
+import transaction
 
 from lp.services.database.interfaces import IStore
 from lp.services.librarian.client import LibrarianClient
@@ -45,6 +46,7 @@ class TestFeedSwift(TestCase):
             IStore(LibraryFileAlias).get(LibraryFileAlias, lfa_id)
                 for lfa_id in self.lfa_ids]
         self.lfcs = [lfa.content for lfa in self.lfas]
+        transaction.commit()
 
     def test_copy_to_swift(self):
         log = BufferLogger()
@@ -98,3 +100,23 @@ class TestFeedSwift(TestCase):
             container, name = swift.swift_location(lfc.id)
             headers, obj = swift_client.get_object(container, name)
             self.assertEqual(contents, obj, 'Did not round trip')
+
+    def test_librarian_serves_from_swift(self):
+        log = BufferLogger()
+
+        # Move all the files into Swift and off the file system.
+        swift.to_swift(log, remove=True)
+
+        # Confirm we can still access the files from the Librarian.
+        for lfa_id, content in zip(self.lfa_ids, self.contents):
+            data = self.librarian_client.getFileByAlias(lfa_id).read()
+            self.assertEqual(content, data)
+
+    def test_librarian_serves_from_disk(self):
+        # Ensure the Librarian falls back to serving files from disk
+        # when they cannot be found in the Swift server. Note that other
+        # Librarian tests do not have Swift active, so this test is not
+        # redundant.
+        for lfa_id, content in zip(self.lfa_ids, self.contents):
+            data = self.librarian_client.getFileByAlias(lfa_id).read()
+            self.assertEqual(content, data)

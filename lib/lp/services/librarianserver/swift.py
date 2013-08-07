@@ -12,7 +12,6 @@ import sys
 from swiftclient import client as swiftclient
 
 from lp.services.config import config
-from lp.services.librarianserver.storage import _relFileLocation
 
 
 def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
@@ -24,13 +23,7 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
     If remove is True, files are removed from disk after being copied into
     Swift.
     '''
-    swift_connection = swiftclient.Connection(
-        authurl=os.environ.get('OS_AUTH_URL', None),
-        user=os.environ.get('OS_USERNAME', None),
-        key=os.environ.get('OS_PASSWORD', None),
-        tenant_name=os.environ.get('OS_TENANT_NAME', None),
-        auth_version='2.0',
-        )
+    swift_connection = connection_pool.get()
     fs_root = os.path.abspath(config.librarian_server.root)
 
     if start_lfc_id is None:
@@ -134,5 +127,40 @@ def swift_location(lfc_id):
 
 
 def filesystem_path(lfc_id):
+    from lp.services.librarianserver.storage import _relFileLocation
     return os.path.join(
         config.librarian_server.root, _relFileLocation(lfc_id))
+
+
+class ConnectionPool:
+    def __init__(self):
+        self.clear()
+
+    def clear(self):
+        self._pool = []
+
+    def get(self):
+        '''Return a conection from the pool, or a fresh connection.'''
+        try:
+            return self._pool.pop()
+        except IndexError:
+            return self._new_connection()
+
+    def put(self, swift_connection):
+        '''Put a connection back in the pool for reuse.
+
+        Only call this if the connection is in a usable state.
+        '''
+        self._pool.append(swift_connection)
+
+    def _new_connection(self):
+        return swiftclient.Connection(
+            authurl=os.environ.get('OS_AUTH_URL', None),
+            user=os.environ.get('OS_USERNAME', None),
+            key=os.environ.get('OS_PASSWORD', None),
+            tenant_name=os.environ.get('OS_TENANT_NAME', None),
+            auth_version='2.0',
+            )
+
+
+connection_pool = ConnectionPool()

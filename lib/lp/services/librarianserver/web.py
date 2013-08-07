@@ -8,9 +8,11 @@ import time
 from urlparse import urlparse
 
 from storm.exceptions import DisconnectionError
+from twisted.internet import defer
 from twisted.internet.threads import deferToThread
 from twisted.python import log
 from twisted.web import (
+    http,
     proxy,
     resource,
     server,
@@ -128,7 +130,8 @@ class LibraryFileAliasResource(resource.Resource):
         try:
             alias = self.storage.getFileAlias(aliasID, token, path)
             return (alias.contentID, alias.filename,
-                alias.mimetype, alias.date_created, alias.restricted)
+                alias.mimetype, alias.date_created, alias.content.filesize,
+                alias.restricted)
         except LookupError:
             raise NotFound
 
@@ -143,9 +146,11 @@ class LibraryFileAliasResource(resource.Resource):
         else:
             return fourOhFour
 
+    @defer.inlineCallbacks
     def _cb_getFileAlias(
             self,
-            (dbcontentID, dbfilename, mimetype, date_created, restricted),
+            (dbcontentID, dbfilename, mimetype, date_created, size,
+                restricted),
             filename, request
             ):
         # Return a 404 if the filename in the URL is incorrect. This offers
@@ -155,7 +160,7 @@ class LibraryFileAliasResource(resource.Resource):
             log.msg(
                 "404: dbfilename.encode('utf-8') != filename: %r != %r"
                 % (dbfilename.encode('utf-8'), filename))
-            return fourOhFour
+            defer.returnValue(fourOhFour)
 
         if not restricted:
             # Set our caching headers. Librarian files can be cached forever.
@@ -166,16 +171,17 @@ class LibraryFileAliasResource(resource.Resource):
             # simplest, most cautious approach is taken: no caching permited.
             request.setHeader('Cache-Control', 'max-age=0, private')
 
-        if self.storage.hasFile(dbcontentID) or self.upstreamHost is None:
+        stream = yield self.storage.open(dbcontentID)
+        if stream is not None or self.upstreamHost is None:
             # XXX: Brad Crittenden 2007-12-05 bug=174204: When encodings are
             # stored as part of a file's metadata this logic will be replaced.
             encoding, mimetype = guess_librarian_encoding(filename, mimetype)
-            return File(
-                mimetype, encoding, date_created,
-                self.storage._fileLocation(dbcontentID))
+            defer.returnValue(File(
+                mimetype, encoding, date_created, stream, size))
         else:
-            return proxy.ReverseProxyResource(self.upstreamHost,
-                                              self.upstreamPort, request.path)
+            defer.returnValue(
+                proxy.ReverseProxyResource(
+                    self.upstreamHost, self.upstreamPort, request.path))
 
     def render_GET(self, request):
         return defaultResource.render(request)
@@ -185,15 +191,17 @@ class File(static.File):
     isLeaf = True
 
     def __init__(
-        self, contentType, encoding, modification_time, *args, **kwargs):
+        self, contentType, encoding, modification_time, stream, size):
         # Have to convert the UTC datetime to POSIX timestamp (localtime)
         offset = datetime.utcnow() - datetime.now()
         local_modification_time = modification_time - offset
         self._modification_time = time.mktime(
             local_modification_time.timetuple())
-        static.File.__init__(self, *args, **kwargs)
+        static.File.__init__(self, '.')
         self.type = contentType
         self.encoding = encoding
+        self.stream = stream
+        self.size = size
 
     def getModificationTime(self):
         """Override the time on disk with the time from the database.
@@ -201,6 +209,40 @@ class File(static.File):
         This is used by twisted to set the Last-Modified: header.
         """
         return self._modification_time
+
+    def restat(self, reraise=True):
+        return  # Noop
+
+    def getsize(self):
+        return self.size
+
+    def exists(self):
+        return self.stream is not None
+
+    def isdir(self):
+        return False
+
+    def openForReading(self):
+        return self.stream
+
+    def makeProducer(self, request, fileForReading):
+        self._setContentHeaders(request)
+        request.setResponseCode(http.OK)
+        return FileProducer(request, fileForReading)
+
+
+class FileProducer(static.NoRangeStaticProducer):
+    @defer.inlineCallbacks
+    def resumeProducing(self):
+        if not self.request:
+            return
+        data = yield self.fileObject.read(self.bufferSize)
+        if data:
+            self.request.write(data)
+        else:
+            self.request.unregisterProducer()
+            self.request.finish()
+            self.stopProducing()
 
 
 class DigestSearchResource(resource.Resource):

@@ -9,11 +9,18 @@ import os
 import shutil
 import tempfile
 
+from swiftclient import client as swiftclient
+from twisted.python import log
+from twisted.internet import defer
+from twisted.internet.threads import deferToThread
+from twisted.web.static import StaticProducer
+
 from lp.registry.model.product import Product
 from lp.services.config import dbconfig
 from lp.services.database import write_transaction
 from lp.services.database.interfaces import IStore
 from lp.services.database.postgresql import ConnectionString
+from lp.services.librarianserver import swift
 
 
 __all__ = [
@@ -67,6 +74,33 @@ class LibrarianStorage:
     def hasFile(self, fileid):
         return os.access(self._fileLocation(fileid), os.F_OK)
 
+    @defer.inlineCallbacks
+    def open(self, fileid):
+        # First, try and stream the file from Swift.
+        container, name = swift.swift_location(fileid)
+        chunk_size = StaticProducer.bufferSize
+        swift_connection = swift.connection_pool.get()
+        try:
+            headers, chunks = yield deferToThread(
+                swift_connection.get_object,
+                container, name, resp_chunk_size=chunk_size)
+            swift_stream = SwiftStream(swift_connection, chunks)
+            defer.returnValue(swift_stream)
+        except swiftclient.ClientException as x:
+            if x.http_status != 404:
+                log.err(x)
+        except Exception as x:
+            log.err(x)
+
+        # If Swift failed, for any reason, try and stream the data from
+        # disk.
+        path = self._fileLocation(fileid)
+        if os.path.exists(path):
+            defer.returnValue(open(path, 'rb'))
+
+        # Return None if the file cannot be found in Swift nor on disk.
+        defer.returnValue(None)
+
     def _fileLocation(self, fileid):
         return os.path.join(self.directory, _relFileLocation(str(fileid)))
 
@@ -75,6 +109,61 @@ class LibrarianStorage:
 
     def getFileAlias(self, aliasid, token, path):
         return self.library.getAlias(aliasid, token, path)
+
+
+class SwiftStream:
+
+    def __init__(self, swift_connection, chunks):
+        self._swift_connection = swift_connection
+        self._chunks = chunks  # Generator from swiftclient.get_object()
+
+        self.closed = False
+        self._offset = 0
+        self._chunk = None
+
+    @defer.inlineCallbacks
+    def read(self, size):
+        if self.closed:
+            raise ValueError('I/O operation on closed file')
+
+        if self._swift_connection is None:
+            defer.returnValue('')  # EOF already reached, connection returned.
+
+        return_chunks = []
+        return_size = 0
+
+        while size < 0 or return_size <= size:
+            if not self._chunk:
+                try:
+                    self._chunk = yield deferToThread(self._chunks.next)
+                except StopIteration:
+                    # If we have drained the data successfully,
+                    # the connection can be reused saving on auth
+                    # handshakes.
+                    swift.connection_pool.put(self._swift_connection)
+                    self._swift_connection = None
+                    self._chunks = None
+                    break
+            split = size - return_size
+            return_chunks.append(self._chunk[:split])
+            self._chunk = self._chunk[split:]
+            return_size += len(return_chunks[-1])
+
+        self._offset += return_size
+        defer.returnValue(''.join(return_chunks))
+
+    def close(self):
+        self.closed = True
+        self._swift_connection = None
+
+    def seek(self, offset):
+        if offset < self._offset:
+            raise NotImplementedError  # Rewind not supported
+        else:
+            self.read(offset - self._offset)
+
+    def tell(self):
+        return self._offset
 
 
 class LibraryFileUpload(object):
