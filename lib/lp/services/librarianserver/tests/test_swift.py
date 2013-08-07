@@ -18,7 +18,7 @@ from lp.testing import TestCase
 from lp.testing.layers import LaunchpadZopelessLayer, LibrarianLayer
 from lp.testing.swift.fixture import SwiftFixture
 
-from lp.services.librarianserver import feedswift
+from lp.services.librarianserver import swift
 
 
 class TestFeedSwift(TestCase):
@@ -51,51 +51,50 @@ class TestFeedSwift(TestCase):
 
         # Confirm that files exist on disk where we expect to find them.
         for lfc in self.lfcs:
-            path = feedswift.filesystem_path(lfc.id)
+            path = swift.filesystem_path(lfc.id)
             self.assert_(os.path.exists(path))
 
         # Copy all the files into Swift.
-        feedswift.to_swift(log)  # remove == False
+        swift.to_swift(log)  # remove == False
 
         # Confirm that files exist on disk where we expect to find them.
         for lfc in self.lfcs:
-            path = feedswift.filesystem_path(lfc.id)
+            path = swift.filesystem_path(lfc.id)
             self.assert_(os.path.exists(path))
 
         # Confirm all the files are also in Swift.
-        swift = self.swift_fixture.connect()
+        swift_client = self.swift_fixture.connect()
         for lfc, contents in zip(self.lfcs, self.contents):
-            container, name = feedswift.swift_location(lfc.id)
-            headers, obj = swift.get_object(container, name)
+            container, name = swift.swift_location(lfc.id)
+            headers, obj = swift_client.get_object(container, name)
             self.assertEqual(contents, obj, 'Did not round trip')
 
         # Running again does nothing, in particular does not reupload
         # the files to Swift.
         con_patch = patch.object(
-            feedswift.swiftclient.Connection, 'put_object',
+            swift.swiftclient.Connection, 'put_object',
             side_effect=AssertionError('do not call'))
         with con_patch:
-            feedswift.to_swift(log)  # remove == False
-
+            swift.to_swift(log)  # remove == False
 
     def test_move_to_swift(self):
         log = BufferLogger()
 
         # Confirm that files exist on disk where we expect to find them.
         for lfc in self.lfcs:
-            path = feedswift.filesystem_path(lfc.id)
+            path = swift.filesystem_path(lfc.id)
             self.assert_(os.path.exists(path))
 
         # Migrate all the files into Swift.
-        feedswift.to_swift(log, remove=True)
+        swift.to_swift(log, remove=True)
 
         # Confirm that all the files have gone from disk.
         for lfc in self.lfcs:
-            self.failIf(os.path.exists(feedswift.filesystem_path(lfc.id)))
+            self.failIf(os.path.exists(swift.filesystem_path(lfc.id)))
 
         # Confirm all the files are in Swift.
-        swift = self.swift_fixture.connect()
+        swift_client = self.swift_fixture.connect()
         for lfc, contents in zip(self.lfcs, self.contents):
-            container, name = feedswift.swift_location(lfc.id)
-            headers, obj = swift.get_object(container, name)
+            container, name = swift.swift_location(lfc.id)
+            headers, obj = swift_client.get_object(container, name)
             self.assertEqual(contents, obj, 'Did not round trip')
