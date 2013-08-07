@@ -338,6 +338,8 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF
 
+    task_queue = 'bzrsyncd_job'
+
     config = config.IBranchMergeProposalJobSource
 
     user_error_types = (UpdatePreviewDiffNotReady, )
@@ -576,6 +578,8 @@ class GenerateIncrementalDiffJob(BranchMergeProposalJobDerived):
     classProvides(IGenerateIncrementalDiffJobSource)
 
     class_job_type = BranchMergeProposalJobType.GENERATE_INCREMENTAL_DIFF
+
+    task_queue = 'bzrsyncd_job'
 
     config = config.IBranchMergeProposalJobSource
 
