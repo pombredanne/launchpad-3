@@ -8,6 +8,11 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.services.features.testing import FeatureFixture
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.tests import block_on_job
+from lp.services.mail.sendmail import format_address_for_person
+from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.soyuz.interfaces.packagetranslationsuploadjob import (
     IPackageTranslationsUploadJob,
     IPackageTranslationsUploadJobSource,
@@ -15,21 +20,16 @@ from lp.soyuz.interfaces.packagetranslationsuploadjob import (
 from lp.soyuz.model.packagetranslationsuploadjob import (
     PackageTranslationsUploadJob,
     )
-from lp.services.features.testing import FeatureFixture
-from lp.services.job.interfaces.job import JobStatus
 from lp.testing import (
     run_script,
     TestCaseWithFactory,
     verifyObject,
     )
-from lp.services.job.tests import block_on_job
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
     CeleryJobLayer,
     LaunchpadZopelessLayer,
     )
-from lp.services.mail.sendmail import format_address_for_person
-from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
