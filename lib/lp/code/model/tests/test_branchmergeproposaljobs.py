@@ -71,6 +71,7 @@ from lp.testing import (
     )
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import (
+    CeleryBzrsyncdJobLayer,
     CeleryJobLayer,
     LaunchpadZopelessLayer,
     )
@@ -607,18 +608,6 @@ class TestViaCelery(TestCaseWithFactory):
             transaction.commit()
         self.assertEqual(2, len(pop_remote_notifications()))
 
-    def test_UpdatePreviewDiffJob(self):
-        """UpdatePreviewDiffJob runs under Celery."""
-        self.useBzrBranches(direct_database=True)
-        bmp = create_example_merge(self)[0]
-        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
-        self.useFixture(FeatureFixture(
-            {'jobs.celery.enabled_classes': 'UpdatePreviewDiffJob'}))
-        with block_on_job():
-            UpdatePreviewDiffJob.create(bmp)
-            transaction.commit()
-        self.assertIsNot(None, bmp.preview_diff)
-
     def test_CodeReviewCommentEmailJob(self):
         """CodeReviewCommentEmailJob runs under Celery."""
         comment = self.factory.makeCodeReviewComment()
@@ -649,6 +638,23 @@ class TestViaCelery(TestCaseWithFactory):
                 bmp, 'change', bmp.registrant)
             transaction.commit()
         self.assertEqual(2, len(pop_remote_notifications()))
+
+
+class TestViaBzrsyncdCelery(TestCaseWithFactory):
+
+    layer = CeleryBzrsyncdJobLayer
+
+    def test_UpdatePreviewDiffJob(self):
+        """UpdatePreviewDiffJob runs under Celery."""
+        self.useBzrBranches(direct_database=True)
+        bmp = create_example_merge(self)[0]
+        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'UpdatePreviewDiffJob'}))
+        with block_on_job():
+            UpdatePreviewDiffJob.create(bmp)
+            transaction.commit()
+        self.assertIsNot(None, bmp.preview_diff)
 
     def test_GenerateIncrementalDiffJob(self):
         """GenerateIncrementalDiffJob runs under Celery."""
