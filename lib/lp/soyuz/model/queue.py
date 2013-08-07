@@ -98,12 +98,12 @@ from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJobSource
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
+from lp.soyuz.interfaces.packagetranslationsuploadjob import (
+    IPackageTranslationsUploadJobSource,
+    )
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     name_priority_map,
-    )
-from lp.soyuz.interfaces.packagetranslationsuploadjob import (
-    IPackageTranslationsUploadJobSource,
     )
 from lp.soyuz.interfaces.queue import (
     IPackageUpload,
