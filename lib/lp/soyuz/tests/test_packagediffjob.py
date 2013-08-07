@@ -9,8 +9,13 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.database.interfaces import IStore
-from lp.services.job.interfaces.job import JobType
+from lp.services.features.testing import FeatureFixture
+from lp.services.job.interfaces.job import (
+    JobStatus,
+    JobType,
+    )
 from lp.services.job.model.job import Job
+from lp.services.job.tests import block_on_job
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.packagediffjob import (
     IPackageDiffJob,
@@ -18,14 +23,11 @@ from lp.soyuz.interfaces.packagediffjob import (
     )
 from lp.soyuz.model.packagediffjob import PackageDiffJob
 from lp.soyuz.tests.test_packagediff import create_proper_job
-from lp.services.features.testing import FeatureFixture
-from lp.services.job.interfaces.job import JobStatus
 from lp.testing import (
     run_script,
     TestCaseWithFactory,
     verifyObject,
     )
-from lp.services.job.tests import block_on_job
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
     CeleryJobLayer,
