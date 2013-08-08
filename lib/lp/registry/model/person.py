@@ -311,7 +311,6 @@ from lp.soyuz.enums import (
     ArchiveStatus,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.model.archive import (
     Archive,
@@ -2970,12 +2969,6 @@ class Person(
             BranchMergeQueue,
             BranchMergeQueue.owner == self,
             BranchMergeQueue.name == unicode(name)).one()
-
-    def isUploader(self, distribution):
-        """See `IPerson`."""
-        permissions = getUtility(IArchivePermissionSet).componentsForUploader(
-            distribution.main_archive, self)
-        return not permissions.is_empty()
 
     @cachedproperty
     def is_ubuntu_coc_signer(self):

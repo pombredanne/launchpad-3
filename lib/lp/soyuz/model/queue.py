@@ -905,12 +905,16 @@ class PackageUpload(SQLBase):
     def findPersonToNotify(self):
         """Find the right person to notify about this upload."""
         spph = self.findSourcePublication()
-        if spph and self.sourcepackagerelease.upload_archive != self.archive:
+        spr = self.sourcepackagerelease
+        if spph and spr.upload_archive != self.archive:
             # This is a build triggered by the syncing of a source
             # package.  Notify the person who requested the sync.
             return spph.creator
         elif self.signing_key:
             return self.signing_key.owner
+            # It may be a recipe upload.
+        elif spr and spr.source_package_recipe_build:
+            return spr.source_package_recipe_build.requester
         else:
             return None
 
@@ -935,14 +939,6 @@ class PackageUpload(SQLBase):
             self.archive, self.distroseries, self.pocket, summary_text,
             changes, changesfile_content, changes_file_object,
             status_action[self.status], dry_run=dry_run, logger=logger)
-
-    def _isPersonUploader(self, person):
-        """Return True if person is an uploader to the package's distro."""
-        debug(self.logger, "Attempting to decide if %s is an uploader." % (
-            person.displayname))
-        uploader = person.isUploader(self.distroseries.distribution)
-        debug(self.logger, "Decision: %s" % uploader)
-        return uploader
 
     @property
     def components(self):
