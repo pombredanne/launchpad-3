@@ -11,10 +11,12 @@ import os.path
 from mock import patch
 import transaction
 
+from lp.services.database import write_transaction
 from lp.services.database.interfaces import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.client import LibrarianClient
 from lp.services.librarian.model import LibraryFileAlias
+from lp.services.librarianserver.storage import LibrarianStorage
 from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase
 from lp.testing.layers import LaunchpadZopelessLayer, LibrarianLayer
@@ -41,21 +43,24 @@ class TestFeedSwift(TestCase):
         self.librarian_client = LibrarianClient()
         self.contents = [str(i) * i for i in range(1, 5)]
         self.lfa_ids = [
-            self.librarian_client.addFile(
-                name='file_{}'.format(i),
-                size=len(content), file=StringIO(content),
-                contentType='text/plain') for content in self.contents]
+            self.add_file('file_{}'.format(i), content)
+            for content in self.contents]
         self.lfas = [
             IStore(LibraryFileAlias).get(LibraryFileAlias, lfa_id)
                 for lfa_id in self.lfa_ids]
         self.lfcs = [lfa.content for lfa in self.lfas]
-        transaction.commit()
 
     def tearDown(self):
         super(TestFeedSwift, self).tearDown()
         # Restart the Librarian so it picks up the feature flag change.
         LibrarianLayer.librarian_fixture.killTac()
         LibrarianLayer.librarian_fixture.setUp()
+
+    @write_transaction
+    def add_file(self, name, content, content_type='text/plain'):
+        return self.librarian_client.addFile(
+            name=name, size=len(content), file=StringIO(content),
+            contentType=content_type)
 
     def test_copy_to_swift(self):
         log = BufferLogger()
@@ -129,3 +134,47 @@ class TestFeedSwift(TestCase):
         for lfa_id, content in zip(self.lfa_ids, self.contents):
             data = self.librarian_client.getFileByAlias(lfa_id).read()
             self.assertEqual(content, data)
+
+    def test_large_binary_files_from_disk(self):
+        # Generate a large blob, including null bytes for kicks.
+        size = 512 * 1024  # 512KB
+        expected_content = ''.join(chr(i % 256) for i in range(0, size))
+        lfa_id = self.add_file('hello_bigboy.xls', expected_content)
+
+        # Data round trips when served from disk.
+        lfa = self.librarian_client.getFileByAlias(lfa_id)
+        self.assertEqual(expected_content, lfa.read())
+
+    def test_large_binary_files_from_swift(self):
+        # Generate large blob, multiple of the chunk size.
+        # Including null bytes for kicks.
+        size = LibrarianStorage.CHUNK_SIZE * 50
+        self.assert_(size > 1024*1024)
+        expected_content = ''.join(chr(i % 256) for i in range(0, size))
+        lfa_id = self.add_file('hello_bigboy.xls', expected_content)
+
+        # This data size is a multiple of our chunk size.
+        self.assertEqual(
+            0, len(expected_content) % LibrarianStorage.CHUNK_SIZE)
+
+        # Data round trips when served from Swift.
+        swift.to_swift(BufferLogger(), remove=True)
+        lfa = self.librarian_client.getFileByAlias(lfa_id)
+        self.assertEqual(expected_content, lfa.read())
+
+    def test_large_binary_files_from_swift_2(self):
+        # Generate large blob, multiple of the chunk size.
+        # Including null bytes for kicks.
+        size = LibrarianStorage.CHUNK_SIZE * 50 + 1
+        self.assert_(size > 1024*1024)
+        expected_content = ''.join(chr(i % 256) for i in range(0, size))
+        lfa_id = self.add_file('hello_bigboy.xls', expected_content)
+
+        # This data size is NOT a multiple of our chunk size.
+        self.assertNotEqual(
+            0, len(expected_content) % LibrarianStorage.CHUNK_SIZE)
+
+        # Data round trips when served from Swift.
+        swift.to_swift(BufferLogger(), remove=True)
+        lfa = self.librarian_client.getFileByAlias(lfa_id)
+        self.assertEqual(expected_content, lfa.read())

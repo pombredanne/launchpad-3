@@ -74,16 +74,17 @@ class LibrarianStorage:
     def hasFile(self, fileid):
         return os.access(self._fileLocation(fileid), os.F_OK)
 
+    CHUNK_SIZE = StaticProducer.bufferSize
+
     @defer.inlineCallbacks
     def open(self, fileid):
         # First, try and stream the file from Swift.
         container, name = swift.swift_location(fileid)
-        chunk_size = StaticProducer.bufferSize
         swift_connection = swift.connection_pool.get()
         try:
             headers, chunks = yield deferToThread(
                 swift_connection.get_object,
-                container, name, resp_chunk_size=chunk_size)
+                container, name, resp_chunk_size=self.CHUNK_SIZE)
             swift_stream = SwiftStream(swift_connection, chunks)
             defer.returnValue(swift_stream)
         except swiftclient.ClientException as x:
@@ -127,14 +128,16 @@ class SwiftStream:
         if self._swift_connection is None:
             defer.returnValue('')  # EOF already reached, connection returned.
 
+        if size == 0:
+            defer.returnValue('')
+
         return_chunks = []
         return_size = 0
 
-        while size < 0 or return_size <= size:
+        while return_size < size:
             if not self._chunk:
-                try:
-                    self._chunk = yield deferToThread(self._chunks.next)
-                except StopIteration:
+                self._chunk = yield deferToThread(self._next_chunk)
+                if not self._chunk:
                     # If we have drained the data successfully,
                     # the connection can be reused saving on auth
                     # handshakes.
@@ -149,6 +152,12 @@ class SwiftStream:
 
         self._offset += return_size
         defer.returnValue(''.join(return_chunks))
+
+    def _next_chunk(self):
+        try:
+            return self._chunks.next()
+        except StopIteration:
+            return None
 
     def close(self):
         self.closed = True
