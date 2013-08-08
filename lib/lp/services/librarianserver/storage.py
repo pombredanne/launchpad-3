@@ -93,13 +93,11 @@ class LibrarianStorage:
             log.err(x)
 
         # If Swift failed, for any reason, try and stream the data from
-        # disk.
+        # disk. In particular, files cannot be found in Swift until
+        # librarian-feed-swift.py has put them in there.
         path = self._fileLocation(fileid)
         if os.path.exists(path):
             defer.returnValue(open(path, 'rb'))
-
-        # Return None if the file cannot be found in Swift nor on disk.
-        defer.returnValue(None)
 
     def _fileLocation(self, fileid):
         return os.path.join(self.directory, _relFileLocation(str(fileid)))
@@ -158,7 +156,7 @@ class SwiftStream:
 
     def seek(self, offset):
         if offset < self._offset:
-            raise NotImplementedError  # Rewind not supported
+            raise NotImplementedError('rewind')  # Rewind not supported
         else:
             self.read(offset - self._offset)
 

@@ -149,7 +149,9 @@ class ConnectionPool:
     def put(self, swift_connection):
         '''Put a connection back in the pool for reuse.
 
-        Only call this if the connection is in a usable state.
+        Only call this if the connection is in a usable state. If an
+        exception has been raised (apart from a 404), don't trust the
+        swift_connection and throw it away.
         '''
         self._pool.append(swift_connection)
 
