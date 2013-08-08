@@ -47,7 +47,7 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
 
     user_error_types = (InitializationError,)
 
-    config = config.initializedistroseries
+    config = config.IInitializeDistroSeriesJobSource
 
     @classmethod
     def create(cls, child, parents, arches=(), archindep_archtag=None,

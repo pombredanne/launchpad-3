@@ -160,7 +160,7 @@ class TestBranchScanJob(TestCaseWithFactory):
             LaunchpadZopelessLayer.commit()
 
             job = BranchScanJob.create(db_branch)
-            with dbuser(config.branchscanner.dbuser):
+            with dbuser("branchscanner"):
                 job.run()
 
             self.assertEqual(db_branch.revision_count, 3)
@@ -169,7 +169,7 @@ class TestBranchScanJob(TestCaseWithFactory):
             bzr_tree.commit('Fifth commit', rev_id='rev5')
 
         job = BranchScanJob.create(db_branch)
-        with dbuser(config.branchscanner.dbuser):
+        with dbuser("branchscanner"):
             job.run()
 
         self.assertEqual(db_branch.revision_count, 5)
@@ -191,7 +191,7 @@ class TestBranchScanJob(TestCaseWithFactory):
         job = BranchScanJob.create(db_branch)
         db_branch.destroySelf()
         with self.expectedLog(expected_message):
-            with dbuser(config.branchscanner.dbuser):
+            with dbuser("branchscanner"):
                 job.run()
 
     def test_run_with_private_linked_bug(self):
@@ -206,7 +206,7 @@ class TestBranchScanJob(TestCaseWithFactory):
             bzr_tree.commit(
                 'First commit', rev_id='rev1', revprops={'bugs': bug_line})
         job = BranchScanJob.create(db_branch)
-        with dbuser(config.branchscanner.dbuser):
+        with dbuser("branchscanner"):
             job.run()
         self.assertEqual(db_branch.revision_count, 1)
         self.assertTrue(private_bug.hasBranch(db_branch))
@@ -248,7 +248,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         job = BranchUpgradeJob.create(db_branch, self.factory.makePerson())
 
         dbuser = config.launchpad.dbuser
-        self.becomeDbUser(config.upgrade_branches.dbuser)
+        self.becomeDbUser('upgrade-branches')
         with TransactionFreeOperation.require():
             job.run()
         new_branch = Branch.open(tree.branch.base)
@@ -282,7 +282,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             source_branch_transport.clone('backup.bzr'))
 
         job = BranchUpgradeJob.create(db_branch, self.factory.makePerson())
-        self.becomeDbUser(config.upgrade_branches.dbuser)
+        self.becomeDbUser('upgrade-branches')
         job.run()
 
         new_branch = Branch.open(tree.branch.base)
@@ -294,7 +294,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         # The database user that does the upgrade needs to be able to request
         # a scan of the branch.
         branch = self.factory.makeAnyBranch()
-        self.becomeDbUser(config.upgrade_branches.dbuser)
+        self.becomeDbUser('upgrade-branches')
         # Scan jobs are created by the branchChanged method.
         branch.branchChanged('', 'new-id', None, None, None)
         Store.of(branch).flush()
@@ -311,7 +311,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         branch_job = BranchJob(
             db_branch, BranchJobType.UPGRADE_BRANCH, {}, requester=requester)
         job = BranchUpgradeJob(branch_job)
-        self.becomeDbUser(config.upgrade_branches.dbuser)
+        self.becomeDbUser('upgrade-branches')
         runner = JobRunner([job])
         runner.runJobHandleError(job)
         self.assertEqual([], self.oopses)
@@ -692,7 +692,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
     def test_getRevisionMessage_with_related_BMP(self):
         """Information about related proposals is displayed."""
         job, bmp = self.makeJobAndBMP()
-        with dbuser(config.sendbranchmail.dbuser):
+        with dbuser('send-branch-mail'):
             message = job.getRevisionMessage('rev2d-id', 1)
         self.assertEqual(
         'Merge authors:\n'
@@ -715,7 +715,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         """Superseded proposals are skipped."""
         job, bmp = self.makeJobAndBMP()
         bmp2 = bmp.resubmit(bmp.registrant)
-        with dbuser(config.sendbranchmail.dbuser):
+        with dbuser('send-branch-mail'):
             message = job.getRevisionMessage('rev2d-id', 1)
         self.assertEqual(
         'Merge authors:\n'
@@ -743,7 +743,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         job, bmp = self.makeJobAndBMP()
         reviewer = self.factory.makePerson()
         bmp.nominateReviewer(reviewer, bmp.registrant)
-        with dbuser(config.sendbranchmail.dbuser):
+        with dbuser('send-branch-mail'):
             message = job.getRevisionMessage('rev2d-id', 1)
         self.assertEqual(
         'Merge authors:\n'
@@ -1349,7 +1349,7 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
     def runReadyJobs(self):
         """Run all ready `ReclaimBranchSpaceJob`s with the appropriate dbuser.
         """
-        switch_dbuser(config.reclaimbranchspace.dbuser)
+        switch_dbuser('reclaim-branch-space')
         job_count = 0
         for job in ReclaimBranchSpaceJob.iterReady():
             job.run()

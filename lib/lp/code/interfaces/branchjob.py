@@ -102,28 +102,22 @@ class IRevisionMailJob(IRunnableJob):
     subject = Text(title=u'The subject of the email to send.')
 
 
-class IRevisionMailJobSource(Interface):
+class IRevisionMailJobSource(IJobSource):
     """A utility to create and retrieve RevisionMailJobs."""
 
     def create(db_branch, revno, email_from, message, subject):
         """Create and return a new object that implements IRevisionMailJob."""
-
-    def iterReady():
-        """Iterate through ready IRevisionMailJobs."""
 
 
 class IRevisionsAddedJob(IRunnableJob):
     """A Job to send emails about revisions added to a branch."""
 
 
-class IRevisionsAddedJobSource(Interface):
+class IRevisionsAddedJobSource(IJobSource):
     """A utility to create and retrieve RevisionMailJobs."""
 
     def create(branch, last_scanned_id, last_revision_id, from_address):
         """Create and return a new object that implements IRevisionMailJob."""
-
-    def iterReady():
-        """Iterate through ready IRevisionsAddedJobSource."""
 
 
 class IRosettaUploadJob(IRunnableJob):
@@ -144,7 +138,7 @@ class IRosettaUploadJob(IRunnableJob):
         """
 
 
-class IRosettaUploadJobSource(Interface):
+class IRosettaUploadJobSource(IJobSource):
 
     def create(branch, from_revision_id, force_translations_upload):
         """Construct a new object that implements IRosettaUploadJob.
@@ -154,9 +148,6 @@ class IRosettaUploadJobSource(Interface):
         :param force_translations_upload: Flag to override the settings in the
             product series and upload all translation files.
         """
-
-    def iterReady():
-        """Iterate through ready IRosettaUploadJobs."""
 
     def findUnfinishedJobs(branch, since=None):
         """Find any `IRosettaUploadJob`s for `branch` that haven't run yet.
@@ -186,13 +177,10 @@ class IReclaimBranchSpaceJob(IRunnableJob):
         title=_('The id of the now-deleted branch.'))
 
 
-class IReclaimBranchSpaceJobSource(Interface):
+class IReclaimBranchSpaceJobSource(IJobSource):
 
     def create(branch_id):
         """Construct a new object that implements IReclaimBranchSpaceJob.
 
         :param branch_id: The id of the branch to remove from disk.
         """
-
-    def iterReady():
-        """Iterate through ready IReclaimBranchSpaceJobs."""

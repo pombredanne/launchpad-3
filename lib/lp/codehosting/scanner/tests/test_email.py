@@ -170,7 +170,7 @@ class TestViaCelery(TestCaseWithFactory):
         self.useBzrBranches(direct_database=True)
         db_branch, tree = self.create_branch_and_tree()
         add_subscriber(db_branch)
-        switch_dbuser(config.branchscanner.dbuser)
+        switch_dbuser("branchscanner")
         # Needed for feature flag teardown
         self.addCleanup(switch_dbuser, config.launchpad.dbuser)
         # Set 'bzr whoami' for proper test isolation.  (See bug 981114).

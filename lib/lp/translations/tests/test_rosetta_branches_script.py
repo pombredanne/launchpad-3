@@ -10,10 +10,6 @@ provisions to handle Bazaar branches.
 __metaclass__ = type
 
 from bzrlib.revision import NULL_REVISION
-from testtools.matchers import (
-    Equals,
-    MatchesAny,
-    )
 import transaction
 from zope.component import getUtility
 
@@ -29,16 +25,6 @@ from lp.translations.interfaces.translationimportqueue import (
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
-
-
-def filter_out_disconnection_oopses(oopses):
-    """Remove the bug 884036-related oopses from a set of oopses.
-
-    :return: All non-DisconnectionError or AssertionError oopses.
-    """
-    unwanted_types = ('AssertionError', 'DisconnectionError')
-    return [
-        oops for oops in oopses if oops['type'] not in unwanted_types]
 
 
 class TestRosettaBranchesScript(TestCaseWithFactory):
@@ -81,7 +67,7 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
         transaction.commit()
 
         return_code, stdout, stderr = run_script(
-            'cronscripts/rosetta-branches.py', [])
+            'cronscripts/process-job-source.py', ['IRosettaUploadJobSource'])
         self.assertEqual(0, return_code)
 
         queue = getUtility(ITranslationImportQueue)
@@ -89,34 +75,3 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
         entry = list(queue)[0]
         self.assertEqual(RosettaImportStatus.APPROVED, entry.status)
         self.assertEqual(pot_path, entry.path)
-
-    def test_rosetta_branches_script_oops(self):
-        # A bogus revision in the job will trigger an OOPS.
-        self._clear_import_queue()
-        pot_path = self.factory.getUniqueString() + ".pot"
-        branch = self._setup_series_branch(pot_path)
-        RosettaUploadJob.create(branch, self.factory.getUniqueString())
-        transaction.commit()
-
-        return_code, stdout, stderr = run_script(
-            'cronscripts/rosetta-branches.py', [])
-        self.assertEqual(0, return_code)
-
-        queue = getUtility(ITranslationImportQueue)
-        self.assertEqual(0, queue.countEntries())
-
-        self.oops_capture.sync()
-        # XXX 2012-04-20 bug=884036 gmb:
-        #     This filter_out_disconnection_oopses() call is here to
-        #     stop the above bug from biting us in parallel test runs.
-        #     We filter out all OOPSes related to the fact that the DB
-        #     connection gets reset from under the running slave during
-        #     these test runs.
-        oopses = filter_out_disconnection_oopses(self.oopses)
-        self.assertThat(
-            len(oopses), Equals(1),
-            "Unexpected number of OOPSes %r" % oopses)
-        oops_report = oopses[-1]
-        self.assertIn(
-            'INFO    Job resulted in OOPS: %s\n' % oops_report['id'], stderr)
-        self.assertEqual('NoSuchRevision', oops_report['type'])

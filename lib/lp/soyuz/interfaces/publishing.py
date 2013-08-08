@@ -991,7 +991,7 @@ class IPublishingSet(Interface):
         :param pocket: The target `PackagePublishingPocket`.
         :param binaries: A dict mapping `BinaryPackageReleases` to their
             desired overrides as (`Component`, `Section`,
-            `PackagePublishingPriority`) tuples.
+            `PackagePublishingPriority`, `phased_update_percentage`) tuples.
 
         :return: A list of new `IBinaryPackagePublishingHistory` records.
         """

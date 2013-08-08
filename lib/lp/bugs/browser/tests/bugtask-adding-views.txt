@@ -518,7 +518,7 @@ we'll present only the ones whose name is similar to what the user entered.
 
     >>> flush_database_updates()
     >>> dummy = form.pop('create_new')
-    >>> form['field.name'] = 'foo'
+    >>> form['field.name'] = u'foo'
     >>> form['field.displayname'] = 'Foo, the return'
     >>> form['field.summary'] = 'Foo'
     >>> add_task_view = create_view(

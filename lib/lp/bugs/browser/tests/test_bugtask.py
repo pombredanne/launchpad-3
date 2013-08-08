@@ -142,7 +142,7 @@ class TestBugTaskView(TestCaseWithFactory):
         # "SELECT id, product, project, distribution FROM PillarName ..."
         # query by previously browsing the task url, in which case the
         # query count is decreased by one.
-        self.assertThat(recorder, HasQueryCount(LessThan(82)))
+        self.assertThat(recorder, HasQueryCount(LessThan(83)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)

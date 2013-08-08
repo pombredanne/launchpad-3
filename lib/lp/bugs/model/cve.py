@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -37,10 +37,8 @@ from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
+from lp.services.database.sqlbase import SQLBase
+from lp.services.database.stormexpr import fti_search
 
 
 cverefpat = re.compile(r'(CVE|CAN)-((19|20)\d{2}\-\d{4})')
@@ -142,8 +140,8 @@ class CveSet:
 
     def search(self, text):
         """See ICveSet."""
-        query = "Cve.fti @@ ftq(%s) " % sqlvalues(text)
-        return Cve.select(query, distinct=True, orderBy='-datemodified')
+        return Cve.select(
+            fti_search(Cve, text), distinct=True, orderBy='-datemodified')
 
     def inText(self, text):
         """See ICveSet."""

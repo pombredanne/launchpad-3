@@ -73,7 +73,6 @@ from lp.services.database.stormexpr import (
     )
 from lp.services.features import getFeatureFlag
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
-from lp.services.librarian.interfaces.client import DownloadFailed
 from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
@@ -99,6 +98,9 @@ from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJobSource
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
+from lp.soyuz.interfaces.packagetranslationsuploadjob import (
+    IPackageTranslationsUploadJobSource,
+    )
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     name_priority_map,
@@ -324,16 +326,11 @@ class PackageUpload(SQLBase):
 
         raise NotFoundError(filename)
 
-    def setNew(self):
-        """See `IPackageUpload`."""
-        if self.status == PackageUploadStatus.NEW:
-            raise QueueInconsistentStateError('Queue item already new')
-        self.status = PassthroughStatusValue(PackageUploadStatus.NEW)
-
     def setUnapproved(self):
         """See `IPackageUpload`."""
-        if self.status == PackageUploadStatus.UNAPPROVED:
-            raise QueueInconsistentStateError('Queue item already unapproved')
+        if self.status != PackageUploadStatus.NEW:
+            raise QueueInconsistentStateError(
+                'Can not set modified queue items to UNAPPROVED.')
         self.status = PassthroughStatusValue(PackageUploadStatus.UNAPPROVED)
 
     def setAccepted(self):
@@ -345,8 +342,11 @@ class PackageUpload(SQLBase):
             "series in the '%s' state." % (
             self.pocket.name, self.distroseries.status.name))
 
-        if self.status == PackageUploadStatus.ACCEPTED:
-            raise QueueInconsistentStateError('Queue item already accepted')
+        if self.status not in (
+                PackageUploadStatus.NEW, PackageUploadStatus.UNAPPROVED,
+                PackageUploadStatus.REJECTED):
+            raise QueueInconsistentStateError(
+                'Unable to accept queue item due to status.')
 
         for source in self.sources:
             source.verifyBeforeAccept()
@@ -437,8 +437,11 @@ class PackageUpload(SQLBase):
 
     def setRejected(self):
         """See `IPackageUpload`."""
-        if self.status == PackageUploadStatus.REJECTED:
-            raise QueueInconsistentStateError('Queue item already rejected')
+        if self.status not in (
+                PackageUploadStatus.NEW, PackageUploadStatus.UNAPPROVED,
+                PackageUploadStatus.ACCEPTED):
+            raise QueueInconsistentStateError(
+                'Unable to reject queue item due to status.')
         self.status = PassthroughStatusValue(PackageUploadStatus.REJECTED)
 
     def _closeBugs(self, changesfile_path, logger=None):
@@ -902,13 +905,17 @@ class PackageUpload(SQLBase):
     def findPersonToNotify(self):
         """Find the right person to notify about this upload."""
         spph = self.findSourcePublication()
-        if spph and self.sourcepackagerelease.upload_archive != self.archive:
+        spr = self.sourcepackagerelease
+        if spph and spr.upload_archive != self.archive:
             # This is a build triggered by the syncing of a source
             # package.  Notify the person who requested the sync.
             return spph.creator
         elif self.signing_key:
             return self.signing_key.owner
         else:
+            # It may be a recipe upload.
+            if spr.sourcepackagerecipebuild:
+                return spr.sourcepackagerecipebuild.requestor
             return None
 
     def notify(self, summary_text=None, changes_file_object=None,
@@ -932,14 +939,6 @@ class PackageUpload(SQLBase):
             self.archive, self.distroseries, self.pocket, summary_text,
             changes, changesfile_content, changes_file_object,
             status_action[self.status], dry_run=dry_run, logger=logger)
-
-    def _isPersonUploader(self, person):
-        """Return True if person is an uploader to the package's distro."""
-        debug(self.logger, "Attempting to decide if %s is an uploader." % (
-            person.displayname))
-        uploader = person.isUploader(self.distroseries.distribution)
-        debug(self.logger, "Decision: %s" % uploader)
-        return uploader
 
     @property
     def components(self):
@@ -1207,7 +1206,8 @@ class PackageUploadBuild(SQLBase):
                 binary.version,
                 'Specific' if binary.architecturespecific else 'Independent',
                 ))
-            bins[binary] = (binary.component, binary.section, binary.priority)
+            bins[binary] = (
+                binary.component, binary.section, binary.priority, None)
         return getUtility(IPublishingSet).publishBinaries(
             self.packageupload.archive, distroseries,
             self.packageupload.pocket, bins)
@@ -1452,17 +1452,9 @@ class PackageUploadCustom(SQLBase):
             # packages in main.
             return
 
-        # Set the importer to package creator.
-        importer = sourcepackagerelease.creator
-
-        # Attach the translation tarball. It's always published.
-        try:
-            sourcepackagerelease.attachTranslationFiles(
-                self.libraryfilealias, True, importer=importer)
-        except DownloadFailed:
-            if logger is not None:
-                debug(logger, "Unable to fetch %s to import it into Rosetta" %
-                    self.libraryfilealias.http_url)
+        blamee = self.packageupload.findPersonToNotify()
+        getUtility(IPackageTranslationsUploadJobSource).create(
+            sourcepackagerelease, self.libraryfilealias, blamee)
 
     def publishStaticTranslations(self, logger=None):
         """See `IPackageUploadCustom`."""

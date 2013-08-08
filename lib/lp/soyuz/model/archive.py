@@ -628,8 +628,10 @@ class Archive(SQLBase):
             SourcePackagePublishingHistory, *clauses).order_by(
                 SourcePackageName.name, Desc(SourcePackageRelease.version),
                 Desc(SourcePackagePublishingHistory.id))
-        load_related(SourcePackageRelease, sources, ['sourcepackagereleaseID'])
-        return sources
+        def eager_load(rows):
+            load_related(
+                SourcePackageRelease, rows, ['sourcepackagereleaseID'])
+        return DecoratedResultSet(sources, pre_iter_hook=eager_load)
 
     @property
     def number_of_sources(self):
@@ -1635,9 +1637,17 @@ class Archive(SQLBase):
     def copyPackage(self, source_name, version, from_archive, to_pocket,
                     person, to_series=None, include_binaries=False,
                     sponsored=None, unembargo=False, auto_approve=False,
-                    from_pocket=None, from_series=None):
+                    from_pocket=None, from_series=None,
+                    phased_update_percentage=None):
         """See `IArchive`."""
         # Asynchronously copy a package using the job system.
+        if phased_update_percentage is not None:
+            if phased_update_percentage < 0 or phased_update_percentage > 100:
+                raise ValueError(
+                    "phased_update_percentage must be between 0 and 100 "
+                    "(inclusive).")
+            elif phased_update_percentage == 100:
+                phased_update_percentage = None
         pocket = self._text_to_pocket(to_pocket)
         series = self._text_to_series(to_series)
         if from_pocket:
@@ -1663,7 +1673,8 @@ class Archive(SQLBase):
             copy_policy=PackageCopyPolicy.INSECURE, requester=person,
             sponsored=sponsored, unembargo=unembargo,
             auto_approve=auto_approve, source_distroseries=from_series,
-            source_pocket=from_pocket)
+            source_pocket=from_pocket,
+            phased_update_percentage=phased_update_percentage)
 
     def copyPackages(self, source_names, from_archive, to_pocket,
                      person, to_series=None, from_series=None,
@@ -1996,14 +2007,15 @@ class Archive(SQLBase):
         # understandiung EnumItems.
         return list(PackagePublishingPocket.items)
 
-    def getOverridePolicy(self):
+    def getOverridePolicy(self, phased_update_percentage=None):
         """See `IArchive`."""
         # Circular imports.
         from lp.soyuz.adapters.overrides import UbuntuOverridePolicy
         # XXX StevenK: bug=785004 2011-05-19 Return PPAOverridePolicy() for
         # a PPA that overrides the component/pocket to main/RELEASE.
         if self.purpose in MAIN_ARCHIVE_PURPOSES:
-            return UbuntuOverridePolicy()
+            return UbuntuOverridePolicy(
+                phased_update_percentage=phased_update_percentage)
         return None
 
     def removeCopyNotification(self, job_id):

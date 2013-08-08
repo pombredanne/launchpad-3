@@ -306,12 +306,8 @@ Performing full acceptance:
 
     >>> items = breezy_autotest.getPackageUploads(PackageUploadStatus.NEW)
     >>> for item in items:
-    ...      try:
-    ...          item.setAccepted()
-    ...      except QueueInconsistentStateError as e:
-    ...          print item.displayname, e
-    ...      else:
-    ...          print item.displayname, item.status.name
+    ...     item.setAccepted()
+    ...     print item.displayname, item.status.name
     netapplet-1.0.0.tar.gz ACCEPTED
     netapplet-1.0.0.tar.gz ACCEPTED
     alsa-utils ACCEPTED
@@ -321,10 +317,12 @@ Performing full acceptance:
 
 Move the ACCEPTED items back to NEW.
 
-    >>> items = breezy_autotest.getPackageUploads(
-    ...     PackageUploadStatus.ACCEPTED)
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.soyuz.model.queue import PassthroughStatusValue
+    >>> items = breezy_autotest.getPackageUploads(PackageUploadStatus.ACCEPTED)
     >>> for item in items:
-    ...     item.setNew()
+    ...     removeSecurityProxy(item).status = PassthroughStatusValue(
+    ...         PackageUploadStatus.NEW)
     ...     print item.displayname, item.status.name
     netapplet-1.0.0.tar.gz NEW
     netapplet-1.0.0.tar.gz NEW
@@ -332,23 +330,6 @@ Move the ACCEPTED items back to NEW.
     netapplet NEW
     pmount NEW
     mozilla-firefox NEW
-
-Check if the state machine methods raise when trying to set the same state:
-
-    >>> items = breezy_autotest.getPackageUploads(PackageUploadStatus.NEW)
-    >>> for item in items:
-    ...      try:
-    ...          item.setNew()
-    ...      except QueueInconsistentStateError as e:
-    ...          print item.displayname, e
-    ...      else:
-    ...          print item.displayname, 'BOGUS'
-    netapplet-1.0.0.tar.gz Queue item already new
-    netapplet-1.0.0.tar.gz Queue item already new
-    alsa-utils Queue item already new
-    netapplet Queue item already new
-    pmount Queue item already new
-    mozilla-firefox Queue item already new
 
 Check several available state machine methods on a NEW queue item
 (except setAccepted, it's already covered by other tests, check if they
@@ -358,11 +339,11 @@ don't raise any exception):
     >>> test_qitem.setUnapproved()
     >>> test_qitem.setRejected()
     >>> test_qitem.setDone()
-    >>> test_qitem.setNew()
+    >>> removeSecurityProxy(test_qitem).status = PassthroughStatusValue(
+    ...     PackageUploadStatus.NEW)
 
 Check forbidden approval of not selected Section:
 
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> from lp.soyuz.interfaces.section import ISectionSet
 
@@ -435,7 +416,8 @@ The only available action will be rejection:
 Move the second item back to its original queue to perform the same
 test after the former accepted item was published (DONE queue)
 
-    >>> dup_two.setUnapproved()
+    >>> removeSecurityProxy(dup_two).status = PassthroughStatusValue(
+    ...     PackageUploadStatus.UNAPPROVED)
     >>> dup_two.syncUpdate()
     >>> dup_two.status.name
     'UNAPPROVED'
@@ -831,15 +813,10 @@ Let's accept something in the queue.  (We need to populate the librarian
 with fake changes files first so that emails can be generated.)
 
     >>> from lp.archiveuploader.tests import insertFakeChangesFile
+    >>> items = breezy_autotest.getPackageUploads(PackageUploadStatus.NEW)
     >>> insertFakeChangesFile(items[1].changesfile.id)
     >>> insertFakeChangesFile(items[3].changesfile.id)
-    >>> try:
-    ...    items[1].acceptFromQueue()
-    ... except QueueInconsistentStateError as e:
-    ...    print 'FAILED'
-    ... else:
-    ...    print 'DONE'
-    DONE
+    >>> items[1].acceptFromQueue()
 
 Two emails are generated.  We won't look what is inside them here, that is
 well shown in nascentupload-announcements.txt.
@@ -864,13 +841,7 @@ build once it was accepted, using 'queue-tool' or via the Web UI.
 
 Let's reject something in the queue:
 
-    >>> try:
-    ...     items[3].rejectFromQueue(factory.makePerson())
-    ... except QueueInconsistentStateError as e:
-    ...    print 'FAILED'
-    ... else:
-    ...    print 'REJECTED'
-    REJECTED
+    >>> items[3].rejectFromQueue(factory.makePerson())
 
 One email is generated (see nascentupload-announcements.txt)
 

@@ -40,7 +40,7 @@ class POFileStatsJob(StormBase, BaseRunnableJob):
 
     __storm_table__ = 'POFileStatsJob'
 
-    config = config.pofile_stats
+    config = config.IPOFileStatsJobSource
 
     # Instances of this class are runnable jobs.
     implements(IRunnableJob)

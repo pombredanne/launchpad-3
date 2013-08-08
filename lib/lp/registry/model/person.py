@@ -253,6 +253,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.database.stormexpr import fti_search
 from lp.services.helpers import (
     ensure_unicode,
     shortlist,
@@ -310,7 +311,6 @@ from lp.soyuz.enums import (
     ArchiveStatus,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.model.archive import (
     Archive,
@@ -1130,7 +1130,7 @@ class Person(
                 Or(
                     Product.name.contains_string(match_name),
                     Product.displayname.contains_string(match_name),
-                    SQL("Product.fti @@ ftq(?)", params=(match_name,))))
+                    fti_search(Product, match_name)))
         return IStore(Product).find(
             Product, *clauses
             ).config(distinct=True).order_by(Product.displayname)
@@ -2970,12 +2970,6 @@ class Person(
             BranchMergeQueue.owner == self,
             BranchMergeQueue.name == unicode(name)).one()
 
-    def isUploader(self, distribution):
-        """See `IPerson`."""
-        permissions = getUtility(IArchivePermissionSet).componentsForUploader(
-            distribution.main_archive, self)
-        return not permissions.is_empty()
-
     @cachedproperty
     def is_ubuntu_coc_signer(self):
         """See `IPerson`."""
@@ -3519,9 +3513,8 @@ class PersonSet:
         """Produce the query for team names."""
         team_name_query = And(
             get_person_visibility_terms(getUtility(ILaunchBag).user),
-            Person.teamowner != None,
-            Person.merged == None,
-            SQL("Person.fti @@ ftq(?)", (text, )))
+            Person.teamowner != None, Person.merged == None,
+            fti_search(Person, text))
         return team_name_query
 
     def find(self, text=""):
@@ -3556,12 +3549,10 @@ class PersonSet:
             Person, person_email_query).order_by()
 
         person_name_query = And(
-            Person.teamowner == None,
-            Person.merged == None,
+            Person.teamowner == None, Person.merged == None,
             Person.account == Account.id,
             Not(Account.status.is_in(INACTIVE_ACCOUNT_STATUSES)),
-            SQL("Person.fti @@ ftq(?)", (text, ))
-            )
+            fti_search(Person, text))
 
         results = results.union(store.find(
             Person, person_name_query)).order_by()
@@ -3621,9 +3612,7 @@ class PersonSet:
             EmailAddress.person == Person.id,
             EmailAddress.email.lower().startswith(text.lower()))
 
-        name_query = And(
-            base_query,
-            SQL("Person.fti @@ ftq(?)", (text, )))
+        name_query = And(base_query, fti_search(Person, text))
         email_results = store.find(Person, email_query).order_by()
         name_results = store.find(Person, name_query).order_by()
         combined_results = email_results.union(name_results)

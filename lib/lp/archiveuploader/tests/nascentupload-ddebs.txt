@@ -81,6 +81,7 @@ DDEB.
 
 We override the binary to main/devel, and accept it into the archive.
 
+    >>> from operator import attrgetter
     >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> from lp.soyuz.interfaces.section import ISectionSet
     >>> main = getUtility(IComponentSet)['main']
@@ -99,7 +100,8 @@ We override the binary to main/devel, and accept it into the archive.
 
     >>> switch_dbuser(config.uploadqueue.dbuser)
 
-    >>> bin_pubs = bin.queue_root.realiseUpload()
+    >>> bin_pubs = sorted(
+    ...     bin.queue_root.realiseUpload(), key=attrgetter('displayname'))
 
     >>> switch_dbuser('uploader')
 
@@ -109,8 +111,8 @@ Now, both, binary and debug-symbol packages are pending publication.
     ...     print '%s %s %s %s' % (
     ...         bin_pub.displayname, bin_pub.status.name,
     ...         bin_pub.component.name, bin_pub.section.name)
-    debug-bin-dbgsym 1.0-1 in hoary i386 PENDING main devel
     debug-bin 1.0-1 in hoary i386 PENDING main devel
+    debug-bin-dbgsym 1.0-1 in hoary i386 PENDING main devel
 
 DEBs and DDEBs are uploaded to separate archives, because the size
 impact of uploading them to a single archive on mirrors would be
@@ -118,7 +120,7 @@ unacceptable.
 
 The DDEB is stored appropriately in the database.
 
-    >>> [ddeb_pub, deb_pub] = bin_pubs
+    >>> [deb_pub, ddeb_pub] = bin_pubs
     >>> ddeb = ddeb_pub.binarypackagerelease
 
     >>> print ddeb.title

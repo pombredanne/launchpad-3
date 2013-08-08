@@ -12,18 +12,6 @@ objects for the distribution.
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> debian = getUtility(IDistributionSet).getByName('debian')
 
-(Create some data that is depended upon by later tests. It was part of a
-test "narrative" that was converted to unit tests.... for obvious reasons.)
-
-    >>> from lp.soyuz.tests.ppa import publishToPPA
-    >>> publishToPPA(
-    ...     person_name='cprov',
-    ...     sourcepackage_name='at', sourcepackage_version='0.00',
-    ...     binarypackage_version='3.14156',
-    ...     distribution_name='ubuntutest',
-    ...     distroseries_name='hoary-test',
-    ...     publishing_status=PackagePublishingStatus.PUBLISHED)
-
 
 Handling Personal Package Archives
 ----------------------------------
@@ -68,7 +56,7 @@ further information see doc/package-cache.txt.
 There is only one 'active' PPA:
 
     >>> cprov.archive.getPublishedSources().count()
-    4
+    3
 
     >>> mark.archive.getPublishedSources().count()
     1
@@ -256,7 +244,10 @@ A binary pending publication also moves a PPA to the pending-publication
 state. In order to test this behaviour we will copy some binaries within
 Celso's PPA.
 
-    >>> cprov_bin = cprov.archive.getAllPublishedBinaries()[0]
+    >>> cprov_bin = factory.makeBinaryPackagePublishingHistory(
+    ...     archive=cprov.archive, status=PackagePublishingStatus.PUBLISHED)
+    >>> spr = cprov_bin.binarypackagerelease.build.source_package_release
+    >>> spr.publishings[0].setPublished()
     >>> pending_binaries = cprov_bin.copyTo(
     ...     warty, pocket_release, cprov.archive)
 
