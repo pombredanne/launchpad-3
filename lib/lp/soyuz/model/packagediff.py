@@ -106,7 +106,7 @@ class PackageDiff(SQLBase):
     date_requested = UtcDateTimeCol(notNull=False, default=UTC_NOW)
 
     requester = ForeignKey(
-        dbName='requester', foreignKey='Person', notNull=True)
+        dbName='requester', foreignKey='Person', notNull=False)
 
     from_source = ForeignKey(
         dbName="from_source", foreignKey='SourcePackageRelease', notNull=True)
@@ -263,12 +263,6 @@ class PackageDiffSet:
     def get(self, diff_id):
         """See `IPackageDiffSet`."""
         return PackageDiff.get(diff_id)
-
-    def getPendingDiffs(self, limit=None):
-        return IStore(PackageDiff).find(
-            PackageDiff,
-            PackageDiff.status == PackageDiffStatus.PENDING).order_by(
-                PackageDiff.id).config(limit=limit)
 
     def getDiffsToReleases(self, sprs, preload_for_display=False):
         """See `IPackageDiffSet`."""

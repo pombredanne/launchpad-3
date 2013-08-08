@@ -1042,7 +1042,7 @@ class IArchiveView(IHasBuildRecords):
     def getPockets():
         """Return iterable containing valid pocket names for this archive."""
 
-    def getOverridePolicy():
+    def getOverridePolicy(phased_update_percentage=None):
         """Returns an instantiated `IOverridePolicy` for the archive."""
 
     buildd_secret = TextLine(
@@ -1356,13 +1356,20 @@ class IArchiveView(IHasBuildRecords):
         from_pocket=TextLine(title=_("Source pocket name"), required=False),
         from_series=TextLine(
             title=_("Source distroseries name"), required=False),
+        phased_update_percentage=Int(
+            title=_("Phased update percentage"),
+            description=_("The percentage of users for whom this package"
+                          " should be recommended, or None to publish the"
+                          " update for everyone."),
+            required=False),
         )
     @export_write_operation()
     @operation_for_version('devel')
     def copyPackage(source_name, version, from_archive, to_pocket,
                     person, to_series=None, include_binaries=False,
                     sponsored=None, unembargo=False, auto_approve=False,
-                    from_pocket=None, from_series=None):
+                    from_pocket=None, from_series=None,
+                    phased_update_percentage=None):
         """Copy a single named source into this archive.
 
         Asynchronously copy a specific version of a named source to the
@@ -1393,6 +1400,8 @@ class IArchiveView(IHasBuildRecords):
             copy from any pocket with a matching version.
         :param from_series: the source distroseries (as a string). If
             omitted, copy from any series with a matching version.
+        :param phased_update_percentage: the phased update percentage to
+            apply to the copied publication.
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid

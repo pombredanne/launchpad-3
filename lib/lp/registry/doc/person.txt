@@ -1265,24 +1265,6 @@ Branches
 ** See branch.txt for API related to branches.
 
 
-Distribution uploaders
-----------------------
-
-We can ascertain whether a person has uploader rights to a distribution
-or not.
-
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-    >>> cprov.isUploader(ubuntu)
-    True
-
-'kiko' is not an uploader to Ubuntu:
-
-    >>> kiko = getUtility(IPersonSet).getByName('kiko')
-    >>> kiko.isUploader(ubuntu)
-    False
-
-
 Bug contribution
 ----------------
 

@@ -4,6 +4,7 @@
 from collections import defaultdict
 import os
 from StringIO import StringIO
+import time
 
 from storm.expr import (
     Desc,
@@ -108,6 +109,8 @@ SUBCOMPONENT_TO_EXT = {
     'debug': 'ddeb',
     }
 
+CLEANUP_FREQUENCY = 60 * 60 * 24
+
 
 class AptFTPArchiveFailure(Exception):
     """Failure while running apt-ftparchive."""
@@ -137,17 +140,9 @@ class FTPArchiveHandler:
         self.log.debug("Doing apt-ftparchive work.")
         apt_config_filename = self.generateConfig(is_careful)
         self.runApt(apt_config_filename)
+        self.cleanCaches()
 
-    def _getArchitectureTags(self):
-        """List tags of all architectures enabled in this distro."""
-        archs = set()
-        for series in self.distro.series:
-            archs.update(set([
-                distroarchseries.architecturetag
-                for distroarchseries in series.enabled_architectures]))
-        return archs
-
-    def runApt(self, apt_config_filename):
+    def runAptWithArgs(self, apt_config_filename, *args):
         """Run apt-ftparchive in subprocesses.
 
         :raise: AptFTPArchiveFailure if any of the apt-ftparchive
@@ -157,12 +152,7 @@ class FTPArchiveHandler:
 
         stdout_handler = OutputLineHandler(self.log.debug, "a-f: ")
         stderr_handler = OutputLineHandler(self.log.info, "a-f: ")
-        base_command = [
-            "apt-ftparchive",
-            "--no-contents",
-            "generate",
-            apt_config_filename,
-            ]
+        base_command = ["apt-ftparchive"] + list(args) + [apt_config_filename]
         spawner = CommandSpawner()
 
         returncodes = {}
@@ -184,6 +174,9 @@ class FTPArchiveHandler:
             by_arch = ["%s (returned %d)" % failure for failure in failures]
             raise AptFTPArchiveFailure(
                 "Failure(s) from apt-ftparchive: %s" % ", ".join(by_arch))
+
+    def runApt(self, apt_config_filename):
+        self.runAptWithArgs(apt_config_filename, "--no-contents", "generate")
 
     #
     # Empty Pocket Requests
@@ -726,14 +719,10 @@ class FTPArchiveHandler:
 
                 self.generateConfigForPocket(apt_config, distroseries, pocket)
 
-        # And now return that string.
-        s = apt_config.getvalue()
-        apt_config.close()
-
         apt_config_filename = os.path.join(self._config.miscroot, "apt.conf")
-        fp = file(apt_config_filename, "w")
-        fp.write(s)
-        fp.close()
+        with open(apt_config_filename, "w") as fp:
+            fp.write(apt_config.getvalue())
+        apt_config.close()
         return apt_config_filename
 
     def generateConfigForPocket(self, apt_config, distroseries, pocket):
@@ -746,6 +735,25 @@ class FTPArchiveHandler:
             comp.name for comp in
             self.publisher.archive.getComponentsForSeries(distroseries)]
 
+        self.writeAptConfig(
+            apt_config, suite, comps, archs,
+            distroseries.include_long_descriptions)
+
+        # XXX: 2006-08-24 kiko: Why do we do this directory creation here?
+        for comp in comps:
+            component_path = os.path.join(
+                self._config.distsroot, suite, comp)
+            safe_mkdir(os.path.join(component_path, "source"))
+            if not distroseries.include_long_descriptions:
+                safe_mkdir(os.path.join(component_path, "i18n"))
+            for arch in archs:
+                safe_mkdir(os.path.join(component_path, "binary-" + arch))
+                for subcomp in self.publisher.subcomponents:
+                    safe_mkdir(os.path.join(
+                        component_path, subcomp, "binary-" + arch))
+
+    def writeAptConfig(self, apt_config, suite, comps, archs,
+                       include_long_descriptions):
         self.log.debug("Generating apt config for %s" % suite)
         apt_config.write(STANZA_TEMPLATE % {
                          "LISTPATH": self._config.overrideroot,
@@ -759,8 +767,7 @@ class FTPArchiveHandler:
                          "DISTS": os.path.basename(self._config.distsroot),
                          "HIDEEXTRA": "",
                          "LONGDESCRIPTION":
-                             "true" if distroseries.include_long_descriptions
-                                    else "false",
+                             "true" if include_long_descriptions else "false",
                          })
 
         if archs:
@@ -780,15 +787,44 @@ class FTPArchiveHandler:
                         "LONGDESCRIPTION": "true",
                         })
 
-        # XXX: 2006-08-24 kiko: Why do we do this directory creation here?
-        for comp in comps:
-            component_path = os.path.join(
-                self._config.distsroot, suite, comp)
-            safe_mkdir(os.path.join(component_path, "source"))
-            if not distroseries.include_long_descriptions:
-                safe_mkdir(os.path.join(component_path, "i18n"))
-            for arch in archs:
-                safe_mkdir(os.path.join(component_path, "binary-" + arch))
-                for subcomp in self.publisher.subcomponents:
-                    safe_mkdir(os.path.join(
-                        component_path, subcomp, "binary-" + arch))
+    def cleanCaches(self):
+        """Clean apt-ftparchive caches.
+
+        This takes a few minutes and doesn't need to be done on every run,
+        but it should be done every so often so that the cache files don't
+        get too large and slow down normal runs of apt-ftparchive.
+        """
+        apt_config_filename = os.path.join(
+            self._config.miscroot, "apt-cleanup.conf")
+        try:
+            last_cleanup = os.stat(apt_config_filename).st_mtime
+            if last_cleanup > time.time() - CLEANUP_FREQUENCY:
+                return
+        except OSError:
+            pass
+
+        apt_config = StringIO()
+        apt_config.write(CONFIG_HEADER % (self._config.archiveroot,
+                                          self._config.overrideroot,
+                                          self._config.cacheroot,
+                                          self._config.miscroot))
+
+        # "apt-ftparchive clean" doesn't care what suite it's given, but it
+        # needs to know the union of all architectures and components for
+        # each suite we might publish.
+        archs = set()
+        comps = set()
+        for distroseries in self.publisher.consider_series:
+            for a in distroseries.enabled_architectures:
+                archs.add(a.architecturetag)
+            for comp in self.publisher.archive.getComponentsForSeries(
+                distroseries):
+                comps.add(comp.name)
+        self.writeAptConfig(
+            apt_config, "nonexistent-suite", sorted(comps), sorted(archs),
+            True)
+
+        with open(apt_config_filename, "w") as fp:
+            fp.write(apt_config.getvalue())
+        apt_config.close()
+        self.runAptWithArgs(apt_config_filename, "clean")

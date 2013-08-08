@@ -89,7 +89,7 @@ class TranslationMergeJob(TranslationPackagingJob):
 
     create_on_event = IObjectCreatedEvent
 
-    config = config.packaging_translations
+    config = config.ITranslationPackagingJobSource
 
     def run(self):
         """See `IRunnableJob`."""
@@ -116,7 +116,7 @@ class TranslationSplitJob(TranslationPackagingJob):
 
     create_on_event = IObjectDeletedEvent
 
-    config = config.packaging_translations
+    config = config.ITranslationPackagingJobSource
 
     def run(self):
         """See `IRunnableJob`."""
@@ -136,7 +136,7 @@ class TranslationTemplateChangeJob(TranslationPackagingJob):
 
     create_on_event = IObjectModifiedEvent
 
-    config = config.packaging_translations
+    config = config.ITranslationPackagingJobSource
 
     @classmethod
     def forPOTemplate(cls, potemplate):

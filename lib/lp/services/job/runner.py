@@ -10,7 +10,6 @@ __all__ = [
     'BaseRunnableJob',
     'BaseRunnableJobSource',
     'celery_enabled',
-    'JobCronScript',
     'JobRunner',
     'JobRunnerProcess',
     'TwistedJobRunner',
@@ -18,7 +17,6 @@ __all__ = [
 
 
 from calendar import timegm
-from collections import defaultdict
 import contextlib
 from datetime import (
     datetime,
@@ -36,7 +34,6 @@ from signal import (
     signal,
     )
 import sys
-from textwrap import dedent
 from uuid import uuid4
 
 from ampoule import (
@@ -61,7 +58,6 @@ from twisted.python import (
     failure,
     log,
     )
-from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services import scripts
@@ -78,7 +74,6 @@ from lp.services.mail.sendmail import (
     MailController,
     set_immediate_mail_delivery,
     )
-from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.twistedsupport import run_reactor
 from lp.services.webapp import errorlog
 
@@ -567,103 +562,6 @@ class TwistedJobRunner(BaseJobRunner):
         reactor.callWhenRunning(runner.runAll)
         run_reactor()
         return runner
-
-
-class JobCronScript(LaunchpadCronScript):
-    """Generic job runner.
-
-    :ivar config_name: Optional name of a configuration section that specifies
-        the jobs to run.  Alternatively, may be taken from the command line.
-    :ivar source_interface: `IJobSource`-derived utility to iterate pending
-        jobs of the type that is to be run.
-    """
-
-    config_name = None
-
-    usage = dedent("""\
-        run_jobs.py [options] [lazr-configuration-section]
-
-        Run Launchpad Jobs of one particular type.
-
-        The lazr configuration section specifies what jobs to run, and how.
-        It should provide at least:
-
-         * source_interface, the name of the IJobSource-derived utility
-           interface for the job type that you want to run.
-
-         * dbuser, the name of the database role to run the job under.
-        """).rstrip()
-
-    description = (
-        "Takes pending jobs of the given type off the queue and runs them.")
-
-    def __init__(self, runner_class=JobRunner, test_args=None, name=None,
-                 commandline_config=False):
-        """Initialize a `JobCronScript`.
-
-        :param runner_class: The runner class to use.  Defaults to
-            `JobRunner`, which runs synchronously, but could also be
-            `TwistedJobRunner` which is asynchronous.
-        :param test_args: For tests: pretend that this list of arguments has
-            been passed on the command line.
-        :param name: Identifying name for this type of job.  Is also used to
-            compose a lock file name.
-        :param commandline_config: If True, take configuration from the
-            command line (in the form of a config section name).  Otherwise,
-            rely on the subclass providing `config_name` and
-            `source_interface`.
-        """
-        self._runner_class = runner_class
-        super(JobCronScript, self).__init__(
-            name=name, dbuser=None, test_args=test_args)
-        self.log_twisted = getattr(self.options, 'log_twisted', False)
-        if not commandline_config:
-            return
-        self.config_name = self.args[0]
-        self.source_interface = import_source(
-            self.config_section.source_interface)
-
-    def add_my_options(self):
-        if self.runner_class is TwistedJobRunner:
-            self.add_log_twisted_option()
-
-    def add_log_twisted_option(self):
-        self.parser.add_option(
-            '--log-twisted', action='store_true', default=False,
-            help='Enable extra Twisted logging.')
-
-    @property
-    def dbuser(self):
-        return self.config_section.dbuser
-
-    @property
-    def runner_class(self):
-        """Enable subclasses to override with command-line arguments."""
-        return self._runner_class
-
-    def job_counts(self, jobs):
-        """Return a list of tuples containing the job name and counts."""
-        counts = defaultdict(lambda: 0)
-        for job in jobs:
-            counts[job.__class__.__name__] += 1
-        return sorted(counts.items())
-
-    @property
-    def config_section(self):
-        return getattr(config, self.config_name)
-
-    def main(self):
-        errorlog.globalErrorUtility.configure(self.config_name)
-        job_source = getUtility(self.source_interface)
-        kwargs = {}
-        if self.log_twisted:
-            kwargs['_log_twisted'] = True
-        runner = self.runner_class.runFromSource(
-            job_source, self.dbuser, self.logger, **kwargs)
-        for name, count in self.job_counts(runner.completed_jobs):
-            self.logger.info('Ran %d %s jobs.', count, name)
-        for name, count in self.job_counts(runner.incomplete_jobs):
-            self.logger.info('%d %s jobs did not complete.', count, name)
 
 
 class TimeoutError(Exception):

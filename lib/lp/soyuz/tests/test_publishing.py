@@ -1422,7 +1422,7 @@ class TestPublishBinaries(TestCaseWithFactory):
             'binaries': dict(
                 (bpr, (self.factory.makeComponent(),
                  self.factory.makeSection(),
-                 PackagePublishingPriority.REQUIRED)) for bpr in bprs),
+                 PackagePublishingPriority.REQUIRED, 50)) for bpr in bprs),
             }
 
     def test_architecture_dependent(self):
@@ -1445,7 +1445,9 @@ class TestPublishBinaries(TestCaseWithFactory):
             (args['archive'], target_das, args['pocket']),
             (bpph.archive, bpph.distroarchseries, bpph.pocket))
         self.assertEqual(
-            overrides, (bpph.component, bpph.section, bpph.priority))
+            overrides,
+            (bpph.component, bpph.section, bpph.priority,
+             bpph.phased_update_percentage))
         self.assertEqual(PackagePublishingStatus.PENDING, bpph.status)
 
     def test_architecture_independent(self):

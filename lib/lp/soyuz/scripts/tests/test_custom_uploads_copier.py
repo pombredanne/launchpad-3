@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test copying of custom package uploads for a new `DistroSeries`."""
@@ -133,10 +133,12 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
         # CustomUploadsCopier copies custom uploads from one series to
         # another.
         current_series = self.factory.makeDistroSeries()
-        original_upload = self.makeUpload(current_series)
+        original_upload = self.makeUpload(current_series, arch='alpha')
         new_series = self.factory.makeDistroSeries(
             distribution=current_series.distribution,
             previous_series=current_series)
+        self.factory.makeDistroArchSeries(
+            distroseries=new_series, architecturetag='alpha')
 
         CustomUploadsCopier(new_series).copy(current_series)
 
@@ -324,6 +326,39 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
         self.assertTrue(
             copier.isObsolete(
                 source_upload, copier.getLatestUploads(target_series)))
+
+    def test_isForValidDAS_returns_False_with_dead_arch(self):
+        source_series = self.factory.makeDistroSeries()
+        source_upload = self.makeUpload(source_series, arch='alpha')
+        target_series = self.factory.makeDistroSeries()
+        copier = CustomUploadsCopier(target_series)
+        self.assertFalse(copier.isForValidDAS(source_upload))
+
+    def test_isForValidDAS_returns_False_with_disabled_arch(self):
+        source_series = self.factory.makeDistroSeries()
+        source_upload = self.makeUpload(source_series, arch='alpha')
+        target_series = self.factory.makeDistroSeries()
+        self.factory.makeDistroArchSeries(
+            distroseries=target_series, architecturetag='alpha', enabled=False)
+        copier = CustomUploadsCopier(target_series)
+        self.assertFalse(copier.isForValidDAS(source_upload))
+
+    def test_isForValidDAS_returns_True(self):
+        source_series = self.factory.makeDistroSeries()
+        source_upload = self.makeUpload(source_series, arch='alpha')
+        target_series = self.factory.makeDistroSeries()
+        self.factory.makeDistroArchSeries(
+            distroseries=target_series, architecturetag='alpha')
+        copier = CustomUploadsCopier(target_series)
+        self.assertTrue(copier.isForValidDAS(source_upload))
+
+    def test_isForValidDAS_returns_True_for_DDTP(self):
+        source_series = self.factory.makeDistroSeries()
+        source_upload = self.makeUpload(
+            source_series, custom_type=PackageUploadCustomFormat.DDTP_TARBALL)
+        target_series = self.factory.makeDistroSeries()
+        copier = CustomUploadsCopier(target_series)
+        self.assertTrue(copier.isForValidDAS(source_upload))
 
     def test_copyUpload_creates_upload(self):
         # copyUpload creates a new upload that's very similar to the

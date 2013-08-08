@@ -1020,12 +1020,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             DistributionSourcePackageCache.archiveID.is_in(
                 self.all_distro_archive_ids),
             Or(
-                SQL("DistributionSourcePackageCache.fti @@ ftq(?)",
-                    params=(text,)),
+                fti_search(DistributionSourcePackageCache, text),
                 DistributionSourcePackageCache.name.contains_string(
-                    text.lower()),
-                ),
-            ]
+                    text.lower()))]
 
         if has_packaging is not None:
             packaging_query = Exists(Select(

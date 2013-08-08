@@ -1046,6 +1046,8 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         new_series = self.factory.makeDistroSeries(
             distribution=distro, previous_series=old_series,
             status=SeriesStatus.FROZEN)
+        self.factory.makeDistroArchSeries(
+            distroseries=new_series, architecturetag='i386')
         custom_upload = self.factory.makeCustomPackageUpload(
             distroseries=old_series,
             custom_type=PackageUploadCustomFormat.DEBIAN_INSTALLER,

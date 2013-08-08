@@ -194,7 +194,8 @@
                 components
                 searchable_names
                 searchable_versions
-                changes_file_id"/>
+                changes_file_id
+                findPersonToNotify"/>
         <require
             permission="launchpad.Edit"
             attributes="
@@ -983,6 +984,30 @@
       <allow interface=".interfaces.processacceptedbugsjob.IProcessAcceptedBugsJob" />
     </class>
 
+    <!-- PackageDiffJobSource -->
+    <securedutility
+      component=".model.packagediffjob.PackageDiffJob"
+      provides=".interfaces.packagediffjob.IPackageDiffJobSource">
+      <allow interface=".interfaces.packagediffjob.IPackageDiffJobSource" />
+    </securedutility>
+
+    <!-- PackageDiffJob -->
+    <class class=".model.packagediffjob.PackageDiffJob">
+      <allow interface=".interfaces.packagediffjob.IPackageDiffJob" />
+    </class>
+
+    <!-- PackageTranslationsUploadJobSource -->
+    <securedutility
+      component=".model.packagetranslationsuploadjob.PackageTranslationsUploadJob"
+      provides=".interfaces.packagetranslationsuploadjob.IPackageTranslationsUploadJobSource">
+      <allow interface=".interfaces.packagetranslationsuploadjob.IPackageTranslationsUploadJobSource" />
+    </securedutility>
+
+    <!-- PackageTranslationsUploadJob -->
+    <class class=".model.packagetranslationsuploadjob.PackageTranslationsUploadJob">
+      <allow
+      interface=".interfaces.packagetranslationsuploadjob.IPackageTranslationsUploadJob" />
+    </class>
     <webservice:register module="lp.soyuz.interfaces.webservice" />
 
 </configure>

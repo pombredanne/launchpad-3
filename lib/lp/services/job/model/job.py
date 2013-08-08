@@ -8,7 +8,6 @@ __all__ = [
     'EnumeratedSubclass',
     'InvalidTransition',
     'Job',
-    'JobStatus',
     'UniversalJobSource',
     ]
 
@@ -19,10 +18,7 @@ import time
 
 from lazr.jobrunner.jobrunner import LeaseHeld
 import pytz
-from sqlobject import (
-    IntCol,
-    StringCol,
-    )
+from sqlobject import StringCol
 from storm.expr import (
     And,
     Or,
@@ -30,6 +26,7 @@ from storm.expr import (
     )
 from storm.locals import (
     Int,
+    JSON,
     Reference,
     )
 import transaction
@@ -44,6 +41,7 @@ from lp.services.database.sqlbase import SQLBase
 from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
+    JobType,
     )
 
 
@@ -80,15 +78,20 @@ class Job(SQLBase):
 
     log = StringCol()
 
-    _status = EnumCol(enum=JobStatus, notNull=True, default=JobStatus.WAITING,
-                      dbName='status')
+    _status = EnumCol(
+        enum=JobStatus, notNull=True, default=JobStatus.WAITING,
+        dbName='status')
 
-    attempt_count = IntCol(default=0)
+    attempt_count = Int(default=0)
 
-    max_retries = IntCol(default=0)
+    max_retries = Int(default=0)
 
     requester_id = Int(name='requester', allow_none=True)
     requester = Reference(requester_id, 'Person.id')
+
+    base_json_data = JSON(name='json_data')
+
+    base_job_type = EnumCol(enum=JobType, dbName='job_type')
 
     # Mapping of valid target states from a given state.
     _valid_transitions = {
@@ -251,10 +254,7 @@ Job.ready_jobs = Select(
 
 
 class UniversalJobSource:
-    """Returns the RunnableJob associated with a Job.id.
-
-    Only BranchJobs are supported at present.
-    """
+    """Returns the RunnableJob associated with a Job.id."""
 
     memory_limit = 2 * (1024 ** 3)
 
@@ -272,8 +272,20 @@ class UniversalJobSource:
         factory = getattr(db_class, 'makeInstance', None)
         if factory is not None:
             return factory(job_id)
-        store = IStore(db_class)
-        db_job = store.find(db_class, db_class.job == job_id).one()
+        # This method can be called with two distinct types of Jobs:
+        # - Jobs that are backed by a DB table with a foreign key onto Job.
+        # - Jobs that have no backing, and are only represented by a row in
+        #   the Job table, but the class name we are given is the abstract 
+        #   job class.
+        # If there is no __storm_table__, it is the second type, and we have
+        # to look it up via the Job table.
+        if getattr(db_class, '__storm_table__', None) is None:
+            db_job = IStore(Job).find(Job, Job.id == job_id).one()
+            # Job.makeDerived() would be a mess of circular imports, so it is
+            # cleaner to just return the bare Job wrapped in the class.
+            return db_class(db_job)
+        # Otherwise, we have the concrete DB class, so use its FK.
+        db_job = IStore(db_class).find(db_class, db_class.job == job_id).one()
         if db_job is None:
             return None
         return db_job.makeDerived()

@@ -113,7 +113,10 @@ from lp.services.job.model.job import (
     EnumeratedSubclass,
     Job,
     )
-from lp.services.job.runner import BaseRunnableJob
+from lp.services.job.runner import (
+    BaseRunnableJob,
+    BaseRunnableJobSource,
+    )
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.webapp import (
     canonical_url,
@@ -312,7 +315,7 @@ class BranchScanJob(BranchJobDerived):
 
     task_queue = 'bzrsyncd_job'
 
-    config = config.branchscanner
+    config = config.IBranchScanJobSource
 
     @classmethod
     def create(cls, branch):
@@ -339,13 +342,6 @@ class BranchScanJob(BranchJobDerived):
                 log.warning('Skipping branch %s because it has been deleted.'
                     % self._cached_branch_name)
 
-    @classmethod
-    @contextlib.contextmanager
-    def contextManager(cls):
-        """See `IBranchScanJobSource`."""
-        errorlog.globalErrorUtility.configure('branchscanner')
-        yield
-
 
 class BranchUpgradeJob(BranchJobDerived):
     """A Job that upgrades branches to the current stable format."""
@@ -359,7 +355,7 @@ class BranchUpgradeJob(BranchJobDerived):
 
     task_queue = 'branch_write_job'
 
-    config = config.upgrade_branches
+    config = config.IBranchUpgradeJobSource
 
     def getOperationDescription(self):
         return 'upgrading a branch'
@@ -371,13 +367,6 @@ class BranchUpgradeJob(BranchJobDerived):
         branch_job = BranchJob(
             branch, cls.class_job_type, {}, requester=requester)
         return cls(branch_job)
-
-    @staticmethod
-    @contextlib.contextmanager
-    def contextManager():
-        """See `IBranchUpgradeJobSource`."""
-        errorlog.globalErrorUtility.configure('upgrade_branches')
-        yield
 
     def run(self, _check_transaction=False):
         """See `IBranchUpgradeJob`."""
@@ -445,7 +434,7 @@ class RevisionMailJob(BranchJobDerived):
 
     class_job_type = BranchJobType.REVISION_MAIL
 
-    config = config.sendbranchmail
+    config = config.IRevisionMailJobSource
 
     @classmethod
     def create(cls, branch, revno, from_address, body, subject):
@@ -492,7 +481,7 @@ class RevisionsAddedJob(BranchJobDerived):
 
     class_job_type = BranchJobType.REVISIONS_ADDED_MAIL
 
-    config = config.sendbranchmail
+    config = config.IRevisionsAddedJobSource
 
     @classmethod
     def create(cls, branch, last_scanned_id, last_revision_id,
@@ -753,7 +742,7 @@ class RosettaUploadJob(BranchJobDerived):
 
     task_queue = 'bzrsyncd_job'
 
-    config = config.rosettabranches
+    config = config.IRosettaUploadJobSource
 
     def __init__(self, branch_job):
         super(RosettaUploadJob, self).__init__(branch_job)
@@ -979,7 +968,7 @@ class RosettaUploadJob(BranchJobDerived):
         return jobs
 
 
-class ReclaimBranchSpaceJob(BranchJobDerived):
+class ReclaimBranchSpaceJob(BranchJobDerived, BaseRunnableJobSource):
     """Reclaim the disk space used by a branch that's deleted from the DB."""
 
     implements(IReclaimBranchSpaceJob)
@@ -990,7 +979,7 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
 
     task_queue = 'branch_write_job'
 
-    config = config.reclaimbranchspace
+    config = config.IReclaimBranchSpaceJobSource
 
     def __repr__(self):
         return '<RECLAIM_BRANCH_SPACE branch job (%(id)s) for %(branch)s>' % {

@@ -499,7 +499,8 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         # Make changes visible to the process we'll be spawning.
         transaction.commit()
         return_code, stdout, stderr = run_script(
-            'cronscripts/distroseriesdifference_job.py', ['-v'])
+            'cronscripts/process-job-source.py',
+            ['-v', 'IDistroSeriesDifferenceJobSource'])
         # The cronscript ran how we expected it to.
         self.assertEqual(return_code, 0)
         self.assertIn(

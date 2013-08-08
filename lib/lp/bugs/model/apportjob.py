@@ -176,7 +176,7 @@ class ProcessApportBlobJob(ApportJobDerived):
     class_job_type = ApportJobType.PROCESS_BLOB
     classProvides(IProcessApportBlobJobSource)
 
-    config = config.process_apport_blobs
+    config = config.IProcessApportBlobJobSource
 
     @classmethod
     def create(cls, blob):

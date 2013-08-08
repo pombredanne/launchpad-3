@@ -95,13 +95,6 @@ class ArchivePurpose(DBEnumeratedType):
         This kind of archive will be used for rebuilds, snapshots etc.
         """)
 
-    DEBUG = DBItem(7, """
-        Debug Archive
-
-        This kind of archive will be user for publishing package with
-        debug-symbols.
-        """)
-
 
 archive_suffixes = {
     ArchivePurpose.PRIMARY: '',

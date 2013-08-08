@@ -104,8 +104,8 @@ error:
     ...     requester=cprov, to_sourcepackagerelease=pmount_to)
     Traceback (most recent call last):
     ...
-    PackageDiffAlreadyRequested: diff from 0.1-1 to 0.1-2 was already
-    requested by Celso Providelo
+    PackageDiffAlreadyRequested: diff from 0.1-1 to 0.1-2 has already
+    been requested
 
 
 Diff request for source uploads
@@ -117,8 +117,7 @@ already requests a package diff against the immediate ancestry.
 Before starting let's enable the universe component and add the i386
 chroot in hoary in order to be able to accept the NEW packages.
 
-    >>> from lp.soyuz.model.component import (
-    ...     ComponentSelection)
+    >>> from lp.soyuz.model.component import ComponentSelection
     >>> from lp.services.librarian.model import LibraryFileAlias
     >>> from lp.soyuz.interfaces.component import IComponentSet
 
@@ -154,8 +153,7 @@ suitable ancentry, no diff is requested.
 
     >>> packager.buildUpstream()
     >>> packager.buildSource(signed=False)
-    >>> biscuit_one_pub = packager.uploadSourceVersion(
-    ...     '1.0-1', policy='sync')
+    >>> biscuit_one_pub = packager.uploadSourceVersion('1.0-1', policy='sync')
 
     >>> len(biscuit_one_pub.sourcepackagerelease.package_diffs)
     0
@@ -435,29 +433,6 @@ stored.
     biscuit diff from 1.0-8 to 1.0-9               False  -5
     biscuit diff from 1.0-1 to 1.0-8               True   -6
     pmount diff from 0.1-1 to 0.1-2                False  -7
-
-Or only the PackageDiffs not yet fullfilled.
-
-    >>> print_diffs(packagediff_set.getPendingDiffs())
-    pmount diff from 0.1-1 to 0.1-2                False   0
-    biscuit diff from 1.0-8 to 1.0-9               False   2
-    biscuit diff from 1.0-8 to 1.0-12              False   3
-    biscuit diff from 1.0-9 to 1.0-10              False   4
-    biscuit diff from 1.0-8 to 1.0-11              False   5
-    biscuit diff from 1.0-8 (in Ubuntu) to 1.0-2   False   6
-    biscuit diff from 1.0-2 to 1.0-3               False   7
-
-Note that the iteration over all PackageDiffs is sorted by descending
-database ID, i.e. newest first, and getPendingDiffs() results are
-ordered by ascending database IDs, oldest first.
-
-getPendingDiffs() results can optionally be limited.
-
-    >>> packagediff_set.getPendingDiffs().count()
-    7
-
-    >>> packagediff_set.getPendingDiffs(limit=2).count()
-    2
 
 All package diffs targeting a set of source package releases can also
 be requested.  The results are ordered by the source package release

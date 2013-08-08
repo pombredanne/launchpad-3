@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The processing of debian installer tarballs."""
@@ -48,8 +48,11 @@ class DebianInstallerUpload(CustomUpload):
             raise ValueError("%s is not BASE_VERSION_ARCH" % tarfile_base)
         return bits[0], bits[1], bits[2].split(".")[0]
 
-    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
+    def setComponents(self, tarfile_path):
         _, self.version, self.arch = self.parsePath(tarfile_path)
+
+    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
+        self.setComponents(tarfile_path)
         self.targetdir = os.path.join(
             pubconf.archiveroot, 'dists', distroseries, 'main',
             'installer-%s' % self.arch)

@@ -10,7 +10,9 @@ import os
 import re
 import shutil
 from textwrap import dedent
+import time
 
+from testtools.matchers import LessThan
 from zope.component import getUtility
 
 from lp.archivepublisher.config import getPubConfig
@@ -22,6 +24,7 @@ from lp.archivepublisher.model.ftparchive import (
 from lp.archivepublisher.publishing import Publisher
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.log.logger import (
     BufferLogger,
@@ -131,13 +134,16 @@ class TestFTPArchive(TestCaseWithFactory):
         with open(path) as result_file:
             self.assertEqual("", result_file.read())
 
-    def _addRepositoryFile(self, component, sourcename, leafname):
+    def _addRepositoryFile(self, component, sourcename, leafname,
+                           samplename=None):
         """Create a repository file."""
         fullpath = self._dp.pathFor(component, sourcename, leafname)
         dirname = os.path.dirname(fullpath)
         if not os.path.exists(dirname):
             os.makedirs(dirname)
-        leaf = os.path.join(self._sampledir, leafname)
+        if samplename is None:
+            samplename = leafname
+        leaf = os.path.join(self._sampledir, samplename)
         leafcontent = file(leaf).read()
         file(fullpath, "w").write(leafcontent)
 
@@ -535,75 +541,91 @@ class TestFTPArchive(TestCaseWithFactory):
             os.path.join(self._distsdir, "hoary-test", "main",
                          "source", "Sources")))
 
+    def test_cleanCaches_noop_if_recent(self):
+        # cleanCaches does nothing if it was run recently.
+        fa = self._setUpFTPArchiveHandler()
+        path = os.path.join(self._config.miscroot, "apt-cleanup.conf")
+        with open(path, "w"):
+            pass
+        timestamp = time.time() - 1
+        os.utime(path, (timestamp, timestamp))
+        fa.cleanCaches()
+        # The filesystem may round off subsecond parts of timestamps.
+        self.assertEqual(int(timestamp), int(os.stat(path).st_mtime))
+
+    def test_cleanCaches_union_architectures(self):
+        # cleanCaches operates on the union of architectures for all
+        # considered series.
+        for series in self._distribution.series:
+            series.status = SeriesStatus.OBSOLETE
+        stable = self.factory.makeDistroSeries(
+            distribution=self._distribution, status=SeriesStatus.CURRENT)
+        unstable = self.factory.makeDistroSeries(
+            distribution=self._distribution)
+        for ds, arch in (
+            (stable, "i386"), (stable, "armel"),
+            (unstable, "i386"), (unstable, "armhf")):
+            self.factory.makeDistroArchSeries(
+                distroseries=ds, architecturetag=arch)
+        self._publisher = Publisher(
+            self._logger, self._config, self._dp, self._archive)
+        fa = self._setUpFTPArchiveHandler()
+        fa.cleanCaches()
+        path = os.path.join(self._config.miscroot, "apt-cleanup.conf")
+        with open(path) as config_file:
+            arch_lines = [
+                line for line in config_file if " Architectures " in line]
+        self.assertNotEqual([], arch_lines)
+        for line in arch_lines:
+            match = re.search(r' Architectures "(.*)"', line)
+            self.assertIsNotNone(match)
+            config_arches = set(match.group(1).split())
+            config_arches.discard("source")
+            self.assertContentEqual(["armel", "armhf", "i386"], config_arches)
+
+    def test_cleanCaches(self):
+        # cleanCaches does real work.
+        self._publisher = Publisher(
+            self._logger, self._config, self._dp, self._archive)
+        fa = self._setUpFTPArchiveHandler()
+        fa.createEmptyPocketRequests(fullpublish=True)
+
+        # Set up an initial repository.
+        source_overrides = FakeSelectResult([("foo", "main", "misc")])
+        binary_overrides = FakeSelectResult([(
+            "bin%d" % i, "main", "misc", "i386",
+            PackagePublishingPriority.EXTRA, BinaryPackageFormat.DEB, None)
+            for i in range(10)])
+        fa.publishOverrides("hoary-test", source_overrides, binary_overrides)
+        source_files = FakeSelectResult([("foo", "foo_1.dsc", "main")])
+        binary_files = FakeSelectResult([(
+            "bin%d" % i, "bin%d_1_i386.deb" % i, "main", "binary-i386")
+            for i in range(10)])
+        fa.publishFileLists("hoary-test", source_files, binary_files)
+        self._addRepositoryFile("main", "foo", "foo_1.dsc")
+        for i in range(10):
+            self._addRepositoryFile(
+                "main", "bin%d" % i, "bin%d_1_i386.deb" % i,
+                samplename="foo_1_i386.deb")
+        apt_conf = fa.generateConfig(fullpublish=True)
+        fa.runApt(apt_conf)
+
+        # Remove most of this repository's files so that cleanCaches has
+        # something to do.
+        for i in range(9):
+            os.unlink(
+                self._dp.pathFor("main", "bin%d" % i, "bin%d_1_i386.deb" % i))
+
+        cache_path = os.path.join(self._config.cacheroot, "packages-i386.db")
+        old_cache_size = os.stat(cache_path).st_size
+        fa.cleanCaches()
+        self.assertThat(os.stat(cache_path).st_size, LessThan(old_cache_size))
+
 
 class TestFTPArchiveRunApt(TestCaseWithFactory):
     """Test `FTPArchive`'s execution of apt-ftparchive."""
 
     layer = ZopelessDatabaseLayer
-
-    def _makeMatchingDistroArchSeries(self):
-        """Create two `DistroArchSeries` for the same distro and processor."""
-        distro = self.factory.makeDistribution()
-        processor = self.factory.makeProcessor()
-        return (
-            self.factory.makeDistroArchSeries(
-                distroseries=self.factory.makeDistroSeries(distro),
-                processorfamily=processor.family,
-                architecturetag=processor.name)
-            for counter in (1, 2))
-
-    def test_getArchitectureTags_starts_out_empty(self):
-        fa = FTPArchiveHandler(
-            DevNullLogger(), None, None, self.factory.makeDistribution(),
-            None)
-        self.assertContentEqual([], fa._getArchitectureTags())
-
-    def test_getArchitectureTags_includes_enabled_architectures(self):
-        distroarchseries = self.factory.makeDistroArchSeries()
-        fa = FTPArchiveHandler(
-            DevNullLogger(), None, None,
-            distroarchseries.distroseries.distribution, None)
-        self.assertContentEqual(
-            [distroarchseries.architecturetag], fa._getArchitectureTags())
-
-    def test_getArchitectureTags_considers_all_series(self):
-        distro = self.factory.makeDistribution()
-        affluent_antilope = self.factory.makeDistroSeries(distribution=distro)
-        bilious_baboon = self.factory.makeDistroSeries(distribution=distro)
-        affluent_arch = self.factory.makeDistroArchSeries(
-            distroseries=affluent_antilope)
-        bilious_arch = self.factory.makeDistroArchSeries(
-            distroseries=bilious_baboon)
-        fa = FTPArchiveHandler(DevNullLogger(), None, None, distro, None)
-        self.assertContentEqual(
-            [affluent_arch.architecturetag, bilious_arch.architecturetag],
-            fa._getArchitectureTags())
-
-    def test_getArchitectureTags_ignores_disabled_architectures(self):
-        distroarchseries = self.factory.makeDistroArchSeries()
-        distroarchseries.enabled = False
-        fa = FTPArchiveHandler(
-            DevNullLogger(), None, None,
-            distroarchseries.distroseries.distribution, None)
-        self.assertContentEqual([], fa._getArchitectureTags())
-
-    def test_getArchitectureTags_contains_no_duplicates(self):
-        ominous_okapi, pilfering_puppy = self._makeMatchingDistroArchSeries()
-        fa = FTPArchiveHandler(
-            DevNullLogger(), None, None,
-            ominous_okapi.distroseries.distribution, None)
-        self.assertEqual(1, len(list(fa._getArchitectureTags())))
-        self.assertContentEqual(
-            [ominous_okapi.architecturetag], fa._getArchitectureTags())
-
-    def test_getArchitectureTags_counts_any_architecture_enabled_once(self):
-        manic_mantis, nervous_nit = self._makeMatchingDistroArchSeries()
-        nervous_nit.enabled = False
-        fa = FTPArchiveHandler(
-            DevNullLogger(), None, None,
-            manic_mantis.distroseries.distribution, None)
-        self.assertContentEqual(
-            [manic_mantis.architecturetag], fa._getArchitectureTags())
 
     def test_runApt_reports_failure(self):
         # If we sabotage apt-ftparchive, runApt notices that it failed
