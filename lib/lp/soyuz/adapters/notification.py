@@ -38,6 +38,7 @@ from lp.services.mail.sendmail import (
     sendmail,
     )
 from lp.services.webapp import canonical_url
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 
 
 def reject_changes_file(blamer, changes_file_path, changes, archive,
@@ -244,8 +245,7 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
         and not archive.is_ppa
         and pocket != PackagePublishingPocket.BACKPORTS
         and not (pocket == PackagePublishingPocket.SECURITY and spr is None)
-        and not is_auto_sync_upload(
-            spr, bprs, pocket, from_addr)):
+        and not is_auto_sync_upload(spr, bprs, pocket, from_addr)):
         name = None
         bcc_addr = None
         if spr:
@@ -462,7 +462,8 @@ def is_valid_uploader(person, distribution):
     if person is None:
         return None
     else:
-        return person.isUploader(distribution)
+        return not getUtility(IArchivePermissionSet).componentsForUploader(
+            distribution.main_archive, person).is_empty()
 
 
 def get_upload_notification_recipients(blamer, archive, distroseries,
@@ -600,12 +601,11 @@ def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
     the security pocket. The Changed-By field is also the Katie
     user (archive@ubuntu.com).
     """
-    katie = getUtility(ILaunchpadCelebrities).katie
     changed_by = email_to_person(changed_by_email)
     return (
         spr and
         not bprs and
-        changed_by == katie and
+        changed_by == getUtility(ILaunchpadCelebrities).katie and
         pocket != PackagePublishingPocket.SECURITY)
 
 
