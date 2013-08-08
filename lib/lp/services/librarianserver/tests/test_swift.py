@@ -12,6 +12,7 @@ from mock import patch
 import transaction
 
 from lp.services.database.interfaces import IStore
+from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.client import LibrarianClient
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.log.logger import BufferLogger
@@ -28,6 +29,8 @@ class TestFeedSwift(TestCase):
     def setUp(self):
         super(TestFeedSwift, self).setUp()
         self.swift_fixture = self.useFixture(SwiftFixture())
+        self.useFixture(FeatureFixture({'librarian.swift.enabled': True}))
+        transaction.commit()
 
         # Restart the Librarian so it picks up the OS_* environment
         # variables.
@@ -47,6 +50,12 @@ class TestFeedSwift(TestCase):
                 for lfa_id in self.lfa_ids]
         self.lfcs = [lfa.content for lfa in self.lfas]
         transaction.commit()
+
+    def tearDown(self):
+        super(TestFeedSwift, self).tearDown()
+        # Restart the Librarian so it picks up the feature flag change.
+        LibrarianLayer.librarian_fixture.killTac()
+        LibrarianLayer.librarian_fixture.setUp()
 
     def test_copy_to_swift(self):
         log = BufferLogger()
