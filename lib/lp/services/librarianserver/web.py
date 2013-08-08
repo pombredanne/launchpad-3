@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -229,12 +229,12 @@ class File(static.File):
         # Unfortunately, by overriding the static.File's more
         # complex makeProducer method we lose HTTP range support.
         # However, this seems the only sane way of coping with the fact
-        # that sucking data in from Swift requires a Defered and the
+        # that sucking data in from Swift requires a Deferred and the
         # static.*Producer implementations don't cope. This shouldn't be
         # a problem as the Librarian sits behind Squid. If it is, I
         # think we will need to cargo-cult three Procucer
         # implementations in static, making the small modification to
-        # cope with self.fileObject.read maybe returning a Defered, and
+        # cope with self.fileObject.read maybe returning a Deferred, and
         # the static.File.makeProducer method to return the correct
         # producer.
         self._setContentHeaders(request)
