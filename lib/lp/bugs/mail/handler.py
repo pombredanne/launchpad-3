@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Handle incoming Bugs email."""
@@ -399,24 +399,19 @@ class MaloneHandler:
         """Append the message text to the bug comments."""
         messageset = getUtility(IMessageSet)
         message = messageset.fromEmail(
-            signed_msg.as_string(),
-            owner=getUtility(ILaunchBag).user,
-            filealias=filealias,
-            parsed_message=signed_msg,
-            fallback_parent=bug.initial_message)
-        # If the new message's parent is linked to
-        # a bug watch we also link this message to
-        # that bug watch.
-        bug_message_set = getUtility(IBugMessageSet)
-        parent_bug_message = (
-            bug_message_set.getByBugAndMessage(bug, message.parent))
+            signed_msg.as_string(), owner=getUtility(ILaunchBag).user,
+            filealias=filealias, parsed_message=signed_msg,
+            fallback_parent=bug.initial_message, restricted=bug.private)
+        # If the new message's parent is linked to a bug watch we also link
+        # this message to that bug watch.
+        parent_bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
+            bug, message.parent)
         if (parent_bug_message is not None and
             parent_bug_message.bugwatch):
             bug_watch = parent_bug_message.bugwatch
         else:
             bug_watch = None
-        bugmessage = bug.linkMessage(
-            message, bug_watch)
+        bugmessage = bug.linkMessage(message, bug_watch)
         notify(ObjectCreatedEvent(bugmessage))
         return message
 
