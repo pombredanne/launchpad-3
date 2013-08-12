@@ -803,15 +803,33 @@ class Builder(SQLBase):
         d = defer.maybeDeferred(self.startBuild, candidate, logger)
         return d
 
-    def handleTimeout(self, logger, error_message):
+    def handleFailure(self, logger):
         """See IBuilder."""
+        self.gotFailure()
+        if self.currentjob is not None:
+            build_farm_job = self.getCurrentBuildFarmJob()
+            build_farm_job.gotFailure()
+            logger.info(
+                "Builder %s failure count: %s, job '%s' failure count: %s" % (
+                    self.name, self.failure_count,
+                    build_farm_job.title, build_farm_job.failure_count))
+        else:
+            logger.info(
+                "Builder %s failure count: %s" % (
+                    self.name, self.failure_count))
+
+    def resetOrFail(self, logger, exception):
+        """See IBuilder."""
+        error_message = str(exception)
         if self.virtualized:
-            # Virtualized/PPA builder: attempt a reset.
-            logger.warn(
-                "Resetting builder: %s -- %s" % (self.url, error_message),
-                exc_info=True)
-            d = self.resumeSlaveHost()
-            return d
+            # Virtualized/PPA builder: attempt a reset, unless the failure
+            # was itself a failure to reset.  (In that case, the slave
+            # scanner will try again until we reach the failure threshold.)
+            if not isinstance(exception, CannotResumeHost):
+                logger.warn(
+                    "Resetting builder: %s -- %s" % (self.url, error_message),
+                    exc_info=True)
+                return self.resumeSlaveHost()
         else:
             # XXX: This should really let the failure bubble up to the
             # scan() method that does the failure counting.
@@ -819,7 +837,7 @@ class Builder(SQLBase):
             logger.warn(
                 "Disabling builder: %s -- %s" % (self.url, error_message))
             self.failBuilder(error_message)
-            return defer.succeed(None)
+        return defer.succeed(None)
 
     def findAndStartJob(self):
         """See IBuilder."""

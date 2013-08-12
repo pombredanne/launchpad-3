@@ -214,10 +214,11 @@ class TestHandleStatusMixin:
         self.build = self.makeBuild()
         # For the moment, we require a builder for the build so that
         # handleStatus_OK can get a reference to the slave.
-        builder = self.factory.makeBuilder()
-        self.build.buildqueue_record.builder = builder
+        self.builder = self.factory.makeBuilder()
+        self.build.buildqueue_record.builder = self.builder
         self.build.buildqueue_record.setDateStarted(UTC_NOW)
-        self.behavior = removeSecurityProxy(builder.current_build_behavior)
+        self.behavior = removeSecurityProxy(
+            self.builder.current_build_behavior)
         self.slave = WaitingSlave('BuildStatus.OK')
         self.slave.valid_file_hashes.append('test_file_hash')
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(self.slave))
@@ -320,6 +321,31 @@ class TestHandleStatusMixin:
 
     def test_handleStatus_PACKAGEFAIL_notifies(self):
         return self._test_handleStatus_notifies("PACKAGEFAIL")
+
+    def test_handleStatus_ABORTED_cancels_cancelling(self):
+        self.build.updateStatus(BuildStatus.CANCELLING)
+
+        def got_status(ignored):
+            self.assertEqual(
+                0, len(pop_notifications()), "Notifications received")
+            self.assertEqual(BuildStatus.CANCELLED, self.build.status)
+
+        d = self.behavior.handleStatus("ABORTED", None, {})
+        return d.addCallback(got_status)
+
+    def test_handleStatus_ABORTED_recovers_building(self):
+        self.builder.vm_host = "fake_vm_host"
+        self.build.updateStatus(BuildStatus.BUILDING)
+
+        def got_status(ignored):
+            self.assertEqual(
+                0, len(pop_notifications()), "Notifications received")
+            self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
+            self.assertEqual(1, self.builder.failure_count)
+            self.assertIn("resume", self.slave.call_log)
+
+        d = self.behavior.handleStatus("ABORTED", None, {})
+        return d.addCallback(got_status)
 
     def test_date_finished_set(self):
         # The date finished is updated during handleStatus_OK.

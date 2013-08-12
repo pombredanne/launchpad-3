@@ -19,6 +19,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.tests.mock_slaves import (
     AbortedSlave,
@@ -263,6 +264,19 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         self.assertEqual(
             'Attempt to build virtual item on a non-virtual builder.',
             str(e))
+
+    def test_verifyBuildRequest_no_chroot(self):
+        # Don't dispatch a build when the DAS has no chroot.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        builder = self.factory.makeBuilder()
+        build = self.factory.makeBinaryPackageBuild(
+            builder=builder, archive=archive)
+        candidate = build.queueBuild()
+        behavior = candidate.required_build_behavior
+        behavior.setBuilder(builder)
+        e = self.assertRaises(
+            CannotBuild, behavior.verifyBuildRequest, BufferLogger())
+        self.assertIn("Missing CHROOT", str(e))
 
     def test_getBuildCookie(self):
         # A build cookie is made up of the job type and record id.

@@ -219,7 +219,8 @@ class BuildFarmJobBehaviorBase:
         Buildslave can be WAITING in five situations:
 
         * Build has failed, no filemap is received (PACKAGEFAIL, DEPFAIL,
-                                                    CHROOTFAIL, BUILDERFAIL)
+                                                    CHROOTFAIL, BUILDERFAIL,
+                                                    ABORTED)
 
         * Build has been built successfully (BuildStatus.OK), in this case
           we have a 'filemap', so we can retrieve those files and store in
@@ -412,6 +413,30 @@ class BuildFarmJobBehaviorBase:
         self.build.buildqueue_record.builder.failBuilder(
             "Builder returned BUILDERFAIL when asked for its status")
         self.build.buildqueue_record.reset()
+        transaction.commit()
+
+    @defer.inlineCallbacks
+    def _handleStatus_ABORTED(self, librarian, slave_status, logger,
+                              send_notification):
+        """Handle aborted builds.
+
+        If the build was explicitly cancelled, then mark it as such.
+        Otherwise, the build has failed in some unexpected way.
+        """
+        builder = self.build.buildqueue_record.builder
+        if self.build.status == BuildStatus.CANCELLING:
+            self.build.buildqueue_record.cancel()
+            transaction.commit()
+            yield builder.cleanSlave()
+        else:
+            self.build.buildqueue_record.reset()
+            try:
+                builder.handleFailure(logger)
+                yield builder.resetOrFail(logger, BuildSlaveFailure(
+                    "Builder unexpectedly returned ABORTED"))
+            except Exception as e:
+                # We've already done our best to mark the builder as failed.
+                logger.error("Failed to rescue from ABORTED: %s" % e)
         transaction.commit()
 
     @defer.inlineCallbacks
