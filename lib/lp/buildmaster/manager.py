@@ -217,7 +217,9 @@ class SlaveScanner:
             # something other than CANCELLING once the builder responds to
             # the cancel request.  This timeout is in case it doesn't.
             if self._clock.seconds() >= self.date_cancel:
-                self.logger.info("Build '%s' failed to cancel" % build.title)
+                self.logger.info(
+                    "Build '%s' on %s failed to cancel" %
+                    (build.title, self.builder.name))
                 self.date_cancel = None
                 buildqueue.cancel()
                 transaction.commit()
