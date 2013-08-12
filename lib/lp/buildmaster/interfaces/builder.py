@@ -309,18 +309,27 @@ class IBuilder(IHasOwner):
             explaining what went wrong.
         """
 
-    def handleTimeout(logger, error_message):
-        """Handle buildd slave communication timeout situations.
+    def handleFailure(logger):
+        """Handle buildd slave failures.
+
+        Increment builder and (if possible) job failure counts.
+        """
+
+    def resetOrFail(logger, exception):
+        """Handle "confirmed" build slave failures.
+
+        Call this when there have been multiple failures that are not just
+        the fault of failing jobs, or when the builder has entered an
+        ABORTED state without having been asked to do so.
 
         In case of a virtualized/PPA buildd slave an attempt will be made
-        to reset it first (using `resumeSlaveHost`). Only if that fails
-        will it be (marked as) failed (using `failBuilder`).
+        to reset it (using `resumeSlaveHost`).
 
         Conversely, a non-virtualized buildd slave will be (marked as)
-        failed straightaway.
+        failed straightaway (using `failBuilder`).
 
         :param logger: The logger object to be used for logging.
-        :param error_message: The error message to be used for logging.
+        :param exception: An exception to be used for logging.
         :return: A Deferred that fires after the virtual slave was resumed
             or immediately if it's a non-virtual slave.
         """

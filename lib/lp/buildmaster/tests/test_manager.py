@@ -162,31 +162,6 @@ class TestSlaveScannerScan(TestCase):
         self.assertTrue(builder.builderok)
         self.assertTrue(builder.currentjob is None)
 
-    def testNoDispatchForMissingChroots(self):
-        # When a required chroot is not present the `scan` method
-        # should not return any `RecordingSlaves` to be processed
-        # and the builder used should remain active and IDLE.
-
-        # Reset sampledata builder.
-        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
-        self._resetBuilder(builder)
-
-        # Remove hoary/i386 chroot.
-        login('foo.bar@canonical.com')
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        hoary = ubuntu.getSeries('hoary')
-        pocket_chroot = hoary.getDistroArchSeries('i386').getPocketChroot()
-        removeSecurityProxy(pocket_chroot).chroot = None
-        transaction.commit()
-        login(ANONYMOUS)
-
-        # Run 'scan' and check its result.
-        switch_dbuser(config.builddmaster.dbuser)
-        scanner = self._getScanner()
-        d = defer.maybeDeferred(scanner.singleCycle)
-        d.addCallback(self._checkNoDispatch, builder)
-        return d
-
     def _checkJobRescued(self, slave, builder, job):
         """`SlaveScanner.scan` rescued the job.
 

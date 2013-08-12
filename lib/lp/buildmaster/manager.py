@@ -161,31 +161,16 @@ class SlaveScanner:
                 self.builder_name, failure.getErrorMessage(),
                 failure.getTraceback()))
 
-        # Decide if we need to terminate the job or fail the
-        # builder.
+        # Decide if we need to terminate the job or fail the builder.
+        builder = get_builder(self.builder_name)
         try:
-            builder = get_builder(self.builder_name)
-            builder.gotFailure()
-            if builder.currentjob is not None:
-                build_farm_job = builder.getCurrentBuildFarmJob()
-                build_farm_job.gotFailure()
-                self.logger.info(
-                    "builder %s failure count: %s, "
-                    "job '%s' failure count: %s" % (
-                        self.builder_name,
-                        builder.failure_count,
-                        build_farm_job.title,
-                        build_farm_job.failure_count))
-            else:
-                self.logger.info(
-                    "Builder %s failed a probe, count: %s" % (
-                        self.builder_name, builder.failure_count))
+            builder.handleFailure(self.logger)
             assessFailureCounts(builder, failure.getErrorMessage())
             transaction.commit()
-        except:
+        except Exception:
             # Catastrophic code failure! Not much we can do.
             self.logger.error(
-                "Miserable failure when trying to examine failure counts:\n",
+                "Miserable failure when trying to handle failure:\n",
                 exc_info=True)
             transaction.abort()
 
