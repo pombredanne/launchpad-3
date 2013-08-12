@@ -272,8 +272,7 @@ class MaloneHandler:
                         bugtask = None
                         bugtask_event = None
                         # Get or start building a new bug.
-                        bug, bug_event = command.execute(
-                            signed_msg, filealias)
+                        bug, bug_event = command.execute(signed_msg, filealias)
                         if add_comment_to_bug:
                             message = self.appendBugComment(
                                 bug, signed_msg, filealias)
