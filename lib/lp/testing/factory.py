@@ -1607,7 +1607,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return merge_proposal.generateIncrementalDiff(
             old_revision, new_revision, diff)
 
-    def makeBzrRevision(self, revision_id=None, parent_ids=None, **kwargs):
+    def makeBzrRevision(self, revision_id=None, parent_ids=None, props=None):
         if revision_id is None:
             revision_id = self.getUniqueString('revision-id')
         if parent_ids is None:
@@ -1617,7 +1617,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             revision_id=revision_id,
             committer=self.getUniqueString('committer'),
             parent_ids=parent_ids,
-            timestamp=0, timezone=0, properties=kwargs)
+            timestamp=0, timezone=0, properties=props)
 
     def makeRevision(self, author=None, revision_date=None, parent_ids=None,
                      rev_id=None, log_body=None, date_created=None):
