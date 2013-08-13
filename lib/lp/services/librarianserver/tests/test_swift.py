@@ -162,8 +162,8 @@ class TestFeedSwift(TestCase):
         lfa = self.librarian_client.getFileByAlias(lfa_id)
         self.assertEqual(expected_content, lfa.read())
 
-    def test_large_binary_files_from_swift_2(self):
-        # Generate large blob, multiple of the chunk size.
+    def test_large_binary_files_from_swift_offset(self):
+        # Generate large blob, but NOT a multiple of the chunk size.
         # Including null bytes for kicks.
         size = LibrarianStorage.CHUNK_SIZE * 50 + 1
         self.assert_(size > 1024*1024)
