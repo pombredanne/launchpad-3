@@ -85,7 +85,7 @@ class LibrarianStorage:
             headers, chunks = yield deferToThread(
                 swift_connection.get_object,
                 container, name, resp_chunk_size=self.CHUNK_SIZE)
-            swift_stream = SwiftStream(swift_connection, chunks)
+            swift_stream = TxSwiftStream(swift_connection, chunks)
             defer.returnValue(swift_stream)
         except swiftclient.ClientException as x:
             if x.http_status != 404:
@@ -110,16 +110,7 @@ class LibrarianStorage:
         return self.library.getAlias(aliasid, token, path)
 
 
-class SwiftStream:
-
-    def __init__(self, swift_connection, chunks):
-        self._swift_connection = swift_connection
-        self._chunks = chunks  # Generator from swiftclient.get_object()
-
-        self.closed = False
-        self._offset = 0
-        self._chunk = None
-
+class TxSwiftStream(swift.SwiftStream):
     @defer.inlineCallbacks
     def read(self, size):
         if self.closed:
@@ -152,25 +143,6 @@ class SwiftStream:
 
         self._offset += return_size
         defer.returnValue(''.join(return_chunks))
-
-    def _next_chunk(self):
-        try:
-            return self._chunks.next()
-        except StopIteration:
-            return None
-
-    def close(self):
-        self.closed = True
-        self._swift_connection = None
-
-    def seek(self, offset):
-        if offset < self._offset:
-            raise NotImplementedError('rewind')  # Rewind not supported
-        else:
-            self.read(offset - self._offset)
-
-    def tell(self):
-        return self._offset
 
 
 class LibraryFileUpload(object):

@@ -4,14 +4,21 @@
 """Move files from Librarian disk storage into Swift."""
 
 __metaclass__ = type
-__all__ = ['to_swift', 'filesystem_path', 'swift_location']
+__all__ = [
+    'to_swift', 'filesystem_path', 'swift_location',
+    'connection', 'connection_pool', 'SWIFT_CONTAINER_PREFIX',
+    ]
 
+from contextlib import contextmanager
 import os.path
 import sys
 
 from swiftclient import client as swiftclient
 
 from lp.services.config import config
+
+
+SWIFT_CONTAINER_PREFIX = 'librarian_'
 
 
 def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
@@ -123,7 +130,7 @@ def swift_location(lfc_id):
 
     container_num = lfc_id // max_objects_per_container
 
-    return ('librarian_{}'.format(container_num), str(lfc_id))
+    return (SWIFT_CONTAINER_PREFIX + str(container_num), str(lfc_id))
 
 
 def filesystem_path(lfc_id):
@@ -132,7 +139,70 @@ def filesystem_path(lfc_id):
         config.librarian_server.root, _relFileLocation(lfc_id))
 
 
+class SwiftStream:
+    def __init__(self, swift_connection, chunks):
+        self._swift_connection = swift_connection
+        self._chunks = chunks  # Generator from swiftclient.get_object()
+
+        self.closed = False
+        self._offset = 0
+        self._chunk = None
+
+    def read(self, size):
+        if self.closed:
+            raise ValueError('I/O operation on closed file')
+
+        if self._swift_connection is None:
+            return ''
+
+        if size == 0:
+            return ''
+
+        return_chunks = []
+        return_size = 0
+
+        while return_size < size:
+            if not self._chunk:
+                self._chunk = self._next_chunk()
+                if not self._chunk:
+                    # If we have drained the data successfully,
+                    # the connection can be reused saving on auth
+                    # handshakes.
+                    connection_pool.put(self._swift_connection)
+                    self._swift_connection = None
+                    self._chunks = None
+                    break
+            split = size - return_size
+            return_chunks.append(self._chunk[:split])
+            self._chunk = self._chunk[split:]
+            return_size += len(return_chunks[-1])
+
+        self._offset += return_size
+        return ''.join(return_chunks)
+
+    def _next_chunk(self):
+        try:
+            return self._chunks.next()
+        except StopIteration:
+            return None
+
+    def close(self):
+        self.closed = True
+        self._swift_connection = None
+
+    def seek(self, offset):
+        if offset < self._offset:
+            raise NotImplementedError('rewind')  # Rewind not supported
+        else:
+            self.read(offset - self._offset)
+
+    def tell(self):
+        return self._offset
+
+
 class ConnectionPool:
+    MAX_POOL_SIZE = 10
+
     def __init__(self):
         self.clear()
 
@@ -153,7 +223,10 @@ class ConnectionPool:
         exception has been raised (apart from a 404), don't trust the
         swift_connection and throw it away.
         '''
-        self._pool.append(swift_connection)
+        if swift_connection not in self._pool:
+            self._pool.append(swift_connection)
+            while len(self._pool) > self.MAX_POOL_SIZE:
+                self._pool.pop(0)
 
     def _new_connection(self):
         return swiftclient.Connection(
@@ -166,3 +239,15 @@ class ConnectionPool:
 
 
 connection_pool = ConnectionPool()
+
+
+@contextmanager
+def connection():
+    global connection_pool
+    con = connection_pool.get()
+    yield con
+
+    # We can safely put the connection back in the pool, as this code is
+    # only reached if the contextmanager block exited normally (no
+    # exception raised).
+    connection_pool.put(con)
