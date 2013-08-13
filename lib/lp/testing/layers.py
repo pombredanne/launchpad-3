@@ -824,22 +824,6 @@ class DatabaseLayer(BaseLayer):
         return cls._db_fixture.dropDb()
 
 
-class SwiftLayer(BaseLayer):
-    @classmethod
-    @profiled
-    def setUp(cls):
-        cls.swift_fixture = SwiftFixture()
-        cls.swift_fixture.setUp()
-
-    @classmethod
-    @profiled
-    def tearDown(cls):
-        swift = cls.swift_fixture
-        if swift is not None:
-            cls.swift_fixture = None
-            swift.cleanUp()
-
-
 class LibrarianLayer(DatabaseLayer):
     """Provides tests access to a Librarian instance.
 
