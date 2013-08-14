@@ -38,7 +38,6 @@ __all__ = [
     'LibrarianLayer',
     'PageTestLayer',
     'RabbitMQLayer',
-    'SwiftLayer',
     'TwistedAppServerLayer',
     'TwistedLaunchpadZopelessLayer',
     'TwistedLayer',
@@ -148,7 +147,6 @@ from lp.testing import (
     reset_logging,
     )
 from lp.testing.pgsql import PgTestSetup
-from lp.testing.swift.fixture import SwiftFixture
 from lp.testing.smtpd import SMTPController
 
 
