@@ -61,8 +61,9 @@ class SwiftFixture(TacTestFixture):
     def cleanUp(self):
         if self.logfile is not None and os.path.exists(self.logfile):
             self.addDetail(
-                'log-file', testtools.content.content_from_stream(
-                    open(self.logfile, 'r'), testtools.content_type.UTF8_TEXT))
+                'swift-log', testtools.content.content_from_stream(
+                    open(self.logfile, 'rb'),
+                    testtools.content_type.UTF8_TEXT))
             os.unlink(self.logfile)
         super(SwiftFixture, self).cleanUp()
 
