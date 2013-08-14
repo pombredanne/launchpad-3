@@ -335,7 +335,7 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
             else:
                 return "Work items for %s:" % milestone.name
 
-        if self.work_items.count() == 0:
+        if len(self.work_items) == 0:
             return ''
         milestone = self.work_items[0].milestone
         # Start by appending a header for the milestone of the first work
@@ -353,9 +353,9 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
             else:
                 assignee_part = ""
             # work_items are ordered by sequence
-            workitems_lines.append("%s%s: %s" % (assignee_part,
-                                                 work_item.title,
-                                                 work_item.status.name))
+            workitems_lines.append(
+                "%s%s: %s" % (
+                    assignee_part, work_item.title, work_item.status.name))
         return "\n".join(workitems_lines)
 
     @property
@@ -377,9 +377,13 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
             title=title, status=status, specification=self, assignee=assignee,
             milestone=milestone, sequence=sequence)
 
-    @property
+    @cachedproperty
     def work_items(self):
         """See ISpecification."""
+        return list(self._work_items)
+
+    @property
+    def _work_items(self):
         return Store.of(self).find(
             SpecificationWorkItem, specification=self,
             deleted=False).order_by("sequence")

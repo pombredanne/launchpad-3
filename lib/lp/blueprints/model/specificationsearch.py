@@ -36,6 +36,7 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.model.specification import Specification
 from lp.blueprints.model.specificationbranch import SpecificationBranch
+from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
@@ -233,6 +234,12 @@ def _preload_specifications_related_objects(rows):
         person_ids |= set(
             [spec._assigneeID, spec._approverID, spec._drafterID])
         get_property_cache(spec).linked_branches = []
+        get_property_cache(spec).work_items = []
+    work_items = load_referencing(
+        SpecificationWorkItem, rows, ['specification_id'])
+    for workitem in work_items:
+        person_ids.add(workitem.assignee_id)
+        get_property_cache(workitem.specification).work_items.append(workitem)
     person_ids -= set([None])
     list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
         person_ids, need_validity=True))
