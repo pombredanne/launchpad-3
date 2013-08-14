@@ -48,6 +48,12 @@ class SwiftFixture(TacTestFixture):
             os.path.join(config.root, 'bin', 'py'),
             os.path.join(config.root, 'bin', 'twistd'))
 
+        logfile = self.logfile
+        self.addCleanup(lambda: os.path.exists(logfile) and os.unlink(logfile))
+
+        testtools.content.attach_file(
+            self, logfile, 'swift-log', testtools.content_type.UTF8_TEXT)
+
         self.useFixture(EnvironmentVariableFixture(
             'OS_AUTH_URL',
             'http://localhost:{}/keystone/v2.0/'.format(self.daemon_port)))
@@ -57,15 +63,6 @@ class SwiftFixture(TacTestFixture):
             'OS_PASSWORD', hollow.DEFAULT_PASSWORD))
         self.useFixture(EnvironmentVariableFixture(
             'OS_TENANT_NAME', hollow.DEFAULT_TENANT_NAME))
-
-    def cleanUp(self):
-        if self.logfile is not None and os.path.exists(self.logfile):
-            self.addDetail(
-                'swift-log', testtools.content.content_from_stream(
-                    open(self.logfile, 'rb'),
-                    testtools.content_type.UTF8_TEXT))
-            os.unlink(self.logfile)
-        super(SwiftFixture, self).cleanUp()
 
     def setUpRoot(self):
         # Create a root directory.
@@ -82,7 +79,6 @@ class SwiftFixture(TacTestFixture):
 
     def connect(self):
         """Return a valid connection to our mock Swift"""
-        port = self.daemon_port
         client = swiftclient.Connection(
             authurl=os.environ.get('OS_AUTH_URL', None),
             auth_version="2.0",

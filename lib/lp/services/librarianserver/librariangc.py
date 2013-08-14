@@ -576,6 +576,13 @@ def delete_unreferenced_content(con):
 
 
 def delete_unwanted_files(con):
+    delete_unwanted_disk_files(con)
+    swift_enabled = getFeatureFlag('librarian.swift.enabled') or False
+    if swift_enabled:
+        delete_unwanted_swift_files(con)
+
+
+def delete_unwanted_disk_files(con):
     """Delete files found on disk that have no corresponding record in the
     database.
 
@@ -704,26 +711,23 @@ def swift_files():
     Results are yielded in numerical order.
     """
     with swift.connection() as swift_connection:
-        def _container_sort(container):
-            return int(container[len(swift.SWIFT_CONTAINER_PREFIX):])
-
-        containers = sorted(
-            swift_connection.get_account(prefix=swift.SWIFT_CONTAINER_PREFIX),
-            key=_container_sort)
-
-    if not containers:
-        # We may not yet have copied any files from disk into Swift,
-        # so this isn't an error.
-        log.warn("No Swift containers found")
-        return
-
-    for container in containers:
-        with swift.connection() as swift_connection:
-            names = sorted(
-                swift_connection.get_container(container, full_listing=True),
-                key=int)
-        for name in names:
-            yield (container, name)
+        try:
+            container_num = 0
+            while True:
+                # We generate the container names, rather than query the
+                # server, because the mock Swift implementation doesn't
+                # support that operation.
+                container = swift.SWIFT_CONTAINER_PREFIX + str(container_num)
+                names = sorted(
+                    swift_connection.get_container(
+                        container, full_listing=True), key=int)
+                for name in names:
+                    yield (container, name)
+                container_num += 1
+        except swiftclient.ClientException as x:
+            if x.http_status == 404:
+                return
+            raise
 
 
 def delete_unwanted_swift_files(con):

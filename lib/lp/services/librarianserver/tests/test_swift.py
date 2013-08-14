@@ -34,6 +34,8 @@ class TestFeedSwift(TestCase):
         self.useFixture(FeatureFixture({'librarian.swift.enabled': True}))
         transaction.commit()
 
+        self.addCleanup(swift.connection_pool.clear)
+
         # Restart the Librarian so it picks up the OS_* environment
         # variables.
         LibrarianLayer.librarian_fixture.killTac()
@@ -149,7 +151,7 @@ class TestFeedSwift(TestCase):
         # Generate large blob, multiple of the chunk size.
         # Including null bytes for kicks.
         size = LibrarianStorage.CHUNK_SIZE * 50
-        self.assert_(size > 1024*1024)
+        self.assert_(size > 1024 * 1024)
         expected_content = ''.join(chr(i % 256) for i in range(0, size))
         lfa_id = self.add_file('hello_bigboy.xls', expected_content)
 
@@ -166,7 +168,7 @@ class TestFeedSwift(TestCase):
         # Generate large blob, but NOT a multiple of the chunk size.
         # Including null bytes for kicks.
         size = LibrarianStorage.CHUNK_SIZE * 50 + 1
-        self.assert_(size > 1024*1024)
+        self.assert_(size > 1024 * 1024)
         expected_content = ''.join(chr(i % 256) for i in range(0, size))
         lfa_id = self.add_file('hello_bigboy.xls', expected_content)
 
