@@ -11,6 +11,8 @@ __all__ = [
     'search_specifications',
     ]
 
+from collections import defaultdict
+
 from storm.expr import (
     And,
     Coalesce,
@@ -237,12 +239,18 @@ def _preload_specifications_related_objects(rows):
         get_property_cache(spec).work_items = []
     work_items = load_referencing(
         SpecificationWorkItem, rows, ['specification_id'])
+    work_items_by_spec = defaultdict(list)
     for workitem in work_items:
         person_ids.add(workitem.assignee_id)
-        get_property_cache(workitem.specification).work_items.append(workitem)
+        work_items_by_spec[workitem.specification_id].append(workitem)
     person_ids -= set([None])
     list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
         person_ids, need_validity=True))
+    for specid in work_items_by_spec.keys():
+        work_items_by_spec[specid].sort(key=lambda wi: wi.sequence)
+        for workitem in work_items_by_spec[specid]:
+            get_property_cache(workitem.specification).work_items.append(
+                workitem)
     spec_branches = load_referencing(
         SpecificationBranch, rows, ['specificationID'])
     for sbranch in spec_branches:
