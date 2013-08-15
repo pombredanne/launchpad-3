@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 from cStringIO import StringIO
-from datetime import timedelta
+from datetime import datetime, timedelta
 import os
 import shutil
 from subprocess import (
@@ -462,15 +462,21 @@ class TestLibrarianGarbageCollectionBase:
         # To test removal does occur when we want it to, we need to trick
         # the garbage collector into thinking it is tomorrow.
         org_time = librariangc.time
+        org_utcnow = librariangc._utcnow
 
         def tomorrow_time():
             return org_time() + 24 * 60 * 60 + 1
 
+        def tomorrow_utcnow():
+            return datetime.utcnow() + timedelta(days=1, seconds=1)
+
         try:
             librariangc.time = tomorrow_time
+            librariangc._utcnow = tomorrow_utcnow
             librariangc.delete_unwanted_files(self.con)
         finally:
             librariangc.time = org_time
+            librariangc._utcnow = org_utcnow
 
         self.failIf(self.file_exists(content_id))
 

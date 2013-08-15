@@ -15,6 +15,7 @@ import re
 import sys
 from time import time
 
+import iso8601
 from swiftclient import client as swiftclient
 from zope.interface import implements
 
@@ -60,6 +61,11 @@ def file_exists(content_id):
                 raise
             swift.connection_pool.put(swift_connection)
     return os.path.exists(get_file_path(content_id))
+
+
+def _utcnow():
+    # Wrapper that is replaced in the test suite.
+    return datetime.utcnow()
 
 
 def open_stream(content_id):
@@ -108,7 +114,7 @@ def confirm_no_clock_skew(con):
     cur = con.cursor()
     cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
     db_now = cur.fetchone()[0]
-    local_now = datetime.utcnow()
+    local_now = _utcnow()
     five_minutes = timedelta(minutes=5)
 
     if -five_minutes < local_now - db_now < five_minutes:
@@ -720,7 +726,8 @@ def swift_files():
                 container = swift.SWIFT_CONTAINER_PREFIX + str(container_num)
                 names = sorted(
                     swift_connection.get_container(
-                        container, full_listing=True), key=int)
+                        container, full_listing=True)[1],
+                    key=lambda x: int(x['name']))
                 for name in names:
                     yield (container, name)
                 container_num += 1
@@ -735,18 +742,6 @@ def delete_unwanted_swift_files(con):
     assert getFeatureFlag('librarian.swift.enabled')
 
     cur = con.cursor()
-
-    # Calculate the largest LibraryFileContent id that we want to risk
-    # removing. We don't want to remove anything that was uploaded less
-    # than a day ago to avoid removing things currently in process of
-    # being uploaded.
-    cur.execute("""
-        SELECT max(id) FROM LibraryFileContent
-        WHERE datecreated < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-            - '1 day'::interval
-        """)
-    max_removable_content_id = cur.fetchone()[0]
-    con.rollback()
 
     # Calculate all stored LibraryFileContent ids that we want to keep.
     # Results are ordered so we don't have to suck them all in at once.
@@ -764,7 +759,8 @@ def delete_unwanted_swift_files(con):
     removed_count = 0
     content_id = next_wanted_content_id = -1
 
-    for container, name in swift_files():
+    for container, obj in swift_files():
+        name = obj['name']
         content_id = int(name)
 
         while (next_wanted_content_id is not None
@@ -787,7 +783,9 @@ def delete_unwanted_swift_files(con):
             and next_wanted_content_id == content_id)
 
         if not file_wanted:
-            if content_id > max_removable_content_id:
+            mod_time = iso8601.parse_date(
+                obj['last_modified']).replace(tzinfo=None)
+            if mod_time > _utcnow() - timedelta(days=1):
                 log.debug(
                     "File %d not removed - created too recently", content_id)
             else:
