@@ -26,10 +26,10 @@ lp.codehosting
 
 from bzrlib.branch import (
     BranchReferenceFormat,
-    BzrBranchFormat5,
     BzrBranchFormat6,
     BzrBranchFormat7,
     )
+from bzrlib.branchfmt.fullhistory import BzrBranchFormat5
 from bzrlib.bzrdir import (
     BzrDirMetaFormat1,
     BzrDirMetaFormat1Colo,
