@@ -190,18 +190,6 @@ class IBuilder(IHasOwner):
         This should delegate to the current `IBuildFarmJobBehavior`.
         """
 
-    def transferSlaveFileToLibrarian(file_sha1, filename, private):
-        """Transfer a file from the slave to the librarian.
-
-        :param file_sha1: The file's sha1, which is how the file is addressed
-            in the slave XMLRPC protocol. Specially, the file_sha1 'buildlog'
-            will cause the build log to be retrieved and gzipped.
-        :param filename: The name of the file to be given to the librarian
-            file alias.
-        :param private: True if the build is for a private archive.
-        :return: A Deferred that calls back with a librarian file alias.
-        """
-
     def getBuildQueue():
         """Return a `BuildQueue` if there's an active job on this builder.
 

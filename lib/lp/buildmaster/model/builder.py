@@ -658,6 +658,54 @@ class BuilderBehavior(object):
         d = self._dispatchBuildCandidate(candidate)
         return d.addCallback(lambda ignored: candidate)
 
+    def transferSlaveFileToLibrarian(self, file_sha1, filename, private):
+        """Transfer a file from the slave to the librarian.
+
+        :param file_sha1: The file's sha1, which is how the file is addressed
+            in the slave XMLRPC protocol. Specially, the file_sha1 'buildlog'
+            will cause the build log to be retrieved and gzipped.
+        :param filename: The name of the file to be given to the librarian
+            file alias.
+        :param private: True if the build is for a private archive.
+        :return: A Deferred that calls back with a librarian file alias.
+        """
+        out_file_fd, out_file_name = tempfile.mkstemp(suffix=".buildlog")
+        out_file = os.fdopen(out_file_fd, "r+")
+
+        def got_file(ignored, filename, out_file, out_file_name):
+            try:
+                # If the requested file is the 'buildlog' compress it
+                # using gzip before storing in Librarian.
+                if file_sha1 == 'buildlog':
+                    out_file = open(out_file_name)
+                    filename += '.gz'
+                    out_file_name += '.gz'
+                    gz_file = gzip.GzipFile(out_file_name, mode='wb')
+                    copy_and_close(out_file, gz_file)
+                    os.remove(out_file_name.replace('.gz', ''))
+
+                # Reopen the file, seek to its end position, count and seek
+                # to beginning, ready for adding to the Librarian.
+                out_file = open(out_file_name)
+                out_file.seek(0, 2)
+                bytes_written = out_file.tell()
+                out_file.seek(0)
+
+                library_file = getUtility(ILibraryFileAliasSet).create(
+                    filename, bytes_written, out_file,
+                    contentType=filenameToContentType(filename),
+                    restricted=private)
+            finally:
+                # Remove the temporary file.  getFile() closes the file
+                # object.
+                os.remove(out_file_name)
+
+            return library_file.id
+
+        d = self.slave.getFile(file_sha1, out_file)
+        d.addCallback(got_file, filename, out_file, out_file_name)
+        return d
+
     def _getSlaveScannerLogger(self):
         """Return the logger instance from buildd-slave-scanner.py."""
         # XXX cprov 20071120: Ideally the Launchpad logging system
@@ -810,45 +858,6 @@ class Builder(SQLBase):
     def updateBuild(self, queueItem):
         """See `IBuilder`."""
         return self.current_build_behavior.updateBuild(queueItem)
-
-    def transferSlaveFileToLibrarian(self, file_sha1, filename, private):
-        """See IBuilder."""
-        out_file_fd, out_file_name = tempfile.mkstemp(suffix=".buildlog")
-        out_file = os.fdopen(out_file_fd, "r+")
-
-        def got_file(ignored, filename, out_file, out_file_name):
-            try:
-                # If the requested file is the 'buildlog' compress it
-                # using gzip before storing in Librarian.
-                if file_sha1 == 'buildlog':
-                    out_file = open(out_file_name)
-                    filename += '.gz'
-                    out_file_name += '.gz'
-                    gz_file = gzip.GzipFile(out_file_name, mode='wb')
-                    copy_and_close(out_file, gz_file)
-                    os.remove(out_file_name.replace('.gz', ''))
-
-                # Reopen the file, seek to its end position, count and seek
-                # to beginning, ready for adding to the Librarian.
-                out_file = open(out_file_name)
-                out_file.seek(0, 2)
-                bytes_written = out_file.tell()
-                out_file.seek(0)
-
-                library_file = getUtility(ILibraryFileAliasSet).create(
-                    filename, bytes_written, out_file,
-                    contentType=filenameToContentType(filename),
-                    restricted=private)
-            finally:
-                # Remove the temporary file.  getFile() closes the file
-                # object.
-                os.remove(out_file_name)
-
-            return library_file.id
-
-        d = self.slave.getFile(file_sha1, out_file)
-        d.addCallback(got_file, filename, out_file, out_file_name)
-        return d
 
     def _getSlaveScannerLogger(self):
         """Return the logger instance from buildd-slave-scanner.py."""

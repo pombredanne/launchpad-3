@@ -90,19 +90,18 @@ class BuildFarmJobBehaviorBase:
         timestamp = now.strftime("%Y%m%d-%H%M%S")
         return '%s-%s' % (timestamp, build_cookie)
 
-    @staticmethod
-    def getLogFromSlave(build, queue_item):
+    def getLogFromSlave(self, queue_item):
         """See `IPackageBuild`."""
-        d = queue_item.builder.transferSlaveFileToLibrarian(
+        d = self._builder_behavior.transferSlaveFileToLibrarian(
             SLAVE_LOG_FILENAME, queue_item.getLogFileName(),
-            build.is_private)
+            self.build.is_private)
         return d
 
     @defer.inlineCallbacks
     def storeLogFromSlave(self, build_queue=None):
         """See `IBuildFarmJob`."""
         lfa_id = yield self.getLogFromSlave(
-            self.build, build_queue or self.build.buildqueue_record)
+            build_queue or self.build.buildqueue_record)
         self.build.setLog(lfa_id)
         transaction.commit()
 
