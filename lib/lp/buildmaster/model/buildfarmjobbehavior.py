@@ -58,10 +58,10 @@ class BuildFarmJobBehaviorBase:
     def build(self):
         return self.buildfarmjob.build
 
-    def setBuilderBehavior(self, builder_behavior):
+    def setBuilderInteractor(self, interactor):
         """The builder should be set once and not changed."""
-        self._builder_behavior = builder_behavior
-        self._builder = builder_behavior.builder
+        self._interactor = interactor
+        self._builder = interactor.builder
 
     def verifyBuildRequest(self, logger):
         """The default behavior is a no-op."""
@@ -92,7 +92,7 @@ class BuildFarmJobBehaviorBase:
 
     def getLogFromSlave(self, queue_item):
         """See `IPackageBuild`."""
-        d = self._builder_behavior.transferSlaveFileToLibrarian(
+        d = self._interactor.transferSlaveFileToLibrarian(
             SLAVE_LOG_FILENAME, queue_item.getLogFileName(),
             self.build.is_private)
         return d
@@ -109,7 +109,7 @@ class BuildFarmJobBehaviorBase:
         """See `IBuildFarmJobBehavior`."""
         logger = logging.getLogger('slave-scanner')
 
-        d = self._builder_behavior.slaveStatus()
+        d = self._interactor.slaveStatus()
 
         def got_failure(failure):
             failure.trap(xmlrpclib.Fault, socket.error)
@@ -189,7 +189,7 @@ class BuildFarmJobBehaviorBase:
 
         Clean the builder for another jobs.
         """
-        d = self._builder_behavior.cleanSlave()
+        d = self._interactor.cleanSlave()
 
         def got_cleaned(ignored):
             queueItem.builder = None
@@ -276,7 +276,7 @@ class BuildFarmJobBehaviorBase:
         if build.build_farm_job_type == BuildFarmJobType.PACKAGEBUILD:
             build = build.buildqueue_record.specific_job.build
             if not build.current_source_publication:
-                yield self._builder_behavior.cleanSlave()
+                yield self._interactor.cleanSlave()
                 build.updateStatus(BuildStatus.SUPERSEDED)
                 self.build.buildqueue_record.destroySelf()
                 return
@@ -320,7 +320,7 @@ class BuildFarmJobBehaviorBase:
                     "for the build %d." % (filename, build.id))
                 break
             filenames_to_download[filemap[filename]] = out_file_name
-        yield self._builder_behavior.slave.getFiles(filenames_to_download)
+        yield self._interactor.slave.getFiles(filenames_to_download)
 
         status = (
             BuildStatus.UPLOADING if successful_copy_from_slave
@@ -352,7 +352,7 @@ class BuildFarmJobBehaviorBase:
         if not os.path.exists(target_dir):
             os.mkdir(target_dir)
 
-        yield self._builder_behavior.cleanSlave()
+        yield self._interactor.cleanSlave()
         self.build.buildqueue_record.destroySelf()
         transaction.commit()
 
@@ -378,7 +378,7 @@ class BuildFarmJobBehaviorBase:
         yield self.storeLogFromSlave()
         if send_notification:
             self.build.notify()
-        yield self._builder_behavior.cleanSlave()
+        yield self._interactor.cleanSlave()
         self.build.buildqueue_record.destroySelf()
         transaction.commit()
 
@@ -425,12 +425,12 @@ class BuildFarmJobBehaviorBase:
         if self.build.status == BuildStatus.CANCELLING:
             self.build.buildqueue_record.cancel()
             transaction.commit()
-            yield self._builder_behavior.cleanSlave()
+            yield self._interactor.cleanSlave()
         else:
             self.build.buildqueue_record.reset()
             try:
                 self._builder.handleFailure(logger)
-                yield self._builder_behavior.resetOrFail(
+                yield self._interactor.resetOrFail(
                     logger,
                     BuildSlaveFailure("Builder unexpectedly returned ABORTED"))
             except Exception as e:
@@ -447,7 +447,7 @@ class BuildFarmJobBehaviorBase:
         later, the build records is delayed by reducing the lastscore to
         ZERO.
         """
-        yield self._builder_behavior.cleanSlave()
+        yield self._interactor.cleanSlave()
         self.build.buildqueue_record.reset()
         transaction.commit()
 

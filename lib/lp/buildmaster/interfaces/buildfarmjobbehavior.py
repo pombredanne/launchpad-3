@@ -22,8 +22,8 @@ class BuildBehaviorMismatch(Exception):
 
 class IBuildFarmJobBehavior(Interface):
 
-    def setBuilderBehavior(builder_behavior):
-        """Sets the associated builder reference for this instance."""
+    def setBuilderInteractor(interactor):
+        """Sets the associated `BuilderInteractor` for this instance."""
 
     def logStartBuild(logger):
         """Log the start of a specific build queue item.

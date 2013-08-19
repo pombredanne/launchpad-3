@@ -5,6 +5,7 @@ __metaclass__ = type
 
 __all__ = [
     'Builder',
+    'BuilderInteractor',
     'BuilderSet',
     'ProxyWithConnectionTimeout',
     'rescueBuilderIfLost',
@@ -390,7 +391,7 @@ def updateBuilderStatus(behavior, logger=None):
     return behavior.rescueIfLost(logger)
 
 
-class BuilderBehavior(object):
+class BuilderInteractor(object):
 
     def __init__(self, builder, override_slave=None):
         self.builder = builder
@@ -790,8 +791,8 @@ class Builder(SQLBase):
                 # ...we'll set it based on our current job.
                 self._current_build_behavior = (
                     currentjob.required_build_behavior)
-                self._current_build_behavior.setBuilderBehavior(
-                    BuilderBehavior(self))
+                self._current_build_behavior.setBuilderInteractor(
+                    BuilderInteractor(self))
                 return self._current_build_behavior
             elif self._current_build_behavior is None:
                 # If we don't have a current job or an idle behavior
@@ -809,8 +810,8 @@ class Builder(SQLBase):
         """Set the current build behavior."""
         self._current_build_behavior = new_behavior
         if self._current_build_behavior is not None:
-            self._current_build_behavior.setBuilderBehavior(
-                BuilderBehavior(self))
+            self._current_build_behavior.setBuilderInteractor(
+                BuilderInteractor(self))
 
     current_build_behavior = property(
         _getCurrentBuildBehavior, _setCurrentBuildBehavior)

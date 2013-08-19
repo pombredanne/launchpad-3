@@ -35,7 +35,7 @@ from lp.buildmaster.manager import (
     )
 from lp.buildmaster.model.builder import (
     Builder,
-    BuilderBehavior,
+    BuilderInteractor,
     BuilderSlave,
     )
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
@@ -455,7 +455,7 @@ class TestCancellationChecking(TestCaseWithFactory):
         self.builder.virtualized = True
         self.scanner = SlaveScanner(builder_name, BufferLogger())
         self.scanner.builder = self.builder
-        self.scanner.behavior = BuilderBehavior(self.builder)
+        self.scanner.interactor = BuilderInteractor(self.builder)
         self.scanner.logger.name = 'slave-scanner'
 
     def test_ignores_nonvirtual(self):

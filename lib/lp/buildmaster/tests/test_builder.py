@@ -40,7 +40,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.builder import (
-    BuilderBehavior,
+    BuilderInteractor,
     BuilderSlave,
     ProxyWithConnectionTimeout,
     )
@@ -147,7 +147,7 @@ class TestBuilder(TestCaseWithFactory):
         slave = LostBuildingBrokenSlave()
         lostbuilding_builder = MockBuilder(
             'Lost Building Broken Slave', behavior=CorruptBehavior())
-        d = BuilderBehavior(lostbuilding_builder, slave).updateStatus(
+        d = BuilderInteractor(lostbuilding_builder, slave).updateStatus(
             BufferLogger())
 
         def check_slave_status(failure):
@@ -160,12 +160,12 @@ class TestBuilder(TestCaseWithFactory):
 
     def test_resumeSlaveHost_nonvirtual(self):
         builder = self.factory.makeBuilder(virtualized=False)
-        d = BuilderBehavior(builder).resumeSlaveHost()
+        d = BuilderInteractor(builder).resumeSlaveHost()
         return assert_fails_with(d, CannotResumeHost)
 
     def test_resumeSlaveHost_no_vmhost(self):
         builder = self.factory.makeBuilder(virtualized=True, vm_host=None)
-        d = BuilderBehavior(builder).resumeSlaveHost()
+        d = BuilderInteractor(builder).resumeSlaveHost()
         return assert_fails_with(d, CannotResumeHost)
 
     def test_resumeSlaveHost_success(self):
@@ -176,7 +176,7 @@ class TestBuilder(TestCaseWithFactory):
         self.addCleanup(config.pop, 'reset')
 
         builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
-        d = BuilderBehavior(builder).resumeSlaveHost()
+        d = BuilderInteractor(builder).resumeSlaveHost()
 
         def got_resume(output):
             self.assertEqual(('parp', ''), output)
@@ -190,7 +190,7 @@ class TestBuilder(TestCaseWithFactory):
         config.push('reset fail', reset_fail_config)
         self.addCleanup(config.pop, 'reset fail')
         builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
-        d = BuilderBehavior(builder).resumeSlaveHost()
+        d = BuilderInteractor(builder).resumeSlaveHost()
         return assert_fails_with(d, CannotResumeHost)
 
     def test_handleFailure_increments_failure_count(self):
@@ -207,7 +207,7 @@ class TestBuilder(TestCaseWithFactory):
         self.addCleanup(config.pop, 'reset fail')
         builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
         builder.builderok = True
-        d = BuilderBehavior(builder).resetOrFail(BufferLogger(), Exception())
+        d = BuilderInteractor(builder).resetOrFail(BufferLogger(), Exception())
         return assert_fails_with(d, CannotResumeHost)
 
     def _setupBuilder(self):
@@ -249,7 +249,7 @@ class TestBuilder(TestCaseWithFactory):
         # findAndStartJob delegates to it.
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
-        d = BuilderBehavior(builder).findAndStartJob()
+        d = BuilderInteractor(builder).findAndStartJob()
         return d.addCallback(self.assertEqual, candidate)
 
     def test_findAndStartJob_starts_job(self):
@@ -260,7 +260,7 @@ class TestBuilder(TestCaseWithFactory):
         candidate = build.queueBuild()
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
-        d = BuilderBehavior(builder).findAndStartJob()
+        d = BuilderInteractor(builder).findAndStartJob()
 
         def check_build_started(candidate):
             self.assertEqual(candidate.builder, builder)
@@ -275,12 +275,12 @@ class TestBuilder(TestCaseWithFactory):
         candidate = build.queueBuild()
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
-        behavior = BuilderBehavior(builder)
-        d = behavior.findAndStartJob()
+        interactor = BuilderInteractor(builder)
+        d = interactor.findAndStartJob()
 
         def check_build_started(candidate):
             self.assertIn(
-                ('echo', 'ping'), behavior.slave.call_log)
+                ('echo', 'ping'), interactor.slave.call_log)
 
         return d.addCallback(check_build_started)
 
@@ -290,14 +290,14 @@ class TestBuilder(TestCaseWithFactory):
         # security context.
         builder = removeSecurityProxy(
             self.factory.makeBuilder(virtualized=False))
-        behavior = BuilderBehavior(builder)
-        self.assertEqual(builder.url, behavior.slave.url)
-        self.assertEqual(10, behavior.slave.timeout)
+        interactor = BuilderInteractor(builder)
+        self.assertEqual(builder.url, interactor.slave.url)
+        self.assertEqual(10, interactor.slave.timeout)
 
         builder = removeSecurityProxy(
             self.factory.makeBuilder(virtualized=True))
-        behavior = BuilderBehavior(builder)
-        self.assertEqual(5, behavior.slave.timeout)
+        interactor = BuilderInteractor(builder)
+        self.assertEqual(5, interactor.slave.timeout)
 
     def test_recovery_of_aborted_virtual_slave(self):
         # If a virtual_slave is in the ABORTED state,
@@ -307,7 +307,7 @@ class TestBuilder(TestCaseWithFactory):
         aborted_slave = AbortedSlave()
         builder = MockBuilder("mock_builder")
         builder.currentjob = None
-        d = BuilderBehavior(builder, aborted_slave).rescueIfLost()
+        d = BuilderInteractor(builder, aborted_slave).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertIn('clean', aborted_slave.call_log)
@@ -323,7 +323,7 @@ class TestBuilder(TestCaseWithFactory):
         builder.currentjob = None
         builder.virtualized = False
         builder.builderok = True
-        d = BuilderBehavior(builder, aborted_slave).rescueIfLost()
+        d = BuilderInteractor(builder, aborted_slave).rescueIfLost()
 
         def check_failed(ignored):
             self.assertFalse(builder.builderok)
@@ -335,7 +335,7 @@ class TestBuilder(TestCaseWithFactory):
         # An idle slave is not rescued.
         slave = OkSlave()
         builder = MockBuilder("mock_builder", TrivialBehavior())
-        d = BuilderBehavior(builder, slave).rescueIfLost()
+        d = BuilderInteractor(builder, slave).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertNotIn('abort', slave.call_log)
@@ -348,7 +348,7 @@ class TestBuilder(TestCaseWithFactory):
         # WAITING.
         waiting_slave = WaitingSlave()
         builder = MockBuilder("mock_builder", TrivialBehavior())
-        d = BuilderBehavior(builder, waiting_slave).rescueIfLost()
+        d = BuilderInteractor(builder, waiting_slave).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertNotIn('abort', waiting_slave.call_log)
@@ -364,7 +364,7 @@ class TestBuilder(TestCaseWithFactory):
         # discarded.
         waiting_slave = WaitingSlave()
         builder = MockBuilder("mock_builder", CorruptBehavior())
-        d = BuilderBehavior(builder, waiting_slave).rescueIfLost()
+        d = BuilderInteractor(builder, waiting_slave).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertNotIn('abort', waiting_slave.call_log)
@@ -377,7 +377,7 @@ class TestBuilder(TestCaseWithFactory):
         # BUILDING.
         building_slave = BuildingSlave()
         builder = MockBuilder("mock_builder", TrivialBehavior())
-        d = BuilderBehavior(builder, building_slave).rescueIfLost()
+        d = BuilderInteractor(builder, building_slave).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertNotIn('abort', building_slave.call_log)
@@ -390,7 +390,7 @@ class TestBuilder(TestCaseWithFactory):
         # abort the build, thus stopping it in its tracks.
         building_slave = BuildingSlave()
         builder = MockBuilder("mock_builder", CorruptBehavior())
-        d = BuilderBehavior(builder, building_slave).rescueIfLost()
+        d = BuilderInteractor(builder, building_slave).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertIn('abort', building_slave.call_log)
@@ -419,7 +419,7 @@ class TestBuilder(TestCaseWithFactory):
         candidate.destroySelf()
         self.layer.txn.commit()
         builder = getUtility(IBuilderSet)[builder.name]
-        d = BuilderBehavior(builder).rescueIfLost()
+        d = BuilderInteractor(builder).rescueIfLost()
 
         def check_builder(ignored):
             self.assertIsInstance(
@@ -445,7 +445,7 @@ class TestBuilderSlaveStatus(TestCaseWithFactory):
                      dependencies=None):
         builder = self.factory.makeBuilder()
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
-        d = BuilderBehavior(builder).slaveStatus()
+        d = BuilderInteractor(builder).slaveStatus()
 
         def got_status(status_dict):
             expected = {}
@@ -492,21 +492,21 @@ class TestBuilderSlaveStatus(TestCaseWithFactory):
         # isAvailable() is a wrapper around slaveStatusSentence()
         builder = self.factory.makeBuilder()
         builder.builderok = False
-        d = BuilderBehavior(builder).isAvailable()
+        d = BuilderInteractor(builder).isAvailable()
         return d.addCallback(self.assertFalse)
 
     def test_isAvailable_with_slave_fault(self):
         builder = self.factory.makeBuilder()
         self.patch(
             BuilderSlave, 'makeBuilderSlave', FakeMethod(BrokenSlave()))
-        d = BuilderBehavior(builder).isAvailable()
+        d = BuilderInteractor(builder).isAvailable()
         return d.addCallback(self.assertFalse)
 
     def test_isAvailable_with_slave_idle(self):
         builder = self.factory.makeBuilder()
         self.patch(
             BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
-        d = BuilderBehavior(builder).isAvailable()
+        d = BuilderInteractor(builder).isAvailable()
         return d.addCallback(self.assertTrue)
 
 
