@@ -40,6 +40,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.builder import (
+    BuilderBehavior,
     BuilderSlave,
     ProxyWithConnectionTimeout,
     )
@@ -146,7 +147,7 @@ class TestBuilder(TestCaseWithFactory):
         slave = LostBuildingBrokenSlave()
         lostbuilding_builder = MockBuilder(
             'Lost Building Broken Slave', slave, behavior=CorruptBehavior())
-        d = lostbuilding_builder.updateStatus(BufferLogger())
+        d = BuilderBehavior(lostbuilding_builder).updateStatus(BufferLogger())
 
         def check_slave_status(failure):
             self.assertIn('abort', slave.call_log)
@@ -302,7 +303,7 @@ class TestBuilder(TestCaseWithFactory):
         aborted_slave = AbortedSlave()
         builder = MockBuilder("mock_builder", aborted_slave)
         builder.currentjob = None
-        d = builder.rescueIfLost()
+        d = BuilderBehavior(builder).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertIn('clean', aborted_slave.call_log)
@@ -318,7 +319,7 @@ class TestBuilder(TestCaseWithFactory):
         builder.currentjob = None
         builder.virtualized = False
         builder.builderok = True
-        d = builder.rescueIfLost()
+        d = BuilderBehavior(builder).rescueIfLost()
 
         def check_failed(ignored):
             self.assertFalse(builder.builderok)
@@ -330,7 +331,7 @@ class TestBuilder(TestCaseWithFactory):
         # An idle slave is not rescued.
         slave = OkSlave()
         builder = MockBuilder("mock_builder", slave, TrivialBehavior())
-        d = builder.rescueIfLost()
+        d = BuilderBehavior(builder).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertNotIn('abort', slave.call_log)
@@ -343,7 +344,7 @@ class TestBuilder(TestCaseWithFactory):
         # WAITING.
         waiting_slave = WaitingSlave()
         builder = MockBuilder("mock_builder", waiting_slave, TrivialBehavior())
-        d = builder.rescueIfLost()
+        d = BuilderBehavior(builder).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertNotIn('abort', waiting_slave.call_log)
@@ -359,7 +360,7 @@ class TestBuilder(TestCaseWithFactory):
         # discarded.
         waiting_slave = WaitingSlave()
         builder = MockBuilder("mock_builder", waiting_slave, CorruptBehavior())
-        d = builder.rescueIfLost()
+        d = BuilderBehavior(builder).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertNotIn('abort', waiting_slave.call_log)
@@ -373,7 +374,7 @@ class TestBuilder(TestCaseWithFactory):
         building_slave = BuildingSlave()
         builder = MockBuilder(
             "mock_builder", building_slave, TrivialBehavior())
-        d = builder.rescueIfLost()
+        d = BuilderBehavior(builder).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertNotIn('abort', building_slave.call_log)
@@ -387,7 +388,7 @@ class TestBuilder(TestCaseWithFactory):
         building_slave = BuildingSlave()
         builder = MockBuilder(
             "mock_builder", building_slave, CorruptBehavior())
-        d = builder.rescueIfLost()
+        d = BuilderBehavior(builder).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertIn('abort', building_slave.call_log)
@@ -416,7 +417,7 @@ class TestBuilder(TestCaseWithFactory):
         candidate.destroySelf()
         self.layer.txn.commit()
         builder = getUtility(IBuilderSet)[builder.name]
-        d = builder.rescueIfLost()
+        d = BuilderBehavior(builder).rescueIfLost()
 
         def check_builder(ignored):
             self.assertIsInstance(

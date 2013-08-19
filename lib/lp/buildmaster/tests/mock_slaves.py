@@ -83,9 +83,6 @@ class MockBuilder:
         return self.current_build_behavior.verifySlaveBuildCookie(
             slave_build_id)
 
-    def cleanSlave(self):
-        return self.slave.clean()
-
     def requestAbort(self):
         return self.slave.abort()
 
@@ -94,12 +91,6 @@ class MockBuilder:
 
     def checkSlaveAlive(self):
         pass
-
-    def rescueIfLost(self, logger=None):
-        return rescueBuilderIfLost(self, logger)
-
-    def updateStatus(self, logger=None):
-        return defer.maybeDeferred(updateBuilderStatus, self, logger)
 
 
 # XXX: It would be *really* nice to run some set of tests against the real

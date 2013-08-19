@@ -33,7 +33,10 @@ from lp.buildmaster.interfaces.builder import (
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch,
     )
-from lp.buildmaster.model.builder import Builder
+from lp.buildmaster.model.builder import (
+    Builder,
+    BuilderBehavior,
+    )
 from lp.services.propertycache import get_property_cache
 
 
@@ -228,6 +231,7 @@ class SlaveScanner:
         # Storm store is invalidated over transaction boundaries.
 
         self.builder = get_builder(self.builder_name)
+        self.behavior = BuilderBehavior(self.builder)
 
         def status_updated(ignored):
             # Commit the changes done while possibly rescuing jobs, to
@@ -292,7 +296,7 @@ class SlaveScanner:
         def cancellation_checked(cancelled):
             if cancelled:
                 return defer.succeed(None)
-            d = self.builder.updateStatus(self.logger)
+            d = self.behavior.updateStatus(self.logger)
             d.addCallback(status_updated)
             d.addCallback(build_updated)
             return d

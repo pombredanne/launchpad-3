@@ -305,7 +305,7 @@ class BuilderSlave(object):
 
 # This is a separate function since MockBuilder needs to use it too.
 # Do not use it -- (Mock)Builder.rescueIfLost should be used instead.
-def rescueBuilderIfLost(builder, logger=None):
+def rescueBuilderIfLost(behavior, logger=None):
     """See `IBuilder`."""
     # 'ident_position' dict relates the position of the job identifier
     # token in the sentence received from status(), according to the
@@ -316,7 +316,7 @@ def rescueBuilderIfLost(builder, logger=None):
         'BuilderStatus.WAITING': 2
         }
 
-    d = builder.slaveStatusSentence()
+    d = behavior.builder.slaveStatusSentence()
 
     def got_status(status_sentence):
         """After we get the status, clean if we have to.
@@ -334,22 +334,23 @@ def rescueBuilderIfLost(builder, logger=None):
         # This situation is usually caused by a temporary loss of
         # communications with the slave and the build manager had to reset
         # the job.
-        if status == 'BuilderStatus.ABORTED' and builder.currentjob is None:
-            if not builder.virtualized:
+        if (status == 'BuilderStatus.ABORTED'
+                and behavior.builder.currentjob is None):
+            if not behavior.builder.virtualized:
                 # We can't reset non-virtual builders reliably as the
                 # abort() function doesn't kill the actual build job,
                 # only the sbuild process!  All we can do here is fail
                 # the builder with a message indicating the problem and
                 # wait for an admin to reboot it.
-                builder.failBuilder(
+                behavior.builder.failBuilder(
                     "Non-virtual builder in ABORTED state, requires admin to "
                     "restart")
                 return "dummy status"
             if logger is not None:
                 logger.info(
                     "Builder '%s' being cleaned up from ABORTED" %
-                    (builder.name,))
-            d = builder.cleanSlave()
+                    (behavior.builder.name,))
+            d = behavior.cleanSlave()
             return d.addCallback(lambda ignored: status_sentence)
         else:
             return status_sentence
@@ -361,18 +362,18 @@ def rescueBuilderIfLost(builder, logger=None):
             return
         slave_build_id = status_sentence[ident_position[status]]
         try:
-            builder.verifySlaveBuildCookie(slave_build_id)
+            behavior.builder.verifySlaveBuildCookie(slave_build_id)
         except CorruptBuildCookie as reason:
             if status == 'BuilderStatus.WAITING':
-                d = builder.cleanSlave()
+                d = behavior.cleanSlave()
             else:
-                d = builder.requestAbort()
+                d = behavior.builder.requestAbort()
 
             def log_rescue(ignored):
                 if logger:
                     logger.info(
                         "Builder '%s' rescued from '%s': '%s'" %
-                        (builder.name, slave_build_id, reason))
+                        (behavior.builder.name, slave_build_id, reason))
             return d.addCallback(log_rescue)
 
     d.addCallback(got_status)
@@ -380,12 +381,30 @@ def rescueBuilderIfLost(builder, logger=None):
     return d
 
 
-def updateBuilderStatus(builder, logger=None):
+def updateBuilderStatus(behavior, logger=None):
     """See `IBuilder`."""
     if logger:
-        logger.debug('Checking %s' % builder.name)
+        logger.debug('Checking %s' % behavior.builder.name)
 
-    return builder.rescueIfLost(logger)
+    return behavior.rescueIfLost(logger)
+
+
+class BuilderBehavior(object):
+
+    def __init__(self, builder):
+        self.builder = builder
+
+    def rescueIfLost(self, logger=None):
+        """See `IBuilder`."""
+        return rescueBuilderIfLost(self, logger)
+
+    def updateStatus(self, logger=None):
+        """See `IBuilder`."""
+        return updateBuilderStatus(self, logger)
+
+    def cleanSlave(self):
+        """See IBuilder."""
+        return self.builder.slave.clean()
 
 
 class Builder(SQLBase):
@@ -478,18 +497,6 @@ class Builder(SQLBase):
         """See `IBuilder`."""
         self.failure_count = 0
         self._clean_currentjob_cache()
-
-    def rescueIfLost(self, logger=None):
-        """See `IBuilder`."""
-        return rescueBuilderIfLost(self, logger)
-
-    def updateStatus(self, logger=None):
-        """See `IBuilder`."""
-        return updateBuilderStatus(self, logger)
-
-    def cleanSlave(self):
-        """See IBuilder."""
-        return self.slave.clean()
 
     @cachedproperty
     def currentjob(self):
