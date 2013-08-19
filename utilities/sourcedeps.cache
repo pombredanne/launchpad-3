@@ -4,8 +4,8 @@
         "launchpad@pqm.canonical.com-20111114140506-6bmt9isw6lcud7yt"
     ], 
     "bzr-git": [
-        277, 
-        "launchpad@pqm.canonical.com-20130816045212-wbeztwl1mw1g461m"
+        278, 
+        "launchpad@pqm.canonical.com-20130819221014-w8ibbvxx55xjfobr"
     ], 
     "bzr-loom": [
         55, 
@@ -24,8 +24,8 @@
         "aaron@aaronbentley.com-20100715135013-uoi3q430urx9gwb8"
     ], 
     "dulwich": [
-        438, 
-        "launchpad@pqm.canonical.com-20130816044524-j9a4yz0t6cidul2k"
+        439, 
+        "launchpad@pqm.canonical.com-20130819221026-2ah578b07nw4mhvv"
     ], 
     "loggerhead": [
         480, 
