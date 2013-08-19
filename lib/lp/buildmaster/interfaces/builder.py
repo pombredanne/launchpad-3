@@ -213,31 +213,6 @@ class IBuilder(IHasOwner):
 
     # All methods below here return Deferred.
 
-    def isAvailable():
-        """Whether or not a builder is available for building new jobs.
-
-        :return: A Deferred that fires with True or False, depending on
-            whether the builder is available or not.
-        """
-
-    def slaveStatus():
-        """Get the slave status for this builder.
-
-        :return: A Deferred which fires when the slave dialog is complete.
-            Its value is a dict containing at least builder_status, but
-            potentially other values included by the current build
-            behavior.
-        """
-
-    def slaveStatusSentence():
-        """Get the slave status sentence for this builder.
-
-        :return: A Deferred which fires when the slave dialog is complete.
-            Its value is a  tuple with the first element containing the
-            slave status, build_id-queue-id and then optionally more
-            elements depending on the status.
-        """
-
     def updateBuild(queueItem):
         """Verify the current build job status.
 

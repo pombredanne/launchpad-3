@@ -317,7 +317,7 @@ def rescueBuilderIfLost(behavior, logger=None):
         'BuilderStatus.WAITING': 2
         }
 
-    d = behavior.builder.slaveStatusSentence()
+    d = behavior.slaveStatusSentence()
 
     def got_status(status_sentence):
         """After we get the status, clean if we have to.
@@ -398,6 +398,66 @@ class BuilderBehavior(object):
     @property
     def slave(self):
         return removeSecurityProxy(self.builder.slave)
+
+    @property
+    def current_build_behavior(self):
+        return removeSecurityProxy(self.builder.current_build_behavior)
+
+    def slaveStatus(self):
+        """Get the slave status for this builder.
+
+        :return: A Deferred which fires when the slave dialog is complete.
+            Its value is a dict containing at least builder_status, but
+            potentially other values included by the current build
+            behavior.
+        """
+        d = self.slave.status()
+
+        def got_status(status_sentence):
+            status = {'builder_status': status_sentence[0]}
+
+            # Extract detailed status and log information if present.
+            # Although build_id is also easily extractable here, there is no
+            # valid reason for anything to use it, so we exclude it.
+            if status['builder_status'] == 'BuilderStatus.WAITING':
+                status['build_status'] = status_sentence[1]
+            else:
+                if status['builder_status'] == 'BuilderStatus.BUILDING':
+                    status['logtail'] = status_sentence[2]
+
+            self.current_build_behavior.updateSlaveStatus(
+                status_sentence, status)
+            return status
+
+        return d.addCallback(got_status)
+
+    def slaveStatusSentence(self):
+        """Get the slave status sentence for this builder.
+
+        :return: A Deferred which fires when the slave dialog is complete.
+            Its value is a  tuple with the first element containing the
+            slave status, build_id-queue-id and then optionally more
+            elements depending on the status.
+        """
+        return self.slave.status()
+
+    def isAvailable(self):
+        """Whether or not a builder is available for building new jobs.
+
+        :return: A Deferred that fires with True or False, depending on
+            whether the builder is available or not.
+        """
+        if not self.builder.builderok:
+            return defer.succeed(False)
+        d = self.slaveStatusSentence()
+
+        def catch_fault(failure):
+            failure.trap(xmlrpclib.Fault, socket.error)
+            return False
+
+        def check_available(status):
+            return status[0] == 'BuilderStatus.IDLE'
+        return d.addCallbacks(check_available, catch_fault)
 
     def rescueIfLost(self, logger=None):
         """Reset the slave if its job information doesn't match the DB.
@@ -485,12 +545,12 @@ class BuilderBehavior(object):
             value is None, or a Failure that contains an exception
             explaining what went wrong.
         """
-        self.builder.current_build_behavior = (
+        removeSecurityProxy(self.builder).current_build_behavior = (
             build_queue_item.required_build_behavior)
-        self.builder.current_build_behavior.logStartBuild(logger)
+        self.current_build_behavior.logStartBuild(logger)
 
         # Make sure the request is valid; an exception is raised if it's not.
-        self.builder.current_build_behavior.verifyBuildRequest(logger)
+        self.current_build_behavior.verifyBuildRequest(logger)
 
         # Set the build behavior depending on the provided build queue item.
         if not self.builder.builderok:
@@ -504,7 +564,7 @@ class BuilderBehavior(object):
             d = defer.succeed(None)
 
         def ping_done(ignored):
-            return self.builder.current_build_behavior.dispatchBuildToSlave(
+            return self.current_build_behavior.dispatchBuildToSlave(
                 build_queue_item.id, logger)
 
         def resume_done(ignored):
@@ -742,32 +802,6 @@ class Builder(SQLBase):
             return getUtility(IBuildFarmJobSet).getBuildsForBuilder(
                 self, status=build_state, user=user)
 
-    def slaveStatus(self):
-        """See IBuilder."""
-        d = self.slave.status()
-
-        def got_status(status_sentence):
-            status = {'builder_status': status_sentence[0]}
-
-            # Extract detailed status and log information if present.
-            # Although build_id is also easily extractable here, there is no
-            # valid reason for anything to use it, so we exclude it.
-            if status['builder_status'] == 'BuilderStatus.WAITING':
-                status['build_status'] = status_sentence[1]
-            else:
-                if status['builder_status'] == 'BuilderStatus.BUILDING':
-                    status['logtail'] = status_sentence[2]
-
-            self.current_build_behavior.updateSlaveStatus(
-                status_sentence, status)
-            return status
-
-        return d.addCallback(got_status)
-
-    def slaveStatusSentence(self):
-        """See IBuilder."""
-        return self.slave.status()
-
     def verifySlaveBuildCookie(self, slave_build_id):
         """See `IBuilder`."""
         return self.current_build_behavior.verifySlaveBuildCookie(
@@ -815,20 +849,6 @@ class Builder(SQLBase):
         d = self.slave.getFile(file_sha1, out_file)
         d.addCallback(got_file, filename, out_file, out_file_name)
         return d
-
-    def isAvailable(self):
-        """See `IBuilder`."""
-        if not self.builderok:
-            return defer.succeed(False)
-        d = self.slaveStatusSentence()
-
-        def catch_fault(failure):
-            failure.trap(xmlrpclib.Fault, socket.error)
-            return False
-
-        def check_available(status):
-            return status[0] == 'BuilderStatus.IDLE'
-        return d.addCallbacks(check_available, catch_fault)
 
     def _getSlaveScannerLogger(self):
         """Return the logger instance from buildd-slave-scanner.py."""

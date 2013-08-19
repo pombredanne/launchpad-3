@@ -265,7 +265,7 @@ class SlaveScanner:
             # the build thusly forcing it to get re-dispatched to another
             # builder.
 
-            return self.builder.isAvailable().addCallback(got_available)
+            return self.behavior.isAvailable().addCallback(got_available)
 
         def got_available(available):
             if not available:

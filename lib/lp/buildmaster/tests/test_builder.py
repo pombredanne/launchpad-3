@@ -443,7 +443,7 @@ class TestBuilderSlaveStatus(TestCaseWithFactory):
                      dependencies=None):
         builder = self.factory.makeBuilder()
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
-        d = builder.slaveStatus()
+        d = BuilderBehavior(builder).slaveStatus()
 
         def got_status(status_dict):
             expected = {}
@@ -490,21 +490,21 @@ class TestBuilderSlaveStatus(TestCaseWithFactory):
         # isAvailable() is a wrapper around slaveStatusSentence()
         builder = self.factory.makeBuilder()
         builder.builderok = False
-        d = builder.isAvailable()
+        d = BuilderBehavior(builder).isAvailable()
         return d.addCallback(self.assertFalse)
 
     def test_isAvailable_with_slave_fault(self):
         builder = self.factory.makeBuilder()
         self.patch(
             BuilderSlave, 'makeBuilderSlave', FakeMethod(BrokenSlave()))
-        d = builder.isAvailable()
+        d = BuilderBehavior(builder).isAvailable()
         return d.addCallback(self.assertFalse)
 
     def test_isAvailable_with_slave_idle(self):
         builder = self.factory.makeBuilder()
         self.patch(
             BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
-        d = builder.isAvailable()
+        d = BuilderBehavior(builder).isAvailable()
         return d.addCallback(self.assertTrue)
 
 

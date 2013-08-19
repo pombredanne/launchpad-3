@@ -110,7 +110,7 @@ class BuildFarmJobBehaviorBase:
         """See `IBuildFarmJobBehavior`."""
         logger = logging.getLogger('slave-scanner')
 
-        d = self._builder.slaveStatus()
+        d = self._builder_behavior.slaveStatus()
 
         def got_failure(failure):
             failure.trap(xmlrpclib.Fault, socket.error)
