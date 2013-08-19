@@ -288,7 +288,7 @@ class SlaveScanner:
                     # failure_count.
                     self.builder.resetFailureCount()
                     transaction.commit()
-                    return self.builder.slave
+                    return self.behavior.slave
                 else:
                     return None
             return d.addCallback(job_started)

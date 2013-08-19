@@ -524,7 +524,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
                 orig_file_content = open(tmp_orig_file_name).read()
                 self.assertEqual(orig_file_content, uncompressed_file)
 
-            d = removeSecurityProxy(self.builder.slave).getFile(
+            d = removeSecurityProxy(self.builder_behavior.slave).getFile(
                 'buildlog', tmp_orig_file_name)
             return d.addCallback(got_orig_log)
 

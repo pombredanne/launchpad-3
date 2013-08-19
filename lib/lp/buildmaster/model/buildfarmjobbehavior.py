@@ -189,7 +189,7 @@ class BuildFarmJobBehaviorBase:
 
         Clean the builder for another jobs.
         """
-        d = queueItem.builder.cleanSlave()
+        d = self._builder_behavior.cleanSlave()
 
         def got_cleaned(ignored):
             queueItem.builder = None
@@ -276,7 +276,7 @@ class BuildFarmJobBehaviorBase:
         if build.build_farm_job_type == BuildFarmJobType.PACKAGEBUILD:
             build = build.buildqueue_record.specific_job.build
             if not build.current_source_publication:
-                yield self.build.buildqueue_record.builder.cleanSlave()
+                yield self._builder_behavior.cleanSlave()
                 build.updateStatus(BuildStatus.SUPERSEDED)
                 self.build.buildqueue_record.destroySelf()
                 return
@@ -305,7 +305,6 @@ class BuildFarmJobBehaviorBase:
             grab_dir, str(build.archive.id), build.distribution.name)
         os.makedirs(upload_path)
 
-        slave = removeSecurityProxy(build.buildqueue_record.builder.slave)
         successful_copy_from_slave = True
         filenames_to_download = {}
         for filename in filemap:
@@ -321,7 +320,7 @@ class BuildFarmJobBehaviorBase:
                     "for the build %d." % (filename, build.id))
                 break
             filenames_to_download[filemap[filename]] = out_file_name
-        yield slave.getFiles(filenames_to_download)
+        yield self._builder_behavior.slave.getFiles(filenames_to_download)
 
         status = (
             BuildStatus.UPLOADING if successful_copy_from_slave
@@ -353,7 +352,7 @@ class BuildFarmJobBehaviorBase:
         if not os.path.exists(target_dir):
             os.mkdir(target_dir)
 
-        yield self.build.buildqueue_record.builder.cleanSlave()
+        yield self._builder_behavior.cleanSlave()
         self.build.buildqueue_record.destroySelf()
         transaction.commit()
 
@@ -379,7 +378,7 @@ class BuildFarmJobBehaviorBase:
         yield self.storeLogFromSlave()
         if send_notification:
             self.build.notify()
-        yield self.build.buildqueue_record.builder.cleanSlave()
+        yield self._builder_behavior.cleanSlave()
         self.build.buildqueue_record.destroySelf()
         transaction.commit()
 
@@ -423,17 +422,17 @@ class BuildFarmJobBehaviorBase:
         If the build was explicitly cancelled, then mark it as such.
         Otherwise, the build has failed in some unexpected way.
         """
-        builder = self.build.buildqueue_record.builder
         if self.build.status == BuildStatus.CANCELLING:
             self.build.buildqueue_record.cancel()
             transaction.commit()
-            yield builder.cleanSlave()
+            yield self._builder_behavior.cleanSlave()
         else:
             self.build.buildqueue_record.reset()
             try:
-                builder.handleFailure(logger)
-                yield builder.resetOrFail(logger, BuildSlaveFailure(
-                    "Builder unexpectedly returned ABORTED"))
+                self._builder.handleFailure(logger)
+                yield self._builder_behavior.resetOrFail(
+                    logger,
+                    BuildSlaveFailure("Builder unexpectedly returned ABORTED"))
             except Exception as e:
                 # We've already done our best to mark the builder as failed.
                 logger.error("Failed to rescue from ABORTED: %s" % e)
@@ -448,7 +447,7 @@ class BuildFarmJobBehaviorBase:
         later, the build records is delayed by reducing the lastscore to
         ZERO.
         """
-        yield self.build.buildqueue_record.builder.cleanSlave()
+        yield self._builder_behavior.cleanSlave()
         self.build.buildqueue_record.reset()
         transaction.commit()
 

@@ -36,11 +36,7 @@ from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
     CorruptBuildCookie,
     )
-from lp.buildmaster.model.builder import (
-    BuilderSlave,
-    rescueBuilderIfLost,
-    updateBuilderStatus,
-    )
+from lp.buildmaster.model.builder import BuilderSlave
 from lp.services.config import config
 from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior,
@@ -64,7 +60,6 @@ class MockBuilder:
         else:
             self.current_build_behavior = behavior
 
-        self.slave = slave
         self.builderok = True
         self.manual = False
         self.url = 'http://fake:0000'
@@ -75,22 +70,6 @@ class MockBuilder:
     def failBuilder(self, reason):
         self.builderok = False
         self.failnotes = reason
-
-    def slaveStatusSentence(self):
-        return self.slave.status()
-
-    def verifySlaveBuildCookie(self, slave_build_id):
-        return self.current_build_behavior.verifySlaveBuildCookie(
-            slave_build_id)
-
-    def requestAbort(self):
-        return self.slave.abort()
-
-    def resumeSlave(self, logger):
-        return ('out', 'err')
-
-    def checkSlaveAlive(self):
-        pass
 
 
 # XXX: It would be *really* nice to run some set of tests against the real

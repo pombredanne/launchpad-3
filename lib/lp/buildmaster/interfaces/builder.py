@@ -163,8 +163,6 @@ class IBuilder(IHasOwner):
         title=_('Publicly Visible'), required=True, default=True,
         description=_('Whether or not to present the builder publicly.')))
 
-    slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
-
     currentjob = Attribute("BuildQueue instance for job being processed.")
 
     failure_count = exported(Int(
@@ -183,12 +181,6 @@ class IBuilder(IHasOwner):
 
     def failBuilder(reason):
         """Mark builder as failed for a given reason."""
-
-    def verifySlaveBuildCookie(slave_build_id):
-        """Verify that a slave's build cookie is consistent.
-
-        This should delegate to the current `IBuildFarmJobBehavior`.
-        """
 
     def getBuildQueue():
         """Return a `BuildQueue` if there's an active job on this builder.

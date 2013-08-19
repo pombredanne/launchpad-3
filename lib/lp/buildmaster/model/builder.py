@@ -363,7 +363,7 @@ def rescueBuilderIfLost(behavior, logger=None):
             return
         slave_build_id = status_sentence[ident_position[status]]
         try:
-            behavior.builder.verifySlaveBuildCookie(slave_build_id)
+            behavior.verifySlaveBuildCookie(slave_build_id)
         except CorruptBuildCookie as reason:
             if status == 'BuilderStatus.WAITING':
                 d = behavior.cleanSlave()
@@ -395,9 +395,15 @@ class BuilderBehavior(object):
     def __init__(self, builder):
         self.builder = builder
 
-    @property
+    @cachedproperty
     def slave(self):
-        return removeSecurityProxy(self.builder.slave)
+        """See IBuilder."""
+        if self.builder.virtualized:
+            timeout = config.builddmaster.virtualized_socket_timeout
+        else:
+            timeout = config.builddmaster.socket_timeout
+        return BuilderSlave.makeBuilderSlave(
+            self.builder.url, self.builder.vm_host, timeout)
 
     @property
     def current_build_behavior(self):
@@ -440,6 +446,14 @@ class BuilderBehavior(object):
             elements depending on the status.
         """
         return self.slave.status()
+
+    def verifySlaveBuildCookie(self, slave_build_id):
+        """Verify that a slave's build cookie is consistent.
+
+        This should delegate to the current `IBuildFarmJobBehavior`.
+        """
+        return self.current_build_behavior.verifySlaveBuildCookie(
+            slave_build_id)
 
     def isAvailable(self):
         """Whether or not a builder is available for building new jobs.
@@ -826,15 +840,6 @@ class Builder(SQLBase):
     def _clean_currentjob_cache(self):
         del get_property_cache(self).currentjob
 
-    @cachedproperty
-    def slave(self):
-        """See IBuilder."""
-        if self.virtualized:
-            timeout = config.builddmaster.virtualized_socket_timeout
-        else:
-            timeout = config.builddmaster.socket_timeout
-        return BuilderSlave.makeBuilderSlave(self.url, self.vm_host, timeout)
-
     def failBuilder(self, reason):
         """See IBuilder"""
         # XXX cprov 2007-04-17: ideally we should be able to notify the
@@ -858,11 +863,6 @@ class Builder(SQLBase):
                     "with binary_only=True.")
             return getUtility(IBuildFarmJobSet).getBuildsForBuilder(
                 self, status=build_state, user=user)
-
-    def verifySlaveBuildCookie(self, slave_build_id):
-        """See `IBuilder`."""
-        return self.current_build_behavior.verifySlaveBuildCookie(
-            slave_build_id)
 
     def _getSlaveScannerLogger(self):
         """Return the logger instance from buildd-slave-scanner.py."""
