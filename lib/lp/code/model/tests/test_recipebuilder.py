@@ -28,7 +28,10 @@ from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
-from lp.buildmaster.model.builder import BuilderSlave
+from lp.buildmaster.model.builder import (
+    BuilderBehavior,
+    BuilderSlave,
+    )
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import (
     MockBuilder,
@@ -124,7 +127,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         # valid builder set.
         job = self.makeJob()
         builder = MockBuilder("bob-de-bouwer", OkSlave())
-        job.setBuilder(builder)
+        job.setBuilderBehavior(BuilderBehavior(builder))
         logger = BufferLogger()
         job.verifyBuildRequest(logger)
         self.assertEquals("", logger.getLogBuffer())
@@ -134,7 +137,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job = self.makeJob()
         builder = MockBuilder('non-virtual builder', OkSlave())
         builder.virtualized = False
-        job.setBuilder(builder)
+        job.setBuilderBehavior(BuilderBehavior(builder))
         logger = BufferLogger()
         e = self.assertRaises(AssertionError, job.verifyBuildRequest, logger)
         self.assertEqual(
@@ -146,7 +149,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
             pocket=PackagePublishingPocket.SECURITY)
         job = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         job = IBuildFarmJobBehavior(job.specific_job)
-        job.setBuilder(MockBuilder("bob-de-bouwer", OkSlave()))
+        job.setBuilderBehavior(
+            BuilderBehavior(MockBuilder("bob-de-bouwer", OkSlave())))
         e = self.assertRaises(
             AssertionError, job.verifyBuildRequest, BufferLogger())
         self.assertIn('invalid pocket due to the series status of', str(e))
@@ -304,7 +308,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         builder = MockBuilder("bob-de-bouwer", slave)
         processorfamily = ProcessorFamilySet().getByProcessorName('386')
         builder.processor = processorfamily.processors[0]
-        job.setBuilder(builder)
+        job.setBuilderBehavior(BuilderBehavior(builder))
         logger = BufferLogger()
         d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
 
@@ -336,7 +340,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         builder = MockBuilder("bob-de-bouwer", OkSlave())
         processorfamily = ProcessorFamilySet().getByProcessorName('386')
         builder.processor = processorfamily.processors[0]
-        job.setBuilder(builder)
+        job.setBuilderBehavior(BuilderBehavior(builder))
         logger = BufferLogger()
         d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
         return assert_fails_with(d, CannotBuild)

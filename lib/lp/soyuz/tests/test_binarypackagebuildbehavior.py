@@ -221,7 +221,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
         behavior = candidate.required_build_behavior
-        behavior.setBuilder(builder)
+        behavior.setBuilderBehavior(BuilderBehavior(builder))
         e = self.assertRaises(
             AssertionError, behavior.verifyBuildRequest, BufferLogger())
         expected_message = (
@@ -242,7 +242,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
         behavior = candidate.required_build_behavior
-        behavior.setBuilder(builder)
+        behavior.setBuilderBehavior(BuilderBehavior(builder))
         e = self.assertRaises(
             AssertionError, behavior.verifyBuildRequest, BufferLogger())
         self.assertEqual(
@@ -261,7 +261,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
         behavior = candidate.required_build_behavior
-        behavior.setBuilder(builder)
+        behavior.setBuilderBehavior(BuilderBehavior(builder))
         e = self.assertRaises(
             AssertionError, behavior.verifyBuildRequest, BufferLogger())
         self.assertEqual(
@@ -276,7 +276,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
             builder=builder, archive=archive)
         candidate = build.queueBuild()
         behavior = candidate.required_build_behavior
-        behavior.setBuilder(builder)
+        behavior.setBuilderBehavior(BuilderBehavior(builder))
         e = self.assertRaises(
             CannotBuild, behavior.verifyBuildRequest, BufferLogger())
         self.assertIn("Missing CHROOT", str(e))
@@ -326,7 +326,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
         self.candidate = self.build.queueBuild()
         self.candidate.markAsBuilding(self.builder)
         self.behavior = self.candidate.required_build_behavior
-        self.behavior.setBuilder(self.builder)
+        self.behavior.setBuilderBehavior(BuilderBehavior(self.builder))
         # This is required so that uploaded files from the buildd don't
         # hang around between test runs.
         self.addCleanup(self._cleanup)
@@ -528,7 +528,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
             return d.addCallback(got_orig_log)
 
         d = removeSecurityProxy(self.behavior).getLogFromSlave(
-            self.build, self.build.buildqueue_record)
+            self.build.buildqueue_record)
         return d.addCallback(got_log)
 
     def test_private_build_log_storage(self):
