@@ -658,6 +658,15 @@ class BuilderBehavior(object):
         d = self._dispatchBuildCandidate(candidate)
         return d.addCallback(lambda ignored: candidate)
 
+    def updateBuild(self, queueItem):
+        """Verify the current build job status.
+
+        Perform the required actions for each state.
+
+        :return: A Deferred that fires when the slave dialog is finished.
+        """
+        return self.current_build_behavior.updateBuild(queueItem)
+
     def transferSlaveFileToLibrarian(self, file_sha1, filename, private):
         """Transfer a file from the slave to the librarian.
 
@@ -854,10 +863,6 @@ class Builder(SQLBase):
         """See `IBuilder`."""
         return self.current_build_behavior.verifySlaveBuildCookie(
             slave_build_id)
-
-    def updateBuild(self, queueItem):
-        """See `IBuilder`."""
-        return self.current_build_behavior.updateBuild(queueItem)
 
     def _getSlaveScannerLogger(self):
         """Return the logger instance from buildd-slave-scanner.py."""

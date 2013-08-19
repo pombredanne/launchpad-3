@@ -244,7 +244,7 @@ class SlaveScanner:
             # Scan the slave and get the logtail, or collect the build if
             # it's ready.  Yes, "updateBuild" is a bad name.
             if buildqueue is not None:
-                return self.builder.updateBuild(buildqueue)
+                return self.behavior.updateBuild(buildqueue)
 
         def build_updated(ignored):
             # Commit changes done while updating the build, to avoid

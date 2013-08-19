@@ -199,16 +199,6 @@ class IBuilder(IHasOwner):
     def getCurrentBuildFarmJob():
         """Return a `BuildFarmJob` for this builder."""
 
-    # All methods below here return Deferred.
-
-    def updateBuild(queueItem):
-        """Verify the current build job status.
-
-        Perform the required actions for each state.
-
-        :return: A Deferred that fires when the slave dialog is finished.
-        """
-
     def acquireBuildCandidate():
         """Acquire a build candidate in an atomic fashion.
 
