@@ -341,7 +341,7 @@ class TestDistroSeries(TestCaseWithFactory):
         IStore(spec1.__class__).flush()
         IStore(spec1.__class__).invalidate()
         with StormStatementRecorder() as recorder:
-            for spec in distroseries._valid_specifications:
+            for spec in distroseries.api_valid_specifications:
                 spec.workitems_text
         self.assertThat(recorder, HasQueryCount(Equals(4)))
 

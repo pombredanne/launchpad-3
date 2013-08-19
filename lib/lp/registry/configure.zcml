@@ -1460,7 +1460,8 @@
             permission="launchpad.View"
             attributes="
                 visible_specifications
-                _valid_specifications
+                valid_specifications
+                api_valid_specifications
                 getAllowedSpecificationInformationTypes
                 getDefaultSpecificationInformationType
                 specifications" />

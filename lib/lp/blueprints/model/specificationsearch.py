@@ -59,8 +59,9 @@ from lp.services.propertycache import get_property_cache
 
 
 def search_specifications(context, base_clauses, user, sort=None,
-                          quantity=None, spec_filter=None, prejoin_people=True,
-                          tables=[], default_acceptance=False):
+                          quantity=None, spec_filter=None, tables=[],
+                          default_acceptance=False, need_people=True,
+                          need_branches=True, need_workitems=False):
     store = IStore(Specification)
     if not default_acceptance:
         default = SpecificationFilter.INCOMPLETE
@@ -109,12 +110,42 @@ def search_specifications(context, base_clauses, user, sort=None,
         order = [sort]
     # Set the _known_viewers property for each specification, as well as
     # preloading the objects involved, if asked.
+    def preload_hook(rows):
+        person_ids = set()
+        work_items_by_spec = defaultdict(list)
+        for spec in rows:
+            if need_people: 
+                person_ids |= set(
+                    [spec._assigneeID, spec._approverID, spec._drafterID])
+            if need_branches:
+                get_property_cache(spec).linked_branches = []
+            if need_workitems:
+                get_property_cache(spec).work_items = []
+        if need_workitems:
+            work_items = load_referencing(
+                SpecificationWorkItem, rows, ['specification_id'])
+            for workitem in work_items:
+                person_ids.add(workitem.assignee_id)
+                work_items_by_spec[workitem.specification_id].append(workitem)
+        person_ids -= set([None])
+        if need_people:
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                person_ids, need_validity=True))
+        for specid in work_items_by_spec.keys():
+            work_items_by_spec[specid].sort(key=lambda wi: wi.sequence)
+            for workitem in work_items_by_spec[specid]:
+                get_property_cache(workitem.specification).work_items.append(
+                    workitem)
+        if need_branches:
+            spec_branches = load_referencing(
+                SpecificationBranch, rows, ['specificationID'])
+            for sbranch in spec_branches:
+                spec_cache = get_property_cache(sbranch.specification)
+                spec_cache.linked_branches.append(sbranch)
+
     decorators = []
-    preload_hook = None
     if user is not None and not IPersonRoles(user).in_admin:
         decorators.append(_make_cache_user_can_view_spec(user))
-    if prejoin_people:
-        preload_hook = _preload_specifications_related_objects
     results = store.using(*tables).find(
         Specification, *clauses).order_by(*order).config(limit=quantity)
     return DecoratedResultSet(
@@ -229,33 +260,6 @@ def _make_cache_user_can_view_spec(user):
         return spec
     return cache_user_can_view_spec
 
-
-def _preload_specifications_related_objects(rows):
-    person_ids = set()
-    for spec in rows:
-        person_ids |= set(
-            [spec._assigneeID, spec._approverID, spec._drafterID])
-        get_property_cache(spec).linked_branches = []
-        get_property_cache(spec).work_items = []
-    work_items = load_referencing(
-        SpecificationWorkItem, rows, ['specification_id'])
-    work_items_by_spec = defaultdict(list)
-    for workitem in work_items:
-        person_ids.add(workitem.assignee_id)
-        work_items_by_spec[workitem.specification_id].append(workitem)
-    person_ids -= set([None])
-    list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-        person_ids, need_validity=True))
-    for specid in work_items_by_spec.keys():
-        work_items_by_spec[specid].sort(key=lambda wi: wi.sequence)
-        for workitem in work_items_by_spec[specid]:
-            get_property_cache(workitem.specification).work_items.append(
-                workitem)
-    spec_branches = load_referencing(
-        SpecificationBranch, rows, ['specificationID'])
-    for sbranch in spec_branches:
-        get_property_cache(sbranch.specification).linked_branches.append(
-            sbranch)
 
 
 def get_specification_started_clause():

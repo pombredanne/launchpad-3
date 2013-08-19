@@ -34,7 +34,7 @@ class HasSpecificationsTests(TestCaseWithFactory):
             product=product, name="spec2",
             status=SpecificationDefinitionStatus.OBSOLETE)
         self.assertNamesOfSpecificationsAre(
-            ["spec1"], product._valid_specifications)
+            ["spec1"], product.valid_specifications())
 
     def test_distribution_all_specifications(self):
         distribution = self.factory.makeDistribution()
@@ -50,7 +50,7 @@ class HasSpecificationsTests(TestCaseWithFactory):
             distribution=distribution, name="spec2",
             status=SpecificationDefinitionStatus.OBSOLETE)
         self.assertNamesOfSpecificationsAre(
-            ["spec1"], distribution._valid_specifications)
+            ["spec1"], distribution.valid_specifications())
 
     def test_distroseries_all_specifications(self):
         distroseries = self.factory.makeDistroSeries(name='maudlin')
@@ -75,7 +75,7 @@ class HasSpecificationsTests(TestCaseWithFactory):
             status=SpecificationDefinitionStatus.OBSOLETE)
         self.factory.makeSpecification(distribution=distribution, name="spec4")
         self.assertNamesOfSpecificationsAre(
-            ["spec1", "spec2"], distroseries._valid_specifications)
+            ["spec1", "spec2"], distroseries.valid_specifications())
 
     def test_productseries_all_specifications(self):
         product = self.factory.makeProduct()
@@ -102,7 +102,7 @@ class HasSpecificationsTests(TestCaseWithFactory):
             status=SpecificationDefinitionStatus.OBSOLETE)
         self.factory.makeSpecification(product=product, name="spec4")
         self.assertNamesOfSpecificationsAre(
-            ["spec1", "spec2"], productseries._valid_specifications)
+            ["spec1", "spec2"], productseries.valid_specifications())
 
     def test_projectgroup_all_specifications(self):
         projectgroup = self.factory.makeProject()
@@ -130,7 +130,7 @@ class HasSpecificationsTests(TestCaseWithFactory):
             status=SpecificationDefinitionStatus.OBSOLETE)
         self.factory.makeSpecification(product=product3, name="spec3")
         self.assertNamesOfSpecificationsAre(
-            ["spec1"], projectgroup._valid_specifications)
+            ["spec1"], projectgroup.valid_specifications())
 
     def test_person_all_specifications(self):
         person = self.factory.makePerson(name="james-w")
@@ -154,7 +154,7 @@ class HasSpecificationsTests(TestCaseWithFactory):
             status=SpecificationDefinitionStatus.OBSOLETE)
         self.factory.makeSpecification(product=product, name="spec3")
         self.assertNamesOfSpecificationsAre(
-            ["spec1"], person._valid_specifications)
+            ["spec1"], person.valid_specifications())
 
 
 class HasSpecificationsSnapshotTestCase(TestCaseWithFactory):

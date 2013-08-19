@@ -92,7 +92,6 @@ def notify_specification_modified(spec, event):
                 workitems_delta['old'], workitems_delta['new'], 72)
             info_lines.append('Work items changed:')
             info_lines.append(workitems_diff)
-
     if not info_lines:
         # The specification was modified, but we don't yet support
         # sending notification for the change.

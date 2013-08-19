@@ -562,7 +562,7 @@ We can get only valid specs (those that are not obsolete or superseded):
     ...         spec.definition_status = (
     ...             SpecificationDefinitionStatus.SUPERSEDED)
     ...     shim = spec.updateLifecycleStatus(owner)
-    >>> for spec in kubuntu._valid_specifications:
+    >>> for spec in kubuntu.valid_specifications():
     ...     print spec.name
     kde-desktopfile-langpacks
 
