@@ -41,6 +41,7 @@ from twisted.web import xmlrpc
 from twisted.web.client import downloadPage
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.builder import (
@@ -367,7 +368,7 @@ def rescueBuilderIfLost(behavior, logger=None):
             if status == 'BuilderStatus.WAITING':
                 d = behavior.cleanSlave()
             else:
-                d = behavior.builder.requestAbort()
+                d = behavior.requestAbort()
 
             def log_rescue(ignored):
                 if logger:
@@ -394,17 +395,217 @@ class BuilderBehavior(object):
     def __init__(self, builder):
         self.builder = builder
 
+    @property
+    def slave(self):
+        return removeSecurityProxy(self.builder.slave)
+
     def rescueIfLost(self, logger=None):
-        """See `IBuilder`."""
+        """Reset the slave if its job information doesn't match the DB.
+
+        This checks the build ID reported in the slave status against the
+        database. If it isn't building what we think it should be, the current
+        build will be aborted and the slave cleaned in preparation for a new
+        task. The decision about the slave's correctness is left up to
+        `IBuildFarmJobBehavior.verifySlaveBuildCookie`.
+
+        :return: A Deferred that fires when the dialog with the slave is
+            finished.  It does not have a return value.
+        """
         return rescueBuilderIfLost(self, logger)
 
     def updateStatus(self, logger=None):
-        """See `IBuilder`."""
+        """Update the builder's status by probing it.
+
+        :return: A Deferred that fires when the dialog with the slave is
+            finished.  It does not have a return value.
+        """
         return updateBuilderStatus(self, logger)
 
     def cleanSlave(self):
-        """See IBuilder."""
-        return self.builder.slave.clean()
+        """Clean any temporary files from the slave.
+
+        :return: A Deferred that fires when the dialog with the slave is
+            finished.  It does not have a return value.
+        """
+        return self.slave.clean()
+
+    def requestAbort(self):
+        """Ask that a build be aborted.
+
+        This takes place asynchronously: Actually killing everything running
+        can take some time so the slave status should be queried again to
+        detect when the abort has taken effect. (Look for status ABORTED).
+
+        :return: A Deferred that fires when the dialog with the slave is
+            finished.  It does not have a return value.
+        """
+        return self.slave.abort()
+
+    def resumeSlaveHost(self):
+        """Resume the slave host to a known good condition.
+
+        Issues 'builddmaster.vm_resume_command' specified in the configuration
+        to resume the slave.
+
+        :raises: CannotResumeHost: if builder is not virtual or if the
+            configuration command has failed.
+
+        :return: A Deferred that fires when the resume operation finishes,
+            whose value is a (stdout, stderr) tuple for success, or a Failure
+            whose value is a CannotResumeHost exception.
+        """
+        if not self.builder.virtualized:
+            return defer.fail(CannotResumeHost('Builder is not virtualized.'))
+
+        if not self.builder.vm_host:
+            return defer.fail(CannotResumeHost('Undefined vm_host.'))
+
+        logger = self._getSlaveScannerLogger()
+        logger.info("Resuming %s (%s)" % (self.builder.name, self.builder.url))
+
+        d = self.slave.resume()
+
+        def got_resume_ok((stdout, stderr, returncode)):
+            return stdout, stderr
+
+        def got_resume_bad(failure):
+            stdout, stderr, code = failure.value
+            raise CannotResumeHost(
+                "Resuming failed:\nOUT:\n%s\nERR:\n%s\n" % (stdout, stderr))
+
+        return d.addCallback(got_resume_ok).addErrback(got_resume_bad)
+
+    def startBuild(self, build_queue_item, logger):
+        """Start a build on this builder.
+
+        :param build_queue_item: A BuildQueueItem to build.
+        :param logger: A logger to be used to log diagnostic information.
+
+        :return: A Deferred that fires after the dispatch has completed whose
+            value is None, or a Failure that contains an exception
+            explaining what went wrong.
+        """
+        self.builder.current_build_behavior = (
+            build_queue_item.required_build_behavior)
+        self.builder.current_build_behavior.logStartBuild(logger)
+
+        # Make sure the request is valid; an exception is raised if it's not.
+        self.builder.current_build_behavior.verifyBuildRequest(logger)
+
+        # Set the build behavior depending on the provided build queue item.
+        if not self.builder.builderok:
+            raise BuildDaemonError(
+                "Attempted to start a build on a known-bad builder.")
+
+        # If we are building a virtual build, resume the virtual machine.
+        if self.builder.virtualized:
+            d = self.resumeSlaveHost()
+        else:
+            d = defer.succeed(None)
+
+        def ping_done(ignored):
+            return self.builder.current_build_behavior.dispatchBuildToSlave(
+                build_queue_item.id, logger)
+
+        def resume_done(ignored):
+            # Before we try and contact the resumed slave, we're going
+            # to send it a message.  This is to ensure it's accepting
+            # packets from the outside world, because testing has shown
+            # that the first packet will randomly fail for no apparent
+            # reason.  This could be a quirk of the Xen guest, we're not
+            # sure.  We also don't care about the result from this message,
+            # just that it's sent, hence the "addBoth".
+            # See bug 586359.
+            if self.builder.virtualized:
+                d = self.slave.echo("ping")
+            else:
+                d = defer.succeed(None)
+            d.addBoth(ping_done)
+            return d
+
+        d.addCallback(resume_done)
+        return d
+
+    def _dispatchBuildCandidate(self, candidate):
+        """Dispatch the pending job to the associated buildd slave.
+
+        This method can only be executed in the builddmaster machine, since
+        it will actually issues the XMLRPC call to the buildd-slave.
+
+        :param candidate: The job to dispatch.
+        """
+        logger = self._getSlaveScannerLogger()
+        # Using maybeDeferred ensures that any exceptions are also
+        # wrapped up and caught later.
+        d = defer.maybeDeferred(self.startBuild, candidate, logger)
+        return d
+
+    def resetOrFail(self, logger, exception):
+        """Handle "confirmed" build slave failures.
+
+        Call this when there have been multiple failures that are not just
+        the fault of failing jobs, or when the builder has entered an
+        ABORTED state without having been asked to do so.
+
+        In case of a virtualized/PPA buildd slave an attempt will be made
+        to reset it (using `resumeSlaveHost`).
+
+        Conversely, a non-virtualized buildd slave will be (marked as)
+        failed straightaway (using `failBuilder`).
+
+        :param logger: The logger object to be used for logging.
+        :param exception: An exception to be used for logging.
+        :return: A Deferred that fires after the virtual slave was resumed
+            or immediately if it's a non-virtual slave.
+        """
+        error_message = str(exception)
+        if self.builder.virtualized:
+            # Virtualized/PPA builder: attempt a reset, unless the failure
+            # was itself a failure to reset.  (In that case, the slave
+            # scanner will try again until we reach the failure threshold.)
+            if not isinstance(exception, CannotResumeHost):
+                logger.warn(
+                    "Resetting builder: %s -- %s" % (
+                        self.builder.url, error_message),
+                    exc_info=True)
+                return self.resumeSlaveHost()
+        else:
+            # XXX: This should really let the failure bubble up to the
+            # scan() method that does the failure counting.
+            # Mark builder as 'failed'.
+            logger.warn(
+                "Disabling builder: %s -- %s" % (
+                    self.builder.url, error_message))
+            self.builder.failBuilder(error_message)
+        return defer.succeed(None)
+
+    def findAndStartJob(self):
+        """Find a job to run and send it to the buildd slave.
+
+        :return: A Deferred whose value is the `IBuildQueue` instance
+            found or None if no job was found.
+        """
+        # XXX This method should be removed in favour of two separately
+        # called methods that find and dispatch the job.  It will
+        # require a lot of test fixing.
+        logger = self._getSlaveScannerLogger()
+        candidate = self.builder.acquireBuildCandidate()
+
+        if candidate is None:
+            logger.debug("No build candidates available for builder.")
+            return defer.succeed(None)
+
+        d = self._dispatchBuildCandidate(candidate)
+        return d.addCallback(lambda ignored: candidate)
+
+    def _getSlaveScannerLogger(self):
+        """Return the logger instance from buildd-slave-scanner.py."""
+        # XXX cprov 20071120: Ideally the Launchpad logging system
+        # should be able to configure the root-logger instead of creating
+        # a new object, then the logger lookups won't require the specific
+        # name argument anymore. See bug 164203.
+        logger = logging.getLogger('slave-scanner')
+        return logger
 
 
 class Builder(SQLBase):
@@ -506,33 +707,6 @@ class Builder(SQLBase):
     def _clean_currentjob_cache(self):
         del get_property_cache(self).currentjob
 
-    def requestAbort(self):
-        """See IBuilder."""
-        return self.slave.abort()
-
-    def resumeSlaveHost(self):
-        """See IBuilder."""
-        if not self.virtualized:
-            return defer.fail(CannotResumeHost('Builder is not virtualized.'))
-
-        if not self.vm_host:
-            return defer.fail(CannotResumeHost('Undefined vm_host.'))
-
-        logger = self._getSlaveScannerLogger()
-        logger.info("Resuming %s (%s)" % (self.name, self.url))
-
-        d = self.slave.resume()
-
-        def got_resume_ok((stdout, stderr, returncode)):
-            return stdout, stderr
-
-        def got_resume_bad(failure):
-            stdout, stderr, code = failure.value
-            raise CannotResumeHost(
-                "Resuming failed:\nOUT:\n%s\nERR:\n%s\n" % (stdout, stderr))
-
-        return d.addCallback(got_resume_ok).addErrback(got_resume_bad)
-
     @cachedproperty
     def slave(self):
         """See IBuilder."""
@@ -541,48 +715,6 @@ class Builder(SQLBase):
         else:
             timeout = config.builddmaster.socket_timeout
         return BuilderSlave.makeBuilderSlave(self.url, self.vm_host, timeout)
-
-    def startBuild(self, build_queue_item, logger):
-        """See IBuilder."""
-        self.current_build_behavior = build_queue_item.required_build_behavior
-        self.current_build_behavior.logStartBuild(logger)
-
-        # Make sure the request is valid; an exception is raised if it's not.
-        self.current_build_behavior.verifyBuildRequest(logger)
-
-        # Set the build behavior depending on the provided build queue item.
-        if not self.builderok:
-            raise BuildDaemonError(
-                "Attempted to start a build on a known-bad builder.")
-
-        # If we are building a virtual build, resume the virtual machine.
-        if self.virtualized:
-            d = self.resumeSlaveHost()
-        else:
-            d = defer.succeed(None)
-
-        def ping_done(ignored):
-            return self.current_build_behavior.dispatchBuildToSlave(
-                build_queue_item.id, logger)
-
-        def resume_done(ignored):
-            # Before we try and contact the resumed slave, we're going
-            # to send it a message.  This is to ensure it's accepting
-            # packets from the outside world, because testing has shown
-            # that the first packet will randomly fail for no apparent
-            # reason.  This could be a quirk of the Xen guest, we're not
-            # sure.  We also don't care about the result from this message,
-            # just that it's sent, hence the "addBoth".
-            # See bug 586359.
-            if self.virtualized:
-                d = self.slave.echo("ping")
-            else:
-                d = defer.succeed(None)
-            d.addBoth(ping_done)
-            return d
-
-        d.addCallback(resume_done)
-        return d
 
     def failBuilder(self, reason):
         """See IBuilder"""
@@ -706,20 +838,7 @@ class Builder(SQLBase):
         return logger
 
     def acquireBuildCandidate(self):
-        """Acquire a build candidate in an atomic fashion.
-
-        When retrieiving a candidate we need to mark it as building
-        immediately so that it is not dispatched by another builder in the
-        build manager.
-
-        We can consider this to be atomic because although the build manager
-        is a Twisted app and gives the appearance of doing lots of things at
-        once, it's still single-threaded so no more than one builder scan
-        can be in this code at the same time.
-
-        If there's ever more than one build manager running at once, then
-        this code will need some sort of mutex.
-        """
+        """See `IBuilder`."""
         candidate = self._findBuildCandidate()
         if candidate is not None:
             candidate.markAsBuilding(self)
@@ -796,20 +915,6 @@ class Builder(SQLBase):
 
         return None
 
-    def _dispatchBuildCandidate(self, candidate):
-        """Dispatch the pending job to the associated buildd slave.
-
-        This method can only be executed in the builddmaster machine, since
-        it will actually issues the XMLRPC call to the buildd-slave.
-
-        :param candidate: The job to dispatch.
-        """
-        logger = self._getSlaveScannerLogger()
-        # Using maybeDeferred ensures that any exceptions are also
-        # wrapped up and caught later.
-        d = defer.maybeDeferred(self.startBuild, candidate, logger)
-        return d
-
     def handleFailure(self, logger):
         """See IBuilder."""
         self.gotFailure()
@@ -824,42 +929,6 @@ class Builder(SQLBase):
             logger.info(
                 "Builder %s failure count: %s" % (
                     self.name, self.failure_count))
-
-    def resetOrFail(self, logger, exception):
-        """See IBuilder."""
-        error_message = str(exception)
-        if self.virtualized:
-            # Virtualized/PPA builder: attempt a reset, unless the failure
-            # was itself a failure to reset.  (In that case, the slave
-            # scanner will try again until we reach the failure threshold.)
-            if not isinstance(exception, CannotResumeHost):
-                logger.warn(
-                    "Resetting builder: %s -- %s" % (self.url, error_message),
-                    exc_info=True)
-                return self.resumeSlaveHost()
-        else:
-            # XXX: This should really let the failure bubble up to the
-            # scan() method that does the failure counting.
-            # Mark builder as 'failed'.
-            logger.warn(
-                "Disabling builder: %s -- %s" % (self.url, error_message))
-            self.failBuilder(error_message)
-        return defer.succeed(None)
-
-    def findAndStartJob(self):
-        """See IBuilder."""
-        # XXX This method should be removed in favour of two separately
-        # called methods that find and dispatch the job.  It will
-        # require a lot of test fixing.
-        logger = self._getSlaveScannerLogger()
-        candidate = self.acquireBuildCandidate()
-
-        if candidate is None:
-            logger.debug("No build candidates available for builder.")
-            return defer.succeed(None)
-
-        d = self._dispatchBuildCandidate(candidate)
-        return d.addCallback(lambda ignored: candidate)
 
     def getBuildQueue(self):
         """See `IBuilder`."""

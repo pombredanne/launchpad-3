@@ -200,7 +200,7 @@ class SlaveScanner:
         self.logger.info("Cancelling build '%s'" % build.title)
         buildqueue.cancel()
         transaction.commit()
-        d = builder.resumeSlaveHost()
+        d = self.behavior.resumeSlaveHost()
         d.addCallback(resume_done)
         return d
 
@@ -280,7 +280,7 @@ class SlaveScanner:
 
             # See if there is a job we can dispatch to the builder slave.
 
-            d = self.builder.findAndStartJob()
+            d = self.behavior.findAndStartJob()
 
             def job_started(candidate):
                 if self.builder.currentjob is not None:

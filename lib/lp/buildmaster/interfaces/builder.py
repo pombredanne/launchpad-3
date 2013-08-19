@@ -220,31 +220,6 @@ class IBuilder(IHasOwner):
             whether the builder is available or not.
         """
 
-    def requestAbort():
-        """Ask that a build be aborted.
-
-        This takes place asynchronously: Actually killing everything running
-        can take some time so the slave status should be queried again to
-        detect when the abort has taken effect. (Look for status ABORTED).
-
-        :return: A Deferred that fires when the dialog with the slave is
-            finished.  It does not have a return value.
-        """
-
-    def resumeSlaveHost():
-        """Resume the slave host to a known good condition.
-
-        Issues 'builddmaster.vm_resume_command' specified in the configuration
-        to resume the slave.
-
-        :raises: CannotResumeHost: if builder is not virtual or if the
-            configuration command has failed.
-
-        :return: A Deferred that fires when the resume operation finishes,
-            whose value is a (stdout, stderr) tuple for success, or a Failure
-            whose value is a CannotResumeHost exception.
-        """
-
     def slaveStatus():
         """Get the slave status for this builder.
 
@@ -271,47 +246,26 @@ class IBuilder(IHasOwner):
         :return: A Deferred that fires when the slave dialog is finished.
         """
 
-    def startBuild(build_queue_item, logger):
-        """Start a build on this builder.
+    def acquireBuildCandidate():
+        """Acquire a build candidate in an atomic fashion.
 
-        :param build_queue_item: A BuildQueueItem to build.
-        :param logger: A logger to be used to log diagnostic information.
+        When retrieiving a candidate we need to mark it as building
+        immediately so that it is not dispatched by another builder in the
+        build manager.
 
-        :return: A Deferred that fires after the dispatch has completed whose
-            value is None, or a Failure that contains an exception
-            explaining what went wrong.
+        We can consider this to be atomic because although the build manager
+        is a Twisted app and gives the appearance of doing lots of things at
+        once, it's still single-threaded so no more than one builder scan
+        can be in this code at the same time.
+
+        If there's ever more than one build manager running at once, then
+        this code will need some sort of mutex.
         """
 
     def handleFailure(logger):
         """Handle buildd slave failures.
 
         Increment builder and (if possible) job failure counts.
-        """
-
-    def resetOrFail(logger, exception):
-        """Handle "confirmed" build slave failures.
-
-        Call this when there have been multiple failures that are not just
-        the fault of failing jobs, or when the builder has entered an
-        ABORTED state without having been asked to do so.
-
-        In case of a virtualized/PPA buildd slave an attempt will be made
-        to reset it (using `resumeSlaveHost`).
-
-        Conversely, a non-virtualized buildd slave will be (marked as)
-        failed straightaway (using `failBuilder`).
-
-        :param logger: The logger object to be used for logging.
-        :param exception: An exception to be used for logging.
-        :return: A Deferred that fires after the virtual slave was resumed
-            or immediately if it's a non-virtual slave.
-        """
-
-    def findAndStartJob():
-        """Find a job to run and send it to the buildd slave.
-
-        :return: A Deferred whose value is the `IBuildQueue` instance
-            found or None if no job was found.
         """
 
 

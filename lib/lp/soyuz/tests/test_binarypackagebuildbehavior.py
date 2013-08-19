@@ -20,7 +20,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import CannotBuild
-from lp.buildmaster.model.builder import BuilderSlave
+from lp.buildmaster.model.builder import (
+    BuilderBehavior,
+    BuilderSlave,
+    )
 from lp.buildmaster.tests.mock_slaves import (
     AbortedSlave,
     AbortingSlave,
@@ -135,7 +138,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         builder = removeSecurityProxy(builder)
         candidate = removeSecurityProxy(candidate)
         return defer.maybeDeferred(
-            builder.startBuild, candidate, BufferLogger())
+            BuilderBehavior(builder).startBuild, candidate, BufferLogger())
 
     def test_non_virtual_ppa_dispatch(self):
         # When the BinaryPackageBuildBehavior dispatches PPA builds to

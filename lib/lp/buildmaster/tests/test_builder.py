@@ -159,12 +159,12 @@ class TestBuilder(TestCaseWithFactory):
 
     def test_resumeSlaveHost_nonvirtual(self):
         builder = self.factory.makeBuilder(virtualized=False)
-        d = builder.resumeSlaveHost()
+        d = BuilderBehavior(builder).resumeSlaveHost()
         return assert_fails_with(d, CannotResumeHost)
 
     def test_resumeSlaveHost_no_vmhost(self):
         builder = self.factory.makeBuilder(virtualized=True, vm_host=None)
-        d = builder.resumeSlaveHost()
+        d = BuilderBehavior(builder).resumeSlaveHost()
         return assert_fails_with(d, CannotResumeHost)
 
     def test_resumeSlaveHost_success(self):
@@ -175,7 +175,7 @@ class TestBuilder(TestCaseWithFactory):
         self.addCleanup(config.pop, 'reset')
 
         builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
-        d = builder.resumeSlaveHost()
+        d = BuilderBehavior(builder).resumeSlaveHost()
 
         def got_resume(output):
             self.assertEqual(('parp', ''), output)
@@ -189,7 +189,7 @@ class TestBuilder(TestCaseWithFactory):
         config.push('reset fail', reset_fail_config)
         self.addCleanup(config.pop, 'reset fail')
         builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
-        d = builder.resumeSlaveHost()
+        d = BuilderBehavior(builder).resumeSlaveHost()
         return assert_fails_with(d, CannotResumeHost)
 
     def test_handleFailure_increments_failure_count(self):
@@ -206,7 +206,7 @@ class TestBuilder(TestCaseWithFactory):
         self.addCleanup(config.pop, 'reset fail')
         builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
         builder.builderok = True
-        d = builder.resetOrFail(BufferLogger(), Exception())
+        d = BuilderBehavior(builder).resetOrFail(BufferLogger(), Exception())
         return assert_fails_with(d, CannotResumeHost)
 
     def _setupBuilder(self):
@@ -248,7 +248,7 @@ class TestBuilder(TestCaseWithFactory):
         # findAndStartJob delegates to it.
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
-        d = builder.findAndStartJob()
+        d = BuilderBehavior(builder).findAndStartJob()
         return d.addCallback(self.assertEqual, candidate)
 
     def test_findAndStartJob_starts_job(self):
@@ -259,7 +259,7 @@ class TestBuilder(TestCaseWithFactory):
         candidate = build.queueBuild()
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
-        d = builder.findAndStartJob()
+        d = BuilderBehavior(builder).findAndStartJob()
 
         def check_build_started(candidate):
             self.assertEqual(candidate.builder, builder)
@@ -274,7 +274,7 @@ class TestBuilder(TestCaseWithFactory):
         candidate = build.queueBuild()
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
-        d = builder.findAndStartJob()
+        d = BuilderBehavior(builder).findAndStartJob()
 
         def check_build_started(candidate):
             self.assertIn(
