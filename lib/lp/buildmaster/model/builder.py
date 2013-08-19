@@ -656,7 +656,8 @@ class Builder(SQLBase):
                 # ...we'll set it based on our current job.
                 self._current_build_behavior = (
                     currentjob.required_build_behavior)
-                self._current_build_behavior.setBuilder(self)
+                self._current_build_behavior.setBuilderBehavior(
+                    BuilderBehavior(self))
                 return self._current_build_behavior
             elif self._current_build_behavior is None:
                 # If we don't have a current job or an idle behavior
@@ -674,7 +675,8 @@ class Builder(SQLBase):
         """Set the current build behavior."""
         self._current_build_behavior = new_behavior
         if self._current_build_behavior is not None:
-            self._current_build_behavior.setBuilder(self)
+            self._current_build_behavior.setBuilderBehavior(
+                BuilderBehavior(self))
 
     current_build_behavior = property(
         _getCurrentBuildBehavior, _setCurrentBuildBehavior)

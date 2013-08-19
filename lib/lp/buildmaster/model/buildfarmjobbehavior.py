@@ -58,9 +58,10 @@ class BuildFarmJobBehaviorBase:
     def build(self):
         return self.buildfarmjob.build
 
-    def setBuilder(self, builder):
+    def setBuilderBehavior(self, builder_behavior):
         """The builder should be set once and not changed."""
-        self._builder = builder
+        self._builder_behavior = builder_behavior
+        self._builder = builder_behavior.builder
 
     def verifyBuildRequest(self, logger):
         """The default behavior is a no-op."""

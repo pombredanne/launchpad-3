@@ -22,7 +22,7 @@ class BuildBehaviorMismatch(Exception):
 
 class IBuildFarmJobBehavior(Interface):
 
-    def setBuilder(builder):
+    def setBuilderBehavior(builder_behavior):
         """Sets the associated builder reference for this instance."""
 
     def logStartBuild(logger):
