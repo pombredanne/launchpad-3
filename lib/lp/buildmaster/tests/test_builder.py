@@ -146,8 +146,9 @@ class TestBuilder(TestCaseWithFactory):
         # broken then abort() should also throw a fault.
         slave = LostBuildingBrokenSlave()
         lostbuilding_builder = MockBuilder(
-            'Lost Building Broken Slave', slave, behavior=CorruptBehavior())
-        d = BuilderBehavior(lostbuilding_builder).updateStatus(BufferLogger())
+            'Lost Building Broken Slave', behavior=CorruptBehavior())
+        d = BuilderBehavior(lostbuilding_builder, slave).updateStatus(
+            BufferLogger())
 
         def check_slave_status(failure):
             self.assertIn('abort', slave.call_log)
@@ -274,11 +275,12 @@ class TestBuilder(TestCaseWithFactory):
         candidate = build.queueBuild()
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
-        d = BuilderBehavior(builder).findAndStartJob()
+        behavior = BuilderBehavior(builder)
+        d = behavior.findAndStartJob()
 
         def check_build_started(candidate):
             self.assertIn(
-                ('echo', 'ping'), removeSecurityProxy(builder.slave).call_log)
+                ('echo', 'ping'), behavior.slave.call_log)
 
         return d.addCallback(check_build_started)
 
@@ -288,12 +290,14 @@ class TestBuilder(TestCaseWithFactory):
         # security context.
         builder = removeSecurityProxy(
             self.factory.makeBuilder(virtualized=False))
-        self.assertEqual(builder.url, builder.slave.url)
-        self.assertEqual(10, builder.slave.timeout)
+        behavior = BuilderBehavior(builder)
+        self.assertEqual(builder.url, behavior.slave.url)
+        self.assertEqual(10, behavior.slave.timeout)
 
         builder = removeSecurityProxy(
             self.factory.makeBuilder(virtualized=True))
-        self.assertEqual(5, builder.slave.timeout)
+        behavior = BuilderBehavior(builder)
+        self.assertEqual(5, behavior.slave.timeout)
 
     def test_recovery_of_aborted_virtual_slave(self):
         # If a virtual_slave is in the ABORTED state,
@@ -301,9 +305,9 @@ class TestBuilder(TestCaseWithFactory):
         # currently building anything.
         # See bug 463046.
         aborted_slave = AbortedSlave()
-        builder = MockBuilder("mock_builder", aborted_slave)
+        builder = MockBuilder("mock_builder")
         builder.currentjob = None
-        d = BuilderBehavior(builder).rescueIfLost()
+        d = BuilderBehavior(builder, aborted_slave).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertIn('clean', aborted_slave.call_log)
@@ -315,11 +319,11 @@ class TestBuilder(TestCaseWithFactory):
         # cleaned since the sbuild process doesn't properly kill the
         # build job.  We test that the builder is marked failed.
         aborted_slave = AbortedSlave()
-        builder = MockBuilder("mock_builder", aborted_slave)
+        builder = MockBuilder("mock_builder")
         builder.currentjob = None
         builder.virtualized = False
         builder.builderok = True
-        d = BuilderBehavior(builder).rescueIfLost()
+        d = BuilderBehavior(builder, aborted_slave).rescueIfLost()
 
         def check_failed(ignored):
             self.assertFalse(builder.builderok)
@@ -330,8 +334,8 @@ class TestBuilder(TestCaseWithFactory):
     def test_recover_ok_slave(self):
         # An idle slave is not rescued.
         slave = OkSlave()
-        builder = MockBuilder("mock_builder", slave, TrivialBehavior())
-        d = BuilderBehavior(builder).rescueIfLost()
+        builder = MockBuilder("mock_builder", TrivialBehavior())
+        d = BuilderBehavior(builder, slave).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertNotIn('abort', slave.call_log)
@@ -343,8 +347,8 @@ class TestBuilder(TestCaseWithFactory):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # WAITING.
         waiting_slave = WaitingSlave()
-        builder = MockBuilder("mock_builder", waiting_slave, TrivialBehavior())
-        d = BuilderBehavior(builder).rescueIfLost()
+        builder = MockBuilder("mock_builder", TrivialBehavior())
+        d = BuilderBehavior(builder, waiting_slave).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertNotIn('abort', waiting_slave.call_log)
@@ -359,8 +363,8 @@ class TestBuilder(TestCaseWithFactory):
         # builder is reset for a new build, and the corrupt build is
         # discarded.
         waiting_slave = WaitingSlave()
-        builder = MockBuilder("mock_builder", waiting_slave, CorruptBehavior())
-        d = BuilderBehavior(builder).rescueIfLost()
+        builder = MockBuilder("mock_builder", CorruptBehavior())
+        d = BuilderBehavior(builder, waiting_slave).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertNotIn('abort', waiting_slave.call_log)
@@ -372,9 +376,8 @@ class TestBuilder(TestCaseWithFactory):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # BUILDING.
         building_slave = BuildingSlave()
-        builder = MockBuilder(
-            "mock_builder", building_slave, TrivialBehavior())
-        d = BuilderBehavior(builder).rescueIfLost()
+        builder = MockBuilder("mock_builder", TrivialBehavior())
+        d = BuilderBehavior(builder, building_slave).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertNotIn('abort', building_slave.call_log)
@@ -386,9 +389,8 @@ class TestBuilder(TestCaseWithFactory):
         # If a slave is BUILDING with a build id we don't recognize, then we
         # abort the build, thus stopping it in its tracks.
         building_slave = BuildingSlave()
-        builder = MockBuilder(
-            "mock_builder", building_slave, CorruptBehavior())
-        d = BuilderBehavior(builder).rescueIfLost()
+        builder = MockBuilder("mock_builder", CorruptBehavior())
+        d = BuilderBehavior(builder, building_slave).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertIn('abort', building_slave.call_log)

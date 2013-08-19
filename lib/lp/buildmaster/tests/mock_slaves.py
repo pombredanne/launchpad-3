@@ -54,7 +54,7 @@ def make_publisher():
 class MockBuilder:
     """Emulates a IBuilder class."""
 
-    def __init__(self, name, slave, behavior=None):
+    def __init__(self, name, behavior=None):
         if behavior is None:
             self.current_build_behavior = BinaryPackageBuildBehavior(None)
         else:
@@ -63,7 +63,6 @@ class MockBuilder:
         self.builderok = True
         self.manual = False
         self.url = 'http://fake:0000'
-        slave.url = self.url
         self.name = name
         self.virtualized = True
 

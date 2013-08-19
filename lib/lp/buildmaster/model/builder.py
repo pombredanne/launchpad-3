@@ -392,12 +392,15 @@ def updateBuilderStatus(behavior, logger=None):
 
 class BuilderBehavior(object):
 
-    def __init__(self, builder):
+    def __init__(self, builder, override_slave=None):
         self.builder = builder
+        self._slave = override_slave
 
     @cachedproperty
     def slave(self):
         """See IBuilder."""
+        if self._slave is not None:
+            return self._slave
         if self.builder.virtualized:
             timeout = config.builddmaster.virtualized_socket_timeout
         else:

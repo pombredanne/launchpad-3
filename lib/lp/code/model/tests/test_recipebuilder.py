@@ -126,8 +126,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
         # VerifyBuildRequest won't raise any exceptions when called with a
         # valid builder set.
         job = self.makeJob()
-        builder = MockBuilder("bob-de-bouwer", OkSlave())
-        job.setBuilderBehavior(BuilderBehavior(builder))
+        builder = MockBuilder("bob-de-bouwer")
+        job.setBuilderBehavior(BuilderBehavior(builder, OkSlave()))
         logger = BufferLogger()
         job.verifyBuildRequest(logger)
         self.assertEquals("", logger.getLogBuffer())
@@ -135,9 +135,9 @@ class TestRecipeBuilder(TestCaseWithFactory):
     def test_verifyBuildRequest_non_virtual(self):
         # verifyBuildRequest will raise if a non-virtual builder is proposed.
         job = self.makeJob()
-        builder = MockBuilder('non-virtual builder', OkSlave())
+        builder = MockBuilder('non-virtual builder')
         builder.virtualized = False
-        job.setBuilderBehavior(BuilderBehavior(builder))
+        job.setBuilderBehavior(BuilderBehavior(builder, OkSlave()))
         logger = BufferLogger()
         e = self.assertRaises(AssertionError, job.verifyBuildRequest, logger)
         self.assertEqual(
@@ -150,7 +150,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         job = IBuildFarmJobBehavior(job.specific_job)
         job.setBuilderBehavior(
-            BuilderBehavior(MockBuilder("bob-de-bouwer", OkSlave())))
+            BuilderBehavior(MockBuilder("bob-de-bouwer"), OkSlave()))
         e = self.assertRaises(
             AssertionError, job.verifyBuildRequest, BufferLogger())
         self.assertIn('invalid pocket due to the series status of', str(e))
@@ -305,10 +305,10 @@ class TestRecipeBuilder(TestCaseWithFactory):
         test_publisher = SoyuzTestPublisher()
         test_publisher.addFakeChroots(job.build.distroseries)
         slave = OkSlave()
-        builder = MockBuilder("bob-de-bouwer", slave)
+        builder = MockBuilder("bob-de-bouwer")
         processorfamily = ProcessorFamilySet().getByProcessorName('386')
         builder.processor = processorfamily.processors[0]
-        job.setBuilderBehavior(BuilderBehavior(builder))
+        job.setBuilderBehavior(BuilderBehavior(builder, slave))
         logger = BufferLogger()
         d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
 
@@ -337,10 +337,10 @@ class TestRecipeBuilder(TestCaseWithFactory):
         # available for the distroseries to build for.
         job = self.makeJob()
         #test_publisher = SoyuzTestPublisher()
-        builder = MockBuilder("bob-de-bouwer", OkSlave())
+        builder = MockBuilder("bob-de-bouwer")
         processorfamily = ProcessorFamilySet().getByProcessorName('386')
         builder.processor = processorfamily.processors[0]
-        job.setBuilderBehavior(BuilderBehavior(builder))
+        job.setBuilderBehavior(BuilderBehavior(builder, OkSlave()))
         logger = BufferLogger()
         d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
         return assert_fails_with(d, CannotBuild)
