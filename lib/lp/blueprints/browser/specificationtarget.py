@@ -406,7 +406,7 @@ class HasSpecificationsView(LaunchpadView):
         """
         return self.context.specifications(self.user,
             sort=SpecificationSort.DATE, quantity=quantity,
-            prejoin_people=False)
+            need_people=False, need_branches=False, need_workitems=False)
 
 
 class SpecificationAssignmentsView(HasSpecificationsView):

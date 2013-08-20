@@ -1416,12 +1416,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return True
 
     def specifications(self, user, sort=None, quantity=None, filter=None,
-                       prejoin_people=True):
+                       need_people=True, need_branches=True,
+                       need_workitems=False):
         """See `IHasSpecifications`."""
-
         base_clauses = [Specification.productID == self.id]
         return search_specifications(
-            self, base_clauses, user, sort, quantity, filter, prejoin_people)
+            self, base_clauses, user, sort, quantity, filter,
+            need_people=need_people, need_branches=need_branches,
+            need_workitems=need_workitems)
 
     def getSpecification(self, name):
         """See `ISpecificationTarget`."""

@@ -244,7 +244,8 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return query, ['Product', 'Specification', 'SprintSpecification']
 
     def specifications(self, user, sort=None, quantity=None, filter=None,
-                       series=None, prejoin_people=True):
+                       series=None, need_people=True, need_branches=True,
+                       need_workitems=False):
         """See `IHasSpecifications`."""
         base_clauses = [
             Specification.productID == Product.id,
@@ -256,8 +257,9 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 Join(ProductSeries,
                 Specification.productseriesID == ProductSeries.id))
         return search_specifications(
-            self, base_clauses, user, sort, quantity, filter, prejoin_people,
-            tables=tables)
+            self, base_clauses, user, sort, quantity, filter, tables=tables,
+            need_people=need_people, need_branches=need_branches,
+            need_workitems=need_workitems)
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this milestone."""
@@ -617,10 +619,11 @@ class ProjectGroupSeries(HasSpecificationsMixin):
         self.name = name
 
     def specifications(self, user, sort=None, quantity=None, filter=None,
-                       prejoin_people=True):
+                       need_people=True, need_branches=True,
+                       need_workitems=False):
         return self.project.specifications(
-            user, sort, quantity, filter, self.name,
-            prejoin_people=prejoin_people)
+            user, sort, quantity, filter, self.name, need_people=need_people,
+            need_branches=need_branches, need_workitems=need_workitems)
 
     @property
     def title(self):

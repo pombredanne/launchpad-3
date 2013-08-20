@@ -335,7 +335,7 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
             else:
                 return "Work items for %s:" % milestone.name
 
-        if self.work_items.count() == 0:
+        if len(self.work_items) == 0:
             return ''
         milestone = self.work_items[0].milestone
         # Start by appending a header for the milestone of the first work
@@ -353,9 +353,9 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
             else:
                 assignee_part = ""
             # work_items are ordered by sequence
-            workitems_lines.append("%s%s: %s" % (assignee_part,
-                                                 work_item.title,
-                                                 work_item.status.name))
+            workitems_lines.append(
+                "%s%s: %s" % (
+                    assignee_part, work_item.title, work_item.status.name))
         return "\n".join(workitems_lines)
 
     @property
@@ -377,9 +377,13 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
             title=title, status=status, specification=self, assignee=assignee,
             milestone=milestone, sequence=sequence)
 
-    @property
+    @cachedproperty
     def work_items(self):
         """See ISpecification."""
+        return list(self._work_items)
+
+    @property
+    def _work_items(self):
         return Store.of(self).find(
             SpecificationWorkItem, specification=self,
             deleted=False).order_by("sequence")
@@ -395,7 +399,7 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
         """
         title_counts = self._list_to_dict_of_frequency(titles)
 
-        for work_item in self.work_items:
+        for work_item in self._work_items:
             if (work_item.title not in title_counts or
                 title_counts[work_item.title] == 0):
                 work_item.deleted = True
@@ -418,9 +422,7 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
         # deleted.
         self._deleteWorkItemsNotMatching(
             [wi['title'] for wi in new_work_items])
-        work_items = Store.of(self).find(
-            SpecificationWorkItem, specification=self, deleted=False)
-        work_items = list(work_items.order_by("sequence"))
+        work_items = self._work_items
         # At this point the list of new_work_items is necessarily the same
         # size (or longer) than the list of existing ones, so we can just
         # iterate over it updating the existing items and creating any new
@@ -456,6 +458,7 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
         for sequence, item in to_insert:
             self.newWorkItem(item['title'], sequence, item['status'],
                              item['assignee'], item['milestone'])
+        del get_property_cache(self).work_items
 
     def setTarget(self, target):
         """See ISpecification."""
@@ -683,9 +686,7 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
         delta.recordNewAndOld(("name", "priority", "definition_status",
                                "target", "approver", "assignee", "drafter",
                                "whiteboard", "workitems_text"))
-        delta.recordListAddedAndRemoved("bugs",
-                                        "bugs_linked",
-                                        "bugs_unlinked")
+        delta.recordListAddedAndRemoved("bugs", "bugs_linked", "bugs_unlinked")
 
         if delta.changes:
             changes = delta.changes
@@ -952,9 +953,10 @@ class HasSpecificationsMixin:
     """
 
     def specifications(self, user, sort=None, quantity=None, filter=None,
-                       prejoin_people=True):
+                       need_people=True, need_branches=True,
+                       need_workitems=False):
         """See IHasSpecifications."""
-        # this should be implemented by the actual context class
+        # This should be implemented by the actual context class.
         raise NotImplementedError
 
     def _specification_sort(self, sort):
@@ -976,11 +978,16 @@ class HasSpecificationsMixin:
         user = getUtility(ILaunchBag).user
         return self.specifications(user, filter=[SpecificationFilter.ALL])
 
-    @property
-    def _valid_specifications(self):
+    def valid_specifications(self, **kwargs):
         """See IHasSpecifications."""
         user = getUtility(ILaunchBag).user
-        return self.specifications(user, filter=[SpecificationFilter.VALID])
+        return self.specifications(
+            user, filter=[SpecificationFilter.VALID], **kwargs)
+
+    @property
+    def api_valid_specifications(self):
+        return self.valid_specifications(
+            need_people=True, need_branches=True, need_workitems=True)
 
     def specificationCount(self, user):
         """See IHasSpecifications."""
@@ -1017,11 +1024,13 @@ class SpecificationSet(HasSpecificationsMixin):
         return cur.fetchall()
 
     def specifications(self, user, sort=None, quantity=None, filter=None,
-                       prejoin_people=True):
+                       need_people=True, need_branches=True,
+                       need_workitems=False):
         from lp.blueprints.model.specificationsearch import (
             search_specifications)
         return search_specifications(
-            self, [], user, sort, quantity, filter, prejoin_people)
+            self, [], user, sort, quantity, filter, need_people=need_people,
+            need_branches=need_branches, need_workitems=need_workitems)
 
     def getByURL(self, url):
         """See ISpecificationSet."""

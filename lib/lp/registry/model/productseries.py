@@ -316,7 +316,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         return self == self.product.development_focus
 
     def specifications(self, user, sort=None, quantity=None, filter=None,
-                       prejoin_people=True):
+                       need_people=True, need_branches=True,
+                       need_workitems=False):
         """See IHasSpecifications.
 
         The rules for filtering are that there are three areas where you can
@@ -329,8 +330,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         """
         base_clauses = [Specification.productseriesID == self.id]
         return search_specifications(
-            self, base_clauses, user, sort, quantity, filter, prejoin_people,
-            default_acceptance=True)
+            self, base_clauses, user, sort, quantity, filter,
+            default_acceptance=True, need_people=need_people,
+            need_branches=need_branches, need_workitems=need_workitems)
 
     @property
     def all_specifications(self):
