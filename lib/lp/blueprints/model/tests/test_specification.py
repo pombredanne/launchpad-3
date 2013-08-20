@@ -233,10 +233,8 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
 
         login_person(spec.owner)
         spec.updateWorkItems([new_work_item])
-        # In production this notification is fired by lazr.restful for changes
-        # in the specification form and notify(ObjectModifiedEvent(...)) for
-        # changes in the +workitems form. We need to do it ourselves in this
-        # test.
+        # For API requests, lazr.restful does the notify() call, for this test
+        # we need to call ourselves.
         transaction.commit()
         notify(ObjectModifiedEvent(
             spec, old_spec, edited_fields=['workitems_text']))

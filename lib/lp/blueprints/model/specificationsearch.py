@@ -119,8 +119,6 @@ def search_specifications(context, base_clauses, user, sort=None,
                     [spec._assigneeID, spec._approverID, spec._drafterID])
             if need_branches:
                 get_property_cache(spec).linked_branches = []
-            if need_workitems:
-                get_property_cache(spec).work_items = []
         if need_workitems:
             work_items = load_referencing(
                 SpecificationWorkItem, rows, ['specification_id'])
@@ -131,11 +129,10 @@ def search_specifications(context, base_clauses, user, sort=None,
         if need_people:
             list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
                 person_ids, need_validity=True))
-        for specid in work_items_by_spec.keys():
-            work_items_by_spec[specid].sort(key=lambda wi: wi.sequence)
-            for workitem in work_items_by_spec[specid]:
-                get_property_cache(workitem.specification).work_items.append(
-                    workitem)
+        if need_workitems:
+            for spec in rows:
+                get_property_cache(spec).work_items = sorted(
+                    work_items_by_spec[spec.id], key=lambda wi: wi.sequence)
         if need_branches:
             spec_branches = load_referencing(
                 SpecificationBranch, rows, ['specificationID'])
