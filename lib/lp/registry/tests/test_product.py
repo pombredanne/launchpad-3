@@ -813,8 +813,8 @@ class TestProduct(TestCaseWithFactory):
             'owner', 'parent_subscription_target', 'project', 'title', )),
         'launchpad.View': set((
             '_getOfficialTagClause', 'visible_specifications',
-            '_valid_specifications', 'active_or_packaged_series',
-            'aliases', 'all_milestones',
+            'valid_specifications', 'api_valid_specifications',
+            'active_or_packaged_series', 'aliases', 'all_milestones',
             'allowsTranslationEdits', 'allowsTranslationSuggestions',
             'announce', 'answer_contacts', 'answers_usage', 'autoupdate',
             'blueprints_usage', 'branch_sharing_policy',
