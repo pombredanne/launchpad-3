@@ -429,15 +429,11 @@ class TestBuilder(TestCaseWithFactory):
         return d.addCallback(check_builder)
 
 
-class TestBuilderSlaveStatus(TestCase):
-    # Verify what IBuilder.slaveStatus returns with slaves in different
-    # states.
+class TestBuilderInteractorSlaveStatus(TestCase):
+    # Verify what BuilderInteractor.slaveStatus returns with slaves in
+    # different states.
 
     run_tests_with = AsynchronousDeferredRunTest
-
-    def setUp(self):
-        super(TestBuilderSlaveStatus, self).setUp()
-        self.slave_helper = self.useFixture(SlaveTestHelpers())
 
     def assertStatus(self, slave, builder_status=None,
                      build_status=None, logtail=False, filemap=None,
