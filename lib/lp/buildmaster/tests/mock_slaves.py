@@ -52,13 +52,17 @@ def make_publisher():
 class MockBuilder:
     """Emulates a IBuilder class."""
 
-    def __init__(self, name='mock-builder', behavior=None):
+    def __init__(self, name='mock-builder', behavior=None, builderok=True,
+                 manual=False, virtualized=True, vm_host=None):
         self.current_build_behavior = behavior or IdleBuildBehavior()
-        self.builderok = True
-        self.manual = False
+        self.currentjob = None
+        self.builderok = builderok
+        self.manual = manual
         self.url = 'http://fake:0000'
         self.name = name
-        self.virtualized = True
+        self.virtualized = virtualized
+        self.vm_host = vm_host
+        self.failnotes = None
 
     def failBuilder(self, reason):
         self.builderok = False
