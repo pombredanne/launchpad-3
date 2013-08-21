@@ -3,7 +3,7 @@
     xmlns:metal="http://xml.zope.org/namespaces/metal"
     xmlns:i18n="http://xml.zope.org/namespaces/i18n"
     class="portlet vertical" id="portlet-blueprints"
-    tal:condition="view/specifications">
+    tal:condition="not:view/specifications/is_empty">
   <h2>Related blueprints</h2>
   <ul>
     <li tal:repeat="spec view/specifications"
