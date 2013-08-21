@@ -307,7 +307,7 @@ class BuilderSlave(object):
 
 # This is a separate function since MockBuilder needs to use it too.
 # Do not use it -- (Mock)Builder.rescueIfLost should be used instead.
-def rescueBuilderIfLost(behavior, logger=None):
+def rescueBuilderIfLost(interactor, logger=None):
     """See `IBuilder`."""
     # 'ident_position' dict relates the position of the job identifier
     # token in the sentence received from status(), according to the
@@ -318,7 +318,7 @@ def rescueBuilderIfLost(behavior, logger=None):
         'BuilderStatus.WAITING': 2
         }
 
-    d = behavior.slaveStatusSentence()
+    d = interactor.slaveStatusSentence()
 
     def got_status(status_sentence):
         """After we get the status, clean if we have to.
@@ -337,22 +337,22 @@ def rescueBuilderIfLost(behavior, logger=None):
         # communications with the slave and the build manager had to reset
         # the job.
         if (status == 'BuilderStatus.ABORTED'
-                and behavior.builder.currentjob is None):
-            if not behavior.builder.virtualized:
+                and interactor.builder.currentjob is None):
+            if not interactor.builder.virtualized:
                 # We can't reset non-virtual builders reliably as the
                 # abort() function doesn't kill the actual build job,
                 # only the sbuild process!  All we can do here is fail
                 # the builder with a message indicating the problem and
                 # wait for an admin to reboot it.
-                behavior.builder.failBuilder(
+                interactor.builder.failBuilder(
                     "Non-virtual builder in ABORTED state, requires admin to "
                     "restart")
                 return "dummy status"
             if logger is not None:
                 logger.info(
                     "Builder '%s' being cleaned up from ABORTED" %
-                    (behavior.builder.name,))
-            d = behavior.cleanSlave()
+                    (interactor.builder.name,))
+            d = interactor.cleanSlave()
             return d.addCallback(lambda ignored: status_sentence)
         else:
             return status_sentence
@@ -364,18 +364,18 @@ def rescueBuilderIfLost(behavior, logger=None):
             return
         slave_build_id = status_sentence[ident_position[status]]
         try:
-            behavior.verifySlaveBuildCookie(slave_build_id)
+            interactor.verifySlaveBuildCookie(slave_build_id)
         except CorruptBuildCookie as reason:
             if status == 'BuilderStatus.WAITING':
-                d = behavior.cleanSlave()
+                d = interactor.cleanSlave()
             else:
-                d = behavior.requestAbort()
+                d = interactor.requestAbort()
 
             def log_rescue(ignored):
                 if logger:
                     logger.info(
                         "Builder '%s' rescued from '%s': '%s'" %
-                        (behavior.builder.name, slave_build_id, reason))
+                        (interactor.builder.name, slave_build_id, reason))
             return d.addCallback(log_rescue)
 
     d.addCallback(got_status)
@@ -383,12 +383,12 @@ def rescueBuilderIfLost(behavior, logger=None):
     return d
 
 
-def updateBuilderStatus(behavior, logger=None):
+def updateBuilderStatus(interactor, logger=None):
     """See `IBuilder`."""
     if logger:
-        logger.debug('Checking %s' % behavior.builder.name)
+        logger.debug('Checking %s' % interactor.builder.name)
 
-    return behavior.rescueIfLost(logger)
+    return interactor.rescueIfLost(logger)
 
 
 class BuilderInteractor(object):
