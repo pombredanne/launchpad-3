@@ -429,11 +429,10 @@ class TestBuilder(TestCaseWithFactory):
         return d.addCallback(check_builder)
 
 
-class TestBuilderSlaveStatus(TestCaseWithFactory):
+class TestBuilderSlaveStatus(TestCase):
     # Verify what IBuilder.slaveStatus returns with slaves in different
     # states.
 
-    layer = LaunchpadZopelessLayer
     run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
@@ -443,9 +442,7 @@ class TestBuilderSlaveStatus(TestCaseWithFactory):
     def assertStatus(self, slave, builder_status=None,
                      build_status=None, logtail=False, filemap=None,
                      dependencies=None):
-        builder = self.factory.makeBuilder()
-        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
-        d = BuilderInteractor(builder).slaveStatus()
+        d = BuilderInteractor(MockBuilder(), slave).slaveStatus()
 
         def got_status(status_dict):
             expected = {}
@@ -490,23 +487,17 @@ class TestBuilderSlaveStatus(TestCaseWithFactory):
 
     def test_isAvailable_with_not_builderok(self):
         # isAvailable() is a wrapper around slaveStatusSentence()
-        builder = self.factory.makeBuilder()
+        builder = MockBuilder()
         builder.builderok = False
         d = BuilderInteractor(builder).isAvailable()
         return d.addCallback(self.assertFalse)
 
     def test_isAvailable_with_slave_fault(self):
-        builder = self.factory.makeBuilder()
-        self.patch(
-            BuilderSlave, 'makeBuilderSlave', FakeMethod(BrokenSlave()))
-        d = BuilderInteractor(builder).isAvailable()
+        d = BuilderInteractor(MockBuilder(), BrokenSlave()).isAvailable()
         return d.addCallback(self.assertFalse)
 
     def test_isAvailable_with_slave_idle(self):
-        builder = self.factory.makeBuilder()
-        self.patch(
-            BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
-        d = BuilderInteractor(builder).isAvailable()
+        d = BuilderInteractor(MockBuilder(), OkSlave()).isAvailable()
         return d.addCallback(self.assertTrue)
 
 

@@ -37,10 +37,8 @@ from lp.buildmaster.interfaces.builder import (
     CorruptBuildCookie,
     )
 from lp.buildmaster.model.builder import BuilderSlave
+from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.services.config import config
-from lp.soyuz.model.binarypackagebuildbehavior import (
-    BinaryPackageBuildBehavior,
-    )
 from lp.testing.sampledata import I386_ARCHITECTURE_NAME
 
 
@@ -54,12 +52,8 @@ def make_publisher():
 class MockBuilder:
     """Emulates a IBuilder class."""
 
-    def __init__(self, name, behavior=None):
-        if behavior is None:
-            self.current_build_behavior = BinaryPackageBuildBehavior(None)
-        else:
-            self.current_build_behavior = behavior
-
+    def __init__(self, name='mock-builder', behavior=None):
+        self.current_build_behavior = behavior or IdleBuildBehavior()
         self.builderok = True
         self.manual = False
         self.url = 'http://fake:0000'
