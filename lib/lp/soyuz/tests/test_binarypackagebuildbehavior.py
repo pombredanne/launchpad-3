@@ -20,7 +20,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import CannotBuild
-from lp.buildmaster.model.builder import BuilderSlave
+from lp.buildmaster.model.builder import (
+    BuilderInteractor,
+    BuilderSlave,
+    )
 from lp.buildmaster.tests.mock_slaves import (
     AbortedSlave,
     AbortingSlave,
@@ -135,7 +138,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         builder = removeSecurityProxy(builder)
         candidate = removeSecurityProxy(candidate)
         return defer.maybeDeferred(
-            builder.startBuild, candidate, BufferLogger())
+            BuilderInteractor(builder).startBuild, candidate, BufferLogger())
 
     def test_non_virtual_ppa_dispatch(self):
         # When the BinaryPackageBuildBehavior dispatches PPA builds to
@@ -174,6 +177,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
         d = self.startBuild(builder, candidate)
+
         def check_build(ignored):
             # We expect the first call to the slave to be a resume call,
             # followed by the rest of the usual calls we expect.
@@ -218,7 +222,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
         behavior = candidate.required_build_behavior
-        behavior.setBuilder(builder)
+        behavior.setBuilderInteractor(BuilderInteractor(builder))
         e = self.assertRaises(
             AssertionError, behavior.verifyBuildRequest, BufferLogger())
         expected_message = (
@@ -239,7 +243,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
         behavior = candidate.required_build_behavior
-        behavior.setBuilder(builder)
+        behavior.setBuilderInteractor(BuilderInteractor(builder))
         e = self.assertRaises(
             AssertionError, behavior.verifyBuildRequest, BufferLogger())
         self.assertEqual(
@@ -258,7 +262,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
         behavior = candidate.required_build_behavior
-        behavior.setBuilder(builder)
+        behavior.setBuilderInteractor(BuilderInteractor(builder))
         e = self.assertRaises(
             AssertionError, behavior.verifyBuildRequest, BufferLogger())
         self.assertEqual(
@@ -273,7 +277,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
             builder=builder, archive=archive)
         candidate = build.queueBuild()
         behavior = candidate.required_build_behavior
-        behavior.setBuilder(builder)
+        behavior.setBuilderInteractor(BuilderInteractor(builder))
         e = self.assertRaises(
             CannotBuild, behavior.verifyBuildRequest, BufferLogger())
         self.assertIn("Missing CHROOT", str(e))
@@ -315,6 +319,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
         switch_dbuser('testadmin')
 
         self.builder = self.factory.makeBuilder()
+        self.interactor = BuilderInteractor(self.builder)
         self.build = self.factory.makeBinaryPackageBuild(
             builder=self.builder, pocket=PackagePublishingPocket.RELEASE)
         lf = self.factory.makeLibraryFileAlias()
@@ -323,7 +328,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
         self.candidate = self.build.queueBuild()
         self.candidate.markAsBuilding(self.builder)
         self.behavior = self.candidate.required_build_behavior
-        self.behavior.setBuilder(self.builder)
+        self.behavior.setBuilderInteractor(BuilderInteractor(self.builder))
         # This is required so that uploaded files from the buildd don't
         # hang around between test runs.
         self.addCleanup(self._cleanup)
@@ -347,7 +352,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
             self.assertBuildProperties(self.build)
             self.assertEqual(BuildStatus.FAILEDTOBUILD, self.build.status)
 
-        d = self.builder.updateBuild(self.candidate)
+        d = self.interactor.updateBuild(self.candidate)
         return d.addCallback(got_update)
 
     def test_depwait_collection(self):
@@ -362,7 +367,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
             self.assertEqual(BuildStatus.MANUALDEPWAIT, self.build.status)
             self.assertEqual(DEPENDENCIES, self.build.dependencies)
 
-        d = self.builder.updateBuild(self.candidate)
+        d = self.interactor.updateBuild(self.candidate)
         return d.addCallback(got_update)
 
     def test_chrootfail_collection(self):
@@ -375,7 +380,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
             self.assertBuildProperties(self.build)
             self.assertEqual(BuildStatus.CHROOTWAIT, self.build.status)
 
-        d = self.builder.updateBuild(self.candidate)
+        d = self.interactor.updateBuild(self.candidate)
         return d.addCallback(got_update)
 
     def test_builderfail_collection(self):
@@ -393,7 +398,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
             job = self.candidate.specific_job.job
             self.assertEqual(JobStatus.WAITING, job.status)
 
-        d = self.builder.updateBuild(self.candidate)
+        d = self.interactor.updateBuild(self.candidate)
         return d.addCallback(got_update)
 
     def test_building_collection(self):
@@ -405,7 +410,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
             # The fake log is returned from the BuildingSlave() mock.
             self.assertEqual("This is a build log", self.candidate.logtail)
 
-        d = self.builder.updateBuild(self.candidate)
+        d = self.interactor.updateBuild(self.candidate)
         return d.addCallback(got_update)
 
     def test_aborted_collection(self):
@@ -416,7 +421,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
         def got_update(ignored):
             self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
 
-        d = self.builder.updateBuild(self.candidate)
+        d = self.interactor.updateBuild(self.candidate)
         return d.addCallback(got_update)
 
     def test_aborting_collection(self):
@@ -429,7 +434,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
                 "Waiting for slave process to be terminated",
                 self.candidate.logtail)
 
-        d = self.builder.updateBuild(self.candidate)
+        d = self.interactor.updateBuild(self.candidate)
         return d.addCallback(got_update)
 
     def test_collection_for_deleted_source(self):
@@ -446,7 +451,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
             self.assertEqual(
                 BuildStatus.SUPERSEDED, self.build.status)
 
-        d = self.builder.updateBuild(self.candidate)
+        d = self.interactor.updateBuild(self.candidate)
         return d.addCallback(got_update)
 
     def test_uploading_collection(self):
@@ -460,7 +465,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
             # upload processing succeeded.
             self.assertIs(None, self.build.upload_log)
 
-        d = self.builder.updateBuild(self.candidate)
+        d = self.interactor.updateBuild(self.candidate)
         return d.addCallback(got_update)
 
     def test_givenback_collection(self):
@@ -477,7 +482,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
             job = self.candidate.specific_job.job
             self.assertEqual(JobStatus.WAITING, job.status)
 
-        d = self.builder.updateBuild(self.candidate)
+        d = self.interactor.updateBuild(self.candidate)
         return d.addCallback(got_update)
 
     def test_log_file_collection(self):
@@ -520,12 +525,12 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
                 orig_file_content = open(tmp_orig_file_name).read()
                 self.assertEqual(orig_file_content, uncompressed_file)
 
-            d = removeSecurityProxy(self.builder.slave).getFile(
+            d = removeSecurityProxy(self.interactor.slave).getFile(
                 'buildlog', tmp_orig_file_name)
             return d.addCallback(got_orig_log)
 
         d = removeSecurityProxy(self.behavior).getLogFromSlave(
-            self.build, self.build.buildqueue_record)
+            self.build.buildqueue_record)
         return d.addCallback(got_log)
 
     def test_private_build_log_storage(self):
@@ -547,7 +552,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
             self.layer.txn.commit()
             self.assertTrue(self.build.log.restricted)
 
-        d = self.builder.updateBuild(self.candidate)
+        d = self.interactor.updateBuild(self.candidate)
         return d.addCallback(got_update)
 
 

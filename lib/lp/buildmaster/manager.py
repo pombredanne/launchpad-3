@@ -33,7 +33,10 @@ from lp.buildmaster.interfaces.builder import (
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch,
     )
-from lp.buildmaster.model.builder import Builder
+from lp.buildmaster.model.builder import (
+    Builder,
+    BuilderInteractor,
+    )
 from lp.services.propertycache import get_property_cache
 
 
@@ -197,7 +200,7 @@ class SlaveScanner:
         self.logger.info("Cancelling build '%s'" % build.title)
         buildqueue.cancel()
         transaction.commit()
-        d = builder.resumeSlaveHost()
+        d = self.interactor.resumeSlaveHost()
         d.addCallback(resume_done)
         return d
 
@@ -228,6 +231,7 @@ class SlaveScanner:
         # Storm store is invalidated over transaction boundaries.
 
         self.builder = get_builder(self.builder_name)
+        self.interactor = BuilderInteractor(self.builder)
 
         def status_updated(ignored):
             # Commit the changes done while possibly rescuing jobs, to
@@ -240,7 +244,7 @@ class SlaveScanner:
             # Scan the slave and get the logtail, or collect the build if
             # it's ready.  Yes, "updateBuild" is a bad name.
             if buildqueue is not None:
-                return self.builder.updateBuild(buildqueue)
+                return self.interactor.updateBuild(buildqueue)
 
         def build_updated(ignored):
             # Commit changes done while updating the build, to avoid
@@ -261,7 +265,7 @@ class SlaveScanner:
             # the build thusly forcing it to get re-dispatched to another
             # builder.
 
-            return self.builder.isAvailable().addCallback(got_available)
+            return self.interactor.isAvailable().addCallback(got_available)
 
         def got_available(available):
             if not available:
@@ -276,7 +280,7 @@ class SlaveScanner:
 
             # See if there is a job we can dispatch to the builder slave.
 
-            d = self.builder.findAndStartJob()
+            d = self.interactor.findAndStartJob()
 
             def job_started(candidate):
                 if self.builder.currentjob is not None:
@@ -284,7 +288,7 @@ class SlaveScanner:
                     # failure_count.
                     self.builder.resetFailureCount()
                     transaction.commit()
-                    return self.builder.slave
+                    return self.interactor.slave
                 else:
                     return None
             return d.addCallback(job_started)
@@ -292,7 +296,7 @@ class SlaveScanner:
         def cancellation_checked(cancelled):
             if cancelled:
                 return defer.succeed(None)
-            d = self.builder.updateStatus(self.logger)
+            d = self.interactor.updateStatus(self.logger)
             d.addCallback(status_updated)
             d.addCallback(build_updated)
             return d

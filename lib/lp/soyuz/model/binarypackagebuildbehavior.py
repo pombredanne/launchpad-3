@@ -53,7 +53,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             filemap[lfa.filename] = lfa.content.sha1
             if not private:
                 dl.append(
-                    self._builder.slave.cacheFile(
+                    self._interactor.slave.cacheFile(
                         logger, source_file.libraryfile))
         d = defer.gatherResults(dl)
         return d.addCallback(lambda ignored: filemap)
@@ -64,13 +64,13 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         # Start the binary package build on the slave builder. First
         # we send the chroot.
         chroot = self.build.distro_arch_series.getChroot()
-        d = self._builder.slave.cacheFile(logger, chroot)
+        d = self._interactor.slave.cacheFile(logger, chroot)
         d.addCallback(self._buildFilemapStructure, logger)
 
         def got_filemap(filemap):
-            # Generate a string which can be used to cross-check when obtaining
-            # results so we know we are referring to the right database object in
-            # subsequent runs.
+            # Generate a string which can be used to cross-check when
+            # obtaining results so we know we are referring to the right
+            # database object in subsequent runs.
             buildid = "%s-%s" % (self.build.id, build_queue_id)
             cookie = self.buildfarmjob.generateSlaveBuildCookie()
             chroot_sha1 = chroot.content.sha1
@@ -78,8 +78,9 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
                 "Initiating build %s on %s" % (buildid, self._builder.url))
 
             args = self._extraBuildArgs(self.build)
-            d = self._builder.slave.build(
+            d = self._interactor.slave.build(
                 cookie, "binarypackage", chroot_sha1, filemap, args)
+
             def got_build((status, info)):
                 message = """%s (%s):
                 ***** RESULT *****
@@ -190,7 +191,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
                          "(%s, %s)" % (
                             self._builder.url, file_name, url, sha1))
             dl.append(
-                self._builder.slave.sendFileToSlave(
+                self._interactor.slave.sendFileToSlave(
                     sha1, url, "buildd", archive.buildd_secret))
         return dl
 
