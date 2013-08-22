@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Source Package Recipe vocabularies used in the lp/code modules."""
@@ -61,5 +61,4 @@ def target_ppas_vocabulary(context):
     """Return a vocabulary of ppas that the current user can target."""
     ppas = getUtility(IArchiveSet).getPPAsForUser(getUtility(ILaunchBag).user)
     return make_archive_vocabulary(
-        ppa for ppa in ppas
-        if check_permission('launchpad.Append', ppa))
+        ppa for ppa in ppas if check_permission('launchpad.Append', ppa))
