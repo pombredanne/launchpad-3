@@ -1471,8 +1471,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build_distros.sort()
         # Secret Squirrel is checked by default.
         self.assertEqual(['Secret Squirrel', 'Woody'], build_distros)
-        self.assertContentEqual(
-            [2605], [build.buildqueue_record.lastscore for build in builds])
+        build_scores = [build.buildqueue_record.lastscore for build in builds]
+        self.assertContentEqual([2605, 2605], build_scores)
 
     def test_request_builds_action_not_logged_in(self):
         """Requesting a build creates pending builds."""
