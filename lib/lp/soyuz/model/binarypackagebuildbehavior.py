@@ -68,9 +68,9 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         d.addCallback(self._buildFilemapStructure, logger)
 
         def got_filemap(filemap):
-            # Generate a string which can be used to cross-check when obtaining
-            # results so we know we are referring to the right database object in
-            # subsequent runs.
+            # Generate a string which can be used to cross-check when
+            # obtaining results so we know we are referring to the right
+            # database object in subsequent runs.
             buildid = "%s-%s" % (self.build.id, build_queue_id)
             cookie = self.buildfarmjob.generateSlaveBuildCookie()
             chroot_sha1 = chroot.content.sha1
@@ -80,6 +80,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             args = self._extraBuildArgs(self.build)
             d = self._interactor.slave.build(
                 cookie, "binarypackage", chroot_sha1, filemap, args)
+
             def got_build((status, info)):
                 message = """%s (%s):
                 ***** RESULT *****

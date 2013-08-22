@@ -74,4 +74,3 @@ class IBuildFarmJobBehavior(Interface):
         :param queueItem: The `BuildQueue` for the build.
         :return: A Deferred that fires when the update is done.
         """
-

@@ -177,6 +177,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
         d = self.startBuild(builder, candidate)
+
         def check_build(ignored):
             # We expect the first call to the slave to be a resume call,
             # followed by the rest of the usual calls we expect.
