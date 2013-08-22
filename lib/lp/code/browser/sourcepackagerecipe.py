@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """SourcePackageRecipe views."""
@@ -394,16 +394,15 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
         The distroseries function as defaults for requesting a build.
         """
         initial_values = {'distroseries': self.context.distroseries}
-        build = self.context.last_build
-        if build:
-            # If the build can't be viewed, the archive can't.
-            if check_permission('launchpad.View', build):
-                initial_values['archive'] = build.archive
+        if self.context.daily_build_archive and check_permission(
+            'launchpad.Append', self.context.daily_build_archive):
+            initial_values['archive'] = self.context.daily_build_archive
         return initial_values
 
     class schema(Interface):
         """Schema for requesting a build."""
-        archive = Choice(vocabulary='TargetPPAs', title=u'Archive')
+        archive = Choice(
+            vocabulary='TargetPPAs', title=u'Archive', required=False)
         distroseries = List(
             Choice(vocabulary='BuildableDistroSeries'),
             title=u'Distribution series')
@@ -411,6 +410,10 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
     custom_widget('distroseries', LabeledMultiCheckBoxWidget)
 
     def validate(self, data):
+        if not data['archive']:
+            self.setFieldError(
+                'archive', "You must specify the archive to build into.")
+            return
         distros = data.get('distroseries', [])
         if not len(distros):
             self.setFieldError('distroseries',
