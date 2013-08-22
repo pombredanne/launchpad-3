@@ -22,8 +22,8 @@ class BuildBehaviorMismatch(Exception):
 
 class IBuildFarmJobBehavior(Interface):
 
-    def setBuilder(builder):
-        """Sets the associated builder reference for this instance."""
+    def setBuilderInteractor(interactor):
+        """Sets the associated `BuilderInteractor` for this instance."""
 
     def logStartBuild(logger):
         """Log the start of a specific build queue item.
@@ -74,4 +74,3 @@ class IBuildFarmJobBehavior(Interface):
         :param queueItem: The `BuildQueue` for the build.
         :return: A Deferred that fires when the update is done.
         """
-

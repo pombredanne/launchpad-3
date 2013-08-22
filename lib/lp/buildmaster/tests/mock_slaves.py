@@ -36,15 +36,9 @@ from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
     CorruptBuildCookie,
     )
-from lp.buildmaster.model.builder import (
-    BuilderSlave,
-    rescueBuilderIfLost,
-    updateBuilderStatus,
-    )
+from lp.buildmaster.model.builder import BuilderSlave
+from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.services.config import config
-from lp.soyuz.model.binarypackagebuildbehavior import (
-    BinaryPackageBuildBehavior,
-    )
 from lp.testing.sampledata import I386_ARCHITECTURE_NAME
 
 
@@ -58,48 +52,21 @@ def make_publisher():
 class MockBuilder:
     """Emulates a IBuilder class."""
 
-    def __init__(self, name, slave, behavior=None):
-        if behavior is None:
-            self.current_build_behavior = BinaryPackageBuildBehavior(None)
-        else:
-            self.current_build_behavior = behavior
-
-        self.slave = slave
-        self.builderok = True
-        self.manual = False
+    def __init__(self, name='mock-builder', behavior=None, builderok=True,
+                 manual=False, virtualized=True, vm_host=None):
+        self.current_build_behavior = behavior or IdleBuildBehavior()
+        self.currentjob = None
+        self.builderok = builderok
+        self.manual = manual
         self.url = 'http://fake:0000'
-        slave.url = self.url
         self.name = name
-        self.virtualized = True
+        self.virtualized = virtualized
+        self.vm_host = vm_host
+        self.failnotes = None
 
     def failBuilder(self, reason):
         self.builderok = False
         self.failnotes = reason
-
-    def slaveStatusSentence(self):
-        return self.slave.status()
-
-    def verifySlaveBuildCookie(self, slave_build_id):
-        return self.current_build_behavior.verifySlaveBuildCookie(
-            slave_build_id)
-
-    def cleanSlave(self):
-        return self.slave.clean()
-
-    def requestAbort(self):
-        return self.slave.abort()
-
-    def resumeSlave(self, logger):
-        return ('out', 'err')
-
-    def checkSlaveAlive(self):
-        pass
-
-    def rescueIfLost(self, logger=None):
-        return rescueBuilderIfLost(self, logger)
-
-    def updateStatus(self, logger=None):
-        return defer.maybeDeferred(updateBuilderStatus, self, logger)
 
 
 # XXX: It would be *really* nice to run some set of tests against the real
