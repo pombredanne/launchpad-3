@@ -345,6 +345,18 @@ class TestDistroSeries(TestCaseWithFactory):
                 spec.workitems_text
         self.assertThat(recorder, HasQueryCount(Equals(4)))
 
+    def test_valid_specifications_preloading_excludes_deleted_workitems(self):
+        distroseries = self.factory.makeDistroSeries()
+        spec = self.factory.makeSpecification(
+            distribution=distroseries.distribution, goal=distroseries)
+        self.factory.makeSpecificationWorkItem(
+            specification=spec, deleted=True)
+        self.factory.makeSpecificationWorkItem(specification=spec)
+        workitems = [
+            s.workitems_text
+            for s in distroseries.api_valid_specifications]
+        self.assertContentEqual([spec.workitems_text], workitems)
+
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):
 
