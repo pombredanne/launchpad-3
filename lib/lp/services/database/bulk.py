@@ -117,7 +117,8 @@ def load(object_type, primary_keys, store=None):
     return list(store.find(object_type, condition))
 
 
-def load_referencing(object_type, owning_objects, reference_keys):
+def load_referencing(object_type, owning_objects, reference_keys,
+                     extra_conditions=[]):
     """Load objects of object_type that reference owning_objects.
 
     Note that complex types like Person are best loaded through dedicated
@@ -130,6 +131,8 @@ def load_referencing(object_type, owning_objects, reference_keys):
         constraint could be lifted in future.
     :param reference_keys: A list of attributes that should be used to select
         object_type keys. e.g. ['branchID']
+    :param extra_conditions: A list of Storm clauses that will be used in the
+        final query.
     :return: A list of object_type where any of reference_keys refered to the
         primary key of any of owning_objects.
     """
@@ -147,7 +150,7 @@ def load_referencing(object_type, owning_objects, reference_keys):
     # clause.
     for column in map(partial(getattr, object_type), reference_keys):
         conditions.append(column.is_in(ids))
-    return list(store.find(object_type, Or(conditions)))
+    return list(store.find(object_type, Or(conditions), *extra_conditions))
 
 
 def load_related(object_type, owning_objects, foreign_keys):
