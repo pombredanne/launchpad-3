@@ -121,7 +121,8 @@ def search_specifications(context, base_clauses, user, sort=None,
                 get_property_cache(spec).linked_branches = []
         if need_workitems:
             work_items = load_referencing(
-                SpecificationWorkItem, rows, ['specification_id'])
+                SpecificationWorkItem, rows, ['specification_id'],
+                extra_conditions=[SpecificationWorkItem.deleted == False])
             for workitem in work_items:
                 person_ids.add(workitem.assignee_id)
                 work_items_by_spec[workitem.specification_id].append(workitem)
