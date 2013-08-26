@@ -90,7 +90,6 @@ to ensure that it fulfills its contract to implement IBuildFarmJobBehavior.
 
 First, we'll reset the current build behavior and destroy the current job.
 
-    >>> bob.current_build_behavior = None
     >>> bob.currentjob.destroySelf()
 
 Attempting to use any other build-related functionality when a builder is

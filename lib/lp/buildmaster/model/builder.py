@@ -393,9 +393,14 @@ def updateBuilderStatus(interactor, logger=None):
 
 class BuilderInteractor(object):
 
-    def __init__(self, builder, override_slave=None):
+    _current_build_behavior = None
+    _cached_currentjob = None
+    _override_behavior = None
+
+    def __init__(self, builder, override_slave=None, override_behavior=None):
         self.builder = builder
         self._slave = override_slave
+        self._override_behavior = override_behavior
 
     @cachedproperty
     def slave(self):
@@ -409,9 +414,29 @@ class BuilderInteractor(object):
         return BuilderSlave.makeBuilderSlave(
             self.builder.url, self.builder.vm_host, timeout)
 
-    @property
-    def current_build_behavior(self):
-        return removeSecurityProxy(self.builder.current_build_behavior)
+    def _getCurrentBuildBehavior(self):
+        """Return the current build behavior."""
+        if self._override_behavior:
+            return self._override_behavior
+        currentjob = self.builder.currentjob
+        if currentjob is None:
+            if not isinstance(
+                    self._current_build_behavior, IdleBuildBehavior):
+                self._current_build_behavior = IdleBuildBehavior()
+        elif currentjob != self._cached_currentjob:
+            self._current_build_behavior = currentjob.required_build_behavior
+            self._current_build_behavior.setBuilderInteractor(self)
+            self._cached_currentjob = currentjob
+        return self._current_build_behavior
+
+    def _setCurrentBuildBehavior(self, new_behavior):
+        """Set the current build behavior."""
+        self._current_build_behavior = new_behavior
+        if self._current_build_behavior is not None:
+            self._current_build_behavior.setBuilderInteractor(self)
+
+    current_build_behavior = property(
+        _getCurrentBuildBehavior, _setCurrentBuildBehavior)
 
     def slaveStatus(self):
         """Get the slave status for this builder.
@@ -563,8 +588,9 @@ class BuilderInteractor(object):
             value is None, or a Failure that contains an exception
             explaining what went wrong.
         """
-        removeSecurityProxy(self.builder).current_build_behavior = (
-            build_queue_item.required_build_behavior)
+        # XXX: Should not set this here. We need to wait for currentjob
+        # to be set.
+        self.current_build_behavior = build_queue_item.required_build_behavior
         self.current_build_behavior.logStartBuild(logger)
 
         # Make sure the request is valid; an exception is raised if it's not.
@@ -770,51 +796,6 @@ class Builder(SQLBase):
     # The number of times a builder can consecutively fail before we
     # give up and mark it builderok=False.
     FAILURE_THRESHOLD = 5
-
-    def __storm_invalidated__(self):
-        """Clear cached properties."""
-        super(Builder, self).__storm_invalidated__()
-        self._current_build_behavior = None
-
-    def _getCurrentBuildBehavior(self):
-        """Return the current build behavior."""
-        self._clean_currentjob_cache()
-        if not safe_hasattr(self, '_current_build_behavior'):
-            self._current_build_behavior = None
-
-        if (self._current_build_behavior is None or
-            isinstance(self._current_build_behavior, IdleBuildBehavior)):
-            # If we don't currently have a current build behavior set,
-            # or we are currently idle, then...
-            currentjob = self.currentjob
-            if currentjob is not None:
-                # ...we'll set it based on our current job.
-                self._current_build_behavior = (
-                    currentjob.required_build_behavior)
-                self._current_build_behavior.setBuilderInteractor(
-                    BuilderInteractor(self))
-                return self._current_build_behavior
-            elif self._current_build_behavior is None:
-                # If we don't have a current job or an idle behavior
-                # already set, then we just set the idle behavior
-                # before returning.
-                self._current_build_behavior = IdleBuildBehavior()
-            return self._current_build_behavior
-
-        else:
-            # We did have a current non-idle build behavior set, so
-            # we just return it.
-            return self._current_build_behavior
-
-    def _setCurrentBuildBehavior(self, new_behavior):
-        """Set the current build behavior."""
-        self._current_build_behavior = new_behavior
-        if self._current_build_behavior is not None:
-            self._current_build_behavior.setBuilderInteractor(
-                BuilderInteractor(self))
-
-    current_build_behavior = property(
-        _getCurrentBuildBehavior, _setCurrentBuildBehavior)
 
     def _getBuilderok(self):
         return self._builderok
