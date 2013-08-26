@@ -135,11 +135,6 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
             result = upload_logs + build_log
         return result
 
-    def startBuild(self, interactor, candidate):
-        candidate = removeSecurityProxy(candidate)
-        return defer.maybeDeferred(
-            interactor.startBuild, candidate, BufferLogger())
-
     def test_non_virtual_ppa_dispatch(self):
         # When the BinaryPackageBuildBehavior dispatches PPA builds to
         # non-virtual builders, it stores the chroot on the server and
@@ -155,7 +150,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         transaction.commit()
         build.distro_arch_series.addOrUpdateChroot(lf)
         interactor = BuilderInteractor(builder, slave)
-        d = interactor.startBuild(build.queueBuild(), BufferLogger())
+        d = interactor._startBuild(build.queueBuild(), BufferLogger())
         d.addCallback(
             self.assertExpectedInteraction, slave.call_log, interactor, build,
             lf, archive, ArchivePurpose.PRIMARY, 'universe')
@@ -174,7 +169,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         transaction.commit()
         build.distro_arch_series.addOrUpdateChroot(lf)
         interactor = BuilderInteractor(builder, slave)
-        d = interactor.startBuild(build.queueBuild(), BufferLogger())
+        d = interactor._startBuild(build.queueBuild(), BufferLogger())
 
         def check_build(ignored):
             # We expect the first call to the slave to be a resume call,
@@ -197,7 +192,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         transaction.commit()
         build.distro_arch_series.addOrUpdateChroot(lf)
         interactor = BuilderInteractor(builder, slave)
-        d = interactor.startBuild(build.queueBuild(), BufferLogger())
+        d = interactor._startBuild(build.queueBuild(), BufferLogger())
         d.addCallback(
             self.assertExpectedInteraction, slave.call_log, interactor, build,
             lf, archive, ArchivePurpose.PARTNER)

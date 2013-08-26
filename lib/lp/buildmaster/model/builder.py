@@ -578,7 +578,7 @@ class BuilderInteractor(object):
 
         return d.addCallback(got_resume_ok).addErrback(got_resume_bad)
 
-    def startBuild(self, build_queue_item, logger):
+    def _startBuild(self, build_queue_item, logger):
         """Start a build on this builder.
 
         :param build_queue_item: A BuildQueueItem to build.
@@ -641,7 +641,7 @@ class BuilderInteractor(object):
         logger = self._getSlaveScannerLogger()
         # Using maybeDeferred ensures that any exceptions are also
         # wrapped up and caught later.
-        d = defer.maybeDeferred(self.startBuild, candidate, logger)
+        d = defer.maybeDeferred(self._startBuild, candidate, logger)
         return d
 
     def resetOrFail(self, logger, exception):
