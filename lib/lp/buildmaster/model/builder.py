@@ -392,42 +392,57 @@ def updateBuilderStatus(interactor, logger=None):
 
 class BuilderInteractor(object):
 
-    _current_build_behavior = None
+    _cached_build_behavior = None
     _cached_currentjob = None
+
+    _cached_slave = None
+    _cached_slave_attrs = None
+
+    # Tests can override current_build_behavior and slave.
     _override_behavior = None
+    _override_slave = None
 
     def __init__(self, builder, override_slave=None, override_behavior=None):
         self.builder = builder
-        self._slave = override_slave
+        self._override_slave = override_slave
         self._override_behavior = override_behavior
 
-    @cachedproperty
+    @property
     def slave(self):
         """See IBuilder."""
-        if self._slave is not None:
-            return self._slave
-        if self.builder.virtualized:
-            timeout = config.builddmaster.virtualized_socket_timeout
-        else:
-            timeout = config.builddmaster.socket_timeout
-        return BuilderSlave.makeBuilderSlave(
-            self.builder.url, self.builder.vm_host, timeout)
+        if self._override_slave is not None:
+            return self._override_slave
+        # The slave cache is invalidated when the builder's URL, VM host
+        # or virtualisation change.
+        new_slave_attrs = (
+            self.builder.url, self.builder.vm_host, self.builder.virtualized)
+        if self._cached_slave_attrs != new_slave_attrs:
+            if self.builder.virtualized:
+                timeout = config.builddmaster.virtualized_socket_timeout
+            else:
+                timeout = config.builddmaster.socket_timeout
+            self._cached_slave = BuilderSlave.makeBuilderSlave(
+                self.builder.url, self.builder.vm_host, timeout)
+            self._cached_slave_attrs = new_slave_attrs
+        return self._cached_slave
 
     @property
     def current_build_behavior(self):
         """Return the current build behavior."""
-        if self._override_behavior:
+        if self._override_behavior is not None:
             return self._override_behavior
+        # The current_build_behavior cache is invalidated when
+        # builder.currentjob changes.
         currentjob = self.builder.currentjob
         if currentjob is None:
             if not isinstance(
-                    self._current_build_behavior, IdleBuildBehavior):
-                self._current_build_behavior = IdleBuildBehavior()
+                    self._cached_build_behavior, IdleBuildBehavior):
+                self._cached_build_behavior = IdleBuildBehavior()
         elif currentjob != self._cached_currentjob:
-            self._current_build_behavior = currentjob.required_build_behavior
-            self._current_build_behavior.setBuilderInteractor(self)
+            self._cached_build_behavior = currentjob.required_build_behavior
+            self._cached_build_behavior.setBuilderInteractor(self)
             self._cached_currentjob = currentjob
-        return self._current_build_behavior
+        return self._cached_build_behavior
 
     def slaveStatus(self):
         """Get the slave status for this builder.
