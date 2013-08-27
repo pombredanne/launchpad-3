@@ -302,24 +302,6 @@ class BuilderInteractor(object):
 
         return d.addCallback(got_status)
 
-    def slaveStatusSentence(self):
-        """Get the slave status sentence for this builder.
-
-        :return: A Deferred which fires when the slave dialog is complete.
-            Its value is a  tuple with the first element containing the
-            slave status, build_id-queue-id and then optionally more
-            elements depending on the status.
-        """
-        return self.slave.status()
-
-    def verifySlaveBuildCookie(self, slave_build_id):
-        """Verify that a slave's build cookie is consistent.
-
-        This should delegate to the current `IBuildFarmJobBehavior`.
-        """
-        return self._current_build_behavior.verifySlaveBuildCookie(
-            slave_build_id)
-
     def isAvailable(self):
         """Whether or not a builder is available for building new jobs.
 
@@ -328,7 +310,7 @@ class BuilderInteractor(object):
         """
         if not self.builder.builderok:
             return defer.succeed(False)
-        d = self.slaveStatusSentence()
+        d = self.slave.status()
 
         def catch_fault(failure):
             failure.trap(xmlrpclib.Fault, socket.error)
@@ -359,7 +341,7 @@ class BuilderInteractor(object):
             'BuilderStatus.WAITING': 2
             }
 
-        d = self.slaveStatusSentence()
+        d = self.slave.status()
 
         def got_status(status_sentence):
             """After we get the status, clean if we have to.
@@ -367,7 +349,7 @@ class BuilderInteractor(object):
             Always return status_sentence.
             """
             # Isolate the BuilderStatus string, always the first token in
-            # IBuilder.slaveStatusSentence().
+            # BuilderSlave.status().
             status = status_sentence[0]
 
             # If the cookie test below fails, it will request an abort of the
@@ -406,7 +388,8 @@ class BuilderInteractor(object):
                 return
             slave_build_id = status_sentence[ident_position[status]]
             try:
-                self.verifySlaveBuildCookie(slave_build_id)
+                self._current_build_behavior.verifySlaveBuildCookie(
+                    slave_build_id)
             except CorruptBuildCookie as reason:
                 if status == 'BuilderStatus.WAITING':
                     d = self.cleanSlave()

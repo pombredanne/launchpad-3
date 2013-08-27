@@ -472,7 +472,7 @@ class TestBuilderInteractorSlaveStatus(TestCase):
             AbortedSlave(), builder_status='BuilderStatus.ABORTED')
 
     def test_isAvailable_with_not_builderok(self):
-        # isAvailable() is a wrapper around slaveStatusSentence()
+        # isAvailable() is a wrapper around BuilderSlave.status()
         builder = MockBuilder()
         builder.builderok = False
         d = BuilderInteractor(builder).isAvailable()
