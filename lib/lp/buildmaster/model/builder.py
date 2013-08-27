@@ -441,7 +441,7 @@ class BuilderInteractor(object):
             'BuilderStatus.WAITING': 2
             }
 
-        d = interactor.slaveStatusSentence()
+        d = self.slaveStatusSentence()
 
         def got_status(status_sentence):
             """After we get the status, clean if we have to.
@@ -460,45 +460,46 @@ class BuilderInteractor(object):
             # communications with the slave and the build manager had to reset
             # the job.
             if (status == 'BuilderStatus.ABORTED'
-                    and interactor.builder.currentjob is None):
-                if not interactor.builder.virtualized:
+                    and self.builder.currentjob is None):
+                if not self.builder.virtualized:
                     # We can't reset non-virtual builders reliably as the
                     # abort() function doesn't kill the actual build job,
                     # only the sbuild process!  All we can do here is fail
                     # the builder with a message indicating the problem and
                     # wait for an admin to reboot it.
-                    interactor.builder.failBuilder(
-                        "Non-virtual builder in ABORTED state, requires admin to "
-                        "restart")
+                    self.builder.failBuilder(
+                        "Non-virtual builder in ABORTED state, requires admin "
+                        "to restart")
                     return "dummy status"
                 if logger is not None:
                     logger.info(
                         "Builder '%s' being cleaned up from ABORTED" %
-                        (interactor.builder.name,))
-                d = interactor.cleanSlave()
+                        (self.builder.name,))
+                d = self.cleanSlave()
                 return d.addCallback(lambda ignored: status_sentence)
             else:
                 return status_sentence
 
         def rescue_slave(status_sentence):
-            # If slave is not building nor waiting, it's not in need of rescuing.
+            # If slave is not building nor waiting, it's not in need of
+            # rescuing.
             status = status_sentence[0]
             if status not in ident_position.keys():
                 return
             slave_build_id = status_sentence[ident_position[status]]
             try:
-                interactor.verifySlaveBuildCookie(slave_build_id)
+                self.verifySlaveBuildCookie(slave_build_id)
             except CorruptBuildCookie as reason:
                 if status == 'BuilderStatus.WAITING':
-                    d = interactor.cleanSlave()
+                    d = self.cleanSlave()
                 else:
-                    d = interactor.requestAbort()
+                    d = self.requestAbort()
 
                 def log_rescue(ignored):
                     if logger:
                         logger.info(
                             "Builder '%s' rescued from '%s': '%s'" %
-                            (interactor.builder.name, slave_build_id, reason))
+                            (self.builder.name, slave_build_id, reason))
                 return d.addCallback(log_rescue)
 
         d.addCallback(got_status)
