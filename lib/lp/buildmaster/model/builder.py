@@ -78,10 +78,7 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.utils import copy_and_close
-from lp.services.propertycache import (
-    cachedproperty,
-    get_property_cache,
-    )
+from lp.services.propertycache import cachedproperty
 from lp.services.twistedsupport import cancel_on_timeout
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
 from lp.services.webapp import urlappend
@@ -807,20 +804,15 @@ class Builder(SQLBase):
     def gotFailure(self):
         """See `IBuilder`."""
         self.failure_count += 1
-        self._clean_currentjob_cache()
 
     def resetFailureCount(self):
         """See `IBuilder`."""
         self.failure_count = 0
-        self._clean_currentjob_cache()
 
     @cachedproperty
     def currentjob(self):
         """See IBuilder"""
         return getUtility(IBuildQueueSet).getByBuilder(self)
-
-    def _clean_currentjob_cache(self):
-        del get_property_cache(self).currentjob
 
     def failBuilder(self, reason):
         """See IBuilder"""
