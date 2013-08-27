@@ -849,24 +849,15 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
         self.assertIsInstance(
             self.interactor.current_build_behavior, IdleBuildBehavior)
 
-    def test_set_behavior_sets_builder(self):
-        """Setting a builder's behavior also associates the behavior with the
-        builder."""
-        behavior = IBuildFarmJobBehavior(self.buildfarmjob)
-        self.interactor.current_build_behavior = behavior
-
-        self.assertEqual(behavior, self.interactor.current_build_behavior)
-        self.assertEqual(behavior._builder, self.builder)
-        self.assertEqual(behavior._interactor, self.interactor)
-
     def test_current_job_behavior(self):
         """The current behavior is set automatically from the current job."""
         # Set the builder attribute on the buildqueue record so that our
         # builder will think it has a current build.
         self.build.buildqueue_record.builder = self.builder
-
-        self.assertIsInstance(
-            self.interactor.current_build_behavior, BinaryPackageBuildBehavior)
+        behavior = removeSecurityProxy(self.interactor.current_build_behavior)
+        self.assertIsInstance(behavior, BinaryPackageBuildBehavior)
+        self.assertEqual(behavior._builder, self.builder)
+        self.assertEqual(behavior._interactor, self.interactor)
 
 
 class TestSlave(TestCase):

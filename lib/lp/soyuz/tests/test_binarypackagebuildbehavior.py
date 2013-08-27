@@ -13,7 +13,6 @@ import tempfile
 from storm.store import Store
 from testtools.deferredruntest import AsynchronousDeferredRunTest
 import transaction
-from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -48,6 +47,9 @@ from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
 from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.model.binarypackagebuildbehavior import (
+    BinaryPackageBuildBehavior,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.fakemethod import FakeMethod
@@ -149,8 +151,11 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         lf = self.factory.makeLibraryFileAlias()
         transaction.commit()
         build.distro_arch_series.addOrUpdateChroot(lf)
+        bq = build.queueBuild()
+        bq.markAsBuilding(builder)
+        transaction.commit()
         interactor = BuilderInteractor(builder, slave)
-        d = interactor._startBuild(build.queueBuild(), BufferLogger())
+        d = interactor._startBuild(bq, BufferLogger())
         d.addCallback(
             self.assertExpectedInteraction, slave.call_log, interactor, build,
             lf, archive, ArchivePurpose.PRIMARY, 'universe')
@@ -168,8 +173,11 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         lf = self.factory.makeLibraryFileAlias()
         transaction.commit()
         build.distro_arch_series.addOrUpdateChroot(lf)
+        bq = build.queueBuild()
+        bq.markAsBuilding(builder)
+        transaction.commit()
         interactor = BuilderInteractor(builder, slave)
-        d = interactor._startBuild(build.queueBuild(), BufferLogger())
+        d = interactor._startBuild(bq, BufferLogger())
 
         def check_build(ignored):
             # We expect the first call to the slave to be a resume call,
@@ -191,8 +199,11 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         lf = self.factory.makeLibraryFileAlias()
         transaction.commit()
         build.distro_arch_series.addOrUpdateChroot(lf)
+        bq = build.queueBuild()
+        bq.markAsBuilding(builder)
+        transaction.commit()
         interactor = BuilderInteractor(builder, slave)
-        d = interactor._startBuild(build.queueBuild(), BufferLogger())
+        d = interactor._startBuild(bq, BufferLogger())
         d.addCallback(
             self.assertExpectedInteraction, slave.call_log, interactor, build,
             lf, archive, ArchivePurpose.PARTNER)
