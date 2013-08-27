@@ -717,5 +717,3 @@ class BuilderInteractor(object):
         # name argument anymore. See bug 164203.
         logger = logging.getLogger('slave-scanner')
         return logger
-
-
