@@ -20,7 +20,6 @@ import tempfile
 from urlparse import urlparse
 import xmlrpclib
 
-from lazr.restful.utils import safe_hasattr
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -42,7 +41,10 @@ from twisted.web import xmlrpc
 from twisted.web.client import downloadPage
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    isinstance as zope_isinstance,
+    removeSecurityProxy,
+    )
 
 from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.builder import (
@@ -414,7 +416,8 @@ class BuilderInteractor(object):
         return BuilderSlave.makeBuilderSlave(
             self.builder.url, self.builder.vm_host, timeout)
 
-    def _getCurrentBuildBehavior(self):
+    @property
+    def current_build_behavior(self):
         """Return the current build behavior."""
         if self._override_behavior:
             return self._override_behavior
@@ -428,15 +431,6 @@ class BuilderInteractor(object):
             self._current_build_behavior.setBuilderInteractor(self)
             self._cached_currentjob = currentjob
         return self._current_build_behavior
-
-    def _setCurrentBuildBehavior(self, new_behavior):
-        """Set the current build behavior."""
-        self._current_build_behavior = new_behavior
-        if self._current_build_behavior is not None:
-            self._current_build_behavior.setBuilderInteractor(self)
-
-    current_build_behavior = property(
-        _getCurrentBuildBehavior, _setCurrentBuildBehavior)
 
     def slaveStatus(self):
         """Get the slave status for this builder.
@@ -588,9 +582,12 @@ class BuilderInteractor(object):
             value is None, or a Failure that contains an exception
             explaining what went wrong.
         """
-        # XXX: Should not set this here. We need to wait for currentjob
-        # to be set.
-        self.current_build_behavior = build_queue_item.required_build_behavior
+        needed_bfjb = type(removeSecurityProxy(
+            build_queue_item.required_build_behavior))
+        if not zope_isinstance(self.current_build_behavior, needed_bfjb):
+            raise AssertionError(
+                "Inappropriate IBuildFarmJobBehavior: %r is not a %r" %
+                (self.current_build_behavior, needed_bfjb))
         self.current_build_behavior.logStartBuild(logger)
 
         # Make sure the request is valid; an exception is raised if it's not.
