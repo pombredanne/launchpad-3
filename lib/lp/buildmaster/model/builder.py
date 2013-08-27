@@ -8,8 +8,6 @@ __all__ = [
     'BuilderInteractor',
     'BuilderSet',
     'ProxyWithConnectionTimeout',
-    'rescueBuilderIfLost',
-    'updateBuilderStatus',
     ]
 
 import gzip
@@ -304,92 +302,6 @@ class BuilderSlave(object):
         return d.addErrback(got_fault)
 
 
-# This is a separate function since MockBuilder needs to use it too.
-# Do not use it -- (Mock)Builder.rescueIfLost should be used instead.
-def rescueBuilderIfLost(interactor, logger=None):
-    """See `IBuilder`."""
-    # 'ident_position' dict relates the position of the job identifier
-    # token in the sentence received from status(), according to the
-    # two statuses we care about. See lp:launchpad-buildd
-    # for further information about sentence format.
-    ident_position = {
-        'BuilderStatus.BUILDING': 1,
-        'BuilderStatus.WAITING': 2
-        }
-
-    d = interactor.slaveStatusSentence()
-
-    def got_status(status_sentence):
-        """After we get the status, clean if we have to.
-
-        Always return status_sentence.
-        """
-        # Isolate the BuilderStatus string, always the first token in
-        # IBuilder.slaveStatusSentence().
-        status = status_sentence[0]
-
-        # If the cookie test below fails, it will request an abort of the
-        # builder.  This will leave the builder in the aborted state and
-        # with no assigned job, and we should now "clean" the slave which
-        # will reset its state back to IDLE, ready to accept new builds.
-        # This situation is usually caused by a temporary loss of
-        # communications with the slave and the build manager had to reset
-        # the job.
-        if (status == 'BuilderStatus.ABORTED'
-                and interactor.builder.currentjob is None):
-            if not interactor.builder.virtualized:
-                # We can't reset non-virtual builders reliably as the
-                # abort() function doesn't kill the actual build job,
-                # only the sbuild process!  All we can do here is fail
-                # the builder with a message indicating the problem and
-                # wait for an admin to reboot it.
-                interactor.builder.failBuilder(
-                    "Non-virtual builder in ABORTED state, requires admin to "
-                    "restart")
-                return "dummy status"
-            if logger is not None:
-                logger.info(
-                    "Builder '%s' being cleaned up from ABORTED" %
-                    (interactor.builder.name,))
-            d = interactor.cleanSlave()
-            return d.addCallback(lambda ignored: status_sentence)
-        else:
-            return status_sentence
-
-    def rescue_slave(status_sentence):
-        # If slave is not building nor waiting, it's not in need of rescuing.
-        status = status_sentence[0]
-        if status not in ident_position.keys():
-            return
-        slave_build_id = status_sentence[ident_position[status]]
-        try:
-            interactor.verifySlaveBuildCookie(slave_build_id)
-        except CorruptBuildCookie as reason:
-            if status == 'BuilderStatus.WAITING':
-                d = interactor.cleanSlave()
-            else:
-                d = interactor.requestAbort()
-
-            def log_rescue(ignored):
-                if logger:
-                    logger.info(
-                        "Builder '%s' rescued from '%s': '%s'" %
-                        (interactor.builder.name, slave_build_id, reason))
-            return d.addCallback(log_rescue)
-
-    d.addCallback(got_status)
-    d.addCallback(rescue_slave)
-    return d
-
-
-def updateBuilderStatus(interactor, logger=None):
-    """See `IBuilder`."""
-    if logger:
-        logger.debug('Checking %s' % interactor.builder.name)
-
-    return interactor.rescueIfLost(logger)
-
-
 class BuilderInteractor(object):
 
     _cached_build_behavior = None
@@ -520,7 +432,78 @@ class BuilderInteractor(object):
         :return: A Deferred that fires when the dialog with the slave is
             finished.  It does not have a return value.
         """
-        return rescueBuilderIfLost(self, logger)
+        # 'ident_position' dict relates the position of the job identifier
+        # token in the sentence received from status(), according to the
+        # two statuses we care about. See lp:launchpad-buildd
+        # for further information about sentence format.
+        ident_position = {
+            'BuilderStatus.BUILDING': 1,
+            'BuilderStatus.WAITING': 2
+            }
+
+        d = interactor.slaveStatusSentence()
+
+        def got_status(status_sentence):
+            """After we get the status, clean if we have to.
+
+            Always return status_sentence.
+            """
+            # Isolate the BuilderStatus string, always the first token in
+            # IBuilder.slaveStatusSentence().
+            status = status_sentence[0]
+
+            # If the cookie test below fails, it will request an abort of the
+            # builder.  This will leave the builder in the aborted state and
+            # with no assigned job, and we should now "clean" the slave which
+            # will reset its state back to IDLE, ready to accept new builds.
+            # This situation is usually caused by a temporary loss of
+            # communications with the slave and the build manager had to reset
+            # the job.
+            if (status == 'BuilderStatus.ABORTED'
+                    and interactor.builder.currentjob is None):
+                if not interactor.builder.virtualized:
+                    # We can't reset non-virtual builders reliably as the
+                    # abort() function doesn't kill the actual build job,
+                    # only the sbuild process!  All we can do here is fail
+                    # the builder with a message indicating the problem and
+                    # wait for an admin to reboot it.
+                    interactor.builder.failBuilder(
+                        "Non-virtual builder in ABORTED state, requires admin to "
+                        "restart")
+                    return "dummy status"
+                if logger is not None:
+                    logger.info(
+                        "Builder '%s' being cleaned up from ABORTED" %
+                        (interactor.builder.name,))
+                d = interactor.cleanSlave()
+                return d.addCallback(lambda ignored: status_sentence)
+            else:
+                return status_sentence
+
+        def rescue_slave(status_sentence):
+            # If slave is not building nor waiting, it's not in need of rescuing.
+            status = status_sentence[0]
+            if status not in ident_position.keys():
+                return
+            slave_build_id = status_sentence[ident_position[status]]
+            try:
+                interactor.verifySlaveBuildCookie(slave_build_id)
+            except CorruptBuildCookie as reason:
+                if status == 'BuilderStatus.WAITING':
+                    d = interactor.cleanSlave()
+                else:
+                    d = interactor.requestAbort()
+
+                def log_rescue(ignored):
+                    if logger:
+                        logger.info(
+                            "Builder '%s' rescued from '%s': '%s'" %
+                            (interactor.builder.name, slave_build_id, reason))
+                return d.addCallback(log_rescue)
+
+        d.addCallback(got_status)
+        d.addCallback(rescue_slave)
+        return d
 
     def updateStatus(self, logger=None):
         """Update the builder's status by probing it.
@@ -528,7 +511,10 @@ class BuilderInteractor(object):
         :return: A Deferred that fires when the dialog with the slave is
             finished.  It does not have a return value.
         """
-        return updateBuilderStatus(self, logger)
+        if logger:
+            logger.debug('Checking %s' % self.builder.name)
+
+        return self.rescueIfLost(logger)
 
     def cleanSlave(self):
         """Clean any temporary files from the slave.
