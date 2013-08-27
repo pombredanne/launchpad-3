@@ -222,7 +222,8 @@ class BuildQueue(SQLBase):
         if self.job.status != JobStatus.RUNNING:
             self.job.start()
         self.specific_job.jobStarted()
-        del get_property_cache(builder).currentjob
+        if builder is not None:
+            del get_property_cache(builder).currentjob
 
     def reset(self):
         """See `IBuildQueue`."""
@@ -234,7 +235,8 @@ class BuildQueue(SQLBase):
         self.job.date_finished = None
         self.logtail = None
         self.specific_job.jobReset()
-        del get_property_cache(builder).currentjob
+        if builder is not None:
+            del get_property_cache(builder).currentjob
 
     def cancel(self):
         """See `IBuildQueue`."""
