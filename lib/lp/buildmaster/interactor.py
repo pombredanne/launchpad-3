@@ -31,6 +31,9 @@ from lp.buildmaster.interfaces.builder import (
     CannotResumeHost,
     CorruptBuildCookie,
     )
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    IBuildFarmJobBehavior,
+    )
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.services.config import config
 from lp.services.helpers import filenameToContentType
@@ -269,7 +272,8 @@ class BuilderInteractor(object):
                     self._cached_build_behavior, IdleBuildBehavior):
                 self._cached_build_behavior = IdleBuildBehavior()
         elif currentjob != self._cached_currentjob:
-            self._cached_build_behavior = currentjob.required_build_behavior
+            self._cached_build_behavior = IBuildFarmJobBehavior(
+                currentjob.specific_job)
             self._cached_build_behavior.setBuilderInteractor(self)
             self._cached_currentjob = currentjob
         return self._cached_build_behavior
@@ -483,7 +487,7 @@ class BuilderInteractor(object):
             explaining what went wrong.
         """
         needed_bfjb = type(removeSecurityProxy(
-            build_queue_item.required_build_behavior))
+            IBuildFarmJobBehavior(build_queue_item.specific_job)))
         if not zope_isinstance(self._current_build_behavior, needed_bfjb):
             raise AssertionError(
                 "Inappropriate IBuildFarmJobBehavior: %r is not a %r" %
