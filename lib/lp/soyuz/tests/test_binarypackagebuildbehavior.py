@@ -153,7 +153,6 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build.distro_arch_series.addOrUpdateChroot(lf)
         bq = build.queueBuild()
         bq.markAsBuilding(builder)
-        transaction.commit()
         interactor = BuilderInteractor(builder, slave)
         d = interactor._startBuild(bq, BufferLogger())
         d.addCallback(
@@ -175,7 +174,6 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build.distro_arch_series.addOrUpdateChroot(lf)
         bq = build.queueBuild()
         bq.markAsBuilding(builder)
-        transaction.commit()
         interactor = BuilderInteractor(builder, slave)
         d = interactor._startBuild(bq, BufferLogger())
 
@@ -201,7 +199,6 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build.distro_arch_series.addOrUpdateChroot(lf)
         bq = build.queueBuild()
         bq.markAsBuilding(builder)
-        transaction.commit()
         interactor = BuilderInteractor(builder, slave)
         d = interactor._startBuild(bq, BufferLogger())
         d.addCallback(
