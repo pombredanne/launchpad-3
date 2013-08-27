@@ -18,7 +18,6 @@ import transaction
 from twisted.internet import defer
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
@@ -52,7 +51,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             raise CannotBuild("Unable to find a chroot for %s" %
                               distroarchseries.displayname)
         chroot_sha1 = chroot.content.sha1
-        d = self._builder.slave.cacheFile(logger, chroot)
+        d = self._interactor.slave.cacheFile(logger, chroot)
 
         def got_cache_file(ignored):
             cookie = self.buildfarmjob.generateSlaveBuildCookie()
@@ -64,7 +63,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
             filemap = {}
 
-            return self._builder.slave.build(
+            return self._interactor.slave.build(
                 cookie, self.build_type, chroot_sha1, filemap, args)
         return d.addCallback(got_cache_file)
 
@@ -93,7 +92,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             logger.error("Did not find templates tarball in slave output.")
             return defer.succeed(None)
 
-        slave = removeSecurityProxy(buildqueue.builder.slave)
+        slave = self._interactor.slave
 
         fd, fname = tempfile.mkstemp()
         tarball_file = os.fdopen(fd, 'wb')
@@ -174,6 +173,6 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
         yield self.storeLogFromSlave(build_queue=queue_item)
 
-        yield queue_item.builder.cleanSlave()
+        yield self._interactor.cleanSlave()
         queue_item.destroySelf()
         transaction.commit()

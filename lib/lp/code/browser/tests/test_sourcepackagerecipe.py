@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the source package recipe view classes and templates."""
@@ -57,7 +57,6 @@ from lp.testing import (
     time_counter,
     )
 from lp.testing.deprecated import LaunchpadFormHarness
-from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -104,8 +103,7 @@ class TestCaseForRecipe(BrowserTestCase):
         self.squirrel = self.factory.makeDistroSeries(
             displayname='Secret Squirrel', name='secret', version='100.04',
             distribution=self.ppa.distribution)
-        naked_squirrel = remove_security_proxy_and_shout_at_engineer(
-            self.squirrel)
+        naked_squirrel = removeSecurityProxy(self.squirrel)
         naked_squirrel.nominatedarchindep = self.squirrel.newArch(
             'i386', ProcessorFamily.get(1), False, self.chef,
             supports_virtualized=True)
@@ -1447,6 +1445,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             cake_recipe
             Request builds for cake_recipe
             Archive:
+            (nothing selected)
             Secret PPA [~chef/ppa]
             Distribution series:
             Secret Squirrel
@@ -1459,14 +1458,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 
     def test_request_builds_action(self):
         """Requesting a build creates pending builds."""
-        woody = self.factory.makeDistroSeries(
-            name='woody', displayname='Woody',
-            distribution=self.ppa.distribution)
-        naked_woody = remove_security_proxy_and_shout_at_engineer(woody)
-        naked_woody.nominatedarchindep = woody.newArch(
-            'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
-            supports_virtualized=True)
-
+        self._makeWoodyDistroSeries()
         recipe = self.makeRecipe()
         browser = self.getViewBrowser(recipe, '+request-builds')
         browser.getControl('Woody').click()
@@ -1479,44 +1471,49 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build_distros.sort()
         # Secret Squirrel is checked by default.
         self.assertEqual(['Secret Squirrel', 'Woody'], build_distros)
-        self.assertEqual(
-            set([2605]),
-            set(build.buildqueue_record.lastscore for build in builds))
+        build_scores = [build.buildqueue_record.lastscore for build in builds]
+        self.assertContentEqual([2605, 2605], build_scores)
 
     def test_request_builds_action_not_logged_in(self):
         """Requesting a build creates pending builds."""
-        woody = self.factory.makeDistroSeries(
-            name='woody', displayname='Woody',
-            distribution=self.ppa.distribution)
-        naked_woody = removeSecurityProxy(woody)
-        naked_woody.nominatedarchindep = woody.newArch(
-            'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
-            supports_virtualized=True)
+        self._makeWoodyDistroSeries()
         recipe = self.makeRecipe()
-
         browser = self.getViewBrowser(recipe, no_login=True)
         self.assertRaises(
             Unauthorized, browser.getLink('Request build(s)').click)
 
-    def test_request_builds_archive(self):
+    def test_request_builds_archive_no_daily_build_archive(self):
         recipe = self.factory.makeSourcePackageRecipe()
-        ppa2 = self.factory.makeArchive(
-            displayname='Secret PPA', owner=self.chef, name='ppa2')
         view = SourcePackageRecipeRequestBuildsView(recipe, None)
         self.assertIs(None, view.initial_values.get('archive'))
-        self.factory.makeSourcePackageRecipeBuild(recipe=recipe, archive=ppa2)
-        self.assertEqual(ppa2, view.initial_values.get('archive'))
 
-    def test_request_build_rejects_over_quota(self):
-        """Over-quota build requests cause validation failures."""
+    def test_request_builds_archive_daily_build_archive_unuploadable(self):
+        ppa = self.factory.makeArchive()
+        recipe = self.factory.makeSourcePackageRecipe(daily_build_archive=ppa)
+        with person_logged_in(self.chef):
+            view = SourcePackageRecipeRequestBuildsView(recipe, None)
+            self.assertIs(None, view.initial_values.get('archive'))
+
+    def test_request_builds_archive(self):
+        ppa = self.factory.makeArchive(
+            displayname='Secret PPA', owner=self.chef, name='ppa2')
+        recipe = self.factory.makeSourcePackageRecipe(daily_build_archive=ppa)
+        with person_logged_in(self.chef):
+            view = SourcePackageRecipeRequestBuildsView(recipe, None)
+            self.assertEqual(ppa, view.initial_values.get('archive'))
+
+    def _makeWoodyDistroSeries(self):
         woody = self.factory.makeDistroSeries(
             name='woody', displayname='Woody',
             distribution=self.ppa.distribution)
-        naked_woody = remove_security_proxy_and_shout_at_engineer(woody)
-        naked_woody.nominatedarchindep = woody.newArch(
+        removeSecurityProxy(woody).nominatedarchindep = woody.newArch(
             'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
             supports_virtualized=True)
+        return woody
 
+    def test_request_build_rejects_over_quota(self):
+        """Over-quota build requests cause validation failures."""
+        woody = self._makeWoodyDistroSeries()
         recipe = self.makeRecipe()
         for x in range(5):
             build = recipe.requestBuild(
@@ -1532,14 +1529,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 
     def test_request_builds_rejects_duplicate(self):
         """Over-quota build requests cause validation failures."""
-        woody = self.factory.makeDistroSeries(
-            name='woody', displayname='Woody',
-            distribution=self.ppa.distribution)
-        naked_woody = remove_security_proxy_and_shout_at_engineer(woody)
-        naked_woody.nominatedarchindep = woody.newArch(
-            'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
-            supports_virtualized=True)
-
+        woody = self._makeWoodyDistroSeries()
         recipe = self.makeRecipe()
         recipe.requestBuild(
             self.ppa, self.chef, woody, PackagePublishingPocket.RELEASE)

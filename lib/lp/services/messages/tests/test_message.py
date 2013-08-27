@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -17,13 +17,12 @@ import transaction
 from lp.services.messages.model.message import MessageSet
 from lp.testing import (
     login,
-    TestCase,
+    TestCaseWithFactory,
     )
-from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import LaunchpadFunctionalLayer
 
 
-class TestMessageSet(TestCase):
+class TestMessageSet(TestCaseWithFactory):
     """Test the methods of `MessageSet`."""
 
     layer = LaunchpadFunctionalLayer
@@ -34,7 +33,6 @@ class TestMessageSet(TestCase):
         super(TestMessageSet, self).setUp()
         # Testing behavior, not permissions here.
         login('foo.bar@canonical.com')
-        self.factory = LaunchpadObjectFactory()
 
     def createTestMessages(self):
         """Create some test messages."""
@@ -71,16 +69,10 @@ class TestMessageSet(TestCase):
         message1, message2, message3, message4 = messages
         threads = MessageSet.threadMessages(messages)
         flattened = list(MessageSet.flattenThreads(threads))
-        expected = [(0, message1),
-                    (1, message2),
-                    (2, message4),
-                    (1, message3)]
+        expected = [(0, message1), (1, message2), (2, message4), (1, message3)]
         self.assertEqual(expected, flattened)
 
-    def test_fromEmail_keeps_attachments(self):
-        """Test that the parsing of the email keeps the attachments."""
-        # Build a simple multipart message with a plain text first part
-        # and an text/x-diff attachment.
+    def _makeMessageWithAttachment(self, filename='review.diff'):
         sender = self.factory.makePerson()
         msg = MIMEMultipart()
         msg['Message-Id'] = make_msgid('launchpad')
@@ -93,8 +85,15 @@ class TestMessageSet(TestCase):
         attachment.set_payload('This is the diff, honest.')
         attachment['Content-Type'] = 'text/x-diff'
         attachment['Content-Disposition'] = (
-            'attachment; filename="review.diff"')
+            'attachment; filename="%s"' % filename)
         msg.attach(attachment)
+        return msg
+
+    def test_fromEmail_keeps_attachments(self):
+        """Test that the parsing of the email keeps the attachments."""
+        # Build a simple multipart message with a plain text first part
+        # and an text/x-diff attachment.
+        msg = self._makeMessageWithAttachment()
         # Now create the message from the MessageSet.
         message = MessageSet().fromEmail(msg.as_string())
         text, diff = message.chunks
@@ -108,20 +107,7 @@ class TestMessageSet(TestCase):
     def test_fromEmail_strips_attachment_paths(self):
         # Build a simple multipart message with a plain text first part
         # and an text/x-diff attachment.
-        sender = self.factory.makePerson()
-        msg = MIMEMultipart()
-        msg['Message-Id'] = make_msgid('launchpad')
-        msg['Date'] = formatdate()
-        msg['To'] = 'to@example.com'
-        msg['From'] = sender.preferredemail.email
-        msg['Subject'] = 'Sample'
-        msg.attach(MIMEText('This is the body of the email.'))
-        attachment = Message()
-        attachment.set_payload('This is the diff, honest.')
-        attachment['Content-Type'] = 'text/x-diff'
-        attachment['Content-Disposition'] = (
-            'attachment; filename="/tmp/foo/review.diff"')
-        msg.attach(attachment)
+        msg = self._makeMessageWithAttachment(filename='/tmp/foo/review.diff')
         # Now create the message from the MessageSet.
         message = MessageSet().fromEmail(msg.as_string())
         text, diff = message.chunks
@@ -136,10 +122,28 @@ class TestMessageSet(TestCase):
         """Even when messages are identical, fromEmail creates a new one."""
         email = self.factory.makeEmailMessage()
         orig_message = MessageSet().fromEmail(email.as_string())
-        # update librarian
         transaction.commit()
         dupe_message = MessageSet().fromEmail(email.as_string())
         self.assertNotEqual(orig_message.id, dupe_message.id)
+
+    def test_fromEmail_restricted_reuploads(self):
+        """fromEmail will re-upload the email to the restricted librarian if
+        restricted is True."""
+        filealias = self.factory.makeLibraryFileAlias()
+        transaction.commit()
+        email = self.factory.makeEmailMessage()
+        message = MessageSet().fromEmail(
+            email.as_string(), filealias=filealias, restricted=True)
+        self.assertTrue(message.raw.restricted)
+        self.assertNotEqual(message.raw.id, filealias.id)
+
+    def test_fromEmail_restricted_attachments(self):
+        """fromEmail creates restricted attachments correctly."""
+        msg = self._makeMessageWithAttachment()
+        message = MessageSet().fromEmail(msg.as_string(), restricted=True)
+        text, diff = message.chunks
+        self.assertEqual('review.diff', diff.blob.filename)
+        self.assertTrue('review.diff', diff.blob.restricted)
 
     def makeEncodedEmail(self, encoding_name, actual_encoding):
         email = self.factory.makeEmailMessage(body=self.high_characters)

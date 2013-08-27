@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -142,7 +142,7 @@ class TestBugTaskView(TestCaseWithFactory):
         # "SELECT id, product, project, distribution FROM PillarName ..."
         # query by previously browsing the task url, in which case the
         # query count is decreased by one.
-        self.assertThat(recorder, HasQueryCount(LessThan(82)))
+        self.assertThat(recorder, HasQueryCount(LessThan(83)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -211,9 +211,8 @@ class TestBugTaskView(TestCaseWithFactory):
         self.getUserBrowser(url, owner)  # This triggers the query recorder.
         # Ideally this should be much fewer, but this tries to keep a win of
         # removing more than half of these.
-        self.assertThat(recorder, HasQueryCount(
-            LessThan(count_with_no_branches + 46),
-            ))
+        self.assertThat(
+            recorder, HasQueryCount(LessThan(count_with_no_branches + 46)))
 
     def test_interesting_activity(self):
         # The interesting_activity property returns a tuple of interesting
@@ -383,6 +382,24 @@ class TestBugTaskView(TestCaseWithFactory):
         tag = soup.find('a', attrs={'id': "duplicate-of"})
         self.assertIsNone(tag)
 
+    def test_related_blueprints_is_hidden(self):
+        # When a bug has no specifications linked, the Related blueprints
+        # portlet is hidden.
+        bug = self.factory.makeBug()
+        browser = self.getUserBrowser(canonical_url(bug))
+        self.assertNotIn('Related blueprints', browser.contents)
+
+    def test_related_blueprints_is_shown(self):
+        # When a bug has specifications linked, the Related blueprints portlet
+        # is shown.
+        bug = self.factory.makeBug()
+        spec = self.factory.makeSpecification(title='My brilliant spec')
+        with person_logged_in(spec.owner):
+            spec.linkBug(bug)
+        browser = self.getUserBrowser(canonical_url(bug))
+        self.assertIn('Related blueprints', browser.contents)
+        self.assertIn('My brilliant spec', browser.contents)
+
 
 class TestBugTasksNominationsView(TestCaseWithFactory):
 
@@ -392,25 +409,21 @@ class TestBugTasksNominationsView(TestCaseWithFactory):
         super(TestBugTasksNominationsView, self).setUp()
         login(ADMIN_EMAIL)
         self.bug = self.factory.makeBug()
-        self.view = BugTasksNominationsView(
-            self.bug, LaunchpadTestRequest())
+        self.view = BugTasksNominationsView(self.bug, LaunchpadTestRequest())
 
     def refresh(self):
         # The view caches, to see different scenarios, a refresh is needed.
-        self.view = BugTasksNominationsView(
-            self.bug, LaunchpadTestRequest())
+        self.view = BugTasksNominationsView(self.bug, LaunchpadTestRequest())
 
     def test_current_user_affected_status(self):
         self.failUnlessEqual(
             None, self.view.current_user_affected_status)
         self.bug.markUserAffected(self.view.user, True)
         self.refresh()
-        self.failUnlessEqual(
-            True, self.view.current_user_affected_status)
+        self.assertTrue(self.view.current_user_affected_status)
         self.bug.markUserAffected(self.view.user, False)
         self.refresh()
-        self.failUnlessEqual(
-            False, self.view.current_user_affected_status)
+        self.assertFalse(self.view.current_user_affected_status)
 
     def test_current_user_affected_js_status(self):
         self.failUnlessEqual(
@@ -649,13 +662,11 @@ class TestBugTasksTableView(TestCaseWithFactory):
         super(TestBugTasksTableView, self).setUp()
         login(ADMIN_EMAIL)
         self.bug = self.factory.makeBug()
-        self.view = BugTasksTableView(
-            self.bug, LaunchpadTestRequest())
+        self.view = BugTasksTableView(self.bug, LaunchpadTestRequest())
 
     def refresh(self):
         # The view caches, to see different scenarios, a refresh is needed.
-        self.view = BugTasksNominationsView(
-            self.bug, LaunchpadTestRequest())
+        self.view = BugTasksNominationsView(self.bug, LaunchpadTestRequest())
 
     def test_not_many_bugtasks(self):
         for count in range(10 - len(self.bug.bugtasks) - 1):
@@ -680,28 +691,28 @@ class TestBugTasksTableView(TestCaseWithFactory):
         target = self.factory.makeProduct()
         bug_task = self.factory.makeBugTask(bug=self.bug, target=target)
         self.view.initialize()
-        self.assertEqual(None, self.view.getTargetLinkTitle(bug_task.target))
+        self.assertIs(None, self.view.getTargetLinkTitle(bug_task.target))
 
     def test_getTargetLinkTitle_productseries(self):
         # The target link title is always none for productseries.
         target = self.factory.makeProductSeries()
         bug_task = self.factory.makeBugTask(bug=self.bug, target=target)
         self.view.initialize()
-        self.assertEqual(None, self.view.getTargetLinkTitle(bug_task.target))
+        self.assertIs(None, self.view.getTargetLinkTitle(bug_task.target))
 
     def test_getTargetLinkTitle_distribution(self):
         # The target link title is always none for distributions.
         target = self.factory.makeDistribution()
         bug_task = self.factory.makeBugTask(bug=self.bug, target=target)
         self.view.initialize()
-        self.assertEqual(None, self.view.getTargetLinkTitle(bug_task.target))
+        self.assertIs(None, self.view.getTargetLinkTitle(bug_task.target))
 
     def test_getTargetLinkTitle_distroseries(self):
         # The target link title is always none for distroseries.
         target = self.factory.makeDistroSeries()
         bug_task = self.factory.makeBugTask(bug=self.bug, target=target)
         self.view.initialize()
-        self.assertEqual(None, self.view.getTargetLinkTitle(bug_task.target))
+        self.assertIs(None, self.view.getTargetLinkTitle(bug_task.target))
 
     def test_getTargetLinkTitle_unpublished_distributionsourcepackage(self):
         # The target link title states that the package is not published
@@ -999,12 +1010,8 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
         bugtask_url = canonical_url(bugtask, rootsite='bugs')
         target_name = bugtask.bugtargetdisplayname
         login_person(bugtask.owner)
-        form = {
-            'field.actions.delete_bugtask': 'Delete',
-            }
-        extra = {
-            'HTTP_REFERER': bugtask_url,
-            }
+        form = {'field.actions.delete_bugtask': 'Delete'}
+        extra = {'HTTP_REFERER': bugtask_url}
         server_url = canonical_url(
             getUtility(ILaunchpadRoot), rootsite='bugs')
         view = create_initialized_view(
@@ -1020,9 +1027,7 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
         # Test that the deleting the only bugtask results in an error message.
         bug = self.factory.makeBug()
         login_person(bug.owner)
-        form = {
-            'field.actions.delete_bugtask': 'Delete',
-            }
+        form = {'field.actions.delete_bugtask': 'Delete'}
         view = create_initialized_view(
             bug.default_bugtask, name='+delete', form=form,
             principal=bug.owner)
@@ -1054,9 +1059,7 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
             'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest',
             'HTTP_REFERER': bugtask_url,
             }
-        form = {
-            'field.actions.delete_bugtask': 'Delete',
-            }
+        form = {'field.actions.delete_bugtask': 'Delete'}
         view = create_initialized_view(
             bugtask, name='+delete', server_url=server_url, form=form,
             principal=bugtask.owner, **extra)
@@ -1082,12 +1085,8 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
         # from the URL of the bugtask we are deleting.
         server_url = canonical_url(
             getUtility(ILaunchpadRoot), rootsite='bugs')
-        extra = {
-            'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest',
-            }
-        form = {
-            'field.actions.delete_bugtask': 'Delete',
-            }
+        extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        form = {'field.actions.delete_bugtask': 'Delete'}
         view = create_initialized_view(
             bug.default_bugtask, name='+delete', server_url=server_url,
             form=form, principal=bug.owner, **extra)
@@ -1121,9 +1120,7 @@ class TestBugTaskDeleteView(TestCaseWithFactory):
             'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest',
             'HTTP_REFERER': default_bugtask_url,
             }
-        form = {
-            'field.actions.delete_bugtask': 'Delete',
-            }
+        form = {'field.actions.delete_bugtask': 'Delete'}
         view = create_initialized_view(
             bugtask, name='+delete', server_url=server_url, form=form,
             principal=bugtask.owner, **extra)
@@ -1516,9 +1513,7 @@ class BugTaskViewTestMixin():
 
     def test_mustache_cache_is_none_for_advanced_form(self):
         """No mustache model for the advanced search form."""
-        form = {
-            'advanced': 1,
-            }
+        form = {'advanced': 1}
         view = create_initialized_view(
             self.target, name=u'+bugs', rootsite='bugs', form=form)
         cache = IJSONRequestCache(view.request)
@@ -1686,8 +1681,7 @@ class TestProjectGroupBugs(TestCaseWithFactory, BugTaskViewTestMixin):
         # bug portlets.
         self.makeSubordinateProduct(False)
         view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs',
-            current_request=True)
+            self.target, name=u'+bugs', rootsite='bugs', current_request=True)
         self.assertFalse(view.should_show_bug_information)
         contents = view.render()
         report_a_bug = find_tag_by_id(contents, 'bug-portlets')
@@ -1698,8 +1692,7 @@ class TestProjectGroupBugs(TestCaseWithFactory, BugTaskViewTestMixin):
         # portlets.
         self.makeSubordinateProduct(True)
         view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs',
-            current_request=True)
+            self.target, name=u'+bugs', rootsite='bugs', current_request=True)
         self.assertTrue(view.should_show_bug_information)
         contents = view.render()
         report_a_bug = find_tag_by_id(contents, 'bug-portlets')
@@ -1710,8 +1703,7 @@ class TestProjectGroupBugs(TestCaseWithFactory, BugTaskViewTestMixin):
         # a 'Getting started' help link.
         self.makeSubordinateProduct(False)
         view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs',
-            current_request=True)
+            self.target, name=u'+bugs', rootsite='bugs', current_request=True)
         contents = view.render()
         help_link = find_tag_by_id(contents, 'getting-started-help')
         self.assertIsNot(None, help_link)
@@ -1721,8 +1713,7 @@ class TestProjectGroupBugs(TestCaseWithFactory, BugTaskViewTestMixin):
         # a 'Getting started' help link.
         self.makeSubordinateProduct(True)
         view = create_initialized_view(
-            self.target, name=u'+bugs', rootsite='bugs',
-            current_request=True)
+            self.target, name=u'+bugs', rootsite='bugs', current_request=True)
         contents = view.render()
         help_link = find_tag_by_id(contents, 'getting-started-help')
         self.assertIs(None, help_link)
@@ -2017,10 +2008,7 @@ class TestBugTaskSearchListingView(BrowserTestCase):
 
     def invalidate_caches(self, obj):
         store = Store.of(obj)
-        # Make sure everything is in the database.
         store.flush()
-        # And invalidate the cache (not a reset, because that stops us using
-        # the domain objects)
         store.invalidate()
 
     def test_rendered_query_counts_constant_with_many_bugtasks(self):

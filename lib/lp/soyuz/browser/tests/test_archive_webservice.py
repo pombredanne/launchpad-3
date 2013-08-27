@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -37,14 +37,13 @@ from lp.testing import (
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
-from lp.testing.pages import LaunchpadWebServiceCaller
 
 
 class TestArchiveWebservice(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestArchiveWebservice, self).setUp()
         with celebrity_logged_in('admin'):
             self.archive = self.factory.makeArchive(
                 purpose=ArchivePurpose.PRIMARY)
@@ -54,9 +53,6 @@ class TestArchiveWebservice(TestCaseWithFactory):
             distro_name = self.archive.distribution.name
             distroseries_name = distroseries.name
             person_name = person.name
-
-        self.webservice = LaunchpadWebServiceCaller(
-            'launchpad-library', 'salgado-change-anything')
 
         self.launchpad = launchpadlib_for(
             "archive test", "salgado", "WRITE_PUBLIC")

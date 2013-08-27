@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -68,6 +68,7 @@ from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
+from lp.soyuz.interfaces.packagediffjob import IPackageDiffJobSource
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
@@ -573,8 +574,7 @@ class SourcePackageRelease(SQLBase):
 
         if candidate is not None:
             raise PackageDiffAlreadyRequested(
-                "%s was already requested by %s"
-                % (candidate.title, candidate.requester.displayname))
+                "%s has already been requested" % candidate.title)
 
         if self.sourcepackagename.name == 'udev':
             # XXX 2009-11-23 Julian bug=314436
@@ -586,9 +586,12 @@ class SourcePackageRelease(SQLBase):
 
         Store.of(to_sourcepackagerelease).flush()
         del get_property_cache(to_sourcepackagerelease).package_diffs
-        return PackageDiff(
+        packagediff = PackageDiff(
             from_source=self, to_source=to_sourcepackagerelease,
             requester=requester, status=status)
+        if status == PackageDiffStatus.PENDING:
+            getUtility(IPackageDiffJobSource).create(packagediff)
+        return packagediff
 
     def aggregate_changelog(self, since_version):
         """See `ISourcePackagePublishingHistory`."""

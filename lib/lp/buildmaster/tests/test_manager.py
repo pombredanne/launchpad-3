@@ -35,6 +35,7 @@ from lp.buildmaster.manager import (
     )
 from lp.buildmaster.model.builder import (
     Builder,
+    BuilderInteractor,
     BuilderSlave,
     )
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
@@ -462,6 +463,7 @@ class TestCancellationChecking(TestCaseWithFactory):
     def _getScanner(self, clock=None):
         scanner = SlaveScanner(None, BufferLogger(), clock=clock)
         scanner.builder = self.builder
+        scanner.interactor = BuilderInteractor(self.builder)
         scanner.logger.name = 'slave-scanner'
         return scanner
 

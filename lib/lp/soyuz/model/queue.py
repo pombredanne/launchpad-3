@@ -73,7 +73,6 @@ from lp.services.database.stormexpr import (
     )
 from lp.services.features import getFeatureFlag
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
-from lp.services.librarian.interfaces.client import DownloadFailed
 from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
@@ -99,6 +98,9 @@ from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJobSource
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
+from lp.soyuz.interfaces.packagetranslationsuploadjob import (
+    IPackageTranslationsUploadJobSource,
+    )
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     name_priority_map,
@@ -903,12 +905,16 @@ class PackageUpload(SQLBase):
     def findPersonToNotify(self):
         """Find the right person to notify about this upload."""
         spph = self.findSourcePublication()
-        if spph and self.sourcepackagerelease.upload_archive != self.archive:
+        spr = self.sourcepackagerelease
+        if spph and spr.upload_archive != self.archive:
             # This is a build triggered by the syncing of a source
             # package.  Notify the person who requested the sync.
             return spph.creator
         elif self.signing_key:
             return self.signing_key.owner
+            # It may be a recipe upload.
+        elif spr and spr.source_package_recipe_build:
+            return spr.source_package_recipe_build.requester
         else:
             return None
 
@@ -933,14 +939,6 @@ class PackageUpload(SQLBase):
             self.archive, self.distroseries, self.pocket, summary_text,
             changes, changesfile_content, changes_file_object,
             status_action[self.status], dry_run=dry_run, logger=logger)
-
-    def _isPersonUploader(self, person):
-        """Return True if person is an uploader to the package's distro."""
-        debug(self.logger, "Attempting to decide if %s is an uploader." % (
-            person.displayname))
-        uploader = person.isUploader(self.distroseries.distribution)
-        debug(self.logger, "Decision: %s" % uploader)
-        return uploader
 
     @property
     def components(self):
@@ -1454,17 +1452,9 @@ class PackageUploadCustom(SQLBase):
             # packages in main.
             return
 
-        # Set the importer to package creator.
-        importer = sourcepackagerelease.creator
-
-        # Attach the translation tarball. It's always published.
-        try:
-            sourcepackagerelease.attachTranslationFiles(
-                self.libraryfilealias, True, importer=importer)
-        except DownloadFailed:
-            if logger is not None:
-                debug(logger, "Unable to fetch %s to import it into Rosetta" %
-                    self.libraryfilealias.http_url)
+        blamee = self.packageupload.findPersonToNotify()
+        getUtility(IPackageTranslationsUploadJobSource).create(
+            sourcepackagerelease, self.libraryfilealias, blamee)
 
     def publishStaticTranslations(self, logger=None):
         """See `IPackageUploadCustom`."""

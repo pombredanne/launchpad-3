@@ -40,6 +40,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.builder import (
+    BuilderInteractor,
     BuilderSlave,
     ProxyWithConnectionTimeout,
     )
@@ -140,73 +141,11 @@ class TestBuilder(TestCaseWithFactory):
         super(TestBuilder, self).setUp()
         self.slave_helper = self.useFixture(SlaveTestHelpers())
 
-    def test_updateStatus_aborts_lost_and_broken_slave(self):
-        # A slave that's 'lost' should be aborted; when the slave is
-        # broken then abort() should also throw a fault.
-        slave = LostBuildingBrokenSlave()
-        lostbuilding_builder = MockBuilder(
-            'Lost Building Broken Slave', slave, behavior=CorruptBehavior())
-        d = lostbuilding_builder.updateStatus(BufferLogger())
-
-        def check_slave_status(failure):
-            self.assertIn('abort', slave.call_log)
-            # 'Fault' comes from the LostBuildingBrokenSlave, this is
-            # just testing that the value is passed through.
-            self.assertIsInstance(failure.value, xmlrpclib.Fault)
-
-        return d.addBoth(check_slave_status)
-
-    def test_resumeSlaveHost_nonvirtual(self):
-        builder = self.factory.makeBuilder(virtualized=False)
-        d = builder.resumeSlaveHost()
-        return assert_fails_with(d, CannotResumeHost)
-
-    def test_resumeSlaveHost_no_vmhost(self):
-        builder = self.factory.makeBuilder(virtualized=True, vm_host=None)
-        d = builder.resumeSlaveHost()
-        return assert_fails_with(d, CannotResumeHost)
-
-    def test_resumeSlaveHost_success(self):
-        reset_config = """
-            [builddmaster]
-            vm_resume_command: /bin/echo -n parp"""
-        config.push('reset', reset_config)
-        self.addCleanup(config.pop, 'reset')
-
-        builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
-        d = builder.resumeSlaveHost()
-
-        def got_resume(output):
-            self.assertEqual(('parp', ''), output)
-
-        return d.addCallback(got_resume)
-
-    def test_resumeSlaveHost_command_failed(self):
-        reset_fail_config = """
-            [builddmaster]
-            vm_resume_command: /bin/false"""
-        config.push('reset fail', reset_fail_config)
-        self.addCleanup(config.pop, 'reset fail')
-        builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
-        d = builder.resumeSlaveHost()
-        return assert_fails_with(d, CannotResumeHost)
-
     def test_handleFailure_increments_failure_count(self):
         builder = self.factory.makeBuilder(virtualized=False)
         builder.builderok = True
-        builder.handleFailure(BufferLogger(), Exception())
+        builder.handleFailure(BufferLogger())
         self.assertEqual(1, builder.failure_count)
-
-    def test_handleFailure_resume_failure(self):
-        reset_fail_config = """
-            [builddmaster]
-            vm_resume_command: /bin/false"""
-        config.push('reset fail', reset_fail_config)
-        self.addCleanup(config.pop, 'reset fail')
-        builder = self.factory.makeBuilder(virtualized=True, vm_host="pop")
-        builder.builderok = True
-        d = builder.handleFailure(BufferLogger(), Exception())
-        return assert_fails_with(d, CannotResumeHost)
 
     def _setupBuilder(self):
         processor = self.factory.makeProcessor(name="i386")
@@ -247,7 +186,7 @@ class TestBuilder(TestCaseWithFactory):
         # findAndStartJob delegates to it.
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
-        d = builder.findAndStartJob()
+        d = BuilderInteractor(builder).findAndStartJob()
         return d.addCallback(self.assertEqual, candidate)
 
     def test_findAndStartJob_starts_job(self):
@@ -258,7 +197,7 @@ class TestBuilder(TestCaseWithFactory):
         candidate = build.queueBuild()
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
-        d = builder.findAndStartJob()
+        d = BuilderInteractor(builder).findAndStartJob()
 
         def check_build_started(candidate):
             self.assertEqual(candidate.builder, builder)
@@ -273,125 +212,14 @@ class TestBuilder(TestCaseWithFactory):
         candidate = build.queueBuild()
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
-        d = builder.findAndStartJob()
+        interactor = BuilderInteractor(builder)
+        d = interactor.findAndStartJob()
 
         def check_build_started(candidate):
             self.assertIn(
-                ('echo', 'ping'), removeSecurityProxy(builder.slave).call_log)
+                ('echo', 'ping'), interactor.slave.call_log)
 
         return d.addCallback(check_build_started)
-
-    def test_slave(self):
-        # Builder.slave is a BuilderSlave that points at the actual Builder.
-        # The Builder is only ever used in scripts that run outside of the
-        # security context.
-        builder = removeSecurityProxy(
-            self.factory.makeBuilder(virtualized=False))
-        self.assertEqual(builder.url, builder.slave.url)
-        self.assertEqual(10, builder.slave.timeout)
-
-        builder = removeSecurityProxy(
-            self.factory.makeBuilder(virtualized=True))
-        self.assertEqual(5, builder.slave.timeout)
-
-    def test_recovery_of_aborted_virtual_slave(self):
-        # If a virtual_slave is in the ABORTED state,
-        # rescueBuilderIfLost should clean it if we don't think it's
-        # currently building anything.
-        # See bug 463046.
-        aborted_slave = AbortedSlave()
-        builder = MockBuilder("mock_builder", aborted_slave)
-        builder.currentjob = None
-        d = builder.rescueIfLost()
-
-        def check_slave_calls(ignored):
-            self.assertIn('clean', aborted_slave.call_log)
-
-        return d.addCallback(check_slave_calls)
-
-    def test_recovery_of_aborted_nonvirtual_slave(self):
-        # If a nonvirtual slave is in the ABORTED state,
-        # rescueBuilderIfLost should clean it if we don't think it's
-        # currently building anything.
-        aborted_slave = AbortedSlave()
-        builder = MockBuilder("mock_builder", aborted_slave)
-        builder.currentjob = None
-        builder.virtualized = False
-        d = builder.rescueIfLost()
-
-        def check_slave_calls(ignored):
-            self.assertIn('clean', aborted_slave.call_log)
-
-        return d.addCallback(check_slave_calls)
-
-    def test_recover_ok_slave(self):
-        # An idle slave is not rescued.
-        slave = OkSlave()
-        builder = MockBuilder("mock_builder", slave, TrivialBehavior())
-        d = builder.rescueIfLost()
-
-        def check_slave_calls(ignored):
-            self.assertNotIn('abort', slave.call_log)
-            self.assertNotIn('clean', slave.call_log)
-
-        return d.addCallback(check_slave_calls)
-
-    def test_recover_waiting_slave_with_good_id(self):
-        # rescueIfLost does not attempt to abort or clean a builder that is
-        # WAITING.
-        waiting_slave = WaitingSlave()
-        builder = MockBuilder("mock_builder", waiting_slave, TrivialBehavior())
-        d = builder.rescueIfLost()
-
-        def check_slave_calls(ignored):
-            self.assertNotIn('abort', waiting_slave.call_log)
-            self.assertNotIn('clean', waiting_slave.call_log)
-
-        return d.addCallback(check_slave_calls)
-
-    def test_recover_waiting_slave_with_bad_id(self):
-        # If a slave is WAITING with a build for us to get, and the build
-        # cookie cannot be verified, which means we don't recognize the build,
-        # then rescueBuilderIfLost should attempt to abort it, so that the
-        # builder is reset for a new build, and the corrupt build is
-        # discarded.
-        waiting_slave = WaitingSlave()
-        builder = MockBuilder("mock_builder", waiting_slave, CorruptBehavior())
-        d = builder.rescueIfLost()
-
-        def check_slave_calls(ignored):
-            self.assertNotIn('abort', waiting_slave.call_log)
-            self.assertIn('clean', waiting_slave.call_log)
-
-        return d.addCallback(check_slave_calls)
-
-    def test_recover_building_slave_with_good_id(self):
-        # rescueIfLost does not attempt to abort or clean a builder that is
-        # BUILDING.
-        building_slave = BuildingSlave()
-        builder = MockBuilder(
-            "mock_builder", building_slave, TrivialBehavior())
-        d = builder.rescueIfLost()
-
-        def check_slave_calls(ignored):
-            self.assertNotIn('abort', building_slave.call_log)
-            self.assertNotIn('clean', building_slave.call_log)
-
-        return d.addCallback(check_slave_calls)
-
-    def test_recover_building_slave_with_bad_id(self):
-        # If a slave is BUILDING with a build id we don't recognize, then we
-        # abort the build, thus stopping it in its tracks.
-        building_slave = BuildingSlave()
-        builder = MockBuilder(
-            "mock_builder", building_slave, CorruptBehavior())
-        d = builder.rescueIfLost()
-
-        def check_slave_calls(ignored):
-            self.assertIn('abort', building_slave.call_log)
-            self.assertNotIn('clean', building_slave.call_log)
-
-        return d.addCallback(check_slave_calls)
 
     def test_recover_building_slave_with_job_that_finished_elsewhere(self):
         # See bug 671242
@@ -414,7 +242,7 @@ class TestBuilder(TestCaseWithFactory):
         candidate.destroySelf()
         self.layer.txn.commit()
         builder = getUtility(IBuilderSet)[builder.name]
-        d = builder.rescueIfLost()
+        d = BuilderInteractor(builder).rescueIfLost()
 
         def check_builder(ignored):
             self.assertIsInstance(
@@ -424,23 +252,188 @@ class TestBuilder(TestCaseWithFactory):
         return d.addCallback(check_builder)
 
 
-class TestBuilderSlaveStatus(TestCaseWithFactory):
-    # Verify what IBuilder.slaveStatus returns with slaves in different
-    # states.
+class TestBuilderInteractor(TestCase):
 
-    layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
+
+    def test_updateStatus_aborts_lost_and_broken_slave(self):
+        # A slave that's 'lost' should be aborted; when the slave is
+        # broken then abort() should also throw a fault.
+        slave = LostBuildingBrokenSlave()
+        lostbuilding_builder = MockBuilder(behavior=CorruptBehavior())
+        d = BuilderInteractor(lostbuilding_builder, slave).updateStatus(
+            BufferLogger())
+
+        def check_slave_status(failure):
+            self.assertIn('abort', slave.call_log)
+            # 'Fault' comes from the LostBuildingBrokenSlave, this is
+            # just testing that the value is passed through.
+            self.assertIsInstance(failure.value, xmlrpclib.Fault)
+
+        return d.addBoth(check_slave_status)
+
+    def test_resumeSlaveHost_nonvirtual(self):
+        builder = MockBuilder(virtualized=False)
+        d = BuilderInteractor(builder).resumeSlaveHost()
+        return assert_fails_with(d, CannotResumeHost)
+
+    def test_resumeSlaveHost_no_vmhost(self):
+        builder = MockBuilder(virtualized=True, vm_host=None)
+        d = BuilderInteractor(builder).resumeSlaveHost()
+        return assert_fails_with(d, CannotResumeHost)
+
+    def test_resumeSlaveHost_success(self):
+        reset_config = """
+            [builddmaster]
+            vm_resume_command: /bin/echo -n parp"""
+        config.push('reset', reset_config)
+        self.addCleanup(config.pop, 'reset')
+
+        builder = MockBuilder(virtualized=True, vm_host="pop")
+        d = BuilderInteractor(builder).resumeSlaveHost()
+
+        def got_resume(output):
+            self.assertEqual(('parp', ''), output)
+
+        return d.addCallback(got_resume)
+
+    def test_resumeSlaveHost_command_failed(self):
+        reset_fail_config = """
+            [builddmaster]
+            vm_resume_command: /bin/false"""
+        config.push('reset fail', reset_fail_config)
+        self.addCleanup(config.pop, 'reset fail')
+        builder = MockBuilder(virtualized=True, vm_host="pop")
+        d = BuilderInteractor(builder).resumeSlaveHost()
+        return assert_fails_with(d, CannotResumeHost)
+
+    def test_resetOrFail_resume_failure(self):
+        reset_fail_config = """
+            [builddmaster]
+            vm_resume_command: /bin/false"""
+        config.push('reset fail', reset_fail_config)
+        self.addCleanup(config.pop, 'reset fail')
+        builder = MockBuilder(virtualized=True, vm_host="pop", builderok=True)
+        d = BuilderInteractor(builder).resetOrFail(BufferLogger(), Exception())
+        return assert_fails_with(d, CannotResumeHost)
+
+    def test_slave(self):
+        # Builder.slave is a BuilderSlave that points at the actual Builder.
+        # The Builder is only ever used in scripts that run outside of the
+        # security context.
+        builder = MockBuilder(virtualized=False)
+        interactor = BuilderInteractor(builder)
+        self.assertEqual(builder.url, interactor.slave.url)
+        self.assertEqual(10, interactor.slave.timeout)
+
+        builder = MockBuilder(virtualized=True)
+        interactor = BuilderInteractor(builder)
+        self.assertEqual(5, interactor.slave.timeout)
+
+    def test_recovery_of_aborted_virtual_slave(self):
+        # If a virtual_slave is in the ABORTED state,
+        # rescueBuilderIfLost should clean it if we don't think it's
+        # currently building anything.
+        # See bug 463046.
+        aborted_slave = AbortedSlave()
+        d = BuilderInteractor(MockBuilder(), aborted_slave).rescueIfLost()
+
+        def check_slave_calls(ignored):
+            self.assertIn('clean', aborted_slave.call_log)
+
+        return d.addCallback(check_slave_calls)
+
+    def test_recovery_of_aborted_nonvirtual_slave(self):
+        # If a nonvirtual slave is in the ABORTED state,
+        # rescueBuilderIfLost should clean it if we don't think it's
+        # currently building anything.
+        aborted_slave = AbortedSlave()
+        builder = MockBuilder(virtualized=False, builderok=False)
+        d = BuilderInteractor(builder, aborted_slave).rescueIfLost()
+
+        def check_slave_calls(ignored):
+            self.assertIn('clean', aborted_slave.call_log)
+
+        return d.addCallback(check_slave_calls)
+
+    def test_recover_ok_slave(self):
+        # An idle slave is not rescued.
+        slave = OkSlave()
+        builder = MockBuilder(behavior=TrivialBehavior())
+        d = BuilderInteractor(builder, slave).rescueIfLost()
+
+        def check_slave_calls(ignored):
+            self.assertNotIn('abort', slave.call_log)
+            self.assertNotIn('clean', slave.call_log)
+
+        return d.addCallback(check_slave_calls)
+
+    def test_recover_waiting_slave_with_good_id(self):
+        # rescueIfLost does not attempt to abort or clean a builder that is
+        # WAITING.
+        waiting_slave = WaitingSlave()
+        builder = MockBuilder(behavior=TrivialBehavior())
+        d = BuilderInteractor(builder, waiting_slave).rescueIfLost()
+
+        def check_slave_calls(ignored):
+            self.assertNotIn('abort', waiting_slave.call_log)
+            self.assertNotIn('clean', waiting_slave.call_log)
+
+        return d.addCallback(check_slave_calls)
+
+    def test_recover_waiting_slave_with_bad_id(self):
+        # If a slave is WAITING with a build for us to get, and the build
+        # cookie cannot be verified, which means we don't recognize the build,
+        # then rescueBuilderIfLost should attempt to abort it, so that the
+        # builder is reset for a new build, and the corrupt build is
+        # discarded.
+        waiting_slave = WaitingSlave()
+        builder = MockBuilder(behavior=CorruptBehavior())
+        d = BuilderInteractor(builder, waiting_slave).rescueIfLost()
+
+        def check_slave_calls(ignored):
+            self.assertNotIn('abort', waiting_slave.call_log)
+            self.assertIn('clean', waiting_slave.call_log)
+
+        return d.addCallback(check_slave_calls)
+
+    def test_recover_building_slave_with_good_id(self):
+        # rescueIfLost does not attempt to abort or clean a builder that is
+        # BUILDING.
+        building_slave = BuildingSlave()
+        builder = MockBuilder(behavior=TrivialBehavior())
+        d = BuilderInteractor(builder, building_slave).rescueIfLost()
+
+        def check_slave_calls(ignored):
+            self.assertNotIn('abort', building_slave.call_log)
+            self.assertNotIn('clean', building_slave.call_log)
+
+        return d.addCallback(check_slave_calls)
+
+    def test_recover_building_slave_with_bad_id(self):
+        # If a slave is BUILDING with a build id we don't recognize, then we
+        # abort the build, thus stopping it in its tracks.
+        building_slave = BuildingSlave()
+        builder = MockBuilder(behavior=CorruptBehavior())
+        d = BuilderInteractor(builder, building_slave).rescueIfLost()
+
+        def check_slave_calls(ignored):
+            self.assertIn('abort', building_slave.call_log)
+            self.assertNotIn('clean', building_slave.call_log)
+
+        return d.addCallback(check_slave_calls)
+
+
+class TestBuilderInteractorSlaveStatus(TestCase):
+    # Verify what BuilderInteractor.slaveStatus returns with slaves in
+    # different states.
+
     run_tests_with = AsynchronousDeferredRunTest
-
-    def setUp(self):
-        super(TestBuilderSlaveStatus, self).setUp()
-        self.slave_helper = self.useFixture(SlaveTestHelpers())
 
     def assertStatus(self, slave, builder_status=None,
                      build_status=None, logtail=False, filemap=None,
                      dependencies=None):
-        builder = self.factory.makeBuilder()
-        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
-        d = builder.slaveStatus()
+        d = BuilderInteractor(MockBuilder(), slave).slaveStatus()
 
         def got_status(status_dict):
             expected = {}
@@ -485,23 +478,17 @@ class TestBuilderSlaveStatus(TestCaseWithFactory):
 
     def test_isAvailable_with_not_builderok(self):
         # isAvailable() is a wrapper around slaveStatusSentence()
-        builder = self.factory.makeBuilder()
+        builder = MockBuilder()
         builder.builderok = False
-        d = builder.isAvailable()
+        d = BuilderInteractor(builder).isAvailable()
         return d.addCallback(self.assertFalse)
 
     def test_isAvailable_with_slave_fault(self):
-        builder = self.factory.makeBuilder()
-        self.patch(
-            BuilderSlave, 'makeBuilderSlave', FakeMethod(BrokenSlave()))
-        d = builder.isAvailable()
+        d = BuilderInteractor(MockBuilder(), BrokenSlave()).isAvailable()
         return d.addCallback(self.assertFalse)
 
     def test_isAvailable_with_slave_idle(self):
-        builder = self.factory.makeBuilder()
-        self.patch(
-            BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
-        d = builder.isAvailable()
+        d = BuilderInteractor(MockBuilder(), OkSlave()).isAvailable()
         return d.addCallback(self.assertTrue)
 
 

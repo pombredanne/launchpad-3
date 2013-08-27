@@ -92,14 +92,6 @@ class IPackageDiffSet(Interface):
     def get(diff_id):
         """Retrieve a `PackageDiff` for the given id."""
 
-    def getPendingDiffs(limit=None):
-        """Return all pending `PackageDiff` records.
-
-        :param limit: optional results limitation.
-
-        :return a `SelectResult` ordered by id respecting the given limit.
-        """
-
     def getDiffsToReleases(sprs, preload_for_display=False):
         """Return all diffs that targetting a set of source package releases.
 
