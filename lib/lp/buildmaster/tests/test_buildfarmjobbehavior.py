@@ -221,7 +221,7 @@ class TestHandleStatusMixin:
         self.slave.valid_file_hashes.append('test_file_hash')
         self.interactor = BuilderInteractor(self.builder, self.slave)
         self.behavior = removeSecurityProxy(
-            self.interactor.current_build_behavior)
+            self.interactor._current_build_behavior)
 
         # We overwrite the buildmaster root to use a temp directory.
         tempdir = tempfile.mkdtemp()

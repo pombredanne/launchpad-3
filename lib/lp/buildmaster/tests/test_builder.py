@@ -231,7 +231,7 @@ class TestBuilder(TestCaseWithFactory):
         # At this point we should see a valid behaviour on the builder:
         self.assertFalse(
             zope_isinstance(
-                interactor.current_build_behavior, IdleBuildBehavior))
+                interactor._current_build_behavior, IdleBuildBehavior))
 
         # Now reset the job and try to rescue the builder.
         candidate.destroySelf()
@@ -241,7 +241,7 @@ class TestBuilder(TestCaseWithFactory):
 
         def check_builder(ignored):
             self.assertIsInstance(
-                removeSecurityProxy(interactor.current_build_behavior),
+                removeSecurityProxy(interactor._current_build_behavior),
                 IdleBuildBehavior)
 
         return d.addCallback(check_builder)
@@ -816,7 +816,7 @@ class TestFindRecipeBuildCandidates(TestFindBuildCandidateBase):
 
 class TestCurrentBuildBehavior(TestCaseWithFactory):
     """This test ensures the get/set behavior of BuilderInteractor's
-    current_build_behavior property.
+    _current_build_behavior property.
     """
 
     layer = LaunchpadZopelessLayer
@@ -843,14 +843,14 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
         nor a current build.
         """
         self.assertIsInstance(
-            self.interactor.current_build_behavior, IdleBuildBehavior)
+            self.interactor._current_build_behavior, IdleBuildBehavior)
 
     def test_current_job_behavior(self):
         """The current behavior is set automatically from the current job."""
         # Set the builder attribute on the buildqueue record so that our
         # builder will think it has a current build.
         self.build.buildqueue_record.builder = self.builder
-        behavior = removeSecurityProxy(self.interactor.current_build_behavior)
+        behavior = removeSecurityProxy(self.interactor._current_build_behavior)
         self.assertIsInstance(behavior, BinaryPackageBuildBehavior)
         self.assertEqual(behavior._builder, self.builder)
         self.assertEqual(behavior._interactor, self.interactor)

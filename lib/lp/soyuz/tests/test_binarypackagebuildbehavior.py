@@ -96,7 +96,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         :return: A list of the calls we expect to be made.
         """
         job = removeSecurityProxy(
-            interactor.current_build_behavior).buildfarmjob
+            interactor._current_build_behavior).buildfarmjob
         build_id = job.generateSlaveBuildCookie()
         ds_name = build.distro_arch_series.distroseries.name
         suite = ds_name + pocketsuffix[build.pocket]

@@ -228,7 +228,7 @@ class BuilderInteractor(object):
     _cached_slave = None
     _cached_slave_attrs = None
 
-    # Tests can override current_build_behavior and slave.
+    # Tests can override _current_build_behavior and slave.
     _override_behavior = None
     _override_slave = None
 
@@ -257,11 +257,11 @@ class BuilderInteractor(object):
         return self._cached_slave
 
     @property
-    def current_build_behavior(self):
+    def _current_build_behavior(self):
         """Return the current build behavior."""
         if self._override_behavior is not None:
             return self._override_behavior
-        # The current_build_behavior cache is invalidated when
+        # The _current_build_behavior cache is invalidated when
         # builder.currentjob changes.
         currentjob = self.builder.currentjob
         if currentjob is None:
@@ -296,7 +296,7 @@ class BuilderInteractor(object):
                 if status['builder_status'] == 'BuilderStatus.BUILDING':
                     status['logtail'] = status_sentence[2]
 
-            self.current_build_behavior.updateSlaveStatus(
+            self._current_build_behavior.updateSlaveStatus(
                 status_sentence, status)
             return status
 
@@ -317,7 +317,7 @@ class BuilderInteractor(object):
 
         This should delegate to the current `IBuildFarmJobBehavior`.
         """
-        return self.current_build_behavior.verifySlaveBuildCookie(
+        return self._current_build_behavior.verifySlaveBuildCookie(
             slave_build_id)
 
     def isAvailable(self):
@@ -501,14 +501,14 @@ class BuilderInteractor(object):
         """
         needed_bfjb = type(removeSecurityProxy(
             build_queue_item.required_build_behavior))
-        if not zope_isinstance(self.current_build_behavior, needed_bfjb):
+        if not zope_isinstance(self._current_build_behavior, needed_bfjb):
             raise AssertionError(
                 "Inappropriate IBuildFarmJobBehavior: %r is not a %r" %
-                (self.current_build_behavior, needed_bfjb))
-        self.current_build_behavior.logStartBuild(logger)
+                (self._current_build_behavior, needed_bfjb))
+        self._current_build_behavior.logStartBuild(logger)
 
         # Make sure the request is valid; an exception is raised if it's not.
-        self.current_build_behavior.verifyBuildRequest(logger)
+        self._current_build_behavior.verifyBuildRequest(logger)
 
         # Set the build behavior depending on the provided build queue item.
         if not self.builder.builderok:
@@ -522,7 +522,7 @@ class BuilderInteractor(object):
             d = defer.succeed(None)
 
         def ping_done(ignored):
-            return self.current_build_behavior.dispatchBuildToSlave(
+            return self._current_build_behavior.dispatchBuildToSlave(
                 build_queue_item.id, logger)
 
         def resume_done(ignored):
@@ -623,7 +623,7 @@ class BuilderInteractor(object):
 
         :return: A Deferred that fires when the slave dialog is finished.
         """
-        return self.current_build_behavior.updateBuild(queueItem)
+        return self._current_build_behavior.updateBuild(queueItem)
 
     def transferSlaveFileToLibrarian(self, file_sha1, filename, private):
         """Transfer a file from the slave to the librarian.
