@@ -32,7 +32,6 @@ from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interactor import (
     BuilderInteractor,
     BuilderSlave,
-    ProxyWithConnectionTimeout,
     )
 from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
@@ -1134,12 +1133,6 @@ class TestSlaveConnectionTimeouts(TestCase):
         self.clock.advance(config.builddmaster.socket_timeout + 1)
         self.assertTrue(d.called)
         return assert_fails_with(d, CancelledError)
-
-    def test_BuilderSlave_uses_ProxyWithConnectionTimeout(self):
-        # Make sure that BuilderSlaves use the custom proxy class.
-        slave = BuilderSlave.makeBuilderSlave(
-            "url", "host", config.builddmaster.socket_timeout)
-        self.assertIsInstance(slave._server, ProxyWithConnectionTimeout)
 
 
 class TestSlaveWithLibrarian(TestCaseWithFactory):
