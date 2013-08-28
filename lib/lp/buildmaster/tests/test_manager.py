@@ -25,6 +25,10 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interactor import (
+    BuilderInteractor,
+    BuilderSlave,
+    )
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.manager import (
@@ -33,11 +37,7 @@ from lp.buildmaster.manager import (
     NewBuildersScanner,
     SlaveScanner,
     )
-from lp.buildmaster.model.builder import (
-    Builder,
-    BuilderInteractor,
-    BuilderSlave,
-    )
+from lp.buildmaster.model.builder import Builder
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
 from lp.buildmaster.tests.mock_slaves import (
     BrokenSlave,

@@ -23,6 +23,7 @@ from twisted.python import log
 from zope.component import getUtility
 
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interactor import BuilderInteractor
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
     BuildSlaveFailure,
@@ -33,10 +34,7 @@ from lp.buildmaster.interfaces.builder import (
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch,
     )
-from lp.buildmaster.model.builder import (
-    Builder,
-    BuilderInteractor,
-    )
+from lp.buildmaster.model.builder import Builder
 from lp.services.propertycache import get_property_cache
 
 

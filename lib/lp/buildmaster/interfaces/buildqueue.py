@@ -19,7 +19,6 @@ from zope.schema import (
     Bool,
     Choice,
     Datetime,
-    Field,
     Int,
     Text,
     Timedelta,
@@ -71,10 +70,6 @@ class IBuildQueue(Interface):
     job_type = Choice(
         title=_('Job type'), required=True, vocabulary=BuildFarmJobType,
         description=_("The type of this job."))
-
-    required_build_behavior = Field(
-        title=_('The builder behavior required to run this job.'),
-        required=False, readonly=True)
 
     estimated_duration = Timedelta(
         title=_("Estimated Job Duration"), required=True,

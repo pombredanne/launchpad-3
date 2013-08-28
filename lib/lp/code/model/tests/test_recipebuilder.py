@@ -24,13 +24,10 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
+from lp.buildmaster.interactor import BuilderInteractor
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
-    )
-from lp.buildmaster.model.builder import (
-    BuilderInteractor,
-    BuilderSlave,
     )
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import (
@@ -374,8 +371,8 @@ class TestBuildNotifications(TrialTestCase):
             self.addCleanup(config.pop, 'tmp_builddmaster_root')
         queue_record.builder = self.factory.makeBuilder()
         slave = WaitingSlave('BuildStatus.OK')
-        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
-        return removeSecurityProxy(queue_record.builder.current_build_behavior)
+        interactor = BuilderInteractor(queue_record.builder, slave)
+        return removeSecurityProxy(interactor._current_build_behavior)
 
     def assertDeferredNotifyCount(self, status, behavior, expected_count):
         d = behavior.handleStatus(status, None, {'filemap': {}})

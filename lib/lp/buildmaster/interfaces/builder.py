@@ -169,10 +169,6 @@ class IBuilder(IHasOwner):
         title=_('Failure Count'), required=False, default=0,
        description=_("Number of consecutive failures for this builder.")))
 
-    current_build_behavior = Field(
-        title=u"The current behavior of the builder for the current job.",
-        required=False)
-
     def gotFailure():
         """Increment failure_count on the builder."""
 

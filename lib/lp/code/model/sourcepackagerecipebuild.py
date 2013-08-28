@@ -85,8 +85,7 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
     implements(ISourcePackageRecipeBuild)
     classProvides(ISourcePackageRecipeBuildSource)
 
-    build_farm_job_type = BuildFarmJobType.RECIPEBRANCHBUILD
-    job_type = build_farm_job_type
+    job_type = BuildFarmJobType.RECIPEBRANCHBUILD
 
     id = Int(primary=True)
 
@@ -227,8 +226,7 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
         if date_created is None:
             date_created = UTC_NOW
         build_farm_job = getUtility(IBuildFarmJobSource).new(
-            cls.build_farm_job_type, BuildStatus.NEEDSBUILD, date_created,
-            None, archive)
+            cls.job_type, BuildStatus.NEEDSBUILD, date_created, None, archive)
         spbuild = cls(
             build_farm_job, distroseries, recipe, requester, archive, pocket,
             date_created)

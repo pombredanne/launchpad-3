@@ -33,9 +33,6 @@ from zope.interface import implements
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior,
-    )
 from lp.buildmaster.interfaces.buildqueue import (
     IBuildQueue,
     IBuildQueueSet,
@@ -128,11 +125,6 @@ class BuildQueue(SQLBase):
     processor = ForeignKey(dbName='processor', foreignKey='Processor')
     virtualized = BoolCol(dbName='virtualized')
 
-    @property
-    def required_build_behavior(self):
-        """See `IBuildQueue`."""
-        return IBuildFarmJobBehavior(self.specific_job)
-
     @cachedproperty
     def specific_job(self):
         """See `IBuildQueue`."""
@@ -182,9 +174,12 @@ class BuildQueue(SQLBase):
         """Remove this record and associated job/specific_job."""
         job = self.job
         specific_job = self.specific_job
+        builder = self.builder
         SQLBase.destroySelf(self)
         specific_job.cleanUp()
         job.destroySelf()
+        if builder is not None:
+            del get_property_cache(builder).currentjob
         self._clear_specific_job_cache()
 
     def manualScore(self, value):
@@ -219,9 +214,12 @@ class BuildQueue(SQLBase):
         if self.job.status != JobStatus.RUNNING:
             self.job.start()
         self.specific_job.jobStarted()
+        if builder is not None:
+            del get_property_cache(builder).currentjob
 
     def reset(self):
         """See `IBuildQueue`."""
+        builder = self.builder
         self.builder = None
         if self.job.status != JobStatus.WAITING:
             self.job.queue()
@@ -229,6 +227,8 @@ class BuildQueue(SQLBase):
         self.job.date_finished = None
         self.logtail = None
         self.specific_job.jobReset()
+        if builder is not None:
+            del get_property_cache(builder).currentjob
 
     def cancel(self):
         """See `IBuildQueue`."""
