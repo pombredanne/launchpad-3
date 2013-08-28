@@ -15,15 +15,12 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interactor import BuilderInteractor
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.buildmaster.model.builder import (
-    BuilderInteractor,
-    BuilderSlave,
-    )
 from lp.buildmaster.tests.mock_slaves import (
     SlaveTestHelpers,
     WaitingSlave,
@@ -86,8 +83,7 @@ class MakeBehaviorMixin(object):
         behavior = IBuildFarmJobBehavior(specific_job)
         slave = WaitingSlave()
         behavior.setBuilderInteractor(
-            BuilderInteractor(self.factory.makeBuilder()))
-        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
+            BuilderInteractor(self.factory.makeBuilder(), slave))
         if use_fake_chroot:
             lf = self.factory.makeLibraryFileAlias()
             self.layer.txn.commit()

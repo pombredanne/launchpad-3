@@ -29,21 +29,18 @@ from zope.security.proxy import (
     )
 
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interactor import (
+    BuilderInteractor,
+    BuilderSlave,
+    ProxyWithConnectionTimeout,
+    )
 from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
     CannotResumeHost,
     IBuilder,
     IBuilderSet,
     )
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior,
-    )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.buildmaster.model.builder import (
-    BuilderInteractor,
-    BuilderSlave,
-    ProxyWithConnectionTimeout,
-    )
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import (

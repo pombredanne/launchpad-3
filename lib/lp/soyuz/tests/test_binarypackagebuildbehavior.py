@@ -18,11 +18,11 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.builder import CannotBuild
-from lp.buildmaster.model.builder import (
+from lp.buildmaster.interactor import (
     BuilderInteractor,
     BuilderSlave,
     )
+from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.tests.mock_slaves import (
     AbortedSlave,
     AbortingSlave,
@@ -47,9 +47,6 @@ from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
 from lp.soyuz.enums import ArchivePurpose
-from lp.soyuz.model.binarypackagebuildbehavior import (
-    BinaryPackageBuildBehavior,
-    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.fakemethod import FakeMethod
