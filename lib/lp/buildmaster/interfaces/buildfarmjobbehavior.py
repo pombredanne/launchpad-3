@@ -65,3 +65,11 @@ class IBuildFarmJobBehavior(Interface):
         :raises CorruptBuildCookie: if the build cookie isn't what it's
             supposed to be.
         """
+
+    def handleStatus(status, librarian, slave_status):
+        """Update the build from a WAITING slave result.
+
+        :param status: The tail of the BuildStatus (eg. OK or PACKAGEFAIL).
+        :param librarian: An `ILibrarianClient` to use for file uploads.
+        :param slave_status: Slave status from `BuilderInteractor.slaveStatus`.
+        """

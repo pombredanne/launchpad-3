@@ -105,7 +105,7 @@ class BuildFarmJobBehaviorBase:
     ALLOWED_STATUS_NOTIFICATIONS = ['OK', 'PACKAGEFAIL', 'CHROOTFAIL']
 
     def handleStatus(self, status, librarian, slave_status):
-        """See `IPackageBuild`."""
+        """See `IBuildFarmJobBehavior`."""
         from lp.buildmaster.manager import BUILDD_MANAGER_LOG_NAME
         logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
         send_notification = status in self.ALLOWED_STATUS_NOTIFICATIONS
