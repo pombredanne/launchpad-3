@@ -42,6 +42,7 @@ from lp.buildmaster.tests.harness import BuilddManagerTestSetup
 from lp.buildmaster.tests.mock_slaves import (
     BrokenSlave,
     BuildingSlave,
+    LostBuildingBrokenSlave,
     make_publisher,
     OkSlave,
     )
@@ -506,6 +507,21 @@ class TestCancellationChecking(TestCaseWithFactory):
 
         clock.advance(SlaveScanner.CANCEL_TIMEOUT)
         result = yield scanner.checkCancellation(self.builder)
+        self.assertEqual(1, slave.call_log.count("resume"))
+        self.assertTrue(result)
+        self.assertEqual(BuildStatus.CANCELLED, build.status)
+
+    @defer.inlineCallbacks
+    def test_lost_build_is_cancelled(self):
+        # If the builder reports a fault while attempting to abort it, then
+        # immediately resume the slave as if the cancel timeout had expired.
+        slave = LostBuildingBrokenSlave()
+        self.builder.vm_host = "fake_vm_host"
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
+        buildqueue = self.builder.currentjob
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
+        build.updateStatus(BuildStatus.CANCELLING)
+        result = yield self._getScanner().checkCancellation(self.builder)
         self.assertEqual(1, slave.call_log.count("resume"))
         self.assertTrue(result)
         self.assertEqual(BuildStatus.CANCELLED, build.status)

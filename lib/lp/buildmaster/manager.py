@@ -211,32 +211,38 @@ class SlaveScanner:
         def resume_done(ignored):
             return defer.succeed(True)
 
+        def cancel_failed(ignored):
+            self.logger.info(
+                "Build '%s' on %s failed to cancel" %
+                (build.title, self.builder.name))
+            self.date_cancel = None
+            buildqueue.cancel()
+            transaction.commit()
+            if builder.virtualized:
+                d = self.interactor.resumeSlaveHost()
+                return d.addCallback(resume_done)
+            else:
+                builder.failBuilder("Build failed to cancel")
+                return defer.succeed(False)
+
         if self.date_cancel is not None:
             # The BuildFarmJob will normally set the build's status to
             # something other than CANCELLING once the builder responds to
             # the cancel request.  This timeout is in case it doesn't.
             if self._clock.seconds() >= self.date_cancel:
-                self.logger.info(
-                    "Build '%s' on %s failed to cancel" %
-                    (build.title, self.builder.name))
-                self.date_cancel = None
-                buildqueue.cancel()
-                transaction.commit()
-                if builder.virtualized:
-                    d = self.interactor.resumeSlaveHost()
-                    d.addCallback(resume_done)
-                    return d
-                else:
-                    builder.failBuilder("Build failed to cancel")
+                return cancel_failed(None)
             else:
                 self.logger.info(
                     "Waiting for build '%s' to cancel" % build.title)
+                return defer.succeed(False)
+
+        def abort_done(ignored):
+            self.date_cancel = self._clock.seconds() + self.CANCEL_TIMEOUT
             return defer.succeed(False)
 
         self.logger.info("Cancelling build '%s'" % build.title)
-        self.interactor.requestAbort()
-        self.date_cancel = self._clock.seconds() + self.CANCEL_TIMEOUT
-        return defer.succeed(False)
+        d = self.interactor.requestAbort()
+        return d.addCallback(abort_done).addErrback(cancel_failed)
 
     def scan(self):
         """Probe the builder and update/dispatch/collect as appropriate.
