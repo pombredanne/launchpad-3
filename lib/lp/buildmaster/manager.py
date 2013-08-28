@@ -20,7 +20,6 @@ from twisted.internet import (
     )
 from twisted.internet.task import LoopingCall
 from twisted.python import log
-from twisted.python.failure import Failure
 from zope.component import getUtility
 
 from lp.buildmaster.enums import BuildStatus
@@ -188,6 +187,7 @@ class SlaveScanner:
                 exc_info=True)
             transaction.abort()
 
+    @defer.inlineCallbacks
     def checkCancellation(self, builder):
         """See if there is a pending cancellation request.
 
@@ -201,45 +201,39 @@ class SlaveScanner:
         buildqueue = self.builder.getBuildQueue()
         if not buildqueue:
             self.date_cancel = None
-            return defer.succeed(False)
+            defer.returnValue(False)
         build = buildqueue.specific_job.build
         if build.status != BuildStatus.CANCELLING:
             self.date_cancel = None
-            return defer.succeed(False)
+            defer.returnValue(False)
 
-        def reset_done(value):
-            # value is not None if we resumed a slave host.
-            return defer.succeed(value is not None)
-
-        def cancel_failed(failure):
+        try:
+            if self.date_cancel is None:
+                self.logger.info("Cancelling build '%s'" % build.title)
+                yield self.interactor.requestAbort()
+                self.date_cancel = self._clock.seconds() + self.CANCEL_TIMEOUT
+                defer.returnValue(False)
+            else:
+                # The BuildFarmJob will normally set the build's status to
+                # something other than CANCELLING once the builder responds to
+                # the cancel request.  This timeout is in case it doesn't.
+                if self._clock.seconds() < self.date_cancel:
+                    self.logger.info(
+                        "Waiting for build '%s' to cancel" % build.title)
+                    defer.returnValue(False)
+                else:
+                    raise BuildSlaveFailure(
+                        "Build '%s' cancellation timed out" % build.title)
+        except Exception as e:
             self.logger.info(
                 "Build '%s' on %s failed to cancel" %
                 (build.title, self.builder.name))
             self.date_cancel = None
             buildqueue.cancel()
             transaction.commit()
-            d = self.interactor.resetOrFail(self.logger, failure.value)
-            return d.addCallback(reset_done)
-
-        if self.date_cancel is not None:
-            # The BuildFarmJob will normally set the build's status to
-            # something other than CANCELLING once the builder responds to
-            # the cancel request.  This timeout is in case it doesn't.
-            if self._clock.seconds() >= self.date_cancel:
-                return cancel_failed(Failure(BuildSlaveFailure(
-                    "Build '%s' cancellation timed out" % build.title)))
-            else:
-                self.logger.info(
-                    "Waiting for build '%s' to cancel" % build.title)
-                return defer.succeed(False)
-
-        def abort_done(ignored):
-            self.date_cancel = self._clock.seconds() + self.CANCEL_TIMEOUT
-            return defer.succeed(False)
-
-        self.logger.info("Cancelling build '%s'" % build.title)
-        d = self.interactor.requestAbort()
-        return d.addCallback(abort_done).addErrback(cancel_failed)
+            value = yield self.interactor.resetOrFail(self.logger, e)
+            # value is not None if we resumed a slave host.
+            defer.returnValue(value is not None)
 
     def scan(self):
         """Probe the builder and update/dispatch/collect as appropriate.
