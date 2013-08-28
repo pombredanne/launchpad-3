@@ -426,20 +426,17 @@ class Publisher(object):
         for pocket in self.archive.getPockets():
             suite_name = distroseries.getSuite(pocket)
             for component in components:
-                yield os.path.join(
-                    self._config.distsroot, suite_name, component.name,
-                    "source", "Sources")
+                component_root = os.path.join(
+                    self._config.distsroot, suite_name, component.name)
+                yield os.path.join(component_root, "source", "Sources")
                 for arch in distroseries.architectures:
                     if not arch.enabled:
                         continue
                     arch_path = "binary-%s" % arch.architecturetag
-                    yield os.path.join(
-                        self._config.distsroot, suite_name, component.name,
-                        arch_path, "Packages")
+                    yield os.path.join(component_root, arch_path, "Packages")
                     for subcomp in self.subcomponents:
                         yield os.path.join(
-                            self._config.distsroot, suite_name, component.name,
-                            subcomp, arch_path, "Packages")
+                            component_root, subcomp, arch_path, "Packages")
 
     def _latestNonEmptySeries(self):
         """Find the latest non-empty series in an archive.
