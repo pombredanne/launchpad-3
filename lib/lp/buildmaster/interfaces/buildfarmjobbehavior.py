@@ -65,12 +65,3 @@ class IBuildFarmJobBehavior(Interface):
         :raises CorruptBuildCookie: if the build cookie isn't what it's
             supposed to be.
         """
-
-    def updateBuild(queueItem):
-        """Verify the current build job status.
-
-        Perform the required actions for each state.
-
-        :param queueItem: The `BuildQueue` for the build.
-        :return: A Deferred that fires when the update is done.
-        """
