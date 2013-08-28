@@ -15,8 +15,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.archiveuploader.uploadprocessor import parse_build_upload_leaf_name
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interactor import BuilderInteractor
 from lp.buildmaster.interfaces.builder import CorruptBuildCookie
-from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -217,11 +217,11 @@ class TestHandleStatusMixin:
         self.builder = self.factory.makeBuilder()
         self.build.buildqueue_record.builder = self.builder
         self.build.buildqueue_record.setDateStarted(UTC_NOW)
-        self.behavior = removeSecurityProxy(
-            self.builder.current_build_behavior)
         self.slave = WaitingSlave('BuildStatus.OK')
         self.slave.valid_file_hashes.append('test_file_hash')
-        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(self.slave))
+        self.interactor = BuilderInteractor(self.builder, self.slave)
+        self.behavior = removeSecurityProxy(
+            self.interactor.current_build_behavior)
 
         # We overwrite the buildmaster root to use a temp directory.
         tempdir = tempfile.mkdtemp()

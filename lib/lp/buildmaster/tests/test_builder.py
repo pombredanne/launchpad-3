@@ -29,21 +29,18 @@ from zope.security.proxy import (
     )
 
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interactor import (
+    BuilderInteractor,
+    BuilderSlave,
+    ProxyWithConnectionTimeout,
+    )
 from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
     CannotResumeHost,
     IBuilder,
     IBuilderSet,
     )
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior,
-    )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.buildmaster.model.builder import (
-    BuilderInteractor,
-    BuilderSlave,
-    ProxyWithConnectionTimeout,
-    )
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import (
@@ -229,24 +226,23 @@ class TestBuilder(TestCaseWithFactory):
         builder, build = self._setupBinaryBuildAndBuilder()
         candidate = build.queueBuild()
         building_slave = BuildingSlave()
-        self.patch(
-            BuilderSlave, 'makeBuilderSlave', FakeMethod(building_slave))
+        interactor = BuilderInteractor(builder, building_slave)
         candidate.markAsBuilding(builder)
 
         # At this point we should see a valid behaviour on the builder:
         self.assertFalse(
             zope_isinstance(
-                builder.current_build_behavior, IdleBuildBehavior))
+                interactor.current_build_behavior, IdleBuildBehavior))
 
         # Now reset the job and try to rescue the builder.
         candidate.destroySelf()
         self.layer.txn.commit()
         builder = getUtility(IBuilderSet)[builder.name]
-        d = BuilderInteractor(builder).rescueIfLost()
+        d = interactor.rescueIfLost()
 
         def check_builder(ignored):
             self.assertIsInstance(
-                removeSecurityProxy(builder.current_build_behavior),
+                removeSecurityProxy(interactor.current_build_behavior),
                 IdleBuildBehavior)
 
         return d.addCallback(check_builder)
@@ -260,9 +256,8 @@ class TestBuilderInteractor(TestCase):
         # A slave that's 'lost' should be aborted; when the slave is
         # broken then abort() should also throw a fault.
         slave = LostBuildingBrokenSlave()
-        lostbuilding_builder = MockBuilder(behavior=CorruptBehavior())
-        d = BuilderInteractor(lostbuilding_builder, slave).updateStatus(
-            BufferLogger())
+        interactor = BuilderInteractor(MockBuilder(), slave, CorruptBehavior())
+        d = interactor.updateStatus(BufferLogger())
 
         def check_slave_status(failure):
             self.assertIn('abort', slave.call_log)
@@ -360,8 +355,8 @@ class TestBuilderInteractor(TestCase):
     def test_recover_ok_slave(self):
         # An idle slave is not rescued.
         slave = OkSlave()
-        builder = MockBuilder(behavior=TrivialBehavior())
-        d = BuilderInteractor(builder, slave).rescueIfLost()
+        d = BuilderInteractor(
+            MockBuilder(), slave, TrivialBehavior()).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertNotIn('abort', slave.call_log)
@@ -373,8 +368,8 @@ class TestBuilderInteractor(TestCase):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # WAITING.
         waiting_slave = WaitingSlave()
-        builder = MockBuilder(behavior=TrivialBehavior())
-        d = BuilderInteractor(builder, waiting_slave).rescueIfLost()
+        d = BuilderInteractor(
+            MockBuilder(), waiting_slave, TrivialBehavior()).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertNotIn('abort', waiting_slave.call_log)
@@ -389,8 +384,8 @@ class TestBuilderInteractor(TestCase):
         # builder is reset for a new build, and the corrupt build is
         # discarded.
         waiting_slave = WaitingSlave()
-        builder = MockBuilder(behavior=CorruptBehavior())
-        d = BuilderInteractor(builder, waiting_slave).rescueIfLost()
+        d = BuilderInteractor(
+            MockBuilder(), waiting_slave, CorruptBehavior()).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertNotIn('abort', waiting_slave.call_log)
@@ -402,8 +397,8 @@ class TestBuilderInteractor(TestCase):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # BUILDING.
         building_slave = BuildingSlave()
-        builder = MockBuilder(behavior=TrivialBehavior())
-        d = BuilderInteractor(builder, building_slave).rescueIfLost()
+        d = BuilderInteractor(
+            MockBuilder(), building_slave, TrivialBehavior()).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertNotIn('abort', building_slave.call_log)
@@ -415,8 +410,8 @@ class TestBuilderInteractor(TestCase):
         # If a slave is BUILDING with a build id we don't recognize, then we
         # abort the build, thus stopping it in its tracks.
         building_slave = BuildingSlave()
-        builder = MockBuilder(behavior=CorruptBehavior())
-        d = BuilderInteractor(builder, building_slave).rescueIfLost()
+        d = BuilderInteractor(
+            MockBuilder(), building_slave, CorruptBehavior()).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertIn('abort', building_slave.call_log)
@@ -821,7 +816,7 @@ class TestFindRecipeBuildCandidates(TestFindBuildCandidateBase):
 
 
 class TestCurrentBuildBehavior(TestCaseWithFactory):
-    """This test ensures the get/set behavior of IBuilder's
+    """This test ensures the get/set behavior of BuilderInteractor's
     current_build_behavior property.
     """
 
@@ -831,6 +826,7 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
         """Create a new builder ready for testing."""
         super(TestCurrentBuildBehavior, self).setUp()
         self.builder = self.factory.makeBuilder(name='builder')
+        self.interactor = BuilderInteractor(self.builder)
 
         # Have a publisher and a ppa handy for some of the tests below.
         self.publisher = make_publisher()
@@ -848,25 +844,17 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
         nor a current build.
         """
         self.assertIsInstance(
-            self.builder.current_build_behavior, IdleBuildBehavior)
-
-    def test_set_behavior_sets_builder(self):
-        """Setting a builder's behavior also associates the behavior with the
-        builder."""
-        behavior = IBuildFarmJobBehavior(self.buildfarmjob)
-        self.builder.current_build_behavior = behavior
-
-        self.assertEqual(behavior, self.builder.current_build_behavior)
-        self.assertEqual(behavior._builder, self.builder)
+            self.interactor.current_build_behavior, IdleBuildBehavior)
 
     def test_current_job_behavior(self):
         """The current behavior is set automatically from the current job."""
         # Set the builder attribute on the buildqueue record so that our
         # builder will think it has a current build.
         self.build.buildqueue_record.builder = self.builder
-
-        self.assertIsInstance(
-            self.builder.current_build_behavior, BinaryPackageBuildBehavior)
+        behavior = removeSecurityProxy(self.interactor.current_build_behavior)
+        self.assertIsInstance(behavior, BinaryPackageBuildBehavior)
+        self.assertEqual(behavior._builder, self.builder)
+        self.assertEqual(behavior._interactor, self.interactor)
 
 
 class TestSlave(TestCase):

@@ -90,14 +90,15 @@ to ensure that it fulfills its contract to implement IBuildFarmJobBehavior.
 
 First, we'll reset the current build behavior and destroy the current job.
 
-    >>> bob.current_build_behavior = None
     >>> bob.currentjob.destroySelf()
 
 Attempting to use any other build-related functionality when a builder is
 idle, such as making a call to log the start of a build, will raise an
 appropriate exception.
 
-    >>> bob.current_build_behavior.logStartBuild(None)
+    >>> from lp.buildmaster.interactor import BuilderInteractor
+    >>> interactor = BuilderInteractor(bob)
+    >>> interactor.current_build_behavior.logStartBuild(None)
     Traceback (most recent call last):
      ...
     BuildBehaviorMismatch: Builder was idle when asked to log the start of a
@@ -106,7 +107,7 @@ appropriate exception.
 If a slave is working on a job while we think it is idle, it will always be
 aborted.
 
-    >>> bob.current_build_behavior.verifySlaveBuildCookie('foo')
+    >>> interactor.current_build_behavior.verifySlaveBuildCookie('foo')
     Traceback (most recent call last):
     ...
     CorruptBuildCookie: No job assigned to builder
