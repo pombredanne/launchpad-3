@@ -17,6 +17,9 @@ from lp.archiveuploader.uploadprocessor import parse_build_upload_leaf_name
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interactor import BuilderInteractor
 from lp.buildmaster.interfaces.builder import CorruptBuildCookie
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    IBuildFarmJobBehavior,
+    )
 from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -183,8 +186,8 @@ class TestGetUploadMethodsMixin:
     def setUp(self):
         super(TestGetUploadMethodsMixin, self).setUp()
         self.build = self.makeBuild()
-        self.behavior = removeSecurityProxy(
-            self.build.buildqueue_record.required_build_behavior)
+        self.behavior = IBuildFarmJobBehavior(
+            self.build.buildqueue_record.specific_job)
 
     def test_getUploadDirLeafCookie_parseable(self):
         # getUploadDirLeaf should return a directory name
@@ -221,7 +224,7 @@ class TestHandleStatusMixin:
         self.slave.valid_file_hashes.append('test_file_hash')
         self.interactor = BuilderInteractor(self.builder, self.slave)
         self.behavior = removeSecurityProxy(
-            self.interactor.current_build_behavior)
+            self.interactor._current_build_behavior)
 
         # We overwrite the buildmaster root to use a temp directory.
         tempdir = tempfile.mkdtemp()

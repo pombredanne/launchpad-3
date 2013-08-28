@@ -5,7 +5,6 @@ __metaclass__ = type
 
 __all__ = [
     'BuilderInteractor',
-    'ProxyWithConnectionTimeout',
     ]
 
 import gzip
@@ -16,10 +15,7 @@ import tempfile
 from urlparse import urlparse
 import xmlrpclib
 
-from twisted.internet import (
-    defer,
-    reactor as default_reactor,
-    )
+from twisted.internet import defer
 from twisted.web import xmlrpc
 from twisted.web.client import downloadPage
 from zope.component import getUtility
@@ -35,6 +31,9 @@ from lp.buildmaster.interfaces.builder import (
     CannotResumeHost,
     CorruptBuildCookie,
     )
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    IBuildFarmJobBehavior,
+    )
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.services.config import config
 from lp.services.helpers import filenameToContentType
@@ -48,38 +47,6 @@ from lp.services.webapp import urlappend
 class QuietQueryFactory(xmlrpc._QueryFactory):
     """XMLRPC client factory that doesn't splatter the log with junk."""
     noisy = False
-
-
-class ProxyWithConnectionTimeout(xmlrpc.Proxy):
-    """Extend Twisted's Proxy to provide a configurable connection timeout."""
-
-    def __init__(self, url, user=None, password=None, allowNone=False,
-                 useDateTime=False, timeout=None):
-        xmlrpc.Proxy.__init__(
-            self, url, user, password, allowNone, useDateTime)
-        self.timeout = timeout
-
-    def callRemote(self, method, *args):
-        """Basically a carbon copy of the parent but passes the timeout
-        to connectTCP."""
-
-        def cancel(d):
-            factory.deferred = None
-            connector.disconnect()
-        factory = self.queryFactory(
-            self.path, self.host, method, self.user,
-            self.password, self.allowNone, args, cancel, self.useDateTime)
-        if self.secure:
-            from twisted.internet import ssl
-            connector = default_reactor.connectSSL(
-                self.host, self.port or 443, factory,
-                ssl.ClientContextFactory(),
-                timeout=self.timeout)
-        else:
-            connector = default_reactor.connectTCP(
-                self.host, self.port or 80, factory,
-                timeout=self.timeout)
-        return factory.deferred
 
 
 class BuilderSlave(object):
@@ -123,8 +90,8 @@ class BuilderSlave(object):
         """
         rpc_url = urlappend(builder_url.encode('utf-8'), 'rpc')
         if proxy is None:
-            server_proxy = ProxyWithConnectionTimeout(
-                rpc_url, allowNone=True, timeout=timeout)
+            server_proxy = xmlrpc.Proxy(
+                rpc_url, allowNone=True, connectTimeout=timeout)
             server_proxy.queryFactory = QuietQueryFactory
         else:
             server_proxy = proxy
@@ -264,7 +231,7 @@ class BuilderInteractor(object):
     _cached_slave = None
     _cached_slave_attrs = None
 
-    # Tests can override current_build_behavior and slave.
+    # Tests can override _current_build_behavior and slave.
     _override_behavior = None
     _override_slave = None
 
@@ -293,11 +260,11 @@ class BuilderInteractor(object):
         return self._cached_slave
 
     @property
-    def current_build_behavior(self):
+    def _current_build_behavior(self):
         """Return the current build behavior."""
         if self._override_behavior is not None:
             return self._override_behavior
-        # The current_build_behavior cache is invalidated when
+        # The _current_build_behavior cache is invalidated when
         # builder.currentjob changes.
         currentjob = self.builder.currentjob
         if currentjob is None:
@@ -305,7 +272,8 @@ class BuilderInteractor(object):
                     self._cached_build_behavior, IdleBuildBehavior):
                 self._cached_build_behavior = IdleBuildBehavior()
         elif currentjob != self._cached_currentjob:
-            self._cached_build_behavior = currentjob.required_build_behavior
+            self._cached_build_behavior = IBuildFarmJobBehavior(
+                currentjob.specific_job)
             self._cached_build_behavior.setBuilderInteractor(self)
             self._cached_currentjob = currentjob
         return self._cached_build_behavior
@@ -332,29 +300,11 @@ class BuilderInteractor(object):
                 if status['builder_status'] == 'BuilderStatus.BUILDING':
                     status['logtail'] = status_sentence[2]
 
-            self.current_build_behavior.updateSlaveStatus(
+            self._current_build_behavior.updateSlaveStatus(
                 status_sentence, status)
             return status
 
         return d.addCallback(got_status)
-
-    def slaveStatusSentence(self):
-        """Get the slave status sentence for this builder.
-
-        :return: A Deferred which fires when the slave dialog is complete.
-            Its value is a  tuple with the first element containing the
-            slave status, build_id-queue-id and then optionally more
-            elements depending on the status.
-        """
-        return self.slave.status()
-
-    def verifySlaveBuildCookie(self, slave_build_id):
-        """Verify that a slave's build cookie is consistent.
-
-        This should delegate to the current `IBuildFarmJobBehavior`.
-        """
-        return self.current_build_behavior.verifySlaveBuildCookie(
-            slave_build_id)
 
     def isAvailable(self):
         """Whether or not a builder is available for building new jobs.
@@ -364,7 +314,7 @@ class BuilderInteractor(object):
         """
         if not self.builder.builderok:
             return defer.succeed(False)
-        d = self.slaveStatusSentence()
+        d = self.slave.status()
 
         def catch_fault(failure):
             failure.trap(xmlrpclib.Fault, socket.error)
@@ -395,7 +345,7 @@ class BuilderInteractor(object):
             'BuilderStatus.WAITING': 2
             }
 
-        d = self.slaveStatusSentence()
+        d = self.slave.status()
 
         def got_status(status_sentence):
             """After we get the status, clean if we have to.
@@ -403,7 +353,7 @@ class BuilderInteractor(object):
             Always return status_sentence.
             """
             # Isolate the BuilderStatus string, always the first token in
-            # IBuilder.slaveStatusSentence().
+            # BuilderSlave.status().
             status = status_sentence[0]
 
             # If the cookie test below fails, it will request an abort of the
@@ -442,7 +392,8 @@ class BuilderInteractor(object):
                 return
             slave_build_id = status_sentence[ident_position[status]]
             try:
-                self.verifySlaveBuildCookie(slave_build_id)
+                self._current_build_behavior.verifySlaveBuildCookie(
+                    slave_build_id)
             except CorruptBuildCookie as reason:
                 if status == 'BuilderStatus.WAITING':
                     d = self.cleanSlave()
@@ -536,15 +487,15 @@ class BuilderInteractor(object):
             explaining what went wrong.
         """
         needed_bfjb = type(removeSecurityProxy(
-            build_queue_item.required_build_behavior))
-        if not zope_isinstance(self.current_build_behavior, needed_bfjb):
+            IBuildFarmJobBehavior(build_queue_item.specific_job)))
+        if not zope_isinstance(self._current_build_behavior, needed_bfjb):
             raise AssertionError(
                 "Inappropriate IBuildFarmJobBehavior: %r is not a %r" %
-                (self.current_build_behavior, needed_bfjb))
-        self.current_build_behavior.logStartBuild(logger)
+                (self._current_build_behavior, needed_bfjb))
+        self._current_build_behavior.logStartBuild(logger)
 
         # Make sure the request is valid; an exception is raised if it's not.
-        self.current_build_behavior.verifyBuildRequest(logger)
+        self._current_build_behavior.verifyBuildRequest(logger)
 
         # Set the build behavior depending on the provided build queue item.
         if not self.builder.builderok:
@@ -558,7 +509,7 @@ class BuilderInteractor(object):
             d = defer.succeed(None)
 
         def ping_done(ignored):
-            return self.current_build_behavior.dispatchBuildToSlave(
+            return self._current_build_behavior.dispatchBuildToSlave(
                 build_queue_item.id, logger)
 
         def resume_done(ignored):
@@ -659,7 +610,7 @@ class BuilderInteractor(object):
 
         :return: A Deferred that fires when the slave dialog is finished.
         """
-        return self.current_build_behavior.updateBuild(queueItem)
+        return self._current_build_behavior.updateBuild(queueItem)
 
     def transferSlaveFileToLibrarian(self, file_sha1, filename, private):
         """Transfer a file from the slave to the librarian.
