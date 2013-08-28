@@ -20,7 +20,6 @@ import tempfile
 from urlparse import urlparse
 import xmlrpclib
 
-from lazr.restful.utils import safe_hasattr
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -42,7 +41,10 @@ from twisted.web import xmlrpc
 from twisted.web.client import downloadPage
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    isinstance as zope_isinstance,
+    removeSecurityProxy,
+    )
 
 from lp.app.errors import NotFoundError
 from lp.buildmaster.interfaces.builder import (
@@ -76,10 +78,7 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.utils import copy_and_close
-from lp.services.propertycache import (
-    cachedproperty,
-    get_property_cache,
-    )
+from lp.services.propertycache import cachedproperty
 from lp.services.twistedsupport import cancel_on_timeout
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
 from lp.services.webapp import urlappend
@@ -393,25 +392,57 @@ def updateBuilderStatus(interactor, logger=None):
 
 class BuilderInteractor(object):
 
-    def __init__(self, builder, override_slave=None):
-        self.builder = builder
-        self._slave = override_slave
+    _cached_build_behavior = None
+    _cached_currentjob = None
 
-    @cachedproperty
+    _cached_slave = None
+    _cached_slave_attrs = None
+
+    # Tests can override current_build_behavior and slave.
+    _override_behavior = None
+    _override_slave = None
+
+    def __init__(self, builder, override_slave=None, override_behavior=None):
+        self.builder = builder
+        self._override_slave = override_slave
+        self._override_behavior = override_behavior
+
+    @property
     def slave(self):
         """See IBuilder."""
-        if self._slave is not None:
-            return self._slave
-        if self.builder.virtualized:
-            timeout = config.builddmaster.virtualized_socket_timeout
-        else:
-            timeout = config.builddmaster.socket_timeout
-        return BuilderSlave.makeBuilderSlave(
-            self.builder.url, self.builder.vm_host, timeout)
+        if self._override_slave is not None:
+            return self._override_slave
+        # The slave cache is invalidated when the builder's URL, VM host
+        # or virtualisation change.
+        new_slave_attrs = (
+            self.builder.url, self.builder.vm_host, self.builder.virtualized)
+        if self._cached_slave_attrs != new_slave_attrs:
+            if self.builder.virtualized:
+                timeout = config.builddmaster.virtualized_socket_timeout
+            else:
+                timeout = config.builddmaster.socket_timeout
+            self._cached_slave = BuilderSlave.makeBuilderSlave(
+                self.builder.url, self.builder.vm_host, timeout)
+            self._cached_slave_attrs = new_slave_attrs
+        return self._cached_slave
 
     @property
     def current_build_behavior(self):
-        return removeSecurityProxy(self.builder.current_build_behavior)
+        """Return the current build behavior."""
+        if self._override_behavior is not None:
+            return self._override_behavior
+        # The current_build_behavior cache is invalidated when
+        # builder.currentjob changes.
+        currentjob = self.builder.currentjob
+        if currentjob is None:
+            if not isinstance(
+                    self._cached_build_behavior, IdleBuildBehavior):
+                self._cached_build_behavior = IdleBuildBehavior()
+        elif currentjob != self._cached_currentjob:
+            self._cached_build_behavior = currentjob.required_build_behavior
+            self._cached_build_behavior.setBuilderInteractor(self)
+            self._cached_currentjob = currentjob
+        return self._cached_build_behavior
 
     def slaveStatus(self):
         """Get the slave status for this builder.
@@ -553,7 +584,7 @@ class BuilderInteractor(object):
 
         return d.addCallback(got_resume_ok).addErrback(got_resume_bad)
 
-    def startBuild(self, build_queue_item, logger):
+    def _startBuild(self, build_queue_item, logger):
         """Start a build on this builder.
 
         :param build_queue_item: A BuildQueueItem to build.
@@ -563,8 +594,12 @@ class BuilderInteractor(object):
             value is None, or a Failure that contains an exception
             explaining what went wrong.
         """
-        removeSecurityProxy(self.builder).current_build_behavior = (
-            build_queue_item.required_build_behavior)
+        needed_bfjb = type(removeSecurityProxy(
+            build_queue_item.required_build_behavior))
+        if not zope_isinstance(self.current_build_behavior, needed_bfjb):
+            raise AssertionError(
+                "Inappropriate IBuildFarmJobBehavior: %r is not a %r" %
+                (self.current_build_behavior, needed_bfjb))
         self.current_build_behavior.logStartBuild(logger)
 
         # Make sure the request is valid; an exception is raised if it's not.
@@ -615,7 +650,7 @@ class BuilderInteractor(object):
         logger = self._getSlaveScannerLogger()
         # Using maybeDeferred ensures that any exceptions are also
         # wrapped up and caught later.
-        d = defer.maybeDeferred(self.startBuild, candidate, logger)
+        d = defer.maybeDeferred(self._startBuild, candidate, logger)
         return d
 
     def resetOrFail(self, logger, exception):
@@ -771,51 +806,6 @@ class Builder(SQLBase):
     # give up and mark it builderok=False.
     FAILURE_THRESHOLD = 5
 
-    def __storm_invalidated__(self):
-        """Clear cached properties."""
-        super(Builder, self).__storm_invalidated__()
-        self._current_build_behavior = None
-
-    def _getCurrentBuildBehavior(self):
-        """Return the current build behavior."""
-        self._clean_currentjob_cache()
-        if not safe_hasattr(self, '_current_build_behavior'):
-            self._current_build_behavior = None
-
-        if (self._current_build_behavior is None or
-            isinstance(self._current_build_behavior, IdleBuildBehavior)):
-            # If we don't currently have a current build behavior set,
-            # or we are currently idle, then...
-            currentjob = self.currentjob
-            if currentjob is not None:
-                # ...we'll set it based on our current job.
-                self._current_build_behavior = (
-                    currentjob.required_build_behavior)
-                self._current_build_behavior.setBuilderInteractor(
-                    BuilderInteractor(self))
-                return self._current_build_behavior
-            elif self._current_build_behavior is None:
-                # If we don't have a current job or an idle behavior
-                # already set, then we just set the idle behavior
-                # before returning.
-                self._current_build_behavior = IdleBuildBehavior()
-            return self._current_build_behavior
-
-        else:
-            # We did have a current non-idle build behavior set, so
-            # we just return it.
-            return self._current_build_behavior
-
-    def _setCurrentBuildBehavior(self, new_behavior):
-        """Set the current build behavior."""
-        self._current_build_behavior = new_behavior
-        if self._current_build_behavior is not None:
-            self._current_build_behavior.setBuilderInteractor(
-                BuilderInteractor(self))
-
-    current_build_behavior = property(
-        _getCurrentBuildBehavior, _setCurrentBuildBehavior)
-
     def _getBuilderok(self):
         return self._builderok
 
@@ -829,20 +819,15 @@ class Builder(SQLBase):
     def gotFailure(self):
         """See `IBuilder`."""
         self.failure_count += 1
-        self._clean_currentjob_cache()
 
     def resetFailureCount(self):
         """See `IBuilder`."""
         self.failure_count = 0
-        self._clean_currentjob_cache()
 
     @cachedproperty
     def currentjob(self):
         """See IBuilder"""
         return getUtility(IBuildQueueSet).getByBuilder(self)
-
-    def _clean_currentjob_cache(self):
-        del get_property_cache(self).currentjob
 
     def failBuilder(self, reason):
         """See IBuilder"""

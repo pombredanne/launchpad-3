@@ -13,7 +13,6 @@ import tempfile
 from storm.store import Store
 from testtools.deferredruntest import AsynchronousDeferredRunTest
 import transaction
-from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -48,6 +47,9 @@ from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
 from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.model.binarypackagebuildbehavior import (
+    BinaryPackageBuildBehavior,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.fakemethod import FakeMethod
@@ -71,16 +73,16 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         super(TestBinaryBuildPackageBehavior, self).setUp()
         switch_dbuser('testadmin')
 
-    def assertExpectedInteraction(self, ignored, call_log, builder, build,
+    def assertExpectedInteraction(self, ignored, call_log, interactor, build,
                                   chroot, archive, archive_purpose,
                                   component=None, extra_urls=None,
                                   filemap_names=None):
         expected = self.makeExpectedInteraction(
-            builder, build, chroot, archive, archive_purpose, component,
+            interactor, build, chroot, archive, archive_purpose, component,
             extra_urls, filemap_names)
         self.assertEqual(call_log, expected)
 
-    def makeExpectedInteraction(self, builder, build, chroot, archive,
+    def makeExpectedInteraction(self, interactor, build, chroot, archive,
                                 archive_purpose, component=None,
                                 extra_urls=None, filemap_names=None):
         """Build the log of calls that we expect to be made to the slave.
@@ -96,7 +98,8 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
             in order to trick the slave into building correctly.
         :return: A list of the calls we expect to be made.
         """
-        job = removeSecurityProxy(builder.current_build_behavior).buildfarmjob
+        job = removeSecurityProxy(
+            interactor.current_build_behavior).buildfarmjob
         build_id = job.generateSlaveBuildCookie()
         ds_name = build.distro_arch_series.distroseries.name
         suite = ds_name + pocketsuffix[build.pocket]
@@ -128,17 +131,11 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build_log = [
             ('build', build_id, 'binarypackage', chroot.content.sha1,
              filemap_names, extra_args)]
-        if builder.virtualized:
+        if interactor.builder.virtualized:
             result = [('echo', 'ping')] + upload_logs + build_log
         else:
             result = upload_logs + build_log
         return result
-
-    def startBuild(self, builder, candidate):
-        builder = removeSecurityProxy(builder)
-        candidate = removeSecurityProxy(candidate)
-        return defer.maybeDeferred(
-            BuilderInteractor(builder).startBuild, candidate, BufferLogger())
 
     def test_non_virtual_ppa_dispatch(self):
         # When the BinaryPackageBuildBehavior dispatches PPA builds to
@@ -149,17 +146,18 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         archive = self.factory.makeArchive(virtualized=False)
         slave = OkSlave()
         builder = self.factory.makeBuilder(virtualized=False)
-        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         build = self.factory.makeBinaryPackageBuild(
             builder=builder, archive=archive)
         lf = self.factory.makeLibraryFileAlias()
         transaction.commit()
         build.distro_arch_series.addOrUpdateChroot(lf)
-        candidate = build.queueBuild()
-        d = self.startBuild(builder, candidate)
+        bq = build.queueBuild()
+        bq.markAsBuilding(builder)
+        interactor = BuilderInteractor(builder, slave)
+        d = interactor._startBuild(bq, BufferLogger())
         d.addCallback(
-            self.assertExpectedInteraction, slave.call_log,
-            builder, build, lf, archive, ArchivePurpose.PRIMARY, 'universe')
+            self.assertExpectedInteraction, slave.call_log, interactor, build,
+            lf, archive, ArchivePurpose.PRIMARY, 'universe')
         return d
 
     def test_virtual_ppa_dispatch(self):
@@ -169,14 +167,15 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         slave = OkSlave()
         builder = self.factory.makeBuilder(
             virtualized=True, vm_host="foohost")
-        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         build = self.factory.makeBinaryPackageBuild(
             builder=builder, archive=archive)
         lf = self.factory.makeLibraryFileAlias()
         transaction.commit()
         build.distro_arch_series.addOrUpdateChroot(lf)
-        candidate = build.queueBuild()
-        d = self.startBuild(builder, candidate)
+        bq = build.queueBuild()
+        bq.markAsBuilding(builder)
+        interactor = BuilderInteractor(builder, slave)
+        d = interactor._startBuild(bq, BufferLogger())
 
         def check_build(ignored):
             # We expect the first call to the slave to be a resume call,
@@ -184,8 +183,8 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
             expected_resume_call = slave.call_log.pop(0)
             self.assertEqual('resume', expected_resume_call)
             self.assertExpectedInteraction(
-                ignored, slave.call_log,
-                builder, build, lf, archive, ArchivePurpose.PPA)
+                ignored, slave.call_log, interactor, build, lf, archive,
+                ArchivePurpose.PPA)
         return d.addCallback(check_build)
 
     def test_partner_dispatch_no_publishing_history(self):
@@ -193,17 +192,18 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
             virtualized=False, purpose=ArchivePurpose.PARTNER)
         slave = OkSlave()
         builder = self.factory.makeBuilder(virtualized=False)
-        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         build = self.factory.makeBinaryPackageBuild(
             builder=builder, archive=archive)
         lf = self.factory.makeLibraryFileAlias()
         transaction.commit()
         build.distro_arch_series.addOrUpdateChroot(lf)
-        candidate = build.queueBuild()
-        d = self.startBuild(builder, candidate)
+        bq = build.queueBuild()
+        bq.markAsBuilding(builder)
+        interactor = BuilderInteractor(builder, slave)
+        d = interactor._startBuild(bq, BufferLogger())
         d.addCallback(
-            self.assertExpectedInteraction, slave.call_log,
-            builder, build, lf, archive, ArchivePurpose.PARTNER)
+            self.assertExpectedInteraction, slave.call_log, interactor, build,
+            lf, archive, ArchivePurpose.PARTNER)
         return d
 
     def test_dont_dispatch_release_builds(self):
