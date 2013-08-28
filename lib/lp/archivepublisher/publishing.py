@@ -481,10 +481,7 @@ class Publisher(object):
             if current is None:
                 return
             for pocket in self.archive.getPockets():
-                if pocket == PackagePublishingPocket.RELEASE:
-                    alias_suite = alias
-                else:
-                    alias_suite = "%s%s" % (alias, pocketsuffix[pocket])
+                alias_suite = "%s%s" % (alias, pocketsuffix[pocket])
                 current_suite = current.getSuite(pocket)
                 current_suite_path = os.path.join(
                     self._config.distsroot, current_suite)
