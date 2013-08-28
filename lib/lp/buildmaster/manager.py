@@ -20,6 +20,7 @@ from twisted.internet import (
     )
 from twisted.internet.task import LoopingCall
 from twisted.python import log
+from twisted.python.failure import Failure
 from zope.component import getUtility
 
 from lp.buildmaster.enums import BuildStatus
@@ -206,29 +207,27 @@ class SlaveScanner:
             self.date_cancel = None
             return defer.succeed(False)
 
-        def resume_done(ignored):
-            return defer.succeed(True)
+        def reset_done(value):
+            # value is not None if we resumed a slave host.
+            return defer.succeed(value is not None)
 
-        def cancel_failed(ignored):
+        def cancel_failed(failure):
             self.logger.info(
                 "Build '%s' on %s failed to cancel" %
                 (build.title, self.builder.name))
             self.date_cancel = None
             buildqueue.cancel()
             transaction.commit()
-            if builder.virtualized:
-                d = self.interactor.resumeSlaveHost()
-                return d.addCallback(resume_done)
-            else:
-                builder.failBuilder("Build failed to cancel")
-                return defer.succeed(False)
+            d = self.interactor.resetOrFail(self.logger, failure.value)
+            return d.addCallback(reset_done)
 
         if self.date_cancel is not None:
             # The BuildFarmJob will normally set the build's status to
             # something other than CANCELLING once the builder responds to
             # the cancel request.  This timeout is in case it doesn't.
             if self._clock.seconds() >= self.date_cancel:
-                return cancel_failed(None)
+                return cancel_failed(Failure(BuildSlaveFailure(
+                    "Build '%s' cancellation timed out" % build.title)))
             else:
                 self.logger.info(
                     "Waiting for build '%s' to cancel" % build.title)
