@@ -33,9 +33,6 @@ from zope.interface import implements
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior,
-    )
 from lp.buildmaster.interfaces.buildqueue import (
     IBuildQueue,
     IBuildQueueSet,
@@ -127,11 +124,6 @@ class BuildQueue(SQLBase):
     estimated_duration = IntervalCol()
     processor = ForeignKey(dbName='processor', foreignKey='Processor')
     virtualized = BoolCol(dbName='virtualized')
-
-    @property
-    def required_build_behavior(self):
-        """See `IBuildQueue`."""
-        return IBuildFarmJobBehavior(self.specific_job)
 
     @cachedproperty
     def specific_job(self):

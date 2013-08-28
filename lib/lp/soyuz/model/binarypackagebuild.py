@@ -99,8 +99,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     _table = 'BinaryPackageBuild'
     _defaultOrder = 'id'
 
-    build_farm_job_type = BuildFarmJobType.PACKAGEBUILD
-    job_type = build_farm_job_type
+    job_type = BuildFarmJobType.PACKAGEBUILD
 
     build_farm_job_id = Int(name='build_farm_job')
     build_farm_job = Reference(build_farm_job_id, BuildFarmJob.id)
@@ -837,8 +836,8 @@ class BinaryPackageBuildSet:
         """See `IBinaryPackageBuildSet`."""
         # Create the BuildFarmJob for the new BinaryPackageBuild.
         build_farm_job = getUtility(IBuildFarmJobSource).new(
-            BinaryPackageBuild.build_farm_job_type, status, date_created,
-            builder, archive)
+            BinaryPackageBuild.job_type, status, date_created, builder,
+            archive)
         binary_package_build = BinaryPackageBuild(
             build_farm_job=build_farm_job,
             distro_arch_series=distro_arch_series,

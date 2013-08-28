@@ -98,7 +98,7 @@ appropriate exception.
 
     >>> from lp.buildmaster.interactor import BuilderInteractor
     >>> interactor = BuilderInteractor(bob)
-    >>> interactor.current_build_behavior.logStartBuild(None)
+    >>> interactor._current_build_behavior.logStartBuild(None)
     Traceback (most recent call last):
      ...
     BuildBehaviorMismatch: Builder was idle when asked to log the start of a
@@ -107,7 +107,7 @@ appropriate exception.
 If a slave is working on a job while we think it is idle, it will always be
 aborted.
 
-    >>> interactor.current_build_behavior.verifySlaveBuildCookie('foo')
+    >>> interactor._current_build_behavior.verifySlaveBuildCookie('foo')
     Traceback (most recent call last):
     ...
     CorruptBuildCookie: No job assigned to builder

@@ -32,7 +32,6 @@ from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interactor import (
     BuilderInteractor,
     BuilderSlave,
-    ProxyWithConnectionTimeout,
     )
 from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
@@ -232,7 +231,7 @@ class TestBuilder(TestCaseWithFactory):
         # At this point we should see a valid behaviour on the builder:
         self.assertFalse(
             zope_isinstance(
-                interactor.current_build_behavior, IdleBuildBehavior))
+                interactor._current_build_behavior, IdleBuildBehavior))
 
         # Now reset the job and try to rescue the builder.
         candidate.destroySelf()
@@ -242,7 +241,7 @@ class TestBuilder(TestCaseWithFactory):
 
         def check_builder(ignored):
             self.assertIsInstance(
-                removeSecurityProxy(interactor.current_build_behavior),
+                removeSecurityProxy(interactor._current_build_behavior),
                 IdleBuildBehavior)
 
         return d.addCallback(check_builder)
@@ -473,7 +472,7 @@ class TestBuilderInteractorSlaveStatus(TestCase):
             AbortedSlave(), builder_status='BuilderStatus.ABORTED')
 
     def test_isAvailable_with_not_builderok(self):
-        # isAvailable() is a wrapper around slaveStatusSentence()
+        # isAvailable() is a wrapper around BuilderSlave.status()
         builder = MockBuilder()
         builder.builderok = False
         d = BuilderInteractor(builder).isAvailable()
@@ -817,7 +816,7 @@ class TestFindRecipeBuildCandidates(TestFindBuildCandidateBase):
 
 class TestCurrentBuildBehavior(TestCaseWithFactory):
     """This test ensures the get/set behavior of BuilderInteractor's
-    current_build_behavior property.
+    _current_build_behavior property.
     """
 
     layer = LaunchpadZopelessLayer
@@ -844,14 +843,14 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
         nor a current build.
         """
         self.assertIsInstance(
-            self.interactor.current_build_behavior, IdleBuildBehavior)
+            self.interactor._current_build_behavior, IdleBuildBehavior)
 
     def test_current_job_behavior(self):
         """The current behavior is set automatically from the current job."""
         # Set the builder attribute on the buildqueue record so that our
         # builder will think it has a current build.
         self.build.buildqueue_record.builder = self.builder
-        behavior = removeSecurityProxy(self.interactor.current_build_behavior)
+        behavior = removeSecurityProxy(self.interactor._current_build_behavior)
         self.assertIsInstance(behavior, BinaryPackageBuildBehavior)
         self.assertEqual(behavior._builder, self.builder)
         self.assertEqual(behavior._interactor, self.interactor)
@@ -1134,12 +1133,6 @@ class TestSlaveConnectionTimeouts(TestCase):
         self.clock.advance(config.builddmaster.socket_timeout + 1)
         self.assertTrue(d.called)
         return assert_fails_with(d, CancelledError)
-
-    def test_BuilderSlave_uses_ProxyWithConnectionTimeout(self):
-        # Make sure that BuilderSlaves use the custom proxy class.
-        slave = BuilderSlave.makeBuilderSlave(
-            "url", "host", config.builddmaster.socket_timeout)
-        self.assertIsInstance(slave._server, ProxyWithConnectionTimeout)
 
 
 class TestSlaveWithLibrarian(TestCaseWithFactory):

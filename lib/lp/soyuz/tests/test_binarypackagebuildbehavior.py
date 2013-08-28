@@ -23,6 +23,9 @@ from lp.buildmaster.interactor import (
     BuilderSlave,
     )
 from lp.buildmaster.interfaces.builder import CannotBuild
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    IBuildFarmJobBehavior,
+    )
 from lp.buildmaster.tests.mock_slaves import (
     AbortedSlave,
     AbortingSlave,
@@ -96,7 +99,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         :return: A list of the calls we expect to be made.
         """
         job = removeSecurityProxy(
-            interactor.current_build_behavior).buildfarmjob
+            interactor._current_build_behavior).buildfarmjob
         build_id = job.generateSlaveBuildCookie()
         ds_name = build.distro_arch_series.distroseries.name
         suite = ds_name + pocketsuffix[build.pocket]
@@ -218,7 +221,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         transaction.commit()
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
-        behavior = candidate.required_build_behavior
+        behavior = IBuildFarmJobBehavior(candidate.specific_job)
         behavior.setBuilderInteractor(BuilderInteractor(builder))
         e = self.assertRaises(
             AssertionError, behavior.verifyBuildRequest, BufferLogger())
@@ -239,7 +242,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         transaction.commit()
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
-        behavior = candidate.required_build_behavior
+        behavior = IBuildFarmJobBehavior(candidate.specific_job)
         behavior.setBuilderInteractor(BuilderInteractor(builder))
         e = self.assertRaises(
             AssertionError, behavior.verifyBuildRequest, BufferLogger())
@@ -258,7 +261,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         transaction.commit()
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
-        behavior = candidate.required_build_behavior
+        behavior = IBuildFarmJobBehavior(candidate.specific_job)
         behavior.setBuilderInteractor(BuilderInteractor(builder))
         e = self.assertRaises(
             AssertionError, behavior.verifyBuildRequest, BufferLogger())
@@ -273,7 +276,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build = self.factory.makeBinaryPackageBuild(
             builder=builder, archive=archive)
         candidate = build.queueBuild()
-        behavior = candidate.required_build_behavior
+        behavior = IBuildFarmJobBehavior(candidate.specific_job)
         behavior.setBuilderInteractor(BuilderInteractor(builder))
         e = self.assertRaises(
             CannotBuild, behavior.verifyBuildRequest, BufferLogger())
@@ -284,7 +287,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         # The uploadprocessor relies on this format.
         build = self.factory.makeBinaryPackageBuild()
         candidate = build.queueBuild()
-        behavior = candidate.required_build_behavior
+        behavior = IBuildFarmJobBehavior(candidate.specific_job)
         cookie = removeSecurityProxy(behavior).getBuildCookie()
         expected_cookie = "PACKAGEBUILD-%d" % build.id
         self.assertEqual(expected_cookie, cookie)
@@ -324,7 +327,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
         self.build.distro_arch_series.addOrUpdateChroot(lf)
         self.candidate = self.build.queueBuild()
         self.candidate.markAsBuilding(self.builder)
-        self.behavior = self.candidate.required_build_behavior
+        self.behavior = IBuildFarmJobBehavior(self.candidate.specific_job)
         self.behavior.setBuilderInteractor(BuilderInteractor(self.builder))
         # This is required so that uploaded files from the buildd don't
         # hang around between test runs.
