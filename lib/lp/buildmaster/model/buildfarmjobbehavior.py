@@ -273,7 +273,7 @@ class BuildFarmJobBehaviorBase:
 
         # If this is a binary package build, discard it if its source is
         # no longer published.
-        if build.build_farm_job_type == BuildFarmJobType.PACKAGEBUILD:
+        if build.job_type == BuildFarmJobType.PACKAGEBUILD:
             build = build.buildqueue_record.specific_job.build
             if not build.current_source_publication:
                 yield self._interactor.cleanSlave()
