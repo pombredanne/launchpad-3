@@ -51,7 +51,6 @@ from lp.buildmaster.tests.mock_slaves import (
     AbortingSlave,
     BrokenSlave,
     BuildingSlave,
-    CorruptBehavior,
     DeadProxy,
     LostBuildingBrokenSlave,
     make_publisher,
@@ -314,7 +313,7 @@ class TestBuilderInteractor(TestCase):
         # A slave that's 'lost' should be aborted; when the slave is
         # broken then abort() should also throw a fault.
         slave = LostBuildingBrokenSlave()
-        interactor = BuilderInteractor(MockBuilder(), slave, CorruptBehavior())
+        interactor = BuilderInteractor(MockBuilder(), slave, TrivialBehavior())
         d = interactor.updateStatus(BufferLogger())
 
         def check_slave_status(failure):
@@ -425,7 +424,7 @@ class TestBuilderInteractor(TestCase):
     def test_recover_waiting_slave_with_good_id(self):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # WAITING.
-        waiting_slave = WaitingSlave()
+        waiting_slave = WaitingSlave(build_id='trivial')
         d = BuilderInteractor(
             MockBuilder(), waiting_slave, TrivialBehavior()).rescueIfLost()
 
@@ -441,9 +440,9 @@ class TestBuilderInteractor(TestCase):
         # then rescueBuilderIfLost should attempt to abort it, so that the
         # builder is reset for a new build, and the corrupt build is
         # discarded.
-        waiting_slave = WaitingSlave()
+        waiting_slave = WaitingSlave(build_id='non-trivial')
         d = BuilderInteractor(
-            MockBuilder(), waiting_slave, CorruptBehavior()).rescueIfLost()
+            MockBuilder(), waiting_slave, TrivialBehavior()).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertNotIn('abort', waiting_slave.call_log)
@@ -454,7 +453,7 @@ class TestBuilderInteractor(TestCase):
     def test_recover_building_slave_with_good_id(self):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # BUILDING.
-        building_slave = BuildingSlave()
+        building_slave = BuildingSlave(build_id='trivial')
         d = BuilderInteractor(
             MockBuilder(), building_slave, TrivialBehavior()).rescueIfLost()
 
@@ -467,9 +466,9 @@ class TestBuilderInteractor(TestCase):
     def test_recover_building_slave_with_bad_id(self):
         # If a slave is BUILDING with a build id we don't recognize, then we
         # abort the build, thus stopping it in its tracks.
-        building_slave = BuildingSlave()
+        building_slave = BuildingSlave(build_id='non-trivial')
         d = BuilderInteractor(
-            MockBuilder(), building_slave, CorruptBehavior()).rescueIfLost()
+            MockBuilder(), building_slave, TrivialBehavior()).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertIn('abort', building_slave.call_log)

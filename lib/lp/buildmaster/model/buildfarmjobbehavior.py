@@ -63,6 +63,9 @@ class BuildFarmJobBehaviorBase:
         The default behavior is that we don't add any extra values."""
         pass
 
+    def generateSlaveBuildCookie(self):
+        return self.buildfarmjob.generateSlaveBuildCookie()
+
     def getBuildCookie(self):
         """See `IPackageBuild`."""
         return '%s-%s' % (self.build.job_type.name, self.build.id)

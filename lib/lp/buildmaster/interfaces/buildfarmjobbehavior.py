@@ -46,6 +46,13 @@ class IBuildFarmJobBehavior(Interface):
         :param logger: A logger to be used to log diagnostic information.
         """
 
+    def generateSlaveBuildCookie(self):
+        """Produce a cookie for the slave as a token of the job it's doing.
+
+        The cookie should uniquely represent the current dispatch of the
+        current build.
+        """
+
     def updateSlaveStatus(raw_slave_status, status):
         """Update the slave status dict with custom values for this behavior.
 

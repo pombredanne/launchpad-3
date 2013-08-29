@@ -332,9 +332,8 @@ class BuilderInteractor(object):
         """See `IBuildFarmJobBehavior`."""
         if isinstance(self._current_build_behavior, IdleBuildBehavior):
             raise CorruptBuildCookie('No job assigned to builder')
-        bfjo = self._current_build_behavior.buildfarmjob
-        expected_cookie = bfjo.generateSlaveBuildCookie()
-        if slave_build_cookie != expected_cookie:
+        good_cookie = self._current_build_behavior.generateSlaveBuildCookie()
+        if slave_build_cookie != good_cookie:
             raise CorruptBuildCookie("Invalid slave build cookie.")
 
     def rescueIfLost(self, logger=None):
@@ -405,8 +404,7 @@ class BuilderInteractor(object):
                 return
             slave_build_id = status_sentence[ident_position[status]]
             try:
-                self._current_build_behavior.verifySlaveBuildCookie(
-                    slave_build_id)
+                self.verifySlaveBuildCookie(slave_build_id)
             except CorruptBuildCookie as reason:
                 if status == 'BuilderStatus.WAITING':
                     d = self.cleanSlave()
