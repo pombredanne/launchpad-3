@@ -39,7 +39,7 @@ class TestRepositoryArchiveIndex(unittest.TestCase):
         'temp_root'.
         """
         return RepositoryIndexFile(
-            self.root, self.temp_root, filename)
+            os.path.join(self.root, filename), self.temp_root)
 
     def testWorkflow(self):
         """`RepositoryIndexFile` workflow.
@@ -116,7 +116,7 @@ class TestRepositoryArchiveIndex(unittest.TestCase):
         """`RepositoryIndexFile` creates given 'root' path if necessary."""
         missing_root = os.path.join(self.root, 'donotexist')
         repo_file = RepositoryIndexFile(
-            missing_root, self.temp_root, 'boing')
+            os.path.join(missing_root, 'boing'), self.temp_root)
 
         self.assertFalse(os.path.exists(missing_root))
 
@@ -130,5 +130,5 @@ class TestRepositoryArchiveIndex(unittest.TestCase):
         """`RepositoryIndexFile` cannot be given a missing 'temp_root'."""
         missing_temp_root = os.path.join(self.temp_root, 'donotexist')
         self.assertRaises(
-            AssertionError,
-            RepositoryIndexFile, self.root, missing_temp_root, 'boing')
+            AssertionError, RepositoryIndexFile,
+            os.path.join(self.root, 'boing'), missing_temp_root)

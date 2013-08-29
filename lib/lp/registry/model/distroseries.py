@@ -55,6 +55,7 @@ from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
+from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import (
     DerivationError,
     IDistroSeries,
@@ -1490,9 +1491,17 @@ class DistroSeriesSet:
             DistroSeries.hide_all_translations == False,
             DistroSeries.id == POTemplate.distroseriesID).config(distinct=True)
 
-    def queryByName(self, distribution, name):
+    def queryByName(self, distribution, name, follow_aliases=False):
         """See `IDistroSeriesSet`."""
-        return DistroSeries.selectOneBy(distribution=distribution, name=name)
+        series = DistroSeries.selectOneBy(distribution=distribution, name=name)
+        if series is not None:
+            return series
+        if follow_aliases:
+            try:
+                return distribution.resolveSeriesAlias(name)
+            except NoSuchDistroSeries:
+                pass
+        return None
 
     def queryByVersion(self, distribution, version):
         """See `IDistroSeriesSet`."""
