@@ -149,11 +149,8 @@ class IBuildFarmJobOld(Interface):
     def generateSlaveBuildCookie():
         """Produce a cookie for the slave as a token of the job it's doing.
 
-        The cookie need not be unique, but should be hard for a
-        compromised slave to guess.
-
-        :return: a hard-to-guess ASCII string that can be reproduced
-            accurately based on this job's properties.
+        The cookie should uniquely represent the current dispatch of this
+        build.
         """
 
     def cleanUp():

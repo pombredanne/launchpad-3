@@ -46,30 +46,29 @@ class IBuildFarmJobBehavior(Interface):
         :param logger: A logger to be used to log diagnostic information.
         """
 
-    def updateSlaveStatus(raw_slave_status, status):
+    def generateSlaveBuildCookie():
+        """Produce a cookie for the slave as a token of the job it's doing.
+
+        The cookie should uniquely represent the current dispatch of the
+        current build.
+        """
+
+    def updateSlaveStatus(status_sentence, status_dict):
         """Update the slave status dict with custom values for this behavior.
 
-        :param raw_slave_status: The value returned by the build slave's
+        :param status_sentence: The value returned by the build slave's
            status() method.
-        :param status: A dict of the processed slave status values provided
-           by all types: builder_status, build_id, and optionally build_status
-           or logtail. This should have any behaviour-specific values
-           added to it.
+        :param status_dict: A dict of the processed slave status values
+           provided by all types: builder_status, build_id, and optionally
+           build_status or logtail. This should have any behaviour-specific
+           values added to it.
         """
 
-    def verifySlaveBuildCookie(slave_build_cookie):
-        """Verify that a slave's build cookie shows no signs of corruption.
-
-        :param slave_build_cookie: The slave's build cookie, as specified in
-           `dispatchBuildToSlave`.
-        :raises CorruptBuildCookie: if the build cookie isn't what it's
-            supposed to be.
-        """
-
-    def handleStatus(status, librarian, slave_status):
+    def handleStatus(status, librarian, status_dict):
         """Update the build from a WAITING slave result.
 
         :param status: The tail of the BuildStatus (eg. OK or PACKAGEFAIL).
         :param librarian: An `ILibrarianClient` to use for file uploads.
-        :param slave_status: Slave status from `BuilderInteractor.slaveStatus`.
+        :param status_dict: Slave status dict from
+           `BuilderInteractor.slaveStatus` and `updateSlaveStatus`.
         """

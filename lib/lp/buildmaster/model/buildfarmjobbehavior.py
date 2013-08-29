@@ -22,10 +22,7 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
-from lp.buildmaster.interfaces.builder import (
-    BuildSlaveFailure,
-    CorruptBuildCookie,
-    )
+from lp.buildmaster.interfaces.builder import BuildSlaveFailure
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch,
     IBuildFarmJobBehavior,
@@ -66,11 +63,8 @@ class BuildFarmJobBehaviorBase:
         The default behavior is that we don't add any extra values."""
         pass
 
-    def verifySlaveBuildCookie(self, slave_build_cookie):
-        """See `IBuildFarmJobBehavior`."""
-        expected_cookie = self.buildfarmjob.generateSlaveBuildCookie()
-        if slave_build_cookie != expected_cookie:
-            raise CorruptBuildCookie("Invalid slave build cookie.")
+    def generateSlaveBuildCookie(self):
+        return self.buildfarmjob.generateSlaveBuildCookie()
 
     def getBuildCookie(self):
         """See `IPackageBuild`."""
@@ -336,12 +330,3 @@ class IdleBuildBehavior(BuildFarmJobBehaviorBase):
         """See `IBuildFarmJobBehavior`."""
         raise BuildBehaviorMismatch(
             "Builder was idle when asked to dispatch a build to the slave.")
-
-    @property
-    def status(self):
-        """See `IBuildFarmJobBehavior`."""
-        return "Idle"
-
-    def verifySlaveBuildCookie(self, slave_build_id):
-        """See `IBuildFarmJobBehavior`."""
-        raise CorruptBuildCookie('No job assigned to builder')
