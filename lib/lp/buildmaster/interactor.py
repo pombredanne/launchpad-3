@@ -328,6 +328,15 @@ class BuilderInteractor(object):
             return status[0] == 'BuilderStatus.IDLE'
         return d.addCallbacks(check_available, catch_fault)
 
+    def verifySlaveBuildCookie(self, slave_build_cookie):
+        """See `IBuildFarmJobBehavior`."""
+        if isinstance(self._current_build_behavior, IdleBuildBehavior):
+            raise CorruptBuildCookie('No job assigned to builder')
+        bfjo = self._current_build_behavior.buildfarmjob
+        expected_cookie = bfjo.generateSlaveBuildCookie()
+        if slave_build_cookie != expected_cookie:
+            raise CorruptBuildCookie("Invalid slave build cookie.")
+
     def rescueIfLost(self, logger=None):
         """Reset the slave if its job information doesn't match the DB.
 

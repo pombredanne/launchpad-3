@@ -54,11 +54,6 @@ class TestBuildFarmJobBehaviorBase(TestCaseWithFactory):
             buildfarmjob = removeSecurityProxy(buildfarmjob)
         return BuildFarmJobBehaviorBase(buildfarmjob)
 
-    def _changeBuildFarmJobName(self, buildfarmjob):
-        """Manipulate `buildfarmjob` so that its `getName` changes."""
-        name = buildfarmjob.getName() + 'x'
-        removeSecurityProxy(buildfarmjob).getName = FakeMethod(result=name)
-
     def _makeBuild(self):
         """Create a `Build` object."""
         x86 = getUtility(IProcessorFamilySet).getByName('x86')
@@ -88,45 +83,6 @@ class TestBuildFarmJobBehaviorBase(TestCaseWithFactory):
         self.assertTrue(len(cookie) > 10)
 
         self.assertEqual(cookie, buildfarmjob.generateSlaveBuildCookie())
-
-    def test_verifySlaveBuildCookie_good(self):
-        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
-        behavior = self._makeBehavior(buildfarmjob)
-
-        cookie = buildfarmjob.generateSlaveBuildCookie()
-
-        # The correct cookie validates successfully.
-        behavior.verifySlaveBuildCookie(cookie)
-
-    def test_verifySlaveBuildCookie_bad(self):
-        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
-        behavior = self._makeBehavior(buildfarmjob)
-
-        cookie = buildfarmjob.generateSlaveBuildCookie()
-
-        self.assertRaises(
-            CorruptBuildCookie,
-            behavior.verifySlaveBuildCookie,
-            cookie + 'x')
-
-    def test_cookie_includes_job_name(self):
-        # The cookie is a hash that includes the job's name.
-        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
-        buildfarmjob = removeSecurityProxy(buildfarmjob)
-        behavior = self._makeBehavior(buildfarmjob)
-        cookie = buildfarmjob.generateSlaveBuildCookie()
-
-        self._changeBuildFarmJobName(buildfarmjob)
-
-        self.assertRaises(
-            CorruptBuildCookie,
-            behavior.verifySlaveBuildCookie,
-            cookie)
-
-        # However, the name is not included in plaintext so as not to
-        # provide a compromised slave a starting point for guessing
-        # another slave's cookie.
-        self.assertNotIn(buildfarmjob.getName(), cookie)
 
     def test_cookie_includes_more_than_name(self):
         # Two build jobs with the same name still get different cookies.

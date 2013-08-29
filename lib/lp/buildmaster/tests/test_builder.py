@@ -36,8 +36,12 @@ from lp.buildmaster.interactor import (
 from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
     CannotResumeHost,
+    CorruptBuildCookie,
     IBuilder,
     IBuilderSet,
+    )
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    IBuildFarmJobBehavior,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
@@ -245,6 +249,58 @@ class TestBuilder(TestCaseWithFactory):
                 IdleBuildBehavior)
 
         return d.addCallback(check_builder)
+
+
+class TestBuilderInteractorDB(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def _changeBuildFarmJobName(self, buildfarmjob):
+        """Manipulate `buildfarmjob` so that its `getName` changes."""
+        name = buildfarmjob.getName() + 'x'
+        removeSecurityProxy(buildfarmjob).getName = FakeMethod(result=name)
+
+    def test_verifySlaveBuildCookie_good(self):
+        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
+        behavior = IBuildFarmJobBehavior(buildfarmjob)
+        interactor = BuilderInteractor(
+            MockBuilder(), override_behavior=behavior)
+
+        # The correct cookie validates successfully.
+        cookie = buildfarmjob.generateSlaveBuildCookie()
+        interactor.verifySlaveBuildCookie(cookie)
+
+    def test_verifySlaveBuildCookie_bad(self):
+        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
+        behavior = IBuildFarmJobBehavior(buildfarmjob)
+        interactor = BuilderInteractor(
+            MockBuilder(), override_behavior=behavior)
+
+        cookie = buildfarmjob.generateSlaveBuildCookie()
+        self.assertRaises(
+            CorruptBuildCookie,
+            interactor.verifySlaveBuildCookie, cookie + 'x')
+
+    def test_verifySlaveBuildCookie_idle(self):
+        interactor = BuilderInteractor(MockBuilder())
+        self.assertTrue(
+            isinstance(interactor._current_build_behavior, IdleBuildBehavior))
+        self.assertRaises(
+            CorruptBuildCookie, interactor.verifySlaveBuildCookie, 'foo')
+
+    def test_cookie_includes_job_name(self):
+        # The cookie is a hash that includes the job's name.
+        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
+        behavior = IBuildFarmJobBehavior(buildfarmjob)
+        interactor = BuilderInteractor(
+            MockBuilder(), override_behavior=behavior)
+        cookie = buildfarmjob.generateSlaveBuildCookie()
+
+        self._changeBuildFarmJobName(removeSecurityProxy(buildfarmjob))
+        self.assertRaises(
+            CorruptBuildCookie,
+            interactor.verifySlaveBuildCookie, cookie)
+        self.assertNotIn(buildfarmjob.getName(), cookie)
 
 
 class TestBuilderInteractor(TestCase):

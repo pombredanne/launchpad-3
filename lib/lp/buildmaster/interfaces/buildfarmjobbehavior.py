@@ -57,15 +57,6 @@ class IBuildFarmJobBehavior(Interface):
            added to it.
         """
 
-    def verifySlaveBuildCookie(slave_build_cookie):
-        """Verify that a slave's build cookie shows no signs of corruption.
-
-        :param slave_build_cookie: The slave's build cookie, as specified in
-           `dispatchBuildToSlave`.
-        :raises CorruptBuildCookie: if the build cookie isn't what it's
-            supposed to be.
-        """
-
     def handleStatus(status, librarian, slave_status):
         """Update the build from a WAITING slave result.
 
