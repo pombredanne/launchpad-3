@@ -41,7 +41,10 @@ from lp.archivepublisher.utils import (
     get_ppa_reference,
     RepositoryIndexFile,
     )
-from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.sqlbase import sqlvalues
@@ -156,6 +159,22 @@ def getPublisher(archive, allowed_suites, log, distsroot=None):
     log.debug("Preparing publisher.")
 
     return Publisher(log, pubconf, disk_pool, archive, allowed_suites)
+
+
+def get_sources_path(config, suite_name, component):
+    """Return path to Sources file for the given arguments."""
+    return os.path.join(
+        config.distsroot, suite_name, component.name, "source", "Sources")
+
+
+def get_packages_path(config, suite_name, component, arch, subcomp=None):
+    """Return path to Packages file for the given arguments."""
+    component_root = os.path.join(config.distsroot, suite_name, component.name)
+    arch_path = "binary-%s" % arch.architecturetag
+    if subcomp is None:
+        return os.path.join(component_root, arch_path, "Packages")
+    else:
+        return os.path.join(component_root, subcomp, arch_path, "Packages")
 
 
 class I18nIndex(_multivalued):
@@ -417,6 +436,85 @@ class Publisher(object):
                     self.checkDirtySuiteBeforePublishing(distroseries, pocket)
                 self._writeSuite(distroseries, pocket)
 
+    def _allIndexFiles(self, distroseries):
+        """Return all index files on disk for a distroseries."""
+        components = self.archive.getComponentsForSeries(distroseries)
+        for pocket in self.archive.getPockets():
+            suite_name = distroseries.getSuite(pocket)
+            for component in components:
+                yield get_sources_path(self._config, suite_name, component)
+                for arch in distroseries.architectures:
+                    if not arch.enabled:
+                        continue
+                    arch_path = "binary-%s" % arch.architecturetag
+                    yield get_packages_path(
+                        self._config, suite_name, component, arch)
+                    for subcomp in self.subcomponents:
+                        yield get_packages_path(
+                            self._config, suite_name, component, arch, subcomp)
+
+    def _latestNonEmptySeries(self):
+        """Find the latest non-empty series in an archive.
+
+        Doing this properly (series with highest version and any active
+        publications) is expensive.  However, we just went to the effort of
+        publishing everything; so a quick-and-dirty approach is to look
+        through what we published on disk.
+        """
+        for distroseries in self.distro:
+            for index in self._allIndexFiles(distroseries):
+                try:
+                    if os.path.getsize(index) > 0:
+                        return distroseries
+                except OSError:
+                    pass
+
+    def createSeriesAliases(self):
+        """Ensure that any series aliases exist.
+
+        The natural implementation would be to point the alias at
+        self.distro.currentseries, but that works poorly for PPAs, where
+        it's possible that no packages have been published for the current
+        series.  We also don't want to have to go through and republish all
+        PPAs when we create a new series.  Thus, we instead do the best we
+        can by pointing the alias at the latest series with any publications
+        in the archive, which is the best approximation to a development
+        series for that PPA.
+
+        This does mean that the published alias might point to an older
+        series, then you upload something to the alias and find that the
+        alias has now moved to a newer series.  What can I say?  The
+        requirements are not entirely coherent for PPAs given that packages
+        are not automatically copied forward.
+        """
+        alias = self.distro.development_series_alias
+        if alias is not None:
+            current = self._latestNonEmptySeries()
+            if current is None:
+                return
+            for pocket in self.archive.getPockets():
+                alias_suite = "%s%s" % (alias, pocketsuffix[pocket])
+                current_suite = current.getSuite(pocket)
+                current_suite_path = os.path.join(
+                    self._config.distsroot, current_suite)
+                if not os.path.isdir(current_suite_path):
+                    continue
+                alias_suite_path = os.path.join(
+                    self._config.distsroot, alias_suite)
+                if os.path.islink(alias_suite_path):
+                    if os.readlink(alias_suite_path) == current_suite:
+                        continue
+                elif os.path.isdir(alias_suite_path):
+                    # Perhaps somebody did something misguided ...
+                    self.log.warning(
+                        "Alias suite path %s is a directory!" % alias_suite)
+                    continue
+                try:
+                    os.unlink(alias_suite_path)
+                except OSError:
+                    pass
+                os.symlink(current_suite, alias_suite_path)
+
     def _writeComponentIndexes(self, distroseries, pocket, component):
         """Write Index files for single distroseries + pocket + component.
 
@@ -431,10 +529,9 @@ class Publisher(object):
 
         self.log.debug("Generating Sources")
 
-        source_index_root = os.path.join(
-            self._config.distsroot, suite_name, component.name, 'source')
         source_index = RepositoryIndexFile(
-            source_index_root, self._config.temproot, 'Sources')
+            get_sources_path(self._config, suite_name, component),
+            self._config.temproot)
 
         for spp in distroseries.getSourcePackagePublishing(
                 pocket, component, self.archive):
@@ -452,17 +549,15 @@ class Publisher(object):
             self.log.debug("Generating Packages for %s" % arch_path)
 
             indices = {}
-            package_index_root = os.path.join(
-                self._config.distsroot, suite_name, component.name, arch_path)
             indices[None] = RepositoryIndexFile(
-                package_index_root, self._config.temproot, 'Packages')
+                get_packages_path(self._config, suite_name, component, arch),
+                self._config.temproot)
 
             for subcomp in self.subcomponents:
-                sub_index_root = os.path.join(
-                    self._config.distsroot, suite_name, component.name,
-                    subcomp, arch_path)
                 indices[subcomp] = RepositoryIndexFile(
-                    sub_index_root, self._config.temproot, 'Packages')
+                    get_packages_path(
+                        self._config, suite_name, component, arch, subcomp),
+                    self._config.temproot)
 
             for bpp in distroseries.getBinaryPackagePublishing(
                     arch.architecturetag, pocket, component, self.archive):

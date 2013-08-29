@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for publisher class."""
@@ -1173,6 +1173,47 @@ class TestPublisher(TestPublisherBase):
             self.assertReleaseContentsMatch(
                 release, 'main/i18n/Index', i18n_index_file.read())
 
+    def testCreateSeriesAliasesNoAlias(self):
+        """createSeriesAliases has nothing to do by default."""
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+        publisher.createSeriesAliases()
+        self.assertEqual([], os.listdir(self.config.distsroot))
+
+    def _assertPublishesSeriesAlias(self, publisher, expected):
+        publisher.A_publish(False)
+        publisher.C_writeIndexes(False)
+        publisher.createSeriesAliases()
+        self.assertTrue(os.path.exists(os.path.join(
+            self.config.distsroot, expected)))
+        for pocket, suffix in pocketsuffix.items():
+            path = os.path.join(self.config.distsroot, "devel%s" % suffix)
+            expected_path = os.path.join(
+                self.config.distsroot, expected + suffix)
+            # A symlink for the RELEASE pocket exists.  Symlinks for other
+            # pockets only exist if the respective targets exist.
+            if not suffix or os.path.exists(expected_path):
+                self.assertTrue(os.path.islink(path))
+                self.assertEqual(expected + suffix, os.readlink(path))
+            else:
+                self.assertFalse(os.path.islink(path))
+
+    def testCreateSeriesAliasesChangesAlias(self):
+        """createSeriesAliases tracks the latest published series."""
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+        self.ubuntutest.development_series_alias = "devel"
+        # Oddly, hoary-test has a higher version than breezy-autotest.
+        self.getPubSource(distroseries=self.ubuntutest["breezy-autotest"])
+        self._assertPublishesSeriesAlias(publisher, "breezy-autotest")
+        hoary_pub = self.getPubSource(
+            distroseries=self.ubuntutest["hoary-test"])
+        self._assertPublishesSeriesAlias(publisher, "hoary-test")
+        hoary_pub.requestDeletion(self.ubuntutest.owner)
+        self._assertPublishesSeriesAlias(publisher, "breezy-autotest")
+
     def testHtaccessForPrivatePPA(self):
         # A htaccess file is created for new private PPA's.
 
@@ -1222,7 +1263,7 @@ class TestPublisher(TestPublisherBase):
         # Write a zero-length Translation-en file and compressed versions of
         # it.
         translation_en_index = RepositoryIndexFile(
-            i18n_root, self.config.temproot, 'Translation-en')
+            os.path.join(i18n_root, 'Translation-en'), self.config.temproot)
         translation_en_index.close()
 
         all_files = set()

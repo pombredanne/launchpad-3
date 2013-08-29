@@ -11,6 +11,7 @@ __all__ = [
     'TranslationTemplatesBuildBehavior',
     ]
 
+import logging
 import os
 import tempfile
 
@@ -118,8 +119,8 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                 status['filemap'] = raw_slave_status[3]
 
     @defer.inlineCallbacks
-    def updateBuild_WAITING(self, queue_item, slave_status, logtail, logger):
-        """Deal with a finished ("WAITING" state, perversely) build job.
+    def handleStatus(self, status, slave_status, queue_item=None):
+        """Deal with a finished build job.
 
         Retrieves tarball and logs from the slave, then cleans up the
         slave so it's ready for a next job and destroys the queue item.
@@ -127,15 +128,17 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         If this fails for whatever unforeseen reason, a future run will
         retry it.
         """
-        build_status = self.extractBuildStatus(slave_status)
-
+        from lp.buildmaster.manager import BUILDD_MANAGER_LOG_NAME
+        logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
+        if queue_item is None:
+            queue_item = self.build.buildqueue_record
         logger.info(
             "Templates generation job %s for %s finished with status %s." % (
             queue_item.specific_job.getName(),
             queue_item.specific_job.branch.bzr_identity,
-            build_status))
+            status))
 
-        if build_status == 'OK':
+        if status == 'OK':
             self.build.updateStatus(
                 BuildStatus.UPLOADING, builder=queue_item.builder)
             transaction.commit()
