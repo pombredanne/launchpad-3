@@ -254,11 +254,6 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def _changeBuildFarmJobName(self, buildfarmjob):
-        """Manipulate `buildfarmjob` so that its `getName` changes."""
-        name = buildfarmjob.getName() + 'x'
-        removeSecurityProxy(buildfarmjob).getName = FakeMethod(result=name)
-
     def test_verifySlaveBuildCookie_good(self):
         buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
         behavior = IBuildFarmJobBehavior(buildfarmjob)
