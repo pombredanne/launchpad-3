@@ -10,11 +10,15 @@ __all__ = [
     ]
 
 import datetime
+import gzip
 import logging
+import os
 import os.path
+import tempfile
 
 import transaction
 from twisted.internet import defer
+from zope.component import getUtility
 
 from lp.buildmaster.enums import (
     BuildFarmJobType,
@@ -22,6 +26,9 @@ from lp.buildmaster.enums import (
     )
 from lp.buildmaster.interfaces.builder import BuildSlaveFailure
 from lp.services.config import config
+from lp.services.helpers import filenameToContentType
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.utils import copy_and_close
 
 
 SLAVE_LOG_FILENAME = 'buildlog'
@@ -71,9 +78,57 @@ class BuildFarmJobBehaviorBase:
         timestamp = now.strftime("%Y%m%d-%H%M%S")
         return '%s-%s' % (timestamp, build_cookie)
 
+    def transferSlaveFileToLibrarian(self, file_sha1, filename, private):
+        """Transfer a file from the slave to the librarian.
+
+        :param file_sha1: The file's sha1, which is how the file is addressed
+            in the slave XMLRPC protocol. Specially, the file_sha1 'buildlog'
+            will cause the build log to be retrieved and gzipped.
+        :param filename: The name of the file to be given to the librarian
+            file alias.
+        :param private: True if the build is for a private archive.
+        :return: A Deferred that calls back with a librarian file alias.
+        """
+        out_file_fd, out_file_name = tempfile.mkstemp(suffix=".buildlog")
+        out_file = os.fdopen(out_file_fd, "r+")
+
+        def got_file(ignored, filename, out_file, out_file_name):
+            try:
+                # If the requested file is the 'buildlog' compress it
+                # using gzip before storing in Librarian.
+                if file_sha1 == 'buildlog':
+                    out_file = open(out_file_name)
+                    filename += '.gz'
+                    out_file_name += '.gz'
+                    gz_file = gzip.GzipFile(out_file_name, mode='wb')
+                    copy_and_close(out_file, gz_file)
+                    os.remove(out_file_name.replace('.gz', ''))
+
+                # Reopen the file, seek to its end position, count and seek
+                # to beginning, ready for adding to the Librarian.
+                out_file = open(out_file_name)
+                out_file.seek(0, 2)
+                bytes_written = out_file.tell()
+                out_file.seek(0)
+
+                library_file = getUtility(ILibraryFileAliasSet).create(
+                    filename, bytes_written, out_file,
+                    contentType=filenameToContentType(filename),
+                    restricted=private)
+            finally:
+                # Remove the temporary file.  getFile() closes the file
+                # object.
+                os.remove(out_file_name)
+
+            return library_file.id
+
+        d = self._interactor.slave.getFile(file_sha1, out_file)
+        d.addCallback(got_file, filename, out_file, out_file_name)
+        return d
+
     def getLogFromSlave(self, queue_item):
         """See `IPackageBuild`."""
-        d = self._interactor.transferSlaveFileToLibrarian(
+        d = self.transferSlaveFileToLibrarian(
             SLAVE_LOG_FILENAME, queue_item.getLogFileName(),
             self.build.is_private)
         return d
