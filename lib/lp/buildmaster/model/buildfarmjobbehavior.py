@@ -151,7 +151,7 @@ class BuildFarmJobBehaviorBase:
         """See `IBuildFarmJobBehavior`."""
         from lp.buildmaster.manager import BUILDD_MANAGER_LOG_NAME
         logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
-        send_notification = status in self.ALLOWED_STATUS_NOTIFICATIONS
+        notify = status in self.ALLOWED_STATUS_NOTIFICATIONS
         method = getattr(self, '_handleStatus_' + status, None)
         if method is None:
             logger.critical(
@@ -163,12 +163,11 @@ class BuildFarmJobBehaviorBase:
             % (status, self.getBuildCookie(),
                self.build.buildqueue_record.specific_job.build.title,
                self.build.buildqueue_record.builder.name))
-        d = method(slave_status, logger, send_notification)
+        d = method(slave_status, logger, notify)
         return d
 
     @defer.inlineCallbacks
-    def _handleStatus_OK(self, slave_status, logger,
-                         send_notification):
+    def _handleStatus_OK(self, slave_status, logger, notify):
         """Handle a package that built successfully.
 
         Once built successfully, we pull the files, store them in a
@@ -251,7 +250,7 @@ class BuildFarmJobBehaviorBase:
         else:
             logger.warning(
                 "Copy from slave for build %s was unsuccessful.", build.id)
-            if send_notification:
+            if notify:
                 build.notify(
                     extra_info='Copy from slave was unsuccessful.')
             target_dir = os.path.join(root, "failed")
@@ -269,8 +268,7 @@ class BuildFarmJobBehaviorBase:
         os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
 
     @defer.inlineCallbacks
-    def _handleStatus_generic_failure(self, status, slave_status, logger,
-                                      send_notification):
+    def _handleStatus_generic_fail(self, status, slave_status, logger, notify):
         """Handle a generic build failure.
 
         The build, not the builder, has failed. Set its status, store
@@ -283,35 +281,28 @@ class BuildFarmJobBehaviorBase:
             slave_status=slave_status)
         transaction.commit()
         yield self.storeLogFromSlave()
-        if send_notification:
+        if notify:
             self.build.notify()
         yield self._interactor.cleanSlave()
         self.build.buildqueue_record.destroySelf()
         transaction.commit()
 
-    def _handleStatus_PACKAGEFAIL(self, slave_status, logger,
-                                  send_notification):
+    def _handleStatus_PACKAGEFAIL(self, slave_status, logger, notify):
         """Handle a package that had failed to build."""
-        return self._handleStatus_generic_failure(
-            BuildStatus.FAILEDTOBUILD, slave_status, logger,
-            send_notification)
+        return self._handleStatus_generic_fail(
+            BuildStatus.FAILEDTOBUILD, slave_status, logger, notify)
 
-    def _handleStatus_DEPFAIL(self, slave_status, logger,
-                              send_notification):
+    def _handleStatus_DEPFAIL(self, slave_status, logger, notify):
         """Handle a package that had missing dependencies."""
-        return self._handleStatus_generic_failure(
-            BuildStatus.MANUALDEPWAIT, slave_status, logger,
-            send_notification)
+        return self._handleStatus_generic_fail(
+            BuildStatus.MANUALDEPWAIT, slave_status, logger, notify)
 
-    def _handleStatus_CHROOTFAIL(self, slave_status, logger,
-                                 send_notification):
+    def _handleStatus_CHROOTFAIL(self, slave_status, logger, notify):
         """Handle a package that had failed when unpacking the CHROOT."""
-        return self._handleStatus_generic_failure(
-            BuildStatus.CHROOTWAIT, slave_status, logger,
-            send_notification)
+        return self._handleStatus_generic_fail(
+            BuildStatus.CHROOTWAIT, slave_status, logger, notify)
 
-    def _handleStatus_BUILDERFAIL(self, slave_status, logger,
-                                  send_notification):
+    def _handleStatus_BUILDERFAIL(self, slave_status, logger, notify):
         """Handle builder failures.
 
         Fail the builder, and reset the job.
@@ -322,8 +313,7 @@ class BuildFarmJobBehaviorBase:
         transaction.commit()
 
     @defer.inlineCallbacks
-    def _handleStatus_ABORTED(self, slave_status, logger,
-                              send_notification):
+    def _handleStatus_ABORTED(self, slave_status, logger, notify):
         """Handle aborted builds.
 
         If the build was explicitly cancelled, then mark it as such.
@@ -346,8 +336,7 @@ class BuildFarmJobBehaviorBase:
         transaction.commit()
 
     @defer.inlineCallbacks
-    def _handleStatus_GIVENBACK(self, slave_status, logger,
-                                send_notification):
+    def _handleStatus_GIVENBACK(self, slave_status, logger, notify):
         """Handle automatic retry requested by builder.
 
         GIVENBACK pseudo-state represents a request for automatic retry
