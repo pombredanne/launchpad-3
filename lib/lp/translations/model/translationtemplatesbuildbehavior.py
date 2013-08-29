@@ -119,7 +119,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                 status['filemap'] = raw_slave_status[3]
 
     @defer.inlineCallbacks
-    def handleStatus(self, status, librarian, slave_status, queue_item=None):
+    def handleStatus(self, status, slave_status, queue_item=None):
         """Deal with a finished build job.
 
         Retrieves tarball and logs from the slave, then cleans up the

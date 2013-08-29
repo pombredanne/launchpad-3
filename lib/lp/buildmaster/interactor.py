@@ -16,7 +16,6 @@ import transaction
 from twisted.internet import defer
 from twisted.web import xmlrpc
 from twisted.web.client import downloadPage
-from zope.component import getUtility
 from zope.security.proxy import (
     isinstance as zope_isinstance,
     removeSecurityProxy,
@@ -35,7 +34,6 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
 from lp.services import encoding
 from lp.services.config import config
 from lp.services.job.interfaces.job import JobStatus
-from lp.services.librarian.interfaces.client import ILibrarianClient
 from lp.services.twistedsupport import cancel_on_timeout
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
 from lp.services.webapp import urlappend
@@ -719,8 +717,7 @@ class BuilderInteractor(object):
         self._current_build_behavior.updateSlaveStatus(
             status_sentence, status_dict)
         d = self._current_build_behavior.handleStatus(
-            self.extractBuildStatus(status_dict),
-            getUtility(ILibrarianClient), status_dict)
+            self.extractBuildStatus(status_dict), status_dict)
         return d
 
     def _getSlaveScannerLogger(self):

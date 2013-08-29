@@ -56,11 +56,10 @@ class IBuildFarmJobBehavior(Interface):
            values added to it.
         """
 
-    def handleStatus(status, librarian, status_dict):
+    def handleStatus(status, status_dict):
         """Update the build from a WAITING slave result.
 
         :param status: The tail of the BuildStatus (eg. OK or PACKAGEFAIL).
-        :param librarian: An `ILibrarianClient` to use for file uploads.
         :param status_dict: Slave status dict from
            `BuilderInteractor.slaveStatus` and `updateSlaveStatus`.
         """

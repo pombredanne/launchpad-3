@@ -206,7 +206,7 @@ class TestHandleStatusMixin:
             self.assertEqual(BuildStatus.UPLOADING, self.build.status)
             self.assertResultCount(1, "incoming")
 
-        d = self.behavior.handleStatus('OK', None, {
+        d = self.behavior.handleStatus('OK', {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
         return d.addCallback(got_status)
@@ -219,7 +219,7 @@ class TestHandleStatusMixin:
             self.assertResultCount(0, "failed")
             self.assertIdentical(None, self.build.buildqueue_record)
 
-        d = self.behavior.handleStatus('OK', None, {
+        d = self.behavior.handleStatus('OK', {
             'filemap': {'/tmp/myfile.py': 'test_file_hash'},
             })
         return d.addCallback(got_status)
@@ -231,7 +231,7 @@ class TestHandleStatusMixin:
             self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
             self.assertResultCount(0, "failed")
 
-        d = self.behavior.handleStatus('OK', None, {
+        d = self.behavior.handleStatus('OK', {
             'filemap': {'../myfile.py': 'test_file_hash'},
             })
         return d.addCallback(got_status)
@@ -239,7 +239,7 @@ class TestHandleStatusMixin:
     def test_handleStatus_OK_sets_build_log(self):
         # The build log is set during handleStatus.
         self.assertEqual(None, self.build.log)
-        d = self.behavior.handleStatus('OK', None, {
+        d = self.behavior.handleStatus('OK', {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
 
@@ -265,7 +265,7 @@ class TestHandleStatusMixin:
                     len(pop_notifications()) > 0,
                     "Notifications received")
 
-        d = self.behavior.handleStatus(status, None, {})
+        d = self.behavior.handleStatus(status, {})
         return d.addCallback(got_status)
 
     def test_handleStatus_DEPFAIL_notifies(self):
@@ -285,7 +285,7 @@ class TestHandleStatusMixin:
                 0, len(pop_notifications()), "Notifications received")
             self.assertEqual(BuildStatus.CANCELLED, self.build.status)
 
-        d = self.behavior.handleStatus("ABORTED", None, {})
+        d = self.behavior.handleStatus("ABORTED", {})
         return d.addCallback(got_status)
 
     def test_handleStatus_ABORTED_recovers_building(self):
@@ -299,13 +299,13 @@ class TestHandleStatusMixin:
             self.assertEqual(1, self.builder.failure_count)
             self.assertIn("resume", self.slave.call_log)
 
-        d = self.behavior.handleStatus("ABORTED", None, {})
+        d = self.behavior.handleStatus("ABORTED", {})
         return d.addCallback(got_status)
 
     def test_date_finished_set(self):
         # The date finished is updated during handleStatus_OK.
         self.assertEqual(None, self.build.date_finished)
-        d = self.behavior.handleStatus('OK', None, {
+        d = self.behavior.handleStatus('OK', {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
 
