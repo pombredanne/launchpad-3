@@ -537,20 +537,6 @@ class BuilderInteractor(object):
         d.addCallback(resume_done)
         return d
 
-    def _dispatchBuildCandidate(self, candidate):
-        """Dispatch the pending job to the associated buildd slave.
-
-        This method can only be executed in the builddmaster machine, since
-        it will actually issues the XMLRPC call to the buildd-slave.
-
-        :param candidate: The job to dispatch.
-        """
-        logger = self._getSlaveScannerLogger()
-        # Using maybeDeferred ensures that any exceptions are also
-        # wrapped up and caught later.
-        d = defer.maybeDeferred(self._startBuild, candidate, logger)
-        return d
-
     def resetOrFail(self, logger, exception):
         """Handle "confirmed" build slave failures.
 
@@ -606,7 +592,9 @@ class BuilderInteractor(object):
             logger.debug("No build candidates available for builder.")
             return defer.succeed(None)
 
-        d = self._dispatchBuildCandidate(candidate)
+        # Using maybeDeferred ensures that any exceptions are also
+        # wrapped up and caught later.
+        d = defer.maybeDeferred(self._startBuild, candidate, logger)
         return d.addCallback(lambda ignored: candidate)
 
     def updateBuild(self, queueItem):
