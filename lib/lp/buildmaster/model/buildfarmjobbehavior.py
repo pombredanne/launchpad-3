@@ -15,17 +15,12 @@ import os.path
 
 import transaction
 from twisted.internet import defer
-from zope.interface import implements
 
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
 from lp.buildmaster.interfaces.builder import BuildSlaveFailure
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    BuildBehaviorMismatch,
-    IBuildFarmJobBehavior,
-    )
 from lp.services.config import config
 
 
