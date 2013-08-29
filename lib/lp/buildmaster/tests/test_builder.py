@@ -251,6 +251,23 @@ class TestBuilderInteractor(TestCase):
 
     run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
 
+    def test_extractBuildStatus_baseline(self):
+        # extractBuildStatus picks the name of the build status out of a
+        # dict describing the slave's status.
+        slave_status = {'build_status': 'BuildStatus.BUILDING'}
+        interactor = BuilderInteractor(MockBuilder())
+        self.assertEqual(
+            BuildStatus.BUILDING.name,
+            interactor.extractBuildStatus(slave_status))
+
+    def test_extractBuildStatus_malformed(self):
+        # extractBuildStatus errors out when the status string is not
+        # of the form it expects.
+        slave_status = {'build_status': 'BUILDING'}
+        interactor = BuilderInteractor(MockBuilder())
+        self.assertRaises(
+            AssertionError, interactor.extractBuildStatus, slave_status)
+
     def test_updateStatus_aborts_lost_and_broken_slave(self):
         # A slave that's 'lost' should be aborted; when the slave is
         # broken then abort() should also throw a fault.

@@ -66,11 +66,10 @@ class IBuildFarmJobBehavior(Interface):
             supposed to be.
         """
 
-    def updateBuild(queueItem):
-        """Verify the current build job status.
+    def handleStatus(status, librarian, slave_status):
+        """Update the build from a WAITING slave result.
 
-        Perform the required actions for each state.
-
-        :param queueItem: The `BuildQueue` for the build.
-        :return: A Deferred that fires when the update is done.
+        :param status: The tail of the BuildStatus (eg. OK or PACKAGEFAIL).
+        :param librarian: An `ILibrarianClient` to use for file uploads.
+        :param slave_status: Slave status from `BuilderInteractor.slaveStatus`.
         """

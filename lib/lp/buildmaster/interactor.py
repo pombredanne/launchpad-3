@@ -15,6 +15,7 @@ import tempfile
 from urlparse import urlparse
 import xmlrpclib
 
+import transaction
 from twisted.internet import defer
 from twisted.web import xmlrpc
 from twisted.web.client import downloadPage
@@ -35,9 +36,12 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
+from lp.services import encoding
 from lp.services.config import config
 from lp.services.helpers import filenameToContentType
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.interfaces.client import ILibrarianClient
 from lp.services.librarian.utils import copy_and_close
 from lp.services.twistedsupport import cancel_on_timeout
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
@@ -610,7 +614,133 @@ class BuilderInteractor(object):
 
         :return: A Deferred that fires when the slave dialog is finished.
         """
-        return self._current_build_behavior.updateBuild(queueItem)
+        logger = logging.getLogger('slave-scanner')
+
+        d = self.slaveStatus()
+
+        def got_failure(failure):
+            failure.trap(xmlrpclib.Fault, socket.error)
+            info = failure.value
+            info = ("Could not contact the builder %s, caught a (%s)"
+                    % (queueItem.builder.url, info))
+            raise BuildSlaveFailure(info)
+
+        def got_status(slave_status):
+            builder_status_handlers = {
+                'BuilderStatus.IDLE': self.updateBuild_IDLE,
+                'BuilderStatus.BUILDING': self.updateBuild_BUILDING,
+                'BuilderStatus.ABORTING': self.updateBuild_ABORTING,
+                'BuilderStatus.ABORTED': self.updateBuild_ABORTED,
+                'BuilderStatus.WAITING': self.updateBuild_WAITING,
+                }
+
+            builder_status = slave_status['builder_status']
+            if builder_status not in builder_status_handlers:
+                logger.critical(
+                    "Builder on %s returned unknown status %s, failing it"
+                    % (self.builder.url, builder_status))
+                self.builder.failBuilder(
+                    "Unknown status code (%s) returned from status() probe."
+                    % builder_status)
+                # XXX: This will leave the build and job in a bad state, but
+                # should never be possible, since our builder statuses are
+                # known.
+                queueItem._builder = None
+                queueItem.setDateStarted(None)
+                transaction.commit()
+                return
+
+            # Since logtail is a xmlrpclib.Binary container and it is
+            # returned from the IBuilder content class, it arrives
+            # protected by a Zope Security Proxy, which is not declared,
+            # thus empty. Before passing it to the status handlers we
+            # will simply remove the proxy.
+            logtail = removeSecurityProxy(slave_status.get('logtail'))
+
+            method = builder_status_handlers[builder_status]
+            return defer.maybeDeferred(
+                method, queueItem, slave_status, logtail, logger)
+
+        d.addErrback(got_failure)
+        d.addCallback(got_status)
+        return d
+
+    def updateBuild_IDLE(self, queueItem, slave_status, logtail, logger):
+        """Somehow the builder forgot about the build job.
+
+        Log this and reset the record.
+        """
+        logger.warn(
+            "Builder %s forgot about buildqueue %d -- resetting buildqueue "
+            "record" % (queueItem.builder.url, queueItem.id))
+        queueItem.reset()
+        transaction.commit()
+
+    def updateBuild_BUILDING(self, queueItem, slave_status, logtail, logger):
+        """Build still building, collect the logtail"""
+        if queueItem.job.status != JobStatus.RUNNING:
+            queueItem.job.start()
+        queueItem.logtail = encoding.guess(str(logtail))
+        transaction.commit()
+
+    def updateBuild_ABORTING(self, queueItem, slave_status, logtail, logger):
+        """Build was ABORTED.
+
+        Master-side should wait until the slave finish the process correctly.
+        """
+        queueItem.logtail = "Waiting for slave process to be terminated"
+        transaction.commit()
+
+    def updateBuild_ABORTED(self, queueItem, slave_status, logtail, logger):
+        """ABORTING process has successfully terminated.
+
+        Clean the builder for another jobs.
+        """
+        d = self.cleanSlave()
+
+        def got_cleaned(ignored):
+            queueItem.builder = None
+            if queueItem.job.status != JobStatus.FAILED:
+                queueItem.job.fail()
+            queueItem.specific_job.jobAborted()
+            transaction.commit()
+        return d.addCallback(got_cleaned)
+
+    def extractBuildStatus(self, slave_status):
+        """Read build status name.
+
+        :param slave_status: build status dict as passed to the
+            updateBuild_* methods.
+        :return: the unqualified status name, e.g. "OK".
+        """
+        status_string = slave_status['build_status']
+        lead_string = 'BuildStatus.'
+        assert status_string.startswith(lead_string), (
+            "Malformed status string: '%s'" % status_string)
+
+        return status_string[len(lead_string):]
+
+    def updateBuild_WAITING(self, queueItem, slave_status, logtail, logger):
+        """Perform the actions needed for a slave in a WAITING state
+
+        Buildslave can be WAITING in five situations:
+
+        * Build has failed, no filemap is received (PACKAGEFAIL, DEPFAIL,
+                                                    CHROOTFAIL, BUILDERFAIL,
+                                                    ABORTED)
+
+        * Build has been built successfully (BuildStatus.OK), in this case
+          we have a 'filemap', so we can retrieve those files and store in
+          Librarian with getFileFromSlave() and then pass the binaries to
+          the uploader for processing.
+        """
+        librarian = getUtility(ILibrarianClient)
+        build_status = self.extractBuildStatus(slave_status)
+
+        # XXX: dsilvers 2005-03-02: Confirm the builder has the right build?
+        d = self._current_build_behavior.handleStatus(
+            build_status, librarian, slave_status)
+        return d
 
     def transferSlaveFileToLibrarian(self, file_sha1, filename, private):
         """Transfer a file from the slave to the librarian.

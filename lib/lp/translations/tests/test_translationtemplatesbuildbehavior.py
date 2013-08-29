@@ -188,7 +188,7 @@ class TestTranslationTemplatesBuildBehavior(
         d = behavior._readTarball(buildqueue, {path: path}, logging)
         return d.addCallback(got_tarball)
 
-    def test_updateBuild_WAITING_OK(self):
+    def test_handleStatus_OK(self):
         # Hopefully, a build will succeed and produce a tarball.
         behavior = self.makeBehavior()
         behavior._uploadTarball = FakeMethod()
@@ -212,8 +212,11 @@ class TestTranslationTemplatesBuildBehavior(
                 'build_status': status[1],
                 'filemap': {'translation-templates.tar.gz': 'foo'},
                 }
-            return behavior.updateBuild_WAITING(
-                queue_item, slave_status, None, logging), slave_call_log
+            return (
+                behavior.handleStatus(
+                    behavior._interactor.extractBuildStatus(slave_status),
+                    None, slave_status, queue_item=queue_item),
+                slave_call_log)
 
         def build_updated(ignored):
             self.assertEqual(BuildStatus.FULLYBUILT, behavior.build.status)
@@ -229,7 +232,7 @@ class TestTranslationTemplatesBuildBehavior(
         d.addCallback(build_updated)
         return d
 
-    def test_updateBuild_WAITING_failed(self):
+    def test_handleStatus_failed(self):
         # Builds may also fail (and produce no tarball).
         behavior = self.makeBehavior()
         behavior._uploadTarball = FakeMethod()
@@ -247,15 +250,15 @@ class TestTranslationTemplatesBuildBehavior(
                 'BuildStatus.FAILEDTOBUILD',
                 status[2],
                 )
-            status_dict = {
+            slave_status = {
                 'builder_status': raw_status[0],
                 'build_status': raw_status[1],
                 }
-            behavior.updateSlaveStatus(raw_status, status_dict)
-            self.assertNotIn('filemap', status_dict)
-
-            return behavior.updateBuild_WAITING(
-                queue_item, status_dict, None, logging)
+            behavior.updateSlaveStatus(raw_status, slave_status)
+            self.assertNotIn('filemap', slave_status)
+            return behavior.handleStatus(
+                    behavior._interactor.extractBuildStatus(slave_status),
+                    None, slave_status, queue_item=queue_item),
 
         def build_updated(ignored):
             self.assertEqual(BuildStatus.FAILEDTOBUILD, behavior.build.status)
@@ -270,7 +273,7 @@ class TestTranslationTemplatesBuildBehavior(
         d.addCallback(build_updated)
         return d
 
-    def test_updateBuild_WAITING_notarball(self):
+    def test_handleStatus_notarball(self):
         # Even if the build status is "OK," absence of a tarball will
         # not faze the Behavior class.
         behavior = self.makeBehavior()
@@ -288,14 +291,15 @@ class TestTranslationTemplatesBuildBehavior(
                 'BuildStatus.OK',
                 status[2],
                 )
-            status_dict = {
+            slave_status = {
                 'builder_status': raw_status[0],
                 'build_status': raw_status[1],
                 }
-            behavior.updateSlaveStatus(raw_status, status_dict)
-            self.assertFalse('filemap' in status_dict)
-            return behavior.updateBuild_WAITING(
-                queue_item, status_dict, None, logging)
+            behavior.updateSlaveStatus(raw_status, slave_status)
+            self.assertFalse('filemap' in slave_status)
+            return behavior.handleStatus(
+                    behavior._interactor.extractBuildStatus(slave_status),
+                    None, slave_status, queue_item=queue_item),
 
         def build_updated(ignored):
             self.assertEqual(BuildStatus.FULLYBUILT, behavior.build.status)
@@ -308,7 +312,7 @@ class TestTranslationTemplatesBuildBehavior(
         d.addCallback(build_updated)
         return d
 
-    def test_updateBuild_WAITING_uploads(self):
+    def test_handleStatus_uploads(self):
         productseries = self.makeProductSeriesWithBranchForTranslation()
         branch = productseries.branch
         behavior = self.makeBehavior(branch=branch)
@@ -336,8 +340,9 @@ class TestTranslationTemplatesBuildBehavior(
                 'build_id': status[2],
                 }
             behavior.updateSlaveStatus(status, slave_status)
-            return behavior.updateBuild_WAITING(
-                queue_item, slave_status, None, logging)
+            return behavior.handleStatus(
+                    behavior._interactor.extractBuildStatus(slave_status),
+                    None, slave_status, queue_item=queue_item),
 
         def build_updated(ignored):
             self.assertEqual(BuildStatus.FULLYBUILT, behavior.build.status)

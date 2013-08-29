@@ -43,8 +43,6 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
     ALLOWED_STATUS_NOTIFICATIONS = [
         'OK', 'PACKAGEFAIL', 'DEPFAIL', 'CHROOTFAIL']
 
-    status = None
-
     @property
     def build(self):
         return self.buildfarmjob.build

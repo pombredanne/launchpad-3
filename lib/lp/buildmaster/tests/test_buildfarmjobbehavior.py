@@ -78,23 +78,6 @@ class TestBuildFarmJobBehaviorBase(TestCaseWithFactory):
         """Create a `BuildQueue` object."""
         return self.factory.makeSourcePackageRecipeBuildJob()
 
-    def test_extractBuildStatus_baseline(self):
-        # extractBuildStatus picks the name of the build status out of a
-        # dict describing the slave's status.
-        slave_status = {'build_status': 'BuildStatus.BUILDING'}
-        behavior = self._makeBehavior()
-        self.assertEqual(
-            BuildStatus.BUILDING.name,
-            behavior.extractBuildStatus(slave_status))
-
-    def test_extractBuildStatus_malformed(self):
-        # extractBuildStatus errors out when the status string is not
-        # of the form it expects.
-        slave_status = {'build_status': 'BUILDING'}
-        behavior = self._makeBehavior()
-        self.assertRaises(
-            AssertionError, behavior.extractBuildStatus, slave_status)
-
     def test_cookie_baseline(self):
         buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
 
