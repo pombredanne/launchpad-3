@@ -1263,7 +1263,7 @@ class TestPublisher(TestPublisherBase):
         # Write a zero-length Translation-en file and compressed versions of
         # it.
         translation_en_index = RepositoryIndexFile(
-            i18n_root, self.config.temproot, 'Translation-en')
+            os.path.join(i18n_root, 'Translation-en'), self.config.temproot)
         translation_en_index.close()
 
         all_files = set()

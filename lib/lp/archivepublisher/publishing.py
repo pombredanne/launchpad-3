@@ -161,6 +161,22 @@ def getPublisher(archive, allowed_suites, log, distsroot=None):
     return Publisher(log, pubconf, disk_pool, archive, allowed_suites)
 
 
+def get_sources_path(config, suite_name, component):
+    """Return path to Sources file for the given arguments."""
+    return os.path.join(
+        config.distsroot, suite_name, component.name, "source", "Sources")
+
+
+def get_packages_path(config, suite_name, component, arch, subcomp=None):
+    """Return path to Packages file for the given arguments."""
+    component_root = os.path.join(config.distsroot, suite_name, component.name)
+    arch_path = "binary-%s" % arch.architecturetag
+    if subcomp is None:
+        return os.path.join(component_root, arch_path, "Packages")
+    else:
+        return os.path.join(component_root, subcomp, arch_path, "Packages")
+
+
 class I18nIndex(_multivalued):
     """Represents an i18n/Index file."""
     _multivalued_fields = {
@@ -426,17 +442,16 @@ class Publisher(object):
         for pocket in self.archive.getPockets():
             suite_name = distroseries.getSuite(pocket)
             for component in components:
-                component_root = os.path.join(
-                    self._config.distsroot, suite_name, component.name)
-                yield os.path.join(component_root, "source", "Sources")
+                yield get_sources_path(self._config, suite_name, component)
                 for arch in distroseries.architectures:
                     if not arch.enabled:
                         continue
                     arch_path = "binary-%s" % arch.architecturetag
-                    yield os.path.join(component_root, arch_path, "Packages")
+                    yield get_packages_path(
+                        self._config, suite_name, component, arch)
                     for subcomp in self.subcomponents:
-                        yield os.path.join(
-                            component_root, subcomp, arch_path, "Packages")
+                        yield get_packages_path(
+                            self._config, suite_name, component, arch, subcomp)
 
     def _latestNonEmptySeries(self):
         """Find the latest non-empty series in an archive.
@@ -514,10 +529,9 @@ class Publisher(object):
 
         self.log.debug("Generating Sources")
 
-        source_index_root = os.path.join(
-            self._config.distsroot, suite_name, component.name, 'source')
         source_index = RepositoryIndexFile(
-            source_index_root, self._config.temproot, 'Sources')
+            get_sources_path(self._config, suite_name, component),
+            self._config.temproot)
 
         for spp in distroseries.getSourcePackagePublishing(
                 pocket, component, self.archive):
@@ -535,17 +549,15 @@ class Publisher(object):
             self.log.debug("Generating Packages for %s" % arch_path)
 
             indices = {}
-            package_index_root = os.path.join(
-                self._config.distsroot, suite_name, component.name, arch_path)
             indices[None] = RepositoryIndexFile(
-                package_index_root, self._config.temproot, 'Packages')
+                get_packages_path(self._config, suite_name, component, arch),
+                self._config.temproot)
 
             for subcomp in self.subcomponents:
-                sub_index_root = os.path.join(
-                    self._config.distsroot, suite_name, component.name,
-                    subcomp, arch_path)
                 indices[subcomp] = RepositoryIndexFile(
-                    sub_index_root, self._config.temproot, 'Packages')
+                    get_packages_path(
+                        self._config, suite_name, component, arch, subcomp),
+                    self._config.temproot)
 
             for bpp in distroseries.getBinaryPackagePublishing(
                     arch.architecturetag, pocket, component, self.archive):
