@@ -35,7 +35,6 @@ from lp.buildmaster.interfaces.builder import (
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
-from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.services import encoding
 from lp.services.config import config
 from lp.services.helpers import filenameToContentType
@@ -272,9 +271,8 @@ class BuilderInteractor(object):
         # builder.currentjob changes.
         currentjob = self.builder.currentjob
         if currentjob is None:
-            if not isinstance(
-                    self._cached_build_behavior, IdleBuildBehavior):
-                self._cached_build_behavior = IdleBuildBehavior()
+            self._cached_build_behavior = None
+            self._cached_currentjob = None
         elif currentjob != self._cached_currentjob:
             self._cached_build_behavior = IBuildFarmJobBehavior(
                 currentjob.specific_job)
@@ -327,7 +325,7 @@ class BuilderInteractor(object):
 
     def verifySlaveBuildCookie(self, slave_build_cookie):
         """See `IBuildFarmJobBehavior`."""
-        if isinstance(self._current_build_behavior, IdleBuildBehavior):
+        if self._current_build_behavior is None:
             raise CorruptBuildCookie('No job assigned to builder')
         good_cookie = self._current_build_behavior.generateSlaveBuildCookie()
         if slave_build_cookie != good_cookie:

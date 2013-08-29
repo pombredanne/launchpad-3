@@ -24,10 +24,7 @@ from twisted.internet.task import Clock
 from twisted.python.failure import Failure
 from twisted.web.client import getPage
 from zope.component import getUtility
-from zope.security.proxy import (
-    isinstance as zope_isinstance,
-    removeSecurityProxy,
-    )
+from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interactor import (
@@ -42,7 +39,6 @@ from lp.buildmaster.interfaces.builder import (
     IBuilderSet,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import (
     AbortedSlave,
@@ -218,6 +214,7 @@ class TestBuilder(TestCaseWithFactory):
 
         return d.addCallback(check_build_started)
 
+    @inlineCallbacks
     def test_recover_building_slave_with_job_that_finished_elsewhere(self):
         # See bug 671242
         # When a job is destroyed, the builder's behaviour should be reset
@@ -230,22 +227,12 @@ class TestBuilder(TestCaseWithFactory):
         candidate.markAsBuilding(builder)
 
         # At this point we should see a valid behaviour on the builder:
-        self.assertFalse(
-            zope_isinstance(
-                interactor._current_build_behavior, IdleBuildBehavior))
-
-        # Now reset the job and try to rescue the builder.
+        self.assertIsNot(None, interactor._current_build_behavior)
+        yield interactor.rescueIfLost()
+        self.assertIsNot(None, interactor._current_build_behavior)
         candidate.destroySelf()
-        self.layer.txn.commit()
-        builder = getUtility(IBuilderSet)[builder.name]
-        d = interactor.rescueIfLost()
-
-        def check_builder(ignored):
-            self.assertIsInstance(
-                removeSecurityProxy(interactor._current_build_behavior),
-                IdleBuildBehavior)
-
-        return d.addCallback(check_builder)
+        yield interactor.rescueIfLost()
+        self.assertIs(None, interactor._current_build_behavior)
 
 
 class TestBuilderInteractor(TestCase):
@@ -281,8 +268,7 @@ class TestBuilderInteractor(TestCase):
 
     def test_verifySlaveBuildCookie_idle(self):
         interactor = BuilderInteractor(MockBuilder())
-        self.assertTrue(
-            isinstance(interactor._current_build_behavior, IdleBuildBehavior))
+        self.assertIs(None, interactor._current_build_behavior)
         self.assertRaises(
             CorruptBuildCookie, interactor.verifySlaveBuildCookie, 'foo')
 
@@ -873,11 +859,8 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
         self.buildfarmjob = self.build.buildqueue_record.specific_job
 
     def test_idle_behavior_when_no_current_build(self):
-        """We return an idle behavior when there is no behavior specified
-        nor a current build.
-        """
-        self.assertIsInstance(
-            self.interactor._current_build_behavior, IdleBuildBehavior)
+        """An idle builder has no build behavior."""
+        self.assertIs(None, self.interactor._current_build_behavior)
 
     def test_current_job_behavior(self):
         """The current behavior is set automatically from the current job."""
