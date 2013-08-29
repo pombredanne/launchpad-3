@@ -375,7 +375,7 @@ class TestBuildNotifications(TrialTestCase):
         return removeSecurityProxy(interactor._current_build_behavior)
 
     def assertDeferredNotifyCount(self, status, behavior, expected_count):
-        d = behavior.handleStatus(status, None, {'filemap': {}})
+        d = behavior.handleStatus(status, {'filemap': {}})
 
         def cb(result):
             self.assertEqual(expected_count, len(pop_notifications()))

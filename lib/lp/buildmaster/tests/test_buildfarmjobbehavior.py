@@ -17,7 +17,6 @@ from zope.security.proxy import removeSecurityProxy
 from lp.archiveuploader.uploadprocessor import parse_build_upload_leaf_name
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interactor import BuilderInteractor
-from lp.buildmaster.interfaces.builder import CorruptBuildCookie
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
@@ -55,11 +54,6 @@ class TestBuildFarmJobBehaviorBase(TestCaseWithFactory):
             buildfarmjob = removeSecurityProxy(buildfarmjob)
         return BuildFarmJobBehaviorBase(buildfarmjob)
 
-    def _changeBuildFarmJobName(self, buildfarmjob):
-        """Manipulate `buildfarmjob` so that its `getName` changes."""
-        name = buildfarmjob.getName() + 'x'
-        removeSecurityProxy(buildfarmjob).getName = FakeMethod(result=name)
-
     def _makeBuild(self):
         """Create a `Build` object."""
         x86 = getUtility(IProcessorFamilySet).getByName('x86')
@@ -79,22 +73,10 @@ class TestBuildFarmJobBehaviorBase(TestCaseWithFactory):
         """Create a `BuildQueue` object."""
         return self.factory.makeSourcePackageRecipeBuildJob()
 
-    def test_extractBuildStatus_baseline(self):
-        # extractBuildStatus picks the name of the build status out of a
-        # dict describing the slave's status.
-        slave_status = {'build_status': 'BuildStatus.BUILDING'}
-        behavior = self._makeBehavior()
-        self.assertEqual(
-            BuildStatus.BUILDING.name,
-            behavior.extractBuildStatus(slave_status))
-
-    def test_extractBuildStatus_malformed(self):
-        # extractBuildStatus errors out when the status string is not
-        # of the form it expects.
-        slave_status = {'build_status': 'BUILDING'}
-        behavior = self._makeBehavior()
-        self.assertRaises(
-            AssertionError, behavior.extractBuildStatus, slave_status)
+    def _changeBuildFarmJobName(self, buildfarmjob):
+        """Manipulate `buildfarmjob` so that its `getName` changes."""
+        name = buildfarmjob.getName() + 'x'
+        removeSecurityProxy(buildfarmjob).getName = FakeMethod(result=name)
 
     def test_cookie_baseline(self):
         buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
@@ -107,43 +89,13 @@ class TestBuildFarmJobBehaviorBase(TestCaseWithFactory):
 
         self.assertEqual(cookie, buildfarmjob.generateSlaveBuildCookie())
 
-    def test_verifySlaveBuildCookie_good(self):
-        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
-        behavior = self._makeBehavior(buildfarmjob)
-
-        cookie = buildfarmjob.generateSlaveBuildCookie()
-
-        # The correct cookie validates successfully.
-        behavior.verifySlaveBuildCookie(cookie)
-
-    def test_verifySlaveBuildCookie_bad(self):
-        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
-        behavior = self._makeBehavior(buildfarmjob)
-
-        cookie = buildfarmjob.generateSlaveBuildCookie()
-
-        self.assertRaises(
-            CorruptBuildCookie,
-            behavior.verifySlaveBuildCookie,
-            cookie + 'x')
-
     def test_cookie_includes_job_name(self):
         # The cookie is a hash that includes the job's name.
         buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
-        buildfarmjob = removeSecurityProxy(buildfarmjob)
-        behavior = self._makeBehavior(buildfarmjob)
         cookie = buildfarmjob.generateSlaveBuildCookie()
+        self._changeBuildFarmJobName(removeSecurityProxy(buildfarmjob))
 
-        self._changeBuildFarmJobName(buildfarmjob)
-
-        self.assertRaises(
-            CorruptBuildCookie,
-            behavior.verifySlaveBuildCookie,
-            cookie)
-
-        # However, the name is not included in plaintext so as not to
-        # provide a compromised slave a starting point for guessing
-        # another slave's cookie.
+        self.assertNotEqual(cookie, buildfarmjob.generateSlaveBuildCookie())
         self.assertNotIn(buildfarmjob.getName(), cookie)
 
     def test_cookie_includes_more_than_name(self):
@@ -255,7 +207,7 @@ class TestHandleStatusMixin:
             self.assertEqual(BuildStatus.UPLOADING, self.build.status)
             self.assertResultCount(1, "incoming")
 
-        d = self.behavior.handleStatus('OK', None, {
+        d = self.behavior.handleStatus('OK', {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
         return d.addCallback(got_status)
@@ -268,7 +220,7 @@ class TestHandleStatusMixin:
             self.assertResultCount(0, "failed")
             self.assertIdentical(None, self.build.buildqueue_record)
 
-        d = self.behavior.handleStatus('OK', None, {
+        d = self.behavior.handleStatus('OK', {
             'filemap': {'/tmp/myfile.py': 'test_file_hash'},
             })
         return d.addCallback(got_status)
@@ -280,7 +232,7 @@ class TestHandleStatusMixin:
             self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
             self.assertResultCount(0, "failed")
 
-        d = self.behavior.handleStatus('OK', None, {
+        d = self.behavior.handleStatus('OK', {
             'filemap': {'../myfile.py': 'test_file_hash'},
             })
         return d.addCallback(got_status)
@@ -288,7 +240,7 @@ class TestHandleStatusMixin:
     def test_handleStatus_OK_sets_build_log(self):
         # The build log is set during handleStatus.
         self.assertEqual(None, self.build.log)
-        d = self.behavior.handleStatus('OK', None, {
+        d = self.behavior.handleStatus('OK', {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
 
@@ -314,7 +266,7 @@ class TestHandleStatusMixin:
                     len(pop_notifications()) > 0,
                     "Notifications received")
 
-        d = self.behavior.handleStatus(status, None, {})
+        d = self.behavior.handleStatus(status, {})
         return d.addCallback(got_status)
 
     def test_handleStatus_DEPFAIL_notifies(self):
@@ -334,7 +286,7 @@ class TestHandleStatusMixin:
                 0, len(pop_notifications()), "Notifications received")
             self.assertEqual(BuildStatus.CANCELLED, self.build.status)
 
-        d = self.behavior.handleStatus("ABORTED", None, {})
+        d = self.behavior.handleStatus("ABORTED", {})
         return d.addCallback(got_status)
 
     def test_handleStatus_ABORTED_recovers_building(self):
@@ -348,7 +300,7 @@ class TestHandleStatusMixin:
             self.assertEqual(1, self.builder.failure_count)
             self.assertIn("resume", self.slave.call_log)
 
-        d = self.behavior.handleStatus("ABORTED", None, {})
+        d = self.behavior.handleStatus("ABORTED", {})
         return d.addCallback(got_status)
 
     @defer.inlineCallbacks
@@ -356,13 +308,13 @@ class TestHandleStatusMixin:
         # If a build is intentionally cancelled, the build log is set.
         self.assertEqual(None, self.build.log)
         self.build.updateStatus(BuildStatus.CANCELLING)
-        yield self.behavior.handleStatus("ABORTED", None, {})
+        yield self.behavior.handleStatus("ABORTED", {})
         self.assertNotEqual(None, self.build.log)
 
     def test_date_finished_set(self):
         # The date finished is updated during handleStatus_OK.
         self.assertEqual(None, self.build.date_finished)
-        d = self.behavior.handleStatus('OK', None, {
+        d = self.behavior.handleStatus('OK', {
                 'filemap': {'myfile.py': 'test_file_hash'},
                 })
 

@@ -56,6 +56,17 @@ Or IDistroSeriesSet.queryByVersion:
     >>> print distroseriesset.queryByVersion(ubuntu, "5.05")
     None
 
+queryByName works on series aliases too if follow_aliases is True.
+
+    >>> ignored = login_person(ubuntu.owner.activemembers[0])
+    >>> ubuntu.development_series_alias = "devel"
+    >>> login(ANONYMOUS)
+    >>> print distroseriesset.queryByName(ubuntu, "devel")
+    None
+    >>> print distroseriesset.queryByName(
+    ...     ubuntu, "devel", follow_aliases=True).name
+    hoary
+
 We verify that a distroseries does in fact fully provide IDistroSeries:
 
     >>> verifyObject(IDistroSeries, warty)

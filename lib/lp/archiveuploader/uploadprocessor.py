@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code for 'processing' 'uploads'. Also see nascentupload.py.
@@ -743,7 +743,7 @@ def _getDistributionAndSuite(parts, exc_type):
 
     suite_name = parts[1]
     try:
-        distribution.getDistroSeriesAndPocket(suite_name)
+        distribution.getDistroSeriesAndPocket(suite_name, follow_aliases=True)
     except NotFoundError:
         raise exc_type("Could not find suite '%s'." % suite_name)
 
