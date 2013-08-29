@@ -10,11 +10,15 @@ __all__ = [
     ]
 
 import datetime
+import gzip
 import logging
+import os
 import os.path
+import tempfile
 
 import transaction
 from twisted.internet import defer
+from zope.component import getUtility
 
 from lp.buildmaster.enums import (
     BuildFarmJobType,
@@ -22,6 +26,9 @@ from lp.buildmaster.enums import (
     )
 from lp.buildmaster.interfaces.builder import BuildSlaveFailure
 from lp.services.config import config
+from lp.services.helpers import filenameToContentType
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.utils import copy_and_close
 
 
 SLAVE_LOG_FILENAME = 'buildlog'
@@ -71,9 +78,57 @@ class BuildFarmJobBehaviorBase:
         timestamp = now.strftime("%Y%m%d-%H%M%S")
         return '%s-%s' % (timestamp, build_cookie)
 
+    def transferSlaveFileToLibrarian(self, file_sha1, filename, private):
+        """Transfer a file from the slave to the librarian.
+
+        :param file_sha1: The file's sha1, which is how the file is addressed
+            in the slave XMLRPC protocol. Specially, the file_sha1 'buildlog'
+            will cause the build log to be retrieved and gzipped.
+        :param filename: The name of the file to be given to the librarian
+            file alias.
+        :param private: True if the build is for a private archive.
+        :return: A Deferred that calls back with a librarian file alias.
+        """
+        out_file_fd, out_file_name = tempfile.mkstemp(suffix=".buildlog")
+        out_file = os.fdopen(out_file_fd, "r+")
+
+        def got_file(ignored, filename, out_file, out_file_name):
+            try:
+                # If the requested file is the 'buildlog' compress it
+                # using gzip before storing in Librarian.
+                if file_sha1 == 'buildlog':
+                    out_file = open(out_file_name)
+                    filename += '.gz'
+                    out_file_name += '.gz'
+                    gz_file = gzip.GzipFile(out_file_name, mode='wb')
+                    copy_and_close(out_file, gz_file)
+                    os.remove(out_file_name.replace('.gz', ''))
+
+                # Reopen the file, seek to its end position, count and seek
+                # to beginning, ready for adding to the Librarian.
+                out_file = open(out_file_name)
+                out_file.seek(0, 2)
+                bytes_written = out_file.tell()
+                out_file.seek(0)
+
+                library_file = getUtility(ILibraryFileAliasSet).create(
+                    filename, bytes_written, out_file,
+                    contentType=filenameToContentType(filename),
+                    restricted=private)
+            finally:
+                # Remove the temporary file.  getFile() closes the file
+                # object.
+                os.remove(out_file_name)
+
+            return library_file.id
+
+        d = self._interactor.slave.getFile(file_sha1, out_file)
+        d.addCallback(got_file, filename, out_file, out_file_name)
+        return d
+
     def getLogFromSlave(self, queue_item):
         """See `IPackageBuild`."""
-        d = self._interactor.transferSlaveFileToLibrarian(
+        d = self.transferSlaveFileToLibrarian(
             SLAVE_LOG_FILENAME, queue_item.getLogFileName(),
             self.build.is_private)
         return d
@@ -92,11 +147,11 @@ class BuildFarmJobBehaviorBase:
     # in this list.
     ALLOWED_STATUS_NOTIFICATIONS = ['OK', 'PACKAGEFAIL', 'CHROOTFAIL']
 
-    def handleStatus(self, status, librarian, slave_status):
+    def handleStatus(self, status, slave_status):
         """See `IBuildFarmJobBehavior`."""
         from lp.buildmaster.manager import BUILDD_MANAGER_LOG_NAME
         logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
-        send_notification = status in self.ALLOWED_STATUS_NOTIFICATIONS
+        notify = status in self.ALLOWED_STATUS_NOTIFICATIONS
         method = getattr(self, '_handleStatus_' + status, None)
         if method is None:
             logger.critical(
@@ -108,12 +163,11 @@ class BuildFarmJobBehaviorBase:
             % (status, self.getBuildCookie(),
                self.build.buildqueue_record.specific_job.build.title,
                self.build.buildqueue_record.builder.name))
-        d = method(librarian, slave_status, logger, send_notification)
+        d = method(slave_status, logger, notify)
         return d
 
     @defer.inlineCallbacks
-    def _handleStatus_OK(self, librarian, slave_status, logger,
-                         send_notification):
+    def _handleStatus_OK(self, slave_status, logger, notify):
         """Handle a package that built successfully.
 
         Once built successfully, we pull the files, store them in a
@@ -196,7 +250,7 @@ class BuildFarmJobBehaviorBase:
         else:
             logger.warning(
                 "Copy from slave for build %s was unsuccessful.", build.id)
-            if send_notification:
+            if notify:
                 build.notify(
                     extra_info='Copy from slave was unsuccessful.')
             target_dir = os.path.join(root, "failed")
@@ -214,8 +268,7 @@ class BuildFarmJobBehaviorBase:
         os.rename(grab_dir, os.path.join(target_dir, upload_leaf))
 
     @defer.inlineCallbacks
-    def _handleStatus_generic_failure(self, status, librarian, slave_status,
-                                      logger, send_notification):
+    def _handleStatus_generic_fail(self, status, slave_status, logger, notify):
         """Handle a generic build failure.
 
         The build, not the builder, has failed. Set its status, store
@@ -228,35 +281,28 @@ class BuildFarmJobBehaviorBase:
             slave_status=slave_status)
         transaction.commit()
         yield self.storeLogFromSlave()
-        if send_notification:
+        if notify:
             self.build.notify()
         yield self._interactor.cleanSlave()
         self.build.buildqueue_record.destroySelf()
         transaction.commit()
 
-    def _handleStatus_PACKAGEFAIL(self, librarian, slave_status, logger,
-                                  send_notification):
+    def _handleStatus_PACKAGEFAIL(self, slave_status, logger, notify):
         """Handle a package that had failed to build."""
-        return self._handleStatus_generic_failure(
-            BuildStatus.FAILEDTOBUILD, librarian, slave_status, logger,
-            send_notification)
+        return self._handleStatus_generic_fail(
+            BuildStatus.FAILEDTOBUILD, slave_status, logger, notify)
 
-    def _handleStatus_DEPFAIL(self, librarian, slave_status, logger,
-                              send_notification):
+    def _handleStatus_DEPFAIL(self, slave_status, logger, notify):
         """Handle a package that had missing dependencies."""
-        return self._handleStatus_generic_failure(
-            BuildStatus.MANUALDEPWAIT, librarian, slave_status, logger,
-            send_notification)
+        return self._handleStatus_generic_fail(
+            BuildStatus.MANUALDEPWAIT, slave_status, logger, notify)
 
-    def _handleStatus_CHROOTFAIL(self, librarian, slave_status, logger,
-                                 send_notification):
+    def _handleStatus_CHROOTFAIL(self, slave_status, logger, notify):
         """Handle a package that had failed when unpacking the CHROOT."""
-        return self._handleStatus_generic_failure(
-            BuildStatus.CHROOTWAIT, librarian, slave_status, logger,
-            send_notification)
+        return self._handleStatus_generic_fail(
+            BuildStatus.CHROOTWAIT, slave_status, logger, notify)
 
-    def _handleStatus_BUILDERFAIL(self, librarian, slave_status, logger,
-                                  send_notification):
+    def _handleStatus_BUILDERFAIL(self, slave_status, logger, notify):
         """Handle builder failures.
 
         Fail the builder, and reset the job.
@@ -267,8 +313,7 @@ class BuildFarmJobBehaviorBase:
         transaction.commit()
 
     @defer.inlineCallbacks
-    def _handleStatus_ABORTED(self, librarian, slave_status, logger,
-                              send_notification):
+    def _handleStatus_ABORTED(self, slave_status, logger, notify):
         """Handle aborted builds.
 
         If the build was explicitly cancelled, then mark it as such.
@@ -291,8 +336,7 @@ class BuildFarmJobBehaviorBase:
         transaction.commit()
 
     @defer.inlineCallbacks
-    def _handleStatus_GIVENBACK(self, librarian, slave_status, logger,
-                                send_notification):
+    def _handleStatus_GIVENBACK(self, slave_status, logger, notify):
         """Handle automatic retry requested by builder.
 
         GIVENBACK pseudo-state represents a request for automatic retry

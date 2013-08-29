@@ -7,11 +7,8 @@ __all__ = [
     'BuilderInteractor',
     ]
 
-import gzip
 import logging
-import os
 import socket
-import tempfile
 from urlparse import urlparse
 import xmlrpclib
 
@@ -19,7 +16,6 @@ import transaction
 from twisted.internet import defer
 from twisted.web import xmlrpc
 from twisted.web.client import downloadPage
-from zope.component import getUtility
 from zope.security.proxy import (
     isinstance as zope_isinstance,
     removeSecurityProxy,
@@ -37,11 +33,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     )
 from lp.services import encoding
 from lp.services.config import config
-from lp.services.helpers import filenameToContentType
 from lp.services.job.interfaces.job import JobStatus
-from lp.services.librarian.interfaces import ILibraryFileAliasSet
-from lp.services.librarian.interfaces.client import ILibrarianClient
-from lp.services.librarian.utils import copy_and_close
 from lp.services.twistedsupport import cancel_on_timeout
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
 from lp.services.webapp import urlappend
@@ -537,20 +529,6 @@ class BuilderInteractor(object):
         d.addCallback(resume_done)
         return d
 
-    def _dispatchBuildCandidate(self, candidate):
-        """Dispatch the pending job to the associated buildd slave.
-
-        This method can only be executed in the builddmaster machine, since
-        it will actually issues the XMLRPC call to the buildd-slave.
-
-        :param candidate: The job to dispatch.
-        """
-        logger = self._getSlaveScannerLogger()
-        # Using maybeDeferred ensures that any exceptions are also
-        # wrapped up and caught later.
-        d = defer.maybeDeferred(self._startBuild, candidate, logger)
-        return d
-
     def resetOrFail(self, logger, exception):
         """Handle "confirmed" build slave failures.
 
@@ -606,7 +584,9 @@ class BuilderInteractor(object):
             logger.debug("No build candidates available for builder.")
             return defer.succeed(None)
 
-        d = self._dispatchBuildCandidate(candidate)
+        # Using maybeDeferred ensures that any exceptions are also
+        # wrapped up and caught later.
+        d = defer.maybeDeferred(self._startBuild, candidate, logger)
         return d.addCallback(lambda ignored: candidate)
 
     def updateBuild(self, queueItem):
@@ -737,56 +717,7 @@ class BuilderInteractor(object):
         self._current_build_behavior.updateSlaveStatus(
             status_sentence, status_dict)
         d = self._current_build_behavior.handleStatus(
-            self.extractBuildStatus(status_dict),
-            getUtility(ILibrarianClient), status_dict)
-        return d
-
-    def transferSlaveFileToLibrarian(self, file_sha1, filename, private):
-        """Transfer a file from the slave to the librarian.
-
-        :param file_sha1: The file's sha1, which is how the file is addressed
-            in the slave XMLRPC protocol. Specially, the file_sha1 'buildlog'
-            will cause the build log to be retrieved and gzipped.
-        :param filename: The name of the file to be given to the librarian
-            file alias.
-        :param private: True if the build is for a private archive.
-        :return: A Deferred that calls back with a librarian file alias.
-        """
-        out_file_fd, out_file_name = tempfile.mkstemp(suffix=".buildlog")
-        out_file = os.fdopen(out_file_fd, "r+")
-
-        def got_file(ignored, filename, out_file, out_file_name):
-            try:
-                # If the requested file is the 'buildlog' compress it
-                # using gzip before storing in Librarian.
-                if file_sha1 == 'buildlog':
-                    out_file = open(out_file_name)
-                    filename += '.gz'
-                    out_file_name += '.gz'
-                    gz_file = gzip.GzipFile(out_file_name, mode='wb')
-                    copy_and_close(out_file, gz_file)
-                    os.remove(out_file_name.replace('.gz', ''))
-
-                # Reopen the file, seek to its end position, count and seek
-                # to beginning, ready for adding to the Librarian.
-                out_file = open(out_file_name)
-                out_file.seek(0, 2)
-                bytes_written = out_file.tell()
-                out_file.seek(0)
-
-                library_file = getUtility(ILibraryFileAliasSet).create(
-                    filename, bytes_written, out_file,
-                    contentType=filenameToContentType(filename),
-                    restricted=private)
-            finally:
-                # Remove the temporary file.  getFile() closes the file
-                # object.
-                os.remove(out_file_name)
-
-            return library_file.id
-
-        d = self.slave.getFile(file_sha1, out_file)
-        d.addCallback(got_file, filename, out_file, out_file_name)
+            self.extractBuildStatus(status_dict), status_dict)
         return d
 
     def _getSlaveScannerLogger(self):
