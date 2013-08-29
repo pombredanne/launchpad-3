@@ -18,6 +18,7 @@ from testtools.deferredruntest import (
 from twisted.internet.defer import (
     CancelledError,
     DeferredList,
+    inlineCallbacks,
     )
 from twisted.internet.task import Clock
 from twisted.python.failure import Failure
@@ -39,9 +40,6 @@ from lp.buildmaster.interfaces.builder import (
     CorruptBuildCookie,
     IBuilder,
     IBuilderSet,
-    )
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
@@ -462,29 +460,28 @@ class TestBuilderInteractorSlaveStatus(TestCase):
 
     run_tests_with = AsynchronousDeferredRunTest
 
+    @inlineCallbacks
     def assertStatus(self, slave, builder_status=None,
                      build_status=None, logtail=False, filemap=None,
                      dependencies=None):
-        d = BuilderInteractor(MockBuilder(), slave).slaveStatus()
+        statuses = yield BuilderInteractor(MockBuilder(), slave).slaveStatus()
+        status_dict = statuses[1]
 
-        def got_status(status_dict):
-            expected = {}
-            if builder_status is not None:
-                expected["builder_status"] = builder_status
-            if build_status is not None:
-                expected["build_status"] = build_status
-            if dependencies is not None:
-                expected["dependencies"] = dependencies
+        expected = {}
+        if builder_status is not None:
+            expected["builder_status"] = builder_status
+        if build_status is not None:
+            expected["build_status"] = build_status
+        if dependencies is not None:
+            expected["dependencies"] = dependencies
 
-            # We don't care so much about the content of the logtail,
-            # just that it's there.
-            if logtail:
-                tail = status_dict.pop("logtail")
-                self.assertIsInstance(tail, xmlrpclib.Binary)
+        # We don't care so much about the content of the logtail,
+        # just that it's there.
+        if logtail:
+            tail = status_dict.pop("logtail")
+            self.assertIsInstance(tail, xmlrpclib.Binary)
 
-            self.assertEqual(expected, status_dict)
-
-        return d.addCallback(got_status)
+        self.assertEqual(expected, status_dict)
 
     def test_slaveStatus_idle_slave(self):
         self.assertStatus(

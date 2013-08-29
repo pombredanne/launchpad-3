@@ -41,17 +41,6 @@ from lp.translations.interfaces.translations import (
     )
 
 
-class FakeBuilder:
-    """Pretend `Builder`."""
-
-    def __init__(self, slave):
-        self.slave = slave
-        self.cleanSlave = FakeMethod()
-
-    def slaveStatus(self):
-        return self.slave._status
-
-
 class FakeBuildQueue:
     """Pretend `BuildQueue`."""
 
