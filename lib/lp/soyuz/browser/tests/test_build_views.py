@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -305,10 +305,9 @@ class TestBuildViews(TestCaseWithFactory):
 
     def test_cancelling_uncancellable_build(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        removeSecurityProxy(archive).require_virtualized = False
         pending_build = self.factory.makeBinaryPackageBuild(archive=archive)
         pending_build.queueBuild()
-        pending_build.updateStatus(BuildStatus.BUILDING)
+        pending_build.updateStatus(BuildStatus.FAILEDTOBUILD)
         with person_logged_in(archive.owner):
             view = create_initialized_view(
                 pending_build, name="+cancel", form={
@@ -316,7 +315,7 @@ class TestBuildViews(TestCaseWithFactory):
         notification = view.request.response.notifications[0]
         self.assertEqual(
             notification.message, "Unable to cancel build.")
-        self.assertEqual(BuildStatus.BUILDING, pending_build.status)
+        self.assertEqual(BuildStatus.FAILEDTOBUILD, pending_build.status)
 
     def test_build_records_view(self):
         # The BuildRecordsView can also be used to filter by architecture tag.

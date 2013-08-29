@@ -144,6 +144,7 @@ new 'score' value is presented.
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))
     Build status
     Needs building
+    Cancel build
     Start in ...
     Build score:0 Rescore build (What's this?)
 
@@ -294,6 +295,7 @@ retrying the build is not a possibility anymore.
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))
     Build status
     Needs building
+    Cancel build
     Start in ...
     Build score:... Rescore build (What's this?)
 
