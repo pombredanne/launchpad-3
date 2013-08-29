@@ -250,39 +250,6 @@ class TestBuilder(TestCaseWithFactory):
         return d.addCallback(check_builder)
 
 
-class TestBuilderInteractorDB(TestCaseWithFactory):
-
-    layer = LaunchpadZopelessLayer
-
-    def test_verifySlaveBuildCookie_good(self):
-        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
-        behavior = IBuildFarmJobBehavior(buildfarmjob)
-        interactor = BuilderInteractor(
-            MockBuilder(), override_behavior=behavior)
-
-        # The correct cookie validates successfully.
-        cookie = buildfarmjob.generateSlaveBuildCookie()
-        interactor.verifySlaveBuildCookie(cookie)
-
-    def test_verifySlaveBuildCookie_bad(self):
-        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
-        behavior = IBuildFarmJobBehavior(buildfarmjob)
-        interactor = BuilderInteractor(
-            MockBuilder(), override_behavior=behavior)
-
-        cookie = buildfarmjob.generateSlaveBuildCookie()
-        self.assertRaises(
-            CorruptBuildCookie,
-            interactor.verifySlaveBuildCookie, cookie + 'x')
-
-    def test_verifySlaveBuildCookie_idle(self):
-        interactor = BuilderInteractor(MockBuilder())
-        self.assertTrue(
-            isinstance(interactor._current_build_behavior, IdleBuildBehavior))
-        self.assertRaises(
-            CorruptBuildCookie, interactor.verifySlaveBuildCookie, 'foo')
-
-
 class TestBuilderInteractor(TestCase):
 
     run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
@@ -303,6 +270,23 @@ class TestBuilderInteractor(TestCase):
         interactor = BuilderInteractor(MockBuilder())
         self.assertRaises(
             AssertionError, interactor.extractBuildStatus, slave_status)
+
+    def test_verifySlaveBuildCookie_good(self):
+        interactor = BuilderInteractor(MockBuilder(), None, TrivialBehavior())
+        interactor.verifySlaveBuildCookie('trivial')
+
+    def test_verifySlaveBuildCookie_bad(self):
+        interactor = BuilderInteractor(MockBuilder(), None, TrivialBehavior())
+        self.assertRaises(
+            CorruptBuildCookie,
+            interactor.verifySlaveBuildCookie, 'difficult')
+
+    def test_verifySlaveBuildCookie_idle(self):
+        interactor = BuilderInteractor(MockBuilder())
+        self.assertTrue(
+            isinstance(interactor._current_build_behavior, IdleBuildBehavior))
+        self.assertRaises(
+            CorruptBuildCookie, interactor.verifySlaveBuildCookie, 'foo')
 
     def test_updateStatus_aborts_lost_and_broken_slave(self):
         # A slave that's 'lost' should be aborted; when the slave is
