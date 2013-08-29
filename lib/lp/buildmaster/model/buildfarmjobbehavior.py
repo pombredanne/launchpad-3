@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'BuildFarmJobBehaviorBase',
-    'IdleBuildBehavior',
     ]
 
 import datetime
@@ -308,25 +307,3 @@ class BuildFarmJobBehaviorBase:
         yield self._interactor.cleanSlave()
         self.build.buildqueue_record.reset()
         transaction.commit()
-
-
-class IdleBuildBehavior(BuildFarmJobBehaviorBase):
-
-    implements(IBuildFarmJobBehavior)
-
-    def __init__(self):
-        """The idle behavior is special in that a buildfarmjob is not
-        specified during initialization as it is not the result of an
-        adaption.
-        """
-        super(IdleBuildBehavior, self).__init__(None)
-
-    def logStartBuild(self, logger):
-        """See `IBuildFarmJobBehavior`."""
-        raise BuildBehaviorMismatch(
-            "Builder was idle when asked to log the start of a build.")
-
-    def dispatchBuildToSlave(self, build_queue_item_id, logger):
-        """See `IBuildFarmJobBehavior`."""
-        raise BuildBehaviorMismatch(
-            "Builder was idle when asked to dispatch a build to the slave.")
