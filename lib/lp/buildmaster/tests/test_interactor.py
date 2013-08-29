@@ -21,7 +21,11 @@ from twisted.python.failure import Failure
 from twisted.web.client import getPage
 from zope.security.proxy import removeSecurityProxy
 
-from lp.buildmaster.interactor import BuilderInteractor
+from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interactor import (
+    BuilderInteractor,
+    BuilderSlave,
+    )
 from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
     CannotResumeHost,
@@ -50,7 +54,11 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing.fakemethod import FakeMethod
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 class TestBuilderInteractor(TestCase):
@@ -325,34 +333,122 @@ class TestBuilderInteractorSlaveStatus(TestCase):
         return d.addCallback(self.assertTrue)
 
 
-class TestCurrentBuildBehavior(TestCaseWithFactory):
-    """This test ensures the get/set behavior of BuilderInteractor's
-    _current_build_behavior property.
-    """
+class TestBuilderInteractorDB(TestCaseWithFactory):
+    """BuilderInteractor tests that need a DB."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
 
-    def setUp(self):
-        """Create a new builder ready for testing."""
-        super(TestCurrentBuildBehavior, self).setUp()
-        self.builder = self.factory.makeBuilder(name='builder')
-        self.interactor = BuilderInteractor(self.builder)
-        self.build = self.factory.makeBinaryPackageBuild()
-        self.buildfarmjob = self.build.queueBuild().specific_job
-
-    def test_idle_behavior_when_no_current_build(self):
+    def test_current_build_behavior_idle(self):
         """An idle builder has no build behavior."""
-        self.assertIs(None, self.interactor._current_build_behavior)
+        self.assertIs(
+            None, BuilderInteractor(MockBuilder())._current_build_behavior)
 
-    def test_current_job_behavior(self):
+    def test_current_build_behavior_building(self):
         """The current behavior is set automatically from the current job."""
         # Set the builder attribute on the buildqueue record so that our
         # builder will think it has a current build.
-        self.build.buildqueue_record.builder = self.builder
-        behavior = removeSecurityProxy(self.interactor._current_build_behavior)
+        builder = self.factory.makeBuilder(name='builder')
+        interactor = BuilderInteractor(builder)
+        build = self.factory.makeBinaryPackageBuild()
+        build.queueBuild().markAsBuilding(builder)
+        behavior = interactor._current_build_behavior
         self.assertIsInstance(behavior, BinaryPackageBuildBehavior)
-        self.assertEqual(behavior._builder, self.builder)
-        self.assertEqual(behavior._interactor, self.interactor)
+        self.assertEqual(behavior._builder, builder)
+        self.assertEqual(behavior._interactor, interactor)
+
+    def _setupBuilder(self):
+        processor = self.factory.makeProcessor(name="i386")
+        builder = self.factory.makeBuilder(
+            processor=processor, virtualized=True, vm_host="bladh")
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
+        distroseries = self.factory.makeDistroSeries()
+        das = self.factory.makeDistroArchSeries(
+            distroseries=distroseries, architecturetag="i386",
+            processorfamily=processor.family)
+        chroot = self.factory.makeLibraryFileAlias(db_only=True)
+        das.addOrUpdateChroot(chroot)
+        distroseries.nominatedarchindep = das
+        return builder, distroseries, das
+
+    def _setupRecipeBuildAndBuilder(self):
+        # Helper function to make a builder capable of building a
+        # recipe, returning both.
+        builder, distroseries, distroarchseries = self._setupBuilder()
+        build = self.factory.makeSourcePackageRecipeBuild(
+            distroseries=distroseries)
+        return builder, build
+
+    def _setupBinaryBuildAndBuilder(self):
+        # Helper function to make a builder capable of building a
+        # binary package, returning both.
+        builder, distroseries, distroarchseries = self._setupBuilder()
+        build = self.factory.makeBinaryPackageBuild(
+            distroarchseries=distroarchseries, builder=builder)
+        return builder, build
+
+    def test_findAndStartJob_returns_candidate(self):
+        # findAndStartJob finds the next queued job using _findBuildCandidate.
+        # We don't care about the type of build at all.
+        builder, build = self._setupRecipeBuildAndBuilder()
+        candidate = build.queueBuild()
+        # _findBuildCandidate is tested elsewhere, we just make sure that
+        # findAndStartJob delegates to it.
+        removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
+            result=candidate)
+        d = BuilderInteractor(builder).findAndStartJob()
+        return d.addCallback(self.assertEqual, candidate)
+
+    def test_findAndStartJob_starts_job(self):
+        # findAndStartJob finds the next queued job using _findBuildCandidate
+        # and then starts it.
+        # We don't care about the type of build at all.
+        builder, build = self._setupRecipeBuildAndBuilder()
+        candidate = build.queueBuild()
+        removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
+            result=candidate)
+        d = BuilderInteractor(builder).findAndStartJob()
+
+        def check_build_started(candidate):
+            self.assertEqual(candidate.builder, builder)
+            self.assertEqual(BuildStatus.BUILDING, build.status)
+
+        return d.addCallback(check_build_started)
+
+    def test_virtual_job_dispatch_pings_before_building(self):
+        # We need to send a ping to the builder to work around a bug
+        # where sometimes the first network packet sent is dropped.
+        builder, build = self._setupBinaryBuildAndBuilder()
+        candidate = build.queueBuild()
+        removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
+            result=candidate)
+        interactor = BuilderInteractor(builder)
+        d = interactor.findAndStartJob()
+
+        def check_build_started(candidate):
+            self.assertIn(('echo', 'ping'), interactor.slave.call_log)
+
+        return d.addCallback(check_build_started)
+
+    @defer.inlineCallbacks
+    def test_recover_building_slave_with_job_that_finished_elsewhere(self):
+        # See bug 671242
+        # When a job is destroyed, the builder's behaviour should be reset
+        # too so that we don't traceback when the wrong behaviour tries
+        # to access a non-existent job.
+        builder, build = self._setupBinaryBuildAndBuilder()
+        candidate = build.queueBuild()
+        building_slave = BuildingSlave()
+        interactor = BuilderInteractor(builder, building_slave)
+        candidate.markAsBuilding(builder)
+
+        # At this point we should see a valid behaviour on the builder:
+        self.assertIsNot(None, interactor._current_build_behavior)
+        yield interactor.rescueIfLost()
+        self.assertIsNot(None, interactor._current_build_behavior)
+        candidate.destroySelf()
+        yield interactor.rescueIfLost()
+        self.assertIs(None, interactor._current_build_behavior)
 
 
 class TestSlave(TestCase):

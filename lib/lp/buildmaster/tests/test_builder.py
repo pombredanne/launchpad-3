@@ -3,28 +3,17 @@
 
 """Test Builder features."""
 
-from testtools.deferredruntest import AsynchronousDeferredRunTest
-from twisted.internet.defer import inlineCallbacks
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interactor import (
-    BuilderInteractor,
-    BuilderSlave,
-    )
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.buildmaster.tests.mock_slaves import (
-    BuildingSlave,
-    make_publisher,
-    OkSlave,
-    SlaveTestHelpers,
-    )
+from lp.buildmaster.tests.mock_slaves import make_publisher
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import flush_database_updates
 from lp.services.job.interfaces.job import JobStatus
@@ -35,14 +24,13 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.testing import TestCaseWithFactory
-from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
 
 
-class TestBuilderBasics(TestCaseWithFactory):
+class TestBuilder(TestCaseWithFactory):
     """Basic unit tests for `Builder`."""
 
     layer = DatabaseFunctionalLayer
@@ -87,115 +75,11 @@ class TestBuilderBasics(TestCaseWithFactory):
         builder.builderok = True
         self.assertEqual(0, builder.failure_count)
 
-
-class TestBuilder(TestCaseWithFactory):
-
-    layer = LaunchpadZopelessLayer
-    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
-
-    def setUp(self):
-        super(TestBuilder, self).setUp()
-        self.slave_helper = self.useFixture(SlaveTestHelpers())
-
     def test_handleFailure_increments_failure_count(self):
-        builder = self.factory.makeBuilder(virtualized=False)
-        builder.builderok = True
+        builder = self.factory.makeBuilder()
+        self.assertEqual(0, builder.failure_count)
         builder.handleFailure(BufferLogger())
         self.assertEqual(1, builder.failure_count)
-
-    def _setupBuilder(self):
-        processor = self.factory.makeProcessor(name="i386")
-        builder = self.factory.makeBuilder(
-            processor=processor, virtualized=True, vm_host="bladh")
-        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
-        distroseries = self.factory.makeDistroSeries()
-        das = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, architecturetag="i386",
-            processorfamily=processor.family)
-        chroot = self.factory.makeLibraryFileAlias()
-        das.addOrUpdateChroot(chroot)
-        distroseries.nominatedarchindep = das
-        return builder, distroseries, das
-
-    def _setupRecipeBuildAndBuilder(self):
-        # Helper function to make a builder capable of building a
-        # recipe, returning both.
-        builder, distroseries, distroarchseries = self._setupBuilder()
-        build = self.factory.makeSourcePackageRecipeBuild(
-            distroseries=distroseries)
-        return builder, build
-
-    def _setupBinaryBuildAndBuilder(self):
-        # Helper function to make a builder capable of building a
-        # binary package, returning both.
-        builder, distroseries, distroarchseries = self._setupBuilder()
-        build = self.factory.makeBinaryPackageBuild(
-            distroarchseries=distroarchseries, builder=builder)
-        return builder, build
-
-    def test_findAndStartJob_returns_candidate(self):
-        # findAndStartJob finds the next queued job using _findBuildCandidate.
-        # We don't care about the type of build at all.
-        builder, build = self._setupRecipeBuildAndBuilder()
-        candidate = build.queueBuild()
-        # _findBuildCandidate is tested elsewhere, we just make sure that
-        # findAndStartJob delegates to it.
-        removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
-            result=candidate)
-        d = BuilderInteractor(builder).findAndStartJob()
-        return d.addCallback(self.assertEqual, candidate)
-
-    def test_findAndStartJob_starts_job(self):
-        # findAndStartJob finds the next queued job using _findBuildCandidate
-        # and then starts it.
-        # We don't care about the type of build at all.
-        builder, build = self._setupRecipeBuildAndBuilder()
-        candidate = build.queueBuild()
-        removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
-            result=candidate)
-        d = BuilderInteractor(builder).findAndStartJob()
-
-        def check_build_started(candidate):
-            self.assertEqual(candidate.builder, builder)
-            self.assertEqual(BuildStatus.BUILDING, build.status)
-
-        return d.addCallback(check_build_started)
-
-    def test_virtual_job_dispatch_pings_before_building(self):
-        # We need to send a ping to the builder to work around a bug
-        # where sometimes the first network packet sent is dropped.
-        builder, build = self._setupBinaryBuildAndBuilder()
-        candidate = build.queueBuild()
-        removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
-            result=candidate)
-        interactor = BuilderInteractor(builder)
-        d = interactor.findAndStartJob()
-
-        def check_build_started(candidate):
-            self.assertIn(
-                ('echo', 'ping'), interactor.slave.call_log)
-
-        return d.addCallback(check_build_started)
-
-    @inlineCallbacks
-    def test_recover_building_slave_with_job_that_finished_elsewhere(self):
-        # See bug 671242
-        # When a job is destroyed, the builder's behaviour should be reset
-        # too so that we don't traceback when the wrong behaviour tries
-        # to access a non-existent job.
-        builder, build = self._setupBinaryBuildAndBuilder()
-        candidate = build.queueBuild()
-        building_slave = BuildingSlave()
-        interactor = BuilderInteractor(builder, building_slave)
-        candidate.markAsBuilding(builder)
-
-        # At this point we should see a valid behaviour on the builder:
-        self.assertIsNot(None, interactor._current_build_behavior)
-        yield interactor.rescueIfLost()
-        self.assertIsNot(None, interactor._current_build_behavior)
-        candidate.destroySelf()
-        yield interactor.rescueIfLost()
-        self.assertIs(None, interactor._current_build_behavior)
 
 
 class TestFindBuildCandidateBase(TestCaseWithFactory):
