@@ -10,7 +10,6 @@ __all__ = [
     'AbortingSlave',
     'BrokenSlave',
     'BuildingSlave',
-    'CorruptBehavior',
     'DeadProxy',
     'LostBuildingBrokenSlave',
     'make_publisher',
