@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from zope.component import getUtility
@@ -21,6 +21,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.sqlbase import flush_database_updates
 from lp.testing import (
     celebrity_logged_in,
+    person_logged_in,
     TestCase,
     TestCaseWithFactory,
     )
@@ -193,6 +194,20 @@ class TestUploadPolicy(TestCaseWithFactory):
         self.assertRaises(
             NotFoundError, policy.setDistroSeriesAndPocket,
             'nonexistent_security')
+
+    def test_setDistroSeriesAndPocket_honours_aliases(self):
+        # setDistroSeriesAndPocket honours uploads to the development series
+        # alias, if set.
+        policy = AbstractUploadPolicy()
+        policy.distro = self.factory.makeDistribution()
+        series = self.factory.makeDistroSeries(
+            distribution=policy.distro, status=SeriesStatus.DEVELOPMENT)
+        self.assertRaises(
+            NotFoundError, policy.setDistroSeriesAndPocket, "devel")
+        with person_logged_in(policy.distro.owner):
+            policy.distro.development_series_alias = "devel"
+        policy.setDistroSeriesAndPocket("devel")
+        self.assertEqual(series, policy.distroseries)
 
     def test_redirect_release_uploads_primary(self):
         # With the insecure policy, the
