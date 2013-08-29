@@ -654,24 +654,16 @@ class BuilderInteractor(object):
                 transaction.commit()
                 return
 
-            # Since logtail is a xmlrpclib.Binary container and it is
-            # returned from the IBuilder content class, it arrives
-            # protected by a Zope Security Proxy, which is not declared,
-            # thus empty. Before passing it to the status handlers we
-            # will simply remove the proxy.
-            logtail = removeSecurityProxy(status_dict.get('logtail'))
-
             method = builder_status_handlers[builder_status]
             return defer.maybeDeferred(
-                method, queueItem, status_sentence, status_dict, logtail,
-                logger)
+                method, queueItem, status_sentence, status_dict, logger)
 
         d.addErrback(got_failure)
         d.addCallback(got_status)
         return d
 
     def updateBuild_IDLE(self, queueItem, status_sentence, status_dict,
-                         logtail, logger):
+                         logger):
         """Somehow the builder forgot about the build job.
 
         Log this and reset the record.
@@ -683,15 +675,15 @@ class BuilderInteractor(object):
         transaction.commit()
 
     def updateBuild_BUILDING(self, queueItem, status_sentence, status_dict,
-                             logtail, logger):
+                             logger):
         """Build still building, collect the logtail"""
         if queueItem.job.status != JobStatus.RUNNING:
             queueItem.job.start()
-        queueItem.logtail = encoding.guess(str(logtail))
+        queueItem.logtail = encoding.guess(str(status_dict.get('logtail')))
         transaction.commit()
 
     def updateBuild_ABORTING(self, queueItem, status_sentence, status_dict,
-                             logtail, logger):
+                             logger):
         """Build was ABORTED.
 
         Master-side should wait until the slave finish the process correctly.
@@ -700,7 +692,7 @@ class BuilderInteractor(object):
         transaction.commit()
 
     def updateBuild_ABORTED(self, queueItem, status_sentence, status_dict,
-                            logtail, logger):
+                            logger):
         """ABORTING process has successfully terminated.
 
         Clean the builder for another jobs.
@@ -730,7 +722,7 @@ class BuilderInteractor(object):
         return status_string[len(lead_string):]
 
     def updateBuild_WAITING(self, queueItem, status_sentence, status_dict,
-                            logtail, logger):
+                            logger):
         """Perform the actions needed for a slave in a WAITING state
 
         Buildslave can be WAITING in five situations:
