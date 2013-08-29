@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Mock Build objects for tests soyuz buildd-system."""
@@ -221,6 +221,10 @@ class LostBuildingBrokenSlave:
     def abort(self):
         self.call_log.append('abort')
         return defer.fail(xmlrpclib.Fault(8002, "Could not abort"))
+
+    def resume(self):
+        self.call_log.append('resume')
+        return defer.succeed(("", "", 0))
 
 
 class BrokenSlave:
