@@ -288,20 +288,6 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
         self.assertRaises(
             CorruptBuildCookie, interactor.verifySlaveBuildCookie, 'foo')
 
-    def test_cookie_includes_job_name(self):
-        # The cookie is a hash that includes the job's name.
-        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
-        behavior = IBuildFarmJobBehavior(buildfarmjob)
-        interactor = BuilderInteractor(
-            MockBuilder(), override_behavior=behavior)
-        cookie = buildfarmjob.generateSlaveBuildCookie()
-
-        self._changeBuildFarmJobName(removeSecurityProxy(buildfarmjob))
-        self.assertRaises(
-            CorruptBuildCookie,
-            interactor.verifySlaveBuildCookie, cookie)
-        self.assertNotIn(buildfarmjob.getName(), cookie)
-
 
 class TestBuilderInteractor(TestCase):
 

@@ -16,7 +16,6 @@ from zope.security.proxy import removeSecurityProxy
 from lp.archiveuploader.uploadprocessor import parse_build_upload_leaf_name
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interactor import BuilderInteractor
-from lp.buildmaster.interfaces.builder import CorruptBuildCookie
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
@@ -83,6 +82,15 @@ class TestBuildFarmJobBehaviorBase(TestCaseWithFactory):
         self.assertTrue(len(cookie) > 10)
 
         self.assertEqual(cookie, buildfarmjob.generateSlaveBuildCookie())
+
+    def test_cookie_includes_job_name(self):
+        # The cookie is a hash that includes the job's name.
+        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
+        cookie = buildfarmjob.generateSlaveBuildCookie()
+        self._changeBuildFarmJobName(removeSecurityProxy(buildfarmjob))
+
+        self.assertNotEqual(cookie, buildfarmjob.generateSlaveBuildCookie())
+        self.assertNotIn(buildfarmjob.getName(), cookie)
 
     def test_cookie_includes_more_than_name(self):
         # Two build jobs with the same name still get different cookies.
