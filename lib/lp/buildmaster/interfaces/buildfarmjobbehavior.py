@@ -6,18 +6,10 @@
 __metaclass__ = type
 
 __all__ = [
-    'BuildBehaviorMismatch',
     'IBuildFarmJobBehavior',
     ]
 
 from zope.interface import Interface
-
-
-class BuildBehaviorMismatch(Exception):
-    """
-    A general exception that can be raised when the builder's current behavior
-    does not match the expected behavior.
-    """
 
 
 class IBuildFarmJobBehavior(Interface):
