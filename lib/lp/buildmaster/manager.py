@@ -31,9 +31,6 @@ from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
     CannotResumeHost,
     )
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    BuildBehaviorMismatch,
-    )
 from lp.buildmaster.model.builder import Builder
 from lp.services.propertycache import get_property_cache
 
@@ -153,8 +150,8 @@ class SlaveScanner:
         # the error.
         error_message = failure.getErrorMessage()
         if failure.check(
-            BuildSlaveFailure, CannotBuild, BuildBehaviorMismatch,
-            CannotResumeHost, BuildDaemonError, CannotFetchFile):
+            BuildSlaveFailure, CannotBuild, CannotResumeHost,
+            BuildDaemonError, CannotFetchFile):
             self.logger.info("Scanning %s failed with: %s" % (
                 self.builder_name, error_message))
         else:

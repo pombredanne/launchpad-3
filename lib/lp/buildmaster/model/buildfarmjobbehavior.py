@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'BuildFarmJobBehaviorBase',
-    'IdleBuildBehavior',
     ]
 
 import datetime
@@ -16,20 +15,12 @@ import os.path
 
 import transaction
 from twisted.internet import defer
-from zope.interface import implements
 
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
-from lp.buildmaster.interfaces.builder import (
-    BuildSlaveFailure,
-    CorruptBuildCookie,
-    )
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    BuildBehaviorMismatch,
-    IBuildFarmJobBehavior,
-    )
+from lp.buildmaster.interfaces.builder import BuildSlaveFailure
 from lp.services.config import config
 
 
@@ -66,11 +57,8 @@ class BuildFarmJobBehaviorBase:
         The default behavior is that we don't add any extra values."""
         pass
 
-    def verifySlaveBuildCookie(self, slave_build_cookie):
-        """See `IBuildFarmJobBehavior`."""
-        expected_cookie = self.buildfarmjob.generateSlaveBuildCookie()
-        if slave_build_cookie != expected_cookie:
-            raise CorruptBuildCookie("Invalid slave build cookie.")
+    def generateSlaveBuildCookie(self):
+        return self.buildfarmjob.generateSlaveBuildCookie()
 
     def getBuildCookie(self):
         """See `IPackageBuild`."""
@@ -314,34 +302,3 @@ class BuildFarmJobBehaviorBase:
         yield self._interactor.cleanSlave()
         self.build.buildqueue_record.reset()
         transaction.commit()
-
-
-class IdleBuildBehavior(BuildFarmJobBehaviorBase):
-
-    implements(IBuildFarmJobBehavior)
-
-    def __init__(self):
-        """The idle behavior is special in that a buildfarmjob is not
-        specified during initialization as it is not the result of an
-        adaption.
-        """
-        super(IdleBuildBehavior, self).__init__(None)
-
-    def logStartBuild(self, logger):
-        """See `IBuildFarmJobBehavior`."""
-        raise BuildBehaviorMismatch(
-            "Builder was idle when asked to log the start of a build.")
-
-    def dispatchBuildToSlave(self, build_queue_item_id, logger):
-        """See `IBuildFarmJobBehavior`."""
-        raise BuildBehaviorMismatch(
-            "Builder was idle when asked to dispatch a build to the slave.")
-
-    @property
-    def status(self):
-        """See `IBuildFarmJobBehavior`."""
-        return "Idle"
-
-    def verifySlaveBuildCookie(self, slave_build_id):
-        """See `IBuildFarmJobBehavior`."""
-        raise CorruptBuildCookie('No job assigned to builder')

@@ -10,7 +10,6 @@ __all__ = [
     'AbortingSlave',
     'BrokenSlave',
     'BuildingSlave',
-    'CorruptBehavior',
     'DeadProxy',
     'LostBuildingBrokenSlave',
     'make_publisher',
@@ -33,10 +32,7 @@ from twisted.internet import defer
 from twisted.web import xmlrpc
 
 from lp.buildmaster.interactor import BuilderSlave
-from lp.buildmaster.interfaces.builder import (
-    CannotFetchFile,
-    CorruptBuildCookie,
-    )
+from lp.buildmaster.interfaces.builder import CannotFetchFile
 from lp.services.config import config
 from lp.testing.sampledata import I386_ARCHITECTURE_NAME
 
@@ -238,16 +234,10 @@ class BrokenSlave:
         return defer.fail(xmlrpclib.Fault(8001, "Broken slave"))
 
 
-class CorruptBehavior:
-
-    def verifySlaveBuildCookie(self, cookie):
-        raise CorruptBuildCookie("Bad value: %r" % (cookie,))
-
-
 class TrivialBehavior:
 
-    def verifySlaveBuildCookie(self, cookie):
-        pass
+    def generateSlaveBuildCookie(self):
+        return 'trivial'
 
 
 class DeadProxy(xmlrpc.Proxy):
