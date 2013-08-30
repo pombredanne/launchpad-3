@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BuildFarmJobBehaviorBase."""
@@ -10,6 +10,7 @@ import os
 import shutil
 import tempfile
 
+from twisted.internet import defer
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -301,6 +302,14 @@ class TestHandleStatusMixin:
 
         d = self.behavior.handleStatus("ABORTED", {})
         return d.addCallback(got_status)
+
+    @defer.inlineCallbacks
+    def test_handleStatus_ABORTED_cancelling_sets_build_log(self):
+        # If a build is intentionally cancelled, the build log is set.
+        self.assertEqual(None, self.build.log)
+        self.build.updateStatus(BuildStatus.CANCELLING)
+        yield self.behavior.handleStatus("ABORTED", {})
+        self.assertNotEqual(None, self.build.log)
 
     def test_date_finished_set(self):
         # The date finished is updated during handleStatus_OK.

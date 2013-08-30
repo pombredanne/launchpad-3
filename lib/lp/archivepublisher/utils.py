@@ -1,7 +1,7 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Miscelaneous functions for publisher."""
+"""Miscellaneous functions for publisher."""
 
 __metaclass__ = type
 
@@ -101,16 +101,17 @@ class RepositoryIndexFile:
     (plain, gzip and bzip2) transparently and atomically.
     """
 
-    def __init__(self, root, temp_root, filename):
+    def __init__(self, path, temp_root):
         """Store repositories destinations and filename.
 
-        The given 'temp_root' needs to exist, on the other hand, 'root'
-        will be created on `close` if it doesn't exist.
+        The given 'temp_root' needs to exist; on the other hand, the
+        directory containing 'path' will be created on `close` if it doesn't
+        exist.
 
-        Additionally creates the needs temporary files in the given
+        Additionally creates the needed temporary files in the given
         'temp_root'.
         """
-        self.root = root
+        self.root, filename = os.path.split(path)
         assert os.path.exists(temp_root), 'Temporary root does not exist.'
 
         self.index_files = (

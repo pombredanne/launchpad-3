@@ -364,16 +364,6 @@ class BuilderInteractor(object):
             # the job.
             if (status == 'BuilderStatus.ABORTED'
                     and self.builder.currentjob is None):
-                if not self.builder.virtualized:
-                    # We can't reset non-virtual builders reliably as the
-                    # abort() function doesn't kill the actual build job,
-                    # only the sbuild process!  All we can do here is fail
-                    # the builder with a message indicating the problem and
-                    # wait for an admin to reboot it.
-                    self.builder.failBuilder(
-                        "Non-virtual builder in ABORTED state, requires admin "
-                        "to restart")
-                    return "dummy status"
                 if logger is not None:
                     logger.info(
                         "Builder '%s' being cleaned up from ABORTED" %

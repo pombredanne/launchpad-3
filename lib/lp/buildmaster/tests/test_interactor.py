@@ -172,12 +172,12 @@ class TestBuilderInteractor(TestCase):
         self.assertEqual(5, interactor.slave.timeout)
 
     def test_recovery_of_aborted_virtual_slave(self):
-        # If a virtual_slave is in the ABORTED state,
+        # If a nonvirtual slave is in the ABORTED state,
         # rescueBuilderIfLost should clean it if we don't think it's
         # currently building anything.
-        # See bug 463046.
         aborted_slave = AbortedSlave()
-        d = BuilderInteractor(MockBuilder(), aborted_slave).rescueIfLost()
+        builder = MockBuilder(virtualized=False, builderok=False)
+        d = BuilderInteractor(builder, aborted_slave).rescueIfLost()
 
         def check_slave_calls(ignored):
             self.assertIn('clean', aborted_slave.call_log)
@@ -463,10 +463,7 @@ class TestSlave(TestCase):
         super(TestSlave, self).setUp()
         self.slave_helper = self.useFixture(SlaveTestHelpers())
 
-    # XXX 2010-10-06 Julian bug=655559
-    # This is failing on buildbot but not locally; it's trying to abort
-    # before the build has started.
-    def disabled_test_abort(self):
+    def test_abort(self):
         slave = self.slave_helper.getClientSlave()
         # We need to be in a BUILDING state before we can abort.
         d = self.slave_helper.triggerGoodBuild(slave)
