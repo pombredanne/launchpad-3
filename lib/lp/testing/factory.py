@@ -31,6 +31,7 @@ from email.utils import (
     formatdate,
     make_msgid,
     )
+import hashlib
 from itertools import count
 from operator import (
     isMappingType,
@@ -242,6 +243,10 @@ from lp.services.identity.interfaces.emailaddress import (
     )
 from lp.services.identity.model.account import Account
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.messages.model.message import (
     Message,
@@ -2440,17 +2445,28 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeLibraryFileAlias(self, filename=None, content=None,
                              content_type='text/plain', restricted=False,
-                             expires=None):
+                             expires=None, db_only=False):
         """Make a library file, and return the alias."""
         if filename is None:
             filename = self.getUniqueString('filename')
         if content is None:
             content = self.getUniqueString()
-        library_file_alias_set = getUtility(ILibraryFileAliasSet)
-        library_file_alias = library_file_alias_set.create(
-            filename, len(content), StringIO(content), content_type,
-            expires=expires, restricted=restricted)
-        return library_file_alias
+
+        if db_only:
+            # Often we don't actually care if the file exists on disk.
+            # This lets us run tests without a librarian server.
+            lfc = LibraryFileContent(
+                filesize=len(content),
+                sha256=hashlib.sha256(content).hexdigest(),
+                sha1=hashlib.sha1(content).hexdigest(),
+                md5=hashlib.md5(content).hexdigest())
+            lfa = LibraryFileAlias(
+                content=lfc, filename=filename, mimetype=content_type)
+        else:
+            lfa = getUtility(ILibraryFileAliasSet).create(
+                filename, len(content), StringIO(content), content_type,
+                expires=expires, restricted=restricted)
+        return lfa
 
     def makeDistribution(self, name=None, displayname=None, owner=None,
                          registrant=None, members=None, title=None,
