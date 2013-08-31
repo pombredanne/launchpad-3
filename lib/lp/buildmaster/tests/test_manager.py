@@ -348,7 +348,8 @@ class TestSlaveScannerScan(TestCase):
         scanner = self._getScanner()
         scanner.scan = failing_scan
         builder = getUtility(IBuilderSet)[scanner.builder_name]
-        builder.failure_count = Builder.FAILURE_THRESHOLD
+        builder.failure_count = (
+            Builder.RESET_THRESHOLD * Builder.RESET_FAILURE_THRESHOLD)
         builder.currentjob.reset()
         self.layer.txn.commit()
 
@@ -573,12 +574,18 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.build = self.factory.makeSourcePackageRecipeBuild()
         self.buildqueue = self.build.queueBuild()
         self.buildqueue.markAsBuilding(self.builder)
+        self.interactor = BuilderInteractor(self.builder)
+
+    def _assessFailureCounts(self, fail_notes):
+        # Helper for assessFailureCounts boilerplate.
+        assessFailureCounts(
+            BufferLogger(), self.interactor, Exception(fail_notes))
 
     def test_equal_failures_reset_job(self):
         self.builder.gotFailure()
         self.builder.getCurrentBuildFarmJob().gotFailure()
 
-        assessFailureCounts(self.builder, "failnotes")
+        self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
 
@@ -587,33 +594,63 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.builder.getCurrentBuildFarmJob().gotFailure()
         self.builder.gotFailure()
 
-        assessFailureCounts(self.builder, "failnotes")
+        self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.FAILEDTOBUILD)
         self.assertEqual(0, self.builder.failure_count)
 
-    def test_builder_failing_more_than_job_but_under_fail_threshold(self):
-        self.builder.failure_count = Builder.FAILURE_THRESHOLD - 1
+    def test_virtual_builder_reset_thresholds(self):
+        self.builder.virtualized = True
+        self.patch(self.interactor, "resumeSlaveHost", FakeMethod())
 
-        assessFailureCounts(self.builder, "failnotes")
+        for failure_count in range(
+            Builder.RESET_THRESHOLD - 1,
+            Builder.RESET_THRESHOLD * Builder.RESET_FAILURE_THRESHOLD):
+            self.builder.failure_count = failure_count
+            self._assessFailureCounts("failnotes")
+            self.assertIs(None, self.builder.currentjob)
+            self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
+            self.assertEqual(
+                failure_count // Builder.RESET_THRESHOLD,
+                self.interactor.resumeSlaveHost.call_count)
+            self.assertTrue(self.builder.builderok)
+
+        self.builder.failure_count = (
+            Builder.RESET_THRESHOLD * Builder.RESET_FAILURE_THRESHOLD)
+        self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
+        self.assertEqual(
+            Builder.RESET_FAILURE_THRESHOLD - 1,
+            self.interactor.resumeSlaveHost.call_count)
+        self.assertFalse(self.builder.builderok)
+        self.assertEqual("failnotes", self.builder.failnotes)
+
+    def test_non_virtual_builder_reset_thresholds(self):
+        self.builder.virtualized = False
+        self.patch(self.interactor, "resumeSlaveHost", FakeMethod())
+
+        self.builder.failure_count = Builder.RESET_THRESHOLD - 1
+        self._assessFailureCounts("failnotes")
+        self.assertIs(None, self.builder.currentjob)
+        self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
+        self.assertEqual(0, self.interactor.resumeSlaveHost.call_count)
         self.assertTrue(self.builder.builderok)
 
-    def test_builder_failing_more_than_job_but_over_fail_threshold(self):
-        self.builder.failure_count = Builder.FAILURE_THRESHOLD
-
-        assessFailureCounts(self.builder, "failnotes")
+        self.builder.failure_count = Builder.RESET_THRESHOLD
+        self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
+        self.assertEqual(0, self.interactor.resumeSlaveHost.call_count)
         self.assertFalse(self.builder.builderok)
         self.assertEqual("failnotes", self.builder.failnotes)
 
     def test_builder_failing_with_no_attached_job(self):
         self.buildqueue.reset()
-        self.builder.failure_count = Builder.FAILURE_THRESHOLD
+        self.builder.failure_count = (
+            Builder.RESET_THRESHOLD * Builder.RESET_FAILURE_THRESHOLD)
 
-        assessFailureCounts(self.builder, "failnotes")
+        self._assessFailureCounts("failnotes")
         self.assertFalse(self.builder.builderok)
         self.assertEqual("failnotes", self.builder.failnotes)
 

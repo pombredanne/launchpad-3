@@ -84,9 +84,14 @@ class Builder(SQLBase):
     active = BoolCol(dbName='active', notNull=True, default=True)
     failure_count = IntCol(dbName='failure_count', default=0, notNull=True)
 
-    # The number of times a builder can consecutively fail before we
-    # give up and mark it builderok=False.
-    FAILURE_THRESHOLD = 5
+    # The number of times a builder can consecutively fail before we try
+    # resetting it (if virtual) or marking it builderok=False (if not).
+    RESET_THRESHOLD = 5
+
+    # The number of times a virtual builder can reach its reset threshold
+    # due to consecutive failures before we give up and mark it
+    # builderok=False.
+    RESET_FAILURE_THRESHOLD = 3
 
     def _getBuilderok(self):
         return self._builderok
