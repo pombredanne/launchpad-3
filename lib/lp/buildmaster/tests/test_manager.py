@@ -568,27 +568,30 @@ class TestFailureAssessments(TestCaseWithFactory):
 
     def _assessFailureCounts(self, fail_notes):
         # Helper for assessFailureCounts boilerplate.
-        assessFailureCounts(
+        return assessFailureCounts(
             BufferLogger(), self.interactor, Exception(fail_notes))
 
+    @defer.inlineCallbacks
     def test_equal_failures_reset_job(self):
         self.builder.gotFailure()
         self.builder.getCurrentBuildFarmJob().gotFailure()
 
-        self._assessFailureCounts("failnotes")
+        yield self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
 
+    @defer.inlineCallbacks
     def test_job_failing_more_than_builder_fails_job(self):
         self.builder.getCurrentBuildFarmJob().gotFailure()
         self.builder.getCurrentBuildFarmJob().gotFailure()
         self.builder.gotFailure()
 
-        self._assessFailureCounts("failnotes")
+        yield self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.FAILEDTOBUILD)
         self.assertEqual(0, self.builder.failure_count)
 
+    @defer.inlineCallbacks
     def test_virtual_builder_reset_thresholds(self):
         self.builder.virtualized = True
         self.patch(self.interactor, "resumeSlaveHost", FakeMethod())
@@ -597,7 +600,7 @@ class TestFailureAssessments(TestCaseWithFactory):
             Builder.RESET_THRESHOLD - 1,
             Builder.RESET_THRESHOLD * Builder.RESET_FAILURE_THRESHOLD):
             self.builder.failure_count = failure_count
-            self._assessFailureCounts("failnotes")
+            yield self._assessFailureCounts("failnotes")
             self.assertIs(None, self.builder.currentjob)
             self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
             self.assertEqual(
@@ -607,7 +610,7 @@ class TestFailureAssessments(TestCaseWithFactory):
 
         self.builder.failure_count = (
             Builder.RESET_THRESHOLD * Builder.RESET_FAILURE_THRESHOLD)
-        self._assessFailureCounts("failnotes")
+        yield self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
         self.assertEqual(
@@ -616,31 +619,33 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.assertFalse(self.builder.builderok)
         self.assertEqual("failnotes", self.builder.failnotes)
 
+    @defer.inlineCallbacks
     def test_non_virtual_builder_reset_thresholds(self):
         self.builder.virtualized = False
         self.patch(self.interactor, "resumeSlaveHost", FakeMethod())
 
         self.builder.failure_count = Builder.RESET_THRESHOLD - 1
-        self._assessFailureCounts("failnotes")
+        yield self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
         self.assertEqual(0, self.interactor.resumeSlaveHost.call_count)
         self.assertTrue(self.builder.builderok)
 
         self.builder.failure_count = Builder.RESET_THRESHOLD
-        self._assessFailureCounts("failnotes")
+        yield self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
         self.assertEqual(0, self.interactor.resumeSlaveHost.call_count)
         self.assertFalse(self.builder.builderok)
         self.assertEqual("failnotes", self.builder.failnotes)
 
+    @defer.inlineCallbacks
     def test_builder_failing_with_no_attached_job(self):
         self.buildqueue.reset()
         self.builder.failure_count = (
             Builder.RESET_THRESHOLD * Builder.RESET_FAILURE_THRESHOLD)
 
-        self._assessFailureCounts("failnotes")
+        yield self._assessFailureCounts("failnotes")
         self.assertFalse(self.builder.builderok)
         self.assertEqual("failnotes", self.builder.failnotes)
 
