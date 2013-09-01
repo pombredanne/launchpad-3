@@ -45,11 +45,17 @@ def get_builder(name):
     return getUtility(IBuilderSet)[name]
 
 
-def assessFailureCounts(builder, fail_notes):
-    """View builder/job failure_count and work out which needs to die.  """
+@defer.inlineCallbacks
+def assessFailureCounts(logger, interactor, exception):
+    """View builder/job failure_count and work out which needs to die.
+
+    :return: A Deferred that fires either immediately or after a virtual
+        slave has been reset.
+    """
     # builder.currentjob hides a complicated query, don't run it twice.
     # See bug 623281 (Note that currentjob is a cachedproperty).
 
+    builder = interactor.builder
     del get_property_cache(builder).currentjob
     current_job = builder.currentjob
     if current_job is None:
@@ -79,9 +85,15 @@ def assessFailureCounts(builder, fail_notes):
         # failing jobs because sometimes they get unresponsive due to
         # human error, flaky networks etc.  We expect the builder to get
         # better, whereas jobs are very unlikely to get better.
-        if builder.failure_count >= Builder.FAILURE_THRESHOLD:
-            # It's also gone over the threshold so let's disable it.
-            builder.failBuilder(fail_notes)
+        if builder.failure_count >= (
+                Builder.RESET_THRESHOLD * Builder.RESET_FAILURE_THRESHOLD):
+            # We've already tried resetting it enough times, so we have
+            # little choice but to give up.
+            builder.failBuilder(str(exception))
+        elif builder.failure_count % Builder.RESET_THRESHOLD == 0:
+            # The builder is dead, but in the virtual case it might be worth
+            # resetting it.
+            yield interactor.resetOrFail(logger, exception)
     else:
         # The job is the culprit!  Override its status to 'failed'
         # to make sure it won't get automatically dispatched again,
@@ -147,11 +159,15 @@ class SlaveScanner:
         d.addErrback(self._scanFailed)
         return d
 
+    @defer.inlineCallbacks
     def _scanFailed(self, failure):
         """Deal with failures encountered during the scan cycle.
 
         1. Print the error in the log
         2. Increment and assess failure counts on the builder and job.
+
+        :return: A Deferred that fires either immediately or after a virtual
+            slave has been reset.
         """
         # Make sure that pending database updates are removed as it
         # could leave the database in an inconsistent state (e.g. The
@@ -171,11 +187,12 @@ class SlaveScanner:
                 self.builder_name, failure.getErrorMessage(),
                 failure.getTraceback()))
 
-        # Decide if we need to terminate the job or fail the builder.
+        # Decide if we need to terminate the job or reset/fail the builder.
         builder = get_builder(self.builder_name)
         try:
             builder.handleFailure(self.logger)
-            assessFailureCounts(builder, failure.getErrorMessage())
+            yield assessFailureCounts(
+                self.logger, BuilderInteractor(builder), failure.value)
             transaction.commit()
         except Exception:
             # Catastrophic code failure! Not much we can do.

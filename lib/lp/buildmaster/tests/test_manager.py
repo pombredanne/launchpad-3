@@ -260,6 +260,7 @@ class TestSlaveScannerScan(TestCase):
         d.addCallback(self._checkNoDispatch, builder)
         return d
 
+    @defer.inlineCallbacks
     def test_scan_with_not_ok_builder(self):
         # Reset sampledata builder.
         builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
@@ -267,11 +268,9 @@ class TestSlaveScannerScan(TestCase):
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
         builder.builderok = False
         scanner = self._getScanner()
-        d = scanner.scan()
+        yield scanner.scan()
         # Because the builder is not ok, we can't use _checkNoDispatch.
-        d.addCallback(
-            lambda ignored: self.assertIs(None, builder.currentjob))
-        return d
+        self.assertIsNone(builder.currentjob)
 
     def test_scan_of_broken_slave(self):
         builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
@@ -283,6 +282,7 @@ class TestSlaveScannerScan(TestCase):
         d = scanner.scan()
         return assert_fails_with(d, xmlrpclib.Fault)
 
+    @defer.inlineCallbacks
     def _assertFailureCounting(self, builder_count, job_count,
                                expected_builder_count, expected_job_count):
         # If scan() fails with an exception, failure_counts should be
@@ -306,20 +306,16 @@ class TestSlaveScannerScan(TestCase):
 
         # singleCycle() calls scan() which is our fake one that throws an
         # exception.
-        d = scanner.singleCycle()
+        yield scanner.singleCycle()
 
         # Failure counts should be updated, and the assessment method
         # should have been called.  The actual behaviour is tested below
         # in TestFailureAssessments.
-        def got_scan(ignored):
-            self.assertEqual(expected_builder_count, builder.failure_count)
-            self.assertEqual(
-                expected_job_count,
-                builder.currentjob.specific_job.build.failure_count)
-            self.assertEqual(
-                1, manager_module.assessFailureCounts.call_count)
-
-        return d.addCallback(got_scan)
+        self.assertEqual(expected_builder_count, builder.failure_count)
+        self.assertEqual(
+            expected_job_count,
+            builder.currentjob.specific_job.build.failure_count)
+        self.assertEqual(1, manager_module.assessFailureCounts.call_count)
 
     def test_scan_first_fail(self):
         # The first failure of a job should result in the failure_count
@@ -342,23 +338,22 @@ class TestSlaveScannerScan(TestCase):
             builder_count=0, job_count=1, expected_builder_count=1,
             expected_job_count=2)
 
+    @defer.inlineCallbacks
     def test_scanFailed_handles_lack_of_a_job_on_the_builder(self):
         def failing_scan():
             return defer.fail(Exception("fake exception"))
         scanner = self._getScanner()
         scanner.scan = failing_scan
         builder = getUtility(IBuilderSet)[scanner.builder_name]
-        builder.failure_count = Builder.FAILURE_THRESHOLD
+        builder.failure_count = (
+            Builder.RESET_THRESHOLD * Builder.RESET_FAILURE_THRESHOLD)
         builder.currentjob.reset()
         self.layer.txn.commit()
 
-        d = scanner.singleCycle()
+        yield scanner.singleCycle()
+        self.assertFalse(builder.builderok)
 
-        def scan_finished(ignored):
-            self.assertFalse(builder.builderok)
-
-        return d.addCallback(scan_finished)
-
+    @defer.inlineCallbacks
     def test_fail_to_resume_slave_resets_job(self):
         # If an attempt to resume and dispatch a slave fails, it should
         # reset the job via job.reset()
@@ -382,19 +377,15 @@ class TestSlaveScannerScan(TestCase):
         job = removeSecurityProxy(builder._findBuildCandidate())
         job.virtualized = True
         builder.virtualized = True
-        d = scanner.singleCycle()
+        yield scanner.singleCycle()
 
-        def check(ignored):
-            # The failure_count will have been incremented on the
-            # builder, we can check that to see that a dispatch attempt
-            # did indeed occur.
-            self.assertEqual(1, builder.failure_count)
-            # There should also be no builder set on the job.
-            self.assertTrue(job.builder is None)
-            build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
-            self.assertEqual(build.status, BuildStatus.NEEDSBUILD)
-
-        return d.addCallback(check)
+        # The failure_count will have been incremented on the builder, we
+        # can check that to see that a dispatch attempt did indeed occur.
+        self.assertEqual(1, builder.failure_count)
+        # There should also be no builder set on the job.
+        self.assertIsNone(job.builder)
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
+        self.assertEqual(build.status, BuildStatus.NEEDSBUILD)
 
     @defer.inlineCallbacks
     def test_cancelling_a_build(self):
@@ -573,47 +564,88 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.build = self.factory.makeSourcePackageRecipeBuild()
         self.buildqueue = self.build.queueBuild()
         self.buildqueue.markAsBuilding(self.builder)
+        self.interactor = BuilderInteractor(self.builder)
 
+    def _assessFailureCounts(self, fail_notes):
+        # Helper for assessFailureCounts boilerplate.
+        return assessFailureCounts(
+            BufferLogger(), self.interactor, Exception(fail_notes))
+
+    @defer.inlineCallbacks
     def test_equal_failures_reset_job(self):
         self.builder.gotFailure()
         self.builder.getCurrentBuildFarmJob().gotFailure()
 
-        assessFailureCounts(self.builder, "failnotes")
+        yield self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
 
+    @defer.inlineCallbacks
     def test_job_failing_more_than_builder_fails_job(self):
         self.builder.getCurrentBuildFarmJob().gotFailure()
         self.builder.getCurrentBuildFarmJob().gotFailure()
         self.builder.gotFailure()
 
-        assessFailureCounts(self.builder, "failnotes")
+        yield self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.FAILEDTOBUILD)
         self.assertEqual(0, self.builder.failure_count)
 
-    def test_builder_failing_more_than_job_but_under_fail_threshold(self):
-        self.builder.failure_count = Builder.FAILURE_THRESHOLD - 1
+    @defer.inlineCallbacks
+    def test_virtual_builder_reset_thresholds(self):
+        self.builder.virtualized = True
+        self.patch(self.interactor, "resumeSlaveHost", FakeMethod())
 
-        assessFailureCounts(self.builder, "failnotes")
+        for failure_count in range(
+            Builder.RESET_THRESHOLD - 1,
+            Builder.RESET_THRESHOLD * Builder.RESET_FAILURE_THRESHOLD):
+            self.builder.failure_count = failure_count
+            yield self._assessFailureCounts("failnotes")
+            self.assertIs(None, self.builder.currentjob)
+            self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
+            self.assertEqual(
+                failure_count // Builder.RESET_THRESHOLD,
+                self.interactor.resumeSlaveHost.call_count)
+            self.assertTrue(self.builder.builderok)
+
+        self.builder.failure_count = (
+            Builder.RESET_THRESHOLD * Builder.RESET_FAILURE_THRESHOLD)
+        yield self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
-        self.assertTrue(self.builder.builderok)
-
-    def test_builder_failing_more_than_job_but_over_fail_threshold(self):
-        self.builder.failure_count = Builder.FAILURE_THRESHOLD
-
-        assessFailureCounts(self.builder, "failnotes")
-        self.assertIs(None, self.builder.currentjob)
-        self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
+        self.assertEqual(
+            Builder.RESET_FAILURE_THRESHOLD - 1,
+            self.interactor.resumeSlaveHost.call_count)
         self.assertFalse(self.builder.builderok)
         self.assertEqual("failnotes", self.builder.failnotes)
 
+    @defer.inlineCallbacks
+    def test_non_virtual_builder_reset_thresholds(self):
+        self.builder.virtualized = False
+        self.patch(self.interactor, "resumeSlaveHost", FakeMethod())
+
+        self.builder.failure_count = Builder.RESET_THRESHOLD - 1
+        yield self._assessFailureCounts("failnotes")
+        self.assertIs(None, self.builder.currentjob)
+        self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
+        self.assertEqual(0, self.interactor.resumeSlaveHost.call_count)
+        self.assertTrue(self.builder.builderok)
+
+        self.builder.failure_count = Builder.RESET_THRESHOLD
+        yield self._assessFailureCounts("failnotes")
+        self.assertIs(None, self.builder.currentjob)
+        self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
+        self.assertEqual(0, self.interactor.resumeSlaveHost.call_count)
+        self.assertFalse(self.builder.builderok)
+        self.assertEqual("failnotes", self.builder.failnotes)
+
+    @defer.inlineCallbacks
     def test_builder_failing_with_no_attached_job(self):
         self.buildqueue.reset()
-        self.builder.failure_count = Builder.FAILURE_THRESHOLD
+        self.builder.failure_count = (
+            Builder.RESET_THRESHOLD * Builder.RESET_FAILURE_THRESHOLD)
 
-        assessFailureCounts(self.builder, "failnotes")
+        yield self._assessFailureCounts("failnotes")
         self.assertFalse(self.builder.builderok)
         self.assertEqual("failnotes", self.builder.failnotes)
 
