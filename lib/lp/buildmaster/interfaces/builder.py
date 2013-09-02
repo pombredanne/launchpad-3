@@ -38,7 +38,6 @@ from zope.interface import (
     )
 from zope.schema import (
     Bool,
-    Field,
     Int,
     Text,
     TextLine,
@@ -177,15 +176,6 @@ class IBuilder(IHasOwner):
 
     def failBuilder(reason):
         """Mark builder as failed for a given reason."""
-
-    def getBuildQueue():
-        """Return a `BuildQueue` if there's an active job on this builder.
-
-        :return: A BuildQueue, or None.
-        """
-
-    def getCurrentBuildFarmJob():
-        """Return a `BuildFarmJob` for this builder."""
 
     def acquireBuildCandidate():
         """Acquire a build candidate in an atomic fashion.

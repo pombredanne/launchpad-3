@@ -578,7 +578,7 @@ class TestFailureAssessments(TestCaseWithFactory):
     @defer.inlineCallbacks
     def test_equal_failures_reset_job(self):
         self.builder.gotFailure()
-        self.builder.getCurrentBuildFarmJob().gotFailure()
+        self.build.gotFailure()
 
         yield self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
@@ -586,8 +586,8 @@ class TestFailureAssessments(TestCaseWithFactory):
 
     @defer.inlineCallbacks
     def test_job_failing_more_than_builder_fails_job(self):
-        self.builder.getCurrentBuildFarmJob().gotFailure()
-        self.builder.getCurrentBuildFarmJob().gotFailure()
+        self.build.gotFailure()
+        self.build.gotFailure()
         self.builder.gotFailure()
 
         yield self._assessFailureCounts("failnotes")

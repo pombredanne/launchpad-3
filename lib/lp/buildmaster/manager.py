@@ -212,7 +212,7 @@ class SlaveScanner:
             by resuming a slave host, so that there is no need to update its
             status.
         """
-        buildqueue = self.builder.getBuildQueue()
+        buildqueue = self.builder.currentjob
         if not buildqueue:
             self.date_cancel = None
             defer.returnValue(False)
@@ -284,7 +284,7 @@ class SlaveScanner:
             transaction.commit()
 
             # See if we think there's an active build on the builder.
-            buildqueue = self.builder.getBuildQueue()
+            buildqueue = self.builder.currentjob
 
             # Scan the slave and get the logtail, or collect the build if
             # it's ready.  Yes, "updateBuild" is a bad name.
