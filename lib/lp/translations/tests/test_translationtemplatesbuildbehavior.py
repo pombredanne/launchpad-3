@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for TranslationTemplatesBuildBehavior."""
@@ -20,12 +20,13 @@ from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
-from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import (
     SlaveTestHelpers,
     WaitingSlave,
     )
 from lp.services.config import config
+from lp.services.database.interfaces import IStore
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.utils import copy_and_close
 from lp.testing import TestCaseWithFactory
@@ -53,9 +54,6 @@ class FakeBuildQueue:
         self.specific_job = behavior.buildfarmjob
         self.date_started = datetime.datetime.now(pytz.UTC)
         self.destroySelf = FakeMethod()
-
-    def getLogFileName(self):
-        return self.specific_job.getLogFileName()
 
 
 class MakeBehaviorMixin(object):
@@ -103,7 +101,13 @@ class TestTranslationTemplatesBuildBehavior(
     def _getBuildQueueItem(self, behavior):
         """Get `BuildQueue` for an `IBuildFarmJobBehavior`."""
         job = removeSecurityProxy(behavior.buildfarmjob.job)
-        return getUtility(IBuildQueueSet).getByJob(job.id)
+        return IStore(BuildQueue).find(BuildQueue, job=job).one()
+
+    def test_getLogFileName(self):
+        # Each job has a unique log file name.
+        b1 = self.makeBehavior()
+        b2 = self.makeBehavior()
+        self.assertNotEqual(b1.getLogFileName(), b2.getLogFileName())
 
     def test_dispatchBuildToSlave_no_chroot_fails(self):
         # dispatchBuildToSlave will fail if the chroot does not exist.

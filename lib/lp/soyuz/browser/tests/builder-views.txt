@@ -207,7 +207,8 @@ all the 'private' information is exposed.
 
     >>> import datetime
     >>> import pytz
-    >>> private_job.setDateStarted(
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(private_job.job).date_started = (
     ...     datetime.datetime.now(pytz.UTC) - datetime.timedelta(10))
     >>> print admin_view.current_build_duration
     10 days...
@@ -364,7 +365,6 @@ We change the sampledata to create a pending build in for the 386
 processor queue in the PPA category.
 
     >>> import datetime
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> login('foo.bar@canonical.com')
     >>> any_failed_build = cprov.archive.getBuildRecords(
     ...     build_state=BuildStatus.FAILEDTOBUILD)[0]

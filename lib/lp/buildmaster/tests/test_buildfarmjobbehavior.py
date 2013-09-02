@@ -24,7 +24,6 @@ from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
-from lp.services.database.constants import UTC_NOW
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
@@ -69,51 +68,13 @@ class TestBuildFarmJobBehaviorBase(TestCaseWithFactory):
         return spr.createBuild(
             distroarchseries=distroarchseries, pocket=pocket, archive=archive)
 
-    def _makeBuildQueue(self):
-        """Create a `BuildQueue` object."""
-        return self.factory.makeSourcePackageRecipeBuildJob()
-
-    def _changeBuildFarmJobName(self, buildfarmjob):
-        """Manipulate `buildfarmjob` so that its `getName` changes."""
-        name = buildfarmjob.getName() + 'x'
-        removeSecurityProxy(buildfarmjob).getName = FakeMethod(result=name)
-
-    def test_cookie_baseline(self):
+    def test_getBuildCookie(self):
         buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
-
-        cookie = buildfarmjob.generateSlaveBuildCookie()
-
-        self.assertNotEqual(None, cookie)
-        self.assertNotEqual(0, len(cookie))
-        self.assertTrue(len(cookie) > 10)
-
-        self.assertEqual(cookie, buildfarmjob.generateSlaveBuildCookie())
-
-    def test_cookie_includes_job_name(self):
-        # The cookie is a hash that includes the job's name.
-        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
-        cookie = buildfarmjob.generateSlaveBuildCookie()
-        self._changeBuildFarmJobName(removeSecurityProxy(buildfarmjob))
-
-        self.assertNotEqual(cookie, buildfarmjob.generateSlaveBuildCookie())
-        self.assertNotIn(buildfarmjob.getName(), cookie)
-
-    def test_cookie_includes_more_than_name(self):
-        # Two build jobs with the same name still get different cookies.
-        buildfarmjob1 = self.factory.makeTranslationTemplatesBuildJob()
-        buildfarmjob1 = removeSecurityProxy(buildfarmjob1)
-        buildfarmjob2 = self.factory.makeTranslationTemplatesBuildJob(
-            branch=buildfarmjob1.branch)
-        buildfarmjob2 = removeSecurityProxy(buildfarmjob2)
-
-        name_factory = FakeMethod(result="same-name")
-        buildfarmjob1.getName = name_factory
-        buildfarmjob2.getName = name_factory
-
-        self.assertEqual(buildfarmjob1.getName(), buildfarmjob2.getName())
-        self.assertNotEqual(
-            buildfarmjob1.generateSlaveBuildCookie(),
-            buildfarmjob2.generateSlaveBuildCookie())
+        build = buildfarmjob.build
+        behavior = self._makeBehavior(buildfarmjob)
+        self.assertEqual(
+            '%s-%s' % (build.job_type.name, build.id),
+            behavior.getBuildCookie())
 
     def test_getUploadDirLeaf(self):
         # getUploadDirLeaf returns the current time, followed by the build
@@ -171,8 +132,7 @@ class TestHandleStatusMixin:
         # For the moment, we require a builder for the build so that
         # handleStatus_OK can get a reference to the slave.
         self.builder = self.factory.makeBuilder()
-        self.build.buildqueue_record.builder = self.builder
-        self.build.buildqueue_record.setDateStarted(UTC_NOW)
+        self.build.buildqueue_record.markAsBuilding(self.builder)
         self.slave = WaitingSlave('BuildStatus.OK')
         self.slave.valid_file_hashes.append('test_file_hash')
         self.interactor = BuilderInteractor(self.builder, self.slave)

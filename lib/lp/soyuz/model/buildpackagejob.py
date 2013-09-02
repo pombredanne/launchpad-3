@@ -103,33 +103,6 @@ class BuildPackageJob(BuildFarmJobOld, Storm):
 
         return score
 
-    def getLogFileName(self):
-        """See `IBuildPackageJob`."""
-        sourcename = self.build.source_package_release.name
-        version = self.build.source_package_release.version
-        # we rely on previous storage of current buildstate
-        # in the state handling methods.
-        state = self.build.status.name
-
-        dar = self.build.distro_arch_series
-        distroname = dar.distroseries.distribution.name
-        distroseriesname = dar.distroseries.name
-        archname = dar.architecturetag
-
-        # logfilename format:
-        # buildlog_<DISTRIBUTION>_<DISTROSeries>_<ARCHITECTURE>_\
-        # <SOURCENAME>_<SOURCEVERSION>_<BUILDSTATE>.txt
-        # as:
-        # buildlog_ubuntu_dapper_i386_foo_1.0-ubuntu0_FULLYBUILT.txt
-        # it fix request from bug # 30617
-        return ('buildlog_%s-%s-%s.%s_%s_%s.txt' % (
-            distroname, distroseriesname, archname, sourcename, version,
-            state))
-
-    def getName(self):
-        """See `IBuildPackageJob`."""
-        return self.build.source_package_release.name
-
     @property
     def processor(self):
         """See `IBuildFarmJob`."""
@@ -233,7 +206,7 @@ class BuildPackageJob(BuildFarmJobOld, Storm):
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
         distroseries = build.distro_arch_series.distroseries
         if (
-            build.pocket == PackagePublishingPocket.SECURITY or 
+            build.pocket == PackagePublishingPocket.SECURITY or
             (distroseries.status == SeriesStatus.OBSOLETE and
                 not build.archive.permit_obsolete_series_uploads)):
             # We never build anything in the security pocket, or for obsolete

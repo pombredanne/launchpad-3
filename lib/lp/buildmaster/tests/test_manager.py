@@ -30,6 +30,9 @@ from lp.buildmaster.interactor import (
     BuilderSlave,
     )
 from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    IBuildFarmJobBehavior,
+    )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.manager import (
     assessFailureCounts,
@@ -407,7 +410,8 @@ class TestSlaveScannerScan(TestCase):
         transaction.commit()
         login(ANONYMOUS)
         buildqueue = builder.currentjob
-        slave.build_id = buildqueue.specific_job.generateSlaveBuildCookie()
+        behavior = IBuildFarmJobBehavior(buildqueue.specific_job)
+        slave.build_id = behavior.getBuildCookie()
         self.assertBuildingJob(buildqueue, builder)
 
         # Now set the build to CANCELLING.
@@ -574,7 +578,7 @@ class TestFailureAssessments(TestCaseWithFactory):
     @defer.inlineCallbacks
     def test_equal_failures_reset_job(self):
         self.builder.gotFailure()
-        self.builder.getCurrentBuildFarmJob().gotFailure()
+        self.build.gotFailure()
 
         yield self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
@@ -582,8 +586,8 @@ class TestFailureAssessments(TestCaseWithFactory):
 
     @defer.inlineCallbacks
     def test_job_failing_more_than_builder_fails_job(self):
-        self.builder.getCurrentBuildFarmJob().gotFailure()
-        self.builder.getCurrentBuildFarmJob().gotFailure()
+        self.build.gotFailure()
+        self.build.gotFailure()
         self.builder.gotFailure()
 
         yield self._assessFailureCounts("failnotes")

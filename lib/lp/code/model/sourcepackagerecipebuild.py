@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation code for source package builds."""
@@ -470,9 +470,6 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOld, Storm):
         store = IMasterStore(cls)
         store.add(specific_job)
         return specific_job
-
-    def getName(self):
-        return "%s-%s" % (self.id, self.build_id)
 
     def score(self):
         return 2505 + self.build.archive.relative_build_score

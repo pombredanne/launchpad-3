@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -96,23 +96,6 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
 
         self.assertEquals(expected_processor, buildqueue.processor)
 
-    def test_getName(self):
-        # Each job gets a unique name.
-        other_job = self.jobset.create(self.branch)
-        self.assertNotEqual(self.specific_job.getName(), other_job.getName())
-
-    def test_getTitle(self):
-        self.jobset.create(self.branch)
-        self.assertEqual(
-            '%s translation templates build' % self.branch.bzr_identity,
-            self.specific_job.getTitle())
-
-    def test_getLogFileName(self):
-        # Each job has a unique log file name.
-        other_job = self.jobset.create(self.branch)
-        self.assertNotEqual(
-            self.specific_job.getLogFileName(), other_job.getLogFileName())
-
     def test_score(self):
         # For now, these jobs always score themselves at 2510.  In the
         # future however the scoring system is to be revisited.
@@ -122,7 +105,7 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         # TranslationTemplatesBuildJob has its own customized cleanup
         # behaviour, since it's actually a BranchJob.
         job = removeSecurityProxy(self.specific_job.job)
-        buildqueue = getUtility(IBuildQueueSet).getByJob(job)
+        buildqueue = IStore(BuildQueue).find(BuildQueue, job=job).one()
 
         job_id = job.id
         store = Store.of(job)
