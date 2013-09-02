@@ -88,9 +88,6 @@ class IBuildQueue(Interface):
     def destroySelf():
         """Delete this entry from the database."""
 
-    def getLogFileName():
-        """Get the preferred filename for the buildlog of this build."""
-
     def markAsBuilding(builder):
         """Set this queue item to a 'building' state."""
 

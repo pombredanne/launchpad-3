@@ -9,7 +9,6 @@ __all__ = [
 
 from datetime import timedelta
 import logging
-import re
 
 from storm.store import Store
 from zope.component import getUtility
@@ -60,19 +59,12 @@ class TranslationTemplatesBuildJob(BuildFarmJobOld, BranchJobDerived):
 
     duration_estimate = timedelta(seconds=10)
 
-    unsafe_chars = '[^a-zA-Z0-9_+-]'
-
     def score(self):
         """See `IBuildFarmJob`."""
         # Hard-code score for now.  Most PPA jobs start out at 2505;
         # TranslationTemplateBuildJobs are fast so we want them at a
         # higher priority.
         return HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE
-
-    def getLogFileName(self):
-        """See `IBuildFarmJob`."""
-        sanitized_name = re.sub(self.unsafe_chars, '_', self.getName())
-        return "translationtemplates_%s" % sanitized_name
 
     def getName(self):
         """See `IBuildFarmJob`."""

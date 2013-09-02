@@ -54,9 +54,6 @@ class FakeBuildQueue:
         self.date_started = datetime.datetime.now(pytz.UTC)
         self.destroySelf = FakeMethod()
 
-    def getLogFileName(self):
-        return self.specific_job.getLogFileName()
-
 
 class MakeBehaviorMixin(object):
     """Provide common test methods."""
@@ -104,6 +101,12 @@ class TestTranslationTemplatesBuildBehavior(
         """Get `BuildQueue` for an `IBuildFarmJobBehavior`."""
         job = removeSecurityProxy(behavior.buildfarmjob.job)
         return getUtility(IBuildQueueSet).getByJob(job.id)
+
+    def test_getLogFileName(self):
+        # Each job has a unique log file name.
+        b1 = self.makeBehavior()
+        b2 = self.makeBehavior()
+        self.assertNotEqual(b1.getLogFileName(), b2.getLogFileName())
 
     def test_dispatchBuildToSlave_no_chroot_fails(self):
         # dispatchBuildToSlave will fail if the chroot does not exist.

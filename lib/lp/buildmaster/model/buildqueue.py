@@ -202,12 +202,6 @@ class BuildQueue(SQLBase):
         # the job at hand to calculate the score as appropriate.
         self.lastscore = self.specific_job.score()
 
-    def getLogFileName(self):
-        """See `IBuildQueue`."""
-        # Allow the `IBuildFarmJob` instance with the data/logic specific to
-        # the job at hand to calculate the log file name as appropriate.
-        return self.specific_job.getLogFileName()
-
     def markAsBuilding(self, builder):
         """See `IBuildQueue`."""
         self.builder = builder

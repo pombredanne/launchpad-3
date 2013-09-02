@@ -75,9 +75,6 @@ class IBuildFarmJobOld(Interface):
     def score():
         """Calculate a job score appropriate for the job type in question."""
 
-    def getLogFileName():
-        """The preferred file name for this job's log."""
-
     def getName():
         """An appropriate name for this job."""
 

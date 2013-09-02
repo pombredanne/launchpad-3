@@ -13,6 +13,7 @@ __all__ = [
 
 import logging
 import os
+import re
 import tempfile
 
 import transaction
@@ -43,6 +44,14 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
     # Filename for the tarball of templates that the slave builds.
     templates_tarball_path = 'translation-templates.tar.gz'
+
+    unsafe_chars = '[^a-zA-Z0-9_+-]'
+
+    def getLogFileName(self):
+        """See `IBuildFarmJob`."""
+        sanitized_name = re.sub(
+            self.unsafe_chars, '_', self.buildfarmjob.getName())
+        return "translationtemplates_%s" % sanitized_name
 
     def dispatchBuildToSlave(self, build_queue_item, logger):
         """See `IBuildFarmJobBehavior`."""

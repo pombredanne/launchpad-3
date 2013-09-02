@@ -37,6 +37,29 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         logger.info("startBuild(%s, %s, %s, %s)", self._builder.url,
                     spr.name, spr.version, self.build.pocket.title)
 
+    def getLogFileName(self):
+        """See `IBuildPackageJob`."""
+        sourcename = self.build.source_package_release.name
+        version = self.build.source_package_release.version
+        # we rely on previous storage of current buildstate
+        # in the state handling methods.
+        state = self.build.status.name
+
+        dar = self.build.distro_arch_series
+        distroname = dar.distroseries.distribution.name
+        distroseriesname = dar.distroseries.name
+        archname = dar.architecturetag
+
+        # logfilename format:
+        # buildlog_<DISTRIBUTION>_<DISTROSeries>_<ARCHITECTURE>_\
+        # <SOURCENAME>_<SOURCEVERSION>_<BUILDSTATE>.txt
+        # as:
+        # buildlog_ubuntu_dapper_i386_foo_1.0-ubuntu0_FULLYBUILT.txt
+        # it fix request from bug # 30617
+        return ('buildlog_%s-%s-%s.%s_%s_%s.txt' % (
+            distroname, distroseriesname, archname, sourcename, version,
+            state))
+
     def _buildFilemapStructure(self, ignored, logger):
         # Build filemap structure with the files required in this build
         # and send them to the slave.
