@@ -75,9 +75,6 @@ class IBuildFarmJobOld(Interface):
     def score():
         """Calculate a job score appropriate for the job type in question."""
 
-    def getName():
-        """An appropriate name for this job."""
-
     def jobStarted():
         """'Job started' life cycle event, handle as appropriate."""
 

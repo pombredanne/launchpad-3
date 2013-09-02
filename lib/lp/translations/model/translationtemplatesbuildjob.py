@@ -20,7 +20,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
-from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
@@ -65,11 +64,6 @@ class TranslationTemplatesBuildJob(BuildFarmJobOld, BranchJobDerived):
         # TranslationTemplateBuildJobs are fast so we want them at a
         # higher priority.
         return HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE
-
-    def getName(self):
-        """See `IBuildFarmJob`."""
-        buildqueue = getUtility(IBuildQueueSet).getByJob(self.job)
-        return '%s-%d' % (self.branch.name, buildqueue.id)
 
     def cleanUp(self):
         """See `IBuildFarmJob`."""

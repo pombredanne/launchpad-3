@@ -75,10 +75,6 @@ class BuildFarmJobOld:
         """See `IBuildFarmJobOld`."""
         raise NotImplementedError
 
-    def getName(self):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
     def cleanUp(self):
         """See `IBuildFarmJob`.
 

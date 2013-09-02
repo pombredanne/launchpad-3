@@ -96,11 +96,6 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
 
         self.assertEquals(expected_processor, buildqueue.processor)
 
-    def test_getName(self):
-        # Each job gets a unique name.
-        other_job = self.jobset.create(self.branch)
-        self.assertNotEqual(self.specific_job.getName(), other_job.getName())
-
     def test_score(self):
         # For now, these jobs always score themselves at 2510.  In the
         # future however the scoring system is to be revisited.

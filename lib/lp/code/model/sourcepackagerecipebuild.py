@@ -471,8 +471,5 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOld, Storm):
         store.add(specific_job)
         return specific_job
 
-    def getName(self):
-        return "%s-%s" % (self.id, self.build_id)
-
     def score(self):
         return 2505 + self.build.archive.relative_build_score

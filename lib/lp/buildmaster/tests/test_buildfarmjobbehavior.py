@@ -69,16 +69,7 @@ class TestBuildFarmJobBehaviorBase(TestCaseWithFactory):
         return spr.createBuild(
             distroarchseries=distroarchseries, pocket=pocket, archive=archive)
 
-    def _makeBuildQueue(self):
-        """Create a `BuildQueue` object."""
-        return self.factory.makeSourcePackageRecipeBuildJob()
-
-    def _changeBuildFarmJobName(self, buildfarmjob):
-        """Manipulate `buildfarmjob` so that its `getName` changes."""
-        name = buildfarmjob.getName() + 'x'
-        removeSecurityProxy(buildfarmjob).getName = FakeMethod(result=name)
-
-    def test_cookie_baseline(self):
+    def test_getBuildCookie(self):
         buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
         build = buildfarmjob.build
         behavior = self._makeBehavior(buildfarmjob)
