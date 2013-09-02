@@ -319,7 +319,7 @@ class BuilderInteractor(object):
         """See `IBuildFarmJobBehavior`."""
         if self._current_build_behavior is None:
             raise CorruptBuildCookie('No job assigned to builder')
-        good_cookie = self._current_build_behavior.generateSlaveBuildCookie()
+        good_cookie = self._current_build_behavior.getBuildCookie()
         if slave_build_cookie != good_cookie:
             raise CorruptBuildCookie("Invalid slave build cookie.")
 

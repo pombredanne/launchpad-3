@@ -80,44 +80,11 @@ class TestBuildFarmJobBehaviorBase(TestCaseWithFactory):
 
     def test_cookie_baseline(self):
         buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
+        build = buildfarmjob.build
         behavior = self._makeBehavior(buildfarmjob)
-
-        cookie = behavior.generateSlaveBuildCookie()
-
-        self.assertNotEqual(None, cookie)
-        self.assertNotEqual(0, len(cookie))
-        self.assertTrue(len(cookie) > 10)
-
-        self.assertEqual(cookie, behavior.generateSlaveBuildCookie())
-
-    def test_cookie_includes_job_name(self):
-        # The cookie is a hash that includes the job's name.
-        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
-        behavior = self._makeBehavior(buildfarmjob)
-        cookie = behavior.generateSlaveBuildCookie()
-        self._changeBuildFarmJobName(removeSecurityProxy(buildfarmjob))
-
-        self.assertNotEqual(cookie, behavior.generateSlaveBuildCookie())
-        self.assertNotIn(buildfarmjob.getName(), cookie)
-
-    def test_cookie_includes_more_than_name(self):
-        # Two build jobs with the same name still get different cookies.
-        buildfarmjob1 = self.factory.makeTranslationTemplatesBuildJob()
-        buildfarmjob1 = removeSecurityProxy(buildfarmjob1)
-        behavior1 = self._makeBehavior(buildfarmjob1)
-        buildfarmjob2 = self.factory.makeTranslationTemplatesBuildJob(
-            branch=buildfarmjob1.branch)
-        buildfarmjob2 = removeSecurityProxy(buildfarmjob2)
-        behavior2 = self._makeBehavior(buildfarmjob2)
-
-        name_factory = FakeMethod(result="same-name")
-        buildfarmjob1.getName = name_factory
-        buildfarmjob2.getName = name_factory
-
-        self.assertEqual(buildfarmjob1.getName(), buildfarmjob2.getName())
-        self.assertNotEqual(
-            behavior1.generateSlaveBuildCookie(),
-            behavior2.generateSlaveBuildCookie())
+        self.assertEqual(
+            '%s-%s' % (build.job_type.name, build.id),
+            behavior.getBuildCookie())
 
     def test_getUploadDirLeaf(self):
         # getUploadDirLeaf returns the current time, followed by the build

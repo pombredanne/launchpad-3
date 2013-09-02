@@ -319,8 +319,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
             self.assertEquals(["ensurepresent", "build"],
                               [call[0] for call in slave.call_log])
             build_args = slave.call_log[1][1:]
-            self.assertEquals(
-                build_args[0], job.generateSlaveBuildCookie())
+            self.assertEquals(build_args[0], job.getBuildCookie())
             self.assertEquals(build_args[1], "sourcepackagerecipe")
             self.assertEquals(build_args[3], [])
             distroarchseries = job.build.distroseries.architectures[0]

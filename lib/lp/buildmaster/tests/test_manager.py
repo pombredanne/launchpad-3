@@ -411,7 +411,7 @@ class TestSlaveScannerScan(TestCase):
         login(ANONYMOUS)
         buildqueue = builder.currentjob
         behavior = IBuildFarmJobBehavior(buildqueue.specific_job)
-        slave.build_id = behavior.generateSlaveBuildCookie()
+        slave.build_id = behavior.getBuildCookie()
         self.assertBuildingJob(buildqueue, builder)
 
         # Now set the build to CANCELLING.

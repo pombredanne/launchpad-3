@@ -64,8 +64,6 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         d = self._interactor.slave.cacheFile(logger, chroot)
 
         def got_cache_file(ignored):
-            cookie = self.generateSlaveBuildCookie()
-
             args = {
                 'arch_tag': self._getDistroArchSeries().architecturetag,
                 'branch_url': self.buildfarmjob.branch.composePublicURL(),
@@ -74,7 +72,8 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             filemap = {}
 
             return self._interactor.slave.build(
-                cookie, self.build_type, chroot_sha1, filemap, args)
+                self.getBuildCookie(), self.build_type, chroot_sha1, filemap,
+                args)
         return d.addCallback(got_cache_file)
 
     def _getChroot(self):

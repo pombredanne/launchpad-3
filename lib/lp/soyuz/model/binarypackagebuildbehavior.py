@@ -95,7 +95,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             # obtaining results so we know we are referring to the right
             # database object in subsequent runs.
             buildid = "%s-%s" % (self.build.id, build_queue_id)
-            cookie = self.generateSlaveBuildCookie()
+            cookie = self.getBuildCookie()
             chroot_sha1 = chroot.content.sha1
             logger.debug(
                 "Initiating build %s on %s" % (buildid, self._builder.url))
