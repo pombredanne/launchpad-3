@@ -147,8 +147,11 @@ class BuildFarmJobBehaviorBase:
     # in this list.
     ALLOWED_STATUS_NOTIFICATIONS = ['OK', 'PACKAGEFAIL', 'CHROOTFAIL']
 
-    def handleStatus(self, status, slave_status):
+    def handleStatus(self, bq, status, slave_status):
         """See `IBuildFarmJobBehavior`."""
+        if bq != self.build.buildqueue_record:
+            raise AssertionError(
+                "%r != %r" % (bq, self.build.buildqueue_record))
         from lp.buildmaster.manager import BUILDD_MANAGER_LOG_NAME
         logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
         notify = status in self.ALLOWED_STATUS_NOTIFICATIONS
