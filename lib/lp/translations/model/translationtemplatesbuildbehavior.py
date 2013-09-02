@@ -49,9 +49,9 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
     def getLogFileName(self):
         """See `IBuildFarmJob`."""
-        sanitized_name = re.sub(
-            self.unsafe_chars, '_', self.buildfarmjob.getName())
-        return "translationtemplates_%s" % sanitized_name
+        safe_name = re.sub(
+            self.unsafe_chars, '_', self.buildfarmjob.branch.unique_name)
+        return "translationtemplates_%s_%d.txt" % (safe_name, self.build.id)
 
     def dispatchBuildToSlave(self, build_queue_item, logger):
         """See `IBuildFarmJobBehavior`."""
@@ -88,7 +88,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         """See `IBuildFarmJobBehavior`."""
         logger.info(
             "Starting templates build %s for %s." % (
-            self.buildfarmjob.getName(),
+            self.getBuildCookie(),
             self.buildfarmjob.branch.bzr_identity))
 
     def _readTarball(self, buildqueue, filemap, logger):
@@ -140,10 +140,10 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         from lp.buildmaster.manager import BUILDD_MANAGER_LOG_NAME
         logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
         logger.info(
-            "Templates generation job %s for %s finished with status %s." % (
-            queue_item.specific_job.getName(),
+            "Processing finished %s build %s (%s) from builder %s" % (
+            status, self.getBuildCookie(),
             queue_item.specific_job.branch.bzr_identity,
-            status))
+            queue_item.builder.name))
 
         if status == 'OK':
             self.build.updateStatus(
