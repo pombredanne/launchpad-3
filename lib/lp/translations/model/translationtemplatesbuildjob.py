@@ -79,10 +79,6 @@ class TranslationTemplatesBuildJob(BuildFarmJobOld, BranchJobDerived):
         buildqueue = getUtility(IBuildQueueSet).getByJob(self.job)
         return '%s-%d' % (self.branch.name, buildqueue.id)
 
-    def getTitle(self):
-        """See `IBuildFarmJob`."""
-        return '%s translation templates build' % self.branch.bzr_identity
-
     def cleanUp(self):
         """See `IBuildFarmJob`."""
         # This class is not itself database-backed.  But it delegates to

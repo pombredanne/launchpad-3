@@ -87,10 +87,6 @@ class BuildFarmJobOld:
         """See `IBuildFarmJobOld`."""
         raise NotImplementedError
 
-    def getTitle(self):
-        """See `IBuildFarmJob`."""
-        return self.build.title
-
     def generateSlaveBuildCookie(self):
         """See `IBuildFarmJobOld`."""
         buildqueue = getUtility(IBuildQueueSet).getByJob(self.job)
