@@ -133,8 +133,7 @@ class TestHandleStatusMixin:
         # For the moment, we require a builder for the build so that
         # handleStatus_OK can get a reference to the slave.
         self.builder = self.factory.makeBuilder()
-        self.build.buildqueue_record.builder = self.builder
-        self.build.buildqueue_record.setDateStarted(UTC_NOW)
+        self.build.buildqueue_record.markAsBuilding(self.builder)
         self.slave = WaitingSlave('BuildStatus.OK')
         self.slave.valid_file_hashes.append('test_file_hash')
         self.interactor = BuilderInteractor(self.builder, self.slave)

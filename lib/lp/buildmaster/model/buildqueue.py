@@ -222,10 +222,6 @@ class BuildQueue(SQLBase):
         self.specific_job.jobCancel()
         self.destroySelf()
 
-    def setDateStarted(self, timestamp):
-        """See `IBuildQueue`."""
-        self.job.date_started = timestamp
-
     def _getFreeBuildersCount(self, processor, virtualized):
         """How many builders capable of running jobs for the given processor
         and virtualization combination are idle/free at present?"""

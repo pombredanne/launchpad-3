@@ -132,7 +132,7 @@ def check_mintime_to_builder(test, bq, min_time):
 def set_remaining_time_for_running_job(bq, remainder):
     """Set remaining running time for job."""
     offset = bq.estimated_duration.seconds - remainder
-    bq.setDateStarted(
+    removeSecurityProxy(bq.job).date_started = (
         datetime.now(utc) - timedelta(seconds=offset))
 
 

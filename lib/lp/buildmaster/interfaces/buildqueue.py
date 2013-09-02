@@ -101,9 +101,6 @@ class IBuildQueue(Interface):
         IBuildFarmJob, title=_("Job"),
         description=_("Data and operations common to all build farm jobs."))
 
-    def setDateStarted(timestamp):
-        """Sets the date started property to the given value."""
-
     date_started = Datetime(
         title=_('Start time'),
         description=_('Time when the job started.'))
