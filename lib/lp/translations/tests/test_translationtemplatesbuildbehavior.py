@@ -20,12 +20,13 @@ from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
-from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import (
     SlaveTestHelpers,
     WaitingSlave,
     )
 from lp.services.config import config
+from lp.services.database.interfaces import IStore
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.utils import copy_and_close
 from lp.testing import TestCaseWithFactory
@@ -100,7 +101,7 @@ class TestTranslationTemplatesBuildBehavior(
     def _getBuildQueueItem(self, behavior):
         """Get `BuildQueue` for an `IBuildFarmJobBehavior`."""
         job = removeSecurityProxy(behavior.buildfarmjob.job)
-        return getUtility(IBuildQueueSet).getByJob(job.id)
+        return IStore(BuildQueue).find(BuildQueue, job=job).one()
 
     def test_getLogFileName(self):
         # Each job has a unique log file name.

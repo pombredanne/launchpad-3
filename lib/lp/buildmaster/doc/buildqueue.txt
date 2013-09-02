@@ -163,33 +163,10 @@ respective interface:
     >>> verifyObject(IBuildQueueSet, bqset)
     True
 
-IBuildQueueSet utility is iterable:
-
-    >>> for bq in bqset:
-    ...     bq.id
-    1
-    2
-
-Also provides a getter:
-
-    >>> bqset[1].id
-    1
-
-a 'get' method:
+IBuildQueueSet utility provides a 'get' method:
 
     >>> bqset.get(2).id
     2
-
-and a full counter:
-
-    >>> bqset.count()
-    2
-
-IBuildQueueSet provides a method to retrieve the active job:
-
-    >>> for bq in bqset.getActiveBuildJobs():
-    ...     bq.id, bq.builder.name
-    (1, u'bob')
 
 Another method to fetch the BuildQueue being processed for a builder,
 there should be only one since the builders are sigle-task

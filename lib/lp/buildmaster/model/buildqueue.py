@@ -15,7 +15,6 @@ from datetime import (
     timedelta,
     )
 from itertools import groupby
-import logging
 from operator import attrgetter
 
 import pytz
@@ -24,13 +23,11 @@ from sqlobject import (
     ForeignKey,
     IntCol,
     IntervalCol,
-    SQLObjectNotFound,
     StringCol,
     )
 from zope.component import getSiteManager
 from zope.interface import implements
 
-from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.interfaces.buildqueue import (
@@ -517,44 +514,10 @@ class BuildQueueSet(object):
     """Utility to deal with BuildQueue content class."""
     implements(IBuildQueueSet)
 
-    def __init__(self):
-        self.title = "The Launchpad build queue"
-
-    def __iter__(self):
-        """See `IBuildQueueSet`."""
-        return iter(BuildQueue.select())
-
-    def __getitem__(self, buildqueue_id):
-        """See `IBuildQueueSet`."""
-        try:
-            return BuildQueue.get(buildqueue_id)
-        except SQLObjectNotFound:
-            raise NotFoundError(buildqueue_id)
-
     def get(self, buildqueue_id):
         """See `IBuildQueueSet`."""
         return BuildQueue.get(buildqueue_id)
 
-    def getByJob(self, job):
-        """See `IBuildQueueSet`."""
-        return IStore(BuildQueue).find(BuildQueue, BuildQueue.job == job).one()
-
-    def count(self):
-        """See `IBuildQueueSet`."""
-        return BuildQueue.select().count()
-
     def getByBuilder(self, builder):
         """See `IBuildQueueSet`."""
         return BuildQueue.selectOneBy(builder=builder)
-
-    def getActiveBuildJobs(self):
-        """See `IBuildQueueSet`."""
-        return IStore(BuildQueue).find(
-            BuildQueue,
-            BuildQueue.job == Job.id,
-            # XXX Michael Nelson 2010-02-22 bug=499421
-            # Avoid corrupt build jobs where the builder is None.
-            BuildQueue.builder != None,
-            # status is a property. Let's use _status.
-            Job._status == JobStatus.RUNNING,
-            Job.date_started != None)

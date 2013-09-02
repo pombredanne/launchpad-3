@@ -105,7 +105,7 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         # TranslationTemplatesBuildJob has its own customized cleanup
         # behaviour, since it's actually a BranchJob.
         job = removeSecurityProxy(self.specific_job.job)
-        buildqueue = getUtility(IBuildQueueSet).getByJob(job)
+        buildqueue = IStore(BuildQueue).find(BuildQueue, job=job).one()
 
         job_id = job.id
         store = Store.of(job)

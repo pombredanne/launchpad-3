@@ -15,7 +15,6 @@ from zope.component import (
     getGlobalSiteManager,
     getUtility,
     )
-from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import (
@@ -24,7 +23,6 @@ from lp.buildmaster.enums import (
     )
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
-from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.builder import specific_job_classes
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobMixin
 from lp.buildmaster.model.buildqueue import (
@@ -32,7 +30,6 @@ from lp.buildmaster.model.buildqueue import (
     get_builder_data,
     )
 from lp.services.database.interfaces import IStore
-from lp.services.job.model.job import Job
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -198,40 +195,6 @@ def disable_builders(test, processor, virtualized):
         processor = processor_fam.processors[0].id
     for builder in test.builders[(processor, virtualized)]:
         builder.builderok = False
-
-
-class TestBuildQueueSet(TestCaseWithFactory):
-    """Test for `BuildQueueSet`."""
-
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        super(TestBuildQueueSet, self).setUp()
-        self.buildqueueset = getUtility(IBuildQueueSet)
-
-    def test_baseline(self):
-        verifyObject(IBuildQueueSet, self.buildqueueset)
-
-    def test_getByJob_none(self):
-        job = Job()
-        self.assertEquals(None, self.buildqueueset.getByJob(job))
-
-    def test_getByJob(self):
-        job = Job()
-        buildqueue = BuildQueue(job=job.id)
-        self.assertEquals(buildqueue, self.buildqueueset.getByJob(job))
-
-    def test_getActiveBuildJobs_no_builder_bug499421(self):
-        # An active build queue item that does not have a builder will
-        # not be included in the results and so will not block the
-        # buildd-manager.
-        active_jobs = self.buildqueueset.getActiveBuildJobs()
-        self.assertEqual(1, active_jobs.count())
-        active_job = active_jobs[0]
-        active_job.builder = None
-        self.assertTrue(
-            self.buildqueueset.getActiveBuildJobs().is_empty(),
-            "An active build job must have a builder.")
 
 
 class TestBuildQueueBase(TestCaseWithFactory):
