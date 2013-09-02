@@ -9,7 +9,6 @@ __all__ = [
     ]
 
 import datetime
-import hashlib
 
 import pytz
 from storm.expr import (
@@ -24,12 +23,10 @@ from storm.locals import (
     Storm,
     )
 from storm.store import Store
-from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
     )
-from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import (
     BuildFarmJobType,
@@ -41,7 +38,6 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJobSet,
     IBuildFarmJobSource,
     )
-from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.interfaces import (
     IMasterStore,
@@ -82,26 +78,6 @@ class BuildFarmJobOld:
     def getName(self):
         """See `IBuildFarmJobOld`."""
         raise NotImplementedError
-
-    def generateSlaveBuildCookie(self):
-        """See `IBuildFarmJobOld`."""
-        buildqueue = getUtility(IBuildQueueSet).getByJob(self.job)
-
-        if buildqueue.processor is None:
-            processor = '*'
-        else:
-            processor = repr(buildqueue.processor.id)
-
-        contents = ';'.join([
-            repr(removeSecurityProxy(self.job).id),
-            self.job.date_created.isoformat(),
-            repr(buildqueue.id),
-            buildqueue.job_type.name,
-            processor,
-            self.getName(),
-            ])
-
-        return hashlib.sha1(contents).hexdigest()
 
     def cleanUp(self):
         """See `IBuildFarmJob`.

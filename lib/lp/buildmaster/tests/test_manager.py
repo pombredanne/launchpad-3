@@ -30,6 +30,9 @@ from lp.buildmaster.interactor import (
     BuilderSlave,
     )
 from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    IBuildFarmJobBehavior,
+    )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.manager import (
     assessFailureCounts,
@@ -407,7 +410,8 @@ class TestSlaveScannerScan(TestCase):
         transaction.commit()
         login(ANONYMOUS)
         buildqueue = builder.currentjob
-        slave.build_id = buildqueue.specific_job.generateSlaveBuildCookie()
+        behavior = IBuildFarmJobBehavior(buildqueue.specific_job)
+        slave.build_id = behavior.generateSlaveBuildCookie()
         self.assertBuildingJob(buildqueue, builder)
 
         # Now set the build to CANCELLING.

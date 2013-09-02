@@ -140,13 +140,6 @@ class IBuildFarmJobOld(Interface):
         has entries associated with `job`s.
         """
 
-    def generateSlaveBuildCookie():
-        """Produce a cookie for the slave as a token of the job it's doing.
-
-        The cookie should uniquely represent the current dispatch of this
-        build.
-        """
-
     def cleanUp():
         """Job's finished.  Delete its supporting data."""
 

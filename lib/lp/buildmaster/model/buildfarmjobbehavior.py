@@ -11,6 +11,7 @@ __all__ = [
 
 import datetime
 import gzip
+import hashlib
 import logging
 import os
 import os.path
@@ -19,12 +20,14 @@ import tempfile
 import transaction
 from twisted.internet import defer
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
 from lp.buildmaster.interfaces.builder import BuildSlaveFailure
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.services.config import config
 from lp.services.helpers import filenameToContentType
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
@@ -65,7 +68,23 @@ class BuildFarmJobBehaviorBase:
         pass
 
     def generateSlaveBuildCookie(self):
-        return self.buildfarmjob.generateSlaveBuildCookie()
+        buildqueue = getUtility(IBuildQueueSet).getByJob(self.buildfarmjob.job)
+
+        if buildqueue.processor is None:
+            processor = '*'
+        else:
+            processor = repr(buildqueue.processor.id)
+
+        contents = ';'.join([
+            repr(removeSecurityProxy(self.buildfarmjob.job).id),
+            self.buildfarmjob.job.date_created.isoformat(),
+            repr(buildqueue.id),
+            buildqueue.job_type.name,
+            processor,
+            self.buildfarmjob.getName(),
+            ])
+
+        return hashlib.sha1(contents).hexdigest()
 
     def getBuildCookie(self):
         """See `IPackageBuild`."""

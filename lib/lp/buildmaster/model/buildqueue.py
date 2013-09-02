@@ -189,15 +189,8 @@ class BuildQueue(SQLBase):
 
     def score(self):
         """See `IBuildQueue`."""
-        # Grab any logger instance available.
-        logger = logging.getLogger()
-        name = self.specific_job.getName()
-
         if self.manual:
-            logger.debug(
-                "%s (%d) MANUALLY RESCORED" % (name, self.lastscore))
             return
-
         # Allow the `IBuildFarmJob` instance with the data/logic specific to
         # the job at hand to calculate the score as appropriate.
         self.lastscore = self.specific_job.score()
