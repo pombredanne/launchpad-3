@@ -353,8 +353,8 @@ class TestBuildNotifications(TrialTestCase):
         self.factory = LaunchpadObjectFactory()
 
     def prepareBehavior(self, fake_successful_upload=False):
-        queue_record = self.factory.makeSourcePackageRecipeBuildJob()
-        build = queue_record.specific_job.build
+        self.queue_record = self.factory.makeSourcePackageRecipeBuildJob()
+        build = self.queue_record.specific_job.build
         build.updateStatus(BuildStatus.FULLYBUILT)
         if fake_successful_upload:
             removeSecurityProxy(build).verifySuccessfulUpload = FakeMethod(
@@ -369,13 +369,13 @@ class TestBuildNotifications(TrialTestCase):
             """ % self.upload_root
             config.push('tmp_builddmaster_root', tmp_builddmaster_root)
             self.addCleanup(config.pop, 'tmp_builddmaster_root')
-        queue_record.builder = self.factory.makeBuilder()
+        self.queue_record.builder = self.factory.makeBuilder()
         slave = WaitingSlave('BuildStatus.OK')
-        interactor = BuilderInteractor(queue_record.builder, slave)
+        interactor = BuilderInteractor(self.queue_record.builder, slave)
         return removeSecurityProxy(interactor._current_build_behavior)
 
     def assertDeferredNotifyCount(self, status, behavior, expected_count):
-        d = behavior.handleStatus(status, {'filemap': {}})
+        d = behavior.handleStatus(self.queue_record, status, {'filemap': {}})
 
         def cb(result):
             self.assertEqual(expected_count, len(pop_notifications()))

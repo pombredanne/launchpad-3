@@ -707,7 +707,7 @@ class BuilderInteractor(object):
         self._current_build_behavior.updateSlaveStatus(
             status_sentence, status_dict)
         d = self._current_build_behavior.handleStatus(
-            self.extractBuildStatus(status_dict), status_dict)
+            queueItem, self.extractBuildStatus(status_dict), status_dict)
         return d
 
     def _getSlaveScannerLogger(self):

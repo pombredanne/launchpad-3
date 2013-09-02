@@ -119,7 +119,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                 status['filemap'] = raw_slave_status[3]
 
     @defer.inlineCallbacks
-    def handleStatus(self, status, slave_status, queue_item=None):
+    def handleStatus(self, queue_item, status, slave_status):
         """Deal with a finished build job.
 
         Retrieves tarball and logs from the slave, then cleans up the
@@ -130,8 +130,6 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         """
         from lp.buildmaster.manager import BUILDD_MANAGER_LOG_NAME
         logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
-        if queue_item is None:
-            queue_item = self.build.buildqueue_record
         logger.info(
             "Templates generation job %s for %s finished with status %s." % (
             queue_item.specific_job.getName(),
