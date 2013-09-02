@@ -203,8 +203,9 @@ class TestTranslationTemplatesBuildBehavior(
                 }
             return (
                 behavior.handleStatus(
+                    queue_item,
                     behavior._interactor.extractBuildStatus(slave_status),
-                    slave_status, queue_item=queue_item),
+                    slave_status),
                 slave_call_log)
 
         def build_updated(ignored):
@@ -246,8 +247,9 @@ class TestTranslationTemplatesBuildBehavior(
             behavior.updateSlaveStatus(raw_status, slave_status)
             self.assertNotIn('filemap', slave_status)
             return behavior.handleStatus(
+                queue_item,
                 behavior._interactor.extractBuildStatus(slave_status),
-                slave_status, queue_item=queue_item),
+                slave_status),
 
         def build_updated(ignored):
             self.assertEqual(BuildStatus.FAILEDTOBUILD, behavior.build.status)
@@ -287,8 +289,9 @@ class TestTranslationTemplatesBuildBehavior(
             behavior.updateSlaveStatus(raw_status, slave_status)
             self.assertFalse('filemap' in slave_status)
             return behavior.handleStatus(
+                queue_item,
                 behavior._interactor.extractBuildStatus(slave_status),
-                slave_status, queue_item=queue_item),
+                slave_status),
 
         def build_updated(ignored):
             self.assertEqual(BuildStatus.FULLYBUILT, behavior.build.status)
@@ -330,8 +333,9 @@ class TestTranslationTemplatesBuildBehavior(
                 }
             behavior.updateSlaveStatus(status, slave_status)
             return behavior.handleStatus(
+                queue_item,
                 behavior._interactor.extractBuildStatus(slave_status),
-                slave_status, queue_item=queue_item),
+                slave_status),
 
         def build_updated(ignored):
             self.assertEqual(BuildStatus.FULLYBUILT, behavior.build.status)
