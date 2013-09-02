@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd. This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd. This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -9,7 +9,6 @@ __all__ = [
 
 from datetime import timedelta
 import logging
-import re
 
 from storm.store import Store
 from zope.component import getUtility
@@ -21,7 +20,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
-from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
@@ -60,28 +58,12 @@ class TranslationTemplatesBuildJob(BuildFarmJobOld, BranchJobDerived):
 
     duration_estimate = timedelta(seconds=10)
 
-    unsafe_chars = '[^a-zA-Z0-9_+-]'
-
     def score(self):
         """See `IBuildFarmJob`."""
         # Hard-code score for now.  Most PPA jobs start out at 2505;
         # TranslationTemplateBuildJobs are fast so we want them at a
         # higher priority.
         return HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE
-
-    def getLogFileName(self):
-        """See `IBuildFarmJob`."""
-        sanitized_name = re.sub(self.unsafe_chars, '_', self.getName())
-        return "translationtemplates_%s" % sanitized_name
-
-    def getName(self):
-        """See `IBuildFarmJob`."""
-        buildqueue = getUtility(IBuildQueueSet).getByJob(self.job)
-        return '%s-%d' % (self.branch.name, buildqueue.id)
-
-    def getTitle(self):
-        """See `IBuildFarmJob`."""
-        return '%s translation templates build' % self.branch.bzr_identity
 
     def cleanUp(self):
         """See `IBuildFarmJob`."""

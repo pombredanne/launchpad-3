@@ -240,7 +240,7 @@ class BrokenSlave:
 
 class TrivialBehavior:
 
-    def generateSlaveBuildCookie(self):
+    def getBuildCookie(self):
         return 'trivial'
 
 

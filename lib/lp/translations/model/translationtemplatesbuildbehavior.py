@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An `IBuildFarmJobBehavior` for `TranslationTemplatesBuildJob`.
@@ -13,6 +13,7 @@ __all__ = [
 
 import logging
 import os
+import re
 import tempfile
 
 import transaction
@@ -44,6 +45,14 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
     # Filename for the tarball of templates that the slave builds.
     templates_tarball_path = 'translation-templates.tar.gz'
 
+    unsafe_chars = '[^a-zA-Z0-9_+-]'
+
+    def getLogFileName(self):
+        """See `IBuildFarmJob`."""
+        safe_name = re.sub(
+            self.unsafe_chars, '_', self.buildfarmjob.branch.unique_name)
+        return "translationtemplates_%s_%d.txt" % (safe_name, self.build.id)
+
     def dispatchBuildToSlave(self, build_queue_item, logger):
         """See `IBuildFarmJobBehavior`."""
         chroot = self._getChroot()
@@ -55,8 +64,6 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         d = self._interactor.slave.cacheFile(logger, chroot)
 
         def got_cache_file(ignored):
-            cookie = self.buildfarmjob.generateSlaveBuildCookie()
-
             args = {
                 'arch_tag': self._getDistroArchSeries().architecturetag,
                 'branch_url': self.buildfarmjob.branch.composePublicURL(),
@@ -65,7 +72,8 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             filemap = {}
 
             return self._interactor.slave.build(
-                cookie, self.build_type, chroot_sha1, filemap, args)
+                self.getBuildCookie(), self.build_type, chroot_sha1, filemap,
+                args)
         return d.addCallback(got_cache_file)
 
     def _getChroot(self):
@@ -79,7 +87,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         """See `IBuildFarmJobBehavior`."""
         logger.info(
             "Starting templates build %s for %s." % (
-            self.buildfarmjob.getName(),
+            self.getBuildCookie(),
             self.buildfarmjob.branch.bzr_identity))
 
     def _readTarball(self, buildqueue, filemap, logger):
@@ -131,10 +139,10 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         from lp.buildmaster.manager import BUILDD_MANAGER_LOG_NAME
         logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
         logger.info(
-            "Templates generation job %s for %s finished with status %s." % (
-            queue_item.specific_job.getName(),
+            "Processing finished %s build %s (%s) from builder %s" % (
+            status, self.getBuildCookie(),
             queue_item.specific_job.branch.bzr_identity,
-            status))
+            queue_item.builder.name))
 
         if status == 'OK':
             self.build.updateStatus(

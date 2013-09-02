@@ -11,7 +11,6 @@ from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
     )
-from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import make_publisher
 from lp.services.database.interfaces import IStore
@@ -46,26 +45,6 @@ class TestBuilder(TestCaseWithFactory):
         # initializes.
         flush_database_updates()
         self.assertEqual(0, builder.failure_count)
-
-    def test_getCurrentBuildFarmJob(self):
-        bq = self.factory.makeSourcePackageRecipeBuildJob(3333)
-        builder = self.factory.makeBuilder()
-        bq.markAsBuilding(builder)
-        self.assertEqual(
-            bq, builder.getCurrentBuildFarmJob().buildqueue_record)
-
-    def test_getBuildQueue(self):
-        buildqueueset = getUtility(IBuildQueueSet)
-        active_jobs = buildqueueset.getActiveBuildJobs()
-        [active_job] = active_jobs
-        builder = active_job.builder
-
-        bq = builder.getBuildQueue()
-        self.assertEqual(active_job, bq)
-
-        active_job.builder = None
-        bq = builder.getBuildQueue()
-        self.assertIs(None, bq)
 
     def test_setting_builderok_resets_failure_count(self):
         builder = removeSecurityProxy(self.factory.makeBuilder())

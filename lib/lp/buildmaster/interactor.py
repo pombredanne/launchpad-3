@@ -319,7 +319,7 @@ class BuilderInteractor(object):
         """See `IBuildFarmJobBehavior`."""
         if self._current_build_behavior is None:
             raise CorruptBuildCookie('No job assigned to builder')
-        good_cookie = self._current_build_behavior.generateSlaveBuildCookie()
+        good_cookie = self._current_build_behavior.getBuildCookie()
         if slave_build_cookie != good_cookie:
             raise CorruptBuildCookie("Invalid slave build cookie.")
 
@@ -608,20 +608,7 @@ class BuilderInteractor(object):
             status_sentence, status_dict = statuses
             builder_status = status_dict['builder_status']
             if builder_status not in builder_status_handlers:
-                logger.critical(
-                    "Builder on %s returned unknown status %s, failing it"
-                    % (self.builder.url, builder_status))
-                self.builder.failBuilder(
-                    "Unknown status code (%s) returned from status() probe."
-                    % builder_status)
-                # XXX: This will leave the build and job in a bad state, but
-                # should never be possible, since our builder statuses are
-                # known.
-                queueItem._builder = None
-                queueItem.setDateStarted(None)
-                transaction.commit()
-                return
-
+                raise AssertionError("Unknown status %s" % builder_status)
             method = builder_status_handlers[builder_status]
             return defer.maybeDeferred(
                 method, queueItem, status_sentence, status_dict, logger)

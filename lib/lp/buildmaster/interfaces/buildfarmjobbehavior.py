@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface for build farm job behaviors."""
@@ -38,12 +38,8 @@ class IBuildFarmJobBehavior(Interface):
         :param logger: A logger to be used to log diagnostic information.
         """
 
-    def generateSlaveBuildCookie():
-        """Produce a cookie for the slave as a token of the job it's doing.
-
-        The cookie should uniquely represent the current dispatch of the
-        current build.
-        """
+    def getBuildCookie():
+        """Return a string which uniquely identifies the job."""
 
     def updateSlaveStatus(status_sentence, status_dict):
         """Update the slave status dict with custom values for this behavior.

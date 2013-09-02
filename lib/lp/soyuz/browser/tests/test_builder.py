@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the lp.soyuz.browser.builder module."""
@@ -9,7 +9,8 @@ from testtools.matchers import Equals
 from zope.component import getUtility
 
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
+from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.services.database.interfaces import IStore
 from lp.services.job.model.job import Job
 from lp.soyuz.browser.tests.test_builder_views import BuildCreationMixin
 from lp.testing import (
@@ -71,8 +72,8 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
             jobset = getUtility(ITranslationTemplatesBuildJobSource)
             branch = self.factory.makeBranch()
             specific_job = jobset.create(branch)
-            queueset = getUtility(IBuildQueueSet)
-            queue = queueset.getByJob(specific_job.job)
+            queue = IStore(BuildQueue).find(
+                BuildQueue, job=specific_job.job).one()
             queue.markAsBuilding(self.factory.makeBuilder())
 
         nb_objects = 2

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BinaryPackageBuildBehavior."""
@@ -98,9 +98,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
             in order to trick the slave into building correctly.
         :return: A list of the calls we expect to be made.
         """
-        job = removeSecurityProxy(
-            interactor._current_build_behavior).buildfarmjob
-        build_id = job.generateSlaveBuildCookie()
+        cookie = interactor._current_build_behavior.getBuildCookie()
         ds_name = build.distro_arch_series.distroseries.name
         suite = ds_name + pocketsuffix[build.pocket]
         archives = get_sources_list_for_building(
@@ -129,7 +127,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
             'suite': suite,
             }
         build_log = [
-            ('build', build_id, 'binarypackage', chroot.content.sha1,
+            ('build', cookie, 'binarypackage', chroot.content.sha1,
              filemap_names, extra_args)]
         if interactor.builder.virtualized:
             result = [('echo', 'ping')] + upload_logs + build_log

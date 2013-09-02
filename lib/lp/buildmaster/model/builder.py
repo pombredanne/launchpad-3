@@ -231,7 +231,7 @@ class Builder(SQLBase):
         """See IBuilder."""
         self.gotFailure()
         if self.currentjob is not None:
-            build_farm_job = self.getCurrentBuildFarmJob()
+            build_farm_job = self.currentjob.specific_job.build
             build_farm_job.gotFailure()
             logger.info(
                 "Builder %s failure count: %s, job '%s' failure count: %s" % (
@@ -241,22 +241,6 @@ class Builder(SQLBase):
             logger.info(
                 "Builder %s failure count: %s" % (
                     self.name, self.failure_count))
-
-    def getBuildQueue(self):
-        """See `IBuilder`."""
-        # Return a single BuildQueue for the builder provided it's
-        # currently running a job.
-        return IStore(BuildQueue).find(
-            BuildQueue,
-            BuildQueue.job == Job.id,
-            BuildQueue.builder == self.id,
-            Job._status == JobStatus.RUNNING,
-            Job.date_started != None).one()
-
-    def getCurrentBuildFarmJob(self):
-        """See `IBuilder`."""
-        # Don't make this a property, it's masking a few queries.
-        return self.currentjob.specific_job.build
 
 
 class BuilderSet(object):

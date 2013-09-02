@@ -64,9 +64,6 @@ class BuildFarmJobBehaviorBase:
         The default behavior is that we don't add any extra values."""
         pass
 
-    def generateSlaveBuildCookie(self):
-        return self.buildfarmjob.generateSlaveBuildCookie()
-
     def getBuildCookie(self):
         """See `IPackageBuild`."""
         return '%s-%s' % (self.build.job_type.name, self.build.id)
@@ -126,11 +123,14 @@ class BuildFarmJobBehaviorBase:
         d.addCallback(got_file, filename, out_file, out_file_name)
         return d
 
+    def getLogFileName(self):
+        """Return the preferred file name for this job's log."""
+        return 'buildlog.txt'
+
     def getLogFromSlave(self, queue_item):
-        """See `IPackageBuild`."""
+        """Return a Deferred which fires when the log is in the librarian."""
         d = self.transferSlaveFileToLibrarian(
-            SLAVE_LOG_FILENAME, queue_item.getLogFileName(),
-            self.build.is_private)
+            SLAVE_LOG_FILENAME, self.getLogFileName(), self.build.is_private)
         return d
 
     @defer.inlineCallbacks
