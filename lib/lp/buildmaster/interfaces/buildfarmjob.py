@@ -81,9 +81,6 @@ class IBuildFarmJobOld(Interface):
     def jobReset():
         """'Job reset' life cycle event, handle as appropriate."""
 
-    def jobAborted():
-        """'Job aborted' life cycle event, handle as appropriate."""
-
     def jobCancel():
         """'Job cancel' life cycle event."""
 
