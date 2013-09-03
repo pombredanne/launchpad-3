@@ -346,33 +346,6 @@ class BuilderInteractor(object):
 
         d = self.slave.status()
 
-        def got_status(status_sentence):
-            """After we get the status, clean if we have to.
-
-            Always return status_sentence.
-            """
-            # Isolate the BuilderStatus string, always the first token in
-            # BuilderSlave.status().
-            status = status_sentence[0]
-
-            # If the cookie test below fails, it will request an abort of the
-            # builder.  This will leave the builder in the aborted state and
-            # with no assigned job, and we should now "clean" the slave which
-            # will reset its state back to IDLE, ready to accept new builds.
-            # This situation is usually caused by a temporary loss of
-            # communications with the slave and the build manager had to reset
-            # the job.
-            if (status == 'BuilderStatus.ABORTED'
-                    and self.builder.currentjob is None):
-                if logger is not None:
-                    logger.info(
-                        "Builder '%s' being cleaned up from ABORTED" %
-                        (self.builder.name,))
-                d = self.cleanSlave()
-                return d.addCallback(lambda ignored: status_sentence)
-            else:
-                return status_sentence
-
         def rescue_slave(status_sentence):
             # If slave is not building nor waiting, it's not in need of
             # rescuing.
@@ -395,7 +368,6 @@ class BuilderInteractor(object):
                             (self.builder.name, slave_build_id, reason))
                 return d.addCallback(log_rescue)
 
-        d.addCallback(got_status)
         d.addCallback(rescue_slave)
         return d
 
@@ -602,7 +574,6 @@ class BuilderInteractor(object):
                 'BuilderStatus.IDLE': self.updateBuild_IDLE,
                 'BuilderStatus.BUILDING': self.updateBuild_BUILDING,
                 'BuilderStatus.ABORTING': self.updateBuild_ABORTING,
-                'BuilderStatus.ABORTED': self.updateBuild_ABORTED,
                 'BuilderStatus.WAITING': self.updateBuild_WAITING,
                 }
             status_sentence, status_dict = statuses
@@ -645,22 +616,6 @@ class BuilderInteractor(object):
         """
         queueItem.logtail = "Waiting for slave process to be terminated"
         transaction.commit()
-
-    def updateBuild_ABORTED(self, queueItem, status_sentence, status_dict,
-                            logger):
-        """ABORTING process has successfully terminated.
-
-        Clean the builder for another jobs.
-        """
-        d = self.cleanSlave()
-
-        def got_cleaned(ignored):
-            queueItem.builder = None
-            if queueItem.job.status != JobStatus.FAILED:
-                queueItem.job.fail()
-            queueItem.specific_job.jobAborted()
-            transaction.commit()
-        return d.addCallback(got_cleaned)
 
     def extractBuildStatus(self, status_dict):
         """Read build status name.

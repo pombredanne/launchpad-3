@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'AbortedSlave',
     'AbortingSlave',
     'BrokenSlave',
     'BuildingSlave',
@@ -191,18 +190,6 @@ class AbortingSlave(OkSlave):
     def status(self):
         self.call_log.append('status')
         return defer.succeed(('BuilderStatus.ABORTING', '1-1'))
-
-
-class AbortedSlave(OkSlave):
-    """A mock slave that looks like it's aborted."""
-
-    def clean(self):
-        self.call_log.append('clean')
-        return defer.succeed(None)
-
-    def status(self):
-        self.call_log.append('status')
-        return defer.succeed(('BuilderStatus.ABORTED', '1-1'))
 
 
 class LostBuildingBrokenSlave:
