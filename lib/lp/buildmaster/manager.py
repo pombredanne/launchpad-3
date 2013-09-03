@@ -249,6 +249,7 @@ class SlaveScanner:
             # value is not None if we resumed a slave host.
             defer.returnValue(value is not None)
 
+    @defer.inlineCallbacks
     def scan(self):
         """Probe the builder and update/dispatch/collect as appropriate.
 
@@ -278,83 +279,59 @@ class SlaveScanner:
         self.builder = get_builder(self.builder_name)
         self.interactor = BuilderInteractor(self.builder)
 
-        def status_updated(ignored):
-            # Commit the changes done while possibly rescuing jobs, to
-            # avoid holding table locks.
-            transaction.commit()
-
-            # See if we think there's an active build on the builder.
-            buildqueue = self.builder.currentjob
-
-            # Scan the slave and get the logtail, or collect the build if
-            # it's ready.  Yes, "updateBuild" is a bad name.
-            if buildqueue is not None:
-                return self.interactor.updateBuild(buildqueue)
-
-        def build_updated(ignored):
-            # Commit changes done while updating the build, to avoid
-            # holding table locks.
-            transaction.commit()
-
-            # If the builder is in manual mode, don't dispatch anything.
-            if self.builder.manual:
-                self.logger.debug(
-                    '%s is in manual mode, not dispatching.' %
-                    self.builder.name)
-                return
-
-            # If the builder is marked unavailable, don't dispatch anything.
-            # Additionaly, because builders can be removed from the pool at
-            # any time, we need to see if we think there was a build running
-            # on it before it was marked unavailable. In this case we reset
-            # the build thusly forcing it to get re-dispatched to another
-            # builder.
-
-            return self.interactor.isAvailable().addCallback(got_available)
-
-        def got_available(available):
-            if not available:
-                job = self.builder.currentjob
-                if job is not None and not self.builder.builderok:
-                    self.logger.info(
-                        "%s was made unavailable, resetting attached "
-                        "job" % self.builder.name)
-                    job.reset()
-                    transaction.commit()
-                return
-
-            # See if there is a job we can dispatch to the builder slave.
-
-            d = self.interactor.findAndStartJob()
-
-            def job_started(candidate):
-                if self.builder.currentjob is not None:
-                    # After a successful dispatch we can reset the
-                    # failure_count.
-                    self.builder.resetFailureCount()
-                    transaction.commit()
-                    return self.interactor.slave
-                else:
-                    return None
-            return d.addCallback(job_started)
-
-        def cancellation_checked(cancelled):
-            if cancelled:
-                return defer.succeed(None)
-            d = self.interactor.updateStatus(self.logger)
-            d.addCallback(status_updated)
-            d.addCallback(build_updated)
-            return d
-
         if self.builder.builderok:
-            d = self.checkCancellation(self.builder)
-            d.addCallback(cancellation_checked)
-        else:
-            d = defer.succeed(None)
-            d.addCallback(status_updated)
-            d.addCallback(build_updated)
+            cancelled = yield self.checkCancellation(self.builder)
+            if cancelled:
+                return
+            yield self.interactor.updateStatus(self.logger)
 
-        return d
+        # Commit the changes done while possibly rescuing jobs, to
+        # avoid holding table locks.
+        transaction.commit()
+
+        # See if we think there's an active build on the builder.
+        buildqueue = self.builder.currentjob
+
+        # Scan the slave and get the logtail, or collect the build if
+        # it's ready.  Yes, "updateBuild" is a bad name.
+        if buildqueue is not None:
+            yield self.interactor.updateBuild(buildqueue)
+
+        # Commit changes done while updating the build, to avoid
+        # holding table locks.
+        transaction.commit()
+
+        # If the builder is in manual mode, don't dispatch anything.
+        if self.builder.manual:
+            self.logger.debug(
+                '%s is in manual mode, not dispatching.' %
+                self.builder.name)
+            return
+
+        # If the builder is marked unavailable, don't dispatch anything.
+        # Additionaly, because builders can be removed from the pool at
+        # any time, we need to see if we think there was a build running
+        # on it before it was marked unavailable. In this case we reset
+        # the build thusly forcing it to get re-dispatched to another
+        # builder.
+        available = yield self.interactor.isAvailable()
+        if not available:
+            job = self.builder.currentjob
+            if job is not None and not self.builder.builderok:
+                self.logger.info(
+                    "%s was made unavailable, resetting attached "
+                    "job" % self.builder.name)
+                job.reset()
+                transaction.commit()
+            return
+
+        # See if there is a job we can dispatch to the builder slave.
+        yield self.interactor.findAndStartJob()
+        if self.builder.currentjob is not None:
+            # After a successful dispatch we can reset the
+            # failure_count.
+            self.builder.resetFailureCount()
+            transaction.commit()
 
 
 class NewBuildersScanner:
