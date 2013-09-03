@@ -288,6 +288,7 @@ class BuilderInteractor(object):
                 status['logtail'] = status_sentence[2]
         defer.returnValue((status_sentence, status))
 
+    @defer.inlineCallbacks
     def isAvailable(self):
         """Whether or not a builder is available for building new jobs.
 
@@ -295,16 +296,12 @@ class BuilderInteractor(object):
             whether the builder is available or not.
         """
         if not self.builder.builderok:
-            return defer.succeed(False)
-        d = self.slave.status()
-
-        def catch_fault(failure):
-            failure.trap(xmlrpclib.Fault, socket.error)
-            return False
-
-        def check_available(status):
-            return status[0] == 'BuilderStatus.IDLE'
-        return d.addCallbacks(check_available, catch_fault)
+            defer.returnValue(False)
+        try:
+            status = yield self.slave.status()
+        except (xmlrpclib.Fault, socket.error):
+            defer.returnValue(False)
+        defer.returnValue(status[0] == 'BuilderStatus.IDLE')
 
     def verifySlaveBuildCookie(self, slave_build_cookie):
         """See `IBuildFarmJobBehavior`."""
@@ -439,6 +436,7 @@ class BuilderInteractor(object):
 
         return d.addCallback(got_resume_ok).addErrback(got_resume_bad)
 
+    @defer.inlineCallbacks
     def _startBuild(self, build_queue_item, logger):
         """Start a build on this builder.
 
@@ -456,8 +454,6 @@ class BuilderInteractor(object):
                 "Inappropriate IBuildFarmJobBehavior: %r is not a %r" %
                 (self._current_build_behavior, needed_bfjb))
         self._current_build_behavior.logStartBuild(logger)
-
-        # Make sure the request is valid; an exception is raised if it's not.
         self._current_build_behavior.verifyBuildRequest(logger)
 
         # Set the build behavior depending on the provided build queue item.
@@ -465,34 +461,20 @@ class BuilderInteractor(object):
             raise BuildDaemonError(
                 "Attempted to start a build on a known-bad builder.")
 
-        # If we are building a virtual build, resume the virtual machine.
+        # If we are building a virtual build, resume the virtual
+        # machine.  Before we try and contact the resumed slave, we're
+        # going to send it a message.  This is to ensure it's accepting
+        # packets from the outside world, because testing has shown that
+        # the first packet will randomly fail for no apparent reason.
+        # This could be a quirk of the Xen guest, we're not sure.  We
+        # also don't care about the result from this message, just that
+        # it's sent, hence the "addBoth".  See bug 586359.
         if self.builder.virtualized:
-            d = self.resumeSlaveHost()
-        else:
-            d = defer.succeed(None)
+            yield self.resumeSlaveHost()
+            yield self.slave.echo("ping")
 
-        def ping_done(ignored):
-            return self._current_build_behavior.dispatchBuildToSlave(
-                build_queue_item.id, logger)
-
-        def resume_done(ignored):
-            # Before we try and contact the resumed slave, we're going
-            # to send it a message.  This is to ensure it's accepting
-            # packets from the outside world, because testing has shown
-            # that the first packet will randomly fail for no apparent
-            # reason.  This could be a quirk of the Xen guest, we're not
-            # sure.  We also don't care about the result from this message,
-            # just that it's sent, hence the "addBoth".
-            # See bug 586359.
-            if self.builder.virtualized:
-                d = self.slave.echo("ping")
-            else:
-                d = defer.succeed(None)
-            d.addBoth(ping_done)
-            return d
-
-        d.addCallback(resume_done)
-        return d
+        yield self._current_build_behavior.dispatchBuildToSlave(
+            build_queue_item.id, logger)
 
     def resetOrFail(self, logger, exception):
         """Handle "confirmed" build slave failures.
@@ -534,26 +516,24 @@ class BuilderInteractor(object):
             transaction.commit()
         return defer.succeed(None)
 
+    @defer.inlineCallbacks
     def findAndStartJob(self):
         """Find a job to run and send it to the buildd slave.
 
         :return: A Deferred whose value is the `IBuildQueue` instance
             found or None if no job was found.
         """
+        logger = self._getSlaveScannerLogger()
         # XXX This method should be removed in favour of two separately
         # called methods that find and dispatch the job.  It will
         # require a lot of test fixing.
-        logger = self._getSlaveScannerLogger()
         candidate = self.builder.acquireBuildCandidate()
-
         if candidate is None:
             logger.debug("No build candidates available for builder.")
-            return defer.succeed(None)
+            defer.returnValue(None)
 
-        # Using maybeDeferred ensures that any exceptions are also
-        # wrapped up and caught later.
-        d = defer.maybeDeferred(self._startBuild, candidate, logger)
-        return d.addCallback(lambda ignored: candidate)
+        yield self._startBuild(candidate, logger)
+        defer.returnValue(candidate)
 
     @defer.inlineCallbacks
     def updateBuild(self, queueItem):
