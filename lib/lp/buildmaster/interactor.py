@@ -323,6 +323,7 @@ class BuilderInteractor(object):
         if slave_build_cookie != good_cookie:
             raise CorruptBuildCookie("Invalid slave build cookie.")
 
+    @defer.inlineCallbacks
     def rescueIfLost(self, logger=None):
         """Reset the slave if its job information doesn't match the DB.
 
@@ -344,60 +345,43 @@ class BuilderInteractor(object):
             'BuilderStatus.WAITING': 2
             }
 
-        d = self.slave.status()
+        # Isolate the BuilderStatus string, always the first token in
+        # BuilderSlave.status().
+        status_sentence = yield self.slave.status()
+        status = status_sentence[0]
 
-        def got_status(status_sentence):
-            """After we get the status, clean if we have to.
+        # If the cookie test below fails, it will request an abort of the
+        # builder.  This will leave the builder in the aborted state and
+        # with no assigned job, and we should now "clean" the slave which
+        # will reset its state back to IDLE, ready to accept new builds.
+        # This situation is usually caused by a temporary loss of
+        # communications with the slave and the build manager had to reset
+        # the job.
+        if (status == 'BuilderStatus.ABORTED'
+                and self.builder.currentjob is None):
+            if logger is not None:
+                logger.info(
+                    "Builder '%s' being cleaned up from ABORTED" %
+                    (self.builder.name,))
+            yield self.cleanSlave()
 
-            Always return status_sentence.
-            """
-            # Isolate the BuilderStatus string, always the first token in
-            # BuilderSlave.status().
-            status = status_sentence[0]
-
-            # If the cookie test below fails, it will request an abort of the
-            # builder.  This will leave the builder in the aborted state and
-            # with no assigned job, and we should now "clean" the slave which
-            # will reset its state back to IDLE, ready to accept new builds.
-            # This situation is usually caused by a temporary loss of
-            # communications with the slave and the build manager had to reset
-            # the job.
-            if (status == 'BuilderStatus.ABORTED'
-                    and self.builder.currentjob is None):
-                if logger is not None:
-                    logger.info(
-                        "Builder '%s' being cleaned up from ABORTED" %
-                        (self.builder.name,))
-                d = self.cleanSlave()
-                return d.addCallback(lambda ignored: status_sentence)
+        # If slave is not building nor waiting, it's not in need of
+        # rescuing.
+        status = status_sentence[0]
+        if status not in ident_position.keys():
+            return
+        slave_build_id = status_sentence[ident_position[status]]
+        try:
+            self.verifySlaveBuildCookie(slave_build_id)
+        except CorruptBuildCookie as reason:
+            if status == 'BuilderStatus.WAITING':
+                yield self.cleanSlave()
             else:
-                return status_sentence
-
-        def rescue_slave(status_sentence):
-            # If slave is not building nor waiting, it's not in need of
-            # rescuing.
-            status = status_sentence[0]
-            if status not in ident_position.keys():
-                return
-            slave_build_id = status_sentence[ident_position[status]]
-            try:
-                self.verifySlaveBuildCookie(slave_build_id)
-            except CorruptBuildCookie as reason:
-                if status == 'BuilderStatus.WAITING':
-                    d = self.cleanSlave()
-                else:
-                    d = self.requestAbort()
-
-                def log_rescue(ignored):
-                    if logger:
-                        logger.info(
-                            "Builder '%s' rescued from '%s': '%s'" %
-                            (self.builder.name, slave_build_id, reason))
-                return d.addCallback(log_rescue)
-
-        d.addCallback(got_status)
-        d.addCallback(rescue_slave)
-        return d
+                yield self.requestAbort()
+            if logger:
+                logger.info(
+                    "Builder '%s' rescued from '%s': '%s'" %
+                    (self.builder.name, slave_build_id, reason))
 
     def updateStatus(self, logger=None):
         """Update the builder's status by probing it.
