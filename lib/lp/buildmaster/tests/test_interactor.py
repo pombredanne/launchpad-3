@@ -32,7 +32,6 @@ from lp.buildmaster.interfaces.builder import (
     CorruptBuildCookie,
     )
 from lp.buildmaster.tests.mock_slaves import (
-    AbortedSlave,
     AbortingSlave,
     BrokenSlave,
     BuildingSlave,
@@ -171,32 +170,6 @@ class TestBuilderInteractor(TestCase):
         interactor = BuilderInteractor(builder)
         self.assertEqual(5, interactor.slave.timeout)
 
-    def test_recovery_of_aborted_virtual_slave(self):
-        # If a nonvirtual slave is in the ABORTED state,
-        # rescueBuilderIfLost should clean it if we don't think it's
-        # currently building anything.
-        aborted_slave = AbortedSlave()
-        builder = MockBuilder(virtualized=False, builderok=False)
-        d = BuilderInteractor(builder, aborted_slave).rescueIfLost()
-
-        def check_slave_calls(ignored):
-            self.assertIn('clean', aborted_slave.call_log)
-
-        return d.addCallback(check_slave_calls)
-
-    def test_recovery_of_aborted_nonvirtual_slave(self):
-        # If a nonvirtual slave is in the ABORTED state,
-        # rescueBuilderIfLost should clean it if we don't think it's
-        # currently building anything.
-        aborted_slave = AbortedSlave()
-        builder = MockBuilder(virtualized=False, builderok=False)
-        d = BuilderInteractor(builder, aborted_slave).rescueIfLost()
-
-        def check_slave_calls(ignored):
-            self.assertIn('clean', aborted_slave.call_log)
-
-        return d.addCallback(check_slave_calls)
-
     def test_recover_ok_slave(self):
         # An idle slave is not rescued.
         slave = OkSlave()
@@ -311,10 +284,6 @@ class TestBuilderInteractorSlaveStatus(TestCase):
     def test_slaveStatus_aborting_slave(self):
         self.assertStatus(
             AbortingSlave(), builder_status='BuilderStatus.ABORTING')
-
-    def test_slaveStatus_aborted_slave(self):
-        self.assertStatus(
-            AbortedSlave(), builder_status='BuilderStatus.ABORTED')
 
     def test_isAvailable_with_not_builderok(self):
         # isAvailable() is a wrapper around BuilderSlave.status()
