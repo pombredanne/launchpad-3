@@ -23,7 +23,6 @@ from zope.security.proxy import (
 
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
-    BuildSlaveFailure,
     CannotFetchFile,
     CannotResumeHost,
     CorruptBuildCookie,
@@ -209,13 +208,8 @@ class BuilderSlave(object):
         :param args: A dictionary of extra arguments. The contents depend on
             the build job type.
         """
-        d = self._with_timeout(self._server.callRemote(
+        return self._with_timeout(self._server.callRemote(
             'build', buildid, builder_type, chroot_sha1, filemap, args))
-
-        def got_fault(failure):
-            failure.trap(xmlrpclib.Fault)
-            raise BuildSlaveFailure(failure.value)
-        return d.addErrback(got_fault)
 
 
 class BuilderInteractor(object):
@@ -561,6 +555,7 @@ class BuilderInteractor(object):
         d = defer.maybeDeferred(self._startBuild, candidate, logger)
         return d.addCallback(lambda ignored: candidate)
 
+    @defer.inlineCallbacks
     def updateBuild(self, queueItem):
         """Verify the current build job status.
 
@@ -568,36 +563,21 @@ class BuilderInteractor(object):
 
         :return: A Deferred that fires when the slave dialog is finished.
         """
+        builder_status_handlers = {
+            'BuilderStatus.IDLE': self.updateBuild_IDLE,
+            'BuilderStatus.BUILDING': self.updateBuild_BUILDING,
+            'BuilderStatus.ABORTING': self.updateBuild_ABORTING,
+            'BuilderStatus.ABORTED': self.updateBuild_ABORTED,
+            'BuilderStatus.WAITING': self.updateBuild_WAITING,
+            }
+        statuses = yield self.slaveStatus()
         logger = logging.getLogger('slave-scanner')
-
-        d = self.slaveStatus()
-
-        def got_failure(failure):
-            failure.trap(xmlrpclib.Fault, socket.error)
-            info = failure.value
-            info = ("Could not contact the builder %s, caught a (%s)"
-                    % (queueItem.builder.url, info))
-            raise BuildSlaveFailure(info)
-
-        def got_status(statuses):
-            builder_status_handlers = {
-                'BuilderStatus.IDLE': self.updateBuild_IDLE,
-                'BuilderStatus.BUILDING': self.updateBuild_BUILDING,
-                'BuilderStatus.ABORTING': self.updateBuild_ABORTING,
-                'BuilderStatus.ABORTED': self.updateBuild_ABORTED,
-                'BuilderStatus.WAITING': self.updateBuild_WAITING,
-                }
-            status_sentence, status_dict = statuses
-            builder_status = status_dict['builder_status']
-            if builder_status not in builder_status_handlers:
-                raise AssertionError("Unknown status %s" % builder_status)
-            method = builder_status_handlers[builder_status]
-            return defer.maybeDeferred(
-                method, queueItem, status_sentence, status_dict, logger)
-
-        d.addErrback(got_failure)
-        d.addCallback(got_status)
-        return d
+        status_sentence, status_dict = statuses
+        builder_status = status_dict['builder_status']
+        if builder_status not in builder_status_handlers:
+            raise AssertionError("Unknown status %s" % builder_status)
+        method = builder_status_handlers[builder_status]
+        yield method(queueItem, status_sentence, status_dict, logger)
 
     def updateBuild_IDLE(self, queueItem, status_sentence, status_dict,
                          logger):
