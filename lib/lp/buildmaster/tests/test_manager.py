@@ -128,14 +128,7 @@ class TestSlaveScannerScan(TestCase):
 
         return scanner
 
-    def _checkDispatch(self, slave, builder):
-        # SlaveScanner.scan returns a slave when a dispatch was
-        # successful.  We also check that the builder has a job on it.
-
-        self.assertTrue(slave is not None, "Expected a slave.")
-        self.assertEqual(0, builder.failure_count)
-        self.assertTrue(builder.currentjob is not None)
-
+    @defer.inlineCallbacks
     def testScanDispatchForResetBuilder(self):
         # A job gets dispatched to the sampledata builder after it's reset.
 
@@ -150,9 +143,9 @@ class TestSlaveScannerScan(TestCase):
         # Run 'scan' and check its result.
         switch_dbuser(config.builddmaster.dbuser)
         scanner = self._getScanner()
-        d = defer.maybeDeferred(scanner.scan)
-        d.addCallback(self._checkDispatch, builder)
-        return d
+        yield scanner.scan()
+        self.assertEqual(0, builder.failure_count)
+        self.assertTrue(builder.currentjob is not None)
 
     def _checkNoDispatch(self, slave, builder):
         """Assert that no dispatch has occurred.
