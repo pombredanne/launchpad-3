@@ -289,17 +289,11 @@ class SlaveScanner:
         # avoid holding table locks.
         transaction.commit()
 
-        # See if we think there's an active build on the builder.
         buildqueue = self.builder.currentjob
-
-        # Scan the slave and get the logtail, or collect the build if
-        # it's ready.  Yes, "updateBuild" is a bad name.
         if buildqueue is not None:
+            # Scan the slave and get the logtail, or collect the build
+            # if it's ready.  Yes, "updateBuild" is a bad name.
             yield self.interactor.updateBuild(buildqueue)
-
-        # Commit changes done while updating the build, to avoid
-        # holding table locks.
-        transaction.commit()
 
         # If the builder is in manual mode, don't dispatch anything.
         if self.builder.manual:

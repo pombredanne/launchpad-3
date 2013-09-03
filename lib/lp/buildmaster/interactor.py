@@ -556,6 +556,7 @@ class BuilderInteractor(object):
                 "Disabling builder: %s -- %s" % (
                     self.builder.url, error_message))
             self.builder.failBuilder(error_message)
+            transaction.commit()
         return defer.succeed(None)
 
     def findAndStartJob(self):
