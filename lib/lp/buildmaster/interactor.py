@@ -272,6 +272,7 @@ class BuilderInteractor(object):
             self._cached_currentjob = currentjob
         return self._cached_build_behavior
 
+    @defer.inlineCallbacks
     def slaveStatus(self):
         """Get the slave status for this builder.
 
@@ -280,22 +281,18 @@ class BuilderInteractor(object):
             potentially other values included by the current build
             behavior.
         """
-        d = self.slave.status()
+        status_sentence = yield self.slave.status()
+        status = {'builder_status': status_sentence[0]}
 
-        def got_status(status_sentence):
-            status = {'builder_status': status_sentence[0]}
-
-            # Extract detailed status and log information if present.
-            # Although build_id is also easily extractable here, there is no
-            # valid reason for anything to use it, so we exclude it.
-            if status['builder_status'] == 'BuilderStatus.WAITING':
-                status['build_status'] = status_sentence[1]
-            else:
-                if status['builder_status'] == 'BuilderStatus.BUILDING':
-                    status['logtail'] = status_sentence[2]
-            return (status_sentence, status)
-
-        return d.addCallback(got_status)
+        # Extract detailed status and log information if present.
+        # Although build_id is also easily extractable here, there is no
+        # valid reason for anything to use it, so we exclude it.
+        if status['builder_status'] == 'BuilderStatus.WAITING':
+            status['build_status'] = status_sentence[1]
+        else:
+            if status['builder_status'] == 'BuilderStatus.BUILDING':
+                status['logtail'] = status_sentence[2]
+        defer.returnValue((status_sentence, status))
 
     def isAvailable(self):
         """Whether or not a builder is available for building new jobs.
