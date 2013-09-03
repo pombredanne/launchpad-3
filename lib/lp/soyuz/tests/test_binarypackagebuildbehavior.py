@@ -27,7 +27,6 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
 from lp.buildmaster.tests.mock_slaves import (
-    AbortedSlave,
     AbortingSlave,
     BuildingSlave,
     OkSlave,
@@ -407,17 +406,6 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
         def got_update(ignored):
             # The fake log is returned from the BuildingSlave() mock.
             self.assertEqual("This is a build log", self.candidate.logtail)
-
-        d = self.interactor.updateBuild(self.candidate)
-        return d.addCallback(got_update)
-
-    def test_aborted_collection(self):
-        # The builder aborted the job.
-        self.patch(BuilderSlave, 'makeBuilderSlave',
-                   FakeMethod(AbortedSlave()))
-
-        def got_update(ignored):
-            self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
 
         d = self.interactor.updateBuild(self.candidate)
         return d.addCallback(got_update)
