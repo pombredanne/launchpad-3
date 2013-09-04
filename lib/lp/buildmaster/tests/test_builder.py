@@ -252,20 +252,11 @@ class TestFindBuildCandidatePPABase(TestFindBuildCandidateBase):
 
 class TestFindBuildCandidatePPA(TestFindBuildCandidatePPABase):
 
-    def test_findBuildCandidate_first_build_started(self):
-        # A PPA cannot start a build if it would use 80% or more of the
-        # builders.
+    def test_findBuildCandidate(self):
+        # joe's fourth i386 build will be the next build candidate.
         next_job = removeSecurityProxy(self.builder4)._findBuildCandidate()
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
-        self.failIfEqual('joesppa', build.archive.name)
-
-    def test_findBuildCandidate_first_build_finished(self):
-        # When joe's first ppa build finishes, his fourth i386 build
-        # will be the next build candidate.
-        self.joe_builds[0].updateStatus(BuildStatus.FAILEDTOBUILD)
-        next_job = removeSecurityProxy(self.builder4)._findBuildCandidate()
-        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
-        self.failUnlessEqual('joesppa', build.archive.name)
+        self.assertEqual('joesppa', build.archive.name)
 
     def test_findBuildCandidate_with_disabled_archive(self):
         # Disabled archives should not be considered for dispatching
@@ -283,11 +274,10 @@ class TestFindBuildCandidatePrivatePPA(TestFindBuildCandidatePPABase):
     ppa_joe_private = True
 
     def test_findBuildCandidate_for_private_ppa(self):
-        # If a ppa is private it will be able to have parallel builds
-        # for the one architecture.
+        # joe's fourth i386 build will be the next build candidate.
         next_job = removeSecurityProxy(self.builder4)._findBuildCandidate()
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
-        self.failUnlessEqual('joesppa', build.archive.name)
+        self.assertEqual('joesppa', build.archive.name)
 
         # If the source for the build is still pending, it won't be
         # dispatched because the builder has to fetch the source files

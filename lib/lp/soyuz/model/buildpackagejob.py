@@ -129,7 +129,7 @@ class BuildPackageJob(BuildFarmJobOld, Storm):
             PackagePublishingStatus.SUPERSEDED,
             PackagePublishingStatus.DELETED,
             )
-        sub_query = """
+        return """
             SELECT TRUE FROM Archive, BinaryPackageBuild, BuildPackageJob,
                              DistroArchSeries
             WHERE
@@ -153,44 +153,6 @@ class BuildPackageJob(BuildFarmJobOld, Storm):
               archive.private IS FALSE) AND
             BinaryPackageBuild.status = %s
         """ % sqlvalues(private_statuses, BuildStatus.NEEDSBUILD)
-
-        # Ensure that if BUILDING builds exist for the same
-        # public ppa archive and architecture and another would not
-        # leave at least 20% of them free, then we don't consider
-        # another as a candidate.
-        #
-        # This clause selects the count of currently building builds on
-        # the arch in question, then adds one to that total before
-        # deriving a percentage of the total available builders on that
-        # arch.  It then makes sure that percentage is under 80.
-        #
-        # The extra clause is only used if the number of available
-        # builders is greater than one, or nothing would get dispatched
-        # at all.
-        num_arch_builders = getUtility(IBuilderSet).getBuildersForQueue(
-            processor, virtualized).count()
-        if num_arch_builders > 1:
-            sub_query += """
-            AND Archive.id NOT IN (
-                SELECT Archive.id
-                FROM Archive, BinaryPackageBuild, DistroArchSeries
-                WHERE
-                    BinaryPackageBuild.distro_arch_series = DistroArchSeries.id
-                    AND DistroArchSeries.processorfamily = %s
-                    AND BinaryPackageBuild.status = %s
-                    AND BinaryPackageBuild.archive = Archive.id
-                    AND Archive.purpose = %s
-                    AND Archive.private IS FALSE
-                GROUP BY Archive.id
-                HAVING (
-                    (count(*)+1) * 100.0 / %s
-                    ) >= 80
-                )
-            """ % sqlvalues(
-                processor.family, BuildStatus.BUILDING,
-                ArchivePurpose.PPA, num_arch_builders)
-
-        return sub_query
 
     @staticmethod
     def postprocessCandidate(job, logger):
