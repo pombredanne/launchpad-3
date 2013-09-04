@@ -16,17 +16,13 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.bulk import load_related
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
-from lp.soyuz.enums import (
-    ArchivePurpose,
-    PackagePublishingStatus,
-    )
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildpackagejob import (
     COPY_ARCHIVE_SCORE_PENALTY,
