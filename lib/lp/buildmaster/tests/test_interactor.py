@@ -33,7 +33,6 @@ from lp.buildmaster.interfaces.builder import (
     )
 from lp.buildmaster.tests.mock_slaves import (
     AbortingSlave,
-    BrokenSlave,
     BuildingSlave,
     DeadProxy,
     LostBuildingBrokenSlave,
@@ -80,28 +79,33 @@ class TestBuilderInteractor(TestCase):
         self.assertRaises(
             AssertionError, interactor.extractBuildStatus, slave_status)
 
-    def test_verifySlaveBuildCookie_good(self):
+    def test_verifySlaveBuildCookie_building_match(self):
         interactor = BuilderInteractor(MockBuilder(), None, TrivialBehavior())
         interactor.verifySlaveBuildCookie('trivial')
 
-    def test_verifySlaveBuildCookie_bad(self):
+    def test_verifySlaveBuildCookie_building_mismatch(self):
         interactor = BuilderInteractor(MockBuilder(), None, TrivialBehavior())
         self.assertRaises(
             CorruptBuildCookie,
             interactor.verifySlaveBuildCookie, 'difficult')
 
-    def test_verifySlaveBuildCookie_idle(self):
+    def test_verifySlaveBuildCookie_idle_match(self):
+        interactor = BuilderInteractor(MockBuilder())
+        self.assertIs(None, interactor._current_build_behavior)
+        interactor.verifySlaveBuildCookie(None)
+
+    def test_verifySlaveBuildCookie_idle_mismatch(self):
         interactor = BuilderInteractor(MockBuilder())
         self.assertIs(None, interactor._current_build_behavior)
         self.assertRaises(
             CorruptBuildCookie, interactor.verifySlaveBuildCookie, 'foo')
 
-    def test_updateStatus_aborts_lost_and_broken_slave(self):
+    def test_rescueIfLost_aborts_lost_and_broken_slave(self):
         # A slave that's 'lost' should be aborted; when the slave is
         # broken then abort() should also throw a fault.
         slave = LostBuildingBrokenSlave()
         interactor = BuilderInteractor(MockBuilder(), slave, TrivialBehavior())
-        d = interactor.updateStatus(DevNullLogger())
+        d = interactor.rescueIfLost(DevNullLogger())
 
         def check_slave_status(failure):
             self.assertIn('abort', slave.call_log)
@@ -170,31 +174,37 @@ class TestBuilderInteractor(TestCase):
         interactor = BuilderInteractor(builder)
         self.assertEqual(5, interactor.slave.timeout)
 
-    def test_recover_ok_slave(self):
-        # An idle slave is not rescued.
+    @defer.inlineCallbacks
+    def test_recover_idle_slave(self):
+        # An idle slave is not rescued, even if it's not meant to be
+        # idle. SlaveScanner.scan() will clean up the DB side, because
+        # we still report that it's lost.
         slave = OkSlave()
-        d = BuilderInteractor(
+        lost = yield BuilderInteractor(
             MockBuilder(), slave, TrivialBehavior()).rescueIfLost()
+        self.assertTrue(lost)
+        self.assertEqual([], slave.call_log)
 
-        def check_slave_calls(ignored):
-            self.assertNotIn('abort', slave.call_log)
-            self.assertNotIn('clean', slave.call_log)
+    @defer.inlineCallbacks
+    def test_recover_ok_slave(self):
+        # An idle slave that's meant to be idle is not rescued.
+        slave = OkSlave()
+        lost = yield BuilderInteractor(
+            MockBuilder(), slave, None).rescueIfLost()
+        self.assertFalse(lost)
+        self.assertEqual([], slave.call_log)
 
-        return d.addCallback(check_slave_calls)
-
+    @defer.inlineCallbacks
     def test_recover_waiting_slave_with_good_id(self):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # WAITING.
         waiting_slave = WaitingSlave(build_id='trivial')
-        d = BuilderInteractor(
+        lost = yield BuilderInteractor(
             MockBuilder(), waiting_slave, TrivialBehavior()).rescueIfLost()
+        self.assertFalse(lost)
+        self.assertEqual(['status'], waiting_slave.call_log)
 
-        def check_slave_calls(ignored):
-            self.assertNotIn('abort', waiting_slave.call_log)
-            self.assertNotIn('clean', waiting_slave.call_log)
-
-        return d.addCallback(check_slave_calls)
-
+    @defer.inlineCallbacks
     def test_recover_waiting_slave_with_bad_id(self):
         # If a slave is WAITING with a build for us to get, and the build
         # cookie cannot be verified, which means we don't recognize the build,
@@ -202,40 +212,30 @@ class TestBuilderInteractor(TestCase):
         # builder is reset for a new build, and the corrupt build is
         # discarded.
         waiting_slave = WaitingSlave(build_id='non-trivial')
-        d = BuilderInteractor(
+        lost = yield BuilderInteractor(
             MockBuilder(), waiting_slave, TrivialBehavior()).rescueIfLost()
+        self.assertTrue(lost)
+        self.assertEqual(['status', 'clean'], waiting_slave.call_log)
 
-        def check_slave_calls(ignored):
-            self.assertNotIn('abort', waiting_slave.call_log)
-            self.assertIn('clean', waiting_slave.call_log)
-
-        return d.addCallback(check_slave_calls)
-
+    @defer.inlineCallbacks
     def test_recover_building_slave_with_good_id(self):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # BUILDING.
         building_slave = BuildingSlave(build_id='trivial')
-        d = BuilderInteractor(
+        lost = yield BuilderInteractor(
             MockBuilder(), building_slave, TrivialBehavior()).rescueIfLost()
+        self.assertFalse(lost)
+        self.assertEqual(['status'], building_slave.call_log)
 
-        def check_slave_calls(ignored):
-            self.assertNotIn('abort', building_slave.call_log)
-            self.assertNotIn('clean', building_slave.call_log)
-
-        return d.addCallback(check_slave_calls)
-
+    @defer.inlineCallbacks
     def test_recover_building_slave_with_bad_id(self):
         # If a slave is BUILDING with a build id we don't recognize, then we
         # abort the build, thus stopping it in its tracks.
         building_slave = BuildingSlave(build_id='non-trivial')
-        d = BuilderInteractor(
+        lost = yield BuilderInteractor(
             MockBuilder(), building_slave, TrivialBehavior()).rescueIfLost()
-
-        def check_slave_calls(ignored):
-            self.assertIn('abort', building_slave.call_log)
-            self.assertNotIn('clean', building_slave.call_log)
-
-        return d.addCallback(check_slave_calls)
+        self.assertTrue(lost)
+        self.assertEqual(['status', 'abort'], building_slave.call_log)
 
 
 class TestBuilderInteractorSlaveStatus(TestCase):
@@ -284,21 +284,6 @@ class TestBuilderInteractorSlaveStatus(TestCase):
     def test_slaveStatus_aborting_slave(self):
         self.assertStatus(
             AbortingSlave(), builder_status='BuilderStatus.ABORTING')
-
-    def test_isAvailable_with_not_builderok(self):
-        # isAvailable() is a wrapper around BuilderSlave.status()
-        builder = MockBuilder()
-        builder.builderok = False
-        d = BuilderInteractor(builder).isAvailable()
-        return d.addCallback(self.assertFalse)
-
-    def test_isAvailable_with_slave_fault(self):
-        d = BuilderInteractor(MockBuilder(), BrokenSlave()).isAvailable()
-        return d.addCallback(self.assertFalse)
-
-    def test_isAvailable_with_slave_idle(self):
-        d = BuilderInteractor(MockBuilder(), OkSlave()).isAvailable()
-        return d.addCallback(self.assertTrue)
 
 
 class TestBuilderInteractorDB(TestCaseWithFactory):
