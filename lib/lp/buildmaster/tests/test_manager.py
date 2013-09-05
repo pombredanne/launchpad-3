@@ -442,6 +442,7 @@ class TestSlaveScannerScan(TestCase):
 class FakeBuildQueue:
 
     def __init__(self):
+        self.id = 1
         self.reset = FakeMethod()
 
 

@@ -289,10 +289,13 @@ class SlaveScanner:
             lost = yield self.interactor.rescueIfLost(self.logger)
             if lost:
                 if self.builder.currentjob is not None:
-                    # The DB and slave both have a job assigned, but
-                    # disagree on its identity. rescueIfLost is already
-                    # cleaning up the slave, so let's free the DB build
-                    # to be dispatched elsewhere.
+                    # The DB has a job assigned, but it and the slave
+                    # disagree. rescueIfLost is already cleaning up the
+                    # slave as necessary, so let's free the DB build to
+                    # be dispatched elsewhere.
+                    self.logger.warn(
+                        "Builder %s is lost. Resetting BuildQueue %d.",
+                        self.builder.name, self.builder.currentjob.id)
                     self.builder.currentjob.reset()
                     transaction.commit()
                 return
