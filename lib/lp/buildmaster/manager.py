@@ -282,35 +282,35 @@ class SlaveScanner:
         self.builder = builder or get_builder(self.builder_name)
         self.interactor = interactor or BuilderInteractor(self.builder)
 
-        if self.builder.builderok:
+        # Confirm that the DB and slave sides are in a valid, mutually
+        # agreeable state.
+        lost_reason = None
+        if not self.builder.builderok:
+            lost_reason = '%s is disabled' % self.builder.name
+        else:
             cancelled = yield self.checkCancellation(self.builder)
             if cancelled:
                 return
             lost = yield self.interactor.rescueIfLost(self.logger)
             if lost:
-                if self.builder.currentjob is not None:
-                    # The DB has a job assigned, but it and the slave
-                    # disagree. rescueIfLost is already cleaning up the
-                    # slave as necessary, so let's free the DB build to
-                    # be dispatched elsewhere.
-                    self.logger.warn(
-                        "%s is lost. Resetting BuildQueue %d.",
-                        self.builder.name, self.builder.currentjob.id)
-                    self.builder.currentjob.reset()
-                    transaction.commit()
-                return
-        else:
+                lost_reason = '%s is lost' % self.builder.name
+
+        # The slave is lost or the builder is disabled. We can't
+        # continue to update the job status or dispatch a new job, so
+        # just rescue the assigned job, if any, so it can be dispatched
+        # to another slave.
+        if lost_reason:
             if self.builder.currentjob is not None:
                 self.logger.warn(
-                    "%s was made unavailable. Resetting BuildQueue %d.",
-                    self.builder.name, self.builder.currentjob.id)
+                    "%s. Resetting BuildQueue %d.", lost_reason,
+                    self.builder.currentjob.id)
                 self.builder.currentjob.reset()
                 transaction.commit()
+            return
 
-        # Commit the changes done while possibly rescuing jobs, to
-        # avoid holding table locks.
-        transaction.commit()
-
+        # We've confirmed that the slave state matches the DB. Continue
+        # with updating the job status, or dispatching a new job if the
+        # builder is idle.
         buildqueue = self.builder.currentjob
         if buildqueue is not None:
             # Scan the slave and get the logtail, or collect the build
