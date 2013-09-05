@@ -320,7 +320,6 @@ class SlaveScanner:
             self.logger.debug(
                 '%s is in manual mode, not dispatching.' %
                 self.builder.name)
-            return
         else:
             # See if there is a job we can dispatch to the builder slave.
             yield self.interactor.findAndStartJob()
