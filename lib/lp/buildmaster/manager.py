@@ -276,6 +276,9 @@ class SlaveScanner:
         # We need to re-fetch the builder object on each cycle as the
         # Storm store is invalidated over transaction boundaries.
 
+        if self.logger:
+            self.logger.debug("Scanning %s" % self.builder_name)
+
         self.builder = builder or get_builder(self.builder_name)
         self.interactor = interactor or BuilderInteractor(self.builder)
 
@@ -283,7 +286,7 @@ class SlaveScanner:
             cancelled = yield self.checkCancellation(self.builder)
             if cancelled:
                 return
-            lost = yield self.interactor.updateStatus(self.logger)
+            lost = yield self.interactor.rescueIfLost(self.logger)
             if lost:
                 if self.builder.currentjob is not None:
                     # The DB and slave both have a job assigned, but

@@ -96,12 +96,12 @@ class TestBuilderInteractor(TestCase):
         self.assertRaises(
             CorruptBuildCookie, interactor.verifySlaveBuildCookie, 'foo')
 
-    def test_updateStatus_aborts_lost_and_broken_slave(self):
+    def test_rescueIfLost_aborts_lost_and_broken_slave(self):
         # A slave that's 'lost' should be aborted; when the slave is
         # broken then abort() should also throw a fault.
         slave = LostBuildingBrokenSlave()
         interactor = BuilderInteractor(MockBuilder(), slave, TrivialBehavior())
-        d = interactor.updateStatus(DevNullLogger())
+        d = interactor.rescueIfLost(DevNullLogger())
 
         def check_slave_status(failure):
             self.assertIn('abort', slave.call_log)

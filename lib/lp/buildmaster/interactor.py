@@ -354,17 +354,6 @@ class BuilderInteractor(object):
                     (self.builder.name, slave_build_id, reason))
             defer.returnValue(True)
 
-    def updateStatus(self, logger=None):
-        """Update the builder's status by probing it.
-
-        :return: A Deferred that fires when the dialog with the slave is
-            finished.  It does not have a return value.
-        """
-        if logger:
-            logger.debug('Checking %s' % self.builder.name)
-
-        return self.rescueIfLost(logger)
-
     def cleanSlave(self):
         """Clean any temporary files from the slave.
 
