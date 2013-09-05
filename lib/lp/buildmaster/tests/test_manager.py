@@ -225,7 +225,7 @@ class TestSlaveScannerScan(TestCase):
         login('foo.bar@canonical.com')
         builder.builderok = True
         self.patch(BuilderSlave, 'makeBuilderSlave',
-                   FakeMethod(BuildingSlave(build_id='8-1')))
+                   FakeMethod(BuildingSlave(build_id='PACKAGEBUILD-8')))
         transaction.commit()
         login(ANONYMOUS)
 
