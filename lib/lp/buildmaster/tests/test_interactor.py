@@ -177,8 +177,7 @@ class TestBuilderInteractor(TestCase):
         lost = yield BuilderInteractor(
             MockBuilder(), slave, TrivialBehavior()).rescueIfLost()
         self.assertFalse(lost)
-        self.assertNotIn('abort', slave.call_log)
-        self.assertNotIn('clean', slave.call_log)
+        self.assertEqual([], slave.call_log)
 
     @defer.inlineCallbacks
     def test_recover_waiting_slave_with_good_id(self):
@@ -188,8 +187,7 @@ class TestBuilderInteractor(TestCase):
         lost = yield BuilderInteractor(
             MockBuilder(), waiting_slave, TrivialBehavior()).rescueIfLost()
         self.assertFalse(lost)
-        self.assertNotIn('abort', waiting_slave.call_log)
-        self.assertNotIn('clean', waiting_slave.call_log)
+        self.assertEqual(['status'], waiting_slave.call_log)
 
     @defer.inlineCallbacks
     def test_recover_waiting_slave_with_bad_id(self):
@@ -202,8 +200,7 @@ class TestBuilderInteractor(TestCase):
         lost = yield BuilderInteractor(
             MockBuilder(), waiting_slave, TrivialBehavior()).rescueIfLost()
         self.assertTrue(lost)
-        self.assertNotIn('abort', waiting_slave.call_log)
-        self.assertIn('clean', waiting_slave.call_log)
+        self.assertEqual(['status', 'clean'], waiting_slave.call_log)
 
     @defer.inlineCallbacks
     def test_recover_building_slave_with_good_id(self):
@@ -213,8 +210,7 @@ class TestBuilderInteractor(TestCase):
         lost = yield BuilderInteractor(
             MockBuilder(), building_slave, TrivialBehavior()).rescueIfLost()
         self.assertFalse(lost)
-        self.assertNotIn('abort', building_slave.call_log)
-        self.assertNotIn('clean', building_slave.call_log)
+        self.assertEqual(['status'], building_slave.call_log)
 
     @defer.inlineCallbacks
     def test_recover_building_slave_with_bad_id(self):
@@ -224,8 +220,7 @@ class TestBuilderInteractor(TestCase):
         lost = yield BuilderInteractor(
             MockBuilder(), building_slave, TrivialBehavior()).rescueIfLost()
         self.assertTrue(lost)
-        self.assertIn('abort', building_slave.call_log)
-        self.assertNotIn('clean', building_slave.call_log)
+        self.assertEqual(['status', 'abort'], building_slave.call_log)
 
 
 class TestBuilderInteractorSlaveStatus(TestCase):
