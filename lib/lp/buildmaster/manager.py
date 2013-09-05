@@ -294,11 +294,18 @@ class SlaveScanner:
                     # slave as necessary, so let's free the DB build to
                     # be dispatched elsewhere.
                     self.logger.warn(
-                        "Builder %s is lost. Resetting BuildQueue %d.",
+                        "%s is lost. Resetting BuildQueue %d.",
                         self.builder.name, self.builder.currentjob.id)
                     self.builder.currentjob.reset()
                     transaction.commit()
                 return
+        else:
+            if self.builder.currentjob is not None:
+                self.logger.warn(
+                    "%s was made unavailable. Resetting BuildQueue %d.",
+                    self.builder.name, self.builder.currentjob.id)
+                self.builder.currentjob.reset()
+                transaction.commit()
 
         # Commit the changes done while possibly rescuing jobs, to
         # avoid holding table locks.
@@ -325,13 +332,6 @@ class SlaveScanner:
         # builder.
         available = yield self.interactor.isAvailable()
         if not available:
-            job = self.builder.currentjob
-            if job is not None and not self.builder.builderok:
-                self.logger.info(
-                    "%s was made unavailable, resetting attached "
-                    "job" % self.builder.name)
-                job.reset()
-                transaction.commit()
             return
 
         # See if there is a job we can dispatch to the builder slave.
