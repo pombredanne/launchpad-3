@@ -256,8 +256,9 @@ class SlaveScanner:
         :return: A Deferred that fires when the scan is complete.
         """
         self.logger.debug("Scanning %s." % self.builder_name)
-        # We need to re-fetch the builder object on each cycle as the
-        # Storm store is invalidated over transaction boundaries.
+        # Commit and refetch the Builder object to ensure we have the
+        # latest data from the DB.
+        transaction.commit()
         self.builder = builder or get_builder(self.builder_name)
         self.interactor = interactor or BuilderInteractor(self.builder)
 
