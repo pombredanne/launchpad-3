@@ -80,17 +80,22 @@ class TestBuilderInteractor(TestCase):
         self.assertRaises(
             AssertionError, interactor.extractBuildStatus, slave_status)
 
-    def test_verifySlaveBuildCookie_good(self):
+    def test_verifySlaveBuildCookie_building_match(self):
         interactor = BuilderInteractor(MockBuilder(), None, TrivialBehavior())
         interactor.verifySlaveBuildCookie('trivial')
 
-    def test_verifySlaveBuildCookie_bad(self):
+    def test_verifySlaveBuildCookie_building_mismatch(self):
         interactor = BuilderInteractor(MockBuilder(), None, TrivialBehavior())
         self.assertRaises(
             CorruptBuildCookie,
             interactor.verifySlaveBuildCookie, 'difficult')
 
-    def test_verifySlaveBuildCookie_idle(self):
+    def test_verifySlaveBuildCookie_idle_match(self):
+        interactor = BuilderInteractor(MockBuilder())
+        self.assertIs(None, interactor._current_build_behavior)
+        interactor.verifySlaveBuildCookie(None)
+
+    def test_verifySlaveBuildCookie_idle_mismatch(self):
         interactor = BuilderInteractor(MockBuilder())
         self.assertIs(None, interactor._current_build_behavior)
         self.assertRaises(
@@ -171,11 +176,22 @@ class TestBuilderInteractor(TestCase):
         self.assertEqual(5, interactor.slave.timeout)
 
     @defer.inlineCallbacks
-    def test_recover_ok_slave(self):
-        # An idle slave is not rescued.
+    def test_recover_idle_slave(self):
+        # An idle slave is not rescued, even if it's not meant to be
+        # idle. SlaveScanner.scan() will clean up the DB side, because
+        # we still report that it's lost.
         slave = OkSlave()
         lost = yield BuilderInteractor(
             MockBuilder(), slave, TrivialBehavior()).rescueIfLost()
+        self.assertTrue(lost)
+        self.assertEqual([], slave.call_log)
+
+    @defer.inlineCallbacks
+    def test_recover_ok_slave(self):
+        # An idle slave that's meant to be idle is not rescued.
+        slave = OkSlave()
+        lost = yield BuilderInteractor(
+            MockBuilder(), slave, None).rescueIfLost()
         self.assertFalse(lost)
         self.assertEqual([], slave.call_log)
 

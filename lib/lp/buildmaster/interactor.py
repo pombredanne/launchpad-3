@@ -303,13 +303,17 @@ class BuilderInteractor(object):
             defer.returnValue(False)
         defer.returnValue(status[0] == 'BuilderStatus.IDLE')
 
-    def verifySlaveBuildCookie(self, slave_build_cookie):
+    def verifySlaveBuildCookie(self, slave_cookie):
         """See `IBuildFarmJobBehavior`."""
         if self._current_build_behavior is None:
-            raise CorruptBuildCookie('No job assigned to builder')
-        good_cookie = self._current_build_behavior.getBuildCookie()
-        if slave_build_cookie != good_cookie:
-            raise CorruptBuildCookie("Invalid slave build cookie.")
+            if slave_cookie is not None:
+                raise CorruptBuildCookie('Slave building when should be idle.')
+        else:
+            good_cookie = self._current_build_behavior.getBuildCookie()
+            if slave_cookie != good_cookie:
+                raise CorruptBuildCookie(
+                    "Invalid slave build cookie: got %r, expected %r."
+                    % (slave_cookie, good_cookie))
 
     @defer.inlineCallbacks
     def rescueIfLost(self, logger=None):
@@ -322,7 +326,8 @@ class BuilderInteractor(object):
         `IBuildFarmJobBehavior.verifySlaveBuildCookie`.
 
         :return: A Deferred that fires when the dialog with the slave is
-            finished.  It does not have a return value.
+            finished.  Its return value is True if the slave is lost,
+            False otherwise.
         """
         # 'ident_position' dict relates the position of the job identifier
         # token in the sentence received from status(), according to the
@@ -330,28 +335,39 @@ class BuilderInteractor(object):
         # for further information about sentence format.
         ident_position = {
             'BuilderStatus.BUILDING': 1,
+            'BuilderStatus.ABORTING': 1,
             'BuilderStatus.WAITING': 2
             }
 
-        # If slave is not building nor waiting, it's not in need of
-        # rescuing.
+        # Determine the slave's current build cookie. For BUILDING, ABORTING
+        # and WAITING we extract the string from the slave status
+        # sentence, and for IDLE it is None.
         status_sentence = yield self.slave.status()
         status = status_sentence[0]
         if status not in ident_position.keys():
-            defer.returnValue(False)
-        slave_build_id = status_sentence[ident_position[status]]
+            slave_cookie = None
+        else:
+            slave_cookie = status_sentence[ident_position[status]]
+
+        # verifySlaveBuildCookie will raise CorruptBuildCookie if the
+        # slave cookie doesn't match the expected one, including
+        # verifying that the slave cookie is None iff we expect the
+        # slave to be idle.
         try:
-            self.verifySlaveBuildCookie(slave_build_id)
+            self.verifySlaveBuildCookie(slave_cookie)
             defer.returnValue(False)
         except CorruptBuildCookie as reason:
+            # An IDLE slave doesn't need rescuing (SlaveScanner.scan
+            # will rescue the DB side instead), and we just have to wait
+            # out an ABORTING one.
             if status == 'BuilderStatus.WAITING':
                 yield self.cleanSlave()
-            else:
+            elif status == 'BuilderStatus.BUILDING':
                 yield self.requestAbort()
             if logger:
                 logger.info(
                     "Builder '%s' rescued from '%s': '%s'" %
-                    (self.builder.name, slave_build_id, reason))
+                    (self.builder.name, slave_cookie, reason))
             defer.returnValue(True)
 
     def cleanSlave(self):
