@@ -466,7 +466,7 @@ class TestSlaveScannerWithoutDB(TestCase):
         scanner.checkCancellation = FakeMethod(defer.succeed(False))
 
         yield scanner.scan(builder=interactor.builder, interactor=interactor)
-        self.assertEqual(['status', 'status'], interactor.slave.call_log)
+        self.assertEqual(['status'], interactor.slave.call_log)
         self.assertEqual(1, interactor.updateBuild.call_count)
         self.assertEqual(0, interactor.builder.currentjob.reset.call_count)
 
