@@ -288,21 +288,6 @@ class BuilderInteractor(object):
                 status['logtail'] = status_sentence[2]
         defer.returnValue((status_sentence, status))
 
-    @defer.inlineCallbacks
-    def isAvailable(self):
-        """Whether or not a builder is available for building new jobs.
-
-        :return: A Deferred that fires with True or False, depending on
-            whether the builder is available or not.
-        """
-        if not self.builder.builderok:
-            defer.returnValue(False)
-        try:
-            status = yield self.slave.status()
-        except (xmlrpclib.Fault, socket.error):
-            defer.returnValue(False)
-        defer.returnValue(status[0] == 'BuilderStatus.IDLE')
-
     def verifySlaveBuildCookie(self, slave_cookie):
         """See `IBuildFarmJobBehavior`."""
         if self._current_build_behavior is None:

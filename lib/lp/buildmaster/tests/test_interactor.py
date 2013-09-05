@@ -286,21 +286,6 @@ class TestBuilderInteractorSlaveStatus(TestCase):
         self.assertStatus(
             AbortingSlave(), builder_status='BuilderStatus.ABORTING')
 
-    def test_isAvailable_with_not_builderok(self):
-        # isAvailable() is a wrapper around BuilderSlave.status()
-        builder = MockBuilder()
-        builder.builderok = False
-        d = BuilderInteractor(builder).isAvailable()
-        return d.addCallback(self.assertFalse)
-
-    def test_isAvailable_with_slave_fault(self):
-        d = BuilderInteractor(MockBuilder(), BrokenSlave()).isAvailable()
-        return d.addCallback(self.assertFalse)
-
-    def test_isAvailable_with_slave_idle(self):
-        d = BuilderInteractor(MockBuilder(), OkSlave()).isAvailable()
-        return d.addCallback(self.assertTrue)
-
 
 class TestBuilderInteractorDB(TestCaseWithFactory):
     """BuilderInteractor tests that need a DB."""
