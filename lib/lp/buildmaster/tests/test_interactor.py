@@ -33,7 +33,6 @@ from lp.buildmaster.interfaces.builder import (
     )
 from lp.buildmaster.tests.mock_slaves import (
     AbortingSlave,
-    BrokenSlave,
     BuildingSlave,
     DeadProxy,
     LostBuildingBrokenSlave,

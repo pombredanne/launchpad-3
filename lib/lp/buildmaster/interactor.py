@@ -8,9 +8,7 @@ __all__ = [
     ]
 
 import logging
-import socket
 from urlparse import urlparse
-import xmlrpclib
 
 import transaction
 from twisted.internet import defer

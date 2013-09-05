@@ -8,7 +8,6 @@ import signal
 import time
 import xmlrpclib
 
-from lpbuildd.tests import BuilddSlaveTestSetup
 from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
