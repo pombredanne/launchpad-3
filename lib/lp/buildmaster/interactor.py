@@ -531,8 +531,11 @@ class BuilderInteractor(object):
 
         :return: A Deferred that fires when the slave dialog is finished.
         """
+        # IDLE is deliberately not handled here, because it should be
+        # impossible to get past rescueIfLost unless the slave matches
+        # the DB, and this method isn't called unless the DB says
+        # there's a job.
         builder_status_handlers = {
-            'BuilderStatus.IDLE': self.updateBuild_IDLE,
             'BuilderStatus.BUILDING': self.updateBuild_BUILDING,
             'BuilderStatus.ABORTING': self.updateBuild_ABORTING,
             'BuilderStatus.WAITING': self.updateBuild_WAITING,
@@ -545,18 +548,6 @@ class BuilderInteractor(object):
             raise AssertionError("Unknown status %s" % builder_status)
         method = builder_status_handlers[builder_status]
         yield method(queueItem, status_sentence, status_dict, logger)
-
-    def updateBuild_IDLE(self, queueItem, status_sentence, status_dict,
-                         logger):
-        """Somehow the builder forgot about the build job.
-
-        Log this and reset the record.
-        """
-        logger.warn(
-            "Builder %s forgot about buildqueue %d -- resetting buildqueue "
-            "record" % (queueItem.builder.url, queueItem.id))
-        queueItem.reset()
-        transaction.commit()
 
     def updateBuild_BUILDING(self, queueItem, status_sentence, status_dict,
                              logger):

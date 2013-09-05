@@ -180,28 +180,30 @@ class TestSlaveScannerScan(TestCase):
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
         self.assertEqual(build.status, BuildStatus.NEEDSBUILD)
 
+    @defer.inlineCallbacks
     def testScanRescuesJobFromBrokenBuilder(self):
         # The job assigned to a broken builder is rescued.
-        self.useFixture(BuilddSlaveTestSetup())
-
         # Sampledata builder is enabled and is assigned to an active job.
         builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
+        self.patch(
+            BuilderSlave, 'makeBuilderSlave',
+            FakeMethod(BuildingSlave(build_id='PACKAGEBUILD-8')))
         self.assertTrue(builder.builderok)
         job = builder.currentjob
         self.assertBuildingJob(job, builder)
 
+        scanner = self._getScanner()
+        yield scanner.scan()
+        self.assertIsNot(None, builder.currentjob)
+
         # Disable the sampledata builder
-        login('foo.bar@canonical.com')
         builder.builderok = False
         transaction.commit()
-        login(ANONYMOUS)
 
         # Run 'scan' and check its result.
-        switch_dbuser(config.builddmaster.dbuser)
-        scanner = self._getScanner()
-        d = defer.maybeDeferred(scanner.scan)
-        d.addCallback(self._checkJobRescued, builder, job)
-        return d
+        slave = yield scanner.scan()
+        self.assertIs(None, builder.currentjob)
+        self._checkJobRescued(slave, builder, job)
 
     def _checkJobUpdated(self, slave, builder, job):
         """`SlaveScanner.scan` updates legitimate jobs.
