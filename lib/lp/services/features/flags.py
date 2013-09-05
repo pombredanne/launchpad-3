@@ -209,6 +209,12 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('code.inline_diff_comments.enabled',
+     'space delimited',
+     'Names of projects have inline diff comments enabled.',
+     '',
+     '',
+     ''),
     ])
 
 # The set of all flag names that are documented.
