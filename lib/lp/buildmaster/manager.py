@@ -255,9 +255,7 @@ class SlaveScanner:
 
         :return: A Deferred that fires when the scan is complete.
         """
-        if self.logger:
-            self.logger.debug("Scanning %s." % self.builder_name)
-
+        self.logger.debug("Scanning %s." % self.builder_name)
         # We need to re-fetch the builder object on each cycle as the
         # Storm store is invalidated over transaction boundaries.
         self.builder = builder or get_builder(self.builder_name)
