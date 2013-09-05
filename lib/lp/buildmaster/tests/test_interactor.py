@@ -174,8 +174,9 @@ class TestBuilderInteractor(TestCase):
     def test_recover_ok_slave(self):
         # An idle slave is not rescued.
         slave = OkSlave()
-        yield BuilderInteractor(
+        lost = yield BuilderInteractor(
             MockBuilder(), slave, TrivialBehavior()).rescueIfLost()
+        self.assertFalse(lost)
         self.assertNotIn('abort', slave.call_log)
         self.assertNotIn('clean', slave.call_log)
 
@@ -184,8 +185,9 @@ class TestBuilderInteractor(TestCase):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # WAITING.
         waiting_slave = WaitingSlave(build_id='trivial')
-        yield BuilderInteractor(
+        lost = yield BuilderInteractor(
             MockBuilder(), waiting_slave, TrivialBehavior()).rescueIfLost()
+        self.assertFalse(lost)
         self.assertNotIn('abort', waiting_slave.call_log)
         self.assertNotIn('clean', waiting_slave.call_log)
 
@@ -197,8 +199,9 @@ class TestBuilderInteractor(TestCase):
         # builder is reset for a new build, and the corrupt build is
         # discarded.
         waiting_slave = WaitingSlave(build_id='non-trivial')
-        yield BuilderInteractor(
+        lost = yield BuilderInteractor(
             MockBuilder(), waiting_slave, TrivialBehavior()).rescueIfLost()
+        self.assertTrue(lost)
         self.assertNotIn('abort', waiting_slave.call_log)
         self.assertIn('clean', waiting_slave.call_log)
 
@@ -207,8 +210,9 @@ class TestBuilderInteractor(TestCase):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # BUILDING.
         building_slave = BuildingSlave(build_id='trivial')
-        yield BuilderInteractor(
+        lost = yield BuilderInteractor(
             MockBuilder(), building_slave, TrivialBehavior()).rescueIfLost()
+        self.assertFalse(lost)
         self.assertNotIn('abort', building_slave.call_log)
         self.assertNotIn('clean', building_slave.call_log)
 
@@ -217,8 +221,9 @@ class TestBuilderInteractor(TestCase):
         # If a slave is BUILDING with a build id we don't recognize, then we
         # abort the build, thus stopping it in its tracks.
         building_slave = BuildingSlave(build_id='non-trivial')
-        yield BuilderInteractor(
+        lost = yield BuilderInteractor(
             MockBuilder(), building_slave, TrivialBehavior()).rescueIfLost()
+        self.assertTrue(lost)
         self.assertIn('abort', building_slave.call_log)
         self.assertNotIn('clean', building_slave.call_log)
 

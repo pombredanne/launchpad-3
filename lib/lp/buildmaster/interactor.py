@@ -338,10 +338,11 @@ class BuilderInteractor(object):
         status_sentence = yield self.slave.status()
         status = status_sentence[0]
         if status not in ident_position.keys():
-            return
+            defer.returnValue(False)
         slave_build_id = status_sentence[ident_position[status]]
         try:
             self.verifySlaveBuildCookie(slave_build_id)
+            defer.returnValue(False)
         except CorruptBuildCookie as reason:
             if status == 'BuilderStatus.WAITING':
                 yield self.cleanSlave()
@@ -351,6 +352,7 @@ class BuilderInteractor(object):
                 logger.info(
                     "Builder '%s' rescued from '%s': '%s'" %
                     (self.builder.name, slave_build_id, reason))
+            defer.returnValue(True)
 
     def updateStatus(self, logger=None):
         """Update the builder's status by probing it.
