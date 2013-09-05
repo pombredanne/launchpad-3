@@ -47,7 +47,9 @@ from lp.buildmaster.tests.mock_slaves import (
     BuildingSlave,
     LostBuildingBrokenSlave,
     make_publisher,
+    MockBuilder,
     OkSlave,
+    TrivialBehavior,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.config import config
@@ -435,6 +437,74 @@ class TestSlaveScannerScan(TestCase):
         self.assertEqual(1, slave.call_log.count("abort"))
         self.assertEqual(1, slave.call_log.count("resume"))
         self.assertEqual(BuildStatus.CANCELLED, build.status)
+
+
+class FakeBuildQueue:
+
+    def __init__(self):
+        self.reset = FakeMethod()
+
+
+class TestSlaveScannerWithoutDB(TestCase):
+
+    run_tests_with = AsynchronousDeferredRunTest
+
+    @defer.inlineCallbacks
+    def test_scan_with_job(self):
+        # SlaveScanner.scan calls updateBuild() when a job is building.
+        interactor = BuilderInteractor(
+            MockBuilder(), BuildingSlave('trivial'), TrivialBehavior())
+        scanner = SlaveScanner('mock', BufferLogger())
+
+        # Instrument updateBuild and currentjob.reset
+        interactor.updateBuild = FakeMethod()
+        interactor.builder.currentjob = FakeBuildQueue()
+        # XXX: checkCancellation needs more than a FakeBuildQueue.
+        scanner.checkCancellation = FakeMethod(defer.succeed(False))
+
+        yield scanner.scan(builder=interactor.builder, interactor=interactor)
+        self.assertEqual(['status', 'status'], interactor.slave.call_log)
+        self.assertEqual(1, interactor.updateBuild.call_count)
+        self.assertEqual(0, interactor.builder.currentjob.reset.call_count)
+
+    @defer.inlineCallbacks
+    def test_scan_aborts_lost_slave_with_job(self):
+        # SlaveScanner.scan uses BuilderInteractor.rescueIfLost to abort
+        # slaves that don't have the expected job.
+        interactor = BuilderInteractor(
+            MockBuilder(), BuildingSlave('nontrivial'), TrivialBehavior())
+        scanner = SlaveScanner('mock', BufferLogger())
+
+        # Instrument updateBuild and currentjob.reset
+        interactor.updateBuild = FakeMethod()
+        interactor.builder.currentjob = FakeBuildQueue()
+        # XXX: checkCancellation needs more than a FakeBuildQueue.
+        scanner.checkCancellation = FakeMethod(defer.succeed(False))
+
+        # A single scan will call status(), notice that the slave is
+        # lost, abort() the slave, then reset() the job without calling
+        # updateBuild().
+        yield scanner.scan(builder=interactor.builder, interactor=interactor)
+        self.assertEqual(['status', 'abort'], interactor.slave.call_log)
+        self.assertEqual(0, interactor.updateBuild.call_count)
+        self.assertEqual(1, interactor.builder.currentjob.reset.call_count)
+
+    @defer.inlineCallbacks
+    def test_scan_aborts_lost_slave_when_idle(self):
+        # SlaveScanner.scan uses BuilderInteractor.rescueIfLost to abort
+        # slaves that aren't meant to have a job.
+        interactor = BuilderInteractor(MockBuilder(), BuildingSlave(), None)
+        scanner = SlaveScanner('mock', BufferLogger())
+
+        # Instrument updateBuild.
+        interactor.updateBuild = FakeMethod()
+
+        # A single scan will call status(), notice that the slave is
+        # lost, abort() the slave, then reset() the job without calling
+        # updateBuild().
+        yield scanner.scan(builder=interactor.builder, interactor=interactor)
+        self.assertEqual(['status', 'abort'], interactor.slave.call_log)
+        self.assertEqual(0, interactor.updateBuild.call_count)
 
 
 class TestCancellationChecking(TestCaseWithFactory):

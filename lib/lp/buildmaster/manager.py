@@ -250,7 +250,7 @@ class SlaveScanner:
             defer.returnValue(value is not None)
 
     @defer.inlineCallbacks
-    def scan(self):
+    def scan(self, builder=None, interactor=None):
         """Probe the builder and update/dispatch/collect as appropriate.
 
         There are several steps to scanning:
@@ -276,14 +276,23 @@ class SlaveScanner:
         # We need to re-fetch the builder object on each cycle as the
         # Storm store is invalidated over transaction boundaries.
 
-        self.builder = get_builder(self.builder_name)
-        self.interactor = BuilderInteractor(self.builder)
+        self.builder = builder or get_builder(self.builder_name)
+        self.interactor = interactor or BuilderInteractor(self.builder)
 
         if self.builder.builderok:
             cancelled = yield self.checkCancellation(self.builder)
             if cancelled:
                 return
-            yield self.interactor.updateStatus(self.logger)
+            lost = yield self.interactor.updateStatus(self.logger)
+            if lost:
+                if self.builder.currentjob is not None:
+                    # The DB and slave both have a job assigned, but
+                    # disagree on its identity. rescueIfLost is already
+                    # cleaning up the slave, so let's free the DB build
+                    # to be dispatched elsewhere.
+                    self.builder.currentjob.reset()
+                    transaction.commit()
+                return
 
         # Commit the changes done while possibly rescuing jobs, to
         # avoid holding table locks.
