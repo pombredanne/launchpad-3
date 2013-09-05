@@ -299,7 +299,7 @@ class SlaveScanner:
         # continue to update the job status or dispatch a new job, so
         # just rescue the assigned job, if any, so it can be dispatched
         # to another slave.
-        if lost_reason:
+        if lost_reason is not None:
             if self.builder.currentjob is not None:
                 self.logger.warn(
                     "%s. Resetting BuildQueue %d.", lost_reason,
@@ -311,36 +311,24 @@ class SlaveScanner:
         # We've confirmed that the slave state matches the DB. Continue
         # with updating the job status, or dispatching a new job if the
         # builder is idle.
-        buildqueue = self.builder.currentjob
-        if buildqueue is not None:
+        if self.builder.currentjob is not None:
             # Scan the slave and get the logtail, or collect the build
             # if it's ready.  Yes, "updateBuild" is a bad name.
-            yield self.interactor.updateBuild(buildqueue)
-
-        # If the builder is in manual mode, don't dispatch anything.
-        if self.builder.manual:
+            yield self.interactor.updateBuild(self.builder.currentjob)
+        elif self.builder.manual:
+            # If the builder is in manual mode, don't dispatch anything.
             self.logger.debug(
                 '%s is in manual mode, not dispatching.' %
                 self.builder.name)
             return
-
-        # If the builder is marked unavailable, don't dispatch anything.
-        # Additionaly, because builders can be removed from the pool at
-        # any time, we need to see if we think there was a build running
-        # on it before it was marked unavailable. In this case we reset
-        # the build thusly forcing it to get re-dispatched to another
-        # builder.
-        available = yield self.interactor.isAvailable()
-        if not available:
-            return
-
-        # See if there is a job we can dispatch to the builder slave.
-        yield self.interactor.findAndStartJob()
-        if self.builder.currentjob is not None:
-            # After a successful dispatch we can reset the
-            # failure_count.
-            self.builder.resetFailureCount()
-            transaction.commit()
+        else:
+            # See if there is a job we can dispatch to the builder slave.
+            yield self.interactor.findAndStartJob()
+            if self.builder.currentjob is not None:
+                # After a successful dispatch we can reset the
+                # failure_count.
+                self.builder.resetFailureCount()
+                transaction.commit()
 
 
 class NewBuildersScanner:
