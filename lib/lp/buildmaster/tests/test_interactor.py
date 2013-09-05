@@ -170,31 +170,26 @@ class TestBuilderInteractor(TestCase):
         interactor = BuilderInteractor(builder)
         self.assertEqual(5, interactor.slave.timeout)
 
+    @defer.inlineCallbacks
     def test_recover_ok_slave(self):
         # An idle slave is not rescued.
         slave = OkSlave()
-        d = BuilderInteractor(
+        yield BuilderInteractor(
             MockBuilder(), slave, TrivialBehavior()).rescueIfLost()
+        self.assertNotIn('abort', slave.call_log)
+        self.assertNotIn('clean', slave.call_log)
 
-        def check_slave_calls(ignored):
-            self.assertNotIn('abort', slave.call_log)
-            self.assertNotIn('clean', slave.call_log)
-
-        return d.addCallback(check_slave_calls)
-
+    @defer.inlineCallbacks
     def test_recover_waiting_slave_with_good_id(self):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # WAITING.
         waiting_slave = WaitingSlave(build_id='trivial')
-        d = BuilderInteractor(
+        yield BuilderInteractor(
             MockBuilder(), waiting_slave, TrivialBehavior()).rescueIfLost()
+        self.assertNotIn('abort', waiting_slave.call_log)
+        self.assertNotIn('clean', waiting_slave.call_log)
 
-        def check_slave_calls(ignored):
-            self.assertNotIn('abort', waiting_slave.call_log)
-            self.assertNotIn('clean', waiting_slave.call_log)
-
-        return d.addCallback(check_slave_calls)
-
+    @defer.inlineCallbacks
     def test_recover_waiting_slave_with_bad_id(self):
         # If a slave is WAITING with a build for us to get, and the build
         # cookie cannot be verified, which means we don't recognize the build,
@@ -202,40 +197,30 @@ class TestBuilderInteractor(TestCase):
         # builder is reset for a new build, and the corrupt build is
         # discarded.
         waiting_slave = WaitingSlave(build_id='non-trivial')
-        d = BuilderInteractor(
+        yield BuilderInteractor(
             MockBuilder(), waiting_slave, TrivialBehavior()).rescueIfLost()
+        self.assertNotIn('abort', waiting_slave.call_log)
+        self.assertIn('clean', waiting_slave.call_log)
 
-        def check_slave_calls(ignored):
-            self.assertNotIn('abort', waiting_slave.call_log)
-            self.assertIn('clean', waiting_slave.call_log)
-
-        return d.addCallback(check_slave_calls)
-
+    @defer.inlineCallbacks
     def test_recover_building_slave_with_good_id(self):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # BUILDING.
         building_slave = BuildingSlave(build_id='trivial')
-        d = BuilderInteractor(
+        yield BuilderInteractor(
             MockBuilder(), building_slave, TrivialBehavior()).rescueIfLost()
+        self.assertNotIn('abort', building_slave.call_log)
+        self.assertNotIn('clean', building_slave.call_log)
 
-        def check_slave_calls(ignored):
-            self.assertNotIn('abort', building_slave.call_log)
-            self.assertNotIn('clean', building_slave.call_log)
-
-        return d.addCallback(check_slave_calls)
-
+    @defer.inlineCallbacks
     def test_recover_building_slave_with_bad_id(self):
         # If a slave is BUILDING with a build id we don't recognize, then we
         # abort the build, thus stopping it in its tracks.
         building_slave = BuildingSlave(build_id='non-trivial')
-        d = BuilderInteractor(
+        yield BuilderInteractor(
             MockBuilder(), building_slave, TrivialBehavior()).rescueIfLost()
-
-        def check_slave_calls(ignored):
-            self.assertIn('abort', building_slave.call_log)
-            self.assertNotIn('clean', building_slave.call_log)
-
-        return d.addCallback(check_slave_calls)
+        self.assertIn('abort', building_slave.call_log)
+        self.assertNotIn('clean', building_slave.call_log)
 
 
 class TestBuilderInteractorSlaveStatus(TestCase):
