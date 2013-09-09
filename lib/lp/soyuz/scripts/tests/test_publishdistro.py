@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for publish-distro.py script."""
@@ -30,7 +30,6 @@ from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
-    BinaryPackageFormat,
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
@@ -373,6 +372,7 @@ class FakePublisher:
         self.C_doFTPArchive = FakeMethod()
         self.C_writeIndexes = FakeMethod()
         self.D_writeReleaseFiles = FakeMethod()
+        self.createSeriesAliases = FakeMethod()
 
 
 class TestPublishDistroMethods(TestCaseWithFactory):

@@ -224,9 +224,14 @@ class TestRevisionSet(TestCaseWithFactory):
     def test_newFromBazaarRevisions(self):
         # newFromBazaarRevisions behaves as expected.
         # only branchscanner can SELECT revisionproperties.
+
         self.becomeDbUser('branchscanner')
         bzr_revisions = [
-            self.factory.makeBzrRevision('rev-1', prop1="foo"),
+            self.factory.makeBzrRevision(
+                'rev-1',
+                props={
+                    'prop1': 'foo', 'deb-pristine-delta': 'bar',
+                    'deb-pristine-delta-xz': 'baz'}),
             self.factory.makeBzrRevision('rev-2', parent_ids=['rev-1'])
         ]
         with StormStatementRecorder() as recorder:
@@ -239,6 +244,9 @@ class TestRevisionSet(TestCaseWithFactory):
         self.assertEqual(
             datetime(1970, 1, 1, 0, 0, tzinfo=pytz.UTC), rev_1.revision_date)
         self.assertEqual([], rev_1.parents)
+        # Revision properties starting with 'deb-pristine-delta' aren't
+        # imported into the database; they're huge, opaque and
+        # uninteresting for the application.
         self.assertEqual({'prop1': 'foo'}, rev_1.getProperties())
         rev_2 = self.revision_set.getByRevisionId('rev-2')
         self.assertEqual(['rev-1'], rev_2.parent_ids)

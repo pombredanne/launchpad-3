@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code to build recipes on the buildfarm."""
@@ -42,8 +42,6 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
     # in this list.
     ALLOWED_STATUS_NOTIFICATIONS = [
         'OK', 'PACKAGEFAIL', 'DEPFAIL', 'CHROOTFAIL']
-
-    status = None
 
     @property
     def build(self):
@@ -137,19 +135,19 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
                               distroarchseries.displayname)
         logger.info(
             "Sending chroot file for recipe build to %s" % self._builder.name)
-        d = self._builder.slave.cacheFile(logger, chroot)
+        d = self._interactor.slave.cacheFile(logger, chroot)
 
         def got_cache_file(ignored):
             # Generate a string which can be used to cross-check when
             # obtaining results so we know we are referring to the right
             # database object in subsequent runs.
             buildid = "%s-%s" % (self.build.id, build_queue_id)
-            cookie = self.buildfarmjob.generateSlaveBuildCookie()
+            cookie = self.getBuildCookie()
             chroot_sha1 = chroot.content.sha1
             logger.info(
                 "Initiating build %s on %s" % (buildid, self._builder.url))
 
-            return self._builder.slave.build(
+            return self._interactor.slave.build(
                 cookie, "sourcepackagerecipe", chroot_sha1, {}, args)
 
         def log_build_result((status, info)):

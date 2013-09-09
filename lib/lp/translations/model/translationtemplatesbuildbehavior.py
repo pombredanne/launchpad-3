@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An `IBuildFarmJobBehavior` for `TranslationTemplatesBuildJob`.
@@ -11,14 +11,15 @@ __all__ = [
     'TranslationTemplatesBuildBehavior',
     ]
 
+import logging
 import os
+import re
 import tempfile
 
 import transaction
 from twisted.internet import defer
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
@@ -44,6 +45,14 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
     # Filename for the tarball of templates that the slave builds.
     templates_tarball_path = 'translation-templates.tar.gz'
 
+    unsafe_chars = '[^a-zA-Z0-9_+-]'
+
+    def getLogFileName(self):
+        """See `IBuildFarmJob`."""
+        safe_name = re.sub(
+            self.unsafe_chars, '_', self.buildfarmjob.branch.unique_name)
+        return "translationtemplates_%s_%d.txt" % (safe_name, self.build.id)
+
     def dispatchBuildToSlave(self, build_queue_item, logger):
         """See `IBuildFarmJobBehavior`."""
         chroot = self._getChroot()
@@ -52,11 +61,9 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             raise CannotBuild("Unable to find a chroot for %s" %
                               distroarchseries.displayname)
         chroot_sha1 = chroot.content.sha1
-        d = self._builder.slave.cacheFile(logger, chroot)
+        d = self._interactor.slave.cacheFile(logger, chroot)
 
         def got_cache_file(ignored):
-            cookie = self.buildfarmjob.generateSlaveBuildCookie()
-
             args = {
                 'arch_tag': self._getDistroArchSeries().architecturetag,
                 'branch_url': self.buildfarmjob.branch.composePublicURL(),
@@ -64,8 +71,9 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
             filemap = {}
 
-            return self._builder.slave.build(
-                cookie, self.build_type, chroot_sha1, filemap, args)
+            return self._interactor.slave.build(
+                self.getBuildCookie(), self.build_type, chroot_sha1, filemap,
+                args)
         return d.addCallback(got_cache_file)
 
     def _getChroot(self):
@@ -79,7 +87,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         """See `IBuildFarmJobBehavior`."""
         logger.info(
             "Starting templates build %s for %s." % (
-            self.buildfarmjob.getName(),
+            self.getBuildCookie(),
             self.buildfarmjob.branch.bzr_identity))
 
     def _readTarball(self, buildqueue, filemap, logger):
@@ -93,7 +101,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             logger.error("Did not find templates tarball in slave output.")
             return defer.succeed(None)
 
-        slave = removeSecurityProxy(buildqueue.builder.slave)
+        slave = self._interactor.slave
 
         fd, fname = tempfile.mkstemp()
         tarball_file = os.fdopen(fd, 'wb')
@@ -119,8 +127,8 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                 status['filemap'] = raw_slave_status[3]
 
     @defer.inlineCallbacks
-    def updateBuild_WAITING(self, queue_item, slave_status, logtail, logger):
-        """Deal with a finished ("WAITING" state, perversely) build job.
+    def handleStatus(self, queue_item, status, slave_status):
+        """Deal with a finished build job.
 
         Retrieves tarball and logs from the slave, then cleans up the
         slave so it's ready for a next job and destroys the queue item.
@@ -128,15 +136,15 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         If this fails for whatever unforeseen reason, a future run will
         retry it.
         """
-        build_status = self.extractBuildStatus(slave_status)
-
+        from lp.buildmaster.manager import BUILDD_MANAGER_LOG_NAME
+        logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
         logger.info(
-            "Templates generation job %s for %s finished with status %s." % (
-            queue_item.specific_job.getName(),
+            "Processing finished %s build %s (%s) from builder %s" % (
+            status, self.getBuildCookie(),
             queue_item.specific_job.branch.bzr_identity,
-            build_status))
+            queue_item.builder.name))
 
-        if build_status == 'OK':
+        if status == 'OK':
             self.build.updateStatus(
                 BuildStatus.UPLOADING, builder=queue_item.builder)
             transaction.commit()
@@ -174,6 +182,6 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
         yield self.storeLogFromSlave(build_queue=queue_item)
 
-        yield queue_item.builder.cleanSlave()
+        yield self._interactor.cleanSlave()
         queue_item.destroySelf()
         transaction.commit()

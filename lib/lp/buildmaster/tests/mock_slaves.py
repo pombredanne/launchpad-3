@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Mock Build objects for tests soyuz buildd-system."""
@@ -6,11 +6,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'AbortedSlave',
     'AbortingSlave',
     'BrokenSlave',
     'BuildingSlave',
-    'CorruptBehavior',
     'DeadProxy',
     'LostBuildingBrokenSlave',
     'make_publisher',
@@ -32,19 +30,9 @@ from testtools.content_type import UTF8_TEXT
 from twisted.internet import defer
 from twisted.web import xmlrpc
 
-from lp.buildmaster.interfaces.builder import (
-    CannotFetchFile,
-    CorruptBuildCookie,
-    )
-from lp.buildmaster.model.builder import (
-    BuilderSlave,
-    rescueBuilderIfLost,
-    updateBuilderStatus,
-    )
+from lp.buildmaster.interactor import BuilderSlave
+from lp.buildmaster.interfaces.builder import CannotFetchFile
 from lp.services.config import config
-from lp.soyuz.model.binarypackagebuildbehavior import (
-    BinaryPackageBuildBehavior,
-    )
 from lp.testing.sampledata import I386_ARCHITECTURE_NAME
 
 
@@ -58,48 +46,20 @@ def make_publisher():
 class MockBuilder:
     """Emulates a IBuilder class."""
 
-    def __init__(self, name, slave, behavior=None):
-        if behavior is None:
-            self.current_build_behavior = BinaryPackageBuildBehavior(None)
-        else:
-            self.current_build_behavior = behavior
-
-        self.slave = slave
-        self.builderok = True
-        self.manual = False
+    def __init__(self, name='mock-builder', builderok=True, manual=False,
+                 virtualized=True, vm_host=None):
+        self.currentjob = None
+        self.builderok = builderok
+        self.manual = manual
         self.url = 'http://fake:0000'
-        slave.url = self.url
         self.name = name
-        self.virtualized = True
+        self.virtualized = virtualized
+        self.vm_host = vm_host
+        self.failnotes = None
 
     def failBuilder(self, reason):
         self.builderok = False
         self.failnotes = reason
-
-    def slaveStatusSentence(self):
-        return self.slave.status()
-
-    def verifySlaveBuildCookie(self, slave_build_id):
-        return self.current_build_behavior.verifySlaveBuildCookie(
-            slave_build_id)
-
-    def cleanSlave(self):
-        return self.slave.clean()
-
-    def requestAbort(self):
-        return self.slave.abort()
-
-    def resumeSlave(self, logger):
-        return ('out', 'err')
-
-    def checkSlaveAlive(self):
-        pass
-
-    def rescueIfLost(self, logger=None):
-        return rescueBuilderIfLost(self, logger)
-
-    def updateStatus(self, logger=None):
-        return defer.maybeDeferred(updateBuilderStatus, self, logger)
 
 
 # XXX: It would be *really* nice to run some set of tests against the real
@@ -232,18 +192,6 @@ class AbortingSlave(OkSlave):
         return defer.succeed(('BuilderStatus.ABORTING', '1-1'))
 
 
-class AbortedSlave(OkSlave):
-    """A mock slave that looks like it's aborted."""
-
-    def clean(self):
-        self.call_log.append('clean')
-        return defer.succeed(None)
-
-    def status(self):
-        self.call_log.append('status')
-        return defer.succeed(('BuilderStatus.ABORTED', '1-1'))
-
-
 class LostBuildingBrokenSlave:
     """A mock slave building bogus Build/BuildQueue IDs that can't be aborted.
 
@@ -261,6 +209,10 @@ class LostBuildingBrokenSlave:
         self.call_log.append('abort')
         return defer.fail(xmlrpclib.Fault(8002, "Could not abort"))
 
+    def resume(self):
+        self.call_log.append('resume')
+        return defer.succeed(("", "", 0))
+
 
 class BrokenSlave:
     """A mock slave that reports that it is broken."""
@@ -273,16 +225,10 @@ class BrokenSlave:
         return defer.fail(xmlrpclib.Fault(8001, "Broken slave"))
 
 
-class CorruptBehavior:
-
-    def verifySlaveBuildCookie(self, cookie):
-        raise CorruptBuildCookie("Bad value: %r" % (cookie,))
-
-
 class TrivialBehavior:
 
-    def verifySlaveBuildCookie(self, cookie):
-        pass
+    def getBuildCookie(self):
+        return 'trivial'
 
 
 class DeadProxy(xmlrpc.Proxy):

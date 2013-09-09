@@ -75,23 +75,11 @@ class IBuildFarmJobOld(Interface):
     def score():
         """Calculate a job score appropriate for the job type in question."""
 
-    def getLogFileName():
-        """The preferred file name for this job's log."""
-
-    def getName():
-        """An appropriate name for this job."""
-
-    def getTitle():
-        """A string to identify and describe the job to users."""
-
     def jobStarted():
         """'Job started' life cycle event, handle as appropriate."""
 
     def jobReset():
         """'Job reset' life cycle event, handle as appropriate."""
-
-    def jobAborted():
-        """'Job aborted' life cycle event, handle as appropriate."""
 
     def jobCancel():
         """'Job cancel' life cycle event."""
@@ -144,16 +132,6 @@ class IBuildFarmJobOld(Interface):
 
         Invoked on the specific `IBuildFarmJob`-implementing class that
         has entries associated with `job`s.
-        """
-
-    def generateSlaveBuildCookie():
-        """Produce a cookie for the slave as a token of the job it's doing.
-
-        The cookie need not be unique, but should be hard for a
-        compromised slave to guess.
-
-        :return: a hard-to-guess ASCII string that can be reproduced
-            accurately based on this job's properties.
         """
 
     def cleanUp():

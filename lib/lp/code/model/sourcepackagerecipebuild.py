@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation code for source package builds."""
@@ -85,8 +85,7 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
     implements(ISourcePackageRecipeBuild)
     classProvides(ISourcePackageRecipeBuildSource)
 
-    build_farm_job_type = BuildFarmJobType.RECIPEBRANCHBUILD
-    job_type = build_farm_job_type
+    job_type = BuildFarmJobType.RECIPEBRANCHBUILD
 
     id = Int(primary=True)
 
@@ -227,8 +226,7 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
         if date_created is None:
             date_created = UTC_NOW
         build_farm_job = getUtility(IBuildFarmJobSource).new(
-            cls.build_farm_job_type, BuildStatus.NEEDSBUILD, date_created,
-            None, archive)
+            cls.job_type, BuildStatus.NEEDSBUILD, date_created, None, archive)
         spbuild = cls(
             build_farm_job, distroseries, recipe, requester, archive, pocket,
             date_created)
@@ -472,9 +470,6 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOld, Storm):
         store = IMasterStore(cls)
         store.add(specific_job)
         return specific_job
-
-    def getName(self):
-        return "%s-%s" % (self.id, self.build_id)
 
     def score(self):
         return 2505 + self.build.archive.relative_build_score

@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -99,8 +99,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     _table = 'BinaryPackageBuild'
     _defaultOrder = 'id'
 
-    build_farm_job_type = BuildFarmJobType.PACKAGEBUILD
-    job_type = build_farm_job_type
+    job_type = BuildFarmJobType.PACKAGEBUILD
 
     build_farm_job_id = Int(name='build_farm_job')
     build_farm_job = Reference(build_farm_job_id, BuildFarmJob.id)
@@ -381,8 +380,6 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     def can_be_cancelled(self):
         """See `IBuild`."""
         if not self.buildqueue_record:
-            return False
-        if self.buildqueue_record.virtualized is False:
             return False
 
         cancellable_statuses = [
@@ -837,8 +834,8 @@ class BinaryPackageBuildSet:
         """See `IBinaryPackageBuildSet`."""
         # Create the BuildFarmJob for the new BinaryPackageBuild.
         build_farm_job = getUtility(IBuildFarmJobSource).new(
-            BinaryPackageBuild.build_farm_job_type, status, date_created,
-            builder, archive)
+            BinaryPackageBuild.job_type, status, date_created, builder,
+            archive)
         binary_package_build = BinaryPackageBuild(
             build_farm_job=build_farm_job,
             distro_arch_series=distro_arch_series,

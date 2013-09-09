@@ -16,17 +16,13 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.bulk import load_related
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
-from lp.soyuz.enums import (
-    ArchivePurpose,
-    PackagePublishingStatus,
-    )
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildpackagejob import (
     COPY_ARCHIVE_SCORE_PENALTY,
@@ -103,33 +99,6 @@ class BuildPackageJob(BuildFarmJobOld, Storm):
 
         return score
 
-    def getLogFileName(self):
-        """See `IBuildPackageJob`."""
-        sourcename = self.build.source_package_release.name
-        version = self.build.source_package_release.version
-        # we rely on previous storage of current buildstate
-        # in the state handling methods.
-        state = self.build.status.name
-
-        dar = self.build.distro_arch_series
-        distroname = dar.distroseries.distribution.name
-        distroseriesname = dar.distroseries.name
-        archname = dar.architecturetag
-
-        # logfilename format:
-        # buildlog_<DISTRIBUTION>_<DISTROSeries>_<ARCHITECTURE>_\
-        # <SOURCENAME>_<SOURCEVERSION>_<BUILDSTATE>.txt
-        # as:
-        # buildlog_ubuntu_dapper_i386_foo_1.0-ubuntu0_FULLYBUILT.txt
-        # it fix request from bug # 30617
-        return ('buildlog_%s-%s-%s.%s_%s_%s.txt' % (
-            distroname, distroseriesname, archname, sourcename, version,
-            state))
-
-    def getName(self):
-        """See `IBuildPackageJob`."""
-        return self.build.source_package_release.name
-
     @property
     def processor(self):
         """See `IBuildFarmJob`."""
@@ -156,7 +125,7 @@ class BuildPackageJob(BuildFarmJobOld, Storm):
             PackagePublishingStatus.SUPERSEDED,
             PackagePublishingStatus.DELETED,
             )
-        sub_query = """
+        return """
             SELECT TRUE FROM Archive, BinaryPackageBuild, BuildPackageJob,
                              DistroArchSeries
             WHERE
@@ -181,44 +150,6 @@ class BuildPackageJob(BuildFarmJobOld, Storm):
             BinaryPackageBuild.status = %s
         """ % sqlvalues(private_statuses, BuildStatus.NEEDSBUILD)
 
-        # Ensure that if BUILDING builds exist for the same
-        # public ppa archive and architecture and another would not
-        # leave at least 20% of them free, then we don't consider
-        # another as a candidate.
-        #
-        # This clause selects the count of currently building builds on
-        # the arch in question, then adds one to that total before
-        # deriving a percentage of the total available builders on that
-        # arch.  It then makes sure that percentage is under 80.
-        #
-        # The extra clause is only used if the number of available
-        # builders is greater than one, or nothing would get dispatched
-        # at all.
-        num_arch_builders = getUtility(IBuilderSet).getBuildersForQueue(
-            processor, virtualized).count()
-        if num_arch_builders > 1:
-            sub_query += """
-            AND Archive.id NOT IN (
-                SELECT Archive.id
-                FROM Archive, BinaryPackageBuild, DistroArchSeries
-                WHERE
-                    BinaryPackageBuild.distro_arch_series = DistroArchSeries.id
-                    AND DistroArchSeries.processorfamily = %s
-                    AND BinaryPackageBuild.status = %s
-                    AND BinaryPackageBuild.archive = Archive.id
-                    AND Archive.purpose = %s
-                    AND Archive.private IS FALSE
-                GROUP BY Archive.id
-                HAVING (
-                    (count(*)+1) * 100.0 / %s
-                    ) >= 80
-                )
-            """ % sqlvalues(
-                processor.family, BuildStatus.BUILDING,
-                ArchivePurpose.PPA, num_arch_builders)
-
-        return sub_query
-
     @staticmethod
     def postprocessCandidate(job, logger):
         """See `IBuildFarmJob`."""
@@ -233,7 +164,7 @@ class BuildPackageJob(BuildFarmJobOld, Storm):
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
         distroseries = build.distro_arch_series.distroseries
         if (
-            build.pocket == PackagePublishingPocket.SECURITY or 
+            build.pocket == PackagePublishingPocket.SECURITY or
             (distroseries.status == SeriesStatus.OBSOLETE and
                 not build.archive.permit_obsolete_series_uploads)):
             # We never build anything in the security pocket, or for obsolete

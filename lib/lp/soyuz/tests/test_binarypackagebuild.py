@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Build features."""
@@ -144,12 +144,12 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
                 self.assertFalse(self.build.can_be_cancelled)
 
     def test_can_be_cancelled_virtuality(self):
-        # Only virtual builds can be cancelled.
+        # Both virtual and non-virtual builds can be cancelled.
         bq = removeSecurityProxy(self.build.queueBuild())
         bq.virtualized = True
         self.assertTrue(self.build.can_be_cancelled)
         bq.virtualized = False
-        self.assertFalse(self.build.can_be_cancelled)
+        self.assertTrue(self.build.can_be_cancelled)
 
     def test_cancel_not_in_progress(self):
         # Testing the cancel() method for a pending build should leave
