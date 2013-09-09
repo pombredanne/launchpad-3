@@ -174,6 +174,13 @@ class DistributionNavigation(
     def traverse_archive(self, name):
         return self.context.getArchive(name)
 
+    def traverse(self, name):
+        try:
+            return super(DistributionNavigation, self).traverse(name)
+        except NotFoundError:
+            resolved = self.context.resolveSeriesAlias(name)
+            return self.redirectSubTree(canonical_url(resolved), status=303)
+
 
 class DistributionSetNavigation(Navigation):
 

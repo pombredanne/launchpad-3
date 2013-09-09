@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Distribution."""
@@ -404,8 +404,20 @@ class SeriesTests(TestCaseWithFactory):
             name="dappere", version="42.6")
         self.assertEquals(series, distro.getSeries("42.6"))
 
+    def test_development_series_alias(self):
+        distro = self.factory.makeDistribution()
+        with person_logged_in(distro.owner):
+            distro.development_series_alias = "devel"
+        self.assertRaises(
+            NoSuchDistroSeries, distro.getSeries, "devel", follow_aliases=True)
+        series = self.factory.makeDistroSeries(
+            distribution=distro, status=SeriesStatus.DEVELOPMENT)
+        self.assertRaises(NoSuchDistroSeries, distro.getSeries, "devel")
+        self.assertEqual(
+            series, distro.getSeries("devel", follow_aliases=True))
 
-class SeriesTests(TestCaseWithFactory):
+
+class DerivativesTests(TestCaseWithFactory):
     """Test IDistribution.derivatives.
     """
 
@@ -416,10 +428,8 @@ class SeriesTests(TestCaseWithFactory):
         distro2 = self.factory.makeDistribution()
         previous_series = self.factory.makeDistroSeries(distribution=distro1)
         series = self.factory.makeDistroSeries(
-            distribution=distro2,
-            previous_series=previous_series)
-        self.assertContentEqual(
-            [series], distro1.derivatives)
+            distribution=distro2, previous_series=previous_series)
+        self.assertContentEqual([series], distro1.derivatives)
 
 
 class DistroSnapshotTestCase(TestCaseWithFactory):

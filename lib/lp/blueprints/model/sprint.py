@@ -163,18 +163,17 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         return self.specifications(user, filter=[SpecificationFilter.ALL])
 
     def specifications(self, user, sort=None, quantity=None, filter=None,
-                       prejoin_people=False):
+                       need_people=False, need_branches=False,
+                       need_workitems=False):
         """See IHasSpecifications."""
-        # prejoin_people  is provided only for interface compatibility and
-        # prejoin_people=True is not implemented.
-        assert not prejoin_people
+        # need_* is provided only for interface compatibility and
+        # need_*=True is not implemented.
         if filter is None:
             filter = set([SpecificationFilter.ACCEPTED])
         tables, query = self.spec_filter_clause(user, filter)
         # import here to avoid circular deps
         from lp.blueprints.model.specification import Specification
-        store = Store.of(self)
-        results = store.using(*tables).find(Specification, *query)
+        results = Store.of(self).using(*tables).find(Specification, *query)
         if sort == SpecificationSort.DATE:
             order = (Desc(SprintSpecification.date_created), Specification.id)
             distinct = [SprintSpecification.date_created, Specification.id]

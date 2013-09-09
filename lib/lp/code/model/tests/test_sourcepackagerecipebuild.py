@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for source package builds."""
@@ -120,12 +120,6 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         spb = self.makeSourcePackageRecipeBuild()
         title = "%s recipe build" % spb.recipe.base_branch.unique_name
         self.assertEqual(spb.title, title)
-
-    def test_getTitle(self):
-        # A recipe build job's title is the same as its build's title.
-        spb = self.makeSourcePackageRecipeBuild()
-        job = spb.makeJob()
-        self.assertEqual(job.getTitle(), spb.title)
 
     def test_distribution(self):
         # A source package recipe build has a distribution derived from

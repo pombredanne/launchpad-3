@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BuildFarmJobBehaviorBase."""
@@ -10,18 +10,20 @@ import os
 import shutil
 import tempfile
 
+from twisted.internet import defer
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.archiveuploader.uploadprocessor import parse_build_upload_leaf_name
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.builder import CorruptBuildCookie
-from lp.buildmaster.model.builder import BuilderSlave
+from lp.buildmaster.interactor import BuilderInteractor
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    IBuildFarmJobBehavior,
+    )
 from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
-from lp.services.database.constants import UTC_NOW
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
@@ -51,11 +53,6 @@ class TestBuildFarmJobBehaviorBase(TestCaseWithFactory):
             buildfarmjob = removeSecurityProxy(buildfarmjob)
         return BuildFarmJobBehaviorBase(buildfarmjob)
 
-    def _changeBuildFarmJobName(self, buildfarmjob):
-        """Manipulate `buildfarmjob` so that its `getName` changes."""
-        name = buildfarmjob.getName() + 'x'
-        removeSecurityProxy(buildfarmjob).getName = FakeMethod(result=name)
-
     def _makeBuild(self):
         """Create a `Build` object."""
         x86 = getUtility(IProcessorFamilySet).getByName('x86')
@@ -71,93 +68,13 @@ class TestBuildFarmJobBehaviorBase(TestCaseWithFactory):
         return spr.createBuild(
             distroarchseries=distroarchseries, pocket=pocket, archive=archive)
 
-    def _makeBuildQueue(self):
-        """Create a `BuildQueue` object."""
-        return self.factory.makeSourcePackageRecipeBuildJob()
-
-    def test_extractBuildStatus_baseline(self):
-        # extractBuildStatus picks the name of the build status out of a
-        # dict describing the slave's status.
-        slave_status = {'build_status': 'BuildStatus.BUILDING'}
-        behavior = self._makeBehavior()
+    def test_getBuildCookie(self):
+        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
+        build = buildfarmjob.build
+        behavior = self._makeBehavior(buildfarmjob)
         self.assertEqual(
-            BuildStatus.BUILDING.name,
-            behavior.extractBuildStatus(slave_status))
-
-    def test_extractBuildStatus_malformed(self):
-        # extractBuildStatus errors out when the status string is not
-        # of the form it expects.
-        slave_status = {'build_status': 'BUILDING'}
-        behavior = self._makeBehavior()
-        self.assertRaises(
-            AssertionError, behavior.extractBuildStatus, slave_status)
-
-    def test_cookie_baseline(self):
-        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
-
-        cookie = buildfarmjob.generateSlaveBuildCookie()
-
-        self.assertNotEqual(None, cookie)
-        self.assertNotEqual(0, len(cookie))
-        self.assertTrue(len(cookie) > 10)
-
-        self.assertEqual(cookie, buildfarmjob.generateSlaveBuildCookie())
-
-    def test_verifySlaveBuildCookie_good(self):
-        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
-        behavior = self._makeBehavior(buildfarmjob)
-
-        cookie = buildfarmjob.generateSlaveBuildCookie()
-
-        # The correct cookie validates successfully.
-        behavior.verifySlaveBuildCookie(cookie)
-
-    def test_verifySlaveBuildCookie_bad(self):
-        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
-        behavior = self._makeBehavior(buildfarmjob)
-
-        cookie = buildfarmjob.generateSlaveBuildCookie()
-
-        self.assertRaises(
-            CorruptBuildCookie,
-            behavior.verifySlaveBuildCookie,
-            cookie + 'x')
-
-    def test_cookie_includes_job_name(self):
-        # The cookie is a hash that includes the job's name.
-        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
-        buildfarmjob = removeSecurityProxy(buildfarmjob)
-        behavior = self._makeBehavior(buildfarmjob)
-        cookie = buildfarmjob.generateSlaveBuildCookie()
-
-        self._changeBuildFarmJobName(buildfarmjob)
-
-        self.assertRaises(
-            CorruptBuildCookie,
-            behavior.verifySlaveBuildCookie,
-            cookie)
-
-        # However, the name is not included in plaintext so as not to
-        # provide a compromised slave a starting point for guessing
-        # another slave's cookie.
-        self.assertNotIn(buildfarmjob.getName(), cookie)
-
-    def test_cookie_includes_more_than_name(self):
-        # Two build jobs with the same name still get different cookies.
-        buildfarmjob1 = self.factory.makeTranslationTemplatesBuildJob()
-        buildfarmjob1 = removeSecurityProxy(buildfarmjob1)
-        buildfarmjob2 = self.factory.makeTranslationTemplatesBuildJob(
-            branch=buildfarmjob1.branch)
-        buildfarmjob2 = removeSecurityProxy(buildfarmjob2)
-
-        name_factory = FakeMethod(result="same-name")
-        buildfarmjob1.getName = name_factory
-        buildfarmjob2.getName = name_factory
-
-        self.assertEqual(buildfarmjob1.getName(), buildfarmjob2.getName())
-        self.assertNotEqual(
-            buildfarmjob1.generateSlaveBuildCookie(),
-            buildfarmjob2.generateSlaveBuildCookie())
+            '%s-%s' % (build.job_type.name, build.id),
+            behavior.getBuildCookie())
 
     def test_getUploadDirLeaf(self):
         # getUploadDirLeaf returns the current time, followed by the build
@@ -183,8 +100,8 @@ class TestGetUploadMethodsMixin:
     def setUp(self):
         super(TestGetUploadMethodsMixin, self).setUp()
         self.build = self.makeBuild()
-        self.behavior = removeSecurityProxy(
-            self.build.buildqueue_record.required_build_behavior)
+        self.behavior = IBuildFarmJobBehavior(
+            self.build.buildqueue_record.specific_job)
 
     def test_getUploadDirLeafCookie_parseable(self):
         # getUploadDirLeaf should return a directory name
@@ -214,13 +131,13 @@ class TestHandleStatusMixin:
         self.build = self.makeBuild()
         # For the moment, we require a builder for the build so that
         # handleStatus_OK can get a reference to the slave.
-        builder = self.factory.makeBuilder()
-        self.build.buildqueue_record.builder = builder
-        self.build.buildqueue_record.setDateStarted(UTC_NOW)
-        self.behavior = removeSecurityProxy(builder.current_build_behavior)
+        self.builder = self.factory.makeBuilder()
+        self.build.buildqueue_record.markAsBuilding(self.builder)
         self.slave = WaitingSlave('BuildStatus.OK')
         self.slave.valid_file_hashes.append('test_file_hash')
-        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(self.slave))
+        self.interactor = BuilderInteractor(self.builder, self.slave)
+        self.behavior = removeSecurityProxy(
+            self.interactor._current_build_behavior)
 
         # We overwrite the buildmaster root to use a temp directory.
         tempdir = tempfile.mkdtemp()
@@ -250,9 +167,9 @@ class TestHandleStatusMixin:
             self.assertEqual(BuildStatus.UPLOADING, self.build.status)
             self.assertResultCount(1, "incoming")
 
-        d = self.behavior.handleStatus('OK', None, {
-                'filemap': {'myfile.py': 'test_file_hash'},
-                })
+        d = self.behavior.handleStatus(
+            self.build.buildqueue_record, 'OK',
+            {'filemap': {'myfile.py': 'test_file_hash'}})
         return d.addCallback(got_status)
 
     def test_handleStatus_OK_absolute_filepath(self):
@@ -263,9 +180,9 @@ class TestHandleStatusMixin:
             self.assertResultCount(0, "failed")
             self.assertIdentical(None, self.build.buildqueue_record)
 
-        d = self.behavior.handleStatus('OK', None, {
-            'filemap': {'/tmp/myfile.py': 'test_file_hash'},
-            })
+        d = self.behavior.handleStatus(
+            self.build.buildqueue_record, 'OK',
+            {'filemap': {'/tmp/myfile.py': 'test_file_hash'}})
         return d.addCallback(got_status)
 
     def test_handleStatus_OK_relative_filepath(self):
@@ -275,17 +192,17 @@ class TestHandleStatusMixin:
             self.assertEqual(BuildStatus.FAILEDTOUPLOAD, self.build.status)
             self.assertResultCount(0, "failed")
 
-        d = self.behavior.handleStatus('OK', None, {
-            'filemap': {'../myfile.py': 'test_file_hash'},
-            })
+        d = self.behavior.handleStatus(
+            self.build.buildqueue_record, 'OK',
+            {'filemap': {'../myfile.py': 'test_file_hash'}})
         return d.addCallback(got_status)
 
     def test_handleStatus_OK_sets_build_log(self):
         # The build log is set during handleStatus.
         self.assertEqual(None, self.build.log)
-        d = self.behavior.handleStatus('OK', None, {
-                'filemap': {'myfile.py': 'test_file_hash'},
-                })
+        d = self.behavior.handleStatus(
+            self.build.buildqueue_record, 'OK',
+            {'filemap': {'myfile.py': 'test_file_hash'}})
 
         def got_status(ignored):
             self.assertNotEqual(None, self.build.log)
@@ -309,7 +226,8 @@ class TestHandleStatusMixin:
                     len(pop_notifications()) > 0,
                     "Notifications received")
 
-        d = self.behavior.handleStatus(status, None, {})
+        d = self.behavior.handleStatus(
+            self.build.buildqueue_record, status, {})
         return d.addCallback(got_status)
 
     def test_handleStatus_DEPFAIL_notifies(self):
@@ -321,12 +239,48 @@ class TestHandleStatusMixin:
     def test_handleStatus_PACKAGEFAIL_notifies(self):
         return self._test_handleStatus_notifies("PACKAGEFAIL")
 
+    def test_handleStatus_ABORTED_cancels_cancelling(self):
+        self.build.updateStatus(BuildStatus.CANCELLING)
+
+        def got_status(ignored):
+            self.assertEqual(
+                0, len(pop_notifications()), "Notifications received")
+            self.assertEqual(BuildStatus.CANCELLED, self.build.status)
+
+        d = self.behavior.handleStatus(
+            self.build.buildqueue_record, "ABORTED", {})
+        return d.addCallback(got_status)
+
+    def test_handleStatus_ABORTED_recovers_building(self):
+        self.builder.vm_host = "fake_vm_host"
+        self.build.updateStatus(BuildStatus.BUILDING)
+
+        def got_status(ignored):
+            self.assertEqual(
+                0, len(pop_notifications()), "Notifications received")
+            self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
+            self.assertEqual(1, self.builder.failure_count)
+            self.assertIn("resume", self.slave.call_log)
+
+        d = self.behavior.handleStatus(
+            self.build.buildqueue_record, "ABORTED", {})
+        return d.addCallback(got_status)
+
+    @defer.inlineCallbacks
+    def test_handleStatus_ABORTED_cancelling_sets_build_log(self):
+        # If a build is intentionally cancelled, the build log is set.
+        self.assertEqual(None, self.build.log)
+        self.build.updateStatus(BuildStatus.CANCELLING)
+        yield self.behavior.handleStatus(
+            self.build.buildqueue_record, "ABORTED", {})
+        self.assertNotEqual(None, self.build.log)
+
     def test_date_finished_set(self):
         # The date finished is updated during handleStatus_OK.
         self.assertEqual(None, self.build.date_finished)
-        d = self.behavior.handleStatus('OK', None, {
-                'filemap': {'myfile.py': 'test_file_hash'},
-                })
+        d = self.behavior.handleStatus(
+            self.build.buildqueue_record, 'OK',
+            {'filemap': {'myfile.py': 'test_file_hash'}})
 
         def got_status(ignored):
             self.assertNotEqual(None, self.build.date_finished)

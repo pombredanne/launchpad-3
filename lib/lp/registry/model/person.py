@@ -823,7 +823,8 @@ class Person(
         return "%s (%s)" % (self.displayname, self.name)
 
     def specifications(self, user, sort=None, quantity=None, filter=None,
-                       prejoin_people=True, in_progress=False):
+                       in_progress=False, need_people=True, need_branches=True,
+                       need_workitems=False):
         """See `IHasSpecifications`."""
         from lp.blueprints.model.specificationsubscription import (
             SpecificationSubscription,
@@ -874,7 +875,9 @@ class Person(
                     SpecificationFilter.STARTED])
 
         return search_specifications(
-            self, clauses, user, sort, quantity, list(filter), prejoin_people)
+            self, clauses, user, sort, quantity, list(filter),
+            need_people=need_people, need_branches=need_branches,
+            need_workitems=need_workitems)
 
     # XXX: Tom Berger 2008-04-14 bug=191799:
     # The implementation of these functions

@@ -24,11 +24,11 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
+from lp.buildmaster.interactor import BuilderInteractor
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
-from lp.buildmaster.model.builder import BuilderSlave
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import (
     MockBuilder,
@@ -123,8 +123,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
         # VerifyBuildRequest won't raise any exceptions when called with a
         # valid builder set.
         job = self.makeJob()
-        builder = MockBuilder("bob-de-bouwer", OkSlave())
-        job.setBuilder(builder)
+        builder = MockBuilder("bob-de-bouwer")
+        job.setBuilderInteractor(BuilderInteractor(builder, OkSlave()))
         logger = BufferLogger()
         job.verifyBuildRequest(logger)
         self.assertEquals("", logger.getLogBuffer())
@@ -132,9 +132,9 @@ class TestRecipeBuilder(TestCaseWithFactory):
     def test_verifyBuildRequest_non_virtual(self):
         # verifyBuildRequest will raise if a non-virtual builder is proposed.
         job = self.makeJob()
-        builder = MockBuilder('non-virtual builder', OkSlave())
+        builder = MockBuilder('non-virtual builder')
         builder.virtualized = False
-        job.setBuilder(builder)
+        job.setBuilderInteractor(BuilderInteractor(builder, OkSlave()))
         logger = BufferLogger()
         e = self.assertRaises(AssertionError, job.verifyBuildRequest, logger)
         self.assertEqual(
@@ -146,7 +146,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
             pocket=PackagePublishingPocket.SECURITY)
         job = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         job = IBuildFarmJobBehavior(job.specific_job)
-        job.setBuilder(MockBuilder("bob-de-bouwer", OkSlave()))
+        job.setBuilderInteractor(
+            BuilderInteractor(MockBuilder("bob-de-bouwer"), OkSlave()))
         e = self.assertRaises(
             AssertionError, job.verifyBuildRequest, BufferLogger())
         self.assertIn('invalid pocket due to the series status of', str(e))
@@ -301,10 +302,10 @@ class TestRecipeBuilder(TestCaseWithFactory):
         test_publisher = SoyuzTestPublisher()
         test_publisher.addFakeChroots(job.build.distroseries)
         slave = OkSlave()
-        builder = MockBuilder("bob-de-bouwer", slave)
+        builder = MockBuilder("bob-de-bouwer")
         processorfamily = ProcessorFamilySet().getByProcessorName('386')
         builder.processor = processorfamily.processors[0]
-        job.setBuilder(builder)
+        job.setBuilderInteractor(BuilderInteractor(builder, slave))
         logger = BufferLogger()
         d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
 
@@ -318,8 +319,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
             self.assertEquals(["ensurepresent", "build"],
                               [call[0] for call in slave.call_log])
             build_args = slave.call_log[1][1:]
-            self.assertEquals(
-                build_args[0], job.buildfarmjob.generateSlaveBuildCookie())
+            self.assertEquals(build_args[0], job.getBuildCookie())
             self.assertEquals(build_args[1], "sourcepackagerecipe")
             self.assertEquals(build_args[3], [])
             distroarchseries = job.build.distroseries.architectures[0]
@@ -333,10 +333,10 @@ class TestRecipeBuilder(TestCaseWithFactory):
         # available for the distroseries to build for.
         job = self.makeJob()
         #test_publisher = SoyuzTestPublisher()
-        builder = MockBuilder("bob-de-bouwer", OkSlave())
+        builder = MockBuilder("bob-de-bouwer")
         processorfamily = ProcessorFamilySet().getByProcessorName('386')
         builder.processor = processorfamily.processors[0]
-        job.setBuilder(builder)
+        job.setBuilderInteractor(BuilderInteractor(builder, OkSlave()))
         logger = BufferLogger()
         d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
         return assert_fails_with(d, CannotBuild)
@@ -352,8 +352,8 @@ class TestBuildNotifications(TrialTestCase):
         self.factory = LaunchpadObjectFactory()
 
     def prepareBehavior(self, fake_successful_upload=False):
-        queue_record = self.factory.makeSourcePackageRecipeBuildJob()
-        build = queue_record.specific_job.build
+        self.queue_record = self.factory.makeSourcePackageRecipeBuildJob()
+        build = self.queue_record.specific_job.build
         build.updateStatus(BuildStatus.FULLYBUILT)
         if fake_successful_upload:
             removeSecurityProxy(build).verifySuccessfulUpload = FakeMethod(
@@ -368,13 +368,13 @@ class TestBuildNotifications(TrialTestCase):
             """ % self.upload_root
             config.push('tmp_builddmaster_root', tmp_builddmaster_root)
             self.addCleanup(config.pop, 'tmp_builddmaster_root')
-        queue_record.builder = self.factory.makeBuilder()
+        self.queue_record.builder = self.factory.makeBuilder()
         slave = WaitingSlave('BuildStatus.OK')
-        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
-        return removeSecurityProxy(queue_record.builder.current_build_behavior)
+        interactor = BuilderInteractor(self.queue_record.builder, slave)
+        return removeSecurityProxy(interactor._current_build_behavior)
 
     def assertDeferredNotifyCount(self, status, behavior, expected_count):
-        d = behavior.handleStatus(status, None, {'filemap': {}})
+        d = behavior.handleStatus(self.queue_record, status, {'filemap': {}})
 
         def cb(result):
             self.assertEqual(expected_count, len(pop_notifications()))

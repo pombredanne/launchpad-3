@@ -628,9 +628,11 @@ class Archive(SQLBase):
             SourcePackagePublishingHistory, *clauses).order_by(
                 SourcePackageName.name, Desc(SourcePackageRelease.version),
                 Desc(SourcePackagePublishingHistory.id))
+
         def eager_load(rows):
             load_related(
                 SourcePackageRelease, rows, ['sourcepackagereleaseID'])
+
         return DecoratedResultSet(sources, pre_iter_hook=eager_load)
 
     @property
@@ -1749,7 +1751,7 @@ class Archive(SQLBase):
             distribution = self.distribution
         if to_series is not None:
             result = getUtility(IDistroSeriesSet).queryByName(
-                distribution, to_series)
+                distribution, to_series, follow_aliases=True)
             if result is None:
                 raise NoSuchDistroSeries(to_series)
             series = result

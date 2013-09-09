@@ -1460,7 +1460,8 @@
             permission="launchpad.View"
             attributes="
                 visible_specifications
-                _valid_specifications
+                valid_specifications
+                api_valid_specifications
                 getAllowedSpecificationInformationTypes
                 getDefaultSpecificationInformationType
                 specifications" />
@@ -1713,6 +1714,7 @@
                 bug_reported_acknowledgement
                 bug_reporting_guidelines
                 description
+                development_series_alias
                 displayname
                 driver
                 enable_bug_expiration

@@ -912,10 +912,10 @@ class PackageUpload(SQLBase):
             return spph.creator
         elif self.signing_key:
             return self.signing_key.owner
-        else:
             # It may be a recipe upload.
-            if spr.sourcepackagerecipebuild:
-                return spr.sourcepackagerecipebuild.requestor
+        elif spr and spr.source_package_recipe_build:
+            return spr.source_package_recipe_build.requester
+        else:
             return None
 
     def notify(self, summary_text=None, changes_file_object=None,

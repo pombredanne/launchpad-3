@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -225,7 +225,7 @@ def ensure_sane_signature_timestamp(timestamp, context,
         raise IncomingEmailError(error_message)
 
 
-def save_mail_to_librarian(raw_mail):
+def save_mail_to_librarian(raw_mail, restricted=False):
     """Save the message to the librarian.
 
     It can be referenced from errors, and also accessed by code that needs to
@@ -236,9 +236,8 @@ def save_mail_to_librarian(raw_mail):
     # be guessable for example.
     file_name = str(uuid1()) + '.txt'
     file_alias = getUtility(ILibraryFileAliasSet).create(
-            file_name,
-            len(raw_mail),
-            cStringIO(raw_mail), 'message/rfc822')
+        file_name, len(raw_mail), cStringIO(raw_mail), 'message/rfc822',
+        restricted=restricted)
     return file_alias
 
 

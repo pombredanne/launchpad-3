@@ -216,11 +216,6 @@ class TestBuildPackageJob(TestBuildJobBase):
         bpj = bq.specific_job
         self.assertEqual(bpj.virtualized, False)
 
-    def test_getTitle(self):
-        # Test that BuildPackageJob returns the title of the build.
-        build, bq = find_job(self, 'gcc', '386')
-        self.assertEqual(bq.specific_job.getTitle(), build.title)
-
     def test_providesInterfaces(self):
         # Ensure that a BuildPackageJob generates an appropriate cookie.
         build, bq = find_job(self, 'gcc', '386')

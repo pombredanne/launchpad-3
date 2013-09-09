@@ -1377,6 +1377,12 @@ class IArchiveView(IHasBuildRecords):
         immediately if the copy passes basic security checks and the copy
         will happen sometime later with full checking.
 
+        If the source or target distribution has a development series alias,
+        then it may be used as the source or target distroseries name
+        respectively; but note that this will always be resolved to the true
+        development series of that distribution, which may not match the
+        alias in the respective published archives.
+
         :param source_name: a string name of the package to copy.
         :param version: the version of the package to copy.
         :param from_archive: the source archive from which to copy.
@@ -1456,6 +1462,12 @@ class IArchiveView(IHasBuildRecords):
         Partial changes of the destination archive can happen because each
         source is copied in its own transaction.
 
+        If the source or target distribution has a development series alias,
+        then it may be used as the source or target distroseries name
+        respectively; but note that this will always be resolved to the true
+        development series of that distribution, which may not match the
+        alias in the respective published archives.
+
         :param source_names: a list of string names of packages to copy.
         :param from_archive: the source archive from which to copy.
         :param to_pocket: the target pocket (as a string).
@@ -1522,6 +1534,12 @@ class IArchiveAppend(Interface):
         copies cannot be performed, the whole operation will fail. There
         will be no partial changes of the destination archive.
 
+        If the source or target distribution has a development series alias,
+        then it may be used as the source or target distroseries name
+        respectively; but note that this will always be resolved to the true
+        development series of that distribution, which may not match the
+        alias in the respective published archives.
+
         :param source_names: a list of string names of packages to copy.
         :param from_archive: the source archive from which to copy.
         :param to_pocket: the target pocket (as a string).
@@ -1563,6 +1581,12 @@ class IArchiveAppend(Interface):
 
         Copy a specific version of a named source to the destination
         archive if necessary.
+
+        If the source distribution has a development series alias, then it
+        may be used as the source distroseries name; but note that this will
+        always be resolved to the true development series of that
+        distribution, which may not match the alias in the published source
+        archive.
 
         :param source_name: a string name of the package to copy.
         :param version: the version of the package to copy.

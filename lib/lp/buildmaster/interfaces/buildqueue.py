@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Build interfaces."""
@@ -19,7 +19,6 @@ from zope.schema import (
     Bool,
     Choice,
     Datetime,
-    Field,
     Int,
     Text,
     Timedelta,
@@ -72,10 +71,6 @@ class IBuildQueue(Interface):
         title=_('Job type'), required=True, vocabulary=BuildFarmJobType,
         description=_("The type of this job."))
 
-    required_build_behavior = Field(
-        title=_('The builder behavior required to run this job.'),
-        required=False, readonly=True)
-
     estimated_duration = Timedelta(
         title=_("Estimated Job Duration"), required=True,
         description=_("Estimated job duration interval."))
@@ -93,9 +88,6 @@ class IBuildQueue(Interface):
     def destroySelf():
         """Delete this entry from the database."""
 
-    def getLogFileName():
-        """Get the preferred filename for the buildlog of this build."""
-
     def markAsBuilding(builder):
         """Set this queue item to a 'building' state."""
 
@@ -108,9 +100,6 @@ class IBuildQueue(Interface):
     specific_job = Reference(
         IBuildFarmJob, title=_("Job"),
         description=_("Data and operations common to all build farm jobs."))
-
-    def setDateStarted(timestamp):
-        """Sets the date started property to the given value."""
 
     date_started = Datetime(
         title=_('Start time'),
@@ -129,26 +118,8 @@ class IBuildQueue(Interface):
 class IBuildQueueSet(Interface):
     """Launchpad Auto Build queue set handler and auxiliary methods."""
 
-    title = Attribute('Title')
-
-    def __iter__():
-        """Iterate over current build jobs."""
-
-    def __getitem__(buildqueue_id):
-        """Retrieve a build job by id."""
-
-    def count():
-        """Return the number of build jobs in the queue."""
-
     def get(buildqueue_id):
         """Return the `IBuildQueue` with the given id."""
-
-    def getByJob(job):
-        """Find the `IBuildQueue` to which `job` belongs.
-
-        :param job: A `Job`.
-        :return: The matching `IBuildQueue`, or None.
-        """
 
     def getByBuilder(builder):
         """Return an IBuildQueue instance for a builder.
@@ -156,6 +127,3 @@ class IBuildQueueSet(Interface):
         Retrieve the only one possible entry being processed for a given
         builder. If not found, return None.
         """
-
-    def getActiveBuildJobs():
-        """Return All active Build Jobs."""
