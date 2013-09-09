@@ -38,9 +38,9 @@ class SwiftFixture(TacTestFixture):
             self.daemon_port = sock.getsockname()[1]
             sock.close()
             self.logfile = os.path.join(
-                config.root, 'logs', 'hollow-{}.log'.format(self.daemon_port))
+                config.root, 'logs', 'hollow-%s.log' % self.daemon_port)
             self.pidfile = os.path.join(
-                config.root, 'logs', 'hollow-{}.pid'.format(self.daemon_port))
+                config.root, 'logs', 'hollow-%s.pid' % self.daemon_port)
         assert self.daemon_port is not None
 
         super(SwiftFixture, self).setUp(
