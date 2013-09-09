@@ -26,7 +26,6 @@ setup(
     # this list should only contain direct dependencies--things imported or
     # used in zcml.
     install_requires=[
-        #'pbr',
         'ampoule',
         'auditorclient',
         'auditorfixture',
