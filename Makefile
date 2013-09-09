@@ -23,9 +23,9 @@ ICING=lib/canonical/launchpad/icing
 LP_BUILT_JS_ROOT=${ICING}/build
 
 JS_BUILD_DIR := build/js
-YUI_VERSIONS := 3.10.2
+YUI_VERSIONS := 3.10.3
 YUI_BUILDS := $(patsubst %,$(JS_BUILD_DIR)/yui-%, $(YUI_VERSIONS))
-YUI_DEFAULT := yui-3.10.2
+YUI_DEFAULT := yui-3.10.3
 YUI_DEFAULT_SYMLINK := $(JS_BUILD_DIR)/yui
 LP_JS_BUILD := $(JS_BUILD_DIR)/lp
 
@@ -165,6 +165,9 @@ $(JS_BUILD_DIR):
 $(YUI_BUILDS): | $(JS_BUILD_DIR)
 	mkdir -p $@/tmp
 	unzip -q download-cache/dist/yui_$(subst build/js/yui-,,$@).zip -d $@/tmp 'yui/build/*'
+	# We don't use the Flash components and they have a bad security
+	# record. Kill them.
+	find $@/tmp/yui/build -name '*.swf' -delete
 	mv $@/tmp/yui/build/* $@
 	$(RM) -r $@/tmp
 
