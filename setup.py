@@ -26,7 +26,6 @@ setup(
     # this list should only contain direct dependencies--things imported or
     # used in zcml.
     install_requires=[
-        #'pbr',
         'ampoule',
         'auditorclient',
         'auditorfixture',
@@ -60,7 +59,6 @@ setup(
         'Markdown',
         'mechanize',
         'meliae',
-        'mock',
         'oauth',
         'oops',
         'oops_amqp',
