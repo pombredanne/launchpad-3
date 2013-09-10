@@ -16,9 +16,6 @@ import _pythonpath
 
 import logging
 
-from swiftclient import client as swiftclient
-from keystoneclient.v2_0 import client as keystoneclient
-
 from lp.services.config import config
 from lp.services.database.interfaces import IStore
 from lp.services.librarian.model import LibraryFileAlias
@@ -62,7 +59,6 @@ class LibrarianGC(LaunchpadCronScript):
 
     def main(self):
         librariangc.log = self.logger
-        #swiftclient.logger.setLevel(logging.INFO)
 
         if self.options.loglevel <= logging.DEBUG:
             librariangc.debug = True
@@ -97,6 +93,5 @@ class LibrarianGC(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
-    script = LibrarianGC('librarian-gc',
-                         dbuser=config.librarian_gc.dbuser)
+    script = LibrarianGC('librarian-gc', dbuser=config.librarian_gc.dbuser)
     script.lock_and_run(isolation='autocommit')
