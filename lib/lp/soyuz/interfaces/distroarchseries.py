@@ -59,6 +59,8 @@ class IDistroArchSeriesPublic(IHasOwner):
     processorfamily = Choice(
         title=_("Processor Family"),
         required=True, vocabulary='ProcessorFamily')
+    processor = Choice(
+        title=_("Processor"), required=False, vocabulary='Processor')
     architecturetag = exported(
         TextLine(
             title=_("Architecture Tag"),

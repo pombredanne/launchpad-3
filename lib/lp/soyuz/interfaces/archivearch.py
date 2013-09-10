@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ArchiveArch interfaces."""
@@ -16,7 +16,10 @@ from zope.schema import Int
 
 from lp import _
 from lp.soyuz.interfaces.archive import IArchive
-from lp.soyuz.interfaces.processor import IProcessorFamily
+from lp.soyuz.interfaces.processor import (
+    IProcessor,
+    IProcessorFamily,
+    )
 
 
 class IArchiveArch(Interface):
@@ -35,6 +38,12 @@ class IArchiveArch(Interface):
         required=True, readonly=True,
         description=_(
             "The processorfamily associated with the archive at hand."))
+
+    processor = Reference(
+        title=_("Processor"), schema=IProcessor,
+        required=False, readonly=True,
+        description=_(
+            "The processor associated with the archive at hand."))
 
 
 class IArchiveArchSet(Interface):
@@ -70,4 +79,3 @@ class IArchiveArchSet(Interface):
             The second value in the tuple will be None if the given `archive`
             is not associated with the `ProcessorFamily` yet.
         """
-
