@@ -317,10 +317,7 @@ class NewBuildersScanner:
         if clock is None:
             clock = reactor
         self._clock = clock
-        # Avoid circular import.
-        from lp.buildmaster.interfaces.builder import IBuilderSet
-        self.current_builders = [
-            builder.name for builder in getUtility(IBuilderSet)]
+        self.current_builders = [builder.name for builder in BuildersCache()]
 
     def stop(self):
         """Terminate the LoopingCall."""
@@ -340,10 +337,7 @@ class NewBuildersScanner:
 
     def checkForNewBuilders(self):
         """See if any new builders were added."""
-        # Avoid circular import.
-        from lp.buildmaster.interfaces.builder import IBuilderSet
-        new_builders = set(
-            builder.name for builder in getUtility(IBuilderSet))
+        new_builders = set(builder.name for builder in BuildersCache())
         old_builders = set(self.current_builders)
         extra_builders = new_builders.difference(old_builders)
         self.current_builders.extend(extra_builders)
@@ -354,6 +348,9 @@ class BuildersCache:
 
     def __getitem__(self, name):
         return getUtility(IBuilderSet).getByName(name)
+
+    def __iter__(self):
+        return getUtility(IBuilderSet).__iter__()
 
 
 class BuilddManager(service.Service):
@@ -387,10 +384,7 @@ class BuilddManager(service.Service):
 
         # Get a list of builders and set up scanners on each one.
 
-        # Avoiding circular imports.
-        from lp.buildmaster.interfaces.builder import IBuilderSet
-        builder_set = getUtility(IBuilderSet)
-        builders = [builder.name for builder in builder_set]
+        builders = [builder.name for builder in BuildersCache()]
         self.addScanForBuilders(builders)
         self.new_builders_scanner.scheduleScan()
 
