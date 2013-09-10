@@ -8,7 +8,6 @@ from zope.component import getUtility
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import LaunchpadZopelessLayer
 
@@ -25,11 +24,10 @@ class TestArchiveArch(TestCaseWithFactory):
         self.ppa = getUtility(IPersonSet).getByName('cprov').archive
         ubuntu = getUtility(IDistributionSet)['ubuntu']
         self.ubuntu_archive = ubuntu.main_archive
-        pss = getUtility(IProcessorFamilySet)
-        self.cell_proc = pss.new(
+        self.cell_proc = self.factory.makeProcessor(
             'cell-proc', 'PS cell processor', 'Screamingly faaaaaaaaaaaast',
             True)
-        self.omap = pss.new(
+        self.omap = self.factory.makeProcessor(
             'omap', 'Multimedia applications processor',
             'Does all your sound & video', True)
 

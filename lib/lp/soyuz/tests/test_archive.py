@@ -72,7 +72,7 @@ from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.model.archive import (
     Archive,
     validate_ppa,
@@ -1006,7 +1006,7 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         self.publisher.prepareBreezyAutotest()
         self.archive = self.factory.makeArchive()
         self.archive_arch_set = getUtility(IArchiveArchSet)
-        self.arm = getUtility(IProcessorFamilySet).getByName('arm')
+        self.arm = self.factory.makeProcessor(name='arm', restricted=True)
 
     def test_default(self):
         """By default, ARM builds are not allowed as ARM is restricted."""
@@ -1029,7 +1029,7 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         """
         self.assertContentEqual([], self.archive.enabled_restricted_families)
         self.archive_arch_set.new(self.archive,
-            getUtility(IProcessorFamilySet).getByName('amd64'))
+            getUtility(IProcessorSet).getByName('amd64'))
         self.assertContentEqual([], self.archive.enabled_restricted_families)
 
     def test_set(self):

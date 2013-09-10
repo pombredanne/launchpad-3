@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 
-from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -31,19 +30,15 @@ class TestBuildSet(TestCaseWithFactory):
     def setUp(self):
         super(TestBuildSet, self).setUp()
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-        self.pf_one = self.factory.makeProcessorFamily()
-        pf_proc_1 = self.pf_one.addProcessor(
-            self.factory.getUniqueString(), '', '')
-        self.pf_two = self.factory.makeProcessorFamily()
-        pf_proc_2 = self.pf_two.addProcessor(
-            self.factory.getUniqueString(), '', '')
+        self.processor_one = self.factory.makeProcessor()
+        self.processor_two = self.factory.makeProcessor()
         self.distroseries = self.factory.makeDistroSeries()
         self.distribution = self.distroseries.distribution
         self.das_one = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries, processorfamily=self.pf_one,
+            distroseries=self.distroseries, processor=self.processor_one,
             supports_virtualized=True)
         self.das_two = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries, processorfamily=self.pf_two,
+            distroseries=self.distroseries, processor=self.processor_two,
             supports_virtualized=True)
         self.archive = self.factory.makeArchive(
             distribution=self.distroseries.distribution,
@@ -53,8 +48,10 @@ class TestBuildSet(TestCaseWithFactory):
             self.publisher.prepareBreezyAutotest()
             self.distroseries.nominatedarchindep = self.das_one
             self.publisher.addFakeChroots(distroseries=self.distroseries)
-            self.builder_one = self.factory.makeBuilder(processor=pf_proc_1)
-            self.builder_two = self.factory.makeBuilder(processor=pf_proc_2)
+            self.builder_one = self.factory.makeBuilder(
+                processor=self.processor_one)
+            self.builder_two = self.factory.makeBuilder(
+                processor=self.processor_two)
         self.builds = []
         self.spphs = []
 
