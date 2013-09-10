@@ -792,20 +792,20 @@ def delete_unwanted_swift_files(con):
                 with swift.connection() as swift_connection:
                     swift_connection.delete_object(container, name)
                 log.debug(
-                    'Deleted ({}, {}) from Swift'.format(container, name))
+                    'Deleted (%s, %s) from Swift' % (container, name))
                 removed_count += 1
 
     if next_wanted_content_id == content_id:
         next_wanted_content_id = get_next_wanted_content_id()
     while next_wanted_content_id is not None:
         log.error(
-            "LibraryFileContent {} exists in the database but was not "
-            "found in Swift.".format(next_wanted_content_id))
+            "LibraryFileContent %s exists in the database but was not "
+            "found in Swift." % next_wanted_content_id)
         next_wanted_content_id = get_next_wanted_content_id()
 
     log.info(
-        "Deleted {} files from Swift that where no longer referenced"
-        "in the db".format(removed_count))
+        "Deleted %s files from Swift that where no longer referenced"
+        "in the db" % removed_count)
 
 
 def get_file_path(content_id):

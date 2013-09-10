@@ -88,10 +88,14 @@ class LibrarianStorage:
             swift_stream = TxSwiftStream(swift_connection, chunks)
             defer.returnValue(swift_stream)
         except swiftclient.ClientException as x:
-            if x.http_status != 404:
-                log.err(x)
+            if x.http_status == 404:
+                # Not found in Swift. The connection is still valid,
+                # so we can return it to the pool.
+                self.connection_pool.put(swift_connection)
+            else:
+                log.err(x)  # Oops, but not abort.
         except Exception as x:
-            log.err(x)
+            log.err(x)  # Oops, but not abort.
 
         # If Swift failed, for any reason, try and stream the data from
         # disk. In particular, files cannot be found in Swift until

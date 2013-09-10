@@ -41,7 +41,7 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
     else:
         end_str = str(end_lfc_id)
 
-    log.info("Walking disk store {} from {} to {}, inclusive".format(
+    log.info("Walking disk store %s from %s to %s, inclusive" % (
         fs_root, start_lfc_id, end_str))
 
     start_fs_path = filesystem_path(start_lfc_id)
@@ -59,7 +59,7 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
             dirnames[:] = []
             continue
 
-        log.debug('Scanning {} for matching files'.format(dirpath))
+        log.debug('Scanning %s for matching files' % dirpath)
 
         for filename in sorted(filenames):
             fs_path = os.path.join(dirpath, filename)
@@ -74,37 +74,37 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
             hex_lfc = ''.join(rel_fs_path.split('/'))
             if len(hex_lfc) != 8:
                 log.warning(
-                    'Filename length fail, skipping {}'.format(fs_path))
+                    'Filename length fail, skipping %s' % fs_path)
                 continue
             try:
                 lfc = int(hex_lfc, 16)
             except ValueError:
-                log.warning('Invalid hex fail, skipping {}'.format(fs_path))
+                log.warning('Invalid hex fail, skipping %s' % fs_path)
                 continue
 
-            log.debug('Found {} ({})'.format(lfc, filename))
+            log.debug('Found %s (%s)' % (lfc, filename))
 
             container, obj_name = swift_location(lfc)
 
             try:
                 swift_connection.head_container(container)
-                log.debug2('{} container already exists'.format(container))
+                log.debug2('%s container already exists' % container)
             except swiftclient.ClientException as x:
                 if x.http_status != 404:
                     raise
-                log.info('Creating {} container'.format(container))
+                log.info('Creating %s container' % container)
                 swift_connection.put_container(container)
 
             try:
                 swift_connection.head_object(container, obj_name)
                 log.debug(
-                    "{} already exists in Swift({}, {})".format(
+                    "%s already exists in Swift(%s, %s)" % (
                         lfc, container, obj_name))
             except swiftclient.ClientException as x:
                 if x.http_status != 404:
                     raise
                 log.info(
-                    'Putting {} into Swift ({}, {})'.format(
+                    'Putting %s into Swift (%s, %s)' % (
                         lfc, container, obj_name))
                 swift_connection.put_object(
                     container, obj_name,

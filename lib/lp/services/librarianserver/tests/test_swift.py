@@ -45,7 +45,7 @@ class TestFeedSwift(TestCase):
         self.librarian_client = LibrarianClient()
         self.contents = [str(i) * i for i in range(1, 5)]
         self.lfa_ids = [
-            self.add_file('file_{}'.format(i), content)
+            self.add_file('file_%s' % i, content)
             for content in self.contents]
         self.lfas = [
             IStore(LibraryFileAlias).get(LibraryFileAlias, lfa_id)
