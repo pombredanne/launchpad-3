@@ -30,19 +30,13 @@ from lp.buildmaster.interfaces.builder import (
     CannotBuild,
     CannotFetchFile,
     CannotResumeHost,
+    IBuilderSet,
     )
 from lp.buildmaster.model.builder import Builder
 from lp.services.propertycache import get_property_cache
 
 
 BUILDD_MANAGER_LOG_NAME = "slave-scanner"
-
-
-def get_builder(name):
-    """Helper to return the builder given the slave for this request."""
-    # Avoiding circular imports.
-    from lp.buildmaster.interfaces.builder import IBuilderSet
-    return getUtility(IBuilderSet)[name]
 
 
 @defer.inlineCallbacks
@@ -188,7 +182,7 @@ class SlaveScanner:
                 failure.getTraceback()))
 
         # Decide if we need to terminate the job or reset/fail the builder.
-        builder = get_builder(self.builder_name)
+        builder = BuildersCache()[self.builder_name]
         try:
             builder.handleFailure(self.logger)
             yield assessFailureCounts(
@@ -259,7 +253,7 @@ class SlaveScanner:
         # Commit and refetch the Builder object to ensure we have the
         # latest data from the DB.
         transaction.commit()
-        self.builder = builder or get_builder(self.builder_name)
+        self.builder = builder or BuildersCache()[self.builder_name]
         self.interactor = interactor or BuilderInteractor(self.builder)
 
         # Confirm that the DB and slave sides are in a valid, mutually
@@ -354,6 +348,12 @@ class NewBuildersScanner:
         extra_builders = new_builders.difference(old_builders)
         self.current_builders.extend(extra_builders)
         return list(extra_builders)
+
+
+class BuildersCache:
+
+    def __getitem__(self, name):
+        return getUtility(IBuilderSet).getByName(name)
 
 
 class BuilddManager(service.Service):
