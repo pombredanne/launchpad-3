@@ -125,8 +125,9 @@ class SlaveScanner:
     # greater than abort_timeout in launchpad-buildd's slave BuildManager.
     CANCEL_TIMEOUT = 180
 
-    def __init__(self, builder_name, logger, clock=None):
+    def __init__(self, builder_name, builders_cache, logger, clock=None):
         self.builder_name = builder_name
+        self.builders_cache = builders_cache
         self.logger = logger
         # Use the clock if provided, so that tests can advance it.  Use the
         # reactor by default.
@@ -182,7 +183,7 @@ class SlaveScanner:
                 failure.getTraceback()))
 
         # Decide if we need to terminate the job or reset/fail the builder.
-        builder = BuildersCache()[self.builder_name]
+        builder = self.builders_cache[self.builder_name]
         try:
             builder.handleFailure(self.logger)
             yield assessFailureCounts(
@@ -253,7 +254,7 @@ class SlaveScanner:
         # Commit and refetch the Builder object to ensure we have the
         # latest data from the DB.
         transaction.commit()
-        self.builder = builder or BuildersCache()[self.builder_name]
+        self.builder = builder or self.builders_cache[self.builder_name]
         self.interactor = interactor or BuilderInteractor(self.builder)
 
         # Confirm that the DB and slave sides are in a valid, mutually
@@ -317,7 +318,8 @@ class NewBuildersScanner:
         if clock is None:
             clock = reactor
         self._clock = clock
-        self.current_builders = [builder.name for builder in BuildersCache()]
+        self.current_builders = [
+            builder.name for builder in self.manager.builders_cache]
 
     def stop(self):
         """Terminate the LoopingCall."""
@@ -337,7 +339,8 @@ class NewBuildersScanner:
 
     def checkForNewBuilders(self):
         """See if any new builders were added."""
-        new_builders = set(builder.name for builder in BuildersCache())
+        new_builders = set(
+            builder.name for builder in self.manager.builders_cache)
         old_builders = set(self.current_builders)
         extra_builders = new_builders.difference(old_builders)
         self.current_builders.extend(extra_builders)
@@ -358,6 +361,7 @@ class BuilddManager(service.Service):
 
     def __init__(self, clock=None):
         self.builder_slaves = []
+        self.builders_cache = BuildersCache()
         self.logger = self._setupLogger()
         self.new_builders_scanner = NewBuildersScanner(
             manager=self, clock=clock)
@@ -384,7 +388,7 @@ class BuilddManager(service.Service):
 
         # Get a list of builders and set up scanners on each one.
 
-        builders = [builder.name for builder in BuildersCache()]
+        builders = [builder.name for builder in self.builders_cache]
         self.addScanForBuilders(builders)
         self.new_builders_scanner.scheduleScan()
 
@@ -411,7 +415,8 @@ class BuilddManager(service.Service):
     def addScanForBuilders(self, builders):
         """Set up scanner objects for the builders specified."""
         for builder in builders:
-            slave_scanner = SlaveScanner(builder, self.logger)
+            slave_scanner = SlaveScanner(
+                builder, self.builders_cache, self.logger)
             self.builder_slaves.append(slave_scanner)
             slave_scanner.startCycle()
 

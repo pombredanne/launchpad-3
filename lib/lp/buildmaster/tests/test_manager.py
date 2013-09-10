@@ -36,6 +36,7 @@ from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.manager import (
     assessFailureCounts,
     BuilddManager,
+    BuildersCache,
     NewBuildersScanner,
     SlaveScanner,
     )
@@ -124,7 +125,8 @@ class TestSlaveScannerScan(TestCase):
         """
         if builder_name is None:
             builder_name = BOB_THE_BUILDER_NAME
-        scanner = SlaveScanner(builder_name, BufferLogger(), clock=clock)
+        scanner = SlaveScanner(
+            builder_name, BuildersCache(), BufferLogger(), clock=clock)
         scanner.logger.name = 'slave-scanner'
 
         return scanner
@@ -456,7 +458,7 @@ class TestSlaveScannerWithoutDB(TestCase):
         # SlaveScanner.scan calls updateBuild() when a job is building.
         interactor = BuilderInteractor(
             MockBuilder(), BuildingSlave('trivial'), TrivialBehavior())
-        scanner = SlaveScanner('mock', BufferLogger())
+        scanner = SlaveScanner('mock', None, BufferLogger())
 
         # Instrument updateBuild and currentjob.reset
         interactor.updateBuild = FakeMethod()
@@ -475,7 +477,7 @@ class TestSlaveScannerWithoutDB(TestCase):
         # slaves that don't have the expected job.
         interactor = BuilderInteractor(
             MockBuilder(), BuildingSlave('nontrivial'), TrivialBehavior())
-        scanner = SlaveScanner('mock', BufferLogger())
+        scanner = SlaveScanner('mock', None, BufferLogger())
 
         # Instrument updateBuild and currentjob.reset
         interactor.updateBuild = FakeMethod()
@@ -496,7 +498,7 @@ class TestSlaveScannerWithoutDB(TestCase):
         # SlaveScanner.scan uses BuilderInteractor.rescueIfLost to abort
         # slaves that aren't meant to have a job.
         interactor = BuilderInteractor(MockBuilder(), BuildingSlave(), None)
-        scanner = SlaveScanner('mock', BufferLogger())
+        scanner = SlaveScanner('mock', None, BufferLogger())
 
         # Instrument updateBuild.
         interactor.updateBuild = FakeMethod()
@@ -522,7 +524,8 @@ class TestCancellationChecking(TestCaseWithFactory):
         self.builder.virtualized = True
 
     def _getScanner(self, clock=None):
-        scanner = SlaveScanner(None, BufferLogger(), clock=clock)
+        scanner = SlaveScanner(
+            None, BuildersCache(), BufferLogger(), clock=clock)
         scanner.builder = self.builder
         scanner.interactor = BuilderInteractor(self.builder)
         scanner.logger.name = 'slave-scanner'
@@ -724,8 +727,8 @@ class TestNewBuilders(TestCase):
 
     layer = LaunchpadZopelessLayer
 
-    def _getScanner(self, manager=None, clock=None):
-        return NewBuildersScanner(manager=manager, clock=clock)
+    def _getScanner(self, clock=None):
+        return NewBuildersScanner(manager=BuilddManager(), clock=clock)
 
     def test_init_stores_existing_builders(self):
         # Make sure that NewBuildersScanner initializes itself properly
@@ -779,7 +782,7 @@ class TestNewBuilders(TestCase):
             self.assertEqual("new_builders", new_builders)
 
         clock = task.Clock()
-        builder_scanner = self._getScanner(BuilddManager(), clock=clock)
+        builder_scanner = self._getScanner(clock=clock)
         builder_scanner.checkForNewBuilders = fake_checkForNewBuilders
         builder_scanner.manager.addScanForBuilders = fake_addScanForBuilders
         builder_scanner.scheduleScan = FakeMethod()
