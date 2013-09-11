@@ -242,11 +242,10 @@ class ArchivePopulator(SoyuzScript):
                 raise SoyuzScriptError(
                     "error: cannot copy to disabled archive")
 
-            # The copy archive exists already, get the associated processor
-            # families.
+            # The copy archive exists already, get the associated processors.
             def get_family(archivearch):
                 """Extract the processor family from an `IArchiveArch`."""
-                return removeSecurityProxy(archivearch).processorfamily
+                return removeSecurityProxy(archivearch).processor
 
         # Now instantiate the package copy request that will capture the
         # archive population parameters in the database.

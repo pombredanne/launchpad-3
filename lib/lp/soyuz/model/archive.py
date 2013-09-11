@@ -1973,26 +1973,24 @@ class Archive(SQLBase):
                 distinct=True))
 
     def _getEnabledRestrictedFamilies(self):
-        """Retrieve the restricted architecture families this archive can
-        build on."""
-        families = getUtility(IArchiveArchSet).getRestrictedFamilies(self)
+        """Retrieve the restricted architecture this archive can build on."""
+        processors = getUtility(IArchiveArchSet).getRestrictedProcessors(self)
         return [
-            family for (family, archive_arch) in families
+            processor for (processor, archive_arch) in processors
             if archive_arch is not None]
 
     def _setEnabledRestrictedFamilies(self, value):
-        """Set the restricted architecture families this archive can
-        build on."""
+        """Set the restricted architecture this archive can build on."""
         archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedFamilies(self)
-        for (family, archive_arch) in restricted_families:
-            if family in value and archive_arch is None:
-                archive_arch_set.new(self, family)
-            if family not in value and archive_arch is not None:
+        restricted_processors = archive_arch_set.getRestrictedProcessors(self)
+        for (processor, archive_arch) in restricted_processors:
+            if processor in value and archive_arch is None:
+                archive_arch_set.new(self, processor)
+            if processor not in value and archive_arch is not None:
                 Store.of(self).remove(archive_arch)
 
-    enabled_restricted_families = property(_getEnabledRestrictedFamilies,
-                                           _setEnabledRestrictedFamilies)
+    enabled_restricted_families = property(
+        _getEnabledRestrictedFamilies, _setEnabledRestrictedFamilies)
 
     def enableRestrictedFamily(self, family):
         """See `IArchive`."""

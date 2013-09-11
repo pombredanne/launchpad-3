@@ -602,8 +602,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # Return all distroarches with unrestricted processor families or with
         # processor families the archive is explicitly associated with.
         return [distroarch for distroarch in available_archs
-            if not distroarch.processorfamily.restricted or
-               distroarch.processorfamily in
+            if not distroarch.processor.restricted or
+               distroarch.processor in
                     self.archive.enabled_restricted_families]
 
     def createMissingBuilds(self, architectures_available=None, logger=None):

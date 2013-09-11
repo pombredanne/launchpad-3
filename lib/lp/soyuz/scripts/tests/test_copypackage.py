@@ -1736,7 +1736,7 @@ class TestCopyBuildRecords(TestCaseWithFactory):
         for das in self.series.architectures:
             self.factory.makeDistroArchSeries(
                 distroseries=new_series, architecturetag=das.architecturetag,
-                processorfamily=das.processorfamily)
+                processor=das.processor)
         new_series.nominatedarchindep = new_series[
             self.series.nominatedarchindep.architecturetag]
         new_das = self.factory.makeDistroArchSeries(distroseries=new_series)

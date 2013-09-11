@@ -161,7 +161,7 @@ class TestBuild(TestCaseWithFactory):
         # Builds can not be retried for released distroseries
         distroseries = self.factory.makeDistroSeries()
         das = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, processorfamily=self.pf,
+            distroseries=distroseries, processor=self.processor,
             supports_virtualized=True)
         with person_logged_in(self.admin):
             distroseries.nominatedarchindep = das
@@ -179,7 +179,7 @@ class TestBuild(TestCaseWithFactory):
         # released.
         distroseries = self.factory.makeDistroSeries()
         das = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, processorfamily=self.pf,
+            distroseries=distroseries, processor=self.processor,
             supports_virtualized=True)
         archive = self.factory.makeArchive(
             purpose=ArchivePurpose.PARTNER,

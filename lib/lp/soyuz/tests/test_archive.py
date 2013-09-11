@@ -1039,7 +1039,7 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
             self.archive, self.arm)
         self.assertEqual(1, allowed_restricted_families.count())
         self.assertEqual(
-            self.arm, allowed_restricted_families[0].processorfamily)
+            self.arm, allowed_restricted_families[0].processor)
         self.assertEqual([self.arm], self.archive.enabled_restricted_families)
         self.archive.enabled_restricted_families = []
         self.assertEqual(0,
