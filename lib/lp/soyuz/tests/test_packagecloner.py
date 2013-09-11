@@ -648,7 +648,7 @@ class PackageClonerTests(TestCaseWithFactory):
         amd64 = getUtility(IProcessorSet).getByName('amd64')
         self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag="amd64",
-            processorfamily=amd64, supports_virtualized=True)
+            processor=amd64, supports_virtualized=True)
         # The request builds for both families, so we expect two builds
         # per source.
         processors = [getUtility(IProcessorSet).getByName('386'), amd64]

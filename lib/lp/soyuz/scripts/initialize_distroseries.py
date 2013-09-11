@@ -380,12 +380,12 @@ class InitializeDistroSeries:
                 sqlvalues(self.arches))
         self._store.execute("""
             INSERT INTO DistroArchSeries
-            (distroseries, processorfamily, architecturetag, owner, official,
+            (distroseries, processor, architecturetag, owner, official,
              supports_virtualized)
-            SELECT %s, processorfamily, architecturetag, %s,
+            SELECT %s, processor, architecturetag, %s,
                 bool_and(official), bool_or(supports_virtualized)
             FROM DistroArchSeries WHERE enabled = TRUE %s
-            GROUP BY processorfamily, architecturetag
+            GROUP BY processor, architecturetag
             """ % (sqlvalues(self.distroseries, self.distroseries.owner)
             + (das_filter, )))
         self._store.flush()
@@ -531,15 +531,14 @@ class InitializeDistroSeries:
                     destination = PackageLocation(
                         target_archive, self.distroseries.distribution,
                         self.distroseries, PackagePublishingPocket.RELEASE)
-                    proc_families = None
+                    processors = None
                     if self.rebuild:
-                        proc_families = [
-                            das[1].processorfamily
-                            for das in distroarchseries_list]
+                        processors = [
+                            das[1].processor for das in distroarchseries_list]
                         distroarchseries_list = ()
                     getUtility(IPackageCloner).clonePackages(
                         origin, destination, distroarchseries_list,
-                        proc_families, spns, self.rebuild)
+                        processors, spns, self.rebuild)
                 else:
                     # There is only one available pocket in an unreleased
                     # series.

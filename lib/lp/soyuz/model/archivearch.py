@@ -59,7 +59,7 @@ class ArchiveArchSet:
         return IStore(ArchiveArch).find(ArchiveArch, *clauses).order_by(
             ArchiveArch.id)
 
-    def getRestrictedFamilies(self, archive):
+    def getRestrictedProcessors(self, archive):
         """See `IArchiveArchSet`."""
         origin = (
             Processor,

@@ -41,8 +41,7 @@ class TestBuildStartEstimation(TestCaseWithFactory):
         self.distroseries = self.factory.makeDistroSeries()
         self.bob = getUtility(IBuilderSet).getByName(BOB_THE_BUILDER_NAME)
         das = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries,
-            processorfamily=self.bob.processor.id,
+            distroseries=self.distroseries, processor=self.bob.processor,
             architecturetag='i386', supports_virtualized=True)
         with person_logged_in(self.admin):
             self.distroseries.nominatedarchindep = das

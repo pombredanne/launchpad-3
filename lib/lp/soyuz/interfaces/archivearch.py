@@ -48,7 +48,7 @@ class IArchiveArchSet(Interface):
         :return: a newly created `IArchiveArch`.
         """
 
-    def getByArchive(archive, processorfamily=None):
+    def getByArchive(archive, processor=None):
         """Return associations that match the archive and processor.
 
         If no processor is passed, all associations for 'archive' will
@@ -61,7 +61,7 @@ class IArchiveArchSet(Interface):
         :return: A (potentially empty) result set of `IArchiveArch` instances.
         """
 
-    def getRestrictedFamilies(archive):
+    def getRestrictedProcessors(archive):
         """All restricted processor, paired with `ArchiveArch`
         instances if associated with `archive`.
 

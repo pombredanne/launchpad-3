@@ -402,8 +402,8 @@ priority was correctly munged to "extra":
     386
     >>> print ed.build.status
     Successfully built
-    >>> print ed.build.distro_arch_series.processorfamily.name
-    x86
+    >>> print ed.build.distro_arch_series.processor.name
+    386
     >>> print ed.build.distro_arch_series.architecturetag
     i386
     >>> print ed.priority
