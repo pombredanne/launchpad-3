@@ -16,14 +16,11 @@ from zope.schema import Int
 
 from lp import _
 from lp.soyuz.interfaces.archive import IArchive
-from lp.soyuz.interfaces.processor import (
-    IProcessor,
-    IProcessorFamily,
-    )
+from lp.soyuz.interfaces.processor import IProcessor
 
 
 class IArchiveArch(Interface):
-    """An interface for archive/processor family associations."""
+    """An interface for archive/processor associations."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
 
@@ -32,12 +29,6 @@ class IArchiveArch(Interface):
         required=True, readonly=True,
         description=_(
             "The archive associated with the processor family at hand."))
-
-    processorfamily = Reference(
-        title=_("Processor family"), schema=IProcessorFamily,
-        required=True, readonly=True,
-        description=_(
-            "The processorfamily associated with the archive at hand."))
 
     processor = Reference(
         title=_("Processor"), schema=IProcessor,
@@ -48,34 +39,34 @@ class IArchiveArch(Interface):
 
 class IArchiveArchSet(Interface):
     """An interface for sets of archive/processor family associations."""
-    def new(archive, processorfamily):
-        """Create a new archive/processor family association.
+    def new(archive, processor):
+        """Create a new archive/processor association.
 
         :param archive: the archive to be associated.
-        :param processorfamily: the processor family to be associated.
+        :param processor: the processor to be associated.
 
         :return: a newly created `IArchiveArch`.
         """
 
     def getByArchive(archive, processorfamily=None):
-        """Return associations that match the archive and processor family.
+        """Return associations that match the archive and processor.
 
-        If no processor family is passed, all associations for 'archive' will
+        If no processor is passed, all associations for 'archive' will
         be returned.
 
         :param archive: The associated archive.
-        :param processorfamily: An optional processor family; if passed only
+        :param processor: An optional processor; if passed only
         associations in which it participates will be considered.
 
         :return: A (potentially empty) result set of `IArchiveArch` instances.
         """
 
     def getRestrictedFamilies(archive):
-        """All restricted processor families, paired with `ArchiveArch`
+        """All restricted processor, paired with `ArchiveArch`
         instances if associated with `archive`.
 
-        :return: A sequence containing a (`ProcessorFamily`, `ArchiveArch`)
-            2-tuple for each processor family.
+        :return: A sequence containing a (`Processor`, `ArchiveArch`)
+            2-tuple for each processor.
             The second value in the tuple will be None if the given `archive`
-            is not associated with the `ProcessorFamily` yet.
+            is not associated with the `Processor` yet.
         """

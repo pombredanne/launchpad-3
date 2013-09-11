@@ -89,6 +89,9 @@ class IProcessorSet(Interface):
     def getAll():
         """Return all the `IProcessor` known to Launchpad."""
 
+    def getRestricted():
+        """Return all restricted `IProcessor`s."""
+
     def new(name, title, description, restricted):
         """Create a new processor.
 

@@ -597,7 +597,7 @@ class IArchiveView(IHasBuildRecords):
                 "The restricted architecture families on which the archive "
                 "can build."),
             value_type=Reference(schema=Interface),
-            # Really IProcessorFamily.
+            # Really IProcessor.
             readonly=True),
         as_of='devel')
 
@@ -1963,14 +1963,14 @@ class IArchiveAdmin(Interface):
 
     @operation_parameters(
         family=Reference(schema=Interface, required=True),
-        # Really IProcessorFamily.
+        # Really IProcessor.
     )
     @export_write_operation()
     @operation_for_version('devel')
     def enableRestrictedFamily(family):
-        """Add the processor family to the set of enabled restricted families.
+        """Add the processor to the set of enabled restricted processors.
 
-        :param family: is an `IProcessorFamily` object.
+        :param family: is an `IProcessor` object.
         """
 
 

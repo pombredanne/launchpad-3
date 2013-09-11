@@ -136,7 +136,7 @@ from lp.soyuz.browser.archive import EnableRestrictedFamiliesMixin
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 
 
 class DistributionNavigation(
@@ -873,10 +873,9 @@ class DistributionAddView(LaunchpadFormView,
 
     @property
     def initial_values(self):
-        proc_family_set = getUtility(IProcessorFamilySet)
-        restricted_families = set(proc_family_set.getRestricted())
+        restricted_processors = getUtility(IProcessorSet).getRestricted()
         return {
-            'enabled_restricted_families': restricted_families,
+            'enabled_restricted_families': restricted_processors,
             'require_virtualized': False,
             }
 

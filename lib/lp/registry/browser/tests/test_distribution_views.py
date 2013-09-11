@@ -10,7 +10,7 @@ from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.browser.distribution import DistributionPublisherConfigView
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
     login,
     login_celebrity,
@@ -105,8 +105,7 @@ class TestDistroAddView(TestCaseWithFactory):
         self.simple_user = self.factory.makePerson()
         self.admin = login_celebrity('admin')
         self.distributionset = getUtility(IDistributionSet)
-        proc_family_set = getUtility(IProcessorFamilySet)
-        self.restricted_families = proc_family_set.getRestricted()
+        self.restricted_families = getUtility(IProcessorSet).getRestricted()
 
     def getDefaultAddDict(self):
         return {
@@ -187,8 +186,7 @@ class TestDistroEditView(TestCaseWithFactory):
         super(TestDistroEditView, self).setUp()
         self.admin = login_celebrity('admin')
         self.distribution = self.factory.makeDistribution()
-        proc_family_set = getUtility(IProcessorFamilySet)
-        self.restricted_families = proc_family_set.getRestricted()
+        self.restricted_families = getUtility(IProcessorSet).getRestricted()
 
     def test_edit_distro_init_value_require_virtualized(self):
         view = create_initialized_view(

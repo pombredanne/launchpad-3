@@ -200,7 +200,7 @@ from lp.soyuz.interfaces.packageset import (
     IPackageset,
     IPackagesetSet,
     )
-from lp.soyuz.interfaces.processor import IProcessorFamily
+from lp.soyuz.interfaces.processor import IProcessor
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
     IBinaryPackagePublishingHistoryEdit,
@@ -392,7 +392,7 @@ patch_entry_return_type(
 patch_reference_property(IArchive, 'distribution', IDistribution)
 patch_collection_property(IArchive, 'dependencies', IArchiveDependency)
 patch_collection_property(
-    IArchive, 'enabled_restricted_families', IProcessorFamily)
+    IArchive, 'enabled_restricted_families', IProcessor)
 patch_collection_return_type(IArchive, 'getAllPermissions', IArchivePermission)
 patch_collection_return_type(
     IArchive, 'getPermissionsForPerson', IArchivePermission)
@@ -491,7 +491,7 @@ patch_choice_parameter_type(
 patch_entry_return_type(
     IArchive, '_addArchiveDependency', IArchiveDependency)
 patch_plain_parameter_type(
-    IArchive, 'enableRestrictedFamily', 'family', IProcessorFamily)
+    IArchive, 'enableRestrictedFamily', 'family', IProcessor)
 
 
 # IBuildFarmJob

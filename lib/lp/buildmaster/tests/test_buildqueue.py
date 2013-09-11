@@ -35,7 +35,7 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     )
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-from lp.soyuz.model.processor import ProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
@@ -188,11 +188,10 @@ def check_estimate(test, job, delay_in_seconds):
             (estimate.seconds, delay_in_seconds))
 
 
-def disable_builders(test, processor, virtualized):
+def disable_builders(test, processor_name, virtualized):
     """Disable bulders with the given processor and virtualization setting."""
-    if processor is not None:
-        processor_fam = ProcessorFamilySet().getByName(processor)
-        processor = processor_fam.processors[0].id
+    if processor_name is not None:
+        processor = getUtility(IProcessorSet).getByName(processor_name)
     for builder in test.builders[(processor, virtualized)]:
         builder.builderok = False
 
@@ -219,8 +218,7 @@ class TestBuildQueueBase(TestCaseWithFactory):
         self.i9 = self.factory.makeBuilder(name='i386-n-9', virtualized=False)
 
         # Next make seven 'hppa' builders.
-        processor_fam = ProcessorFamilySet().getByName('hppa')
-        self.hppa_proc = processor_fam.processors[0]
+        self.hppa_proc = getUtility(IProcessorSet).getByName('hppa')
         self.h1 = self.factory.makeBuilder(
             name='hppa-v-1', processor=self.hppa_proc)
         self.h2 = self.factory.makeBuilder(
@@ -237,8 +235,7 @@ class TestBuildQueueBase(TestCaseWithFactory):
             name='hppa-n-7', processor=self.hppa_proc, virtualized=False)
 
         # Finally make five 'amd64' builders.
-        processor_fam = ProcessorFamilySet().getByName('amd64')
-        self.amd_proc = processor_fam.processors[0]
+        self.amd_proc = getUtility(IProcessorSet).getByName('amd64')
         self.a1 = self.factory.makeBuilder(
             name='amd64-v-1', processor=self.amd_proc)
         self.a2 = self.factory.makeBuilder(
@@ -251,8 +248,7 @@ class TestBuildQueueBase(TestCaseWithFactory):
             name='amd64-n-5', processor=self.amd_proc, virtualized=False)
 
         self.builders = dict()
-        processor_fam = ProcessorFamilySet().getByName('x86')
-        self.x86_proc = processor_fam.processors[0]
+        self.x86_proc = getUtility(IProcessorSet).getByName('386')
         # x86 native
         self.builders[(self.x86_proc.id, False)] = [
             self.i6, self.i7, self.i8, self.i9]
@@ -1318,7 +1314,7 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
     def test_no_builder_no_estimate(self):
         # No dispatch estimate is provided in the absence of builders that
         # can run the job of interest (JOI).
-        disable_builders(self, 'x86', True)
+        disable_builders(self, '386', True)
         vim_build, vim_job = find_job(self, 'vim', '386')
         check_estimate(self, vim_job, None)
 
@@ -1326,7 +1322,7 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         # Test that a reduced builder pool results in longer dispatch time
         # estimates.
         vim_build, vim_job = find_job(self, 'vim', '386')
-        disable_builders(self, 'x86', True)
+        disable_builders(self, '386', True)
         # Re-enable one builder.
         builder = self.builders[(self.x86_proc.id, True)][0]
         builder.builderok = True
@@ -1355,7 +1351,7 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
 
     def test_estimation_binary_virtual_headjob(self):
         # The head job only waits for the next builder to become available.
-        disable_builders(self, 'x86', True)
+        disable_builders(self, '386', True)
         # Re-enable one builder.
         builder = self.builders[(self.x86_proc.id, True)][0]
         builder.builderok = True

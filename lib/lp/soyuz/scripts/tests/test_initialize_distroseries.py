@@ -27,7 +27,7 @@ from lp.soyuz.interfaces.packageset import (
     IPackagesetSet,
     NoSuchPackageSet,
     )
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -49,11 +49,10 @@ class InitializationHelperTestCase(TestCaseWithFactory):
     # - setup/populate parents with packages;
     # - initialize a child from parents.
 
-    def setupDas(self, parent, proc, arch_tag):
-        pf = getUtility(IProcessorFamilySet).getByName(proc)
+    def setupDas(self, parent, processor_name, arch_tag):
+        processor = getUtility(IProcessorSet).getByName(processor_name)
         parent_das = self.factory.makeDistroArchSeries(
-            distroseries=parent, processorfamily=pf,
-            architecturetag=arch_tag)
+            distroseries=parent, processor=processor, architecturetag=arch_tag)
         lf = self.factory.makeLibraryFileAlias()
         transaction.commit()
         parent_das.addOrUpdateChroot(lf)
@@ -63,7 +62,7 @@ class InitializationHelperTestCase(TestCaseWithFactory):
     def setupParent(self, parent=None, packages=None, format_selection=None,
                     distribution=None,
                     pocket=PackagePublishingPocket.RELEASE,
-                    proc='x86', arch_tag='i386'
+                    proc='386', arch_tag='i386'
                     ):
         if parent is None:
             parent = self.factory.makeDistroSeries(distribution)

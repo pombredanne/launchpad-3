@@ -25,7 +25,7 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.testing import (
     celebrity_logged_in,
@@ -265,12 +265,9 @@ class TestProcessorFamilies(WebServiceTestCase):
     def test_processors(self):
         """Attributes about processors are available."""
         self.ws_version = 'devel'
-        product_family_set = getUtility(IProcessorFamilySet)
-        ws_arm = self.service.processor_families.getByName(name='arm')
-        self.assertContentEqual([], ws_arm.processors)
-        product_family_set = getUtility(IProcessorFamilySet)
-        arm = product_family_set.getByName('arm')
-        arm.addProcessor('new-arm', 'New ARM Title', 'New ARM Description')
+        ws_arm = self.service.processors.getByName(name='arm')
+        getUtility(IProcessorSet).new(
+            'new-arm', 'New ARM Title', 'New ARM Description')
         transaction.commit()
         ws_proc = ws_arm.processors[0]
         self.assertEqual('new-arm', ws_proc.name)

@@ -33,8 +33,6 @@ __all__ = [
     'IPackageset',
     'IPackagesetSet',
     'IProcessor',
-    'IProcessorFamily',
-    'IProcessorFamilySet',
     'IProcessorSet',
     'ISourcePackagePublishingHistory',
     'IncompatibleArguments',
@@ -57,7 +55,6 @@ from lp import _schema_circular_imports
 from lp.services.webservice.apihelpers import (
     patch_collection_property,
     patch_plain_parameter_type,
-    patch_reference_property,
     )
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed,
@@ -101,8 +98,6 @@ from lp.soyuz.interfaces.packageset import (
     )
 from lp.soyuz.interfaces.processor import (
     IProcessor,
-    IProcessorFamily,
-    IProcessorFamilySet,
     IProcessorSet,
     )
 from lp.soyuz.interfaces.publishing import (
@@ -115,10 +110,7 @@ from lp.soyuz.interfaces.queue import IPackageUpload
 _schema_circular_imports
 
 # IProcessor
-patch_reference_property(
-    IProcessor, 'family', IProcessorFamily)
-
 patch_collection_property(
-    IArchive, 'enabled_restricted_families', IProcessorFamily)
+    IArchive, 'enabled_restricted_families', IProcessor)
 patch_plain_parameter_type(
-    IArchive, 'enableRestrictedFamily', 'family', IProcessorFamily)
+    IArchive, 'enableRestrictedFamily', 'family', IProcessor)

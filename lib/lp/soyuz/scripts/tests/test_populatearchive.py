@@ -463,7 +463,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             exception_type=SoyuzScriptError,
             exception_text="Invalid origin archive name: '//'")
 
-    def testInvalidProcessorFamilyName(self):
+    def testInvalidProcessorName(self):
         """Try copy archive population with an invalid architecture tag.
 
         This test should provoke a `SoyuzScriptError` exception.
@@ -549,7 +549,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             exception_text=(
                 "error: archive 'hello-1' already exists for 'ubuntu'."))
 
-    def testMissingProcessorFamily(self):
+    def testMissingProcessor(self):
         """Try copy archive population without a single architecture tag.
 
         This test should provoke a `SoyuzScriptError` exception.

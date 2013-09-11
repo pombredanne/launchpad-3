@@ -23,7 +23,10 @@ from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import (
+    IProcessorSet,
+    ProcessorNotFound,
+    )
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
     SoyuzScriptError,
@@ -90,25 +93,23 @@ class ArchivePopulator(SoyuzScript):
             copied to.
         """
 
-        def loadProcessorFamilies(arch_tags):
+        def loadProcessors(arch_tags):
             """Load processor families for specified arch tags."""
-            proc_family_set = getUtility(IProcessorFamilySet)
-            proc_families = set()
+            processors = set()
             for name in arch_tags:
-                proc_family = proc_family_set.getByProcessorName(name)
-                if proc_family is None:
+                try:
+                    processor = getUtility(IProcessorSet).getByName(name)
+                    processors.add(processor)
+                except ProcessorNotFound:
                     raise SoyuzScriptError(
                         "Invalid architecture tag: '%s'" % name)
-                else:
-                    proc_families.add(proc_family)
+            return processors
 
-            return proc_families
-
-        def set_archive_architectures(archive, proc_families):
-            """Associate the archive with the processor families."""
+        def set_archive_architectures(archive, processors):
+            """Associate the archive with the processors."""
             aa_set = getUtility(IArchiveArchSet)
-            for proc_family in proc_families:
-                aa_set.new(archive, proc_family)
+            for processor in processors:
+                aa_set.new(archive, processor)
 
         def build_location(distro, suite, component, packageset_names=None):
             """Build and return package location."""
@@ -200,11 +201,11 @@ class ArchivePopulator(SoyuzScript):
                 raise SoyuzScriptError(
                     "error: architecture tags not specified.")
 
-            # First load the processor families for the specified arch tags
+            # First load the processors for the specified arch tags
             # from the database. This will fail if an invalid arch tag
             # name was specified on the command line; that's why it should be
             # done before creating the copy archive.
-            proc_families = loadProcessorFamilies(arch_tags)
+            processors = loadProcessors(arch_tags)
 
             # The copy archive is created in disabled mode. This gives the
             # archive owner the chance to tweak the build dependencies
@@ -218,9 +219,9 @@ class ArchivePopulator(SoyuzScript):
                 description=reason, enabled=False,
                 require_virtualized=virtual)
             the_destination.archive = copy_archive
-            # Associate the newly created copy archive with the processor
-            # families specified by the user.
-            set_archive_architectures(copy_archive, proc_families)
+            # Associate the newly created copy archive with the processors
+            # specified by the user.
+            set_archive_architectures(copy_archive, processors)
         else:
             # Archive name clash! Creation requested for existing archive with
             # the same name and distribution.
@@ -265,7 +266,7 @@ class ArchivePopulator(SoyuzScript):
             pkg_cloner.mergeCopy(the_origin, the_destination)
         else:
             pkg_cloner.clonePackages(
-                the_origin, the_destination, proc_families=proc_families)
+                the_origin, the_destination, processors=processors)
 
         # Mark the package copy request as completed.
         pcr.markAsCompleted()

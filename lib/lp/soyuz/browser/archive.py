@@ -148,7 +148,7 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     inactive_publishing_status,
@@ -2011,9 +2011,9 @@ class EnableRestrictedFamiliesMixin:
     def createEnabledRestrictedFamilies(self, description=None):
         """Creates the 'enabled_restricted_families' field."""
         terms = []
-        for family in getUtility(IProcessorFamilySet).getRestricted():
+        for processor in getUtility(IProcessorSet).getRestricted():
             terms.append(SimpleTerm(
-                family, token=family.name, title=family.title))
+                processor, token=processor.name, title=processor.title))
         old_field = IArchive['enabled_restricted_families']
         return form.Fields(
             List(__name__=old_field.__name__,

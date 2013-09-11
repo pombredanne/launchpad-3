@@ -24,7 +24,7 @@ from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
@@ -55,9 +55,9 @@ class TestBuildFarmJobBehaviorBase(TestCaseWithFactory):
 
     def _makeBuild(self):
         """Create a `Build` object."""
-        x86 = getUtility(IProcessorFamilySet).getByName('x86')
+        x86 = getUtility(IProcessorSet).getByName('386')
         distroarchseries = self.factory.makeDistroArchSeries(
-            architecturetag='x86', processorfamily=x86)
+            architecturetag='x86', processor=x86)
         distroseries = distroarchseries.distroseries
         archive = self.factory.makeArchive(
             distribution=distroseries.distribution)

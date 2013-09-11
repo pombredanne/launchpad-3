@@ -369,20 +369,6 @@
             permission="zope.Public"
             set_schema="lp.soyuz.interfaces.processor.IProcessor"/>
     </class>
-    <class
-        class="lp.soyuz.model.processor.ProcessorFamily">
-        <allow
-            interface="lp.soyuz.interfaces.processor.IProcessorFamily"/>
-        <require
-            permission="zope.Public"
-            set_schema="lp.soyuz.interfaces.processor.IProcessorFamily"/>
-    </class>
-    <securedutility
-        class="lp.soyuz.model.processor.ProcessorFamilySet"
-        provides="lp.soyuz.interfaces.processor.IProcessorFamilySet">
-        <allow
-            interface="lp.soyuz.interfaces.processor.IProcessorFamilySet"/>
-    </securedutility>
     <securedutility
         class="lp.soyuz.model.processor.ProcessorSet"
         provides="lp.soyuz.interfaces.processor.IProcessorSet">

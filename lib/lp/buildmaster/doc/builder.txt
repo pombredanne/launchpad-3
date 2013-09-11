@@ -149,9 +149,8 @@ show up in the calculated queue size.
     >>> print recipe_bq.processor
     None
 
-    >>> from lp.soyuz.interfaces.processor import IProcessorFamilySet
-    >>> i386_family = getUtility(IProcessorFamilySet).getByName('x86')
-    >>> recipe_bq.processor = i386_family.processors[0]
+    >>> from lp.soyuz.interfaces.processor import IProcessorSet
+    >>> recipe_bq.processor = getUtility(IProcessorSet).getByName('386')
     >>> recipe_bq.virtualized = True
     >>> transaction.commit()
 
