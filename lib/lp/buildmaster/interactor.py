@@ -413,7 +413,7 @@ class BuilderInteractor(object):
         return d.addCallback(got_resume_ok).addErrback(got_resume_bad)
 
     @defer.inlineCallbacks
-    def _startBuild(self, build_queue_item, logger):
+    def _startBuild(self, build_queue_item, behavior, logger):
         """Start a build on this builder.
 
         :param build_queue_item: A BuildQueueItem to build.
@@ -423,14 +423,8 @@ class BuilderInteractor(object):
             value is None, or a Failure that contains an exception
             explaining what went wrong.
         """
-        needed_bfjb = type(removeSecurityProxy(
-            IBuildFarmJobBehavior(build_queue_item.specific_job)))
-        if not zope_isinstance(self._current_build_behavior, needed_bfjb):
-            raise AssertionError(
-                "Inappropriate IBuildFarmJobBehavior: %r is not a %r" %
-                (self._current_build_behavior, needed_bfjb))
-        self._current_build_behavior.logStartBuild(logger)
-        self._current_build_behavior.verifyBuildRequest(logger)
+        behavior.logStartBuild(logger)
+        behavior.verifyBuildRequest(logger)
 
         # Set the build behavior depending on the provided build queue item.
         if not self.builder.builderok:
@@ -449,8 +443,7 @@ class BuilderInteractor(object):
             yield self.resumeSlaveHost()
             yield self.slave.echo("ping")
 
-        yield self._current_build_behavior.dispatchBuildToSlave(
-            build_queue_item.id, logger)
+        yield behavior.dispatchBuildToSlave(build_queue_item.id, logger)
 
     def resetOrFail(self, logger, exception):
         """Handle "confirmed" build slave failures.
@@ -508,7 +501,13 @@ class BuilderInteractor(object):
             logger.debug("No build candidates available for builder.")
             defer.returnValue(None)
 
-        yield self._startBuild(candidate, logger)
+        needed_bfjb = type(removeSecurityProxy(
+            IBuildFarmJobBehavior(candidate.specific_job)))
+        if not zope_isinstance(self._current_build_behavior, needed_bfjb):
+            raise AssertionError(
+                "Inappropriate IBuildFarmJobBehavior: %r is not a %r" %
+                (self._current_build_behavior, needed_bfjb))
+        yield self._startBuild(candidate, self._current_build_behavior, logger)
         defer.returnValue(candidate)
 
     @defer.inlineCallbacks
