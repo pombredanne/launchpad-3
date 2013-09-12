@@ -536,19 +536,18 @@ class TestCancellationChecking(TestCaseWithFactory):
         builder_name = BOB_THE_BUILDER_NAME
         self.builder = getUtility(IBuilderSet)[builder_name]
         self.builder.virtualized = True
+        self.interactor = BuilderInteractor(self.builder)
 
     def _getScanner(self, clock=None):
         scanner = SlaveScanner(
             None, BuildersCache(), BufferLogger(), clock=clock)
-        scanner.builder = self.builder
-        scanner.interactor = BuilderInteractor(self.builder)
         scanner.logger.name = 'slave-scanner'
         return scanner
 
     def test_ignores_nonvirtual(self):
         # If the builder is nonvirtual make sure we return False.
         self.builder.virtualized = False
-        d = self._getScanner().checkCancellation(self.builder)
+        d = self._getScanner().checkCancellation(self.builder, self.interactor)
         return d.addCallback(self.assertFalse)
 
     def test_ignores_no_buildqueue(self):
@@ -556,12 +555,12 @@ class TestCancellationChecking(TestCaseWithFactory):
         # make sure we return False.
         buildqueue = self.builder.currentjob
         buildqueue.reset()
-        d = self._getScanner().checkCancellation(self.builder)
+        d = self._getScanner().checkCancellation(self.builder, self.interactor)
         return d.addCallback(self.assertFalse)
 
     def test_ignores_build_not_cancelling(self):
         # If the active build is not in a CANCELLING state, ignore it.
-        d = self._getScanner().checkCancellation(self.builder)
+        d = self._getScanner().checkCancellation(self.builder, self.interactor)
         return d.addCallback(self.assertFalse)
 
     @defer.inlineCallbacks
@@ -577,13 +576,13 @@ class TestCancellationChecking(TestCaseWithFactory):
         clock = task.Clock()
         scanner = self._getScanner(clock=clock)
 
-        result = yield scanner.checkCancellation(self.builder)
+        result = yield scanner.checkCancellation(self.builder, self.interactor)
         self.assertNotIn("resume", slave.call_log)
         self.assertFalse(result)
         self.assertEqual(BuildStatus.CANCELLING, build.status)
 
         clock.advance(SlaveScanner.CANCEL_TIMEOUT)
-        result = yield scanner.checkCancellation(self.builder)
+        result = yield scanner.checkCancellation(self.builder, self.interactor)
         self.assertEqual(1, slave.call_log.count("resume"))
         self.assertTrue(result)
         self.assertEqual(BuildStatus.CANCELLED, build.status)
@@ -598,7 +597,8 @@ class TestCancellationChecking(TestCaseWithFactory):
         buildqueue = self.builder.currentjob
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
         build.updateStatus(BuildStatus.CANCELLING)
-        result = yield self._getScanner().checkCancellation(self.builder)
+        result = yield self._getScanner().checkCancellation(
+            self.builder, self.interactor)
         self.assertEqual(1, slave.call_log.count("resume"))
         self.assertTrue(result)
         self.assertEqual(BuildStatus.CANCELLED, build.status)

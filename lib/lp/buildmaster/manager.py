@@ -197,7 +197,7 @@ class SlaveScanner:
             transaction.abort()
 
     @defer.inlineCallbacks
-    def checkCancellation(self, builder):
+    def checkCancellation(self, builder, interactor):
         """See if there is a pending cancellation request.
 
         If the current build is in status CANCELLING then terminate it
@@ -207,7 +207,7 @@ class SlaveScanner:
             by resuming a slave host, so that there is no need to update its
             status.
         """
-        buildqueue = self.builder.currentjob
+        buildqueue = builder.currentjob
         if not buildqueue:
             self.date_cancel = None
             defer.returnValue(False)
@@ -219,7 +219,7 @@ class SlaveScanner:
         try:
             if self.date_cancel is None:
                 self.logger.info("Cancelling build '%s'" % build.title)
-                yield self.interactor.requestAbort()
+                yield interactor.requestAbort()
                 self.date_cancel = self._clock.seconds() + self.CANCEL_TIMEOUT
                 defer.returnValue(False)
             else:
@@ -236,11 +236,11 @@ class SlaveScanner:
         except Exception as e:
             self.logger.info(
                 "Build '%s' on %s failed to cancel" %
-                (build.title, self.builder.name))
+                (build.title, builder.name))
             self.date_cancel = None
             buildqueue.cancel()
             transaction.commit()
-            value = yield self.interactor.resetOrFail(self.logger, e)
+            value = yield interactor.resetOrFail(self.logger, e)
             # value is not None if we resumed a slave host.
             defer.returnValue(value is not None)
 
@@ -254,21 +254,21 @@ class SlaveScanner:
         # Commit and refetch the Builder object to ensure we have the
         # latest data from the DB.
         transaction.commit()
-        (self.builder, build_queue) = self.builders_cache[self.builder_name]
-        self.interactor = interactor or BuilderInteractor(self.builder)
+        (builder, build_queue) = self.builders_cache[self.builder_name]
+        interactor = interactor or BuilderInteractor(builder)
 
         # Confirm that the DB and slave sides are in a valid, mutually
         # agreeable state.
         lost_reason = None
-        if not self.builder.builderok:
-            lost_reason = '%s is disabled' % self.builder.name
+        if not builder.builderok:
+            lost_reason = '%s is disabled' % builder.name
         else:
-            cancelled = yield self.checkCancellation(self.builder)
+            cancelled = yield self.checkCancellation(builder, interactor)
             if cancelled:
                 return
-            lost = yield self.interactor.rescueIfLost(self.logger)
+            lost = yield interactor.rescueIfLost(self.logger)
             if lost:
-                lost_reason = '%s is lost' % self.builder.name
+                lost_reason = '%s is lost' % builder.name
 
         # The slave is lost or the builder is disabled. We can't
         # continue to update the job status or dispatch a new job, so
@@ -289,19 +289,18 @@ class SlaveScanner:
         if build_queue is not None:
             # Scan the slave and get the logtail, or collect the build
             # if it's ready.  Yes, "updateBuild" is a bad name.
-            yield self.interactor.updateBuild(build_queue)
-        elif self.builder.manual:
+            yield interactor.updateBuild(build_queue)
+        elif builder.manual:
             # If the builder is in manual mode, don't dispatch anything.
             self.logger.debug(
-                '%s is in manual mode, not dispatching.' %
-                self.builder.name)
+                '%s is in manual mode, not dispatching.' % builder.name)
         else:
             # See if there is a job we can dispatch to the builder slave.
-            yield self.interactor.findAndStartJob()
-            if self.builder.currentjob is not None:
+            yield interactor.findAndStartJob()
+            if builder.currentjob is not None:
                 # After a successful dispatch we can reset the
                 # failure_count.
-                self.builder.resetFailureCount()
+                builder.resetFailureCount()
                 transaction.commit()
 
 
