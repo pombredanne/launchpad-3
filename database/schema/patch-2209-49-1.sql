@@ -4,6 +4,7 @@
 SET client_min_messages=ERROR;
 
 ALTER TABLE processor ALTER COLUMN restricted SET NOT NULL;
+ALTER TABLE processor ALTER COLUMN family DROP NOT NULL;
 
 ALTER TABLE distroarchseries ALTER COLUMN processor SET NOT NULL;
 ALTER TABLE distroarchseries ALTER COLUMN processorfamily DROP NOT NULL;
