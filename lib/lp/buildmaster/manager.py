@@ -183,7 +183,7 @@ class SlaveScanner:
                 failure.getTraceback()))
 
         # Decide if we need to terminate the job or reset/fail the builder.
-        builder = self.builders_cache[self.builder_name]
+        builder = self.builders_cache[self.builder_name][0]
         try:
             builder.handleFailure(self.logger)
             yield assessFailureCounts(
@@ -254,7 +254,7 @@ class SlaveScanner:
         # Commit and refetch the Builder object to ensure we have the
         # latest data from the DB.
         transaction.commit()
-        self.builder = self.builders_cache[self.builder_name]
+        (self.builder, build_queue) = self.builders_cache[self.builder_name]
         self.interactor = interactor or BuilderInteractor(self.builder)
 
         # Confirm that the DB and slave sides are in a valid, mutually
@@ -275,21 +275,21 @@ class SlaveScanner:
         # just rescue the assigned job, if any, so it can be dispatched
         # to another slave.
         if lost_reason is not None:
-            if self.builder.currentjob is not None:
+            if build_queue is not None:
                 self.logger.warn(
                     "%s. Resetting BuildQueue %d.", lost_reason,
-                    self.builder.currentjob.id)
-                self.builder.currentjob.reset()
+                    build_queue.id)
+                build_queue.reset()
                 transaction.commit()
             return
 
         # We've confirmed that the slave state matches the DB. Continue
         # with updating the job status, or dispatching a new job if the
         # builder is idle.
-        if self.builder.currentjob is not None:
+        if build_queue is not None:
             # Scan the slave and get the logtail, or collect the build
             # if it's ready.  Yes, "updateBuild" is a bad name.
-            yield self.interactor.updateBuild(self.builder.currentjob)
+            yield self.interactor.updateBuild(build_queue)
         elif self.builder.manual:
             # If the builder is in manual mode, don't dispatch anything.
             self.logger.debug(
@@ -319,7 +319,7 @@ class NewBuildersScanner:
             clock = reactor
         self._clock = clock
         self.current_builders = [
-            builder.name for builder in self.manager.builders_cache]
+            builder.name for builder, bq in self.manager.builders_cache]
 
     def stop(self):
         """Terminate the LoopingCall."""
@@ -340,7 +340,7 @@ class NewBuildersScanner:
     def checkForNewBuilders(self):
         """See if any new builders were added."""
         new_builders = set(
-            builder.name for builder in self.manager.builders_cache)
+            builder.name for builder, bq in self.manager.builders_cache)
         old_builders = set(self.current_builders)
         extra_builders = new_builders.difference(old_builders)
         self.current_builders.extend(extra_builders)
@@ -350,10 +350,11 @@ class NewBuildersScanner:
 class BuildersCache:
 
     def __getitem__(self, name):
-        return getUtility(IBuilderSet).getByName(name)
+        builder = getUtility(IBuilderSet).getByName(name)
+        return (builder, builder.currentjob)
 
     def __iter__(self):
-        return getUtility(IBuilderSet).__iter__()
+        return ((b, b.currentjob) for b in getUtility(IBuilderSet).__iter__())
 
 
 class BuilddManager(service.Service):
@@ -388,7 +389,7 @@ class BuilddManager(service.Service):
 
         # Get a list of builders and set up scanners on each one.
 
-        builders = [builder.name for builder in self.builders_cache]
+        builders = [builder.name for builder, bq in self.builders_cache]
         self.addScanForBuilders(builders)
         self.new_builders_scanner.scheduleScan()
 
