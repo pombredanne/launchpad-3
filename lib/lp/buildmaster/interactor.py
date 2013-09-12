@@ -290,13 +290,13 @@ class BuilderInteractor(object):
                 status['logtail'] = status_sentence[2]
         defer.returnValue((status_sentence, status))
 
-    def verifySlaveBuildCookie(self, slave_cookie):
+    def verifySlaveBuildCookie(self, behavior, slave_cookie):
         """See `IBuildFarmJobBehavior`."""
-        if self._current_build_behavior is None:
+        if behavior is None:
             if slave_cookie is not None:
                 raise CorruptBuildCookie('Slave building when should be idle.')
         else:
-            good_cookie = self._current_build_behavior.getBuildCookie()
+            good_cookie = behavior.getBuildCookie()
             if slave_cookie != good_cookie:
                 raise CorruptBuildCookie(
                     "Invalid slave build cookie: got %r, expected %r."
@@ -341,7 +341,8 @@ class BuilderInteractor(object):
         # verifying that the slave cookie is None iff we expect the
         # slave to be idle.
         try:
-            self.verifySlaveBuildCookie(slave_cookie)
+            self.verifySlaveBuildCookie(
+                self._current_build_behavior, slave_cookie)
             defer.returnValue(False)
         except CorruptBuildCookie as reason:
             # An IDLE slave doesn't need rescuing (SlaveScanner.scan
