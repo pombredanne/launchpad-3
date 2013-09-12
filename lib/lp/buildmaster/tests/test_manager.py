@@ -456,7 +456,10 @@ class MockBuildersCache:
         self._build_queue = build_queue
 
     def __getitem__(self, name):
-        return (self._builder, self._build_queue)
+        return self._builder
+
+    def getVitals(self, name):
+        return BuildersCache.decorate(self._builder, self._build_queue)
 
 
 class TestSlaveScannerWithoutDB(TestCase):

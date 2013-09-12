@@ -10,6 +10,7 @@ __all__ = [
     'BUILDD_MANAGER_LOG_NAME',
     ]
 
+from collections import namedtuple
 import logging
 
 import transaction
@@ -37,6 +38,28 @@ from lp.services.propertycache import get_property_cache
 
 
 BUILDD_MANAGER_LOG_NAME = "slave-scanner"
+
+
+BuilderVitals = namedtuple(
+    'BuilderVitals', ('name', 'builderok', 'manual', 'build_queue'))
+
+
+class BuildersCache:
+
+    @staticmethod
+    def decorate(builder, build_queue=None):
+        return BuilderVitals(
+            builder.name, builder.builderok, builder.manual,
+            build_queue or builder.currentjob)
+
+    def __getitem__(self, name):
+        return getUtility(IBuilderSet).getByName(name)
+
+    def getVitals(self, name):
+        return self.decorate(self[name])
+
+    def iterVitals(self):
+        return (self.decorate(b) for b in getUtility(IBuilderSet).__iter__())
 
 
 @defer.inlineCallbacks
@@ -183,7 +206,7 @@ class SlaveScanner:
                 failure.getTraceback()))
 
         # Decide if we need to terminate the job or reset/fail the builder.
-        builder = self.builders_cache[self.builder_name][0]
+        builder = self.builders_cache[self.builder_name]
         try:
             builder.handleFailure(self.logger)
             yield assessFailureCounts(
@@ -254,49 +277,52 @@ class SlaveScanner:
         # Commit and refetch the Builder object to ensure we have the
         # latest data from the DB.
         transaction.commit()
-        (builder, build_queue) = self.builders_cache[self.builder_name]
-        interactor = interactor or BuilderInteractor(builder)
+        vitals = self.builders_cache.getVitals(self.builder_name)
+        interactor = interactor or BuilderInteractor(
+            self.builders_cache[self.builder_name])
 
         # Confirm that the DB and slave sides are in a valid, mutually
         # agreeable state.
         lost_reason = None
-        if not builder.builderok:
-            lost_reason = '%s is disabled' % builder.name
+        if not vitals.builderok:
+            lost_reason = '%s is disabled' % vitals.name
         else:
-            cancelled = yield self.checkCancellation(builder, interactor)
+            cancelled = yield self.checkCancellation(
+                interactor.builder, interactor)
             if cancelled:
                 return
             lost = yield interactor.rescueIfLost(self.logger)
             if lost:
-                lost_reason = '%s is lost' % builder.name
+                lost_reason = '%s is lost' % vitals.name
 
         # The slave is lost or the builder is disabled. We can't
         # continue to update the job status or dispatch a new job, so
         # just rescue the assigned job, if any, so it can be dispatched
         # to another slave.
         if lost_reason is not None:
-            if build_queue is not None:
+            if vitals.build_queue is not None:
                 self.logger.warn(
                     "%s. Resetting BuildQueue %d.", lost_reason,
-                    build_queue.id)
-                build_queue.reset()
+                    vitals.build_queue.id)
+                vitals.build_queue.reset()
                 transaction.commit()
             return
 
         # We've confirmed that the slave state matches the DB. Continue
         # with updating the job status, or dispatching a new job if the
         # builder is idle.
-        if build_queue is not None:
+        if vitals.build_queue is not None:
             # Scan the slave and get the logtail, or collect the build
             # if it's ready.  Yes, "updateBuild" is a bad name.
-            yield interactor.updateBuild(build_queue)
-        elif builder.manual:
+            yield interactor.updateBuild(vitals.build_queue)
+        elif vitals.manual:
             # If the builder is in manual mode, don't dispatch anything.
             self.logger.debug(
-                '%s is in manual mode, not dispatching.' % builder.name)
+                '%s is in manual mode, not dispatching.' % vitals.name)
         else:
             # See if there is a job we can dispatch to the builder slave.
             yield interactor.findAndStartJob()
+            builder = self.builders_cache[self.builder_name]
             if builder.currentjob is not None:
                 # After a successful dispatch we can reset the
                 # failure_count.
@@ -318,7 +344,7 @@ class NewBuildersScanner:
             clock = reactor
         self._clock = clock
         self.current_builders = [
-            builder.name for builder, bq in self.manager.builders_cache]
+            vitals.name for vitals in self.manager.builders_cache.iterVitals()]
 
     def stop(self):
         """Terminate the LoopingCall."""
@@ -339,21 +365,11 @@ class NewBuildersScanner:
     def checkForNewBuilders(self):
         """See if any new builders were added."""
         new_builders = set(
-            builder.name for builder, bq in self.manager.builders_cache)
+            vitals.name for vitals in self.manager.builders_cache.iterVitals())
         old_builders = set(self.current_builders)
         extra_builders = new_builders.difference(old_builders)
         self.current_builders.extend(extra_builders)
         return list(extra_builders)
-
-
-class BuildersCache:
-
-    def __getitem__(self, name):
-        builder = getUtility(IBuilderSet).getByName(name)
-        return (builder, builder.currentjob)
-
-    def __iter__(self):
-        return ((b, b.currentjob) for b in getUtility(IBuilderSet).__iter__())
 
 
 class BuilddManager(service.Service):
@@ -388,7 +404,7 @@ class BuilddManager(service.Service):
 
         # Get a list of builders and set up scanners on each one.
 
-        builders = [builder.name for builder, bq in self.builders_cache]
+        builders = [vitals.name for vitals in self.builders_cache.iterVitals()]
         self.addScanForBuilders(builders)
         self.new_builders_scanner.scheduleScan()
 
