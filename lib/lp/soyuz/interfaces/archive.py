@@ -590,11 +590,11 @@ class IArchiveView(IHasBuildRecords):
             "context build.\n"
             "NOTE: This is for migration of OEM PPAs only!")))
 
-    enabled_restricted_families = exported(
+    enabled_restricted_processors = exported(
         CollectionField(
-            title=_("Enabled restricted families"),
+            title=_("Enabled restricted processors"),
             description=_(
-                "The restricted architecture families on which the archive "
+                "The restricted architectures on which the archive "
                 "can build."),
             value_type=Reference(schema=Interface),
             # Really IProcessor.
@@ -1962,15 +1962,15 @@ class IArchiveAdmin(Interface):
     """Archive interface for operations restricted by commercial."""
 
     @operation_parameters(
-        family=Reference(schema=Interface, required=True),
+        processor=Reference(schema=Interface, required=True),
         # Really IProcessor.
     )
     @export_write_operation()
     @operation_for_version('devel')
-    def enableRestrictedFamily(family):
+    def enableRestrictedProcessor(processor):
         """Add the processor to the set of enabled restricted processors.
 
-        :param family: is an `IProcessor` object.
+        :param processor: is an `IProcessor` object.
         """
 
 

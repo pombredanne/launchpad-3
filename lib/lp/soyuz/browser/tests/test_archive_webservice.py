@@ -25,7 +25,6 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.testing import (
     celebrity_logged_in,
@@ -224,11 +223,11 @@ class TestArchiveDependencies(WebServiceTestCase):
         self.assertContentEqual([], ws_archive.dependencies)
 
 
-class TestProcessorFamilies(WebServiceTestCase):
-    """Test the enabled_restricted_families property and methods."""
+class TestProcessors(WebServiceTestCase):
+    """Test the enabled_restricted_processors property and methods."""
 
-    def test_erfNotAvailableInBeta(self):
-        """The enabled_restricted_families property is not in beta."""
+    def test_erpNotAvailableInBeta(self):
+        """The enabled_restricted_processors property is not in beta."""
         self.ws_version = 'beta'
         archive = self.factory.makeArchive()
         commercial = getUtility(ILaunchpadCelebrities).commercial_admin
@@ -237,96 +236,80 @@ class TestProcessorFamilies(WebServiceTestCase):
         ws_archive = self.wsObject(archive, user=commercial_admin)
         expected_re = (
             "(.|\n)*object has no attribute "
-            "'enabled_restricted_families'(.|\n)*")
+            "'enabled_restricted_processors'(.|\n)*")
         with ExpectedException(AttributeError, expected_re):
-            ws_archive.enabled_restricted_families
+            ws_archive.enabled_restricted_processors
 
-    def test_erfAvailableInDevel(self):
-        """The enabled_restricted_families property is in devel."""
+    def test_erpAvailableInDevel(self):
+        """The enabled_restricted_processors property is in devel."""
         self.ws_version = 'devel'
         archive = self.factory.makeArchive()
         commercial = getUtility(ILaunchpadCelebrities).commercial_admin
         commercial_admin = self.factory.makePerson(member_of=[commercial])
         transaction.commit()
         ws_archive = self.wsObject(archive, user=commercial_admin)
-        self.assertContentEqual([], ws_archive.enabled_restricted_families)
-
-    def test_getByName(self):
-        """The getByName method returns a processor family."""
-        self.ws_version = 'devel'
-        transaction.commit()
-        arm = self.service.processor_families.getByName(name='arm')
-        self.assertEqual(u'arm', arm.name)
-        self.assertEqual(u'ARM Processors', arm.title)
-        self.assertEqual(
-            u'The ARM and compatible processors', arm.description)
-        self.assertEqual(True, arm.restricted)
+        self.assertContentEqual([], ws_archive.enabled_restricted_processors)
 
     def test_processors(self):
         """Attributes about processors are available."""
         self.ws_version = 'devel'
-        ws_arm = self.service.processors.getByName(name='arm')
-        getUtility(IProcessorSet).new(
+        self.factory.makeProcessor(
             'new-arm', 'New ARM Title', 'New ARM Description')
         transaction.commit()
-        ws_proc = ws_arm.processors[0]
+        ws_proc = self.service.processors.getByName(name='new-arm')
         self.assertEqual('new-arm', ws_proc.name)
         self.assertEqual('New ARM Title', ws_proc.title)
         self.assertEqual('New ARM Description', ws_proc.description)
 
-    def test_enableRestrictedFamily(self):
-        """A new family can be added to the enabled restricted set."""
+    def test_enableRestrictedProcessor(self):
+        """A new processor can be added to the enabled restricted set."""
         self.ws_version = 'devel'
         archive = self.factory.makeArchive()
+        self.factory.makeProcessor(name='arm', restricted=True)
         commercial = getUtility(ILaunchpadCelebrities).commercial_admin
         commercial_admin = self.factory.makePerson(member_of=[commercial])
         transaction.commit()
-        ws_arm = self.service.processor_families.getByName(name='arm')
+        ws_arm = self.service.processors.getByName(name='arm')
         ws_archive = self.wsObject(archive, user=commercial_admin)
-        self.assertContentEqual([], ws_archive.enabled_restricted_families)
-        ws_archive.enableRestrictedFamily(family=ws_arm)
+        self.assertContentEqual([], ws_archive.enabled_restricted_processors)
+        ws_archive.enableRestrictedProcessor(processor=ws_arm)
         self.assertContentEqual(
-            [ws_arm], ws_archive.enabled_restricted_families)
+            [ws_arm], ws_archive.enabled_restricted_processors)
 
-    def test_enableRestrictedFamily_owner(self):
-        """A new family can be added to the enabled restricted set.
+    def test_enableRestrictedProcessor_owner(self):
+        """A new processor can be added to the enabled restricted set.
 
         An unauthorized user, even the archive owner, is not allowed.
         """
         self.ws_version = 'devel'
         archive = self.factory.makeArchive()
+        self.factory.makeProcessor(name='arm', restricted=True)
         transaction.commit()
-        ws_arm = self.service.processor_families.getByName(name='arm')
+        ws_arm = self.service.processors.getByName(name='arm')
         ws_archive = self.wsObject(archive, user=archive.owner)
-        self.assertContentEqual([], ws_archive.enabled_restricted_families)
+        self.assertContentEqual([], ws_archive.enabled_restricted_processors)
         expected_re = (
             "(.|\n)*'launchpad\.Admin'(.|\n)*")
         with ExpectedException(LRUnauthorized, expected_re):
-            ws_archive.enableRestrictedFamily(family=ws_arm)
+            ws_archive.enableRestrictedProcessor(processor=ws_arm)
 
-    def test_enableRestrictedFamily_nonPrivUser(self):
-        """A new family can be added to the enabled restricted set.
+    def test_enableRestrictedProcessor_nonPrivUser(self):
+        """A new processor can be added to the enabled restricted set.
 
         An unauthorized user, some regular user, is not allowed.
         """
         self.ws_version = 'devel'
         archive = self.factory.makeArchive()
+        self.factory.makeProcessor(name='arm', restricted=True)
         just_some_guy = self.factory.makePerson()
         transaction.commit()
-        ws_arm = self.service.processor_families.getByName(name='arm')
+        ws_arm = self.service.processors.getByName(name='arm')
         ws_archive = self.wsObject(archive, user=just_some_guy)
-        self.assertContentEqual([], ws_archive.enabled_restricted_families)
+        self.assertContentEqual([], ws_archive.enabled_restricted_processors)
         expected_re = (
             "(.|\n)*'launchpad\.Admin'(.|\n)*")
         with ExpectedException(LRUnauthorized, expected_re):
-            ws_archive.enableRestrictedFamily(family=ws_arm)
-
-    def test_defaultCollection(self):
-        """getRestricted will return all of the restricted families."""
-        self.ws_version = 'devel'
-        ws_arm = self.service.processor_families.getByName(name='arm')
-        self.assertContentEqual(
-            [ws_arm], self.service.processor_families)
+            ws_archive.enableRestrictedProcessor(processor=ws_arm)
 
 
 class TestCopyPackage(WebServiceTestCase):
