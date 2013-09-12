@@ -245,7 +245,7 @@ class SlaveScanner:
             defer.returnValue(value is not None)
 
     @defer.inlineCallbacks
-    def scan(self, builder=None, interactor=None):
+    def scan(self, interactor=None):
         """Probe the builder and update/dispatch/collect as appropriate.
 
         :return: A Deferred that fires when the scan is complete.
@@ -254,7 +254,7 @@ class SlaveScanner:
         # Commit and refetch the Builder object to ensure we have the
         # latest data from the DB.
         transaction.commit()
-        self.builder = builder or self.builders_cache[self.builder_name]
+        self.builder = self.builders_cache[self.builder_name]
         self.interactor = interactor or BuilderInteractor(self.builder)
 
         # Confirm that the DB and slave sides are in a valid, mutually
