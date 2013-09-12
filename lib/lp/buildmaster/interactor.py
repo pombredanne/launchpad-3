@@ -227,6 +227,10 @@ class BuilderInteractor(object):
         self._override_slave = override_slave
         self._override_behavior = override_behavior
 
+        # XXX: ew.
+        from lp.buildmaster.manager import BuildersCache
+        self.vitals = BuildersCache.decorate(builder)
+
     @property
     def slave(self):
         """See IBuilder."""
@@ -235,14 +239,14 @@ class BuilderInteractor(object):
         # The slave cache is invalidated when the builder's URL, VM host
         # or virtualisation change.
         new_slave_attrs = (
-            self.builder.url, self.builder.vm_host, self.builder.virtualized)
+            self.vitals.url, self.vitals.vm_host, self.vitals.virtualized)
         if self._cached_slave_attrs != new_slave_attrs:
-            if self.builder.virtualized:
+            if self.vitals.virtualized:
                 timeout = config.builddmaster.virtualized_socket_timeout
             else:
                 timeout = config.builddmaster.socket_timeout
             self._cached_slave = BuilderSlave.makeBuilderSlave(
-                self.builder.url, self.builder.vm_host, timeout)
+                self.vitals.url, self.vitals.vm_host, timeout)
             self._cached_slave_attrs = new_slave_attrs
         return self._cached_slave
 
@@ -350,7 +354,7 @@ class BuilderInteractor(object):
             if logger:
                 logger.info(
                     "Builder '%s' rescued from '%s': '%s'" %
-                    (self.builder.name, slave_cookie, reason))
+                    (self.vitals.name, slave_cookie, reason))
             defer.returnValue(True)
 
     def cleanSlave(self):
@@ -386,14 +390,14 @@ class BuilderInteractor(object):
             whose value is a (stdout, stderr) tuple for success, or a Failure
             whose value is a CannotResumeHost exception.
         """
-        if not self.builder.virtualized:
+        if not self.vitals.virtualized:
             return defer.fail(CannotResumeHost('Builder is not virtualized.'))
 
-        if not self.builder.vm_host:
+        if not self.vitals.vm_host:
             return defer.fail(CannotResumeHost('Undefined vm_host.'))
 
         logger = self._getSlaveScannerLogger()
-        logger.info("Resuming %s (%s)" % (self.builder.name, self.builder.url))
+        logger.info("Resuming %s (%s)" % (self.vitals.name, self.vitals.url))
 
         d = self.slave.resume()
 
@@ -466,14 +470,14 @@ class BuilderInteractor(object):
             or immediately if it's a non-virtual slave.
         """
         error_message = str(exception)
-        if self.builder.virtualized:
+        if self.vitals.virtualized:
             # Virtualized/PPA builder: attempt a reset, unless the failure
             # was itself a failure to reset.  (In that case, the slave
             # scanner will try again until we reach the failure threshold.)
             if not isinstance(exception, CannotResumeHost):
                 logger.warn(
                     "Resetting builder: %s -- %s" % (
-                        self.builder.url, error_message),
+                        self.vitals.url, error_message),
                     exc_info=True)
                 return self.resumeSlaveHost()
         else:
@@ -482,8 +486,8 @@ class BuilderInteractor(object):
             # Mark builder as 'failed'.
             logger.warn(
                 "Disabling builder: %s -- %s" % (
-                    self.builder.url, error_message))
-            self.builder.failBuilder(error_message)
+                    self.vitals.url, error_message))
+            self.vitals.failBuilder(error_message)
             transaction.commit()
         return defer.succeed(None)
 

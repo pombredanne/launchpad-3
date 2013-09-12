@@ -573,6 +573,7 @@ class TestCancellationChecking(TestCaseWithFactory):
         slave = OkSlave()
         self.builder.vm_host = "fake_vm_host"
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
+        self.interactor = BuilderInteractor(self.builder)
         buildqueue = self.builder.currentjob
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
         build.updateStatus(BuildStatus.CANCELLING)
@@ -597,6 +598,7 @@ class TestCancellationChecking(TestCaseWithFactory):
         slave = LostBuildingBrokenSlave()
         self.builder.vm_host = "fake_vm_host"
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
+        self.interactor = BuilderInteractor(self.builder)
         buildqueue = self.builder.currentjob
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
         build.updateStatus(BuildStatus.CANCELLING)

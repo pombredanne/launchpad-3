@@ -41,7 +41,9 @@ BUILDD_MANAGER_LOG_NAME = "slave-scanner"
 
 
 BuilderVitals = namedtuple(
-    'BuilderVitals', ('name', 'builderok', 'manual', 'build_queue'))
+    'BuilderVitals',
+    ('name', 'url', 'virtualized', 'vm_host', 'builderok', 'manual',
+     'build_queue'))
 
 
 class BuildersCache:
@@ -49,7 +51,8 @@ class BuildersCache:
     @staticmethod
     def decorate(builder, build_queue=None):
         return BuilderVitals(
-            builder.name, builder.builderok, builder.manual,
+            builder.name, builder.url, builder.virtualized, builder.vm_host,
+            builder.builderok, builder.manual,
             build_queue or builder.currentjob)
 
     def __getitem__(self, name):
