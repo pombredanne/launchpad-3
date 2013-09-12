@@ -247,8 +247,7 @@ class TestDistroEditView(TestCaseWithFactory):
             method='POST', form=edit_form)
 
         self.assertContentEqual(
-            [],
-            self.distribution.main_archive.enabled_restricted_families)
+            [], self.distribution.main_archive.enabled_restricted_families)
 
     def test_package_derivatives_email(self):
         # Test that the edit form allows changing package_derivatives_email
