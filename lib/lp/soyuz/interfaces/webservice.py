@@ -111,6 +111,6 @@ _schema_circular_imports
 
 # IProcessor
 patch_collection_property(
-    IArchive, 'enabled_restricted_families', IProcessor)
+    IArchive, 'enabled_restricted_processors', IProcessor)
 patch_plain_parameter_type(
-    IArchive, 'enableRestrictedFamily', 'family', IProcessor)
+    IArchive, 'enableRestrictedProcessor', 'processor', IProcessor)
