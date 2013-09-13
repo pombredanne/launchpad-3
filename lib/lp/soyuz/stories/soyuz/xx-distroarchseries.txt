@@ -28,7 +28,7 @@ to allow binary package searching.
     This archive contains 5 software packages.
     Details for Ubuntu Warty i386
     Architecture tag: i386
-    Processor family: Intel 386 compatible chips
+    Processor: Intel 386
     Port registrant: Mark Shuttleworth
     5 binary packages
 
@@ -208,7 +208,7 @@ allow duplications.
     (unofficial)
 
     >>> admin_browser.getControl("Architecture Tag").value = 'i386'
-    >>> admin_browser.getControl("Processor Family").value = ['x86']
+    >>> admin_browser.getControl("Processor:").value = ['386']
     >>> admin_browser.getControl("Official Support").selected = True
     >>> admin_browser.getControl("PPA support available").selected = True
 
@@ -217,7 +217,7 @@ to open an already installed architecture instead of a
 traceback. Although It's not a big problem because this form is very
 restricted and rarely used.
 
-    admin_browser.getControl("Add").click()
+    admin_browser.getControl("Continue").click()
     Traceback (most recent call last):
     ...
     RetryPsycopgIntegrityError: ERROR:  duplicate key violates unique
@@ -240,7 +240,7 @@ An administrator can open new distinct architecture, for instance,
     >>> admin_browser.getLink("Add architecture").click()
 
     >>> admin_browser.getControl("Architecture Tag").value = 'amd64'
-    >>> admin_browser.getControl("Processor Family").value = ['amd64']
+    >>> admin_browser.getControl("Processor:").value = ['amd64']
     >>> admin_browser.getControl("Official Support").selected = True
     >>> admin_browser.getControl("PPA support available").selected = True
     >>> admin_browser.getControl("Continue").click()

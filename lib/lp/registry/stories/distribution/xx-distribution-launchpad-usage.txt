@@ -21,6 +21,12 @@ details.
       ...
     Unauthorized...
 
+Create a restricted processor.
+
+    >>> login('admin@canonical.com')
+    >>> ign = factory.makeProcessor(name='arm', restricted=True)
+    >>> logout()
+
 The distribution's registrant can access the page and change the usage.
 
     >>> registrant = setupBrowser(

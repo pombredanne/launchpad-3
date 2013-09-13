@@ -13,7 +13,7 @@
             ARCHTAG
             </a><br />
 
-            <b>Processor family:</b><br />
+            <b>Processor:</b><br />
             <span tal:replace="context/processor/title" /><br />
 
             <b>Port registrant:</b><br />

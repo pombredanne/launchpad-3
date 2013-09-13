@@ -20,6 +20,7 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadStatus,
     )
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.publishing import IPublishingSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.testing.gpgkeys import import_public_test_keys
@@ -177,7 +178,7 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
         """Extend breezy setup to enable uploads to powerpc architecture."""
         TestStagedBinaryUploadBase.setupBreezy(self)
         self.switchToAdmin()
-        ppc = self.factory.makeProcessor(
+        ppc = getUtility(IProcessorSet).new(
             name='powerpc', title='PowerPC', description='not yet')
         self.breezy.newArch(
             'powerpc', ppc, True, self.breezy.owner)

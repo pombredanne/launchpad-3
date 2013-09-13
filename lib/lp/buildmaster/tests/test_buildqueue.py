@@ -192,7 +192,7 @@ def disable_builders(test, processor_name, virtualized):
     """Disable bulders with the given processor and virtualization setting."""
     if processor_name is not None:
         processor = getUtility(IProcessorSet).getByName(processor_name)
-    for builder in test.builders[(processor, virtualized)]:
+    for builder in test.builders[(processor.id, virtualized)]:
         builder.builderok = False
 
 

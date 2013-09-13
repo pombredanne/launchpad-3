@@ -881,7 +881,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         an explicit ArchiveArch association with the archive.
         """
         available_archs = [self.sparc_distroarch, self.avr_distroarch]
-        getUtility(IArchiveArchSet).new(self.archive, self.avr_family)
+        getUtility(IArchiveArchSet).new(self.archive, self.avr)
         pubrec = self.getPubSource(architecturehintlist='any')
         self.assertEqual(
             [self.sparc_distroarch, self.avr_distroarch],
@@ -920,7 +920,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         architecture to architectures that are unrestricted or
         explicitly associated with the archive.
         """
-        getUtility(IArchiveArchSet).new(self.archive, self.avr_family)
+        getUtility(IArchiveArchSet).new(self.archive, self.avr)
         pubrec = self.getPubSource(architecturehintlist='any')
         builds = pubrec.createMissingBuilds()
         self.assertEqual(2, len(builds))
