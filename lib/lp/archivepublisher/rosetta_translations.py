@@ -35,7 +35,9 @@ class RosettaTranslationsUpload(CustomUpload):
 
     All other CustomUploads extract and copy files when processed,
     RosettaTranslationsUpload is a special case that involves more than
-    copying the files, it triggers a job that processes them accordingly.
+    copying the files, so it triggers a job that processes them accordingly.
+    For this reason, all methods from CustomUpload that deal with files are
+    bypassed.
     """
     custom_type = "rosetta-translations"
 
@@ -74,8 +76,6 @@ class RosettaTranslationsUpload(CustomUpload):
                             sourcepackagerelease, libraryfilealias,
                             blamee)
 
-    # RosettaTranslationsUpload doesn't handle the tarball files directly, so
-    # all methods that deal with files are ignored.
     @staticmethod
     def parsePath(tarfile_path):
         pass
