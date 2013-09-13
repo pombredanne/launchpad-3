@@ -52,10 +52,6 @@ __all__ = [
 # XXX: JonathanLange 2010-11-09 bug=673083: Legacy work-around for circular
 # import bugs.  Break this up into a per-package thing.
 from lp import _schema_circular_imports
-from lp.services.webservice.apihelpers import (
-    patch_collection_property,
-    patch_plain_parameter_type,
-    )
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed,
     ArchiveDisabled,
@@ -108,9 +104,3 @@ from lp.soyuz.interfaces.queue import IPackageUpload
 
 
 _schema_circular_imports
-
-# IProcessor
-patch_collection_property(
-    IArchive, 'enabled_restricted_processors', IProcessor)
-patch_plain_parameter_type(
-    IArchive, 'enableRestrictedProcessor', 'processor', IProcessor)

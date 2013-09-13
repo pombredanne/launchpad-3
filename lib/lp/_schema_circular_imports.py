@@ -493,6 +493,8 @@ patch_entry_return_type(
 patch_plain_parameter_type(
     IArchive, 'enableRestrictedProcessor', 'processor', IProcessor)
 
+# IProcessor
+patch_reference_property(IProcessor, 'family', IProcessorFamily)
 
 # IBuildFarmJob
 IBuildFarmJob['status'].vocabulary = BuildStatus

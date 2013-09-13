@@ -601,6 +601,17 @@ class IArchiveView(IHasBuildRecords):
             readonly=True),
         as_of='devel')
 
+    enabled_restricted_processors = exported(
+        CollectionField(
+            title=_("Enabled restricted processors"),
+            description=_(
+                "The restricted architectures on which the archive "
+                "can build."),
+            value_type=Reference(schema=Interface),
+            # Really IProcessor.
+            readonly=True),
+        as_of='devel')
+
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
 
@@ -1960,6 +1971,18 @@ class IArchiveEdit(Interface):
 
 class IArchiveAdmin(Interface):
     """Archive interface for operations restricted by commercial."""
+
+    @operation_parameters(
+        processor=Reference(schema=Interface, required=True),
+        # Really IProcessor.
+    )
+    @export_write_operation()
+    @operation_for_version('devel')
+    def enableRestrictedProcessor(processor):
+        """Add the processor to the set of enabled restricted processors.
+
+        :param processor: is an `IProcessor` object.
+        """
 
     @operation_parameters(
         processor=Reference(schema=Interface, required=True),
