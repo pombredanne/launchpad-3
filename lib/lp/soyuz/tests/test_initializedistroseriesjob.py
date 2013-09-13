@@ -20,7 +20,10 @@ from lp.soyuz.interfaces.distributionjob import (
     InitializationPending,
     )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.interfaces.processor import IProcessorSet
+from lp.soyuz.interfaces.processor import (
+    IProcessorSet,
+    ProcessorNotFound,
+    )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -272,7 +275,10 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
         return getUtility(IInitializeDistroSeriesJobSource)
 
     def setupDas(self, parent, processor_name, arch_tag):
-        processor = getUtility(IProcessorSet).getByName(processor_name)
+        try:
+            processor = getUtility(IProcessorSet).getByName(processor_name)
+        except ProcessorNotFound:
+            processor = self.factory.makeProcessor(name=processor_name)
         parent_das = self.factory.makeDistroArchSeries(
             distroseries=parent, processor=processor, architecturetag=arch_tag)
         lf = self.factory.makeLibraryFileAlias()

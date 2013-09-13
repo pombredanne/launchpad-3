@@ -110,8 +110,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # They do require specific environments.
         self.assertNotEqual(None, bq.processor)
         self.assertEqual(
-            spb.distroseries.nominatedarchindep.default_processor,
-            bq.processor)
+            spb.distroseries.nominatedarchindep.processor, bq.processor)
         self.assertEqual(bq, spb.buildqueue_record)
 
     def test_title(self):

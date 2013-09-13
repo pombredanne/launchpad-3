@@ -902,7 +902,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if title is None:
             title = "The %s processor" % name
         if description is None:
-            description = "The %s processor and compatible processors"
+            description = "The %s processor and compatible processors" % name
         return getUtility(IProcessorSet).new(
             name, title, description, restricted)
 

@@ -351,6 +351,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         return Store.of(self).find(
             DistroArchSeries,
+            DistroArchSeries.distroseriesID == self.id,
             DistroArchSeries.processor_id == processor.id).one()
 
     @property

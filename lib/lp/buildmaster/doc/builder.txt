@@ -150,7 +150,8 @@ show up in the calculated queue size.
     None
 
     >>> from lp.soyuz.interfaces.processor import IProcessorSet
-    >>> recipe_bq.processor = getUtility(IProcessorSet).getByName('386')
+    >>> i386_processor = getUtility(IProcessorSet).getByName('386')
+    >>> recipe_bq.processor = i386_processor
     >>> recipe_bq.virtualized = True
     >>> transaction.commit()
 
@@ -163,7 +164,7 @@ by default.
 
     >>> recipe_bq = factory.makeSourcePackageRecipeBuildJob()
     >>> recipe_bq.virtualized = None
-    >>> recipe_bq.processor = i386_family.processors[0]
+    >>> recipe_bq.processor = i386_processor
     >>> transaction.commit()
     >>> queue_sizes = builderset.getBuildQueueSizes()
 
