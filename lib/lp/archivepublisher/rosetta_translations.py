@@ -25,6 +25,11 @@ from lp.soyuz.interfaces.packagetranslationsuploadjob import (
     )
 
 
+def debug(logger, msg):
+    if logger is not None:
+        logger.debug(msg)
+
+
 class RosettaTranslationsUpload(CustomUpload):
     """Rosetta Translations tarball upload.
 
@@ -39,7 +44,7 @@ class RosettaTranslationsUpload(CustomUpload):
 
         # Ignore translations not with main distribution purposes.
         if packageupload.archive.purpose not in MAIN_ARCHIVE_PURPOSES:
-            self.logger.debug(
+            debug(self.logger,
                   "Skipping translations since its purpose is not "
                   "in MAIN_ARCHIVE_PURPOSES.")
             return
@@ -69,31 +74,23 @@ class RosettaTranslationsUpload(CustomUpload):
                             sourcepackagerelease, libraryfilealias,
                             blamee)
 
+    # RosettaTranslationsUpload doesn't handle the tarball files directly, so
+    # all methods that deal with files are ignored.
     @staticmethod
     def parsePath(tarfile_path):
-        # Irrelevant to this type of upload, we're not handling the file
-        # directly.
         pass
 
     def setComponents(self, tarfile_path):
-        # Irrelevant to this type of upload, we're not handling the file
-        # directly.
         pass
 
     def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
-        # Irrelevant to this type of upload, we're not handling the file
-        # directly.
         pass
 
     @classmethod
     def getSeriesKey(cls, tarfile_path):
-        # Irrelevant to this type of upload, we're not handling the file
-        # directly.
         pass
 
     def shouldInstall(self, filename):
-        # Irrelevant to this type of upload, we're not handling the file
-        # directly.
         pass
 
 
