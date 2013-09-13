@@ -250,6 +250,7 @@ class TestProcessorFamilies(WebServiceTestCase):
         transaction.commit()
         ws_archive = self.wsObject(archive, user=commercial_admin)
         self.assertContentEqual([], ws_archive.enabled_restricted_families)
+        self.assertContentEqual([], ws_archive.enabled_restricted_processors)
 
     def test_getByName(self):
         """The getByName method returns a processor family."""
@@ -290,6 +291,21 @@ class TestProcessorFamilies(WebServiceTestCase):
         ws_archive.enableRestrictedFamily(family=ws_arm)
         self.assertContentEqual(
             [ws_arm], ws_archive.enabled_restricted_families)
+
+    def test_enableRestrictedProcessor(self):
+        self.ws_version = 'devel'
+        archive = self.factory.makeArchive()
+        commercial = getUtility(ILaunchpadCelebrities).commercial_admin
+        commercial_admin = self.factory.makePerson(member_of=[commercial])
+        arm = getUtility(IProcessorFamilySet).getByName('arm')
+        arm.addProcessor('new-arm', 'New ARM Title', 'New ARM Description')
+        transaction.commit()
+        ws_arm = self.service.processors.getByName(name='new-arm')
+        ws_archive = self.wsObject(archive, user=commercial_admin)
+        self.assertContentEqual([], ws_archive.enabled_restricted_processors)
+        ws_archive.enableRestrictedProcessor(processor=ws_arm)
+        self.assertContentEqual(
+            [ws_arm], ws_archive.enabled_restricted_processors)
 
     def test_enableRestrictedFamily_owner(self):
         """A new family can be added to the enabled restricted set.
