@@ -200,7 +200,10 @@ from lp.soyuz.interfaces.packageset import (
     IPackageset,
     IPackagesetSet,
     )
-from lp.soyuz.interfaces.processor import IProcessorFamily
+from lp.soyuz.interfaces.processor import (
+    IProcessorFamily,
+    IProcessor,
+    )
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
     IBinaryPackagePublishingHistoryEdit,
@@ -393,6 +396,8 @@ patch_reference_property(IArchive, 'distribution', IDistribution)
 patch_collection_property(IArchive, 'dependencies', IArchiveDependency)
 patch_collection_property(
     IArchive, 'enabled_restricted_families', IProcessorFamily)
+patch_collection_property(
+    IArchive, 'enabled_restricted_processors', IProcessor)
 patch_collection_return_type(IArchive, 'getAllPermissions', IArchivePermission)
 patch_collection_return_type(
     IArchive, 'getPermissionsForPerson', IArchivePermission)
@@ -492,7 +497,11 @@ patch_entry_return_type(
     IArchive, '_addArchiveDependency', IArchiveDependency)
 patch_plain_parameter_type(
     IArchive, 'enableRestrictedFamily', 'family', IProcessorFamily)
+patch_plain_parameter_type(
+    IArchive, 'enableRestrictedProcessor', 'processor', IProcessor)
 
+# IProcessor
+patch_reference_property(IProcessor, 'family', IProcessorFamily)
 
 # IBuildFarmJob
 IBuildFarmJob['status'].vocabulary = BuildStatus
