@@ -1994,11 +1994,20 @@ class Archive(SQLBase):
     enabled_restricted_families = property(_getEnabledRestrictedFamilies,
                                            _setEnabledRestrictedFamilies)
 
+    @property
+    def enabled_restricted_processors(self):
+        return [
+            family.processors[0]
+            for family in self.enabled_restricted_families]
+
     def enableRestrictedFamily(self, family):
         """See `IArchive`."""
         restricted = set(self.enabled_restricted_families)
         restricted.add(family)
         self.enabled_restricted_families = restricted
+
+    def enableRestrictedProcessor(self, processor):
+        self.enableRestrictedFamily(processor.family)
 
     def getPockets(self):
         """See `IArchive`."""
