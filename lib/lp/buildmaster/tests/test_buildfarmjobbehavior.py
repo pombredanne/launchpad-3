@@ -253,6 +253,9 @@ class TestHandleStatusMixin:
 
     def test_handleStatus_ABORTED_recovers_building(self):
         self.builder.vm_host = "fake_vm_host"
+        self.interactor = BuilderInteractor(self.builder, self.slave)
+        self.behavior = removeSecurityProxy(
+            self.interactor._current_build_behavior)
         self.build.updateStatus(BuildStatus.BUILDING)
 
         def got_status(ignored):
