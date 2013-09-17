@@ -7,11 +7,17 @@ See also lp.soyuz.tests.test_distroseriesqueue_rosetta_translations for
 high-level tests of rosetta-translations upload and queue manipulation.
 """
 
+import transaction
+
 from lp.archivepublisher.rosetta_translations import (
     process_rosetta_translations,
+    RosettaTranslationsUpload,
     )
-
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
+from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.model.packagetranslationsuploadjob import (
+    PackageTranslationsUploadJob,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import LaunchpadZopelessLayer
 
@@ -32,6 +38,19 @@ class TestRosettaTranslations(TestCaseWithFactory):
         return self.factory.makeLibraryFileAlias(content=tarfile_content)
 
     def test_basic(self):
-        packageupload = self.factory.makePackageUpload()
+        sourcepackagename = self.factory.makeSourcePackageName(name="foo")
+        packageupload = self.factory.makeSourcePackageUpload(
+            sourcepackagename=sourcepackagename)
         libraryfilealias = self.makeTranslationsLFA()
+        transaction.commit()
         process_rosetta_translations(packageupload, libraryfilealias)
+
+    def test_job_is_created(self):
+        sourcepackagename = self.factory.makeSourcePackageName(name="foo")
+        packageupload = self.factory.makeSourcePackageUpload(
+            sourcepackagename=sourcepackagename)
+        libraryfilealias = self.makeTranslationsLFA()
+        transaction.commit()
+        process_rosetta_translations(packageupload, libraryfilealias)
+        jobs = list(PackageTranslationsUploadJob.iterReady())
+        self.assertEqual(1, len(jobs))
