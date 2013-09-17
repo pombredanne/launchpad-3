@@ -48,7 +48,7 @@ class TestDistroSeriesQueueRosettaTranslationsTarball(
         series = upload.policy.distro.getSeries(
             name_or_version="breezy-autotest")
         # Publish the source
-        spph = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             distroseries=series, archive=series.main_archive,
             pocket=self.pocket, status=PackagePublishingStatus.PUBLISHED,
             sourcepackagerelease=self.spr)
