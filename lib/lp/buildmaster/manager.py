@@ -10,7 +10,6 @@ __all__ = [
     'BUILDD_MANAGER_LOG_NAME',
     ]
 
-from collections import namedtuple
 import logging
 
 import transaction
@@ -24,7 +23,10 @@ from twisted.python import log
 from zope.component import getUtility
 
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interactor import BuilderInteractor
+from lp.buildmaster.interactor import (
+    BuilderInteractor,
+    extract_vitals_from_db,
+    )
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
     BuildSlaveFailure,
@@ -40,29 +42,18 @@ from lp.services.propertycache import get_property_cache
 BUILDD_MANAGER_LOG_NAME = "slave-scanner"
 
 
-BuilderVitals = namedtuple(
-    'BuilderVitals',
-    ('name', 'url', 'virtualized', 'vm_host', 'builderok', 'manual',
-     'build_queue'))
-
-
 class BuildersCache:
-
-    @staticmethod
-    def decorate(builder, build_queue=None):
-        return BuilderVitals(
-            builder.name, builder.url, builder.virtualized, builder.vm_host,
-            builder.builderok, builder.manual,
-            build_queue or builder.currentjob)
 
     def __getitem__(self, name):
         return getUtility(IBuilderSet).getByName(name)
 
     def getVitals(self, name):
-        return self.decorate(self[name])
+        return extract_vitals_from_db(self[name])
 
     def iterVitals(self):
-        return (self.decorate(b) for b in getUtility(IBuilderSet).__iter__())
+        return (
+            extract_vitals_from_db(b)
+            for b in getUtility(IBuilderSet).__iter__())
 
 
 @defer.inlineCallbacks

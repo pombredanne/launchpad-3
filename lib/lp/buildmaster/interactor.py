@@ -5,8 +5,10 @@ __metaclass__ = type
 
 __all__ = [
     'BuilderInteractor',
+    'extract_vitals_from_db',
     ]
 
+from collections import namedtuple
 import logging
 from urlparse import urlparse
 
@@ -210,6 +212,19 @@ class BuilderSlave(object):
             'build', buildid, builder_type, chroot_sha1, filemap, args))
 
 
+BuilderVitals = namedtuple(
+    'BuilderVitals',
+    ('name', 'url', 'virtualized', 'vm_host', 'builderok', 'manual',
+     'build_queue'))
+
+
+def extract_vitals_from_db(builder, build_queue=None):
+    return BuilderVitals(
+        builder.name, builder.url, builder.virtualized, builder.vm_host,
+        builder.builderok, builder.manual,
+        build_queue or builder.currentjob)
+
+
 class BuilderInteractor(object):
 
     _cached_build_behavior = None
@@ -227,9 +242,8 @@ class BuilderInteractor(object):
         self._override_slave = override_slave
         self._override_behavior = override_behavior
 
-        # XXX: ew.
-        from lp.buildmaster.manager import BuildersCache
-        self.vitals = BuildersCache.decorate(builder)
+        # XXX wgrant: The BuilderVitals should be passed in.
+        self.vitals = extract_vitals_from_db(builder)
 
     @property
     def slave(self):

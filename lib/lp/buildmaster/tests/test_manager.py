@@ -27,6 +27,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interactor import (
     BuilderInteractor,
     BuilderSlave,
+    extract_vitals_from_db,
     )
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
@@ -459,7 +460,7 @@ class MockBuildersCache:
         return self._builder
 
     def getVitals(self, name):
-        return BuildersCache.decorate(self._builder, self._build_queue)
+        return extract_vitals_from_db(self._builder, self._build_queue)
 
 
 class TestSlaveScannerWithoutDB(TestCase):
