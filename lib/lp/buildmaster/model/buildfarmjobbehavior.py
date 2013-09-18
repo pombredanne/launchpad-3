@@ -320,24 +320,17 @@ class BuildFarmJobBehaviorBase:
         """Handle aborted builds.
 
         If the build was explicitly cancelled, then mark it as such.
-        Otherwise, the build has failed in some unexpected way.
+        Otherwise, the build has failed in some unexpected way; we'll
+        reset it it and clean up the slave.
         """
         if self.build.status == BuildStatus.CANCELLING:
             yield self.storeLogFromSlave()
             self.build.buildqueue_record.cancel()
-            transaction.commit()
-            yield self._interactor.cleanSlave()
         else:
+            self._builder.handleFailure(logger)
             self.build.buildqueue_record.reset()
-            try:
-                self._builder.handleFailure(logger)
-                yield self._interactor.resetOrFail(
-                    logger,
-                    BuildSlaveFailure("Builder unexpectedly returned ABORTED"))
-            except Exception as e:
-                # We've already done our best to mark the builder as failed.
-                logger.error("Failed to rescue from ABORTED: %s" % e)
         transaction.commit()
+        yield self._interactor.cleanSlave()
 
     @defer.inlineCallbacks
     def _handleStatus_GIVENBACK(self, slave_status, logger, notify):
