@@ -11,16 +11,16 @@ Changed-By: Foo Bar <foo.bar@canonical.com>
 Description: 
  pmount     - mount removable devices as normal user
 Changes: 
- pmount (0.9.20-2ubuntu0.2) lucid-updates; urgency=low
+ pmount (0.9.20-2ubuntu0.2) breezy-autotest; urgency=low
  .
    * Boooo
 Checksums-Sha1: 
  17e907a47a080ecd17e05b1cdda84577356922ec 112354 pmount_0.9.20-2ubuntu0.2_i386.deb
- 3144038a5b7adad74d3a58d6006635187b1c4cd8 94034 pmount_0.9.20-2ubuntu0.2_i386_translations.tar.gz
+ e86c8bce3ebf21354ac06207eeb08a513143a89d 35535 pmount_0.9.20-2ubuntu0.2_i386_translations.tar.gz
 Checksums-Sha256: 
  97ffd0d39d38d7e644214b44f8cda80a1e1f7706655c81980361960d0f3846e4 112354 pmount_0.9.20-2ubuntu0.2_i386.deb
- 66cc79078c57915f1a720c0459f3a2cbfceff1434c8d4f6b6f9e5630e782cc6e 94034 pmount_0.9.20-2ubuntu0.2_i386_translations.tar.gz
+ efce09a62dc4be2d053cbb7acaa5b2d481fd88c0e512c53b7ebc6d1d49210d7d 35535 pmount_0.9.20-2ubuntu0.2_i386_translations.tar.gz
 Files: 
  8a61eb49d42d4ee7eb7ac6fe3fb0c1e3 112354 utils optional pmount_0.9.20-2ubuntu0.2_i386.deb
- 6e4991bc0439ecbe29bea8837fe101b6 94034 raw-translations - pmount_0.9.20-2ubuntu0.2_i386_translations.tar.gz
+ 0cd445544a6caa3ce9b665e80aeb0093 35535 raw-translations - pmount_0.9.20-2ubuntu0.2_i386_translations.tar.gz
 Original-Maintainer: Vincent Fourmond <fourmond@debian.org>
