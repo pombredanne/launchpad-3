@@ -11,7 +11,6 @@ __all__ = [
 
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.app.validators.name import valid_name
@@ -94,7 +93,7 @@ class ArchivePopulator(SoyuzScript):
         """
 
         def loadProcessors(arch_tags):
-            """Load processor families for specified arch tags."""
+            """Load processors for specified arch tags."""
             processors = set()
             for name in arch_tags:
                 try:
@@ -229,10 +228,9 @@ class ArchivePopulator(SoyuzScript):
                 raise SoyuzScriptError(
                     "error: archive '%s' already exists for '%s'."
                     % (to_archive, the_destination.distribution.name))
-            # The user is not supposed to specify processor families on the
-            # command line for existing copy archives. The processor families
-            # specified when the archive was created will be read from the
-            # database instead.
+            # The user is not supposed to specify processors on the command
+            # line for existing copy archives. The processors specified when
+            # the archive was created will be read from the database instead.
             if specified(arch_tags):
                 raise SoyuzScriptError(
                     "error: cannot specify architecture tags for *existing* "
@@ -241,11 +239,6 @@ class ArchivePopulator(SoyuzScript):
             if not copy_archive.enabled:
                 raise SoyuzScriptError(
                     "error: cannot copy to disabled archive")
-
-            # The copy archive exists already, get the associated processors.
-            def get_family(archivearch):
-                """Extract the processor family from an `IArchiveArch`."""
-                return removeSecurityProxy(archivearch).processor
 
         # Now instantiate the package copy request that will capture the
         # archive population parameters in the database.

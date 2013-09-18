@@ -318,7 +318,7 @@ class PackageClonerTests(TestCaseWithFactory):
         self.checkCopiedSources(
             copy_archive, distroseries, [package_info])
 
-    def testCreatesNoBuildsWithNoProcFamilies(self):
+    def testCreatesNoBuildsWithNoProcessors(self):
         """Test that no builds are created if we specify no processors."""
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
@@ -351,8 +351,8 @@ class PackageClonerTests(TestCaseWithFactory):
         """Test that builds are only created for processors in source."""
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
-        # One of these processor families has a DAS in the source, so
-        # we expect one set of builds
+        # One of these processors has a DAS in the source, so we expect one
+        # set of builds.
         processors = [
             self.factory.makeProcessor(name="armel"),
             getUtility(IProcessorSet).getByName('386')]
@@ -361,16 +361,16 @@ class PackageClonerTests(TestCaseWithFactory):
         self.checkBuilds(copy_archive, [package_info])
 
     def testCreatesSubsetOfBuilds(self):
-        """Test that builds are only created for requested families."""
+        """Test that builds are only created for requested processors."""
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
         distroseries = self.createSourceDistribution([package_info])
-        # Create a DAS for a second family
+        # Create a DAS for a second processor. 
         self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag="amd64",
             processor=getUtility(IProcessorSet).getByName('amd64'),
             supports_virtualized=True)
-        # The request builds for only one of the families, so we
+        # The request builds for only one of the processors, so we
         # expect just one build for each source.
         processors = [getUtility(IProcessorSet).getByName('386')]
         copy_archive = self.getTargetArchive(distroseries.distribution)
@@ -379,16 +379,16 @@ class PackageClonerTests(TestCaseWithFactory):
         self.checkBuilds(copy_archive, [package_info])
 
     def testCreatesMultipleBuilds(self):
-        """Test that multiple families result in mutiple builds."""
+        """Test that multiple processors result in mutiple builds."""
         package_info = PackageInfo(
             "bzr", "2.1", status=PackagePublishingStatus.PUBLISHED)
         distroseries = self.createSourceDistribution([package_info])
-        # Create a DAS for a second family.
+        # Create a DAS for a second processor.
         amd64 = getUtility(IProcessorSet).getByName('amd64')
         self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag="amd64",
             processor=amd64, supports_virtualized=True)
-        # The request builds for both families, so we expect two builds
+        # The request builds for both processors, so we expect two builds
         # per source.
         processors = [getUtility(IProcessorSet).getByName('386'), amd64]
         copy_archive = self.getTargetArchive(distroseries.distribution)
@@ -591,7 +591,7 @@ class PackageClonerTests(TestCaseWithFactory):
             copy_archive, distroseries, [package_infos[1]] + package_infos2)
 
     def setArchiveArchitectures(self, archive, processors):
-        """Associate the archive with the processor families."""
+        """Associate the archive with the processors."""
         aa_set = getUtility(IArchiveArchSet)
         for processor in processors:
             aa_set.new(archive, processor)
@@ -644,12 +644,12 @@ class PackageClonerTests(TestCaseWithFactory):
             "apt", "1.2", status=PackagePublishingStatus.PUBLISHED),
         ]
         distroseries = self.createSourceDistribution(package_infos)
-        # Create a DAS for a second family
+        # Create a DAS for a second processor.
         amd64 = getUtility(IProcessorSet).getByName('amd64')
         self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag="amd64",
             processor=amd64, supports_virtualized=True)
-        # The request builds for both families, so we expect two builds
+        # The request builds for both processors, so we expect two builds
         # per source.
         processors = [getUtility(IProcessorSet).getByName('386'), amd64]
         copy_archive = self.getTargetArchive(distroseries.distribution)
