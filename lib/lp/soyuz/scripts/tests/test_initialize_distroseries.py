@@ -66,10 +66,8 @@ class InitializationHelperTestCase(TestCaseWithFactory):
         return parent_das
 
     def setupParent(self, parent=None, packages=None, format_selection=None,
-                    distribution=None,
-                    pocket=PackagePublishingPocket.RELEASE,
-                    proc='386', arch_tag='i386'
-                    ):
+                    distribution=None, pocket=PackagePublishingPocket.RELEASE,
+                    proc='386', arch_tag='i386'):
         if parent is None:
             parent = self.factory.makeDistroSeries(distribution)
         parent_das = self.setupDas(parent, proc, arch_tag)

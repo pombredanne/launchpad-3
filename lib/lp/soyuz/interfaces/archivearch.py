@@ -28,17 +28,17 @@ class IArchiveArch(Interface):
         title=_("Archive"), schema=IArchive,
         required=True, readonly=True,
         description=_(
-            "The archive associated with the processor family at hand."))
+            "The archive associated with the processor at hand."))
 
     processor = Reference(
         title=_("Processor"), schema=IProcessor,
-        required=False, readonly=True,
+        required=True, readonly=True,
         description=_(
             "The processor associated with the archive at hand."))
 
 
 class IArchiveArchSet(Interface):
-    """An interface for sets of archive/processor family associations."""
+    """An interface for sets of archive/processor associations."""
     def new(archive, processor):
         """Create a new archive/processor association.
 

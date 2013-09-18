@@ -888,8 +888,8 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
         LaunchpadFormView.setUpFields(self)
         self.form_fields += self.createRequireVirtualized()
         self.form_fields += self.createEnabledRestrictedProcessors(
-            u'The restricted architecture families on which the '
-            "distribution's main archive can build.")
+            u"The restricted architectures on which the distribution's main "
+            "archive can build.")
 
     @action("Save", name='save')
     def save_action(self, action, data):
@@ -954,8 +954,8 @@ class DistributionEditView(RegistryEditFormView,
         RegistryEditFormView.setUpFields(self)
         self.form_fields += self.createRequireVirtualized()
         self.form_fields += self.createEnabledRestrictedProcessors(
-            u'The restricted architecture families on which the '
-            "distribution's main archive can build.")
+            u"The restricted architectures on which the distribution's main "
+            "archive can build.")
 
     @property
     def initial_values(self):

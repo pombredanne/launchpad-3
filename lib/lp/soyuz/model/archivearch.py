@@ -34,7 +34,7 @@ class ArchiveArch(Storm):
 
     archive_id = Int(name='archive', allow_none=False)
     archive = Reference(archive_id, 'Archive.id')
-    processor_id = Int(name='processor', allow_none=True)
+    processor_id = Int(name='processor', allow_none=False)
     processor = Reference(processor_id, Processor.id)
 
 
