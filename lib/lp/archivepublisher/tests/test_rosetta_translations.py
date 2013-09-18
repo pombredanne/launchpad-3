@@ -11,10 +11,8 @@ import transaction
 
 from lp.archivepublisher.rosetta_translations import (
     process_rosetta_translations,
-    RosettaTranslationsUpload,
     )
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
-from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.model.packagetranslationsuploadjob import (
     PackageTranslationsUploadJob,
     )
@@ -37,20 +35,26 @@ class TestRosettaTranslations(TestCaseWithFactory):
             tar_content)
         return self.factory.makeLibraryFileAlias(content=tarfile_content)
 
-    def test_basic(self):
+    def makeJobElements(self):
         sourcepackagename = self.factory.makeSourcePackageName(name="foo")
         packageupload = self.factory.makeSourcePackageUpload(
             sourcepackagename=sourcepackagename)
         libraryfilealias = self.makeTranslationsLFA()
+        return packageupload, libraryfilealias
+
+    def test_basic(self):
+        packageupload, libraryfilealias = self.makeJobElements()
         transaction.commit()
         process_rosetta_translations(packageupload, libraryfilealias)
 
-    def test_job_is_created(self):
-        sourcepackagename = self.factory.makeSourcePackageName(name="foo")
-        packageupload = self.factory.makeSourcePackageUpload(
-            sourcepackagename=sourcepackagename)
-        libraryfilealias = self.makeTranslationsLFA()
+    def test_correct_job_is_created(self):
+        packageupload, libraryfilealias = self.makeJobElements()
         transaction.commit()
         process_rosetta_translations(packageupload, libraryfilealias)
+
         jobs = list(PackageTranslationsUploadJob.iterReady())
         self.assertEqual(1, len(jobs))
+
+        self.assertEqual(packageupload.sourcepackagerelease,
+                jobs[0].sourcepackagerelease)
+        self.assertEqual(libraryfilealias, jobs[0].libraryfilealias)

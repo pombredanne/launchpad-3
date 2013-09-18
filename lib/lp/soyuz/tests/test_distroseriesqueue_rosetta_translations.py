@@ -60,7 +60,7 @@ class TestDistroSeriesQueueRosettaTranslationsTarball(
         self.translations_file = "%s_%s_i386_translations.tar.gz" % (name,
                                                                      version)
         upload = NascentUpload.from_changesfile_path(
-            datadir(changes_file),
+            datadir("rosetta-translations/%s" % changes_file),
             self.absolutely_anything_policy, self.logger)
         series = upload.policy.distro.getSeries(
             name_or_version="breezy-autotest")
@@ -94,6 +94,7 @@ class TestDistroSeriesQueueRosettaTranslationsTarball(
         self.assertEqual(1, len(jobs))
 
         job = jobs[0]
+        # Assert the job corresponds to the one we uploaded
         self.assertEqual(job.sourcepackagerelease, self.spr)
         self.assertEqual(job.libraryfilealias.filename, self.translations_file)
 
@@ -104,8 +105,10 @@ class TestDistroSeriesQueueRosettaTranslationsTarball(
         entries_in_queue = translation_import_queue.getAllEntries(
             target=self.spr.sourcepackage)
         self.assertEqual(39, len(list(entries_in_queue)))
-        # and are waiting for review
+        # and are all waiting for review
         entries_in_queue = translation_import_queue.getAllEntries(
             target=self.spr.sourcepackage,
             import_status=RosettaImportStatus.NEEDS_REVIEW)
         self.assertEqual(39, len(list(entries_in_queue)))
+
+
