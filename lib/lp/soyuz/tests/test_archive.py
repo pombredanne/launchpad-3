@@ -1007,6 +1007,7 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         self.archive = self.factory.makeArchive()
         self.archive_arch_set = getUtility(IArchiveArchSet)
         self.arm = getUtility(IProcessorFamilySet).getByName('arm')
+        self.factory.makeProcessor(family=self.arm)
 
     def test_default(self):
         """By default, ARM builds are not allowed as ARM is restricted."""

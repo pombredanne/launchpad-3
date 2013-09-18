@@ -1114,7 +1114,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         distroarchseries = DistroArchSeries(
             architecturetag=architecturetag, processorfamily=processorfamily,
-            official=official, distroseries=self, owner=owner,
+            processor=processorfamily.processors[0], official=official,
+            distroseries=self, owner=owner,
             supports_virtualized=supports_virtualized, enabled=enabled)
         return distroarchseries
 
