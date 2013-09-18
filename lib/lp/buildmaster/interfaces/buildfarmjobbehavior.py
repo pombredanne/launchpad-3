@@ -14,8 +14,8 @@ from zope.interface import Interface
 
 class IBuildFarmJobBehavior(Interface):
 
-    def setBuilderInteractor(interactor):
-        """Sets the associated `BuilderInteractor` for this instance."""
+    def setBuilder(builder, slave):
+        """Sets the associated builder and slave for this instance."""
 
     def logStartBuild(logger):
         """Log the start of a specific build queue item.

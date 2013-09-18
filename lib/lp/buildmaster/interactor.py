@@ -278,7 +278,7 @@ class BuilderInteractor(object):
         elif currentjob != self._cached_currentjob:
             self._cached_build_behavior = IBuildFarmJobBehavior(
                 currentjob.specific_job)
-            self._cached_build_behavior.setBuilderInteractor(self)
+            self._cached_build_behavior.setBuilder(self.builder, self.slave)
             self._cached_currentjob = currentjob
         return self._cached_build_behavior
 
@@ -547,7 +547,8 @@ class BuilderInteractor(object):
         queueItem.logtail = "Waiting for slave process to be terminated"
         transaction.commit()
 
-    def extractBuildStatus(self, status_dict):
+    @staticmethod
+    def extractBuildStatus(status_dict):
         """Read build status name.
 
         :param status_dict: build status dict as passed to the
