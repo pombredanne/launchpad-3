@@ -24,7 +24,6 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
-from lp.buildmaster.interfaces.builder import BuildSlaveFailure
 from lp.services.config import config
 from lp.services.helpers import filenameToContentType
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
@@ -185,7 +184,7 @@ class BuildFarmJobBehaviorBase:
         if build.job_type == BuildFarmJobType.PACKAGEBUILD:
             build = build.buildqueue_record.specific_job.build
             if not build.current_source_publication:
-                yield self._interactor.cleanSlave()
+                yield self._interactor.slave.clean()
                 build.updateStatus(BuildStatus.SUPERSEDED)
                 self.build.buildqueue_record.destroySelf()
                 return
@@ -261,7 +260,7 @@ class BuildFarmJobBehaviorBase:
         if not os.path.exists(target_dir):
             os.mkdir(target_dir)
 
-        yield self._interactor.cleanSlave()
+        yield self._interactor.slave.clean()
         self.build.buildqueue_record.destroySelf()
         transaction.commit()
 
@@ -286,7 +285,7 @@ class BuildFarmJobBehaviorBase:
         yield self.storeLogFromSlave()
         if notify:
             self.build.notify()
-        yield self._interactor.cleanSlave()
+        yield self._interactor.slave.clean()
         self.build.buildqueue_record.destroySelf()
         transaction.commit()
 
@@ -330,7 +329,7 @@ class BuildFarmJobBehaviorBase:
             self._builder.handleFailure(logger)
             self.build.buildqueue_record.reset()
         transaction.commit()
-        yield self._interactor.cleanSlave()
+        yield self._interactor.slave.clean()
 
     @defer.inlineCallbacks
     def _handleStatus_GIVENBACK(self, slave_status, logger, notify):
@@ -340,6 +339,6 @@ class BuildFarmJobBehaviorBase:
         later, the build records is delayed by reducing the lastscore to
         ZERO.
         """
-        yield self._interactor.cleanSlave()
+        yield self._interactor.slave.clean()
         self.build.buildqueue_record.reset()
         transaction.commit()

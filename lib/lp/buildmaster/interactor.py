@@ -363,34 +363,14 @@ class BuilderInteractor(object):
             # will rescue the DB side instead), and we just have to wait
             # out an ABORTING one.
             if status == 'BuilderStatus.WAITING':
-                yield self.cleanSlave()
+                yield self.slave.clean()
             elif status == 'BuilderStatus.BUILDING':
-                yield self.requestAbort()
+                yield self.slave.abort()
             if logger:
                 logger.info(
                     "Builder '%s' rescued from '%s': '%s'" %
                     (self.vitals.name, slave_cookie, reason))
             defer.returnValue(True)
-
-    def cleanSlave(self):
-        """Clean any temporary files from the slave.
-
-        :return: A Deferred that fires when the dialog with the slave is
-            finished.  It does not have a return value.
-        """
-        return self.slave.clean()
-
-    def requestAbort(self):
-        """Ask that a build be aborted.
-
-        This takes place asynchronously: Actually killing everything running
-        can take some time so the slave status should be queried again to
-        detect when the abort has taken effect. (Look for status ABORTED).
-
-        :return: A Deferred that fires when the dialog with the slave is
-            finished.  It does not have a return value.
-        """
-        return self.slave.abort()
 
     def resumeSlaveHost(self):
         """Resume the slave host to a known good condition.

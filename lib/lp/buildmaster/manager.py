@@ -236,7 +236,7 @@ class SlaveScanner:
         try:
             if self.date_cancel is None:
                 self.logger.info("Cancelling build '%s'" % build.title)
-                yield interactor.requestAbort()
+                yield interactor.slave.abort()
                 self.date_cancel = self._clock.seconds() + self.CANCEL_TIMEOUT
                 defer.returnValue(False)
             else:

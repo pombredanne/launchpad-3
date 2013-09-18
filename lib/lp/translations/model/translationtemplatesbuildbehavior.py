@@ -182,6 +182,6 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
         yield self.storeLogFromSlave(build_queue=queue_item)
 
-        yield self._interactor.cleanSlave()
+        yield self._interactor.slave.clean()
         queue_item.destroySelf()
         transaction.commit()
