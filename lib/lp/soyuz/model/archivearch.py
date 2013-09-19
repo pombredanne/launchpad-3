@@ -1,8 +1,11 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-__all__ = ['ArchiveArch', 'ArchiveArchSet']
+__all__ = [
+    'ArchiveArch',
+    'ArchiveArchSet'
+    ]
 
 from storm.expr import (
     And,
@@ -33,6 +36,8 @@ class ArchiveArch(Storm):
     archive = Reference(archive_id, 'Archive.id')
     processorfamily_id = Int(name='processorfamily', allow_none=True)
     processorfamily = Reference(processorfamily_id, 'ProcessorFamily.id')
+    processor_id = Int(name='processor', allow_none=True)
+    processor = Reference(processor_id, 'Processor.id')
 
 
 class ArchiveArchSet:
@@ -44,6 +49,7 @@ class ArchiveArchSet:
         archivearch = ArchiveArch()
         archivearch.archive = archive
         archivearch.processorfamily = processorfamily
+        archivearch.processor = processorfamily.processors[0]
         IStore(ArchiveArch).add(archivearch)
         return archivearch
 
