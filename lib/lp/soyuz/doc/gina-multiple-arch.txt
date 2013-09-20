@@ -50,23 +50,26 @@ Check it was properly created and create its DistroArchSeriess.
     >>> if pf is None:
     ...     pf = ProcessorFamily(name="x86", title="X86",
     ...                          description="Intel X86")
-    >>> dar = DistroArchSeries(distroseries=dapper, processorfamily=pf,
-    ...                         architecturetag="i386", official=True,
-    ...                         owner=celebs.launchpad_developers)
+    >>> dar = dapper.newArch(
+    ...     processorfamily=pf, architecturetag="i386", official=True,
+    ...     owner=celebs.launchpad_developers)
     >>> pf = ProcessorFamily.selectOneBy(name="amd64")
     >>> if pf is None:
     ...     pf = ProcessorFamily(name="amd64", title="AMD64",
     ...                          description="AMD 64")
-    >>> dar = DistroArchSeries(distroseries=dapper, processorfamily=pf,
-    ...                         architecturetag="amd64", official=True,
-    ...                         owner=celebs.launchpad_developers)
+    >>> dar = dapper.newArch(
+    ...     processorfamily=pf, architecturetag="amd64", official=True,
+    ...     owner=celebs.launchpad_developers)
     >>> pf = ProcessorFamily.selectOneBy(name="powerpc")
     >>> if pf is None:
     ...     pf = ProcessorFamily(name="powerpc", title="PowerPC",
     ...                          description="PowerPC")
-    >>> dar = DistroArchSeries(distroseries=dapper, processorfamily=pf,
-    ...                         architecturetag="powerpc", official=True,
-    ...                         owner=celebs.launchpad_developers)
+    >>> from lp.soyuz.model.processor import Processor
+    >>> p = Processor(name="powerpc", title="PowerPC", family=pf,
+    ...     description="The little processor that could")
+    >>> dar = dapper.newArch(
+    ...     processorfamily=pf, architecturetag="powerpc", official=True,
+    ...     owner=celebs.launchpad_developers)
     >>> import transaction
     >>> transaction.commit()
 
@@ -85,28 +88,10 @@ Let's set up the filesystem:
     >>> path = os.path.join(os.getcwd(), relative_path)
     >>> os.symlink(path, '/tmp/gina_test_archive')
 
-Run gina without a powerpc processor for the powerpc family:
-
-    >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q',
-    ...              'dapper', 'dapper-updates']
-    >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
-    >>> print proc.stderr.read()
-    WARNING ...
-    ERROR   Database setup required for run on powerpc
-    Traceback (most recent call last):
-    ...
-    DataSetupError: Unable to find a processor from the processor family...
-    <BLANKLINE>
-    >>> proc.wait()
-    1
-
 Set up the processor, commit and run her again. Note that
 dapper-updates/universe doesn't include the powerpc architecture, but we
 just warn it and move right ahead.
 
-    >>> from lp.soyuz.model.processor import Processor
-    >>> p = Processor(name="powerpc", title="PowerPC", family=pf,
-    ...     description="The little processor that could")
     >>> p == Processor.selectOneBy(familyID=pf.id)
     True
     >>> transaction.commit()
