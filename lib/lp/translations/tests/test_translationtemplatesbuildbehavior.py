@@ -69,8 +69,7 @@ class MakeBehaviorMixin(object):
             branch=branch)
         behavior = IBuildFarmJobBehavior(specific_job)
         slave = WaitingSlave()
-        behavior.setBuilderInteractor(
-            BuilderInteractor(self.factory.makeBuilder(), slave))
+        behavior.setBuilder(self.factory.makeBuilder(), slave)
         if use_fake_chroot:
             lf = self.factory.makeLibraryFileAlias()
             self.layer.txn.commit()
@@ -132,7 +131,7 @@ class TestTranslationTemplatesBuildBehavior(
         def got_dispatch((status, info)):
             # call_log lives on the mock WaitingSlave and tells us what
             # calls to the slave that the behaviour class made.
-            call_log = behavior._interactor.slave.call_log
+            call_log = behavior._slave.call_log
             build_params = call_log[-1]
             self.assertEqual('build', build_params[0])
             build_type = build_params[2]
@@ -167,7 +166,7 @@ class TestTranslationTemplatesBuildBehavior(
         buildqueue = FakeBuildQueue(behavior)
         path = behavior.templates_tarball_path
         # Poke the file we're expecting into the mock slave.
-        behavior._interactor.slave.valid_file_hashes.append(path)
+        behavior._slave.valid_file_hashes.append(path)
 
         def got_tarball(filename):
             tarball = open(filename, 'r')
@@ -186,7 +185,7 @@ class TestTranslationTemplatesBuildBehavior(
         behavior = self.makeBehavior()
         behavior._uploadTarball = FakeMethod()
         queue_item = FakeBuildQueue(behavior)
-        slave = behavior._interactor.slave
+        slave = behavior._slave
 
         d = behavior.dispatchBuildToSlave(queue_item, logging)
 
@@ -208,7 +207,7 @@ class TestTranslationTemplatesBuildBehavior(
             return (
                 behavior.handleStatus(
                     queue_item,
-                    behavior._interactor.extractBuildStatus(slave_status),
+                    BuilderInteractor.extractBuildStatus(slave_status),
                     slave_status),
                 slave_call_log)
 
@@ -231,7 +230,7 @@ class TestTranslationTemplatesBuildBehavior(
         behavior = self.makeBehavior()
         behavior._uploadTarball = FakeMethod()
         queue_item = FakeBuildQueue(behavior)
-        slave = behavior._interactor.slave
+        slave = behavior._slave
         d = behavior.dispatchBuildToSlave(queue_item, logging)
 
         def got_dispatch((status, info)):
@@ -252,7 +251,7 @@ class TestTranslationTemplatesBuildBehavior(
             self.assertNotIn('filemap', slave_status)
             return behavior.handleStatus(
                 queue_item,
-                behavior._interactor.extractBuildStatus(slave_status),
+                BuilderInteractor.extractBuildStatus(slave_status),
                 slave_status),
 
         def build_updated(ignored):
@@ -274,7 +273,7 @@ class TestTranslationTemplatesBuildBehavior(
         behavior = self.makeBehavior()
         behavior._uploadTarball = FakeMethod()
         queue_item = FakeBuildQueue(behavior)
-        slave = behavior._interactor.slave
+        slave = behavior._slave
         d = behavior.dispatchBuildToSlave(queue_item, logging)
 
         def got_dispatch((status, info)):
@@ -294,7 +293,7 @@ class TestTranslationTemplatesBuildBehavior(
             self.assertFalse('filemap' in slave_status)
             return behavior.handleStatus(
                 queue_item,
-                behavior._interactor.extractBuildStatus(slave_status),
+                BuilderInteractor.extractBuildStatus(slave_status),
                 slave_status),
 
         def build_updated(ignored):
@@ -313,7 +312,7 @@ class TestTranslationTemplatesBuildBehavior(
         branch = productseries.branch
         behavior = self.makeBehavior(branch=branch)
         queue_item = FakeBuildQueue(behavior)
-        slave = behavior._interactor.slave
+        slave = behavior._slave
 
         d = behavior.dispatchBuildToSlave(queue_item, logging)
 
@@ -338,7 +337,7 @@ class TestTranslationTemplatesBuildBehavior(
             behavior.updateSlaveStatus(status, slave_status)
             return behavior.handleStatus(
                 queue_item,
-                behavior._interactor.extractBuildStatus(slave_status),
+                BuilderInteractor.extractBuildStatus(slave_status),
                 slave_status),
 
         def build_updated(ignored):
