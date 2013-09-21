@@ -222,7 +222,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
         behavior = IBuildFarmJobBehavior(candidate.specific_job)
-        behavior.setBuilderInteractor(BuilderInteractor(builder))
+        behavior.setBuilder(builder, None)
         e = self.assertRaises(
             AssertionError, behavior.verifyBuildRequest, BufferLogger())
         expected_message = (
@@ -243,7 +243,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
         behavior = IBuildFarmJobBehavior(candidate.specific_job)
-        behavior.setBuilderInteractor(BuilderInteractor(builder))
+        behavior.setBuilder(builder, None)
         e = self.assertRaises(
             AssertionError, behavior.verifyBuildRequest, BufferLogger())
         self.assertEqual(
@@ -262,7 +262,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build.distro_arch_series.addOrUpdateChroot(lf)
         candidate = build.queueBuild()
         behavior = IBuildFarmJobBehavior(candidate.specific_job)
-        behavior.setBuilderInteractor(BuilderInteractor(builder))
+        behavior.setBuilder(builder, None)
         e = self.assertRaises(
             AssertionError, behavior.verifyBuildRequest, BufferLogger())
         self.assertEqual(
@@ -277,7 +277,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
             builder=builder, archive=archive)
         candidate = build.queueBuild()
         behavior = IBuildFarmJobBehavior(candidate.specific_job)
-        behavior.setBuilderInteractor(BuilderInteractor(builder))
+        behavior.setBuilder(builder, None)
         e = self.assertRaises(
             CannotBuild, behavior.verifyBuildRequest, BufferLogger())
         self.assertIn("Missing CHROOT", str(e))
@@ -327,8 +327,6 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
         self.build.distro_arch_series.addOrUpdateChroot(lf)
         self.candidate = self.build.queueBuild()
         self.candidate.markAsBuilding(self.builder)
-        self.behavior = IBuildFarmJobBehavior(self.candidate.specific_job)
-        self.behavior.setBuilderInteractor(BuilderInteractor(self.builder))
         # This is required so that uploaded files from the buildd don't
         # hang around between test runs.
         self.addCleanup(self._cleanup)
@@ -475,10 +473,10 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
         return d.addCallback(got_update)
 
     def test_log_file_collection(self):
-        self.patch(BuilderSlave, 'makeBuilderSlave',
-                   FakeMethod(WaitingSlave('BuildStatus.OK')))
         self.build.updateStatus(BuildStatus.FULLYBUILT)
         old_tmps = sorted(os.listdir('/tmp'))
+
+        slave = WaitingSlave('BuildStatus.OK')
 
         def got_log(logfile_lfa_id):
             # Grabbing logs should not leave new files in /tmp (bug #172798)
@@ -514,12 +512,13 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
                 orig_file_content = open(tmp_orig_file_name).read()
                 self.assertEqual(orig_file_content, uncompressed_file)
 
-            d = removeSecurityProxy(self.interactor.slave).getFile(
+            d = removeSecurityProxy(slave).getFile(
                 'buildlog', tmp_orig_file_name)
             return d.addCallback(got_orig_log)
 
-        d = removeSecurityProxy(self.behavior).getLogFromSlave(
-            self.build.buildqueue_record)
+        behavior = IBuildFarmJobBehavior(self.candidate.specific_job)
+        behavior.setBuilder(self.builder, slave)
+        d = behavior.getLogFromSlave(self.build.buildqueue_record)
         return d.addCallback(got_log)
 
     def test_private_build_log_storage(self):
