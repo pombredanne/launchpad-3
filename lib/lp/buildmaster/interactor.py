@@ -448,7 +448,8 @@ class BuilderInteractor(object):
 
         yield behavior.dispatchBuildToSlave(build_queue_item.id, logger)
 
-    def resetOrFail(self, logger, exception):
+    @classmethod
+    def resetOrFail(cls, vitals, slave, builder, logger, exception):
         """Handle "confirmed" build slave failures.
 
         Call this when there have been multiple failures that are not just
@@ -467,24 +468,23 @@ class BuilderInteractor(object):
             or immediately if it's a non-virtual slave.
         """
         error_message = str(exception)
-        if self.vitals.virtualized:
+        if vitals.virtualized:
             # Virtualized/PPA builder: attempt a reset, unless the failure
             # was itself a failure to reset.  (In that case, the slave
             # scanner will try again until we reach the failure threshold.)
             if not isinstance(exception, CannotResumeHost):
                 logger.warn(
                     "Resetting builder: %s -- %s" % (
-                        self.vitals.url, error_message),
+                        vitals.url, error_message),
                     exc_info=True)
-                return self.resumeSlaveHost(self.vitals, self.slave)
+                return cls.resumeSlaveHost(vitals, slave)
         else:
             # XXX: This should really let the failure bubble up to the
             # scan() method that does the failure counting.
             # Mark builder as 'failed'.
             logger.warn(
-                "Disabling builder: %s -- %s" % (
-                    self.vitals.url, error_message))
-            self.vitals.failBuilder(error_message)
+                "Disabling builder: %s -- %s" % (vitals.url, error_message))
+            builder.failBuilder(error_message)
             transaction.commit()
         return defer.succeed(None)
 

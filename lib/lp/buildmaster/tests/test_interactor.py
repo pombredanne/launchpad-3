@@ -158,7 +158,9 @@ class TestBuilderInteractor(TestCase):
         config.push('reset fail', reset_fail_config)
         self.addCleanup(config.pop, 'reset fail')
         builder = MockBuilder(virtualized=True, vm_host="pop", builderok=True)
-        d = BuilderInteractor(builder).resetOrFail(
+        vitals = extract_vitals_from_db(builder)
+        d = BuilderInteractor.resetOrFail(
+            vitals, BuilderInteractor.makeSlaveFromVitals(vitals), builder,
             DevNullLogger(), Exception())
         return assert_fails_with(d, CannotResumeHost)
 
