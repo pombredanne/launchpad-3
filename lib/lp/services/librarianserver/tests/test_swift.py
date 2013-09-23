@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from cStringIO import StringIO
 import os.path
+import time
 
 from mock import patch
 import transaction
@@ -41,11 +42,14 @@ class TestFeedSwift(TestCase):
         LibrarianLayer.librarian_fixture.killTac()
         LibrarianLayer.librarian_fixture.setUp()
 
-        # Add some files.
+        # Add some files. These common sample files all have their
+        # modification times set to the past so they will not be
+        # considered potential in-progress uploads.
+        the_past = time.time() - 25 * 60 * 60
         self.librarian_client = LibrarianClient()
         self.contents = [str(i) * i for i in range(1, 5)]
         self.lfa_ids = [
-            self.add_file('file_%s' % i, content)
+            self.add_file('file_{0}'.format(i), content, when=the_past)
             for content in self.contents]
         self.lfas = [
             IStore(LibraryFileAlias).get(LibraryFileAlias, lfa_id)
@@ -59,10 +63,15 @@ class TestFeedSwift(TestCase):
         LibrarianLayer.librarian_fixture.setUp()
 
     @write_transaction
-    def add_file(self, name, content, content_type='text/plain'):
-        return self.librarian_client.addFile(
+    def add_file(self, name, content, when=None, content_type='text/plain'):
+        lfa_id = self.librarian_client.addFile(
             name=name, size=len(content), file=StringIO(content),
             contentType=content_type)
+        if when is not None:
+            lfa = IStore(LibraryFileAlias).get(LibraryFileAlias, lfa_id)
+            path = swift.filesystem_path(lfa.content.id)
+            os.utime(path, (when, when))
+        return lfa_id
 
     def test_copy_to_swift(self):
         log = BufferLogger()

@@ -80,7 +80,7 @@ class TestSwiftFixture(TestCase):
         self.assertEqual(hollow.DEFAULT_USERNAME, os.environ['OS_USERNAME'])
         self.assertEqual(hollow.DEFAULT_PASSWORD, os.environ['OS_PASSWORD'])
         self.assertEqual(
-            'http://localhost:%s/keystone/v2.0/' % (
+            'http://localhost:{0}/keystone/v2.0/'.format(
                 self.swift_fixture.daemon_port), os.environ['OS_AUTH_URL'])
         self.assertEqual(
             hollow.DEFAULT_TENANT_NAME, os.environ['OS_TENANT_NAME'])

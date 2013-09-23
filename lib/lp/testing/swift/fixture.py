@@ -56,7 +56,7 @@ class SwiftFixture(TacTestFixture):
 
         self.useFixture(EnvironmentVariableFixture(
             'OS_AUTH_URL',
-            'http://localhost:%s/keystone/v2.0/' % self.daemon_port))
+            'http://localhost:{}/keystone/v2.0/'.format(self.daemon_port)))
         self.useFixture(EnvironmentVariableFixture(
             'OS_USERNAME', hollow.DEFAULT_USERNAME))
         self.useFixture(EnvironmentVariableFixture(
