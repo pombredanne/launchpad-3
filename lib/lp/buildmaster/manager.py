@@ -289,7 +289,9 @@ class SlaveScanner:
                 interactor.builder, interactor)
             if cancelled:
                 return
-            lost = yield interactor.rescueIfLost(self.logger)
+            lost = yield interactor.rescueIfLost(
+                interactor.vitals, interactor.slave,
+                interactor._current_build_behavior, self.logger)
             if lost:
                 lost_reason = '%s is lost' % vitals.name
 

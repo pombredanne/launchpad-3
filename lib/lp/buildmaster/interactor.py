@@ -322,8 +322,9 @@ class BuilderInteractor(object):
                     "Invalid slave build cookie: got %r, expected %r."
                     % (slave_cookie, good_cookie))
 
+    @classmethod
     @defer.inlineCallbacks
-    def rescueIfLost(self, logger=None):
+    def rescueIfLost(cls, vitals, slave, behavior, logger=None):
         """Reset the slave if its job information doesn't match the DB.
 
         This checks the build ID reported in the slave status against the
@@ -349,7 +350,7 @@ class BuilderInteractor(object):
         # Determine the slave's current build cookie. For BUILDING, ABORTING
         # and WAITING we extract the string from the slave status
         # sentence, and for IDLE it is None.
-        status_sentence = yield self.slave.status()
+        status_sentence = yield slave.status()
         status = status_sentence[0]
         if status not in ident_position.keys():
             slave_cookie = None
@@ -361,21 +362,20 @@ class BuilderInteractor(object):
         # verifying that the slave cookie is None iff we expect the
         # slave to be idle.
         try:
-            self.verifySlaveBuildCookie(
-                self._current_build_behavior, slave_cookie)
+            cls.verifySlaveBuildCookie(behavior, slave_cookie)
             defer.returnValue(False)
         except CorruptBuildCookie as reason:
             # An IDLE slave doesn't need rescuing (SlaveScanner.scan
             # will rescue the DB side instead), and we just have to wait
             # out an ABORTING one.
             if status == 'BuilderStatus.WAITING':
-                yield self.slave.clean()
+                yield slave.clean()
             elif status == 'BuilderStatus.BUILDING':
-                yield self.slave.abort()
+                yield slave.abort()
             if logger:
                 logger.info(
                     "Builder '%s' rescued from '%s': '%s'" %
-                    (self.vitals.name, slave_cookie, reason))
+                    (vitals.name, slave_cookie, reason))
             defer.returnValue(True)
 
     @classmethod

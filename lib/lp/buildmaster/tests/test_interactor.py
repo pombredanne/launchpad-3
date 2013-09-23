@@ -183,8 +183,8 @@ class TestBuilderInteractor(TestCase):
         # idle. SlaveScanner.scan() will clean up the DB side, because
         # we still report that it's lost.
         slave = OkSlave()
-        lost = yield BuilderInteractor(
-            MockBuilder(), slave, TrivialBehavior()).rescueIfLost()
+        lost = yield BuilderInteractor.rescueIfLost(
+            extract_vitals_from_db(MockBuilder()), slave, TrivialBehavior())
         self.assertTrue(lost)
         self.assertEqual([], slave.call_log)
 
@@ -192,8 +192,8 @@ class TestBuilderInteractor(TestCase):
     def test_recover_ok_slave(self):
         # An idle slave that's meant to be idle is not rescued.
         slave = OkSlave()
-        lost = yield BuilderInteractor(
-            MockBuilder(), slave, None).rescueIfLost()
+        lost = yield BuilderInteractor.rescueIfLost(
+            extract_vitals_from_db(MockBuilder()), slave, None)
         self.assertFalse(lost)
         self.assertEqual([], slave.call_log)
 
@@ -202,8 +202,9 @@ class TestBuilderInteractor(TestCase):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # WAITING.
         waiting_slave = WaitingSlave(build_id='trivial')
-        lost = yield BuilderInteractor(
-            MockBuilder(), waiting_slave, TrivialBehavior()).rescueIfLost()
+        lost = yield BuilderInteractor.rescueIfLost(
+            extract_vitals_from_db(MockBuilder()), waiting_slave,
+            TrivialBehavior())
         self.assertFalse(lost)
         self.assertEqual(['status'], waiting_slave.call_log)
 
@@ -215,8 +216,9 @@ class TestBuilderInteractor(TestCase):
         # builder is reset for a new build, and the corrupt build is
         # discarded.
         waiting_slave = WaitingSlave(build_id='non-trivial')
-        lost = yield BuilderInteractor(
-            MockBuilder(), waiting_slave, TrivialBehavior()).rescueIfLost()
+        lost = yield BuilderInteractor.rescueIfLost(
+            extract_vitals_from_db(MockBuilder()), waiting_slave,
+            TrivialBehavior())
         self.assertTrue(lost)
         self.assertEqual(['status', 'clean'], waiting_slave.call_log)
 
@@ -225,8 +227,9 @@ class TestBuilderInteractor(TestCase):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # BUILDING.
         building_slave = BuildingSlave(build_id='trivial')
-        lost = yield BuilderInteractor(
-            MockBuilder(), building_slave, TrivialBehavior()).rescueIfLost()
+        lost = yield BuilderInteractor.rescueIfLost(
+            extract_vitals_from_db(MockBuilder()), building_slave,
+            TrivialBehavior())
         self.assertFalse(lost)
         self.assertEqual(['status'], building_slave.call_log)
 
@@ -235,8 +238,9 @@ class TestBuilderInteractor(TestCase):
         # If a slave is BUILDING with a build id we don't recognize, then we
         # abort the build, thus stopping it in its tracks.
         building_slave = BuildingSlave(build_id='non-trivial')
-        lost = yield BuilderInteractor(
-            MockBuilder(), building_slave, TrivialBehavior()).rescueIfLost()
+        lost = yield BuilderInteractor.rescueIfLost(
+            extract_vitals_from_db(MockBuilder()), building_slave,
+            TrivialBehavior())
         self.assertTrue(lost)
         self.assertEqual(['status', 'abort'], building_slave.call_log)
 
@@ -400,10 +404,14 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
 
         # At this point we should see a valid behaviour on the builder:
         self.assertIsNot(None, interactor._current_build_behavior)
-        yield interactor.rescueIfLost()
+        yield BuilderInteractor.rescueIfLost(
+            interactor.vitals, building_slave,
+            interactor._current_build_behavior)
         self.assertIsNot(None, interactor._current_build_behavior)
         candidate.destroySelf()
-        yield interactor.rescueIfLost()
+        yield BuilderInteractor.rescueIfLost(
+            interactor.vitals, building_slave,
+            interactor._current_build_behavior)
         self.assertIs(None, interactor._current_build_behavior)
 
 
