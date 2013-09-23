@@ -149,8 +149,8 @@ def add_architecture(distroseries, architecture_name):
     family = getUtility(IProcessorFamilySet).getByName(architecture_name)
     archseries = DistroArchSeries(
         distroseries=distroseries, processorfamily=family,
-        owner=distroseries.owner, official=True,
-        architecturetag=architecture_name)
+        processor=family.processors[0], owner=distroseries.owner,
+        official=True, architecturetag=architecture_name)
     IMasterStore(DistroArchSeries).add(archseries)
 
 
