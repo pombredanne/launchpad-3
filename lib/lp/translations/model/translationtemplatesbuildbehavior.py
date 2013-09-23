@@ -61,7 +61,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             raise CannotBuild("Unable to find a chroot for %s" %
                               distroarchseries.displayname)
         chroot_sha1 = chroot.content.sha1
-        d = self._interactor.slave.cacheFile(logger, chroot)
+        d = self._slave.cacheFile(logger, chroot)
 
         def got_cache_file(ignored):
             args = {
@@ -71,7 +71,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
             filemap = {}
 
-            return self._interactor.slave.build(
+            return self._slave.build(
                 self.getBuildCookie(), self.build_type, chroot_sha1, filemap,
                 args)
         return d.addCallback(got_cache_file)
@@ -101,11 +101,9 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             logger.error("Did not find templates tarball in slave output.")
             return defer.succeed(None)
 
-        slave = self._interactor.slave
-
         fd, fname = tempfile.mkstemp()
         tarball_file = os.fdopen(fd, 'wb')
-        d = slave.getFile(slave_filename, tarball_file)
+        d = self._slave.getFile(slave_filename, tarball_file)
         # getFile will close the file object.
         return d.addCallback(lambda ignored: fname)
 
@@ -182,6 +180,6 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
         yield self.storeLogFromSlave(build_queue=queue_item)
 
-        yield self._interactor.cleanSlave()
+        yield self._slave.clean()
         queue_item.destroySelf()
         transaction.commit()
