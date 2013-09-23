@@ -515,8 +515,9 @@ class BuilderInteractor(object):
             self._current_build_behavior, logger)
         defer.returnValue(candidate)
 
+    @classmethod
     @defer.inlineCallbacks
-    def updateBuild(self, queueItem):
+    def updateBuild(cls, queueItem, slave, behavior):
         """Verify the current build job status.
 
         Perform the required actions for each state.
@@ -528,11 +529,11 @@ class BuilderInteractor(object):
         # the DB, and this method isn't called unless the DB says
         # there's a job.
         builder_status_handlers = {
-            'BuilderStatus.BUILDING': self.updateBuild_BUILDING,
-            'BuilderStatus.ABORTING': self.updateBuild_ABORTING,
-            'BuilderStatus.WAITING': self.updateBuild_WAITING,
+            'BuilderStatus.BUILDING': cls.updateBuild_BUILDING,
+            'BuilderStatus.ABORTING': cls.updateBuild_ABORTING,
+            'BuilderStatus.WAITING': cls.updateBuild_WAITING,
             }
-        statuses = yield self.slaveStatus(self.slave)
+        statuses = yield cls.slaveStatus(slave)
         logger = logging.getLogger('slave-scanner')
         status_sentence, status_dict = statuses
         builder_status = status_dict['builder_status']
@@ -540,8 +541,7 @@ class BuilderInteractor(object):
             raise AssertionError("Unknown status %s" % builder_status)
         method = builder_status_handlers[builder_status]
         yield method(
-            queueItem, self._current_build_behavior, status_sentence,
-            status_dict, logger)
+            queueItem, behavior, status_sentence, status_dict, logger)
 
     @staticmethod
     def updateBuild_BUILDING(queueItem, behavior, status_sentence, status_dict,
