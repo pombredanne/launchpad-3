@@ -45,6 +45,7 @@ For "devel" additional attributes are available.
     displayname: u'PPA for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
     enabled_restricted_families_collection_link: u'http://.../~cprov/+archive/ppa/enabled_restricted_families'
+    enabled_restricted_processors_collection_link: u'http://.../~cprov/+archive/ppa/enabled_restricted_processors'
     external_dependencies: None
     name: u'ppa'
     owner_link: u'http://.../~cprov'

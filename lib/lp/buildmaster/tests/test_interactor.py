@@ -80,25 +80,23 @@ class TestBuilderInteractor(TestCase):
             AssertionError, interactor.extractBuildStatus, slave_status)
 
     def test_verifySlaveBuildCookie_building_match(self):
-        interactor = BuilderInteractor(MockBuilder(), None, TrivialBehavior())
-        interactor.verifySlaveBuildCookie('trivial')
+        interactor = BuilderInteractor(MockBuilder())
+        interactor.verifySlaveBuildCookie(TrivialBehavior(), 'trivial')
 
     def test_verifySlaveBuildCookie_building_mismatch(self):
-        interactor = BuilderInteractor(MockBuilder(), None, TrivialBehavior())
+        interactor = BuilderInteractor(MockBuilder())
         self.assertRaises(
             CorruptBuildCookie,
-            interactor.verifySlaveBuildCookie, 'difficult')
+            interactor.verifySlaveBuildCookie, TrivialBehavior(), 'difficult')
 
     def test_verifySlaveBuildCookie_idle_match(self):
         interactor = BuilderInteractor(MockBuilder())
-        self.assertIs(None, interactor._current_build_behavior)
-        interactor.verifySlaveBuildCookie(None)
+        interactor.verifySlaveBuildCookie(None, None)
 
     def test_verifySlaveBuildCookie_idle_mismatch(self):
         interactor = BuilderInteractor(MockBuilder())
-        self.assertIs(None, interactor._current_build_behavior)
         self.assertRaises(
-            CorruptBuildCookie, interactor.verifySlaveBuildCookie, 'foo')
+            CorruptBuildCookie, interactor.verifySlaveBuildCookie, None, 'foo')
 
     def test_rescueIfLost_aborts_lost_and_broken_slave(self):
         # A slave that's 'lost' should be aborted; when the slave is
@@ -308,7 +306,7 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
         behavior = interactor._current_build_behavior
         self.assertIsInstance(behavior, BinaryPackageBuildBehavior)
         self.assertEqual(behavior._builder, builder)
-        self.assertEqual(behavior._interactor, interactor)
+        self.assertEqual(behavior._slave, interactor.slave)
 
     def _setupBuilder(self):
         processor = self.factory.makeProcessor(name="i386")

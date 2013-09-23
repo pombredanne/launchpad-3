@@ -29,9 +29,11 @@ class TestArchiveArch(TestCaseWithFactory):
         self.cell_proc = pss.new(
             'cell-proc', 'PS cell processor', 'Screamingly faaaaaaaaaaaast',
             True)
+        self.cell_proc.addProcessor('Cell', '', '')
         self.omap = pss.new(
             'omap', 'Multimedia applications processor',
             'Does all your sound & video', True)
+        self.omap.addProcessor('Omap', '', '')
 
     def test_getRestrictedFamilies_no_restricted_associations(self):
         # Our archive is not associated with any restricted processor
