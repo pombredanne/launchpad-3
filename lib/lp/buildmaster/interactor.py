@@ -413,8 +413,10 @@ class BuilderInteractor(object):
 
         return d.addCallback(got_resume_ok).addErrback(got_resume_bad)
 
+    @classmethod
     @defer.inlineCallbacks
-    def _startBuild(self, build_queue_item, behavior, logger):
+    def _startBuild(cls, build_queue_item, vitals, builder, slave, behavior,
+                    logger):
         """Start a build on this builder.
 
         :param build_queue_item: A BuildQueueItem to build.
@@ -428,7 +430,7 @@ class BuilderInteractor(object):
         behavior.verifyBuildRequest(logger)
 
         # Set the build behavior depending on the provided build queue item.
-        if not self.builder.builderok:
+        if not builder.builderok:
             raise BuildDaemonError(
                 "Attempted to start a build on a known-bad builder.")
 
@@ -440,9 +442,9 @@ class BuilderInteractor(object):
         # This could be a quirk of the Xen guest, we're not sure.  We
         # also don't care about the result from this message, just that
         # it's sent, hence the "addBoth".  See bug 586359.
-        if self.builder.virtualized:
-            yield self.resumeSlaveHost(self.vitals, self.slave)
-            yield self.slave.echo("ping")
+        if builder.virtualized:
+            yield cls.resumeSlaveHost(vitals, slave)
+            yield slave.echo("ping")
 
         yield behavior.dispatchBuildToSlave(build_queue_item.id, logger)
 
@@ -508,7 +510,9 @@ class BuilderInteractor(object):
             raise AssertionError(
                 "Inappropriate IBuildFarmJobBehavior: %r is not a %r" %
                 (self._current_build_behavior, needed_bfjb))
-        yield self._startBuild(candidate, self._current_build_behavior, logger)
+        yield self._startBuild(
+            candidate, self.vitals, self.builder, self.slave,
+            self._current_build_behavior, logger)
         defer.returnValue(candidate)
 
     @defer.inlineCallbacks

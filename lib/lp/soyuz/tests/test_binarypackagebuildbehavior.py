@@ -152,7 +152,8 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         bq.markAsBuilding(builder)
         interactor = BuilderInteractor(builder, slave)
         d = interactor._startBuild(
-            bq, interactor._current_build_behavior, BufferLogger())
+            bq, interactor.vitals, interactor.builder, interactor.slave,
+            interactor._current_build_behavior, BufferLogger())
         d.addCallback(
             self.assertExpectedInteraction, slave.call_log, interactor, build,
             lf, archive, ArchivePurpose.PRIMARY, 'universe')
@@ -174,7 +175,8 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         bq.markAsBuilding(builder)
         interactor = BuilderInteractor(builder, slave)
         d = interactor._startBuild(
-            bq, interactor._current_build_behavior, BufferLogger())
+            bq, interactor.vitals, interactor.builder, interactor.slave,
+            interactor._current_build_behavior, BufferLogger())
 
         def check_build(ignored):
             # We expect the first call to the slave to be a resume call,
@@ -200,7 +202,8 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         bq.markAsBuilding(builder)
         interactor = BuilderInteractor(builder, slave)
         d = interactor._startBuild(
-            bq, interactor._current_build_behavior, BufferLogger())
+            bq, interactor.vitals, interactor.builder, interactor.slave,
+            interactor._current_build_behavior, BufferLogger())
         d.addCallback(
             self.assertExpectedInteraction, slave.call_log, interactor, build,
             lf, archive, ArchivePurpose.PARTNER)
