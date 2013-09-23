@@ -539,9 +539,12 @@ class BuilderInteractor(object):
         if builder_status not in builder_status_handlers:
             raise AssertionError("Unknown status %s" % builder_status)
         method = builder_status_handlers[builder_status]
-        yield method(queueItem, status_sentence, status_dict, logger)
+        yield method(
+            queueItem, self._current_build_behavior, status_sentence,
+            status_dict, logger)
 
-    def updateBuild_BUILDING(self, queueItem, status_sentence, status_dict,
+    @staticmethod
+    def updateBuild_BUILDING(queueItem, behavior, status_sentence, status_dict,
                              logger):
         """Build still building, collect the logtail"""
         if queueItem.job.status != JobStatus.RUNNING:
@@ -549,7 +552,8 @@ class BuilderInteractor(object):
         queueItem.logtail = encoding.guess(str(status_dict.get('logtail')))
         transaction.commit()
 
-    def updateBuild_ABORTING(self, queueItem, status_sentence, status_dict,
+    @staticmethod
+    def updateBuild_ABORTING(queueItem, behavior, status_sentence, status_dict,
                              logger):
         """Build was ABORTED.
 
@@ -573,8 +577,9 @@ class BuilderInteractor(object):
 
         return status_string[len(lead_string):]
 
-    def updateBuild_WAITING(self, queueItem, status_sentence, status_dict,
-                            logger):
+    @classmethod
+    def updateBuild_WAITING(cls, queueItem, behavior, status_sentence,
+                            status_dict, logger):
         """Perform the actions needed for a slave in a WAITING state
 
         Buildslave can be WAITING in five situations:
@@ -588,10 +593,10 @@ class BuilderInteractor(object):
           Librarian with getFileFromSlave() and then pass the binaries to
           the uploader for processing.
         """
-        self._current_build_behavior.updateSlaveStatus(
+        behavior.updateSlaveStatus(
             status_sentence, status_dict)
-        d = self._current_build_behavior.handleStatus(
-            queueItem, self.extractBuildStatus(status_dict), status_dict)
+        d = behavior.handleStatus(
+            queueItem, cls.extractBuildStatus(status_dict), status_dict)
         return d
 
     @staticmethod
