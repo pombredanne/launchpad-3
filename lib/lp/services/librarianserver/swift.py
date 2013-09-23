@@ -67,10 +67,16 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
                 continue
             if fs_path > end_fs_path:
                 break
-            rel_fs_path = fs_path[len(fs_root) + 1:]
+
+            # Skip files which have been modified recently, as they
+            # may be uploads still in progress.
+            if os.path.getmtime(fs_path) > time.time() - 60*60:
+                log.debug('Skipping recent upload %s' % fs_path)
+                continue
 
             # Reverse engineer the LibraryFileContent.id from the
             # file's path. Warn about and skip bad filenames.
+            rel_fs_path = fs_path[len(fs_root) + 1:]
             hex_lfc = ''.join(rel_fs_path.split('/'))
             if len(hex_lfc) != 8:
                 log.warning(
