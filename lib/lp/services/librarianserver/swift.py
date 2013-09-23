@@ -12,6 +12,7 @@ __all__ = [
 from contextlib import contextmanager
 import os.path
 import sys
+import time
 
 from swiftclient import client as swiftclient
 
@@ -70,7 +71,7 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
 
             # Skip files which have been modified recently, as they
             # may be uploads still in progress.
-            if os.path.getmtime(fs_path) > time.time() - 60*60:
+            if os.path.getmtime(fs_path) > time.time() - (60 * 60):
                 log.debug('Skipping recent upload %s' % fs_path)
                 continue
 
