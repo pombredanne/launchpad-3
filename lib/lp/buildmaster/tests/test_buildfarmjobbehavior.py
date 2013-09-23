@@ -253,6 +253,9 @@ class TestHandleStatusMixin:
 
     def test_handleStatus_ABORTED_recovers_building(self):
         self.builder.vm_host = "fake_vm_host"
+        self.interactor = BuilderInteractor(self.builder, self.slave)
+        self.behavior = removeSecurityProxy(
+            self.interactor._current_build_behavior)
         self.build.updateStatus(BuildStatus.BUILDING)
 
         def got_status(ignored):
@@ -260,7 +263,8 @@ class TestHandleStatusMixin:
                 0, len(pop_notifications()), "Notifications received")
             self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
             self.assertEqual(1, self.builder.failure_count)
-            self.assertIn("resume", self.slave.call_log)
+            self.assertEqual(1, self.build.failure_count)
+            self.assertIn("clean", self.slave.call_log)
 
         d = self.behavior.handleStatus(
             self.build.buildqueue_record, "ABORTED", {})

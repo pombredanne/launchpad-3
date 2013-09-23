@@ -126,7 +126,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         # valid builder set.
         job = self.makeJob()
         builder = MockBuilder("bob-de-bouwer")
-        job.setBuilderInteractor(BuilderInteractor(builder, OkSlave()))
+        job.setBuilder(builder, OkSlave())
         logger = BufferLogger()
         job.verifyBuildRequest(logger)
         self.assertEquals("", logger.getLogBuffer())
@@ -136,7 +136,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job = self.makeJob()
         builder = MockBuilder('non-virtual builder')
         builder.virtualized = False
-        job.setBuilderInteractor(BuilderInteractor(builder, OkSlave()))
+        job.setBuilder(builder, OkSlave())
         logger = BufferLogger()
         e = self.assertRaises(AssertionError, job.verifyBuildRequest, logger)
         self.assertEqual(
@@ -148,8 +148,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
             pocket=PackagePublishingPocket.SECURITY)
         job = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         job = IBuildFarmJobBehavior(job.specific_job)
-        job.setBuilderInteractor(
-            BuilderInteractor(MockBuilder("bob-de-bouwer"), OkSlave()))
+        job.setBuilder(MockBuilder("bob-de-bouwer"), OkSlave())
         e = self.assertRaises(
             AssertionError, job.verifyBuildRequest, BufferLogger())
         self.assertIn('invalid pocket due to the series status of', str(e))
@@ -306,7 +305,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         slave = OkSlave()
         builder = MockBuilder("bob-de-bouwer")
         builder.processor = getUtility(IProcessorSet).getByName('386')
-        job.setBuilderInteractor(BuilderInteractor(builder, slave))
+        job.setBuilder(builder, slave)
         logger = BufferLogger()
         d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
 
@@ -336,7 +335,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         #test_publisher = SoyuzTestPublisher()
         builder = MockBuilder("bob-de-bouwer")
         builder.processor = getUtility(IProcessorSet).getByName('386')
-        job.setBuilderInteractor(BuilderInteractor(builder, OkSlave()))
+        job.setBuilder(builder, OkSlave())
         logger = BufferLogger()
         d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
         return assert_fails_with(d, CannotBuild)
