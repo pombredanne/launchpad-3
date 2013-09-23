@@ -13,6 +13,7 @@ from contextlib import contextmanager
 import os.path
 import sys
 import time
+import urllib
 
 from swiftclient import client as swiftclient
 
@@ -133,8 +134,9 @@ def _put(swift_connection, container, obj_name, fs_path):
         while fs_file.tell() < fs_size:
             assert segment <= 9999, 'Insane number of segments'
             seg_name = '%s/%04d' % (obj_name, segment)
+            seg_size = min(fs_size - fs_file.tell(), MAX_SWIFT_OBJECT_SIZE)
             swift_connection.put_object(
-                container, seg_name, fs_file, MAX_SWIFT_OBJECT_SIZE)
+                container, seg_name, fs_file, seg_size)
             segment = segment + 1
         manifest = '%s/%s/' % (
             urllib.quote(container, urllib.quote(obj_name)))
