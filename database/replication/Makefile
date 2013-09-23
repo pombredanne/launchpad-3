@@ -70,7 +70,7 @@ stagingsetup:
 	# production to users not maintained by security.py.
 	pg_restore --list ${STAGING_DUMP} | grep -v 'TRIGGER public _sl_' \
 	    > ${DUMPLIST}
-	pg_restore --dbname=lpmain_staging --no-owner ${EXIT_ON_ERROR} \
+	pg_restore -j6 --dbname=lpmain_staging --no-owner ${EXIT_ON_ERROR} \
 	    --use-list=${DUMPLIST} ${MULTIPROC} ${STAGING_DUMP}
 	rm ${DUMPLIST}
 	# Apply database patches.
@@ -93,7 +93,7 @@ dogfood:
 	${CREATEDB} ${DOGFOOD_DBNAME}
 	pg_restore --list ${DOGFOOD_DUMP} | grep -v 'TRIGGER public _sl_' \
 	    > ${DUMPLIST}
-	pg_restore --dbname=${DOGFOOD_DBNAME} --no-acl --no-owner \
+	pg_restore -j8 --dbname=${DOGFOOD_DBNAME} --no-acl --no-owner \
 	    --use-list=${DUMPLIST} ${EXIT_ON_ERROR} ${DOGFOOD_DUMP}
 	rm ${DUMPLIST}
 	../schema/upgrade.py -d ${DOGFOOD_DBNAME}
