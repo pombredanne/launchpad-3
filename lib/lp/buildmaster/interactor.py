@@ -245,6 +245,15 @@ class BuilderInteractor(object):
         # XXX wgrant: The BuilderVitals should be passed in.
         self.vitals = extract_vitals_from_db(builder)
 
+    @staticmethod
+    def makeSlaveFromVitals(vitals):
+        if vitals.virtualized:
+            timeout = config.builddmaster.virtualized_socket_timeout
+        else:
+            timeout = config.builddmaster.socket_timeout
+        return BuilderSlave.makeBuilderSlave(
+            vitals.url, vitals.vm_host, timeout)
+
     @property
     def slave(self):
         """See IBuilder."""
@@ -255,12 +264,7 @@ class BuilderInteractor(object):
         new_slave_attrs = (
             self.vitals.url, self.vitals.vm_host, self.vitals.virtualized)
         if self._cached_slave_attrs != new_slave_attrs:
-            if self.vitals.virtualized:
-                timeout = config.builddmaster.virtualized_socket_timeout
-            else:
-                timeout = config.builddmaster.socket_timeout
-            self._cached_slave = BuilderSlave.makeBuilderSlave(
-                self.vitals.url, self.vitals.vm_host, timeout)
+            self._cached_slave = self.makeSlaveFromVitals(self.vitals)
             self._cached_slave_attrs = new_slave_attrs
         return self._cached_slave
 
@@ -282,8 +286,9 @@ class BuilderInteractor(object):
             self._cached_currentjob = currentjob
         return self._cached_build_behavior
 
+    @staticmethod
     @defer.inlineCallbacks
-    def slaveStatus(self):
+    def slaveStatus(slave):
         """Get the slave status for this builder.
 
         :return: A Deferred which fires when the slave dialog is complete.
@@ -291,7 +296,7 @@ class BuilderInteractor(object):
             potentially other values included by the current build
             behavior.
         """
-        status_sentence = yield self.slave.status()
+        status_sentence = yield slave.status()
         status = {'builder_status': status_sentence[0]}
 
         # Extract detailed status and log information if present.
@@ -304,7 +309,8 @@ class BuilderInteractor(object):
                 status['logtail'] = status_sentence[2]
         defer.returnValue((status_sentence, status))
 
-    def verifySlaveBuildCookie(self, behavior, slave_cookie):
+    @staticmethod
+    def verifySlaveBuildCookie(behavior, slave_cookie):
         """See `IBuildFarmJobBehavior`."""
         if behavior is None:
             if slave_cookie is not None:
@@ -372,7 +378,8 @@ class BuilderInteractor(object):
                     (self.vitals.name, slave_cookie, reason))
             defer.returnValue(True)
 
-    def resumeSlaveHost(self):
+    @classmethod
+    def resumeSlaveHost(cls, vitals, slave):
         """Resume the slave host to a known good condition.
 
         Issues 'builddmaster.vm_resume_command' specified in the configuration
@@ -385,16 +392,16 @@ class BuilderInteractor(object):
             whose value is a (stdout, stderr) tuple for success, or a Failure
             whose value is a CannotResumeHost exception.
         """
-        if not self.vitals.virtualized:
+        if not vitals.virtualized:
             return defer.fail(CannotResumeHost('Builder is not virtualized.'))
 
-        if not self.vitals.vm_host:
+        if not vitals.vm_host:
             return defer.fail(CannotResumeHost('Undefined vm_host.'))
 
-        logger = self._getSlaveScannerLogger()
-        logger.info("Resuming %s (%s)" % (self.vitals.name, self.vitals.url))
+        logger = cls._getSlaveScannerLogger()
+        logger.info("Resuming %s (%s)" % (vitals.name, vitals.url))
 
-        d = self.slave.resume()
+        d = slave.resume()
 
         def got_resume_ok((stdout, stderr, returncode)):
             return stdout, stderr
@@ -434,7 +441,7 @@ class BuilderInteractor(object):
         # also don't care about the result from this message, just that
         # it's sent, hence the "addBoth".  See bug 586359.
         if self.builder.virtualized:
-            yield self.resumeSlaveHost()
+            yield self.resumeSlaveHost(self.vitals, self.slave)
             yield self.slave.echo("ping")
 
         yield behavior.dispatchBuildToSlave(build_queue_item.id, logger)
@@ -467,7 +474,7 @@ class BuilderInteractor(object):
                     "Resetting builder: %s -- %s" % (
                         self.vitals.url, error_message),
                     exc_info=True)
-                return self.resumeSlaveHost()
+                return self.resumeSlaveHost(self.vitals, self.slave)
         else:
             # XXX: This should really let the failure bubble up to the
             # scan() method that does the failure counting.
@@ -521,7 +528,7 @@ class BuilderInteractor(object):
             'BuilderStatus.ABORTING': self.updateBuild_ABORTING,
             'BuilderStatus.WAITING': self.updateBuild_WAITING,
             }
-        statuses = yield self.slaveStatus()
+        statuses = yield self.slaveStatus(self.slave)
         logger = logging.getLogger('slave-scanner')
         status_sentence, status_dict = statuses
         builder_status = status_dict['builder_status']
@@ -583,7 +590,8 @@ class BuilderInteractor(object):
             queueItem, self.extractBuildStatus(status_dict), status_dict)
         return d
 
-    def _getSlaveScannerLogger(self):
+    @staticmethod
+    def _getSlaveScannerLogger():
         """Return the logger instance from buildd-slave-scanner.py."""
         # XXX cprov 20071120: Ideally the Launchpad logging system
         # should be able to configure the root-logger instead of creating

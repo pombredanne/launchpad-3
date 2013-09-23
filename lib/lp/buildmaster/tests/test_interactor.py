@@ -25,6 +25,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interactor import (
     BuilderInteractor,
     BuilderSlave,
+    extract_vitals_from_db,
     )
 from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
@@ -113,29 +114,32 @@ class TestBuilderInteractor(TestCase):
 
         return d.addBoth(check_slave_status)
 
+    def resumeSlaveHost(self, builder):
+        vitals = extract_vitals_from_db(builder)
+        return BuilderInteractor.resumeSlaveHost(
+            vitals, BuilderInteractor.makeSlaveFromVitals(vitals))
+
     def test_resumeSlaveHost_nonvirtual(self):
-        builder = MockBuilder(virtualized=False)
-        d = BuilderInteractor(builder).resumeSlaveHost()
+        d = self.resumeSlaveHost(MockBuilder(virtualized=False))
         return assert_fails_with(d, CannotResumeHost)
 
     def test_resumeSlaveHost_no_vmhost(self):
-        builder = MockBuilder(virtualized=True, vm_host=None)
-        d = BuilderInteractor(builder).resumeSlaveHost()
+        d = self.resumeSlaveHost(MockBuilder(virtualized=False, vm_host=None))
         return assert_fails_with(d, CannotResumeHost)
 
     def test_resumeSlaveHost_success(self):
         reset_config = """
             [builddmaster]
-            vm_resume_command: /bin/echo -n parp"""
+            vm_resume_command: /bin/echo -n snap %(buildd_name)s %(vm_host)s
+            """
         config.push('reset', reset_config)
         self.addCleanup(config.pop, 'reset')
 
-        builder = MockBuilder(virtualized=True, vm_host="pop")
-        d = BuilderInteractor(builder).resumeSlaveHost()
+        d = self.resumeSlaveHost(MockBuilder(
+            url="http://crackle.ppa/", virtualized=True, vm_host="pop"))
 
         def got_resume(output):
-            self.assertEqual(('parp', ''), output)
-
+            self.assertEqual(('snap crackle pop', ''), output)
         return d.addCallback(got_resume)
 
     def test_resumeSlaveHost_command_failed(self):
@@ -144,8 +148,7 @@ class TestBuilderInteractor(TestCase):
             vm_resume_command: /bin/false"""
         config.push('reset fail', reset_fail_config)
         self.addCleanup(config.pop, 'reset fail')
-        builder = MockBuilder(virtualized=True, vm_host="pop")
-        d = BuilderInteractor(builder).resumeSlaveHost()
+        d = self.resumeSlaveHost(MockBuilder(virtualized=True, vm_host="pop"))
         return assert_fails_with(d, CannotResumeHost)
 
     def test_resetOrFail_resume_failure(self):
@@ -246,7 +249,7 @@ class TestBuilderInteractorSlaveStatus(TestCase):
     def assertStatus(self, slave, builder_status=None,
                      build_status=None, logtail=False, filemap=None,
                      dependencies=None):
-        statuses = yield BuilderInteractor(MockBuilder(), slave).slaveStatus()
+        statuses = yield BuilderInteractor.slaveStatus(slave)
         status_dict = statuses[1]
 
         expected = {}
