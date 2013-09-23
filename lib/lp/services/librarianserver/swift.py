@@ -19,6 +19,7 @@ from lp.services.config import config
 
 
 SWIFT_CONTAINER_PREFIX = 'librarian_'
+MAX_SWIFT_OBJECT_SIZE = 5 * 1024 ** 3  # 5GB Swift limit.
 
 
 def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
@@ -112,12 +113,33 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
                 log.info(
                     'Putting %s into Swift (%s, %s)' % (
                         lfc, container, obj_name))
-                swift_connection.put_object(
-                    container, obj_name,
-                    open(fs_path, 'rb'), os.path.getsize(fs_path))
+                _put(swift_connection, container, obj_name, fs_path)
 
             if remove:
                 os.unlink(fs_path)
+
+
+def _put(swift_connection, container, obj_name, fs_path):
+    fs_size = os.path.getsize(fs_path)
+    fs_file = open(fs_path, 'rb')
+    if fs_size <= MAX_SWIFT_OBJECT_SIZE:
+        swift_connection.put_object(container, obj_name, fs_file, fs_size)
+    else:
+        # Large file upload. Create the segments first, then the
+        # manifest. This order prevents partial downloads, and lets us
+        # detect interrupted uploads and clean up.
+        segment = 0
+        while fs_file.tell() < fs_size:
+            assert segment <= 9999, 'Insane number of segments'
+            seg_name = '%s/%04d' % (obj_name, segment)
+            swift_connection.put_object(
+                container, seg_name, fs_file, MAX_SWIFT_OBJECT_SIZE)
+            segment = segment + 1
+        manifest = '%s/%s/' % (
+            urllib.quote(container, urllib.quote(obj_name)))
+        manifest_headers = {'x-object-manifest': manifest}
+        swift_connection.put_object(
+            container, obj_name, '', 0, headers=manifest_headers)
 
 
 def swift_location(lfc_id):
@@ -132,7 +154,9 @@ def swift_location(lfc_id):
     # storage, as objects will no longer be found in the expected
     # container. This value and the container prefix are deliberatly
     # hard coded to avoid cockups with values specified in config files.
-    max_objects_per_container = 1000000
+    # While the suggested number is 'under a million', the rare large files
+    # will take up multiple slots so we choose a more conservative number.
+    max_objects_per_container = 500000
 
     container_num = lfc_id // max_objects_per_container
 
