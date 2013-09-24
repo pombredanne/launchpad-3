@@ -1,8 +1,12 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-__all__ = ['Processor', 'ProcessorFamily', 'ProcessorFamilySet']
+__all__ = [
+    'Processor',
+    'ProcessorFamily',
+    'ProcessorFamilySet'
+    ]
 
 from sqlobject import (
     ForeignKey,
@@ -32,6 +36,7 @@ class Processor(SQLBase):
     name = StringCol(dbName='name', notNull=True)
     title = StringCol(dbName='title', notNull=True)
     description = StringCol(dbName='description', notNull=True)
+    restricted = Bool(allow_none=True, default=False)
 
     def __repr__(self):
         return "<Processor %r>" % self.title
@@ -68,7 +73,7 @@ class ProcessorFamily(SQLBase):
     def addProcessor(self, name, title, description):
         """See `IProcessorFamily`."""
         return Processor(family=self, name=name, title=title,
-            description=description)
+            description=description, restricted=self.restricted)
 
     def __repr__(self):
         return "<ProcessorFamily %r>" % self.title

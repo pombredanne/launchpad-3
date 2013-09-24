@@ -189,6 +189,9 @@ class TestDistroEditView(TestCaseWithFactory):
         self.distribution = self.factory.makeDistribution()
         proc_family_set = getUtility(IProcessorFamilySet)
         self.restricted_families = proc_family_set.getRestricted()
+        for family in self.restricted_families:
+            if family.processors.is_empty():
+                self.factory.makeProcessor(family=family)
 
     def test_edit_distro_init_value_require_virtualized(self):
         view = create_initialized_view(
@@ -249,8 +252,7 @@ class TestDistroEditView(TestCaseWithFactory):
             method='POST', form=edit_form)
 
         self.assertContentEqual(
-            [],
-            self.distribution.main_archive.enabled_restricted_families)
+            [], self.distribution.main_archive.enabled_restricted_families)
 
     def test_package_derivatives_email(self):
         # Test that the edit form allows changing package_derivatives_email

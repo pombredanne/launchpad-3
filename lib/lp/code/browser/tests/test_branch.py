@@ -228,16 +228,16 @@ class TestBranchView(BrowserTestCase):
         self.assertFalse(view.is_empty_directory)
 
     def test_empty_directories_use_existing(self):
-        # Push example should include --use-existing for empty directories.
+        # Push example should include --use-existing-dir for empty directories.
         branch = self.factory.makeBranch(owner=self.user)
         text = self.getMainText(branch)
-        self.assertIn('push\n--use-existing', text)
+        self.assertIn('push\n--use-existing-dir', text)
         with person_logged_in(self.user):
             # Make it look as though the branch has been pushed.
             branch.branchChanged(
                 None, None, ControlFormat.BZR_METADIR_1, None, None)
         text = self.getMainText(branch)
-        self.assertNotIn('push\n--use-existing', text)
+        self.assertNotIn('push\n--use-existing-dir', text)
 
     def test_user_can_upload(self):
         # A user can upload if they have edit permissions.
