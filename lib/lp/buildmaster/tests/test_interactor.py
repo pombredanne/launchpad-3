@@ -103,8 +103,8 @@ class TestBuilderInteractor(TestCase):
         # A slave that's 'lost' should be aborted; when the slave is
         # broken then abort() should also throw a fault.
         slave = LostBuildingBrokenSlave()
-        interactor = BuilderInteractor(MockBuilder(), slave, TrivialBehavior())
-        d = interactor.rescueIfLost(DevNullLogger())
+        d = BuilderInteractor.rescueIfLost(
+            extract_vitals_from_db(MockBuilder()), slave, TrivialBehavior())
 
         def check_slave_status(failure):
             self.assertIn('abort', slave.call_log)
@@ -356,7 +356,8 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
         # findAndStartJob delegates to it.
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
-        d = BuilderInteractor(builder).findAndStartJob()
+        vitals = extract_vitals_from_db(builder)
+        d = BuilderInteractor.findAndStartJob(vitals, builder, OkSlave())
         return d.addCallback(self.assertEqual, candidate)
 
     def test_findAndStartJob_starts_job(self):
@@ -367,7 +368,8 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
         candidate = build.queueBuild()
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
-        d = BuilderInteractor(builder).findAndStartJob()
+        vitals = extract_vitals_from_db(builder)
+        d = BuilderInteractor.findAndStartJob(vitals, builder, OkSlave())
 
         def check_build_started(candidate):
             self.assertEqual(candidate.builder, builder)
@@ -382,11 +384,12 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
         candidate = build.queueBuild()
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
-        interactor = BuilderInteractor(builder)
-        d = interactor.findAndStartJob()
+        vitals = extract_vitals_from_db(builder)
+        slave = OkSlave()
+        d = BuilderInteractor.findAndStartJob(vitals, builder, slave)
 
         def check_build_started(candidate):
-            self.assertIn(('echo', 'ping'), interactor.slave.call_log)
+            self.assertIn(('echo', 'ping'), slave.call_log)
 
         return d.addCallback(check_build_started)
 

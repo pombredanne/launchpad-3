@@ -268,6 +268,12 @@ class BuilderInteractor(object):
             self._cached_slave_attrs = new_slave_attrs
         return self._cached_slave
 
+    @staticmethod
+    def getBuildBehavior(queue_item, builder, slave):
+        behavior = IBuildFarmJobBehavior(queue_item.specific_job)
+        behavior.setBuilder(builder, slave)
+        return behavior
+
     @property
     def _current_build_behavior(self):
         """Return the current build behavior."""
@@ -280,9 +286,8 @@ class BuilderInteractor(object):
             self._cached_build_behavior = None
             self._cached_currentjob = None
         elif currentjob != self._cached_currentjob:
-            self._cached_build_behavior = IBuildFarmJobBehavior(
-                currentjob.specific_job)
-            self._cached_build_behavior.setBuilder(self.builder, self.slave)
+            self._cached_build_behavior = self.getBuildBehavior(
+                currentjob, self.builder, self.slave)
             self._cached_currentjob = currentjob
         return self._cached_build_behavior
 
@@ -488,31 +493,32 @@ class BuilderInteractor(object):
             transaction.commit()
         return defer.succeed(None)
 
+    @classmethod
     @defer.inlineCallbacks
-    def findAndStartJob(self):
+    def findAndStartJob(cls, vitals, builder, slave):
         """Find a job to run and send it to the buildd slave.
 
         :return: A Deferred whose value is the `IBuildQueue` instance
             found or None if no job was found.
         """
-        logger = self._getSlaveScannerLogger()
+        logger = cls._getSlaveScannerLogger()
         # XXX This method should be removed in favour of two separately
         # called methods that find and dispatch the job.  It will
         # require a lot of test fixing.
-        candidate = self.builder.acquireBuildCandidate()
+        candidate = builder.acquireBuildCandidate()
         if candidate is None:
             logger.debug("No build candidates available for builder.")
             defer.returnValue(None)
 
+        new_behavior = cls.getBuildBehavior(candidate, builder, slave)
         needed_bfjb = type(removeSecurityProxy(
             IBuildFarmJobBehavior(candidate.specific_job)))
-        if not zope_isinstance(self._current_build_behavior, needed_bfjb):
+        if not zope_isinstance(new_behavior, needed_bfjb):
             raise AssertionError(
                 "Inappropriate IBuildFarmJobBehavior: %r is not a %r" %
-                (self._current_build_behavior, needed_bfjb))
-        yield self._startBuild(
-            candidate, self.vitals, self.builder, self.slave,
-            self._current_build_behavior, logger)
+                (new_behavior, needed_bfjb))
+        yield cls._startBuild(
+            candidate, vitals, builder, slave, new_behavior, logger)
         defer.returnValue(candidate)
 
     @classmethod

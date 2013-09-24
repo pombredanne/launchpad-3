@@ -290,8 +290,8 @@ class SlaveScanner:
             if cancelled:
                 return
             lost = yield interactor.rescueIfLost(
-                interactor.vitals, interactor.slave,
-                interactor._current_build_behavior, self.logger)
+                vitals, interactor.slave, interactor._current_build_behavior,
+                self.logger)
             if lost:
                 lost_reason = '%s is lost' % vitals.name
 
@@ -323,8 +323,8 @@ class SlaveScanner:
                 '%s is in manual mode, not dispatching.' % vitals.name)
         else:
             # See if there is a job we can dispatch to the builder slave.
-            yield interactor.findAndStartJob()
             builder = self.builders_cache[self.builder_name]
+            yield interactor.findAndStartJob(vitals, builder, interactor.slave)
             if builder.currentjob is not None:
                 # After a successful dispatch we can reset the
                 # failure_count.
