@@ -46,10 +46,11 @@ class ArchiveArchSet:
 
     def new(self, archive, processorfamily):
         """See `IArchiveArchSet`."""
+        processor = processorfamily.processors[0]
         archivearch = ArchiveArch()
         archivearch.archive = archive
         archivearch.processorfamily = processorfamily
-        archivearch.processor = processorfamily.processors[0]
+        archivearch.processor = processor
         IStore(ArchiveArch).add(archivearch)
         return archivearch
 
