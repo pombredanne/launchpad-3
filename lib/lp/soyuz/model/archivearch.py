@@ -60,6 +60,14 @@ class ArchiveArchSet:
             ArchiveArch.id)
 
     def getRestrictedProcessors(self, archive):
+        clauses = [ArchiveArch.archive == archive]
+        if processor is not None:
+            clauses.append(ArchiveArch.processor == processor)
+
+        return IStore(ArchiveArch).find(ArchiveArch, *clauses).order_by(
+            ArchiveArch.id)
+
+    def getRestrictedFamilies(self, archive):
         """See `IArchiveArchSet`."""
         origin = (
             Processor,

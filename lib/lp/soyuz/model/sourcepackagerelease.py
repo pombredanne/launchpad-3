@@ -55,7 +55,6 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.helpers import shortlist
 from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
