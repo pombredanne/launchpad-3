@@ -135,7 +135,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
                               distroarchseries.displayname)
         logger.info(
             "Sending chroot file for recipe build to %s" % self._builder.name)
-        d = self._interactor.slave.cacheFile(logger, chroot)
+        d = self._slave.cacheFile(logger, chroot)
 
         def got_cache_file(ignored):
             # Generate a string which can be used to cross-check when
@@ -147,7 +147,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
             logger.info(
                 "Initiating build %s on %s" % (buildid, self._builder.url))
 
-            return self._interactor.slave.build(
+            return self._slave.build(
                 cookie, "sourcepackagerecipe", chroot_sha1, {}, args)
 
         def log_build_result((status, info)):
