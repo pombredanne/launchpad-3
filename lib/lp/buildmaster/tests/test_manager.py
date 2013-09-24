@@ -551,7 +551,8 @@ class TestCancellationChecking(TestCaseWithFactory):
     def test_ignores_nonvirtual(self):
         # If the builder is nonvirtual make sure we return False.
         self.builder.virtualized = False
-        d = self._getScanner().checkCancellation(self.builder, self.interactor)
+        d = self._getScanner().checkCancellation(
+            self.builder, None, self.interactor)
         return d.addCallback(self.assertFalse)
 
     def test_ignores_no_buildqueue(self):
@@ -559,12 +560,14 @@ class TestCancellationChecking(TestCaseWithFactory):
         # make sure we return False.
         buildqueue = self.builder.currentjob
         buildqueue.reset()
-        d = self._getScanner().checkCancellation(self.builder, self.interactor)
+        d = self._getScanner().checkCancellation(
+            self.builder, None, self.interactor)
         return d.addCallback(self.assertFalse)
 
     def test_ignores_build_not_cancelling(self):
         # If the active build is not in a CANCELLING state, ignore it.
-        d = self._getScanner().checkCancellation(self.builder, self.interactor)
+        d = self._getScanner().checkCancellation(
+            self.builder, None, self.interactor)
         return d.addCallback(self.assertFalse)
 
     @defer.inlineCallbacks
@@ -573,7 +576,6 @@ class TestCancellationChecking(TestCaseWithFactory):
         # True is returned and the slave was resumed.
         slave = OkSlave()
         self.builder.vm_host = "fake_vm_host"
-        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         self.interactor = BuilderInteractor(self.builder)
         buildqueue = self.builder.currentjob
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
@@ -581,13 +583,15 @@ class TestCancellationChecking(TestCaseWithFactory):
         clock = task.Clock()
         scanner = self._getScanner(clock=clock)
 
-        result = yield scanner.checkCancellation(self.builder, self.interactor)
+        result = yield scanner.checkCancellation(
+            self.builder, slave, self.interactor)
         self.assertNotIn("resume", slave.call_log)
         self.assertFalse(result)
         self.assertEqual(BuildStatus.CANCELLING, build.status)
 
         clock.advance(SlaveScanner.CANCEL_TIMEOUT)
-        result = yield scanner.checkCancellation(self.builder, self.interactor)
+        result = yield scanner.checkCancellation(
+            self.builder, slave, self.interactor)
         self.assertEqual(1, slave.call_log.count("resume"))
         self.assertTrue(result)
         self.assertEqual(BuildStatus.CANCELLED, build.status)
@@ -598,13 +602,12 @@ class TestCancellationChecking(TestCaseWithFactory):
         # immediately resume the slave as if the cancel timeout had expired.
         slave = LostBuildingBrokenSlave()
         self.builder.vm_host = "fake_vm_host"
-        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
         self.interactor = BuilderInteractor(self.builder)
         buildqueue = self.builder.currentjob
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
         build.updateStatus(BuildStatus.CANCELLING)
         result = yield self._getScanner().checkCancellation(
-            self.builder, self.interactor)
+            self.builder, slave, self.interactor)
         self.assertEqual(1, slave.call_log.count("resume"))
         self.assertTrue(result)
         self.assertEqual(BuildStatus.CANCELLED, build.status)

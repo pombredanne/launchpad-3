@@ -216,7 +216,7 @@ class SlaveScanner:
             transaction.abort()
 
     @defer.inlineCallbacks
-    def checkCancellation(self, builder, interactor):
+    def checkCancellation(self, builder, slave, interactor):
         """See if there is a pending cancellation request.
 
         If the current build is in status CANCELLING then terminate it
@@ -238,7 +238,7 @@ class SlaveScanner:
         try:
             if self.date_cancel is None:
                 self.logger.info("Cancelling build '%s'" % build.title)
-                yield interactor.slave.abort()
+                yield slave.abort()
                 self.date_cancel = self._clock.seconds() + self.CANCEL_TIMEOUT
                 defer.returnValue(False)
             else:
@@ -260,8 +260,7 @@ class SlaveScanner:
             buildqueue.cancel()
             transaction.commit()
             value = yield interactor.resetOrFail(
-                interactor.vitals, interactor.slave, interactor.builder,
-                self.logger, e)
+                interactor.vitals, slave, builder, self.logger, e)
             # value is not None if we resumed a slave host.
             defer.returnValue(value is not None)
 
@@ -278,6 +277,7 @@ class SlaveScanner:
         vitals = self.builders_cache.getVitals(self.builder_name)
         interactor = interactor or BuilderInteractor(
             self.builders_cache[self.builder_name])
+        slave = interactor.slave
 
         # Confirm that the DB and slave sides are in a valid, mutually
         # agreeable state.
@@ -285,13 +285,13 @@ class SlaveScanner:
         if not vitals.builderok:
             lost_reason = '%s is disabled' % vitals.name
         else:
+            builder = self.builders_cache[self.builder_name]
             cancelled = yield self.checkCancellation(
-                interactor.builder, interactor)
+                builder, slave, interactor)
             if cancelled:
                 return
             lost = yield interactor.rescueIfLost(
-                vitals, interactor.slave, interactor._current_build_behavior,
-                self.logger)
+                vitals, slave, interactor._current_build_behavior, self.logger)
             if lost:
                 lost_reason = '%s is lost' % vitals.name
 
@@ -315,8 +315,7 @@ class SlaveScanner:
             # Scan the slave and get the logtail, or collect the build
             # if it's ready.  Yes, "updateBuild" is a bad name.
             yield interactor.updateBuild(
-                vitals.build_queue, interactor.slave,
-                interactor._current_build_behavior)
+                vitals.build_queue, slave, interactor._current_build_behavior)
         elif vitals.manual:
             # If the builder is in manual mode, don't dispatch anything.
             self.logger.debug(
@@ -324,7 +323,7 @@ class SlaveScanner:
         else:
             # See if there is a job we can dispatch to the builder slave.
             builder = self.builders_cache[self.builder_name]
-            yield interactor.findAndStartJob(vitals, builder, interactor.slave)
+            yield interactor.findAndStartJob(vitals, builder, slave)
             if builder.currentjob is not None:
                 # After a successful dispatch we can reset the
                 # failure_count.
