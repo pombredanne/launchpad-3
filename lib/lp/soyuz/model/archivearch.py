@@ -23,7 +23,7 @@ from lp.soyuz.interfaces.archivearch import (
     IArchiveArch,
     IArchiveArchSet,
     )
-from lp.soyuz.model.processor import ProcessorFamily
+from lp.soyuz.model.processor import Processor
 
 
 class ArchiveArch(Storm):
@@ -46,34 +46,31 @@ class ArchiveArchSet:
 
     def new(self, archive, processorfamily):
         """See `IArchiveArchSet`."""
+        processor = processorfamily.processors[0]
         archivearch = ArchiveArch()
         archivearch.archive = archive
         archivearch.processorfamily = processorfamily
-        archivearch.processor = processorfamily.processors[0]
+        archivearch.processor = processor
         IStore(ArchiveArch).add(archivearch)
         return archivearch
 
-    def getByArchive(self, archive, processorfamily=None):
+    def getByArchive(self, archive, processor=None):
         """See `IArchiveArchSet`."""
-        base_clauses = (ArchiveArch.archive == archive,)
-        if processorfamily is not None:
-            optional_clauses = (
-                ArchiveArch.processorfamily == processorfamily,)
-        else:
-            optional_clauses = ()
+        clauses = [ArchiveArch.archive == archive]
+        if processor is not None:
+            clauses.append(ArchiveArch.processor == processor)
 
-        return IStore(ArchiveArch).find(
-            ArchiveArch, *(base_clauses + optional_clauses)).order_by(
-                ArchiveArch.id)
+        return IStore(ArchiveArch).find(ArchiveArch, *clauses).order_by(
+            ArchiveArch.id)
 
     def getRestrictedFamilies(self, archive):
         """See `IArchiveArchSet`."""
         origin = (
-            ProcessorFamily,
+            Processor,
             LeftJoin(
                 ArchiveArch,
                 And(ArchiveArch.archive == archive.id,
-                    ArchiveArch.processorfamily == ProcessorFamily.id)))
+                    ArchiveArch.processor == Processor.id)))
         return IStore(ArchiveArch).using(*origin).find(
-            (ProcessorFamily, ArchiveArch),
-            ProcessorFamily.restricted == True).order_by(ProcessorFamily.name)
+            (Processor, ArchiveArch),
+            Processor.restricted == True).order_by(Processor.name)
