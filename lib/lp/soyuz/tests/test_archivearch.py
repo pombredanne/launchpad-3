@@ -50,8 +50,8 @@ class TestArchiveArch(TestCaseWithFactory):
     def test_getRestrictedProcessors_archive_only(self):
         # Test that only the associated archs for the archive itself are
         # returned.
-        self.archive_arch_set.new(self.ppa, self.cell_proc)
-        self.archive_arch_set.new(self.ubuntu_archive, self.omap)
+        self.archive_arch_set.new(self.ppa, self.cell_proc.family)
+        self.archive_arch_set.new(self.ubuntu_archive, self.omap.family)
         result_set = list(
             self.archive_arch_set.getRestrictedProcessors(self.ppa))
         results = dict(
@@ -60,8 +60,8 @@ class TestArchiveArch(TestCaseWithFactory):
 
     def test_getByArchive_no_other_archives(self):
         # Test ArchiveArchSet.getByArchive returns no other archives.
-        self.archive_arch_set.new(self.ppa, self.cell_proc)
-        self.archive_arch_set.new(self.ubuntu_archive, self.omap)
+        self.archive_arch_set.new(self.ppa, self.cell_proc.family)
+        self.archive_arch_set.new(self.ubuntu_archive, self.omap.family)
         result_set = list(self.archive_arch_set.getByArchive(self.ppa))
         self.assertEqual(1, len(result_set))
         self.assertEqual(self.ppa, result_set[0].archive)
@@ -70,8 +70,8 @@ class TestArchiveArch(TestCaseWithFactory):
     def test_getByArchive_follows_creation_order(self):
         # The result of ArchiveArchSet.getByArchive follows the order in
         # which architecture associations were added.
-        self.archive_arch_set.new(self.ppa, self.cell_proc)
-        self.archive_arch_set.new(self.ppa, self.omap)
+        self.archive_arch_set.new(self.ppa, self.cell_proc.family)
+        self.archive_arch_set.new(self.ppa, self.omap.family)
         result_set = list(self.archive_arch_set.getByArchive(self.ppa))
         self.assertEqual(2, len(result_set))
         self.assertEqual(self.ppa, result_set[0].archive)
@@ -82,8 +82,8 @@ class TestArchiveArch(TestCaseWithFactory):
     def test_getByArchive_specific_architecture(self):
         # ArchiveArchSet.getByArchive can query for a specific architecture
         # association.
-        self.archive_arch_set.new(self.ppa, self.cell_proc)
-        self.archive_arch_set.new(self.ppa, self.omap)
+        self.archive_arch_set.new(self.ppa, self.cell_proc.family)
+        self.archive_arch_set.new(self.ppa, self.omap.family)
         result_set = list(
             self.archive_arch_set.getByArchive(self.ppa, self.cell_proc))
         self.assertEqual(1, len(result_set))
