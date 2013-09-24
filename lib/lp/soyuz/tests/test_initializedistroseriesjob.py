@@ -274,6 +274,8 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
 
     def setupDas(self, parent, proc, arch_tag):
         pf = getUtility(IProcessorFamilySet).getByName(proc)
+        if pf.processors.is_empty():
+            self.factory.makeProcessor(family=pf)
         parent_das = self.factory.makeDistroArchSeries(
             distroseries=parent, processorfamily=pf,
             architecturetag=arch_tag)

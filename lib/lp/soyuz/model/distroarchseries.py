@@ -18,8 +18,10 @@ from sqlobject import (
     StringCol,
     )
 from storm.locals import (
+    Int,
     Join,
     Or,
+    Reference,
     )
 from storm.store import EmptyResultSet
 from zope.component import getUtility
@@ -68,6 +70,8 @@ class DistroArchSeries(SQLBase):
         foreignKey='DistroSeries', notNull=True)
     processorfamily = ForeignKey(dbName='processorfamily',
         foreignKey='ProcessorFamily', notNull=True)
+    processor_id = Int(name='processor', allow_none=True)
+    processor = Reference(processor_id, Processor.id)
     architecturetag = StringCol(notNull=True)
     official = BoolCol(notNull=True)
     owner = ForeignKey(
@@ -368,12 +372,11 @@ class PocketChroot(SQLBase):
     implements(IPocketChroot)
     _table = "PocketChroot"
 
-    distroarchseries = ForeignKey(dbName='distroarchseries',
-                                   foreignKey='DistroArchSeries',
-                                   notNull=True)
+    distroarchseries = ForeignKey(
+        dbName='distroarchseries', foreignKey='DistroArchSeries', notNull=True)
 
-    pocket = EnumCol(schema=PackagePublishingPocket,
-                     default=PackagePublishingPocket.RELEASE,
-                     notNull=True)
+    pocket = EnumCol(
+        schema=PackagePublishingPocket,
+        default=PackagePublishingPocket.RELEASE, notNull=True)
 
     chroot = ForeignKey(dbName='chroot', foreignKey='LibraryFileAlias')

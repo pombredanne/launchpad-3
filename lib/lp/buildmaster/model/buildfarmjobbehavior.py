@@ -24,7 +24,6 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
-from lp.buildmaster.interfaces.builder import BuildSlaveFailure
 from lp.services.config import config
 from lp.services.helpers import filenameToContentType
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
@@ -49,10 +48,10 @@ class BuildFarmJobBehaviorBase:
     def build(self):
         return self.buildfarmjob.build
 
-    def setBuilderInteractor(self, interactor):
+    def setBuilder(self, builder, slave):
         """The builder should be set once and not changed."""
-        self._interactor = interactor
-        self._builder = interactor.builder
+        self._builder = builder
+        self._slave = slave
 
     def verifyBuildRequest(self, logger):
         """The default behavior is a no-op."""
@@ -119,7 +118,7 @@ class BuildFarmJobBehaviorBase:
 
             return library_file.id
 
-        d = self._interactor.slave.getFile(file_sha1, out_file)
+        d = self._slave.getFile(file_sha1, out_file)
         d.addCallback(got_file, filename, out_file, out_file_name)
         return d
 
@@ -185,7 +184,7 @@ class BuildFarmJobBehaviorBase:
         if build.job_type == BuildFarmJobType.PACKAGEBUILD:
             build = build.buildqueue_record.specific_job.build
             if not build.current_source_publication:
-                yield self._interactor.cleanSlave()
+                yield self._slave.clean()
                 build.updateStatus(BuildStatus.SUPERSEDED)
                 self.build.buildqueue_record.destroySelf()
                 return
@@ -229,7 +228,7 @@ class BuildFarmJobBehaviorBase:
                     "for the build %d." % (filename, build.id))
                 break
             filenames_to_download[filemap[filename]] = out_file_name
-        yield self._interactor.slave.getFiles(filenames_to_download)
+        yield self._slave.getFiles(filenames_to_download)
 
         status = (
             BuildStatus.UPLOADING if successful_copy_from_slave
@@ -261,7 +260,7 @@ class BuildFarmJobBehaviorBase:
         if not os.path.exists(target_dir):
             os.mkdir(target_dir)
 
-        yield self._interactor.cleanSlave()
+        yield self._slave.clean()
         self.build.buildqueue_record.destroySelf()
         transaction.commit()
 
@@ -286,7 +285,7 @@ class BuildFarmJobBehaviorBase:
         yield self.storeLogFromSlave()
         if notify:
             self.build.notify()
-        yield self._interactor.cleanSlave()
+        yield self._slave.clean()
         self.build.buildqueue_record.destroySelf()
         transaction.commit()
 
@@ -320,24 +319,17 @@ class BuildFarmJobBehaviorBase:
         """Handle aborted builds.
 
         If the build was explicitly cancelled, then mark it as such.
-        Otherwise, the build has failed in some unexpected way.
+        Otherwise, the build has failed in some unexpected way; we'll
+        reset it it and clean up the slave.
         """
         if self.build.status == BuildStatus.CANCELLING:
             yield self.storeLogFromSlave()
             self.build.buildqueue_record.cancel()
-            transaction.commit()
-            yield self._interactor.cleanSlave()
         else:
+            self._builder.handleFailure(logger)
             self.build.buildqueue_record.reset()
-            try:
-                self._builder.handleFailure(logger)
-                yield self._interactor.resetOrFail(
-                    logger,
-                    BuildSlaveFailure("Builder unexpectedly returned ABORTED"))
-            except Exception as e:
-                # We've already done our best to mark the builder as failed.
-                logger.error("Failed to rescue from ABORTED: %s" % e)
         transaction.commit()
+        yield self._slave.clean()
 
     @defer.inlineCallbacks
     def _handleStatus_GIVENBACK(self, slave_status, logger, notify):
@@ -347,6 +339,6 @@ class BuildFarmJobBehaviorBase:
         later, the build records is delayed by reducing the lastscore to
         ZERO.
         """
-        yield self._interactor.cleanSlave()
+        yield self._slave.clean()
         self.build.buildqueue_record.reset()
         transaction.commit()

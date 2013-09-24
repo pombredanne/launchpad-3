@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Processor interfaces."""
@@ -76,6 +76,9 @@ class IProcessor(Interface):
     description = exported(
         Text(title=_("Description"),
              description=_("The Processor Description")),
+        as_of='devel', readonly=True)
+    restricted = exported(
+        Bool(title=_("Whether this processor is restricted.")),
         as_of='devel', readonly=True)
 
 

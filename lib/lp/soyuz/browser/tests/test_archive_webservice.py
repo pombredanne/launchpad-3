@@ -284,6 +284,8 @@ class TestProcessorFamilies(WebServiceTestCase):
         archive = self.factory.makeArchive()
         commercial = getUtility(ILaunchpadCelebrities).commercial_admin
         commercial_admin = self.factory.makePerson(member_of=[commercial])
+        arm_family = getUtility(IProcessorFamilySet).getByName('arm')
+        self.factory.makeProcessor(family=arm_family)
         transaction.commit()
         ws_arm = self.service.processor_families.getByName(name='arm')
         ws_archive = self.wsObject(archive, user=commercial_admin)
