@@ -1006,7 +1006,8 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         self.publisher.prepareBreezyAutotest()
         self.archive = self.factory.makeArchive()
         self.archive_arch_set = getUtility(IArchiveArchSet)
-        self.arm = self.factory.makeProcessor(name='arm', restricted=True)
+        self.arm = getUtility(IProcessorFamilySet).getByName('arm')
+        self.factory.makeProcessor(family=self.arm)
 
     def test_default(self):
         """By default, ARM builds are not allowed as ARM is restricted."""
@@ -1021,7 +1022,8 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         self.assertContentEqual([], self.archive.enabled_restricted_processors)
         self.archive_arch_set.new(self.archive, self.arm)
         self.assertEqual(
-            [self.arm], list(self.archive.enabled_restricted_processors))
+            [self.arm.processors[0]],
+            list(self.archive.enabled_restricted_processors))
 
     def test_get_returns_restricted_only(self):
         """Adding an entry to ArchiveArch for something that is not
@@ -1034,14 +1036,16 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
 
     def test_set(self):
         """The property remembers its value correctly and sets ArchiveArch."""
-        self.archive.enabled_restricted_families = [self.arm.family]
+        arm_proc = self.arm.processors[0]
+        self.archive.enabled_restricted_families = [self.arm]
         allowed_restricted_processors = self.archive_arch_set.getByArchive(
-            self.archive, self.arm)
-        self.assertEqual([self.arm], allowed_restricted_processors)
+            self.archive, arm_proc)
+        self.assertEqual(1, allowed_restricted_processors.count())
+        self.assertEqual(arm_proc, allowed_restricted_processors[0].processor)
         self.archive.enabled_restricted_families = []
         self.assertEqual(
             0,
-            self.archive_arch_set.getByArchive(self.archive, self.arm).count())
+            self.archive_arch_set.getByArchive(self.archive, arm_proc).count())
         self.assertContentEqual([], self.archive.enabled_restricted_families)
 
 
