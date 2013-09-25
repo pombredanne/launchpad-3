@@ -91,10 +91,9 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         buildqueue = queueset.get(job_id)
 
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        expected_processor = (
-            ubuntu.currentseries.nominatedarchindep.default_processor)
-
-        self.assertEquals(expected_processor, buildqueue.processor)
+        self.assertEquals(
+            ubuntu.currentseries.nominatedarchindep.processor,
+            buildqueue.processor)
 
     def test_score(self):
         # For now, these jobs always score themselves at 2510.  In the
