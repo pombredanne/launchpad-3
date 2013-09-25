@@ -50,8 +50,8 @@ class TestArchiveArch(TestCaseWithFactory):
     def test_getRestrictedProcessors_archive_only(self):
         # Test that only the associated archs for the archive itself are
         # returned.
-        self.archive_arch_set.new(self.ppa, self.cell_proc.family)
-        self.archive_arch_set.new(self.ubuntu_archive, self.omap.family)
+        self.archive_arch_set.new(self.ppa, self.cell_proc)
+        self.archive_arch_set.new(self.ubuntu_archive, self.omap)
         result_set = list(
             self.archive_arch_set.getRestrictedProcessors(self.ppa))
         results = dict(
@@ -60,32 +60,33 @@ class TestArchiveArch(TestCaseWithFactory):
 
     def test_getByArchive_no_other_archives(self):
         # Test ArchiveArchSet.getByArchive returns no other archives.
-        self.archive_arch_set.new(self.ppa, self.cell_proc.family)
-        self.archive_arch_set.new(self.ubuntu_archive, self.omap.family)
+        self.archive_arch_set.new(self.ppa, self.cell_proc)
+        self.archive_arch_set.new(self.ubuntu_archive, self.omap)
         result_set = list(self.archive_arch_set.getByArchive(self.ppa))
         self.assertEqual(1, len(result_set))
         self.assertEqual(self.ppa, result_set[0].archive)
-        self.assertEqual(self.cell_proc, result_set[0].processor)
+        self.assertEqual(self.cell_proc, result_set[0].processorfamily)
 
     def test_getByArchive_follows_creation_order(self):
         # The result of ArchiveArchSet.getByArchive follows the order in
         # which architecture associations were added.
-        self.archive_arch_set.new(self.ppa, self.cell_proc.family)
-        self.archive_arch_set.new(self.ppa, self.omap.family)
+        self.archive_arch_set.new(self.ppa, self.cell_proc)
+        self.archive_arch_set.new(self.ppa, self.omap)
         result_set = list(self.archive_arch_set.getByArchive(self.ppa))
         self.assertEqual(2, len(result_set))
         self.assertEqual(self.ppa, result_set[0].archive)
-        self.assertEqual(self.cell_proc, result_set[0].processor)
+        self.assertEqual(self.cell_proc, result_set[0].processorfamily)
         self.assertEqual(self.ppa, result_set[1].archive)
-        self.assertEqual(self.omap, result_set[1].processor)
+        self.assertEqual(self.omap, result_set[1].processorfamily)
 
     def test_getByArchive_specific_architecture(self):
         # ArchiveArchSet.getByArchive can query for a specific architecture
         # association.
-        self.archive_arch_set.new(self.ppa, self.cell_proc.family)
-        self.archive_arch_set.new(self.ppa, self.omap.family)
+        self.archive_arch_set.new(self.ppa, self.cell_proc)
+        self.archive_arch_set.new(self.ppa, self.omap)
         result_set = list(
-            self.archive_arch_set.getByArchive(self.ppa, self.cell_proc))
+            self.archive_arch_set.getByArchive(
+                self.ppa, self.cell_proc.processors[0]))
         self.assertEqual(1, len(result_set))
         self.assertEqual(self.ppa, result_set[0].archive)
-        self.assertEqual(self.cell_proc, result_set[0].processor)
+        self.assertEqual(self.cell_proc, result_set[0].processorfamily)
