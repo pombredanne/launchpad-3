@@ -127,7 +127,7 @@ class TranslationTemplatesBuild(BuildFarmJobMixin, Storm):
         # default processor architecture.  This stops the buildfarm from
         # accidentally dispatching the jobs to private builders.
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        return ubuntu.currentseries.nominatedarchindep.default_processor
+        return ubuntu.currentseries.nominatedarchindep.processor
 
     @classmethod
     def create(cls, branch):
