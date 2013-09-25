@@ -356,7 +356,7 @@ class SourcePackageRelease(SQLBase):
     def createBuild(self, distro_arch_series, pocket, archive, processor=None,
                     status=None):
         """See ISourcePackageRelease."""
-        # If the processor is not provided, use the DAS'.
+        # If a processor is not provided, use the DAS' processor.
         if processor is None:
             processor = distro_arch_series.processor
 

@@ -351,17 +351,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         return Store.of(self).find(
             DistroArchSeries,
-            DistroArchSeries.distroseries == self,
-            DistroArchSeries.processor == processor).one()
+            DistroArchSeries.distroseriesID == self.id,
+            DistroArchSeries.processor_id == processor.id).one()
 
     @property
     def enabled_architectures(self):
-        store = Store.of(self)
-        results = store.find(
+        return Store.of(self).find(
             DistroArchSeries,
             DistroArchSeries.distroseries == self,
-            DistroArchSeries.enabled == True)
-        return results.order_by(DistroArchSeries.architecturetag)
+            DistroArchSeries.enabled == True).order_by(
+                DistroArchSeries.architecturetag)
 
     @property
     def buildable_architectures(self):
