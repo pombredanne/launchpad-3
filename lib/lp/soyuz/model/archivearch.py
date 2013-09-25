@@ -23,7 +23,7 @@ from lp.soyuz.interfaces.archivearch import (
     IArchiveArch,
     IArchiveArchSet,
     )
-from lp.soyuz.model.processor import Processor
+from lp.soyuz.model.processor import ProcessorFamily
 
 
 class ArchiveArch(Storm):
@@ -58,7 +58,7 @@ class ArchiveArchSet:
         """See `IArchiveArchSet`."""
         clauses = [ArchiveArch.archive == archive]
         if processor is not None:
-            clauses.append(ArchiveArch.processor == processor)
+            clauses.append(ArchiveArch.processor_id == processor.id)
 
         return IStore(ArchiveArch).find(ArchiveArch, *clauses).order_by(
             ArchiveArch.id)
@@ -66,11 +66,11 @@ class ArchiveArchSet:
     def getRestrictedFamilies(self, archive):
         """See `IArchiveArchSet`."""
         origin = (
-            Processor,
+            ProcessorFamily,
             LeftJoin(
                 ArchiveArch,
                 And(ArchiveArch.archive == archive.id,
-                    ArchiveArch.processor == Processor.id)))
+                    ArchiveArch.processorfamily == ProcessorFamily.id)))
         return IStore(ArchiveArch).using(*origin).find(
-            (Processor, ArchiveArch),
-            Processor.restricted == True).order_by(Processor.name)
+            (ProcessorFamily, ArchiveArch),
+            ProcessorFamily.restricted == True).order_by(ProcessorFamily.name)
