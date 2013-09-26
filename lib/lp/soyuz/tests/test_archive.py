@@ -1011,18 +1011,19 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
 
     def test_default(self):
         """By default, ARM builds are not allowed as ARM is restricted."""
-        self.assertEqual(0,
-            self.archive_arch_set.getByArchive(
-                self.archive, self.arm).count())
+        self.assertEqual(
+            0,
+            self.archive_arch_set.getByArchive(self.archive, self.arm).count())
         self.assertContentEqual([], self.archive.enabled_restricted_families)
 
     def test_get_uses_archivearch(self):
         """Adding an entry to ArchiveArch for ARM and an archive will
         enable enabled_restricted_families for arm for that archive."""
-        self.assertContentEqual([], self.archive.enabled_restricted_families)
+        self.assertContentEqual([], self.archive.enabled_restricted_processors)
         self.archive_arch_set.new(self.archive, self.arm)
-        self.assertEqual([self.arm],
-                list(self.archive.enabled_restricted_families))
+        self.assertEqual(
+            [self.arm.processors[0]],
+            list(self.archive.enabled_restricted_processors))
 
     def test_get_returns_restricted_only(self):
         """Adding an entry to ArchiveArch for something that is not
@@ -1035,17 +1036,16 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
 
     def test_set(self):
         """The property remembers its value correctly and sets ArchiveArch."""
+        arm_proc = self.arm.processors[0]
         self.archive.enabled_restricted_families = [self.arm]
-        allowed_restricted_families = self.archive_arch_set.getByArchive(
-            self.archive, self.arm)
-        self.assertEqual(1, allowed_restricted_families.count())
-        self.assertEqual(
-            self.arm, allowed_restricted_families[0].processorfamily)
-        self.assertEqual([self.arm], self.archive.enabled_restricted_families)
+        allowed_restricted_processors = self.archive_arch_set.getByArchive(
+            self.archive, arm_proc)
+        self.assertEqual(1, allowed_restricted_processors.count())
+        self.assertEqual(arm_proc, allowed_restricted_processors[0].processor)
         self.archive.enabled_restricted_families = []
-        self.assertEqual(0,
-            self.archive_arch_set.getByArchive(
-                self.archive, self.arm).count())
+        self.assertEqual(
+            0,
+            self.archive_arch_set.getByArchive(self.archive, arm_proc).count())
         self.assertContentEqual([], self.archive.enabled_restricted_families)
 
 
