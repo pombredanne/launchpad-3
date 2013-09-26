@@ -95,7 +95,8 @@ class TestArchiveArch(TestCaseWithFactory):
         self.archive_arch_set.new(self.ppa, self.cell_proc)
         self.archive_arch_set.new(self.ppa, self.omap)
         result_set = list(
-            self.archive_arch_set.getByArchive(self.ppa, self.cell_proc))
+            self.archive_arch_set.getByArchive(
+                self.ppa, self.cell_proc.processors[0]))
         self.assertEqual(1, len(result_set))
         self.assertEqual(self.ppa, result_set[0].archive)
         self.assertEqual(self.cell_proc, result_set[0].processorfamily)
