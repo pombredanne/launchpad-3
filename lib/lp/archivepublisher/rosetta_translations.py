@@ -25,11 +25,6 @@ from lp.soyuz.interfaces.packagetranslationsuploadjob import (
     )
 
 
-def debug(logger, msg):
-    if logger is not None:
-        logger.debug(msg)
-
-
 class RosettaTranslationsUpload(CustomUpload):
     """Rosetta Translations tarball upload.
 
@@ -46,9 +41,10 @@ class RosettaTranslationsUpload(CustomUpload):
 
         # Ignore translations not with main distribution purposes.
         if packageupload.archive.purpose not in MAIN_ARCHIVE_PURPOSES:
-            debug(self.logger,
-                  "Skipping translations since its purpose is not "
-                  "in MAIN_ARCHIVE_PURPOSES.")
+            if self.logger is not None:
+                self.logger.debug(
+                    "Skipping translations since its purpose is not "
+                    "in MAIN_ARCHIVE_PURPOSES.")
             return
 
         # If the distroseries is 11.10 (oneiric) or later, the valid names
@@ -62,7 +58,7 @@ class RosettaTranslationsUpload(CustomUpload):
         valid_components = ('main', 'restricted')
         if (packageupload.pocket not in valid_pockets or
             (do_names_check and
-            sourcepackagerelease.component.name not in valid_components)):
+                sourcepackagerelease.component.name not in valid_components)):
             # XXX: CarlosPerelloMarin 2006-02-16 bug=31665:
             # This should be implemented using a more general rule to accept
             # different policies depending on the distribution.
@@ -73,8 +69,7 @@ class RosettaTranslationsUpload(CustomUpload):
 
         blamee = packageupload.findPersonToNotify()
         getUtility(IPackageTranslationsUploadJobSource).create(
-                            sourcepackagerelease, libraryfilealias,
-                            blamee)
+            sourcepackagerelease, libraryfilealias, blamee)
 
     @staticmethod
     def parsePath(tarfile_path):
