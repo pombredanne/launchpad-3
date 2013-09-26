@@ -54,18 +54,14 @@ class ArchiveArchSet:
         IStore(ArchiveArch).add(archivearch)
         return archivearch
 
-    def getByArchive(self, archive, processorfamily=None):
+    def getByArchive(self, archive, processor=None):
         """See `IArchiveArchSet`."""
-        base_clauses = (ArchiveArch.archive == archive,)
-        if processorfamily is not None:
-            optional_clauses = (
-                ArchiveArch.processorfamily == processorfamily,)
-        else:
-            optional_clauses = ()
+        clauses = [ArchiveArch.archive == archive]
+        if processor is not None:
+            clauses.append(ArchiveArch.processor_id == processor.id)
 
-        return IStore(ArchiveArch).find(
-            ArchiveArch, *(base_clauses + optional_clauses)).order_by(
-                ArchiveArch.id)
+        return IStore(ArchiveArch).find(ArchiveArch, *clauses).order_by(
+            ArchiveArch.id)
 
     def getRestrictedFamilies(self, archive):
         """See `IArchiveArchSet`."""
