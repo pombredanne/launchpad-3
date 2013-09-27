@@ -23,7 +23,7 @@ from lp.soyuz.interfaces.archivearch import (
     IArchiveArch,
     IArchiveArchSet,
     )
-from lp.soyuz.model.processor import ProcessorFamily
+from lp.soyuz.model.processor import Processor
 
 
 class ArchiveArch(Storm):
