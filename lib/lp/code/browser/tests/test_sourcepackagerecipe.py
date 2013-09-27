@@ -45,7 +45,7 @@ from lp.services.webapp import canonical_url
 from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.soyuz.model.processor import ProcessorFamily
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
@@ -105,8 +105,8 @@ class TestCaseForRecipe(BrowserTestCase):
             distribution=self.ppa.distribution)
         naked_squirrel = removeSecurityProxy(self.squirrel)
         naked_squirrel.nominatedarchindep = self.squirrel.newArch(
-            'i386', ProcessorFamily.get(1), False, self.chef,
-            supports_virtualized=True)
+            'i386', getUtility(IProcessorSet).getByName('386'), False,
+            self.chef, supports_virtualized=True)
 
     def makeRecipe(self):
         """Create and return a specific recipe."""
@@ -1507,8 +1507,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             name='woody', displayname='Woody',
             distribution=self.ppa.distribution)
         removeSecurityProxy(woody).nominatedarchindep = woody.newArch(
-            'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
-            supports_virtualized=True)
+            'i386', getUtility(IProcessorSet).getByName('386'), False,
+            self.factory.makePerson(), supports_virtualized=True)
         return woody
 
     def test_request_build_rejects_over_quota(self):
@@ -1734,7 +1734,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         distroarchseries = self.factory.makeDistroArchSeries(
             architecturetag=architecturetag,
             distroseries=release.upload_distroseries,
-            processorfamily=self.factory.makeProcessorFamily())
+            processor=self.factory.makeProcessor())
         return self.factory.makeBinaryPackageBuild(
             source_package_release=release, distroarchseries=distroarchseries)
 

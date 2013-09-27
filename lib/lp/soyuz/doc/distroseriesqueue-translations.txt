@@ -6,7 +6,7 @@ uploaded into the system.
 
     >>> from lp.registry.model.gpgkey import GPGKey
     >>> from lp.soyuz.model.component import Component
-    >>> from lp.soyuz.model.processor import ProcessorFamily
+    >>> from lp.soyuz.interfaces.processor import IProcessorSet
     >>> from lp.soyuz.model.section import Section
     >>> from lp.soyuz.model.publishing import (
     ...     SourcePackagePublishingHistory)
@@ -47,7 +47,8 @@ uploaded into the system.
     ...     'Dapper', 'Dapper', '06.04', hoary, hoary.owner)
 
 # And an AMD 64 arch series.
-    >>> dapper_amd64 = dapper.newArch('amd64', ProcessorFamily.get(3), True,
+    >>> dapper_amd64 = dapper.newArch(
+    ...     'amd64', getUtility(IProcessorSet).getByName('amd64'), True,
     ...     dapper.owner)
 
 Only uploads to the RELEASE, UPDATES, SECURITY and PROPOSED pockets are

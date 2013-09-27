@@ -767,7 +767,7 @@ class IDistroSeriesPublic(
         :return: A new `PackageUpload`.
         """
 
-    def newArch(architecturetag, processorfamily, official, owner,
+    def newArch(architecturetag, processor, official, owner,
                 supports_virtualized=False, enabled=True):
         """Create a new port or DistroArchSeries for this DistroSeries."""
 

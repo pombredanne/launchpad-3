@@ -9,6 +9,8 @@ import shutil
 import tempfile
 from textwrap import dedent
 
+from zope.component import getUtility
+
 from testtools import run_test_with
 from testtools.deferredruntest import (
     assert_fails_with,
@@ -47,7 +49,7 @@ from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
-from lp.soyuz.model.processor import ProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     person_logged_in,
@@ -69,9 +71,9 @@ class TestRecipeBuilder(TestCaseWithFactory):
         distro = self.factory.makeDistribution(name="distro")
         distroseries = self.factory.makeDistroSeries(name="mydistro",
             distribution=distro)
-        processorfamily = ProcessorFamilySet().getByProcessorName('386')
+        processor = getUtility(IProcessorSet).getByName('386')
         distroseries.newArch(
-            'i386', processorfamily, True, self.factory.makePerson())
+            'i386', processor, True, self.factory.makePerson())
         sourcepackage = self.factory.makeSourcePackage(spn, distroseries)
         if recipe_registrant is None:
             recipe_registrant = self.factory.makePerson(
@@ -302,8 +304,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         test_publisher.addFakeChroots(job.build.distroseries)
         slave = OkSlave()
         builder = MockBuilder("bob-de-bouwer")
-        processorfamily = ProcessorFamilySet().getByProcessorName('386')
-        builder.processor = processorfamily.processors[0]
+        builder.processor = getUtility(IProcessorSet).getByName('386')
         job.setBuilder(builder, slave)
         logger = BufferLogger()
         d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
@@ -333,8 +334,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job = self.makeJob()
         #test_publisher = SoyuzTestPublisher()
         builder = MockBuilder("bob-de-bouwer")
-        processorfamily = ProcessorFamilySet().getByProcessorName('386')
-        builder.processor = processorfamily.processors[0]
+        builder.processor = getUtility(IProcessorSet).getByName('386')
         job.setBuilder(builder, OkSlave())
         logger = BufferLogger()
         d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)

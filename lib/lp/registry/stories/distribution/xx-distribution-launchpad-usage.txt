@@ -21,6 +21,12 @@ details.
       ...
     Unauthorized...
 
+Create a restricted processor.
+
+    >>> login('admin@canonical.com')
+    >>> ign = factory.makeProcessor(name='arm', restricted=True)
+    >>> logout()
+
 The distribution's registrant can access the page and change the usage.
 
     >>> registrant = setupBrowser(
@@ -42,7 +48,7 @@ The distribution's registrant can access the page and change the usage.
     >>> print registrant.getControl(name='field.require_virtualized').value
     False
     >>> print registrant.getControl(
-    ...     name='field.enabled_restricted_families').value
+    ...     name='field.enabled_restricted_processors').value
     []
 
     >>> registrant.getControl(name='field.translations_usage').value = [

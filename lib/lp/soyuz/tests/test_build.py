@@ -42,18 +42,17 @@ class TestBuild(TestCaseWithFactory):
     def setUp(self):
         super(TestBuild, self).setUp()
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-        self.pf = self.factory.makeProcessorFamily()
-        pf_proc = self.pf.addProcessor(self.factory.getUniqueString(), '', '')
+        self.processor = self.factory.makeProcessor()
         self.distroseries = self.factory.makeDistroSeries()
         self.das = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries, processorfamily=self.pf,
+            distroseries=self.distroseries, processor=self.processor,
             supports_virtualized=True)
         with person_logged_in(self.admin):
             self.publisher = SoyuzTestPublisher()
             self.publisher.prepareBreezyAutotest()
             self.distroseries.nominatedarchindep = self.das
             self.publisher.addFakeChroots(distroseries=self.distroseries)
-            self.builder = self.factory.makeBuilder(processor=pf_proc)
+            self.builder = self.factory.makeBuilder(processor=self.processor)
         self.now = datetime.now(pytz.UTC)
 
     def test_title(self):
@@ -162,7 +161,7 @@ class TestBuild(TestCaseWithFactory):
         # Builds can not be retried for released distroseries
         distroseries = self.factory.makeDistroSeries()
         das = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, processorfamily=self.pf,
+            distroseries=distroseries, processor=self.processor,
             supports_virtualized=True)
         with person_logged_in(self.admin):
             distroseries.nominatedarchindep = das
@@ -180,7 +179,7 @@ class TestBuild(TestCaseWithFactory):
         # released.
         distroseries = self.factory.makeDistroSeries()
         das = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, processorfamily=self.pf,
+            distroseries=distroseries, processor=self.processor,
             supports_virtualized=True)
         archive = self.factory.makeArchive(
             purpose=ArchivePurpose.PARTNER,

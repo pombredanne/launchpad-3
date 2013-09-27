@@ -132,11 +132,11 @@ from lp.services.webapp import (
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.interfaces import ILaunchBag
-from lp.soyuz.browser.archive import EnableRestrictedFamiliesMixin
+from lp.soyuz.browser.archive import EnableRestrictedProcessorsMixin
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 
 
 class DistributionNavigation(
@@ -844,9 +844,8 @@ class RequireVirtualizedBuildersMixin:
             archive.require_virtualized = require_virtualized
 
 
-class DistributionAddView(LaunchpadFormView,
-                          RequireVirtualizedBuildersMixin,
-                          EnableRestrictedFamiliesMixin):
+class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
+                          EnableRestrictedProcessorsMixin):
 
     schema = IDistribution
     label = "Register a new distribution"
@@ -864,7 +863,7 @@ class DistributionAddView(LaunchpadFormView,
         "answers_usage",
         ]
     custom_widget('require_virtualized', CheckBoxWidget)
-    custom_widget('enabled_restricted_families', LabeledMultiCheckBoxWidget)
+    custom_widget('enabled_restricted_processors', LabeledMultiCheckBoxWidget)
 
     @property
     def page_title(self):
@@ -873,10 +872,9 @@ class DistributionAddView(LaunchpadFormView,
 
     @property
     def initial_values(self):
-        proc_family_set = getUtility(IProcessorFamilySet)
-        restricted_families = set(proc_family_set.getRestricted())
+        restricted_processors = getUtility(IProcessorSet).getRestricted()
         return {
-            'enabled_restricted_families': restricted_families,
+            'enabled_restricted_processors': restricted_processors,
             'require_virtualized': False,
             }
 
@@ -889,9 +887,9 @@ class DistributionAddView(LaunchpadFormView,
         """See `LaunchpadFormView`."""
         LaunchpadFormView.setUpFields(self)
         self.form_fields += self.createRequireVirtualized()
-        self.form_fields += self.createEnabledRestrictedFamilies(
-            u'The restricted architecture families on which the '
-            "distribution's main archive can build.")
+        self.form_fields += self.createEnabledRestrictedProcessors(
+            u"The restricted architectures on which the distribution's main "
+            "archive can build.")
 
     @action("Save", name='save')
     def save_action(self, action, data):
@@ -909,8 +907,8 @@ class DistributionAddView(LaunchpadFormView,
         archive = distribution.main_archive
         self.updateRequireVirtualized(data['require_virtualized'], archive)
         if archive.require_virtualized is True:
-            archive.enabled_restricted_families = (
-                data['enabled_restricted_families'])
+            archive.enabled_restricted_processors = data[
+                'enabled_restricted_processors']
 
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
@@ -918,7 +916,7 @@ class DistributionAddView(LaunchpadFormView,
 
 class DistributionEditView(RegistryEditFormView,
                            RequireVirtualizedBuildersMixin,
-                           EnableRestrictedFamiliesMixin):
+                           EnableRestrictedProcessorsMixin):
 
     schema = IDistribution
     field_names = [
@@ -944,7 +942,7 @@ class DistributionEditView(RegistryEditFormView,
     custom_widget('logo', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('require_virtualized', CheckBoxWidget)
-    custom_widget('enabled_restricted_families', LabeledMultiCheckBoxWidget)
+    custom_widget('enabled_restricted_processors', LabeledMultiCheckBoxWidget)
 
     @property
     def label(self):
@@ -955,17 +953,17 @@ class DistributionEditView(RegistryEditFormView,
         """See `LaunchpadFormView`."""
         RegistryEditFormView.setUpFields(self)
         self.form_fields += self.createRequireVirtualized()
-        self.form_fields += self.createEnabledRestrictedFamilies(
-            u'The restricted architecture families on which the '
-            "distribution's main archive can build.")
+        self.form_fields += self.createEnabledRestrictedProcessors(
+            u"The restricted architectures on which the distribution's main "
+            "archive can build.")
 
     @property
     def initial_values(self):
         return {
             'require_virtualized':
                 self.context.main_archive.require_virtualized,
-            'enabled_restricted_families':
-                self.context.main_archive.enabled_restricted_families,
+            'enabled_restricted_processors':
+                self.context.main_archive.enabled_restricted_processors,
             }
 
     def validate(self, data):
@@ -984,14 +982,14 @@ class DistributionEditView(RegistryEditFormView,
             self.updateRequireVirtualized(
                 new_require_virtualized, self.context.main_archive)
             del(data['require_virtualized'])
-        new_enabled_restricted_families = data.get(
-            'enabled_restricted_families')
-        if new_enabled_restricted_families is not None:
-            if (set(self.context.main_archive.enabled_restricted_families) !=
-                set(new_enabled_restricted_families)):
-                self.context.main_archive.enabled_restricted_families = (
-                    new_enabled_restricted_families)
-            del(data['enabled_restricted_families'])
+        new_enabled_restricted_processors = data.get(
+            'enabled_restricted_processors')
+        if new_enabled_restricted_processors is not None:
+            if (set(self.context.main_archive.enabled_restricted_processors) !=
+                set(new_enabled_restricted_processors)):
+                self.context.main_archive.enabled_restricted_processors = (
+                    new_enabled_restricted_processors)
+            del(data['enabled_restricted_processors'])
 
     @action("Change", name='change')
     def change_action(self, action, data):

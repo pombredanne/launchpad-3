@@ -289,7 +289,7 @@ from lp.soyuz.interfaces.component import (
     )
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.publishing import IPublishingSet
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.interfaces.section import ISectionSet
@@ -302,7 +302,6 @@ from lp.soyuz.model.files import (
     SourcePackageReleaseFile,
     )
 from lp.soyuz.model.packagediff import PackageDiff
-from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
@@ -888,51 +887,24 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                       productseries=productseries, distroseries=distroseries,
                       name=name, active=active, dateexpected=dateexpected))
 
-    def makeProcessor(self, family=None, name=None, title=None,
-                      description=None):
+    def makeProcessor(self, name=None, title=None, description=None,
+                      restricted=False):
         """Create a new processor.
 
-        :param family: Family of the processor
         :param name: Name of the processor
         :param title: Optional title
         :param description: Optional description
+        :param restricted: If the processor is restricted.
         :return: A `IProcessor`
         """
         if name is None:
             name = self.getUniqueString()
-        if family is None:
-            family = self.makeProcessorFamily()
         if title is None:
             title = "The %s processor" % name
         if description is None:
-            description = "The %s and processor and compatible processors"
-        return family.addProcessor(name, title, description)
-
-    def makeProcessorFamily(self, name=None, title=None, description=None,
-                            restricted=False):
-        """Create a new processor family.
-
-        A default processor for the family will be created with the
-        same name as the family.
-
-        :param name: Name of the family (e.g. x86)
-        :param title: Optional title of the family
-        :param description: Optional extended description
-        :param restricted: Whether the processor family is restricted
-        :return: A `IProcessorFamily`
-        """
-        if name is None:
-            name = self.getUniqueString()
-        if description is None:
-            description = "Description of the %s processor family" % name
-        if title is None:
-            title = "%s and compatible processors." % name
-        family = getUtility(IProcessorFamilySet).new(
-            name, title, description, restricted=restricted)
-        # Make sure there's at least one processor in the family, so that
-        # other things can have a default processor.
-        self.makeProcessor(name=name, family=family)
-        return family
+            description = "The %s processor and compatible processors" % name
+        return getUtility(IProcessorSet).new(
+            name, title, description, restricted)
 
     def makeProductRelease(self, milestone=None, product=None,
                            productseries=None):
@@ -2651,24 +2623,24 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             component)
 
     def makeDistroArchSeries(self, distroseries=None,
-                             architecturetag=None, processorfamily=None,
+                             architecturetag=None, processor=None,
                              official=True, owner=None,
                              supports_virtualized=False, enabled=True):
         """Create a new distroarchseries"""
 
         if distroseries is None:
             distroseries = self.makeDistroSeries()
-        if processorfamily is None:
-            processorfamily = self.makeProcessorFamily()
+        if processor is None:
+            processor = self.makeProcessor()
         if owner is None:
             owner = self.makePerson()
-        # XXX: architecturetag & processorfamily are tightly coupled. It's
+        # XXX: architecturetag & processor are tightly coupled. It's
         # wrong to just make a fresh architecture tag without also making a
-        # processor family to go with it (ideally with processors!)
+        # processor to go with it.
         if architecturetag is None:
             architecturetag = self.getUniqueString('arch')
         return distroseries.newArch(
-            architecturetag, processorfamily, official, owner,
+            architecturetag, processor, official, owner,
             supports_virtualized, enabled)
 
     def makeComponent(self, name=None):
@@ -2783,8 +2755,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         test environment.
         """
         if processor is None:
-            processor_fam = ProcessorFamilySet().getByName('x86')
-            processor = processor_fam.processors[0]
+            processor = getUtility(IProcessorSet).getByName('386')
         if url is None:
             url = 'http://%s:8221/' % self.getUniqueString()
         if name is None:
@@ -3625,8 +3596,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             else:
                 distroseries = self.makeDistroSeries()
             distroarchseries = self.makeDistroArchSeries(
-                distroseries=distroseries,
-                processorfamily=processor.family)
+                distroseries=distroseries, processor=processor)
         if archive is None:
             if source_package_release is None:
                 archive = distroarchseries.main_archive

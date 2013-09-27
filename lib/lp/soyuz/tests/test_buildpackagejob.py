@@ -32,9 +32,9 @@ from lp.soyuz.interfaces.buildpackagejob import (
     SCORE_BY_POCKET,
     SCORE_BY_URGENCY,
     )
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
-from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     anonymous_logged_in,
@@ -93,12 +93,11 @@ class TestBuildJobBase(TestCaseWithFactory):
         self.i8 = self.factory.makeBuilder(name='i386-n-8', virtualized=False)
         self.i9 = self.factory.makeBuilder(name='i386-n-9', virtualized=False)
 
-        processor_fam = ProcessorFamilySet().getByName('hppa')
-        proc = processor_fam.processors[0]
+        processor = getUtility(IProcessorSet).getByName('hppa')
         self.h6 = self.factory.makeBuilder(
-            name='hppa-n-6', processor=proc, virtualized=False)
+            name='hppa-n-6', processor=processor, virtualized=False)
         self.h7 = self.factory.makeBuilder(
-            name='hppa-n-7', processor=proc, virtualized=False)
+            name='hppa-n-7', processor=processor, virtualized=False)
 
         self.builders = dict()
         # x86 native

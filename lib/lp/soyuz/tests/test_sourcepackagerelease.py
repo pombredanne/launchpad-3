@@ -249,7 +249,7 @@ class TestSourcePackageReleaseGetBuildByArch(TestCaseWithFactory):
         # archtag as the parent.
         das_derived = self.factory.makeDistroArchSeries(
             dsp.derived_series, architecturetag=das.architecturetag,
-            processorfamily=das.processorfamily, supports_virtualized=True)
+            processor=das.processor, supports_virtualized=True)
         # Now copy the package to the derived series, with binary.
         derived_archive = dsp.derived_series.main_archive
         getUtility(ISourcePackageFormatSelectionSet).add(
