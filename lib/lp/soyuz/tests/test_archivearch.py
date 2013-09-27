@@ -65,7 +65,7 @@ class TestArchiveArch(TestCaseWithFactory):
         result_set = list(self.archive_arch_set.getByArchive(self.ppa))
         self.assertEqual(1, len(result_set))
         self.assertEqual(self.ppa, result_set[0].archive)
-        self.assertEqual(self.cell_proc, result_set[0].processorfamily)
+        self.assertEqual(self.cell_proc, result_set[0].processor)
 
     def test_getByArchive_follows_creation_order(self):
         # The result of ArchiveArchSet.getByArchive follows the order in
@@ -75,9 +75,9 @@ class TestArchiveArch(TestCaseWithFactory):
         result_set = list(self.archive_arch_set.getByArchive(self.ppa))
         self.assertEqual(2, len(result_set))
         self.assertEqual(self.ppa, result_set[0].archive)
-        self.assertEqual(self.cell_proc, result_set[0].processorfamily)
+        self.assertEqual(self.cell_proc, result_set[0].processor)
         self.assertEqual(self.ppa, result_set[1].archive)
-        self.assertEqual(self.omap, result_set[1].processorfamily)
+        self.assertEqual(self.omap, result_set[1].processor)
 
     def test_getByArchive_specific_architecture(self):
         # ArchiveArchSet.getByArchive can query for a specific architecture
@@ -85,8 +85,7 @@ class TestArchiveArch(TestCaseWithFactory):
         self.archive_arch_set.new(self.ppa, self.cell_proc)
         self.archive_arch_set.new(self.ppa, self.omap)
         result_set = list(
-            self.archive_arch_set.getByArchive(
-                self.ppa, self.cell_proc.processors[0]))
+            self.archive_arch_set.getByArchive(self.ppa, self.cell_proc))
         self.assertEqual(1, len(result_set))
         self.assertEqual(self.ppa, result_set[0].archive)
-        self.assertEqual(self.cell_proc, result_set[0].processorfamily)
+        self.assertEqual(self.cell_proc, result_set[0].processor)
