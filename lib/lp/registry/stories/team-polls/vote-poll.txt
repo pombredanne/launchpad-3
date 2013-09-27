@@ -162,6 +162,5 @@ The same is true for condorcet polls too.
 
     >>> team_admin_browser.open(
     ...     'http://launchpad.dev/~ubuntu-team/+poll/director-2004/+vote')
-    >>> for message in get_feedback_messages(team_admin_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(team_admin_browser.contents)
     This poll is already closed.

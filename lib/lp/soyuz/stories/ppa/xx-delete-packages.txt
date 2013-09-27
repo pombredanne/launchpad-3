@@ -107,9 +107,7 @@ Please note that the 'deletion_comment' field (which is optional) is empty.
     >>> admin_browser.getControl(name='field.name_filter').value = ''
     >>> admin_browser.getControl(name='field.selected_sources').value = ['31']
     >>> admin_browser.getControl("Request Deletion").click()
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(admin_browser.contents)
     Source and binaries deleted by Foo Bar:
     iceweasel 1.0 in breezy-autotest
     Deletion comment: None
@@ -131,9 +129,7 @@ is issued.
 
     >>> admin_browser.getControl("Deletion comment").value = "DO IT"
     >>> admin_browser.getControl("Request Deletion").click()
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(admin_browser.contents)
     There is 1 error.
     No sources selected.
 
@@ -152,9 +148,7 @@ entirely readable content.
     ...     "Deletion comment").value = "DO <where is my XSS ?> IT"
     >>> admin_browser.getControl("Request Deletion").click()
 
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(admin_browser.contents)
     Source and binaries deleted by Foo Bar:
     cdrkit 1.0 in breezy-autotest
     Deletion comment: DO &lt;where is my XSS ?&gt; IT
@@ -231,9 +225,7 @@ Multiple packages can be deleted in one single batch.
     >>> admin_browser.getControl("Deletion comment").value = "DO IT AGAIN !"
     >>> admin_browser.getControl("Request Deletion").click()
 
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(admin_browser.contents)
     Source and binaries deleted by Foo Bar:
     iceweasel 1.0 in warty
     pmount 0.1-1 in warty
@@ -456,9 +448,7 @@ source and binaries are marked as DELETED and the corresponding
     >>> user_browser.getControl("Deletion comment").value = deletion_comment
     >>> user_browser.getControl("Request Deletion").click()
 
-    >>> messages = get_feedback_messages(user_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(user_browser.contents)
     Source and binaries deleted by No Privileges Person:
     foo 1.0 in hoary
     Deletion comment: Deletion of a number of base pairs that is ...

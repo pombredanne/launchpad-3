@@ -33,7 +33,7 @@ Architecture tag is restricted to the usual Launchpad name format.
     >>> admin_browser.getLink('Add architecture').click()
     >>> admin_browser.getControl('Architecture Tag').value = 'foo bar'
     >>> admin_browser.getControl('Continue').click()
-    >>> print "\n".join(get_feedback_messages(admin_browser.contents))
+    >>> print_feedback_messages(admin_browser.contents)
     There is 1 error.
     Invalid name 'foo bar'. ...
 

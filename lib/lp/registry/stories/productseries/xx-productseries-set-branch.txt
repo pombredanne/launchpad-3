@@ -38,8 +38,7 @@ A user can choose to link to an existing branch on Launchpad.
 
     >>> browser.getControl(name='field.branch_location').value = branch_name
     >>> browser.getControl('Update').click()
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(browser.contents)
     Series code location updated.
     >>> print browser.url
     http://launchpad.dev/firefox/trunk
@@ -61,8 +60,7 @@ the branch name to use in Launchpad, and the branch owner.
     >>> browser.getControl('Branch URL').value = (
     ...     'https://bzr.example.com/branch')
     >>> browser.getControl('Update').click()
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(browser.contents)
     Series code location updated.
     >>> print browser.url
     http://launchpad.dev/firefox/trunk
@@ -77,8 +75,7 @@ The process is the same for a Git external branch, though the novel
     >>> browser.getControl('Branch URL').value = (
     ...     'git://git.example.com/branch')
     >>> browser.getControl('Update').click()
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(browser.contents)
     Code import created and branch linked to the series.
     >>> print browser.url
     http://launchpad.dev/firefox/trunk
@@ -92,8 +89,7 @@ Likewise Subversion can use the "svn://" scheme.
     >>> browser.getControl('Branch URL').value = (
     ...     'svn://svn.example.com/branch')
     >>> browser.getControl('Update').click()
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(browser.contents)
     Code import created and branch linked to the series.
     >>> print browser.url
     http://launchpad.dev/firefox/trunk
@@ -108,8 +104,7 @@ The branch owner can be the logged in user or one of her teams.
     ...     'http://git.example.com/branch')
     >>> browser.getControl('Branch owner').value = ['hwdb-team']
     >>> browser.getControl('Update').click()
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(browser.contents)
     Code import created and branch linked to the series.
     >>> print browser.url
     http://launchpad.dev/firefox/trunk

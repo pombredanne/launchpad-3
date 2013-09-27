@@ -127,8 +127,7 @@ DistroArchSeries page.
 
 There's also a notification message announcing the success of the change:
 
-    >>> for message in get_feedback_messages(admin_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(admin_browser.contents)
     Successfully updated
 
 Navigating back to the admin page shows the change was made:
