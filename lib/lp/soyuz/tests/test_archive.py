@@ -72,7 +72,7 @@ from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.model.archive import (
     Archive,
     validate_ppa,
@@ -994,7 +994,7 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
 
 
 class TestEnabledRestrictedBuilds(TestCaseWithFactory):
-    """Ensure that restricted architecture family builds can be allowed and
+    """Ensure that restricted architectures builds can be allowed and
     disallowed correctly."""
 
     layer = LaunchpadZopelessLayer
@@ -1011,14 +1011,14 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
 
     def test_default(self):
         """By default, ARM builds are not allowed as ARM is restricted."""
-        self.assertEqual(
-            0,
-            self.archive_arch_set.getByArchive(self.archive, self.arm).count())
-        self.assertContentEqual([], self.archive.enabled_restricted_families)
+        self.assertEqual(0,
+            self.archive_arch_set.getByArchive(
+                self.archive, self.arm).count())
+        self.assertContentEqual([], self.archive.enabled_restricted_processors)
 
     def test_get_uses_archivearch(self):
         """Adding an entry to ArchiveArch for ARM and an archive will
-        enable enabled_restricted_families for arm for that archive."""
+        enable enabled_restricted_processors for arm for that archive."""
         self.assertContentEqual([], self.archive.enabled_restricted_processors)
         self.archive_arch_set.new(self.archive, self.arm)
         self.assertEqual(
@@ -1027,26 +1027,28 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
 
     def test_get_returns_restricted_only(self):
         """Adding an entry to ArchiveArch for something that is not
-        restricted does not make it show up in enabled_restricted_families.
+        restricted does not make it show up in enabled_restricted_processors.
         """
-        self.assertContentEqual([], self.archive.enabled_restricted_families)
-        self.archive_arch_set.new(self.archive,
-            getUtility(IProcessorFamilySet).getByName('amd64'))
-        self.assertContentEqual([], self.archive.enabled_restricted_families)
+        self.assertContentEqual([], self.archive.enabled_restricted_processors)
+        self.archive_arch_set.new(
+            self.archive, getUtility(IProcessorSet).getByName('amd64'))
+        self.assertContentEqual([], self.archive.enabled_restricted_processors)
 
     def test_set(self):
         """The property remembers its value correctly and sets ArchiveArch."""
-        arm_proc = self.arm.processors[0]
-        self.archive.enabled_restricted_families = [self.arm]
+        self.archive.enabled_restricted_processors = [self.arm]
         allowed_restricted_processors = self.archive_arch_set.getByArchive(
-            self.archive, arm_proc)
+            self.archive, self.arm)
         self.assertEqual(1, allowed_restricted_processors.count())
-        self.assertEqual(arm_proc, allowed_restricted_processors[0].processor)
-        self.archive.enabled_restricted_families = []
+        self.assertEqual(
+            self.arm, allowed_restricted_processors[0].processor)
+        self.assertEqual(
+            [self.arm], self.archive.enabled_restricted_processors)
+        self.archive.enabled_restricted_processors = []
         self.assertEqual(
             0,
-            self.archive_arch_set.getByArchive(self.archive, arm_proc).count())
-        self.assertContentEqual([], self.archive.enabled_restricted_families)
+            self.archive_arch_set.getByArchive(self.archive, self.arm).count())
+        self.assertContentEqual([], self.archive.enabled_restricted_processors)
 
 
 class TestBuilddSecret(TestCaseWithFactory):

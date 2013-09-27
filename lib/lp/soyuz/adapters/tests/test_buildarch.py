@@ -1,8 +1,9 @@
 # Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+__metaclass__ = type
+
 from lp.soyuz.adapters.buildarch import determine_architectures_to_build
-from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import LaunchpadZopelessLayer
@@ -18,11 +19,9 @@ class TestDetermineArchitecturesToBuild(TestCaseWithFactory):
         super(TestDetermineArchitecturesToBuild, self).setUp()
         self.publisher = SoyuzTestPublisher()
         self.publisher.prepareBreezyAutotest()
-        armel_family = ProcessorFamily.get(5)
-        if not armel_family.processors:
-            armel_family.addProcessor('armel', 'armel', 'armel')
+        armel = self.factory.makeProcessor('armel', 'armel', 'armel')
         self.publisher.breezy_autotest.newArch(
-            'armel', armel_family, False, self.publisher.person)
+            'armel', armel, False, self.publisher.person)
         self.publisher.addFakeChroots()
 
     def assertArchitecturesToBuild(self, expected_arch_tags, pub,

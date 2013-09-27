@@ -1103,15 +1103,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # results will only see DSBPs
         return DecoratedResultSet(package_caches, result_to_dsbp)
 
-    def newArch(self, architecturetag, processorfamily, official, owner,
+    def newArch(self, architecturetag, processor, official, owner,
                 supports_virtualized=False, enabled=True):
         """See `IDistroSeries`."""
-        distroarchseries = DistroArchSeries(
-            architecturetag=architecturetag, processorfamily=processorfamily,
-            processor=processorfamily.processors[0], official=official,
-            distroseries=self, owner=owner,
+        return DistroArchSeries(
+            architecturetag=architecturetag, processor=processor,
+            official=official, distroseries=self, owner=owner,
             supports_virtualized=supports_virtualized, enabled=enabled)
-        return distroarchseries
 
     def newMilestone(self, name, dateexpected=None, summary=None,
                      code_name=None, tags=None):

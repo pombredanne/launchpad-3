@@ -309,15 +309,14 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
         self.assertEqual(behavior._slave, interactor.slave)
 
     def _setupBuilder(self):
-        pf = self.factory.makeProcessorFamily(name="i386")
-        processor = pf.processors[0]
+        processor = self.factory.makeProcessor(name="i386")
         builder = self.factory.makeBuilder(
             processor=processor, virtualized=True, vm_host="bladh")
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
         distroseries = self.factory.makeDistroSeries()
         das = self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag="i386",
-            processorfamily=pf)
+            processor=processor)
         chroot = self.factory.makeLibraryFileAlias(db_only=True)
         das.addOrUpdateChroot(chroot)
         distroseries.nominatedarchindep = das

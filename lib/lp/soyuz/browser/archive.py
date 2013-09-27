@@ -22,7 +22,7 @@ __all__ = [
     'ArchivePackagesView',
     'ArchiveView',
     'ArchiveViewBase',
-    'EnableRestrictedFamiliesMixin',
+    'EnableRestrictedProcessorsMixin',
     'make_archive_vocabulary',
     'PackageCopyingMixin',
     'traverse_named_ppa',
@@ -148,7 +148,7 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     inactive_publishing_status,
@@ -2005,16 +2005,16 @@ class ArchiveEditView(BaseArchiveEditView):
         return 'Edit %s' % self.context.displayname
 
 
-class EnableRestrictedFamiliesMixin:
-    """A mixin that provides enabled_restricted_families field support"""
+class EnableRestrictedProcessorsMixin:
+    """A mixin that provides enabled_restricted_processors field support"""
 
-    def createEnabledRestrictedFamilies(self, description=None):
-        """Creates the 'enabled_restricted_families' field."""
+    def createEnabledRestrictedProcessors(self, description=None):
+        """Creates the 'enabled_restricted_processors' field."""
         terms = []
-        for family in getUtility(IProcessorFamilySet).getRestricted():
+        for processor in getUtility(IProcessorSet).getRestricted():
             terms.append(SimpleTerm(
-                family, token=family.name, title=family.title))
-        old_field = IArchive['enabled_restricted_families']
+                processor, token=processor.name, title=processor.title))
+        old_field = IArchive['enabled_restricted_processors']
         return form.Fields(
             List(__name__=old_field.__name__,
                  title=old_field.title,
@@ -2025,7 +2025,7 @@ class EnableRestrictedFamiliesMixin:
                  render_context=self.render_context)
 
 
-class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
+class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedProcessorsMixin):
 
     field_names = [
         'enabled',
@@ -2040,7 +2040,7 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
         'external_dependencies',
         ]
     custom_widget('external_dependencies', TextAreaWidget, height=3)
-    custom_widget('enabled_restricted_families', LabeledMultiCheckBoxWidget)
+    custom_widget('enabled_restricted_processors', LabeledMultiCheckBoxWidget)
     page_title = 'Administer'
 
     @property
@@ -2084,17 +2084,17 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
     @property
     def initial_values(self):
         return {
-            'enabled_restricted_families':
-                self.context.enabled_restricted_families,
+            'enabled_restricted_processors':
+                self.context.enabled_restricted_processors,
             }
 
     def setUpFields(self):
         """Override `LaunchpadEditFormView`.
 
-        See `createEnabledRestrictedFamilies` method.
+        See `createEnabledRestrictedProcessors` method.
         """
         super(ArchiveAdminView, self).setUpFields()
-        self.form_fields += self.createEnabledRestrictedFamilies()
+        self.form_fields += self.createEnabledRestrictedProcessors()
 
 
 class ArchiveDeleteView(LaunchpadFormView):

@@ -514,13 +514,11 @@ In order to verify if the binary ancestry lookup algorithm works we
 will need to build a new DistroArchSeries for powerpc in
 ubuntutest/breezy.
 
-    >>> from lp.soyuz.model.processor import (
-    ...     ProcessorFamily, Processor)
-    >>> powerpc_pf = ProcessorFamily.selectOneBy(name='powerpc')
-    >>> powerpc_proc = Processor(family=powerpc_pf, name='powerpc',
-    ...                          title='PowerPC G3/G4', description='G3/G4')
+    >>> from lp.soyuz.model.processor import Processor
+    >>> powerpc = Processor(
+    ...     name='powerpc', title='PowerPC G3/G4', description='G3/G4')
     >>> powerpc_dar = breezy.newArch(
-    ...     'powerpc', powerpc_pf, True, breezy.owner)
+    ...     'powerpc', powerpc, True, breezy.owner)
 
 After having the respective DistroArchSeries in place we will submit a
 binary upload for the last source in BACKPORTS. The ancestry should be

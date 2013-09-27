@@ -35,11 +35,10 @@ class TestBuildNotify(TestCaseWithFactory):
         super(TestBuildNotify, self).setUp()
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         # Create all of the items we need to create builds
-        self.pf = self.factory.makeProcessorFamily()
-        pf_proc = self.pf.addProcessor(self.factory.getUniqueString(), '', '')
+        self.processor = self.factory.makeProcessor()
         self.distroseries = self.factory.makeDistroSeries()
         self.das = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries, processorfamily=self.pf,
+            distroseries=self.distroseries, processor=self.processor,
             supports_virtualized=True)
         self.creator = self.factory.makePerson(email='test@example.com')
         self.gpgkey = self.factory.makeGPGKey(owner=self.creator)
@@ -55,7 +54,7 @@ class TestBuildNotify(TestCaseWithFactory):
             self.publisher.prepareBreezyAutotest()
             self.distroseries.nominatedarchindep = self.das
             self.publisher.addFakeChroots(distroseries=self.distroseries)
-            self.builder = self.factory.makeBuilder(processor=pf_proc)
+            self.builder = self.factory.makeBuilder(processor=self.processor)
             for member in buildd_admins.activemembers:
                 self.buildd_admins_email.append(member.preferredemail.email)
         self.builds = []

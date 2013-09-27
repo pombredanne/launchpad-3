@@ -15,7 +15,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.webapp import canonical_url
-from lp.soyuz.model.processor import ProcessorFamily
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
@@ -69,8 +69,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
             distribution=self.ppa.distribution)
         naked_squirrel = removeSecurityProxy(self.squirrel)
         naked_squirrel.nominatedarchindep = self.squirrel.newArch(
-            'i386', ProcessorFamily.get(1), False, self.chef,
-            supports_virtualized=True)
+            'i386', getUtility(IProcessorSet).getByName('386'), False,
+            self.chef, supports_virtualized=True)
 
     def makeRecipeBuild(self):
         """Create and return a specific recipe."""

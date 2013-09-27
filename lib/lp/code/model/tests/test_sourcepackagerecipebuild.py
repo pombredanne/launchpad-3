@@ -37,7 +37,7 @@ from lp.services.database.interfaces import IStore
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.sendmail import format_address
 from lp.services.webapp.authorization import check_permission
-from lp.soyuz.model.processor import ProcessorFamily
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -62,7 +62,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         person = self.factory.makePerson()
         distroseries = self.factory.makeDistroSeries()
         distroseries_i386 = distroseries.newArch(
-            'i386', ProcessorFamily.get(1), False, person,
+            'i386', getUtility(IProcessorSet).getByName('386'), False, person,
             supports_virtualized=True)
         removeSecurityProxy(distroseries).nominatedarchindep = (
             distroseries_i386)
