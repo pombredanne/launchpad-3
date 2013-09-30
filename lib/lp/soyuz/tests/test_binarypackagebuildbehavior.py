@@ -18,7 +18,10 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interactor import BuilderInteractor
+from lp.buildmaster.interactor import (
+    BuilderInteractor,
+    extract_vitals_from_db,
+    )
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
@@ -68,16 +71,16 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         super(TestBinaryBuildPackageBehavior, self).setUp()
         switch_dbuser('testadmin')
 
-    def assertExpectedInteraction(self, ignored, call_log, interactor, build,
+    def assertExpectedInteraction(self, ignored, call_log, builder, build,
                                   chroot, archive, archive_purpose,
                                   component=None, extra_urls=None,
                                   filemap_names=None):
         expected = self.makeExpectedInteraction(
-            interactor, build, chroot, archive, archive_purpose, component,
+            builder, build, chroot, archive, archive_purpose, component,
             extra_urls, filemap_names)
         self.assertEqual(call_log, expected)
 
-    def makeExpectedInteraction(self, interactor, build, chroot, archive,
+    def makeExpectedInteraction(self, builder, build, chroot, archive,
                                 archive_purpose, component=None,
                                 extra_urls=None, filemap_names=None):
         """Build the log of calls that we expect to be made to the slave.
@@ -125,7 +128,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build_log = [
             ('build', cookie, 'binarypackage', chroot.content.sha1,
              filemap_names, extra_args)]
-        if interactor.builder.virtualized:
+        if builder.virtualized:
             result = [('echo', 'ping')] + upload_logs + build_log
         else:
             result = upload_logs + build_log
@@ -140,6 +143,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         archive = self.factory.makeArchive(virtualized=False)
         slave = OkSlave()
         builder = self.factory.makeBuilder(virtualized=False)
+        vitals = extract_vitals_from_db(builder)
         build = self.factory.makeBinaryPackageBuild(
             builder=builder, archive=archive)
         lf = self.factory.makeLibraryFileAlias()
@@ -147,12 +151,12 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build.distro_arch_series.addOrUpdateChroot(lf)
         bq = build.queueBuild()
         bq.markAsBuilding(builder)
-        interactor = BuilderInteractor(builder, slave)
+        interactor = BuilderInteractor(None)
         d = interactor._startBuild(
-            bq, interactor.vitals, builder, slave,
+            bq, vitals, builder, slave,
             interactor.getBuildBehavior(bq, builder, slave), BufferLogger())
         d.addCallback(
-            self.assertExpectedInteraction, slave.call_log, interactor, build,
+            self.assertExpectedInteraction, slave.call_log, builder, build,
             lf, archive, ArchivePurpose.PRIMARY, 'universe')
         return d
 
@@ -163,6 +167,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         slave = OkSlave()
         builder = self.factory.makeBuilder(
             virtualized=True, vm_host="foohost")
+        vitals = extract_vitals_from_db(builder)
         build = self.factory.makeBinaryPackageBuild(
             builder=builder, archive=archive)
         lf = self.factory.makeLibraryFileAlias()
@@ -170,9 +175,9 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build.distro_arch_series.addOrUpdateChroot(lf)
         bq = build.queueBuild()
         bq.markAsBuilding(builder)
-        interactor = BuilderInteractor(builder, slave)
+        interactor = BuilderInteractor(None)
         d = interactor._startBuild(
-            bq, interactor.vitals, builder, slave,
+            bq, vitals, builder, slave,
             interactor.getBuildBehavior(bq, builder, slave), BufferLogger())
 
         def check_build(ignored):
@@ -181,7 +186,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
             expected_resume_call = slave.call_log.pop(0)
             self.assertEqual('resume', expected_resume_call)
             self.assertExpectedInteraction(
-                ignored, slave.call_log, interactor, build, lf, archive,
+                ignored, slave.call_log, builder, build, lf, archive,
                 ArchivePurpose.PPA)
         return d.addCallback(check_build)
 
@@ -190,6 +195,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
             virtualized=False, purpose=ArchivePurpose.PARTNER)
         slave = OkSlave()
         builder = self.factory.makeBuilder(virtualized=False)
+        vitals = extract_vitals_from_db(builder)
         build = self.factory.makeBinaryPackageBuild(
             builder=builder, archive=archive)
         lf = self.factory.makeLibraryFileAlias()
@@ -197,12 +203,12 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build.distro_arch_series.addOrUpdateChroot(lf)
         bq = build.queueBuild()
         bq.markAsBuilding(builder)
-        interactor = BuilderInteractor(builder, slave)
+        interactor = BuilderInteractor(None)
         d = interactor._startBuild(
-            bq, interactor.vitals, builder, slave,
+            bq, vitals, builder, slave,
             interactor.getBuildBehavior(bq, builder, slave), BufferLogger())
         d.addCallback(
-            self.assertExpectedInteraction, slave.call_log, interactor, build,
+            self.assertExpectedInteraction, slave.call_log, builder, build,
             lf, archive, ArchivePurpose.PARTNER)
         return d
 
@@ -319,7 +325,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
         switch_dbuser('testadmin')
 
         self.builder = self.factory.makeBuilder()
-        self.interactor = BuilderInteractor(self.builder)
+        self.interactor = BuilderInteractor(None)
         self.build = self.factory.makeBinaryPackageBuild(
             builder=self.builder, pocket=PackagePublishingPocket.RELEASE)
         lf = self.factory.makeLibraryFileAlias()

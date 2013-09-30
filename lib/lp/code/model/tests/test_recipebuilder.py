@@ -369,8 +369,7 @@ class TestBuildNotifications(TrialTestCase):
             self.addCleanup(config.pop, 'tmp_builddmaster_root')
         self.queue_record.builder = self.factory.makeBuilder()
         slave = WaitingSlave('BuildStatus.OK')
-        interactor = BuilderInteractor(self.queue_record.builder, slave)
-        return interactor.getBuildBehavior(
+        return BuilderInteractor(None).getBuildBehavior(
             self.queue_record, self.queue_record.builder, slave)
 
     def assertDeferredNotifyCount(self, status, behavior, expected_count):

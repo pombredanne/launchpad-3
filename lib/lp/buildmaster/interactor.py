@@ -242,8 +242,10 @@ class BuilderInteractor(object):
         self._override_slave = override_slave
         self._override_behavior = override_behavior
 
+    @property
+    def vitals(self):
         # XXX wgrant: The BuilderVitals should be passed in.
-        self.vitals = extract_vitals_from_db(builder)
+        return extract_vitals_from_db(self.builder)
 
     @staticmethod
     def makeSlaveFromVitals(vitals):
