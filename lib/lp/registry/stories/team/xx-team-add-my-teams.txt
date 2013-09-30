@@ -33,8 +33,8 @@ We'll now propose Ubuntu Team as a member of the Hoary Gnome Team (name21).
     >>> browser.getControl('Continue').click()
     >>> browser.title
     'Hoary Gnome Team in Launchpad'
-    >>> print get_feedback_messages(browser.contents)
-    [u'Ubuntu Team has been proposed to this team.']
+    >>> print_feedback_messages(browser.contents)
+    Ubuntu Team has been proposed to this team.
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-proposed'))
     Pending approval
@@ -61,8 +61,8 @@ of trying to propose the membership, which is an invalid status change.
     >>> user_browser.getControl('Continue').click()
     >>> print user_browser.title
     Super Team in Launchpad
-    >>> print get_feedback_messages(user_browser.contents)
-    [u'Sub Team has been added to this team because of an existing invite.']
+    >>> print_feedback_messages(user_browser.contents)
+    Sub Team has been added to this team because of an existing invite.
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'recently-approved'))
     Latest members
@@ -83,8 +83,8 @@ members.
     >>> browser.getControl('Continue').click()
     >>> browser.title
     'Hoary Gnome Team in Launchpad'
-    >>> print get_feedback_messages(browser.contents)
-    [u'Ubuntu Team has been added to this team.']
+    >>> print_feedback_messages(browser.contents)
+    Ubuntu Team has been added to this team.
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-approved'))
     Latest members
@@ -145,7 +145,7 @@ anymore of the Hoary Gnome Team:
     >>> browser.getControl(name='field.teams').value = [
     ...     'guadamen', 'ubuntu-security']
     >>> browser.getControl('Continue').click()
-    >>> print "\n".join(get_feedback_messages(browser.contents))
+    >>> print_feedback_messages(browser.contents)
     GuadaMen and Ubuntu Security Team have been added to this team.
 
 And when no teams can be added, a message is displayed:

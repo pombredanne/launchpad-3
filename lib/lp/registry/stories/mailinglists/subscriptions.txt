@@ -126,8 +126,7 @@ explicitly with whatever is his preferred email address.
     >>> admins.value = ['Preferred address']
     >>> carlos_browser.getControl('Update Subscriptions').click()
 
-    >>> for msg in get_feedback_messages(carlos_browser.contents):
-    ...     print msg
+    >>> print_feedback_messages(carlos_browser.contents)
     Subscriptions updated.
 
     >>> admins = carlos_browser.getControl(name='field.subscription.admins')
@@ -354,8 +353,8 @@ has an active mailing list.
 Clicking the link will unsubscribe you from the list immediately.
 
     >>> carlos_browser.getControl('Unsubscribe').click()
-    >>> print get_feedback_messages(carlos_browser.contents)
-    [u'You have been unsubscribed from the team mailing list.']
+    >>> print_feedback_messages(carlos_browser.contents)
+    You have been unsubscribed from the team mailing list.
 
     >>> carlos_browser.open('http://launchpad.dev/~rosetta-admins')
     >>> print extract_text(
@@ -504,8 +503,8 @@ page.
     (*) Always subscribe me to mailing lists
 
     # We only need to check this once.
-    >>> get_feedback_messages(carlos_browser.contents)
-    [u'Your auto-subscribe policy has been updated.']
+    >>> print_feedback_messages(carlos_browser.contents)
+    Your auto-subscribe policy has been updated.
 
     >>> set_autosubscribe_policy_and_submit('NEVER', carlos_browser)
     (*) Never subscribe to mailing lists

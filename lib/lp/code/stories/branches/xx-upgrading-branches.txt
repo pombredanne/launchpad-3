@@ -43,6 +43,5 @@ Only those with edit permissions on a branch can request an upgrade.
     http://code.launchpad.dev/~domino/.../+upgrade
     >>> domino_browser.getControl('Upgrade').click()
 
-    >>> for msg in get_feedback_messages(domino_browser.contents):
-    ...     print msg
+    >>> print_feedback_messages(domino_browser.contents)
     An upgrade of this branch is in progress.

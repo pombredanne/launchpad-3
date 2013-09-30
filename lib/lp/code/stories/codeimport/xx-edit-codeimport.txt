@@ -136,8 +136,7 @@ to run ASAP and the fact that the import has been requested is
 displayed.
 
     >>> sample_person_browser.getControl('Import Now').click()
-    >>> for msg in get_feedback_messages(sample_person_browser.contents):
-    ...     print msg
+    >>> print_feedback_messages(sample_person_browser.contents)
     Import will run as soon as possible.
     >>> print_import_details(sample_person_browser)
     Import Status: Reviewed
