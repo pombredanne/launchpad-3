@@ -227,20 +227,15 @@ def extract_vitals_from_db(builder, build_queue=None):
 
 class BuilderInteractor(object):
 
-    _cached_build_behavior = None
-    _cached_currentjob = None
-
     _cached_slave = None
     _cached_slave_attrs = None
 
-    # Tests can override _current_build_behavior and slave.
-    _override_behavior = None
+    # Tests can override the slave.
     _override_slave = None
 
-    def __init__(self, builder, override_slave=None, override_behavior=None):
+    def __init__(self, builder, override_slave=None):
         self.builder = builder
         self._override_slave = override_slave
-        self._override_behavior = override_behavior
 
     @property
     def vitals(self):
@@ -272,26 +267,11 @@ class BuilderInteractor(object):
 
     @staticmethod
     def getBuildBehavior(queue_item, builder, slave):
+        if queue_item is None:
+            return None
         behavior = IBuildFarmJobBehavior(queue_item.specific_job)
         behavior.setBuilder(builder, slave)
         return behavior
-
-    @property
-    def _current_build_behavior(self):
-        """Return the current build behavior."""
-        if self._override_behavior is not None:
-            return self._override_behavior
-        # The _current_build_behavior cache is invalidated when
-        # builder.currentjob changes.
-        currentjob = self.builder.currentjob
-        if currentjob is None:
-            self._cached_build_behavior = None
-            self._cached_currentjob = None
-        elif currentjob != self._cached_currentjob:
-            self._cached_build_behavior = self.getBuildBehavior(
-                currentjob, self.builder, self.slave)
-            self._cached_currentjob = currentjob
-        return self._cached_build_behavior
 
     @staticmethod
     @defer.inlineCallbacks

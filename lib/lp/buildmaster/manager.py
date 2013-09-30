@@ -265,7 +265,7 @@ class SlaveScanner:
             defer.returnValue(value is not None)
 
     @defer.inlineCallbacks
-    def scan(self, interactor=None):
+    def scan(self, interactor=None, behavior=None):
         """Probe the builder and update/dispatch/collect as appropriate.
 
         :return: A Deferred that fires when the scan is complete.
@@ -290,8 +290,10 @@ class SlaveScanner:
                 builder, slave, interactor)
             if cancelled:
                 return
+            behavior = behavior or interactor.getBuildBehavior(
+                vitals.build_queue, builder, slave)
             lost = yield interactor.rescueIfLost(
-                vitals, slave, interactor._current_build_behavior, self.logger)
+                vitals, slave, behavior, self.logger)
             if lost:
                 lost_reason = '%s is lost' % vitals.name
 
@@ -314,8 +316,9 @@ class SlaveScanner:
         if vitals.build_queue is not None:
             # Scan the slave and get the logtail, or collect the build
             # if it's ready.  Yes, "updateBuild" is a bad name.
-            yield interactor.updateBuild(
-                vitals.build_queue, slave, interactor._current_build_behavior)
+            behavior = behavior or interactor.getBuildBehavior(
+                vitals.build_queue, builder, slave)
+            yield interactor.updateBuild(vitals.build_queue, slave, behavior)
         elif vitals.manual:
             # If the builder is in manual mode, don't dispatch anything.
             self.logger.debug(

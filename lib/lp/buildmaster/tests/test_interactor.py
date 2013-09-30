@@ -299,23 +299,27 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
     layer = ZopelessDatabaseLayer
     run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
 
-    def test_current_build_behavior_idle(self):
+    def test_getBuildBehavior_idle(self):
         """An idle builder has no build behavior."""
         self.assertIs(
-            None, BuilderInteractor(MockBuilder())._current_build_behavior)
+            None,
+            BuilderInteractor(None).getBuildBehavior(
+                None, MockBuilder(), None))
 
-    def test_current_build_behavior_building(self):
+    def test_getBuildBehavior_building(self):
         """The current behavior is set automatically from the current job."""
         # Set the builder attribute on the buildqueue record so that our
         # builder will think it has a current build.
         builder = self.factory.makeBuilder(name='builder')
-        interactor = BuilderInteractor(builder)
+        slave = BuildingSlave()
         build = self.factory.makeBinaryPackageBuild()
-        build.queueBuild().markAsBuilding(builder)
-        behavior = interactor._current_build_behavior
+        bq = build.queueBuild()
+        bq.markAsBuilding(builder)
+        behavior = BuilderInteractor(None).getBuildBehavior(
+            bq, builder, slave)
         self.assertIsInstance(behavior, BinaryPackageBuildBehavior)
         self.assertEqual(behavior._builder, builder)
-        self.assertEqual(behavior._slave, interactor.slave)
+        self.assertEqual(behavior._slave, slave)
 
     def _setupBuilder(self):
         processor = self.factory.makeProcessor(name="i386")
@@ -392,30 +396,6 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
             self.assertIn(('echo', 'ping'), slave.call_log)
 
         return d.addCallback(check_build_started)
-
-    @defer.inlineCallbacks
-    def test_recover_building_slave_with_job_that_finished_elsewhere(self):
-        # See bug 671242
-        # When a job is destroyed, the builder's behaviour should be reset
-        # too so that we don't traceback when the wrong behaviour tries
-        # to access a non-existent job.
-        builder, build = self._setupBinaryBuildAndBuilder()
-        candidate = build.queueBuild()
-        building_slave = BuildingSlave()
-        interactor = BuilderInteractor(builder, building_slave)
-        candidate.markAsBuilding(builder)
-
-        # At this point we should see a valid behaviour on the builder:
-        self.assertIsNot(None, interactor._current_build_behavior)
-        yield BuilderInteractor.rescueIfLost(
-            interactor.vitals, building_slave,
-            interactor._current_build_behavior)
-        self.assertIsNot(None, interactor._current_build_behavior)
-        candidate.destroySelf()
-        yield BuilderInteractor.rescueIfLost(
-            interactor.vitals, building_slave,
-            interactor._current_build_behavior)
-        self.assertIs(None, interactor._current_build_behavior)
 
 
 class TestSlave(TestCase):
