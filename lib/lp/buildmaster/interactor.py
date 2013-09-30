@@ -475,7 +475,7 @@ class BuilderInteractor(object):
             logger.warn(
                 "Disabling builder: %s -- %s" % (
                     self.vitals.url, error_message))
-            self.vitals.failBuilder(error_message)
+            self.builder.failBuilder(error_message)
             transaction.commit()
         return defer.succeed(None)
 
