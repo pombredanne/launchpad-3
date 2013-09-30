@@ -474,7 +474,7 @@ class TestSlaveScannerWithoutDB(TestCase):
         bq = FakeBuildQueue()
 
         # Instrument updateBuild.
-        interactor = BuilderInteractor(None)
+        interactor = BuilderInteractor()
         interactor.updateBuild = FakeMethod()
 
         scanner = SlaveScanner(
@@ -498,7 +498,7 @@ class TestSlaveScannerWithoutDB(TestCase):
         bq = FakeBuildQueue()
 
         # Instrument updateBuild.
-        interactor = BuilderInteractor(None)
+        interactor = BuilderInteractor()
         interactor.updateBuild = FakeMethod()
 
         scanner = SlaveScanner(
@@ -524,7 +524,7 @@ class TestSlaveScannerWithoutDB(TestCase):
         slave = BuildingSlave()
 
         # Instrument updateBuild.
-        interactor = BuilderInteractor(None)
+        interactor = BuilderInteractor()
         interactor.updateBuild = FakeMethod()
 
         scanner = SlaveScanner(
@@ -552,7 +552,7 @@ class TestCancellationChecking(TestCaseWithFactory):
         builder_name = BOB_THE_BUILDER_NAME
         self.builder = getUtility(IBuilderSet)[builder_name]
         self.builder.virtualized = True
-        self.interactor = BuilderInteractor(None)
+        self.interactor = BuilderInteractor()
 
     @property
     def vitals(self):
@@ -592,7 +592,6 @@ class TestCancellationChecking(TestCaseWithFactory):
         # True is returned and the slave was resumed.
         slave = OkSlave()
         self.builder.vm_host = "fake_vm_host"
-        self.interactor = BuilderInteractor(self.builder)
         buildqueue = self.builder.currentjob
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
         build.updateStatus(BuildStatus.CANCELLING)
@@ -618,7 +617,6 @@ class TestCancellationChecking(TestCaseWithFactory):
         # immediately resume the slave as if the cancel timeout had expired.
         slave = LostBuildingBrokenSlave()
         self.builder.vm_host = "fake_vm_host"
-        self.interactor = BuilderInteractor(self.builder)
         buildqueue = self.builder.currentjob
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
         build.updateStatus(BuildStatus.CANCELLING)
@@ -682,7 +680,7 @@ class TestFailureAssessments(TestCaseWithFactory):
         # Helper for assessFailureCounts boilerplate.
         return assessFailureCounts(
             BufferLogger(), extract_vitals_from_db(self.builder), self.builder,
-            self.slave, BuilderInteractor(None), Exception(fail_notes))
+            self.slave, BuilderInteractor(), Exception(fail_notes))
 
     @defer.inlineCallbacks
     def test_equal_failures_reset_job(self):

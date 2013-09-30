@@ -151,7 +151,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build.distro_arch_series.addOrUpdateChroot(lf)
         bq = build.queueBuild()
         bq.markAsBuilding(builder)
-        interactor = BuilderInteractor(None)
+        interactor = BuilderInteractor()
         d = interactor._startBuild(
             bq, vitals, builder, slave,
             interactor.getBuildBehavior(bq, builder, slave), BufferLogger())
@@ -175,7 +175,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build.distro_arch_series.addOrUpdateChroot(lf)
         bq = build.queueBuild()
         bq.markAsBuilding(builder)
-        interactor = BuilderInteractor(None)
+        interactor = BuilderInteractor()
         d = interactor._startBuild(
             bq, vitals, builder, slave,
             interactor.getBuildBehavior(bq, builder, slave), BufferLogger())
@@ -203,7 +203,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build.distro_arch_series.addOrUpdateChroot(lf)
         bq = build.queueBuild()
         bq.markAsBuilding(builder)
-        interactor = BuilderInteractor(None)
+        interactor = BuilderInteractor()
         d = interactor._startBuild(
             bq, vitals, builder, slave,
             interactor.getBuildBehavior(bq, builder, slave), BufferLogger())
@@ -325,7 +325,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
         switch_dbuser('testadmin')
 
         self.builder = self.factory.makeBuilder()
-        self.interactor = BuilderInteractor(None)
+        self.interactor = BuilderInteractor()
         self.build = self.factory.makeBinaryPackageBuild(
             builder=self.builder, pocket=PackagePublishingPocket.RELEASE)
         lf = self.factory.makeLibraryFileAlias()

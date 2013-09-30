@@ -68,36 +68,32 @@ class TestBuilderInteractor(TestCase):
         # extractBuildStatus picks the name of the build status out of a
         # dict describing the slave's status.
         slave_status = {'build_status': 'BuildStatus.BUILDING'}
-        interactor = BuilderInteractor(MockBuilder())
         self.assertEqual(
-            'BUILDING', interactor.extractBuildStatus(slave_status))
+            'BUILDING', BuilderInteractor.extractBuildStatus(slave_status))
 
     def test_extractBuildStatus_malformed(self):
         # extractBuildStatus errors out when the status string is not
         # of the form it expects.
         slave_status = {'build_status': 'BUILDING'}
-        interactor = BuilderInteractor(MockBuilder())
         self.assertRaises(
-            AssertionError, interactor.extractBuildStatus, slave_status)
+            AssertionError, BuilderInteractor.extractBuildStatus, slave_status)
 
     def test_verifySlaveBuildCookie_building_match(self):
-        interactor = BuilderInteractor(MockBuilder())
-        interactor.verifySlaveBuildCookie(TrivialBehavior(), 'trivial')
+        BuilderInteractor.verifySlaveBuildCookie(TrivialBehavior(), 'trivial')
 
     def test_verifySlaveBuildCookie_building_mismatch(self):
-        interactor = BuilderInteractor(MockBuilder())
         self.assertRaises(
             CorruptBuildCookie,
-            interactor.verifySlaveBuildCookie, TrivialBehavior(), 'difficult')
+            BuilderInteractor.verifySlaveBuildCookie,
+            TrivialBehavior(), 'difficult')
 
     def test_verifySlaveBuildCookie_idle_match(self):
-        interactor = BuilderInteractor(MockBuilder())
-        interactor.verifySlaveBuildCookie(None, None)
+        BuilderInteractor.verifySlaveBuildCookie(None, None)
 
     def test_verifySlaveBuildCookie_idle_mismatch(self):
-        interactor = BuilderInteractor(MockBuilder())
         self.assertRaises(
-            CorruptBuildCookie, interactor.verifySlaveBuildCookie, None, 'foo')
+            CorruptBuildCookie,
+            BuilderInteractor.verifySlaveBuildCookie, None, 'foo')
 
     def test_rescueIfLost_aborts_lost_and_broken_slave(self):
         # A slave that's 'lost' should be aborted; when the slave is
@@ -170,13 +166,13 @@ class TestBuilderInteractor(TestCase):
         # security context.
         builder = MockBuilder(virtualized=False)
         vitals = extract_vitals_from_db(builder)
-        slave = BuilderInteractor(None).makeSlaveFromVitals(vitals)
+        slave = BuilderInteractor.makeSlaveFromVitals(vitals)
         self.assertEqual(builder.url, slave.url)
         self.assertEqual(10, slave.timeout)
 
         builder = MockBuilder(virtualized=True)
         vitals = extract_vitals_from_db(builder)
-        slave = BuilderInteractor(None).makeSlaveFromVitals(vitals)
+        slave = BuilderInteractor.makeSlaveFromVitals(vitals)
         self.assertEqual(5, slave.timeout)
 
     @defer.inlineCallbacks
@@ -305,8 +301,7 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
         """An idle builder has no build behavior."""
         self.assertIs(
             None,
-            BuilderInteractor(None).getBuildBehavior(
-                None, MockBuilder(), None))
+            BuilderInteractor.getBuildBehavior(None, MockBuilder(), None))
 
     def test_getBuildBehavior_building(self):
         """The current behavior is set automatically from the current job."""
@@ -317,8 +312,7 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
         build = self.factory.makeBinaryPackageBuild()
         bq = build.queueBuild()
         bq.markAsBuilding(builder)
-        behavior = BuilderInteractor(None).getBuildBehavior(
-            bq, builder, slave)
+        behavior = BuilderInteractor.getBuildBehavior(bq, builder, slave)
         self.assertIsInstance(behavior, BinaryPackageBuildBehavior)
         self.assertEqual(behavior._builder, builder)
         self.assertEqual(behavior._slave, slave)

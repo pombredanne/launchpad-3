@@ -227,9 +227,6 @@ def extract_vitals_from_db(builder, build_queue=None):
 
 class BuilderInteractor(object):
 
-    def __init__(self, builder):
-        self.builder = builder
-
     @staticmethod
     def makeSlaveFromVitals(vitals):
         if vitals.virtualized:

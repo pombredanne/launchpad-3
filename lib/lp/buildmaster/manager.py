@@ -212,7 +212,7 @@ class SlaveScanner:
             builder.handleFailure(self.logger)
             yield assessFailureCounts(
                 self.logger, vitals, builder, self.slave_factory(vitals),
-                self.interactor_factory(None), failure.value)
+                self.interactor_factory(), failure.value)
             transaction.commit()
         except Exception:
             # Catastrophic code failure! Not much we can do.
@@ -280,7 +280,7 @@ class SlaveScanner:
         # latest data from the DB.
         transaction.commit()
         vitals = self.builders_cache.getVitals(self.builder_name)
-        interactor = self.interactor_factory(None)
+        interactor = self.interactor_factory()
         slave = self.slave_factory(vitals)
 
         # Confirm that the DB and slave sides are in a valid, mutually
