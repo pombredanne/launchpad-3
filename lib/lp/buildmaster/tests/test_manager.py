@@ -470,11 +470,12 @@ class TestSlaveScannerWithoutDB(TestCase):
     @defer.inlineCallbacks
     def test_scan_with_job(self):
         # SlaveScanner.scan calls updateBuild() when a job is building.
-        interactor = BuilderInteractor(
-            MockBuilder(), BuildingSlave('trivial'), TrivialBehavior())
+        builder = MockBuilder()
+        slave = BuildingSlave('trivial')
+        interactor = BuilderInteractor(builder, slave, TrivialBehavior())
         bq = FakeBuildQueue()
         scanner = SlaveScanner(
-            'mock', MockBuildersCache(interactor.builder, bq), BufferLogger())
+            'mock', MockBuildersCache(builder, bq), BufferLogger())
 
         # Instrument updateBuild and currentjob.reset
         interactor.updateBuild = FakeMethod()
@@ -482,7 +483,7 @@ class TestSlaveScannerWithoutDB(TestCase):
         scanner.checkCancellation = FakeMethod(defer.succeed(False))
 
         yield scanner.scan(interactor=interactor)
-        self.assertEqual(['status'], interactor.slave.call_log)
+        self.assertEqual(['status'], slave.call_log)
         self.assertEqual(1, interactor.updateBuild.call_count)
         self.assertEqual(0, bq.reset.call_count)
 
@@ -490,11 +491,12 @@ class TestSlaveScannerWithoutDB(TestCase):
     def test_scan_aborts_lost_slave_with_job(self):
         # SlaveScanner.scan uses BuilderInteractor.rescueIfLost to abort
         # slaves that don't have the expected job.
-        interactor = BuilderInteractor(
-            MockBuilder(), BuildingSlave('nontrivial'), TrivialBehavior())
+        builder = MockBuilder()
+        slave = BuildingSlave('nontrivial')
+        interactor = BuilderInteractor(builder, slave, TrivialBehavior())
         bq = FakeBuildQueue()
         scanner = SlaveScanner(
-            'mock', MockBuildersCache(interactor.builder, bq), BufferLogger())
+            'mock', MockBuildersCache(builder, bq), BufferLogger())
 
         # Instrument updateBuild and currentjob.reset
         interactor.updateBuild = FakeMethod()
@@ -505,7 +507,7 @@ class TestSlaveScannerWithoutDB(TestCase):
         # lost, abort() the slave, then reset() the job without calling
         # updateBuild().
         yield scanner.scan(interactor=interactor)
-        self.assertEqual(['status', 'abort'], interactor.slave.call_log)
+        self.assertEqual(['status', 'abort'], slave.call_log)
         self.assertEqual(0, interactor.updateBuild.call_count)
         self.assertEqual(1, bq.reset.call_count)
 
@@ -513,9 +515,11 @@ class TestSlaveScannerWithoutDB(TestCase):
     def test_scan_aborts_lost_slave_when_idle(self):
         # SlaveScanner.scan uses BuilderInteractor.rescueIfLost to abort
         # slaves that aren't meant to have a job.
-        interactor = BuilderInteractor(MockBuilder(), BuildingSlave(), None)
+        builder = MockBuilder()
+        slave = BuildingSlave()
+        interactor = BuilderInteractor(builder, slave, None)
         scanner = SlaveScanner(
-            'mock', MockBuildersCache(interactor.builder, None),
+            'mock', MockBuildersCache(builder, None),
             BufferLogger())
 
         # Instrument updateBuild.
@@ -525,7 +529,7 @@ class TestSlaveScannerWithoutDB(TestCase):
         # lost, abort() the slave, then reset() the job without calling
         # updateBuild().
         yield scanner.scan(interactor=interactor)
-        self.assertEqual(['status', 'abort'], interactor.slave.call_log)
+        self.assertEqual(['status', 'abort'], slave.call_log)
         self.assertEqual(0, interactor.updateBuild.call_count)
 
 
