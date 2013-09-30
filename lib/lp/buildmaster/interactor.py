@@ -230,11 +230,6 @@ class BuilderInteractor(object):
     def __init__(self, builder):
         self.builder = builder
 
-    @property
-    def vitals(self):
-        # XXX wgrant: The BuilderVitals should be passed in.
-        return extract_vitals_from_db(self.builder)
-
     @staticmethod
     def makeSlaveFromVitals(vitals):
         if vitals.virtualized:
