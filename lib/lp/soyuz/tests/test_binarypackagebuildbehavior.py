@@ -93,7 +93,8 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
             in order to trick the slave into building correctly.
         :return: A list of the calls we expect to be made.
         """
-        cookie = interactor._current_build_behavior.getBuildCookie()
+        cookie = IBuildFarmJobBehavior(
+            build.buildqueue_record.specific_job).getBuildCookie()
         ds_name = build.distro_arch_series.distroseries.name
         suite = ds_name + pocketsuffix[build.pocket]
         archives = get_sources_list_for_building(
@@ -149,7 +150,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         interactor = BuilderInteractor(builder, slave)
         d = interactor._startBuild(
             bq, interactor.vitals, builder, slave,
-            interactor._current_build_behavior, BufferLogger())
+            interactor.getBuildBehavior(bq, builder, slave), BufferLogger())
         d.addCallback(
             self.assertExpectedInteraction, slave.call_log, interactor, build,
             lf, archive, ArchivePurpose.PRIMARY, 'universe')
@@ -172,7 +173,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         interactor = BuilderInteractor(builder, slave)
         d = interactor._startBuild(
             bq, interactor.vitals, builder, slave,
-            interactor._current_build_behavior, BufferLogger())
+            interactor.getBuildBehavior(bq, builder, slave), BufferLogger())
 
         def check_build(ignored):
             # We expect the first call to the slave to be a resume call,
@@ -199,7 +200,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         interactor = BuilderInteractor(builder, slave)
         d = interactor._startBuild(
             bq, interactor.vitals, builder, slave,
-            interactor._current_build_behavior, BufferLogger())
+            interactor.getBuildBehavior(bq, builder, slave), BufferLogger())
         d.addCallback(
             self.assertExpectedInteraction, slave.call_log, interactor, build,
             lf, archive, ArchivePurpose.PARTNER)

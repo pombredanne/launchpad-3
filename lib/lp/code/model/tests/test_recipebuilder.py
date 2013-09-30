@@ -370,7 +370,8 @@ class TestBuildNotifications(TrialTestCase):
         self.queue_record.builder = self.factory.makeBuilder()
         slave = WaitingSlave('BuildStatus.OK')
         interactor = BuilderInteractor(self.queue_record.builder, slave)
-        return removeSecurityProxy(interactor._current_build_behavior)
+        return interactor.getBuildBehavior(
+            self.queue_record, self.queue_record.builder, slave)
 
     def assertDeferredNotifyCount(self, status, behavior, expected_count):
         d = behavior.handleStatus(self.queue_record, status, {'filemap': {}})
