@@ -40,8 +40,7 @@ Launchpad sends that address a confirmation message.
     >>> user_browser.getControl('Change').click()
     >>> print user_browser.title
     Aardvarks in Launchpad
-    >>> for msg in get_feedback_messages(user_browser.contents):
-    ...     print msg
+    >>> print_feedback_messages(user_browser.contents)
     A confirmation message has been sent to...
     >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
     >>> stub.test_emails
@@ -65,8 +64,7 @@ confirmed.
     >>> user_browser.getControl('Continue').click()
     >>> print user_browser.title
     Aardvarks in Launchpad
-    >>> for msg in get_feedback_messages(user_browser.contents):
-    ...     print msg
+    >>> print_feedback_messages(user_browser.contents)
     Email address successfully confirmed.
 
     >>> user_browser.getLink(url="+contactaddress").click()

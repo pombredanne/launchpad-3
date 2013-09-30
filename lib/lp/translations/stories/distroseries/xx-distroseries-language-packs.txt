@@ -104,7 +104,7 @@ option to set/unset whether next language pack generation is a full export:
     >>> admin_browser.getControl('Change').click()
     >>> print admin_browser.url
     http://translations.launchpad.dev/ubuntu/hoary/+language-packs
-    >>> print "\n".join(get_feedback_messages(admin_browser.contents))
+    >>> print_feedback_messages(admin_browser.contents)
     Your request has been noted. Next language pack export will include
     all available translations...
 

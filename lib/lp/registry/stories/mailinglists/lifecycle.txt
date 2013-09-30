@@ -29,8 +29,7 @@ He thinks for a second whether his mailing list is for Ubuntu or not.
     >>> browser.getControl('Create new Mailing List').click()
     >>> print browser.title
     Landscape Developers in Launchpad
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
+    >>> print_feedback_messages(browser.contents)
     The mailing list is being created and will be available for use in a few minutes.
 
 Once the mailing list is created, the button to create it is not shown
@@ -187,8 +186,7 @@ An inactive mailing list can be reactivated.
     >>> browser.getControl('Reactivate this Mailing List').click()
     >>> mailing_list_status_message(browser.contents)
     ''
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
+    >>> print_feedback_messages(browser.contents)
     The mailing list will be reactivated within a few minutes.
     >>> act()
     >>> transaction.commit()

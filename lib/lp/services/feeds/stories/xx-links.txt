@@ -68,8 +68,8 @@ the bug status and attempt to subscribe, they are redirected to the bug page:
     >>> auth_browser.open('http://feeds.launchpad.dev/bugs/14/bug.atom')
     >>> print auth_browser.url
     http://bugs.launchpad.dev/
-    >>> print get_feedback_messages(auth_browser.contents)
-    [u'The requested bug is private. Feeds do not serve private bugs.']
+    >>> print_feedback_messages(auth_browser.contents)
+    The requested bug is private. Feeds do not serve private bugs.
 
 == Latest Bugs and Branches for a Person ==
 
@@ -366,5 +366,5 @@ with an error notification:
     >>> browser.open('http://feeds.launchpad.dev/~name12/landscape/feature-x/branch.atom')
     >>> print browser.url
     http://code.launchpad.dev/
-    >>> print get_feedback_messages(browser.contents)
-    [u'The requested branch is private. Feeds do not serve private branches.']
+    >>> print_feedback_messages(browser.contents)
+    The requested branch is private. Feeds do not serve private branches.

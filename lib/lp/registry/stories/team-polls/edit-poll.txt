@@ -28,7 +28,7 @@ Now we'll try to change its name to something that is already in use.
     ...     'The unique name of this poll').value = 'never-closes'
     >>> team_admin_browser.getControl('Save').click()
 
-    >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
+    >>> print_feedback_messages(team_admin_browser.contents)
     There is 1 error.
     ...never-closes is already in use by another poll in this team.
 
@@ -43,7 +43,7 @@ message.
     ...     name='field.datecloses').value = '3000-01-01 00:00:00+00:00'
     >>> team_admin_browser.getControl('Save').click()
 
-    >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
+    >>> print_feedback_messages(team_admin_browser.contents)
     There is 1 error.
     A poll cannot close at the time (or before) it opens.
 

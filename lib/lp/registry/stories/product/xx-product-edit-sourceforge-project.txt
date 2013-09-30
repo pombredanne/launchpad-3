@@ -7,8 +7,7 @@ The setting of the SourceForge project is constrained.
     ...     admin_browser.getControl('Sourceforge Project').value = name
     ...     admin_browser.getControl('Change').click()
     ...     print admin_browser.url
-    ...     for message in get_feedback_messages(admin_browser.contents):
-    ...         print message
+    ...     print_feedback_messages(admin_browser.contents)
 
     >>> set_sourceforge_project('1234')
     http://launchpad.dev/firefox/+edit
