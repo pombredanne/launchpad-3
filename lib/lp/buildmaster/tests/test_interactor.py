@@ -164,18 +164,20 @@ class TestBuilderInteractor(TestCase):
             DevNullLogger(), Exception())
         return assert_fails_with(d, CannotResumeHost)
 
-    def test_slave(self):
+    def test_makeSlaveFromVitals(self):
         # Builder.slave is a BuilderSlave that points at the actual Builder.
         # The Builder is only ever used in scripts that run outside of the
         # security context.
         builder = MockBuilder(virtualized=False)
-        interactor = BuilderInteractor(builder)
-        self.assertEqual(builder.url, interactor.slave.url)
-        self.assertEqual(10, interactor.slave.timeout)
+        vitals = extract_vitals_from_db(builder)
+        slave = BuilderInteractor(None).makeSlaveFromVitals(vitals)
+        self.assertEqual(builder.url, slave.url)
+        self.assertEqual(10, slave.timeout)
 
         builder = MockBuilder(virtualized=True)
-        interactor = BuilderInteractor(builder)
-        self.assertEqual(5, interactor.slave.timeout)
+        vitals = extract_vitals_from_db(builder)
+        slave = BuilderInteractor(None).makeSlaveFromVitals(vitals)
+        self.assertEqual(5, slave.timeout)
 
     @defer.inlineCallbacks
     def test_recover_idle_slave(self):

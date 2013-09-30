@@ -227,15 +227,8 @@ def extract_vitals_from_db(builder, build_queue=None):
 
 class BuilderInteractor(object):
 
-    _cached_slave = None
-    _cached_slave_attrs = None
-
-    # Tests can override the slave.
-    _override_slave = None
-
-    def __init__(self, builder, override_slave=None):
+    def __init__(self, builder):
         self.builder = builder
-        self._override_slave = override_slave
 
     @property
     def vitals(self):
@@ -250,20 +243,6 @@ class BuilderInteractor(object):
             timeout = config.builddmaster.socket_timeout
         return BuilderSlave.makeBuilderSlave(
             vitals.url, vitals.vm_host, timeout)
-
-    @property
-    def slave(self):
-        """See IBuilder."""
-        if self._override_slave is not None:
-            return self._override_slave
-        # The slave cache is invalidated when the builder's URL, VM host
-        # or virtualisation change.
-        new_slave_attrs = (
-            self.vitals.url, self.vitals.vm_host, self.vitals.virtualized)
-        if self._cached_slave_attrs != new_slave_attrs:
-            self._cached_slave = self.makeSlaveFromVitals(self.vitals)
-            self._cached_slave_attrs = new_slave_attrs
-        return self._cached_slave
 
     @staticmethod
     def getBuildBehavior(queue_item, builder, slave):
