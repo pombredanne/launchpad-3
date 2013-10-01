@@ -278,16 +278,6 @@ class DistributionSourcePackage(BugTargetBase,
             [self.sourcepackagename])
         return releases.get(self)
 
-    def bugtasks(self, quantity=None):
-        """See `IDistributionSourcePackage`."""
-        return BugTask.select("""
-            distribution=%s AND
-            sourcepackagename=%s
-            """ % sqlvalues(self.distribution.id,
-                            self.sourcepackagename.id),
-            orderBy='-datecreated',
-            limit=quantity)
-
     def get_distroseries_packages(self, active_only=True):
         """See `IDistributionSourcePackage`."""
         result = []

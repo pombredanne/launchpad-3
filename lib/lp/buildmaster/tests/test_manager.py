@@ -470,19 +470,23 @@ class TestSlaveScannerWithoutDB(TestCase):
     @defer.inlineCallbacks
     def test_scan_with_job(self):
         # SlaveScanner.scan calls updateBuild() when a job is building.
-        interactor = BuilderInteractor(
-            MockBuilder(), BuildingSlave('trivial'), TrivialBehavior())
+        slave = BuildingSlave('trivial')
         bq = FakeBuildQueue()
-        scanner = SlaveScanner(
-            'mock', MockBuildersCache(interactor.builder, bq), BufferLogger())
 
-        # Instrument updateBuild and currentjob.reset
+        # Instrument updateBuild.
+        interactor = BuilderInteractor()
         interactor.updateBuild = FakeMethod()
+
+        scanner = SlaveScanner(
+            'mock', MockBuildersCache(MockBuilder(), bq), BufferLogger(),
+            interactor_factory=FakeMethod(interactor),
+            slave_factory=FakeMethod(slave),
+            behavior_factory=FakeMethod(TrivialBehavior()))
         # XXX: checkCancellation needs more than a FakeBuildQueue.
         scanner.checkCancellation = FakeMethod(defer.succeed(False))
 
-        yield scanner.scan(interactor=interactor)
-        self.assertEqual(['status'], interactor.slave.call_log)
+        yield scanner.scan()
+        self.assertEqual(['status'], slave.call_log)
         self.assertEqual(1, interactor.updateBuild.call_count)
         self.assertEqual(0, bq.reset.call_count)
 
@@ -490,22 +494,26 @@ class TestSlaveScannerWithoutDB(TestCase):
     def test_scan_aborts_lost_slave_with_job(self):
         # SlaveScanner.scan uses BuilderInteractor.rescueIfLost to abort
         # slaves that don't have the expected job.
-        interactor = BuilderInteractor(
-            MockBuilder(), BuildingSlave('nontrivial'), TrivialBehavior())
+        slave = BuildingSlave('nontrivial')
         bq = FakeBuildQueue()
-        scanner = SlaveScanner(
-            'mock', MockBuildersCache(interactor.builder, bq), BufferLogger())
 
-        # Instrument updateBuild and currentjob.reset
+        # Instrument updateBuild.
+        interactor = BuilderInteractor()
         interactor.updateBuild = FakeMethod()
+
+        scanner = SlaveScanner(
+            'mock', MockBuildersCache(MockBuilder(), bq), BufferLogger(),
+            interactor_factory=FakeMethod(interactor),
+            slave_factory=FakeMethod(slave),
+            behavior_factory=FakeMethod(TrivialBehavior()))
         # XXX: checkCancellation needs more than a FakeBuildQueue.
         scanner.checkCancellation = FakeMethod(defer.succeed(False))
 
         # A single scan will call status(), notice that the slave is
         # lost, abort() the slave, then reset() the job without calling
         # updateBuild().
-        yield scanner.scan(interactor=interactor)
-        self.assertEqual(['status', 'abort'], interactor.slave.call_log)
+        yield scanner.scan()
+        self.assertEqual(['status', 'abort'], slave.call_log)
         self.assertEqual(0, interactor.updateBuild.call_count)
         self.assertEqual(1, bq.reset.call_count)
 
@@ -513,19 +521,23 @@ class TestSlaveScannerWithoutDB(TestCase):
     def test_scan_aborts_lost_slave_when_idle(self):
         # SlaveScanner.scan uses BuilderInteractor.rescueIfLost to abort
         # slaves that aren't meant to have a job.
-        interactor = BuilderInteractor(MockBuilder(), BuildingSlave(), None)
-        scanner = SlaveScanner(
-            'mock', MockBuildersCache(interactor.builder, None),
-            BufferLogger())
+        slave = BuildingSlave()
 
         # Instrument updateBuild.
+        interactor = BuilderInteractor()
         interactor.updateBuild = FakeMethod()
+
+        scanner = SlaveScanner(
+            'mock', MockBuildersCache(MockBuilder(), None), BufferLogger(),
+            interactor_factory=FakeMethod(interactor),
+            slave_factory=FakeMethod(slave),
+            behavior_factory=FakeMethod(None))
 
         # A single scan will call status(), notice that the slave is
         # lost, abort() the slave, then reset() the job without calling
         # updateBuild().
-        yield scanner.scan(interactor=interactor)
-        self.assertEqual(['status', 'abort'], interactor.slave.call_log)
+        yield scanner.scan()
+        self.assertEqual(['status', 'abort'], slave.call_log)
         self.assertEqual(0, interactor.updateBuild.call_count)
 
 
@@ -540,7 +552,11 @@ class TestCancellationChecking(TestCaseWithFactory):
         builder_name = BOB_THE_BUILDER_NAME
         self.builder = getUtility(IBuilderSet)[builder_name]
         self.builder.virtualized = True
-        self.interactor = BuilderInteractor(self.builder)
+        self.interactor = BuilderInteractor()
+
+    @property
+    def vitals(self):
+        return extract_vitals_from_db(self.builder)
 
     def _getScanner(self, clock=None):
         scanner = SlaveScanner(
@@ -551,7 +567,8 @@ class TestCancellationChecking(TestCaseWithFactory):
     def test_ignores_nonvirtual(self):
         # If the builder is nonvirtual make sure we return False.
         self.builder.virtualized = False
-        d = self._getScanner().checkCancellation(self.builder, self.interactor)
+        d = self._getScanner().checkCancellation(
+            self.vitals, self.builder, None, self.interactor)
         return d.addCallback(self.assertFalse)
 
     def test_ignores_no_buildqueue(self):
@@ -559,12 +576,14 @@ class TestCancellationChecking(TestCaseWithFactory):
         # make sure we return False.
         buildqueue = self.builder.currentjob
         buildqueue.reset()
-        d = self._getScanner().checkCancellation(self.builder, self.interactor)
+        d = self._getScanner().checkCancellation(
+            self.vitals, self.builder, None, self.interactor)
         return d.addCallback(self.assertFalse)
 
     def test_ignores_build_not_cancelling(self):
         # If the active build is not in a CANCELLING state, ignore it.
-        d = self._getScanner().checkCancellation(self.builder, self.interactor)
+        d = self._getScanner().checkCancellation(
+            self.vitals, self.builder, None, self.interactor)
         return d.addCallback(self.assertFalse)
 
     @defer.inlineCallbacks
@@ -573,21 +592,21 @@ class TestCancellationChecking(TestCaseWithFactory):
         # True is returned and the slave was resumed.
         slave = OkSlave()
         self.builder.vm_host = "fake_vm_host"
-        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
-        self.interactor = BuilderInteractor(self.builder)
         buildqueue = self.builder.currentjob
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
         build.updateStatus(BuildStatus.CANCELLING)
         clock = task.Clock()
         scanner = self._getScanner(clock=clock)
 
-        result = yield scanner.checkCancellation(self.builder, self.interactor)
+        result = yield scanner.checkCancellation(
+            self.vitals, self.builder, slave, self.interactor)
         self.assertNotIn("resume", slave.call_log)
         self.assertFalse(result)
         self.assertEqual(BuildStatus.CANCELLING, build.status)
 
         clock.advance(SlaveScanner.CANCEL_TIMEOUT)
-        result = yield scanner.checkCancellation(self.builder, self.interactor)
+        result = yield scanner.checkCancellation(
+            self.vitals, self.builder, slave, self.interactor)
         self.assertEqual(1, slave.call_log.count("resume"))
         self.assertTrue(result)
         self.assertEqual(BuildStatus.CANCELLED, build.status)
@@ -598,13 +617,11 @@ class TestCancellationChecking(TestCaseWithFactory):
         # immediately resume the slave as if the cancel timeout had expired.
         slave = LostBuildingBrokenSlave()
         self.builder.vm_host = "fake_vm_host"
-        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
-        self.interactor = BuilderInteractor(self.builder)
         buildqueue = self.builder.currentjob
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
         build.updateStatus(BuildStatus.CANCELLING)
         result = yield self._getScanner().checkCancellation(
-            self.builder, self.interactor)
+            self.vitals, self.builder, slave, self.interactor)
         self.assertEqual(1, slave.call_log.count("resume"))
         self.assertTrue(result)
         self.assertEqual(BuildStatus.CANCELLED, build.status)
@@ -649,6 +666,7 @@ class TestBuilddManager(TestCase):
 class TestFailureAssessments(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
+    run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
@@ -656,12 +674,13 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.build = self.factory.makeSourcePackageRecipeBuild()
         self.buildqueue = self.build.queueBuild()
         self.buildqueue.markAsBuilding(self.builder)
-        self.interactor = BuilderInteractor(self.builder)
+        self.slave = OkSlave()
 
     def _assessFailureCounts(self, fail_notes):
         # Helper for assessFailureCounts boilerplate.
         return assessFailureCounts(
-            BufferLogger(), self.interactor, Exception(fail_notes))
+            BufferLogger(), extract_vitals_from_db(self.builder), self.builder,
+            self.slave, BuilderInteractor(), Exception(fail_notes))
 
     @defer.inlineCallbacks
     def test_equal_failures_reset_job(self):
@@ -686,7 +705,7 @@ class TestFailureAssessments(TestCaseWithFactory):
     @defer.inlineCallbacks
     def test_virtual_builder_reset_thresholds(self):
         self.builder.virtualized = True
-        self.patch(self.interactor, "resumeSlaveHost", FakeMethod())
+        self.builder.vm_host = 'foo'
 
         for failure_count in range(
             Builder.RESET_THRESHOLD - 1,
@@ -697,7 +716,7 @@ class TestFailureAssessments(TestCaseWithFactory):
             self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
             self.assertEqual(
                 failure_count // Builder.RESET_THRESHOLD,
-                self.interactor.resumeSlaveHost.call_count)
+                self.slave.call_log.count('resume'))
             self.assertTrue(self.builder.builderok)
 
         self.builder.failure_count = (
@@ -707,27 +726,25 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
         self.assertEqual(
             Builder.RESET_FAILURE_THRESHOLD - 1,
-            self.interactor.resumeSlaveHost.call_count)
+            self.slave.call_log.count('resume'))
         self.assertFalse(self.builder.builderok)
         self.assertEqual("failnotes", self.builder.failnotes)
 
     @defer.inlineCallbacks
     def test_non_virtual_builder_reset_thresholds(self):
         self.builder.virtualized = False
-        self.patch(self.interactor, "resumeSlaveHost", FakeMethod())
-
         self.builder.failure_count = Builder.RESET_THRESHOLD - 1
         yield self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
-        self.assertEqual(0, self.interactor.resumeSlaveHost.call_count)
+        self.assertEqual(0, self.slave.call_log.count('resume'))
         self.assertTrue(self.builder.builderok)
 
         self.builder.failure_count = Builder.RESET_THRESHOLD
         yield self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(self.build.status, BuildStatus.NEEDSBUILD)
-        self.assertEqual(0, self.interactor.resumeSlaveHost.call_count)
+        self.assertEqual(0, self.slave.call_log.count('resume'))
         self.assertFalse(self.builder.builderok)
         self.assertEqual("failnotes", self.builder.failnotes)
 

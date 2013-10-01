@@ -135,9 +135,9 @@ class TestHandleStatusMixin:
         self.build.buildqueue_record.markAsBuilding(self.builder)
         self.slave = WaitingSlave('BuildStatus.OK')
         self.slave.valid_file_hashes.append('test_file_hash')
-        self.interactor = BuilderInteractor(self.builder, self.slave)
-        self.behavior = removeSecurityProxy(
-            self.interactor._current_build_behavior)
+        self.interactor = BuilderInteractor()
+        self.behavior = self.interactor.getBuildBehavior(
+            self.build.buildqueue_record, self.builder, self.slave)
 
         # We overwrite the buildmaster root to use a temp directory.
         tempdir = tempfile.mkdtemp()
@@ -253,9 +253,8 @@ class TestHandleStatusMixin:
 
     def test_handleStatus_ABORTED_recovers_building(self):
         self.builder.vm_host = "fake_vm_host"
-        self.interactor = BuilderInteractor(self.builder, self.slave)
-        self.behavior = removeSecurityProxy(
-            self.interactor._current_build_behavior)
+        self.behavior = self.interactor.getBuildBehavior(
+            self.build.buildqueue_record, self.builder, self.slave)
         self.build.updateStatus(BuildStatus.BUILDING)
 
         def got_status(ignored):

@@ -227,63 +227,26 @@ def extract_vitals_from_db(builder, build_queue=None):
 
 class BuilderInteractor(object):
 
-    _cached_build_behavior = None
-    _cached_currentjob = None
+    @staticmethod
+    def makeSlaveFromVitals(vitals):
+        if vitals.virtualized:
+            timeout = config.builddmaster.virtualized_socket_timeout
+        else:
+            timeout = config.builddmaster.socket_timeout
+        return BuilderSlave.makeBuilderSlave(
+            vitals.url, vitals.vm_host, timeout)
 
-    _cached_slave = None
-    _cached_slave_attrs = None
+    @staticmethod
+    def getBuildBehavior(queue_item, builder, slave):
+        if queue_item is None:
+            return None
+        behavior = IBuildFarmJobBehavior(queue_item.specific_job)
+        behavior.setBuilder(builder, slave)
+        return behavior
 
-    # Tests can override _current_build_behavior and slave.
-    _override_behavior = None
-    _override_slave = None
-
-    def __init__(self, builder, override_slave=None, override_behavior=None):
-        self.builder = builder
-        self._override_slave = override_slave
-        self._override_behavior = override_behavior
-
-        # XXX wgrant: The BuilderVitals should be passed in.
-        self.vitals = extract_vitals_from_db(builder)
-
-    @property
-    def slave(self):
-        """See IBuilder."""
-        if self._override_slave is not None:
-            return self._override_slave
-        # The slave cache is invalidated when the builder's URL, VM host
-        # or virtualisation change.
-        new_slave_attrs = (
-            self.vitals.url, self.vitals.vm_host, self.vitals.virtualized)
-        if self._cached_slave_attrs != new_slave_attrs:
-            if self.vitals.virtualized:
-                timeout = config.builddmaster.virtualized_socket_timeout
-            else:
-                timeout = config.builddmaster.socket_timeout
-            self._cached_slave = BuilderSlave.makeBuilderSlave(
-                self.vitals.url, self.vitals.vm_host, timeout)
-            self._cached_slave_attrs = new_slave_attrs
-        return self._cached_slave
-
-    @property
-    def _current_build_behavior(self):
-        """Return the current build behavior."""
-        if self._override_behavior is not None:
-            return self._override_behavior
-        # The _current_build_behavior cache is invalidated when
-        # builder.currentjob changes.
-        currentjob = self.builder.currentjob
-        if currentjob is None:
-            self._cached_build_behavior = None
-            self._cached_currentjob = None
-        elif currentjob != self._cached_currentjob:
-            self._cached_build_behavior = IBuildFarmJobBehavior(
-                currentjob.specific_job)
-            self._cached_build_behavior.setBuilder(self.builder, self.slave)
-            self._cached_currentjob = currentjob
-        return self._cached_build_behavior
-
+    @staticmethod
     @defer.inlineCallbacks
-    def slaveStatus(self):
+    def slaveStatus(slave):
         """Get the slave status for this builder.
 
         :return: A Deferred which fires when the slave dialog is complete.
@@ -291,7 +254,7 @@ class BuilderInteractor(object):
             potentially other values included by the current build
             behavior.
         """
-        status_sentence = yield self.slave.status()
+        status_sentence = yield slave.status()
         status = {'builder_status': status_sentence[0]}
 
         # Extract detailed status and log information if present.
@@ -304,7 +267,8 @@ class BuilderInteractor(object):
                 status['logtail'] = status_sentence[2]
         defer.returnValue((status_sentence, status))
 
-    def verifySlaveBuildCookie(self, behavior, slave_cookie):
+    @staticmethod
+    def verifySlaveBuildCookie(behavior, slave_cookie):
         """See `IBuildFarmJobBehavior`."""
         if behavior is None:
             if slave_cookie is not None:
@@ -316,8 +280,9 @@ class BuilderInteractor(object):
                     "Invalid slave build cookie: got %r, expected %r."
                     % (slave_cookie, good_cookie))
 
+    @classmethod
     @defer.inlineCallbacks
-    def rescueIfLost(self, logger=None):
+    def rescueIfLost(cls, vitals, slave, behavior, logger=None):
         """Reset the slave if its job information doesn't match the DB.
 
         This checks the build ID reported in the slave status against the
@@ -343,7 +308,7 @@ class BuilderInteractor(object):
         # Determine the slave's current build cookie. For BUILDING, ABORTING
         # and WAITING we extract the string from the slave status
         # sentence, and for IDLE it is None.
-        status_sentence = yield self.slave.status()
+        status_sentence = yield slave.status()
         status = status_sentence[0]
         if status not in ident_position.keys():
             slave_cookie = None
@@ -355,24 +320,24 @@ class BuilderInteractor(object):
         # verifying that the slave cookie is None iff we expect the
         # slave to be idle.
         try:
-            self.verifySlaveBuildCookie(
-                self._current_build_behavior, slave_cookie)
+            cls.verifySlaveBuildCookie(behavior, slave_cookie)
             defer.returnValue(False)
         except CorruptBuildCookie as reason:
             # An IDLE slave doesn't need rescuing (SlaveScanner.scan
             # will rescue the DB side instead), and we just have to wait
             # out an ABORTING one.
             if status == 'BuilderStatus.WAITING':
-                yield self.slave.clean()
+                yield slave.clean()
             elif status == 'BuilderStatus.BUILDING':
-                yield self.slave.abort()
+                yield slave.abort()
             if logger:
                 logger.info(
                     "Builder '%s' rescued from '%s': '%s'" %
-                    (self.vitals.name, slave_cookie, reason))
+                    (vitals.name, slave_cookie, reason))
             defer.returnValue(True)
 
-    def resumeSlaveHost(self):
+    @classmethod
+    def resumeSlaveHost(cls, vitals, slave):
         """Resume the slave host to a known good condition.
 
         Issues 'builddmaster.vm_resume_command' specified in the configuration
@@ -385,16 +350,16 @@ class BuilderInteractor(object):
             whose value is a (stdout, stderr) tuple for success, or a Failure
             whose value is a CannotResumeHost exception.
         """
-        if not self.vitals.virtualized:
+        if not vitals.virtualized:
             return defer.fail(CannotResumeHost('Builder is not virtualized.'))
 
-        if not self.vitals.vm_host:
+        if not vitals.vm_host:
             return defer.fail(CannotResumeHost('Undefined vm_host.'))
 
-        logger = self._getSlaveScannerLogger()
-        logger.info("Resuming %s (%s)" % (self.vitals.name, self.vitals.url))
+        logger = cls._getSlaveScannerLogger()
+        logger.info("Resuming %s (%s)" % (vitals.name, vitals.url))
 
-        d = self.slave.resume()
+        d = slave.resume()
 
         def got_resume_ok((stdout, stderr, returncode)):
             return stdout, stderr
@@ -406,8 +371,10 @@ class BuilderInteractor(object):
 
         return d.addCallback(got_resume_ok).addErrback(got_resume_bad)
 
+    @classmethod
     @defer.inlineCallbacks
-    def _startBuild(self, build_queue_item, behavior, logger):
+    def _startBuild(cls, build_queue_item, vitals, builder, slave, behavior,
+                    logger):
         """Start a build on this builder.
 
         :param build_queue_item: A BuildQueueItem to build.
@@ -421,7 +388,7 @@ class BuilderInteractor(object):
         behavior.verifyBuildRequest(logger)
 
         # Set the build behavior depending on the provided build queue item.
-        if not self.builder.builderok:
+        if not builder.builderok:
             raise BuildDaemonError(
                 "Attempted to start a build on a known-bad builder.")
 
@@ -433,13 +400,14 @@ class BuilderInteractor(object):
         # This could be a quirk of the Xen guest, we're not sure.  We
         # also don't care about the result from this message, just that
         # it's sent, hence the "addBoth".  See bug 586359.
-        if self.builder.virtualized:
-            yield self.resumeSlaveHost()
-            yield self.slave.echo("ping")
+        if builder.virtualized:
+            yield cls.resumeSlaveHost(vitals, slave)
+            yield slave.echo("ping")
 
         yield behavior.dispatchBuildToSlave(build_queue_item.id, logger)
 
-    def resetOrFail(self, logger, exception):
+    @classmethod
+    def resetOrFail(cls, vitals, slave, builder, logger, exception):
         """Handle "confirmed" build slave failures.
 
         Call this when there have been multiple failures that are not just
@@ -458,54 +426,57 @@ class BuilderInteractor(object):
             or immediately if it's a non-virtual slave.
         """
         error_message = str(exception)
-        if self.vitals.virtualized:
+        if vitals.virtualized:
             # Virtualized/PPA builder: attempt a reset, unless the failure
             # was itself a failure to reset.  (In that case, the slave
             # scanner will try again until we reach the failure threshold.)
             if not isinstance(exception, CannotResumeHost):
                 logger.warn(
                     "Resetting builder: %s -- %s" % (
-                        self.vitals.url, error_message),
+                        vitals.url, error_message),
                     exc_info=True)
-                return self.resumeSlaveHost()
+                return cls.resumeSlaveHost(vitals, slave)
         else:
             # XXX: This should really let the failure bubble up to the
             # scan() method that does the failure counting.
             # Mark builder as 'failed'.
             logger.warn(
-                "Disabling builder: %s -- %s" % (
-                    self.vitals.url, error_message))
-            self.builder.failBuilder(error_message)
+                "Disabling builder: %s -- %s" % (vitals.url, error_message))
+            builder.failBuilder(error_message)
             transaction.commit()
         return defer.succeed(None)
 
+    @classmethod
     @defer.inlineCallbacks
-    def findAndStartJob(self):
+    def findAndStartJob(cls, vitals, builder, slave):
         """Find a job to run and send it to the buildd slave.
 
         :return: A Deferred whose value is the `IBuildQueue` instance
             found or None if no job was found.
         """
-        logger = self._getSlaveScannerLogger()
+        logger = cls._getSlaveScannerLogger()
         # XXX This method should be removed in favour of two separately
         # called methods that find and dispatch the job.  It will
         # require a lot of test fixing.
-        candidate = self.builder.acquireBuildCandidate()
+        candidate = builder.acquireBuildCandidate()
         if candidate is None:
             logger.debug("No build candidates available for builder.")
             defer.returnValue(None)
 
+        new_behavior = cls.getBuildBehavior(candidate, builder, slave)
         needed_bfjb = type(removeSecurityProxy(
             IBuildFarmJobBehavior(candidate.specific_job)))
-        if not zope_isinstance(self._current_build_behavior, needed_bfjb):
+        if not zope_isinstance(new_behavior, needed_bfjb):
             raise AssertionError(
                 "Inappropriate IBuildFarmJobBehavior: %r is not a %r" %
-                (self._current_build_behavior, needed_bfjb))
-        yield self._startBuild(candidate, self._current_build_behavior, logger)
+                (new_behavior, needed_bfjb))
+        yield cls._startBuild(
+            candidate, vitals, builder, slave, new_behavior, logger)
         defer.returnValue(candidate)
 
+    @classmethod
     @defer.inlineCallbacks
-    def updateBuild(self, queueItem):
+    def updateBuild(cls, queueItem, slave, behavior):
         """Verify the current build job status.
 
         Perform the required actions for each state.
@@ -517,20 +488,22 @@ class BuilderInteractor(object):
         # the DB, and this method isn't called unless the DB says
         # there's a job.
         builder_status_handlers = {
-            'BuilderStatus.BUILDING': self.updateBuild_BUILDING,
-            'BuilderStatus.ABORTING': self.updateBuild_ABORTING,
-            'BuilderStatus.WAITING': self.updateBuild_WAITING,
+            'BuilderStatus.BUILDING': cls.updateBuild_BUILDING,
+            'BuilderStatus.ABORTING': cls.updateBuild_ABORTING,
+            'BuilderStatus.WAITING': cls.updateBuild_WAITING,
             }
-        statuses = yield self.slaveStatus()
+        statuses = yield cls.slaveStatus(slave)
         logger = logging.getLogger('slave-scanner')
         status_sentence, status_dict = statuses
         builder_status = status_dict['builder_status']
         if builder_status not in builder_status_handlers:
             raise AssertionError("Unknown status %s" % builder_status)
         method = builder_status_handlers[builder_status]
-        yield method(queueItem, status_sentence, status_dict, logger)
+        yield method(
+            queueItem, behavior, status_sentence, status_dict, logger)
 
-    def updateBuild_BUILDING(self, queueItem, status_sentence, status_dict,
+    @staticmethod
+    def updateBuild_BUILDING(queueItem, behavior, status_sentence, status_dict,
                              logger):
         """Build still building, collect the logtail"""
         if queueItem.job.status != JobStatus.RUNNING:
@@ -538,7 +511,8 @@ class BuilderInteractor(object):
         queueItem.logtail = encoding.guess(str(status_dict.get('logtail')))
         transaction.commit()
 
-    def updateBuild_ABORTING(self, queueItem, status_sentence, status_dict,
+    @staticmethod
+    def updateBuild_ABORTING(queueItem, behavior, status_sentence, status_dict,
                              logger):
         """Build was ABORTED.
 
@@ -562,8 +536,9 @@ class BuilderInteractor(object):
 
         return status_string[len(lead_string):]
 
-    def updateBuild_WAITING(self, queueItem, status_sentence, status_dict,
-                            logger):
+    @classmethod
+    def updateBuild_WAITING(cls, queueItem, behavior, status_sentence,
+                            status_dict, logger):
         """Perform the actions needed for a slave in a WAITING state
 
         Buildslave can be WAITING in five situations:
@@ -577,13 +552,14 @@ class BuilderInteractor(object):
           Librarian with getFileFromSlave() and then pass the binaries to
           the uploader for processing.
         """
-        self._current_build_behavior.updateSlaveStatus(
+        behavior.updateSlaveStatus(
             status_sentence, status_dict)
-        d = self._current_build_behavior.handleStatus(
-            queueItem, self.extractBuildStatus(status_dict), status_dict)
+        d = behavior.handleStatus(
+            queueItem, cls.extractBuildStatus(status_dict), status_dict)
         return d
 
-    def _getSlaveScannerLogger(self):
+    @staticmethod
+    def _getSlaveScannerLogger():
         """Return the logger instance from buildd-slave-scanner.py."""
         # XXX cprov 20071120: Ideally the Launchpad logging system
         # should be able to configure the root-logger instead of creating
