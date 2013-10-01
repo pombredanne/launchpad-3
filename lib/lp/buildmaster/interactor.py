@@ -227,24 +227,6 @@ def extract_vitals_from_db(builder, build_queue=None):
 
 class BuilderInteractor(object):
 
-    _cached_build_behavior = None
-    _cached_currentjob = None
-
-    _cached_slave = None
-    _cached_slave_attrs = None
-
-    # Tests can override _current_build_behavior and slave.
-    _override_behavior = None
-    _override_slave = None
-
-    def __init__(self, builder, override_slave=None, override_behavior=None):
-        self.builder = builder
-        self._override_slave = override_slave
-        self._override_behavior = override_behavior
-
-        # XXX wgrant: The BuilderVitals should be passed in.
-        self.vitals = extract_vitals_from_db(builder)
-
     @staticmethod
     def makeSlaveFromVitals(vitals):
         if vitals.virtualized:
@@ -254,42 +236,13 @@ class BuilderInteractor(object):
         return BuilderSlave.makeBuilderSlave(
             vitals.url, vitals.vm_host, timeout)
 
-    @property
-    def slave(self):
-        """See IBuilder."""
-        if self._override_slave is not None:
-            return self._override_slave
-        # The slave cache is invalidated when the builder's URL, VM host
-        # or virtualisation change.
-        new_slave_attrs = (
-            self.vitals.url, self.vitals.vm_host, self.vitals.virtualized)
-        if self._cached_slave_attrs != new_slave_attrs:
-            self._cached_slave = self.makeSlaveFromVitals(self.vitals)
-            self._cached_slave_attrs = new_slave_attrs
-        return self._cached_slave
-
     @staticmethod
     def getBuildBehavior(queue_item, builder, slave):
+        if queue_item is None:
+            return None
         behavior = IBuildFarmJobBehavior(queue_item.specific_job)
         behavior.setBuilder(builder, slave)
         return behavior
-
-    @property
-    def _current_build_behavior(self):
-        """Return the current build behavior."""
-        if self._override_behavior is not None:
-            return self._override_behavior
-        # The _current_build_behavior cache is invalidated when
-        # builder.currentjob changes.
-        currentjob = self.builder.currentjob
-        if currentjob is None:
-            self._cached_build_behavior = None
-            self._cached_currentjob = None
-        elif currentjob != self._cached_currentjob:
-            self._cached_build_behavior = self.getBuildBehavior(
-                currentjob, self.builder, self.slave)
-            self._cached_currentjob = currentjob
-        return self._cached_build_behavior
 
     @staticmethod
     @defer.inlineCallbacks

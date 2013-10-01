@@ -20,7 +20,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interactor import (
     BuilderInteractor,
-    BuilderSlave,
+    extract_vitals_from_db,
     )
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
@@ -51,7 +51,6 @@ from lp.soyuz.adapters.archivedependencies import (
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
-from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
@@ -72,16 +71,16 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         super(TestBinaryBuildPackageBehavior, self).setUp()
         switch_dbuser('testadmin')
 
-    def assertExpectedInteraction(self, ignored, call_log, interactor, build,
+    def assertExpectedInteraction(self, ignored, call_log, builder, build,
                                   chroot, archive, archive_purpose,
                                   component=None, extra_urls=None,
                                   filemap_names=None):
         expected = self.makeExpectedInteraction(
-            interactor, build, chroot, archive, archive_purpose, component,
+            builder, build, chroot, archive, archive_purpose, component,
             extra_urls, filemap_names)
         self.assertEqual(call_log, expected)
 
-    def makeExpectedInteraction(self, interactor, build, chroot, archive,
+    def makeExpectedInteraction(self, builder, build, chroot, archive,
                                 archive_purpose, component=None,
                                 extra_urls=None, filemap_names=None):
         """Build the log of calls that we expect to be made to the slave.
@@ -97,7 +96,8 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
             in order to trick the slave into building correctly.
         :return: A list of the calls we expect to be made.
         """
-        cookie = interactor._current_build_behavior.getBuildCookie()
+        cookie = IBuildFarmJobBehavior(
+            build.buildqueue_record.specific_job).getBuildCookie()
         ds_name = build.distro_arch_series.distroseries.name
         suite = ds_name + pocketsuffix[build.pocket]
         archives = get_sources_list_for_building(
@@ -128,7 +128,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build_log = [
             ('build', cookie, 'binarypackage', chroot.content.sha1,
              filemap_names, extra_args)]
-        if interactor.builder.virtualized:
+        if builder.virtualized:
             result = [('echo', 'ping')] + upload_logs + build_log
         else:
             result = upload_logs + build_log
@@ -143,6 +143,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         archive = self.factory.makeArchive(virtualized=False)
         slave = OkSlave()
         builder = self.factory.makeBuilder(virtualized=False)
+        vitals = extract_vitals_from_db(builder)
         build = self.factory.makeBinaryPackageBuild(
             builder=builder, archive=archive)
         lf = self.factory.makeLibraryFileAlias()
@@ -150,12 +151,12 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build.distro_arch_series.addOrUpdateChroot(lf)
         bq = build.queueBuild()
         bq.markAsBuilding(builder)
-        interactor = BuilderInteractor(builder, slave)
+        interactor = BuilderInteractor()
         d = interactor._startBuild(
-            bq, interactor.vitals, interactor.builder, interactor.slave,
-            interactor._current_build_behavior, BufferLogger())
+            bq, vitals, builder, slave,
+            interactor.getBuildBehavior(bq, builder, slave), BufferLogger())
         d.addCallback(
-            self.assertExpectedInteraction, slave.call_log, interactor, build,
+            self.assertExpectedInteraction, slave.call_log, builder, build,
             lf, archive, ArchivePurpose.PRIMARY, 'universe')
         return d
 
@@ -166,6 +167,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         slave = OkSlave()
         builder = self.factory.makeBuilder(
             virtualized=True, vm_host="foohost")
+        vitals = extract_vitals_from_db(builder)
         build = self.factory.makeBinaryPackageBuild(
             builder=builder, archive=archive)
         lf = self.factory.makeLibraryFileAlias()
@@ -173,10 +175,10 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build.distro_arch_series.addOrUpdateChroot(lf)
         bq = build.queueBuild()
         bq.markAsBuilding(builder)
-        interactor = BuilderInteractor(builder, slave)
+        interactor = BuilderInteractor()
         d = interactor._startBuild(
-            bq, interactor.vitals, interactor.builder, interactor.slave,
-            interactor._current_build_behavior, BufferLogger())
+            bq, vitals, builder, slave,
+            interactor.getBuildBehavior(bq, builder, slave), BufferLogger())
 
         def check_build(ignored):
             # We expect the first call to the slave to be a resume call,
@@ -184,7 +186,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
             expected_resume_call = slave.call_log.pop(0)
             self.assertEqual('resume', expected_resume_call)
             self.assertExpectedInteraction(
-                ignored, slave.call_log, interactor, build, lf, archive,
+                ignored, slave.call_log, builder, build, lf, archive,
                 ArchivePurpose.PPA)
         return d.addCallback(check_build)
 
@@ -193,6 +195,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
             virtualized=False, purpose=ArchivePurpose.PARTNER)
         slave = OkSlave()
         builder = self.factory.makeBuilder(virtualized=False)
+        vitals = extract_vitals_from_db(builder)
         build = self.factory.makeBinaryPackageBuild(
             builder=builder, archive=archive)
         lf = self.factory.makeLibraryFileAlias()
@@ -200,12 +203,12 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         build.distro_arch_series.addOrUpdateChroot(lf)
         bq = build.queueBuild()
         bq.markAsBuilding(builder)
-        interactor = BuilderInteractor(builder, slave)
+        interactor = BuilderInteractor()
         d = interactor._startBuild(
-            bq, interactor.vitals, interactor.builder, interactor.slave,
-            interactor._current_build_behavior, BufferLogger())
+            bq, vitals, builder, slave,
+            interactor.getBuildBehavior(bq, builder, slave), BufferLogger())
         d.addCallback(
-            self.assertExpectedInteraction, slave.call_log, interactor, build,
+            self.assertExpectedInteraction, slave.call_log, builder, build,
             lf, archive, ArchivePurpose.PARTNER)
         return d
 
@@ -322,7 +325,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
         switch_dbuser('testadmin')
 
         self.builder = self.factory.makeBuilder()
-        self.interactor = BuilderInteractor(self.builder)
+        self.interactor = BuilderInteractor()
         self.build = self.factory.makeBinaryPackageBuild(
             builder=self.builder, pocket=PackagePublishingPocket.RELEASE)
         lf = self.factory.makeLibraryFileAlias()
@@ -334,10 +337,10 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
         # hang around between test runs.
         self.addCleanup(self._cleanup)
 
-    def updateBuild(self, candidate):
+    def updateBuild(self, candidate, slave):
         return self.interactor.updateBuild(
-            candidate, self.interactor.slave,
-            self.interactor._current_build_behavior)
+            candidate, slave,
+            self.interactor.getBuildBehavior(candidate, self.builder, slave))
 
     def assertBuildProperties(self, build):
         """Check that a build happened by making sure some of its properties
@@ -350,51 +353,39 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
     def test_packagefail_collection(self):
         # When a package fails to build, make sure the builder notes are
         # stored and the build status is set as failed.
-        waiting_slave = WaitingSlave('BuildStatus.PACKAGEFAIL')
-        self.patch(BuilderSlave, 'makeBuilderSlave',
-                   FakeMethod(waiting_slave))
-
         def got_update(ignored):
             self.assertBuildProperties(self.build)
             self.assertEqual(BuildStatus.FAILEDTOBUILD, self.build.status)
 
-        d = self.updateBuild(self.candidate)
+        d = self.updateBuild(
+            self.candidate, WaitingSlave('BuildStatus.PACKAGEFAIL'))
         return d.addCallback(got_update)
 
     def test_depwait_collection(self):
         # Package build was left in dependency wait.
         DEPENDENCIES = 'baz (>= 1.0.1)'
-        waiting_slave = WaitingSlave('BuildStatus.DEPFAIL', DEPENDENCIES)
-        self.patch(BuilderSlave, 'makeBuilderSlave',
-                   FakeMethod(waiting_slave))
 
         def got_update(ignored):
             self.assertBuildProperties(self.build)
             self.assertEqual(BuildStatus.MANUALDEPWAIT, self.build.status)
             self.assertEqual(DEPENDENCIES, self.build.dependencies)
 
-        d = self.updateBuild(self.candidate)
+        d = self.updateBuild(
+            self.candidate, WaitingSlave('BuildStatus.DEPFAIL', DEPENDENCIES))
         return d.addCallback(got_update)
 
     def test_chrootfail_collection(self):
         # There was a chroot problem for this build.
-        waiting_slave = WaitingSlave('BuildStatus.CHROOTFAIL')
-        self.patch(BuilderSlave, 'makeBuilderSlave',
-                   FakeMethod(waiting_slave))
-
         def got_update(ignored):
             self.assertBuildProperties(self.build)
             self.assertEqual(BuildStatus.CHROOTWAIT, self.build.status)
 
-        d = self.updateBuild(self.candidate)
+        d = self.updateBuild(
+            self.candidate, WaitingSlave('BuildStatus.CHROOTFAIL'))
         return d.addCallback(got_update)
 
     def test_builderfail_collection(self):
         # The builder failed after we dispatched the build.
-        waiting_slave = WaitingSlave('BuildStatus.BUILDERFAIL')
-        self.patch(BuilderSlave, 'makeBuilderSlave',
-                   FakeMethod(waiting_slave))
-
         def got_update(ignored):
             self.assertEqual(
                 "Builder returned BUILDERFAIL when asked for its status",
@@ -404,40 +395,33 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
             job = self.candidate.specific_job.job
             self.assertEqual(JobStatus.WAITING, job.status)
 
-        d = self.updateBuild(self.candidate)
+        d = self.updateBuild(
+            self.candidate, WaitingSlave('BuildStatus.BUILDERFAIL'))
         return d.addCallback(got_update)
 
     def test_building_collection(self):
         # The builder is still building the package.
-        self.patch(BuilderSlave, 'makeBuilderSlave',
-                   FakeMethod(BuildingSlave()))
-
         def got_update(ignored):
             # The fake log is returned from the BuildingSlave() mock.
             self.assertEqual("This is a build log", self.candidate.logtail)
 
-        d = self.updateBuild(self.candidate)
+        d = self.updateBuild(self.candidate, BuildingSlave())
         return d.addCallback(got_update)
 
     def test_aborting_collection(self):
         # The builder is in the process of aborting.
-        self.patch(BuilderSlave, 'makeBuilderSlave',
-                   FakeMethod(AbortingSlave()))
-
         def got_update(ignored):
             self.assertEqual(
                 "Waiting for slave process to be terminated",
                 self.candidate.logtail)
 
-        d = self.updateBuild(self.candidate)
+        d = self.updateBuild(self.candidate, AbortingSlave())
         return d.addCallback(got_update)
 
     def test_collection_for_deleted_source(self):
         # If we collected a build for a superseded/deleted source then
         # the build should get marked superseded as the build results
         # get discarded.
-        self.patch(BuilderSlave, 'makeBuilderSlave',
-                   FakeMethod(WaitingSlave('BuildStatus.OK')))
         spr = removeSecurityProxy(self.build.source_package_release)
         pub = self.build.current_source_publication
         pub.requestDeletion(spr.creator)
@@ -446,27 +430,21 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
             self.assertEqual(
                 BuildStatus.SUPERSEDED, self.build.status)
 
-        d = self.updateBuild(self.candidate)
+        d = self.updateBuild(self.candidate, WaitingSlave('BuildStatus.OK'))
         return d.addCallback(got_update)
 
     def test_uploading_collection(self):
         # After a successful build, the status should be UPLOADING.
-        self.patch(BuilderSlave, 'makeBuilderSlave',
-                   FakeMethod(WaitingSlave('BuildStatus.OK')))
-
         def got_update(ignored):
             self.assertEqual(self.build.status, BuildStatus.UPLOADING)
             # We do not store any upload log information when the binary
             # upload processing succeeded.
             self.assertIs(None, self.build.upload_log)
 
-        d = self.updateBuild(self.candidate)
+        d = self.updateBuild(self.candidate, WaitingSlave('BuildStatus.OK'))
         return d.addCallback(got_update)
 
     def test_givenback_collection(self):
-        waiting_slave = WaitingSlave('BuildStatus.GIVENBACK')
-        self.patch(BuilderSlave, 'makeBuilderSlave',
-                   FakeMethod(waiting_slave))
         score = self.candidate.lastscore
 
         def got_update(ignored):
@@ -477,7 +455,8 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
             job = self.candidate.specific_job.job
             self.assertEqual(JobStatus.WAITING, job.status)
 
-        d = self.updateBuild(self.candidate)
+        d = self.updateBuild(
+            self.candidate, WaitingSlave('BuildStatus.GIVENBACK'))
         return d.addCallback(got_update)
 
     def test_log_file_collection(self):
@@ -532,8 +511,6 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
     def test_private_build_log_storage(self):
         # Builds in private archives should have their log uploaded to
         # the restricted librarian.
-        self.patch(BuilderSlave, 'makeBuilderSlave',
-                   FakeMethod(WaitingSlave('BuildStatus.OK')))
 
         # Go behind Storm's back since the field validator on
         # Archive.private prevents us from setting it to True with
@@ -548,7 +525,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
             self.layer.txn.commit()
             self.assertTrue(self.build.log.restricted)
 
-        d = self.updateBuild(self.candidate)
+        d = self.updateBuild(self.candidate, WaitingSlave('BuildStatus.OK'))
         return d.addCallback(got_update)
 
 
