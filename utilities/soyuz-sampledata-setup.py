@@ -46,7 +46,7 @@ from lp.services.database.interfaces import (
 from lp.services.scripts.base import LaunchpadScript
 from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -146,11 +146,11 @@ def add_architecture(distroseries, architecture_name):
     # Avoid circular import.
     from lp.soyuz.model.distroarchseries import DistroArchSeries
 
-    family = getUtility(IProcessorFamilySet).getByName(architecture_name)
+    processor = getUtility(IProcessorSet).getByName(architecture_name)
     archseries = DistroArchSeries(
-        distroseries=distroseries, processorfamily=family,
-        processor=family.processors[0], owner=distroseries.owner,
-        official=True, architecturetag=architecture_name)
+        distroseries=distroseries, processor=processor,
+        owner=distroseries.owner, official=True,
+        architecturetag=architecture_name)
     IMasterStore(DistroArchSeries).add(archseries)
 
 

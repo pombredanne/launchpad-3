@@ -433,7 +433,7 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOld, Storm):
 
     @property
     def processor(self):
-        return self.build.distroseries.nominatedarchindep.default_processor
+        return self.build.distroseries.nominatedarchindep.processor
 
     @property
     def virtualized(self):

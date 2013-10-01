@@ -29,8 +29,8 @@ class TestBuildersCollection(TestCaseWithFactory):
             ['nonvirt', 'virt'], sorted(results.jsonBody().keys()))
 
     def test_getBuildersForQueue(self):
-        g1 = self.factory.makeProcessorFamily('g1').processors[0]
-        quantum = self.factory.makeProcessorFamily('quantum').processors[0]
+        g1 = self.factory.makeProcessor('g1')
+        quantum = self.factory.makeProcessor('quantum')
         self.factory.makeBuilder(
             processor=quantum, name='quantum_builder1')
         self.factory.makeBuilder(
@@ -58,9 +58,8 @@ class TestBuilderEntry(TestCaseWithFactory):
         self.webservice = LaunchpadWebServiceCaller()
 
     def test_exports_processor(self):
-        processor_family = self.factory.makeProcessorFamily('s1')
-        builder = self.factory.makeBuilder(
-            processor=processor_family.processors[0])
+        processor = self.factory.makeProcessor('s1')
+        builder = self.factory.makeBuilder(processor=processor)
 
         logout()
         entry = self.webservice.get(

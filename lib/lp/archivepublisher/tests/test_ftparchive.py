@@ -161,19 +161,20 @@ class TestFTPArchive(TestCaseWithFactory):
         fa.publisher.archive = hoary.main_archive
         return fa, hoary
 
-    def _publishDefaultOverrides(self, fa, component, section='misc',
+    def _publishDefaultOverrides(self, fa, component, section='devel',
                                  phased_update_percentage=None,
                                  binpackageformat=BinaryPackageFormat.DEB):
-        source_overrides = FakeSelectResult([('foo', component, section)])
+        source_overrides = FakeSelectResult([('tiny', component, section)])
         binary_overrides = FakeSelectResult([(
-            'foo', component, section, 'i386', PackagePublishingPriority.EXTRA,
-            binpackageformat, phased_update_percentage)])
+            'tiny', component, section, 'i386',
+            PackagePublishingPriority.EXTRA, binpackageformat,
+            phased_update_percentage)])
         fa.publishOverrides('hoary-test', source_overrides, binary_overrides)
 
     def _publishDefaultFileLists(self, fa, component):
-        source_files = FakeSelectResult([('foo', 'foo_1.dsc', component)])
+        source_files = FakeSelectResult([('tiny', 'tiny_0.1.dsc', component)])
         binary_files = FakeSelectResult(
-            [('foo', 'foo_1_i386.deb', component, 'binary-i386')])
+            [('tiny', 'tiny_0.1_i386.deb', component, 'binary-i386')])
         fa.publishFileLists('hoary-test', source_files, binary_files)
 
     def test_getSourcesForOverrides(self):
@@ -260,7 +261,7 @@ class TestFTPArchive(TestCaseWithFactory):
         path = os.path.join(self._overdir, "override.hoary-test.extra.main")
         with open(path) as result_file:
             self.assertIn(
-                "foo/i386\tPhased-Update-Percentage\t50",
+                "tiny/i386\tPhased-Update-Percentage\t50",
                 result_file.read().splitlines())
 
     def test_publishOverrides_udebs(self):
@@ -279,7 +280,7 @@ class TestFTPArchive(TestCaseWithFactory):
             self._overdir, "override.hoary-test.main.debian-installer")
         with open(path) as result_file:
             self.assertEqual(
-                ["foo\textra\tdebian-installer"],
+                ["tiny\textra\tdebian-installer"],
                 result_file.read().splitlines())
 
     def test_publishOverrides_ddebs_disabled(self):
@@ -312,7 +313,7 @@ class TestFTPArchive(TestCaseWithFactory):
         path = os.path.join(self._overdir, "override.hoary-test.main.debug")
         with open(path) as result_file:
             self.assertEqual(
-                ["foo\textra\tmisc"], result_file.read().splitlines())
+                ["tiny\textra\tdevel"], result_file.read().splitlines())
 
     def test_generateOverrides(self):
         # generateOverrides generates all the overrides from start to finish.
@@ -426,8 +427,9 @@ class TestFTPArchive(TestCaseWithFactory):
         self._publishDefaultFileLists(fa, 'main')
 
         # Add mentioned files in the repository pool/.
-        self._addRepositoryFile('main', 'foo', 'foo_1.dsc')
-        self._addRepositoryFile('main', 'foo', 'foo_1_i386.deb')
+        self._addRepositoryFile('main', 'tiny', 'tiny_0.1.dsc')
+        self._addRepositoryFile('main', 'tiny', 'tiny_0.1.tar.gz')
+        self._addRepositoryFile('main', 'tiny', 'tiny_0.1_i386.deb')
 
         # When include_long_descriptions is set, apt.conf has
         # LongDescription "true" for that series.
@@ -591,22 +593,22 @@ class TestFTPArchive(TestCaseWithFactory):
         fa.createEmptyPocketRequests(fullpublish=True)
 
         # Set up an initial repository.
-        source_overrides = FakeSelectResult([("foo", "main", "misc")])
+        source_overrides = FakeSelectResult([("tiny", "main", "devel")])
         binary_overrides = FakeSelectResult([(
             "bin%d" % i, "main", "misc", "i386",
             PackagePublishingPriority.EXTRA, BinaryPackageFormat.DEB, None)
             for i in range(10)])
         fa.publishOverrides("hoary-test", source_overrides, binary_overrides)
-        source_files = FakeSelectResult([("foo", "foo_1.dsc", "main")])
+        source_files = FakeSelectResult([("tiny", "tiny_0.1.dsc", "main")])
         binary_files = FakeSelectResult([(
             "bin%d" % i, "bin%d_1_i386.deb" % i, "main", "binary-i386")
             for i in range(10)])
         fa.publishFileLists("hoary-test", source_files, binary_files)
-        self._addRepositoryFile("main", "foo", "foo_1.dsc")
+        self._addRepositoryFile("main", "tiny", "tiny_0.1.dsc")
         for i in range(10):
             self._addRepositoryFile(
                 "main", "bin%d" % i, "bin%d_1_i386.deb" % i,
-                samplename="foo_1_i386.deb")
+                samplename="tiny_0.1_i386.deb")
         apt_conf = fa.generateConfig(fullpublish=True)
         fa.runApt(apt_conf)
 

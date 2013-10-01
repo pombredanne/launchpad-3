@@ -273,7 +273,7 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         processor = self.factory.makeProcessor()
         das = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, processorfamily=processor.family)
+            distroseries=distroseries, processor=processor)
         package = self.factory.makeSuiteSourcePackage(distroseries)
         self.factory.makeSourcePackagePublishingHistory(
             distroseries=distroseries, pocket=package.pocket)
