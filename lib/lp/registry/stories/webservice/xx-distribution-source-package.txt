@@ -29,10 +29,15 @@ It's also possible to search for tasks with the "searchTasks" method:
     ...     mozilla_firefox['self_link'],
     ...     'searchTasks', status='New').jsonBody()
 
-    >>> print_bug_tasks(bug_task_collection['entries'])
-    0. Bug #3 in mozilla-firefox (Debian): "Bug Title Test"
-       New, Unknown, <http://api.launchpad.dev/beta/bugs/3>
-       <http://api.launchpad.dev/beta/debian/+source/mozilla-firefox/+bug/3>
+    >>> for bug_task in bug_task_collection['entries']:
+    ...     print bug_task['title']
+    ...     print '%s, %s, <%s>' % (
+    ...         bug_task['status'], bug_task['importance'],
+    ...         bug_task['bug_link'])
+    ...     print '<%s>' % bug_task['self_link']
+    Bug #3 in mozilla-firefox (Debian): "Bug Title Test"
+    New, Unknown, <http://api.launchpad.dev/beta/bugs/3>
+    <http://api.launchpad.dev/beta/debian/+source/mozilla-firefox/+bug/3>
 
 If the package is linked to an upstream product in Launchpad you can
 retrieve that product using the upstream_product_link of the source
