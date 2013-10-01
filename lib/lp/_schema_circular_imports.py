@@ -917,8 +917,6 @@ patch_operations_explicit_version(
 
 # IDistributionSourcePackage
 patch_entry_explicit_version(IDistributionSourcePackage, 'beta')
-patch_operations_explicit_version(
-    IDistributionSourcePackage, 'beta', "bugtasks")
 
 # IDistroArchSeries
 patch_entry_explicit_version(IDistroArchSeries, 'beta')
