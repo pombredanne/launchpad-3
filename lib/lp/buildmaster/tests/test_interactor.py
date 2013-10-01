@@ -164,6 +164,13 @@ class TestBuilderInteractor(TestCase):
             DevNullLogger(), Exception())
         return assert_fails_with(d, CannotResumeHost)
 
+    @defer.inlineCallbacks
+    def test_resetOrFail_nonvirtual(self):
+        builder = MockBuilder(virtualized=False, builderok=True)
+        yield BuilderInteractor(builder).resetOrFail(
+            DevNullLogger(), Exception())
+        self.assertFalse(builder.builderok)
+
     def test_slave(self):
         # Builder.slave is a BuilderSlave that points at the actual Builder.
         # The Builder is only ever used in scripts that run outside of the
@@ -325,7 +332,7 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         das = self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag="i386",
-            processorfamily=processor.family)
+            processor=processor)
         chroot = self.factory.makeLibraryFileAlias(db_only=True)
         das.addOrUpdateChroot(chroot)
         distroseries.nominatedarchindep = das

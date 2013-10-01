@@ -281,7 +281,7 @@ def get_feedback_messages(content):
 def print_feedback_messages(content):
     """Print out the feedback messages."""
     for message in get_feedback_messages(content):
-        print message
+        print extract_text(message)
 
 
 def print_table(content, columns=None, skip_rows=None, sep="\t"):
@@ -798,7 +798,6 @@ def setUpGlobs(test):
     test.globs['find_tags_by_class'] = find_tags_by_class
     test.globs['find_portlet'] = find_portlet
     test.globs['find_main_content'] = find_main_content
-    test.globs['get_feedback_messages'] = get_feedback_messages
     test.globs['print_feedback_messages'] = print_feedback_messages
     test.globs['print_table'] = print_table
     test.globs['extract_link_from_tag'] = extract_link_from_tag

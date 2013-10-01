@@ -137,8 +137,7 @@ Adminstrators can rescore pending builds in a separate form.
 Once submitted they are redirected to the build index page where the
 new 'score' value is presented.
 
-    >>> for text in get_feedback_messages(admin_browser.contents):
-    ...     print text
+    >>> print_feedback_messages(admin_browser.contents)
     Build rescored to 0.
 
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))
@@ -288,8 +287,7 @@ retrying the build is not a possibility anymore.
 
     >>> admin_browser.getLink("Retry this build").click()
     >>> admin_browser.getControl("Retry Build").click()
-    >>> for text in get_feedback_messages(admin_browser.contents):
-    ...     print text
+    >>> print_feedback_messages(admin_browser.contents)
     Build retried
 
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))

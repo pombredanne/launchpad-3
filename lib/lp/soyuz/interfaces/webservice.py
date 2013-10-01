@@ -33,8 +33,6 @@ __all__ = [
     'IPackageset',
     'IPackagesetSet',
     'IProcessor',
-    'IProcessorFamily',
-    'IProcessorFamilySet',
     'IProcessorSet',
     'ISourcePackagePublishingHistory',
     'IncompatibleArguments',
@@ -96,8 +94,6 @@ from lp.soyuz.interfaces.packageset import (
     )
 from lp.soyuz.interfaces.processor import (
     IProcessor,
-    IProcessorFamily,
-    IProcessorFamilySet,
     IProcessorSet,
     )
 from lp.soyuz.interfaces.publishing import (

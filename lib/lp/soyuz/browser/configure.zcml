@@ -37,13 +37,6 @@
             path_expression="string:+binarypub"
             attribute_to_parent="archive"
             urldata="lp.soyuz.browser.publishing.BinaryPublicationURL"/>
-        <browser:url for="lp.soyuz.interfaces.processor.IProcessorFamilySet"
-            path_expression="string:+processor-families"
-            parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
-        <browser:url
-	    for="lp.soyuz.interfaces.processor.IProcessorFamily"
-            path_expression="string:${name}"
-            parent_utility="lp.soyuz.interfaces.processor.IProcessorFamilySet" />
         <browser:url for="lp.soyuz.interfaces.processor.IProcessorSet"
             path_expression="string:+processors"
             parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
@@ -232,7 +225,7 @@
         classes="ArchiveNavigation" />
     <browser:navigation
         module="lp.soyuz.browser.processor"
-        classes="ProcessorFamilySetNavigation ProcessorSetNavigation"/>
+        classes="ProcessorSetNavigation" />
     <browser:url
         for="lp.soyuz.interfaces.archive.IPPA"
         path_expression="string:+archive"

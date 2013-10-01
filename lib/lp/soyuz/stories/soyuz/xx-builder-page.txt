@@ -55,9 +55,7 @@ location.
 The builder status is now displayed as normal text and not as as a
 notification alert.
 
-    >>> messages = get_feedback_messages(anon_browser.contents)
-    >>> print messages
-    []
+    >>> print_feedback_messages(anon_browser.contents)
 
 == Builder Actions ==
 
@@ -163,9 +161,8 @@ He can see now, in the details portlet that the builder is in manual-mode.
 
 And a relevant notification is displayed after the mode toggle.
 
-    >>> messages = get_feedback_messages(cprov_browser.contents)
-    >>> print messages
-    [u'The builder &quot;Bob The Builder&quot; was updated successfully.']
+    >>> print_feedback_messages(cprov_browser.contents)
+    The builder &quot;Bob The Builder&quot; was updated successfully.
 
 Via the 'edit' form Celso can also modify the 'builderok',
 'failure_notes', 'virtualized' and 'virtual machine' fields. All the
@@ -183,9 +180,8 @@ case is to bring the builder back to work.
 Changing the details via the Change details page also generates a
 notification.
 
-    >>> messages = get_feedback_messages(cprov_browser.contents)
-    >>> print messages
-    [u'The builder &quot;Bob The Builder&quot; was updated successfully.']
+    >>> print_feedback_messages(cprov_browser.contents)
+    The builder &quot;Bob The Builder&quot; was updated successfully.
 
 
 == Marking a builder as inactive ==

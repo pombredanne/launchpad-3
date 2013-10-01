@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for the process-accepted.py script."""
@@ -267,11 +267,6 @@ class ProcessAccepted(LaunchpadCronScript):
     def add_my_options(self):
         """Command line options for this script."""
         self.parser.add_option(
-            "-n", "--dry-run", action="store_true",
-            dest="dryrun", metavar="DRY_RUN", default=False,
-            help="Whether to treat this as a dry-run or not.")
-
-        self.parser.add_option(
             '-D', '--derived', action="store_true", dest="derived",
             default=False, help="Process all Ubuntu-derived distributions.")
 
@@ -282,13 +277,6 @@ class ProcessAccepted(LaunchpadCronScript):
         self.parser.add_option(
             "--copy-archives", action="store_true", dest="copy_archives",
             default=False, help="Run only over COPY archives.")
-
-    def _commit(self):
-        """Commit transaction (unless in dry-run mode)."""
-        if self.options.dryrun:
-            self.logger.debug("Skipping commit: dry-run mode.")
-        else:
-            self.txn.commit()
 
     def findNamedDistro(self, distro_name):
         """Find the `Distribution` called `distro_name`."""
@@ -358,7 +346,7 @@ class ProcessAccepted(LaunchpadCronScript):
     def processForDistro(self, distribution, target_policy):
         """Process all queue items for a distribution.
 
-        Commits between items, except in dry-run mode.
+        Commits between items.
 
         :param distribution: The `Distribution` to process queue items for.
         :param target_policy: The applicable `TargetPolicy`.
@@ -380,7 +368,7 @@ class ProcessAccepted(LaunchpadCronScript):
                     # Commit even on error; we may have altered the
                     # on-disk archive, so the partial state must
                     # make it to the DB.
-                    self._commit()
+                    self.txn.commit()
         return processed_queue_ids
 
     def main(self):
@@ -390,9 +378,9 @@ class ProcessAccepted(LaunchpadCronScript):
         try:
             for distro in self.findTargetDistros():
                 queue_ids = self.processForDistro(distro, target_policy)
-                self._commit()
+                self.txn.commit()
                 target_policy.postprocessSuccesses(queue_ids)
-                self._commit()
+                self.txn.commit()
 
         finally:
             self.logger.debug("Rolling back any remaining transactions.")

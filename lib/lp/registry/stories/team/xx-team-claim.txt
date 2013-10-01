@@ -45,8 +45,7 @@ turning that profile into a team.
     >>> user_browser.title
     'Ubuntu Doc Team does not use Launchpad'
 
-    >>> for msg in get_feedback_messages(user_browser.contents):
-    ...     print msg
+    >>> print_feedback_messages(user_browser.contents)
     A confirmation message has been sent to
     &#x27;doc@lists.ubuntu.com&#x27;. Follow the instructions in that
     message to finish claiming this team. (If the above address is from
@@ -96,8 +95,7 @@ page.
 
     >>> user_browser.title
     'Ubuntu Doc Team in Launchpad'
-    >>> for msg in get_feedback_messages(user_browser.contents):
-    ...     print msg
+    >>> print_feedback_messages(user_browser.contents)
     Team claimed successfully
 
     >>> print extract_text(

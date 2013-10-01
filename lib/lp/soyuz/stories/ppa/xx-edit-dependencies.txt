@@ -104,9 +104,7 @@ An unknown term results in an error.
 
     >>> admin_browser.getControl("Add PPA dependency").value = 'whatever'
     >>> admin_browser.getControl("Save").click()
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(admin_browser.contents)
     There is 1 error.
     Invalid value
 
@@ -116,9 +114,7 @@ for removal is updated.
 
     >>> admin_browser.getControl("Add PPA dependency").value = 'mark/ppa'
     >>> admin_browser.getControl("Save").click()
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(admin_browser.contents)
     Dependency added: PPA for Mark Shuttleworth
 
     >>> admin_browser.reload()
@@ -129,9 +125,7 @@ Trying to add a dependency that is already recorded results in a error.
 
     >>> admin_browser.getControl("Add PPA dependency").value = 'mark/ppa'
     >>> admin_browser.getControl("Save").click()
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(admin_browser.contents)
     There is 1 error.
     This dependency is already registered.
 
@@ -140,9 +134,7 @@ a error.
 
     >>> admin_browser.getControl("Add PPA dependency").value = 'cprov/ppa'
     >>> admin_browser.getControl("Save").click()
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(admin_browser.contents)
     There is 1 error.
     An archive should not depend on itself.
 
@@ -150,9 +142,7 @@ If it's a new dependency everything is fine.
 
     >>> admin_browser.getControl("Add PPA dependency").value = 'no-priv/ppa'
     >>> admin_browser.getControl("Save").click()
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(admin_browser.contents)
     Dependency added: PPA for No Privileges Person
 
 Now Celso's PPA will list Mark's and No-Priv's PPA as its dependencies.
@@ -234,7 +224,6 @@ If no dependency is selected and the configuration is save, no
 dependencies get removed.
 
     >>> admin_browser.getControl("Save").click()
-    >>> messages = get_feedback_messages(admin_browser.contents)
 
     >>> print_ppa_dependencies(admin_browser.contents)
     PPA for Mark Shuttleworth
@@ -247,9 +236,7 @@ dependencies is refreshed.
     ...     name="field.selected_dependencies").value = [
     ...     'mark/ppa', 'no-priv/ppa']
     >>> admin_browser.getControl("Save").click()
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(admin_browser.contents)
     Dependencies removed:
     PPA for Mark Shuttleworth
     PPA for No Privileges Person
@@ -307,9 +294,7 @@ He will see a notification containing a summary of what was changed.
     ...     "Proposed (default dependencies and proposed updates"
     ...     ).selected = True
     >>> admin_browser.getControl("Save").click()
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(admin_browser.contents)
     Primary dependency added: Primary Archive for Ubuntu Linux -
     PROPOSED (main, restricted, universe, multiverse)
 
@@ -329,9 +314,7 @@ pocket.
     >>> admin_browser.getControl(
     ...     "Basic (only released packages).").selected = True
     >>> admin_browser.getControl("Save").click()
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(admin_browser.contents)
     Primary dependency added: Primary Archive for Ubuntu Linux -
     RELEASE (main, restricted, universe, multiverse)
 
@@ -359,9 +342,7 @@ the default dependencies for him.
     ...     "Default (security dependencies and recommended updates"
     ...     ).selected = True
     >>> admin_browser.getControl("Save").click()
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(admin_browser.contents)
     Default primary dependencies restored.
 
 The default option is now selected.
@@ -387,9 +368,7 @@ Now we can simply change the primary archive components field.
     ...     "primary archive."
     ...     ).selected = True
     >>> admin_browser.getControl("Save").click()
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(admin_browser.contents)
     Primary dependency added: Primary Archive for Ubuntu Linux - UPDATES
 
     >>> print_radio_button_field(
@@ -443,9 +422,7 @@ First we will create a PPA dependency for No privileged' PPA.
 
     >>> admin_browser.getControl("Add PPA dependency").value = 'no-priv/ppa'
     >>> admin_browser.getControl("Save").click()
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(admin_browser.contents)
     Dependency added: PPA for No Privileges Person
 
 Now the PPA uses the default primary dependency configuration and
@@ -484,9 +461,7 @@ RELEASE.
     ...     "Basic (only released packages).").selected = True
 
     >>> admin_browser.getControl("Save").click()
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(admin_browser.contents)
     Primary dependency added:
        Primary Archive for Ubuntu Linux - RELEASE
        (main, restricted, universe, multiverse)
