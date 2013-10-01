@@ -167,8 +167,9 @@ class TestBuilderInteractor(TestCase):
     @defer.inlineCallbacks
     def test_resetOrFail_nonvirtual(self):
         builder = MockBuilder(virtualized=False, builderok=True)
+        vitals = extract_vitals_from_db(builder)
         yield BuilderInteractor(builder).resetOrFail(
-            DevNullLogger(), Exception())
+            vitals, None, builder, DevNullLogger(), Exception())
         self.assertFalse(builder.builderok)
 
     def test_slave(self):
