@@ -51,13 +51,6 @@ A distribution source package has a name, displayname, title, and a summary.
     pmount: pmount shortdesc
 
 
-Aggregate attributes
---------------------
-
-    >>> dsp.bugtasks().count()
-    0
-
-
 Publishing-related properties
 -----------------------------
 
