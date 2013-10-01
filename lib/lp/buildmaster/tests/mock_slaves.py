@@ -47,11 +47,11 @@ class MockBuilder:
     """Emulates a IBuilder class."""
 
     def __init__(self, name='mock-builder', builderok=True, manual=False,
-                 virtualized=True, vm_host=None):
+                 virtualized=True, vm_host=None, url='http://fake:0000'):
         self.currentjob = None
         self.builderok = builderok
         self.manual = manual
-        self.url = 'http://fake:0000'
+        self.url = url
         self.name = name
         self.virtualized = virtualized
         self.vm_host = vm_host

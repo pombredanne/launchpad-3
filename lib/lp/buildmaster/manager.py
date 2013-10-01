@@ -104,7 +104,9 @@ def assessFailureCounts(logger, interactor, exception):
         elif builder.failure_count % Builder.RESET_THRESHOLD == 0:
             # The builder is dead, but in the virtual case it might be worth
             # resetting it.
-            yield interactor.resetOrFail(logger, exception)
+            yield interactor.resetOrFail(
+                interactor.vitals, interactor.slave, interactor.builder,
+                logger, exception)
     else:
         # The job is the culprit!  Override its status to 'failed'
         # to make sure it won't get automatically dispatched again,
@@ -257,7 +259,9 @@ class SlaveScanner:
             self.date_cancel = None
             buildqueue.cancel()
             transaction.commit()
-            value = yield interactor.resetOrFail(self.logger, e)
+            value = yield interactor.resetOrFail(
+                interactor.vitals, interactor.slave, interactor.builder,
+                self.logger, e)
             # value is not None if we resumed a slave host.
             defer.returnValue(value is not None)
 
@@ -285,7 +289,9 @@ class SlaveScanner:
                 interactor.builder, interactor)
             if cancelled:
                 return
-            lost = yield interactor.rescueIfLost(self.logger)
+            lost = yield interactor.rescueIfLost(
+                vitals, interactor.slave, interactor._current_build_behavior,
+                self.logger)
             if lost:
                 lost_reason = '%s is lost' % vitals.name
 
@@ -308,15 +314,17 @@ class SlaveScanner:
         if vitals.build_queue is not None:
             # Scan the slave and get the logtail, or collect the build
             # if it's ready.  Yes, "updateBuild" is a bad name.
-            yield interactor.updateBuild(vitals.build_queue)
+            yield interactor.updateBuild(
+                vitals.build_queue, interactor.slave,
+                interactor._current_build_behavior)
         elif vitals.manual:
             # If the builder is in manual mode, don't dispatch anything.
             self.logger.debug(
                 '%s is in manual mode, not dispatching.' % vitals.name)
         else:
             # See if there is a job we can dispatch to the builder slave.
-            yield interactor.findAndStartJob()
             builder = self.builders_cache[self.builder_name]
+            yield interactor.findAndStartJob(vitals, builder, interactor.slave)
             if builder.currentjob is not None:
                 # After a successful dispatch we can reset the
                 # failure_count.

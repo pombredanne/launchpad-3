@@ -25,6 +25,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interactor import (
     BuilderInteractor,
     BuilderSlave,
+    extract_vitals_from_db,
     )
 from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
@@ -102,8 +103,8 @@ class TestBuilderInteractor(TestCase):
         # A slave that's 'lost' should be aborted; when the slave is
         # broken then abort() should also throw a fault.
         slave = LostBuildingBrokenSlave()
-        interactor = BuilderInteractor(MockBuilder(), slave, TrivialBehavior())
-        d = interactor.rescueIfLost(DevNullLogger())
+        d = BuilderInteractor.rescueIfLost(
+            extract_vitals_from_db(MockBuilder()), slave, TrivialBehavior())
 
         def check_slave_status(failure):
             self.assertIn('abort', slave.call_log)
@@ -113,29 +114,32 @@ class TestBuilderInteractor(TestCase):
 
         return d.addBoth(check_slave_status)
 
+    def resumeSlaveHost(self, builder):
+        vitals = extract_vitals_from_db(builder)
+        return BuilderInteractor.resumeSlaveHost(
+            vitals, BuilderInteractor.makeSlaveFromVitals(vitals))
+
     def test_resumeSlaveHost_nonvirtual(self):
-        builder = MockBuilder(virtualized=False)
-        d = BuilderInteractor(builder).resumeSlaveHost()
+        d = self.resumeSlaveHost(MockBuilder(virtualized=False))
         return assert_fails_with(d, CannotResumeHost)
 
     def test_resumeSlaveHost_no_vmhost(self):
-        builder = MockBuilder(virtualized=True, vm_host=None)
-        d = BuilderInteractor(builder).resumeSlaveHost()
+        d = self.resumeSlaveHost(MockBuilder(virtualized=False, vm_host=None))
         return assert_fails_with(d, CannotResumeHost)
 
     def test_resumeSlaveHost_success(self):
         reset_config = """
             [builddmaster]
-            vm_resume_command: /bin/echo -n parp"""
+            vm_resume_command: /bin/echo -n snap %(buildd_name)s %(vm_host)s
+            """
         config.push('reset', reset_config)
         self.addCleanup(config.pop, 'reset')
 
-        builder = MockBuilder(virtualized=True, vm_host="pop")
-        d = BuilderInteractor(builder).resumeSlaveHost()
+        d = self.resumeSlaveHost(MockBuilder(
+            url="http://crackle.ppa/", virtualized=True, vm_host="pop"))
 
         def got_resume(output):
-            self.assertEqual(('parp', ''), output)
-
+            self.assertEqual(('snap crackle pop', ''), output)
         return d.addCallback(got_resume)
 
     def test_resumeSlaveHost_command_failed(self):
@@ -144,8 +148,7 @@ class TestBuilderInteractor(TestCase):
             vm_resume_command: /bin/false"""
         config.push('reset fail', reset_fail_config)
         self.addCleanup(config.pop, 'reset fail')
-        builder = MockBuilder(virtualized=True, vm_host="pop")
-        d = BuilderInteractor(builder).resumeSlaveHost()
+        d = self.resumeSlaveHost(MockBuilder(virtualized=True, vm_host="pop"))
         return assert_fails_with(d, CannotResumeHost)
 
     def test_resetOrFail_resume_failure(self):
@@ -155,15 +158,18 @@ class TestBuilderInteractor(TestCase):
         config.push('reset fail', reset_fail_config)
         self.addCleanup(config.pop, 'reset fail')
         builder = MockBuilder(virtualized=True, vm_host="pop", builderok=True)
-        d = BuilderInteractor(builder).resetOrFail(
+        vitals = extract_vitals_from_db(builder)
+        d = BuilderInteractor.resetOrFail(
+            vitals, BuilderInteractor.makeSlaveFromVitals(vitals), builder,
             DevNullLogger(), Exception())
         return assert_fails_with(d, CannotResumeHost)
 
     @defer.inlineCallbacks
     def test_resetOrFail_nonvirtual(self):
         builder = MockBuilder(virtualized=False, builderok=True)
+        vitals = extract_vitals_from_db(builder)
         yield BuilderInteractor(builder).resetOrFail(
-            DevNullLogger(), Exception())
+            vitals, None, builder, DevNullLogger(), Exception())
         self.assertFalse(builder.builderok)
 
     def test_slave(self):
@@ -185,8 +191,8 @@ class TestBuilderInteractor(TestCase):
         # idle. SlaveScanner.scan() will clean up the DB side, because
         # we still report that it's lost.
         slave = OkSlave()
-        lost = yield BuilderInteractor(
-            MockBuilder(), slave, TrivialBehavior()).rescueIfLost()
+        lost = yield BuilderInteractor.rescueIfLost(
+            extract_vitals_from_db(MockBuilder()), slave, TrivialBehavior())
         self.assertTrue(lost)
         self.assertEqual([], slave.call_log)
 
@@ -194,8 +200,8 @@ class TestBuilderInteractor(TestCase):
     def test_recover_ok_slave(self):
         # An idle slave that's meant to be idle is not rescued.
         slave = OkSlave()
-        lost = yield BuilderInteractor(
-            MockBuilder(), slave, None).rescueIfLost()
+        lost = yield BuilderInteractor.rescueIfLost(
+            extract_vitals_from_db(MockBuilder()), slave, None)
         self.assertFalse(lost)
         self.assertEqual([], slave.call_log)
 
@@ -204,8 +210,9 @@ class TestBuilderInteractor(TestCase):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # WAITING.
         waiting_slave = WaitingSlave(build_id='trivial')
-        lost = yield BuilderInteractor(
-            MockBuilder(), waiting_slave, TrivialBehavior()).rescueIfLost()
+        lost = yield BuilderInteractor.rescueIfLost(
+            extract_vitals_from_db(MockBuilder()), waiting_slave,
+            TrivialBehavior())
         self.assertFalse(lost)
         self.assertEqual(['status'], waiting_slave.call_log)
 
@@ -217,8 +224,9 @@ class TestBuilderInteractor(TestCase):
         # builder is reset for a new build, and the corrupt build is
         # discarded.
         waiting_slave = WaitingSlave(build_id='non-trivial')
-        lost = yield BuilderInteractor(
-            MockBuilder(), waiting_slave, TrivialBehavior()).rescueIfLost()
+        lost = yield BuilderInteractor.rescueIfLost(
+            extract_vitals_from_db(MockBuilder()), waiting_slave,
+            TrivialBehavior())
         self.assertTrue(lost)
         self.assertEqual(['status', 'clean'], waiting_slave.call_log)
 
@@ -227,8 +235,9 @@ class TestBuilderInteractor(TestCase):
         # rescueIfLost does not attempt to abort or clean a builder that is
         # BUILDING.
         building_slave = BuildingSlave(build_id='trivial')
-        lost = yield BuilderInteractor(
-            MockBuilder(), building_slave, TrivialBehavior()).rescueIfLost()
+        lost = yield BuilderInteractor.rescueIfLost(
+            extract_vitals_from_db(MockBuilder()), building_slave,
+            TrivialBehavior())
         self.assertFalse(lost)
         self.assertEqual(['status'], building_slave.call_log)
 
@@ -237,8 +246,9 @@ class TestBuilderInteractor(TestCase):
         # If a slave is BUILDING with a build id we don't recognize, then we
         # abort the build, thus stopping it in its tracks.
         building_slave = BuildingSlave(build_id='non-trivial')
-        lost = yield BuilderInteractor(
-            MockBuilder(), building_slave, TrivialBehavior()).rescueIfLost()
+        lost = yield BuilderInteractor.rescueIfLost(
+            extract_vitals_from_db(MockBuilder()), building_slave,
+            TrivialBehavior())
         self.assertTrue(lost)
         self.assertEqual(['status', 'abort'], building_slave.call_log)
 
@@ -253,7 +263,7 @@ class TestBuilderInteractorSlaveStatus(TestCase):
     def assertStatus(self, slave, builder_status=None,
                      build_status=None, logtail=False, filemap=None,
                      dependencies=None):
-        statuses = yield BuilderInteractor(MockBuilder(), slave).slaveStatus()
+        statuses = yield BuilderInteractor.slaveStatus(slave)
         status_dict = statuses[1]
 
         expected = {}
@@ -354,7 +364,8 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
         # findAndStartJob delegates to it.
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
-        d = BuilderInteractor(builder).findAndStartJob()
+        vitals = extract_vitals_from_db(builder)
+        d = BuilderInteractor.findAndStartJob(vitals, builder, OkSlave())
         return d.addCallback(self.assertEqual, candidate)
 
     def test_findAndStartJob_starts_job(self):
@@ -365,7 +376,8 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
         candidate = build.queueBuild()
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
-        d = BuilderInteractor(builder).findAndStartJob()
+        vitals = extract_vitals_from_db(builder)
+        d = BuilderInteractor.findAndStartJob(vitals, builder, OkSlave())
 
         def check_build_started(candidate):
             self.assertEqual(candidate.builder, builder)
@@ -380,11 +392,12 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
         candidate = build.queueBuild()
         removeSecurityProxy(builder)._findBuildCandidate = FakeMethod(
             result=candidate)
-        interactor = BuilderInteractor(builder)
-        d = interactor.findAndStartJob()
+        vitals = extract_vitals_from_db(builder)
+        slave = OkSlave()
+        d = BuilderInteractor.findAndStartJob(vitals, builder, slave)
 
         def check_build_started(candidate):
-            self.assertIn(('echo', 'ping'), interactor.slave.call_log)
+            self.assertIn(('echo', 'ping'), slave.call_log)
 
         return d.addCallback(check_build_started)
 
@@ -402,10 +415,14 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
 
         # At this point we should see a valid behaviour on the builder:
         self.assertIsNot(None, interactor._current_build_behavior)
-        yield interactor.rescueIfLost()
+        yield BuilderInteractor.rescueIfLost(
+            interactor.vitals, building_slave,
+            interactor._current_build_behavior)
         self.assertIsNot(None, interactor._current_build_behavior)
         candidate.destroySelf()
-        yield interactor.rescueIfLost()
+        yield BuilderInteractor.rescueIfLost(
+            interactor.vitals, building_slave,
+            interactor._current_build_behavior)
         self.assertIs(None, interactor._current_build_behavior)
 
 
