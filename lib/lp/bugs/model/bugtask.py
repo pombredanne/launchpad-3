@@ -1354,20 +1354,6 @@ class BugTaskSet:
                                 str(task_id))
         return bugtask
 
-    def getBugTasks(self, bug_ids):
-        """See `IBugTaskSet`."""
-        from lp.bugs.model.bug import Bug
-        store = IStore(Bug)
-        origin = [BugTask, Join(Bug, BugTask.bug == Bug.id)]
-        columns = (Bug, BugTask)
-        result = store.using(*origin).find(columns, Bug.id.is_in(bug_ids))
-        bugs_and_tasks = {}
-        for bug, task in result:
-            if bug not in bugs_and_tasks:
-                bugs_and_tasks[bug] = []
-            bugs_and_tasks[bug].append(task)
-        return bugs_and_tasks
-
     def getBugTaskTags(self, bugtasks):
         """See `IBugTaskSet`"""
         # Import locally to avoid circular imports.
