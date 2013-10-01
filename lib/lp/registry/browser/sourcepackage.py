@@ -206,23 +206,23 @@ class SourcePackageFacets(StandardLaunchpadFacets):
 
     def overview(self):
         text = 'Overview'
-        summary = 'General information about {0}'.format(
+        summary = u'General information about {0}'.format(
             self.context.displayname)
         return Link('', text, summary)
 
     def bugs(self):
         text = 'Bugs'
-        summary = 'Bugs reported about {0}'.format(self.context.displayname)
+        summary = u'Bugs reported about {0}'.format(self.context.displayname)
         return Link('', text, summary)
 
     def branches(self):
         text = 'Code'
-        summary = 'Branches for {0}'.format(self.context.displayname)
+        summary = u'Branches for {0}'.format(self.context.displayname)
         return Link('', text, summary)
 
     def translations(self):
         text = 'Translations'
-        summary = 'Translations of {0} in Launchpad'.format(
+        summary = u'Translations of {0} in Launchpad'.format(
             self.context.displayname)
         return Link('', text, summary)
 
