@@ -282,14 +282,13 @@ class BuilderInteractor(object):
 
     @classmethod
     @defer.inlineCallbacks
-    def rescueIfLost(cls, vitals, slave, behavior, logger=None):
+    def rescueIfLost(cls, vitals, slave, expected_cookie, logger=None):
         """Reset the slave if its job information doesn't match the DB.
 
-        This checks the build ID reported in the slave status against the
-        database. If it isn't building what we think it should be, the current
-        build will be aborted and the slave cleaned in preparation for a new
-        task. The decision about the slave's correctness is left up to
-        `IBuildFarmJobBehavior.verifySlaveBuildCookie`.
+        This checks the build ID reported in the slave status against
+        the given cookie. If it isn't building what we think it should
+        be, the current build will be aborted and the slave cleaned in
+        preparation for a new task.
 
         :return: A Deferred that fires when the dialog with the slave is
             finished.  Its return value is True if the slave is lost,
@@ -315,14 +314,12 @@ class BuilderInteractor(object):
         else:
             slave_cookie = status_sentence[ident_position[status]]
 
-        # verifySlaveBuildCookie will raise CorruptBuildCookie if the
-        # slave cookie doesn't match the expected one, including
-        # verifying that the slave cookie is None iff we expect the
-        # slave to be idle.
-        try:
-            cls.verifySlaveBuildCookie(behavior, slave_cookie)
+        if slave_cookie == expected_cookie:
+            # The master and slave agree about the current job. Continue.
             defer.returnValue(False)
-        except CorruptBuildCookie as reason:
+        else:
+            # The master and slave disagree. The master is our master,
+            # so try to rescue the slave.
             # An IDLE slave doesn't need rescuing (SlaveScanner.scan
             # will rescue the DB side instead), and we just have to wait
             # out an ABORTING one.
@@ -332,8 +329,8 @@ class BuilderInteractor(object):
                 yield slave.abort()
             if logger:
                 logger.info(
-                    "Builder '%s' rescued from '%s': '%s'" %
-                    (vitals.name, slave_cookie, reason))
+                    "Builder slave '%s' rescued from %r (expected %r)." %
+                    (vitals.name, slave_cookie, expected_cookie))
             defer.returnValue(True)
 
     @classmethod

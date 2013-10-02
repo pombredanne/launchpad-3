@@ -40,7 +40,6 @@ from lp.buildmaster.tests.mock_slaves import (
     MockBuilder,
     OkSlave,
     SlaveTestHelpers,
-    TrivialBehavior,
     WaitingSlave,
     )
 from lp.services.config import config
@@ -77,38 +76,6 @@ class TestBuilderInteractor(TestCase):
         slave_status = {'build_status': 'BUILDING'}
         self.assertRaises(
             AssertionError, BuilderInteractor.extractBuildStatus, slave_status)
-
-    def test_verifySlaveBuildCookie_building_match(self):
-        BuilderInteractor.verifySlaveBuildCookie(TrivialBehavior(), 'trivial')
-
-    def test_verifySlaveBuildCookie_building_mismatch(self):
-        self.assertRaises(
-            CorruptBuildCookie,
-            BuilderInteractor.verifySlaveBuildCookie,
-            TrivialBehavior(), 'difficult')
-
-    def test_verifySlaveBuildCookie_idle_match(self):
-        BuilderInteractor.verifySlaveBuildCookie(None, None)
-
-    def test_verifySlaveBuildCookie_idle_mismatch(self):
-        self.assertRaises(
-            CorruptBuildCookie,
-            BuilderInteractor.verifySlaveBuildCookie, None, 'foo')
-
-    def test_rescueIfLost_aborts_lost_and_broken_slave(self):
-        # A slave that's 'lost' should be aborted; when the slave is
-        # broken then abort() should also throw a fault.
-        slave = LostBuildingBrokenSlave()
-        d = BuilderInteractor.rescueIfLost(
-            extract_vitals_from_db(MockBuilder()), slave, TrivialBehavior())
-
-        def check_slave_status(failure):
-            self.assertIn('abort', slave.call_log)
-            # 'Fault' comes from the LostBuildingBrokenSlave, this is
-            # just testing that the value is passed through.
-            self.assertIsInstance(failure.value, xmlrpclib.Fault)
-
-        return d.addBoth(check_slave_status)
 
     def resumeSlaveHost(self, builder):
         vitals = extract_vitals_from_db(builder)
@@ -183,6 +150,21 @@ class TestBuilderInteractor(TestCase):
         slave = BuilderInteractor.makeSlaveFromVitals(vitals)
         self.assertEqual(5, slave.timeout)
 
+    def test_rescueIfLost_aborts_lost_and_broken_slave(self):
+        # A slave that's 'lost' should be aborted; when the slave is
+        # broken then abort() should also throw a fault.
+        slave = LostBuildingBrokenSlave()
+        d = BuilderInteractor.rescueIfLost(
+            extract_vitals_from_db(MockBuilder()), slave, 'trivial')
+
+        def check_slave_status(failure):
+            self.assertIn('abort', slave.call_log)
+            # 'Fault' comes from the LostBuildingBrokenSlave, this is
+            # just testing that the value is passed through.
+            self.assertIsInstance(failure.value, xmlrpclib.Fault)
+
+        return d.addBoth(check_slave_status)
+
     @defer.inlineCallbacks
     def test_recover_idle_slave(self):
         # An idle slave is not rescued, even if it's not meant to be
@@ -190,7 +172,7 @@ class TestBuilderInteractor(TestCase):
         # we still report that it's lost.
         slave = OkSlave()
         lost = yield BuilderInteractor.rescueIfLost(
-            extract_vitals_from_db(MockBuilder()), slave, TrivialBehavior())
+            extract_vitals_from_db(MockBuilder()), slave, 'trivial')
         self.assertTrue(lost)
         self.assertEqual([], slave.call_log)
 
@@ -209,8 +191,7 @@ class TestBuilderInteractor(TestCase):
         # WAITING.
         waiting_slave = WaitingSlave(build_id='trivial')
         lost = yield BuilderInteractor.rescueIfLost(
-            extract_vitals_from_db(MockBuilder()), waiting_slave,
-            TrivialBehavior())
+            extract_vitals_from_db(MockBuilder()), waiting_slave, 'trivial')
         self.assertFalse(lost)
         self.assertEqual(['status'], waiting_slave.call_log)
 
@@ -223,8 +204,7 @@ class TestBuilderInteractor(TestCase):
         # discarded.
         waiting_slave = WaitingSlave(build_id='non-trivial')
         lost = yield BuilderInteractor.rescueIfLost(
-            extract_vitals_from_db(MockBuilder()), waiting_slave,
-            TrivialBehavior())
+            extract_vitals_from_db(MockBuilder()), waiting_slave, 'trivial')
         self.assertTrue(lost)
         self.assertEqual(['status', 'clean'], waiting_slave.call_log)
 
@@ -234,8 +214,7 @@ class TestBuilderInteractor(TestCase):
         # BUILDING.
         building_slave = BuildingSlave(build_id='trivial')
         lost = yield BuilderInteractor.rescueIfLost(
-            extract_vitals_from_db(MockBuilder()), building_slave,
-            TrivialBehavior())
+            extract_vitals_from_db(MockBuilder()), building_slave, 'trivial')
         self.assertFalse(lost)
         self.assertEqual(['status'], building_slave.call_log)
 
@@ -245,8 +224,7 @@ class TestBuilderInteractor(TestCase):
         # abort the build, thus stopping it in its tracks.
         building_slave = BuildingSlave(build_id='non-trivial')
         lost = yield BuilderInteractor.rescueIfLost(
-            extract_vitals_from_db(MockBuilder()), building_slave,
-            TrivialBehavior())
+            extract_vitals_from_db(MockBuilder()), building_slave, 'trivial')
         self.assertTrue(lost)
         self.assertEqual(['status', 'abort'], building_slave.call_log)
 
