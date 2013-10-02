@@ -489,7 +489,7 @@ class BuilderInteractor(object):
 
     @classmethod
     @defer.inlineCallbacks
-    def updateBuild(cls, queueItem, slave, behavior):
+    def updateBuild(cls, vitals, slave, builders_cache, behavior_factory):
         """Verify the current build job status.
 
         Perform the required actions for each state.
@@ -505,22 +505,27 @@ class BuilderInteractor(object):
         builder_status = status_dict['builder_status']
         if builder_status == 'BuilderStatus.BUILDING':
             # Build still building, collect the logtail.
-            if queueItem.job.status != JobStatus.RUNNING:
+            if vitals.build_queue.job.status != JobStatus.RUNNING:
                 # XXX: This check should be removed once we confirm it's
                 # not regularly hit.
                 raise AssertionError(
                     "Job not running when assigned and slave building.")
-            queueItem.logtail = encoding.guess(str(status_dict.get('logtail')))
+            vitals.build_queue.logtail = encoding.guess(
+                str(status_dict.get('logtail')))
             transaction.commit()
         elif builder_status == 'BuilderStatus.ABORTING':
             # Build is being aborted.
-            queueItem.logtail = "Waiting for slave process to be terminated"
+            vitals.build_queue.logtail = (
+                "Waiting for slave process to be terminated")
             transaction.commit()
         elif builder_status == 'BuilderStatus.WAITING':
             # Build has finished. Delegate handling to the build itself.
+            builder = builders_cache[vitals.name]
+            behavior = behavior_factory(vitals.build_queue, builder, slave)
             behavior.updateSlaveStatus(status_sentence, status_dict)
             yield behavior.handleStatus(
-                queueItem, cls.extractBuildStatus(status_dict), status_dict)
+                vitals.build_queue, cls.extractBuildStatus(status_dict),
+                status_dict)
         else:
             raise AssertionError("Unknown status %s" % builder_status)
 

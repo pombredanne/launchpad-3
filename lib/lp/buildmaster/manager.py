@@ -320,9 +320,8 @@ class SlaveScanner:
         if vitals.build_queue is not None:
             # Scan the slave and get the logtail, or collect the build
             # if it's ready.  Yes, "updateBuild" is a bad name.
-            behavior = behavior or self.behavior_factory(
-                vitals.build_queue, builder, slave)
-            yield interactor.updateBuild(vitals.build_queue, slave, behavior)
+            yield interactor.updateBuild(
+                vitals, slave, self.builders_cache, self.behavior_factory)
         elif vitals.manual:
             # If the builder is in manual mode, don't dispatch anything.
             self.logger.debug(
