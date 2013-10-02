@@ -25,7 +25,6 @@ from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
     CannotFetchFile,
     CannotResumeHost,
-    CorruptBuildCookie,
     )
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
@@ -267,29 +266,15 @@ class BuilderInteractor(object):
                 status['logtail'] = status_sentence[2]
         defer.returnValue((status_sentence, status))
 
-    @staticmethod
-    def verifySlaveBuildCookie(behavior, slave_cookie):
-        """See `IBuildFarmJobBehavior`."""
-        if behavior is None:
-            if slave_cookie is not None:
-                raise CorruptBuildCookie('Slave building when should be idle.')
-        else:
-            good_cookie = behavior.getBuildCookie()
-            if slave_cookie != good_cookie:
-                raise CorruptBuildCookie(
-                    "Invalid slave build cookie: got %r, expected %r."
-                    % (slave_cookie, good_cookie))
-
     @classmethod
     @defer.inlineCallbacks
-    def rescueIfLost(cls, vitals, slave, behavior, logger=None):
+    def rescueIfLost(cls, vitals, slave, expected_cookie, logger=None):
         """Reset the slave if its job information doesn't match the DB.
 
-        This checks the build ID reported in the slave status against the
-        database. If it isn't building what we think it should be, the current
-        build will be aborted and the slave cleaned in preparation for a new
-        task. The decision about the slave's correctness is left up to
-        `IBuildFarmJobBehavior.verifySlaveBuildCookie`.
+        This checks the build ID reported in the slave status against
+        the given cookie. If it isn't building what we think it should
+        be, the current build will be aborted and the slave cleaned in
+        preparation for a new task.
 
         :return: A Deferred that fires when the dialog with the slave is
             finished.  Its return value is True if the slave is lost,
@@ -315,14 +300,12 @@ class BuilderInteractor(object):
         else:
             slave_cookie = status_sentence[ident_position[status]]
 
-        # verifySlaveBuildCookie will raise CorruptBuildCookie if the
-        # slave cookie doesn't match the expected one, including
-        # verifying that the slave cookie is None iff we expect the
-        # slave to be idle.
-        try:
-            cls.verifySlaveBuildCookie(behavior, slave_cookie)
+        if slave_cookie == expected_cookie:
+            # The master and slave agree about the current job. Continue.
             defer.returnValue(False)
-        except CorruptBuildCookie as reason:
+        else:
+            # The master and slave disagree. The master is our master,
+            # so try to rescue the slave.
             # An IDLE slave doesn't need rescuing (SlaveScanner.scan
             # will rescue the DB side instead), and we just have to wait
             # out an ABORTING one.
@@ -332,8 +315,8 @@ class BuilderInteractor(object):
                 yield slave.abort()
             if logger:
                 logger.info(
-                    "Builder '%s' rescued from '%s': '%s'" %
-                    (vitals.name, slave_cookie, reason))
+                    "Builder slave '%s' rescued from %r (expected %r)." %
+                    (vitals.name, slave_cookie, expected_cookie))
             defer.returnValue(True)
 
     @classmethod
@@ -474,9 +457,22 @@ class BuilderInteractor(object):
             candidate, vitals, builder, slave, new_behavior, logger)
         defer.returnValue(candidate)
 
+    @staticmethod
+    def extractBuildStatus(status_dict):
+        """Read build status name.
+
+        :param status_dict: build status dict from slaveStatus.
+        :return: the unqualified status name, e.g. "OK".
+        """
+        status_string = status_dict['build_status']
+        lead_string = 'BuildStatus.'
+        assert status_string.startswith(lead_string), (
+            "Malformed status string: '%s'" % status_string)
+        return status_string[len(lead_string):]
+
     @classmethod
     @defer.inlineCallbacks
-    def updateBuild(cls, queueItem, slave, behavior):
+    def updateBuild(cls, vitals, slave, builders_cache, behavior_factory):
         """Verify the current build job status.
 
         Perform the required actions for each state.
@@ -487,76 +483,34 @@ class BuilderInteractor(object):
         # impossible to get past rescueIfLost unless the slave matches
         # the DB, and this method isn't called unless the DB says
         # there's a job.
-        builder_status_handlers = {
-            'BuilderStatus.BUILDING': cls.updateBuild_BUILDING,
-            'BuilderStatus.ABORTING': cls.updateBuild_ABORTING,
-            'BuilderStatus.WAITING': cls.updateBuild_WAITING,
-            }
         statuses = yield cls.slaveStatus(slave)
-        logger = logging.getLogger('slave-scanner')
         status_sentence, status_dict = statuses
         builder_status = status_dict['builder_status']
-        if builder_status not in builder_status_handlers:
+        if builder_status == 'BuilderStatus.BUILDING':
+            # Build still building, collect the logtail.
+            if vitals.build_queue.job.status != JobStatus.RUNNING:
+                # XXX: This check should be removed once we confirm it's
+                # not regularly hit.
+                raise AssertionError(
+                    "Job not running when assigned and slave building.")
+            vitals.build_queue.logtail = encoding.guess(
+                str(status_dict.get('logtail')))
+            transaction.commit()
+        elif builder_status == 'BuilderStatus.ABORTING':
+            # Build is being aborted.
+            vitals.build_queue.logtail = (
+                "Waiting for slave process to be terminated")
+            transaction.commit()
+        elif builder_status == 'BuilderStatus.WAITING':
+            # Build has finished. Delegate handling to the build itself.
+            builder = builders_cache[vitals.name]
+            behavior = behavior_factory(vitals.build_queue, builder, slave)
+            behavior.updateSlaveStatus(status_sentence, status_dict)
+            yield behavior.handleStatus(
+                vitals.build_queue, cls.extractBuildStatus(status_dict),
+                status_dict)
+        else:
             raise AssertionError("Unknown status %s" % builder_status)
-        method = builder_status_handlers[builder_status]
-        yield method(
-            queueItem, behavior, status_sentence, status_dict, logger)
-
-    @staticmethod
-    def updateBuild_BUILDING(queueItem, behavior, status_sentence, status_dict,
-                             logger):
-        """Build still building, collect the logtail"""
-        if queueItem.job.status != JobStatus.RUNNING:
-            queueItem.job.start()
-        queueItem.logtail = encoding.guess(str(status_dict.get('logtail')))
-        transaction.commit()
-
-    @staticmethod
-    def updateBuild_ABORTING(queueItem, behavior, status_sentence, status_dict,
-                             logger):
-        """Build was ABORTED.
-
-        Master-side should wait until the slave finish the process correctly.
-        """
-        queueItem.logtail = "Waiting for slave process to be terminated"
-        transaction.commit()
-
-    @staticmethod
-    def extractBuildStatus(status_dict):
-        """Read build status name.
-
-        :param status_dict: build status dict as passed to the
-            updateBuild_* methods.
-        :return: the unqualified status name, e.g. "OK".
-        """
-        status_string = status_dict['build_status']
-        lead_string = 'BuildStatus.'
-        assert status_string.startswith(lead_string), (
-            "Malformed status string: '%s'" % status_string)
-
-        return status_string[len(lead_string):]
-
-    @classmethod
-    def updateBuild_WAITING(cls, queueItem, behavior, status_sentence,
-                            status_dict, logger):
-        """Perform the actions needed for a slave in a WAITING state
-
-        Buildslave can be WAITING in five situations:
-
-        * Build has failed, no filemap is received (PACKAGEFAIL, DEPFAIL,
-                                                    CHROOTFAIL, BUILDERFAIL,
-                                                    ABORTED)
-
-        * Build has been built successfully (BuildStatus.OK), in this case
-          we have a 'filemap', so we can retrieve those files and store in
-          Librarian with getFileFromSlave() and then pass the binaries to
-          the uploader for processing.
-        """
-        behavior.updateSlaveStatus(
-            status_sentence, status_dict)
-        d = behavior.handleStatus(
-            queueItem, cls.extractBuildStatus(status_dict), status_dict)
-        return d
 
     @staticmethod
     def _getSlaveScannerLogger():
