@@ -1362,7 +1362,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             custom_file, PackageUploadCustomFormat.DIST_UPGRADER)
         build.package_upload.addCustom(
             self.factory.makeLibraryFileAlias(),
-            PackageUploadCustomFormat.STATIC_TRANSLATIONS)
+            PackageUploadCustomFormat.ROSETTA_TRANSLATIONS)
         # Make the new librarian file available.
         self.layer.txn.commit()
 
@@ -1392,7 +1392,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             status=PackageUploadStatus.ACCEPTED, archive=spph.archive,
             pocket=PackagePublishingPocket.UPDATES))
 
-        # STATIC_TRANSLATIONS is not a copyable type, so is not copied.
+        # ROSETTA_TRANSLATIONS is not a copyable type, so is not copied.
         self.assertEqual(1, len(uploads))
         upload = uploads[0]
         self.assertEqual(
