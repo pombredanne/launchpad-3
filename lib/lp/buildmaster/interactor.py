@@ -506,7 +506,10 @@ class BuilderInteractor(object):
         if builder_status == 'BuilderStatus.BUILDING':
             # Build still building, collect the logtail.
             if queueItem.job.status != JobStatus.RUNNING:
-                queueItem.job.start()
+                # XXX: This check should be removed once we confirm it's
+                # not regularly hit.
+                raise AssertionError(
+                    "Job not running when assigned and slave building.")
             queueItem.logtail = encoding.guess(str(status_dict.get('logtail')))
             transaction.commit()
         elif builder_status == 'BuilderStatus.ABORTING':
