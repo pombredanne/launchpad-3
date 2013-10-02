@@ -25,7 +25,6 @@ from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
     CannotFetchFile,
     CannotResumeHost,
-    CorruptBuildCookie,
     )
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
@@ -266,19 +265,6 @@ class BuilderInteractor(object):
             if status['builder_status'] == 'BuilderStatus.BUILDING':
                 status['logtail'] = status_sentence[2]
         defer.returnValue((status_sentence, status))
-
-    @staticmethod
-    def verifySlaveBuildCookie(behavior, slave_cookie):
-        """See `IBuildFarmJobBehavior`."""
-        if behavior is None:
-            if slave_cookie is not None:
-                raise CorruptBuildCookie('Slave building when should be idle.')
-        else:
-            good_cookie = behavior.getBuildCookie()
-            if slave_cookie != good_cookie:
-                raise CorruptBuildCookie(
-                    "Invalid slave build cookie: got %r, expected %r."
-                    % (slave_cookie, good_cookie))
 
     @classmethod
     @defer.inlineCallbacks

@@ -297,7 +297,6 @@ class SlaveScanner:
             behavior = self.behavior_factory(
                 vitals.build_queue, builder, slave)
             db_cookie = behavior.getBuildCookie() if behavior else None
-
             lost = yield interactor.rescueIfLost(
                 vitals, slave, db_cookie, self.logger)
             if lost:

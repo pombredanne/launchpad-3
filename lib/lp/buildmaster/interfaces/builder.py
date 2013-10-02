@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'BuildDaemonError',
-    'CorruptBuildCookie',
     'BuildSlaveFailure',
     'CannotBuild',
     'CannotFetchFile',
@@ -69,13 +68,6 @@ class CannotFetchFile(BuildDaemonError):
 
 class ProtocolVersionMismatch(BuildDaemonError):
     """The build slave had a protocol version. This is a serious error."""
-
-
-class CorruptBuildCookie(BuildDaemonError):
-    """The build slave is working with mismatched information.
-
-    It needs to be rescued.
-    """
 
 
 class CannotResumeHost(BuildDaemonError):

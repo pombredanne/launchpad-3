@@ -30,7 +30,6 @@ from lp.buildmaster.interactor import (
 from lp.buildmaster.interfaces.builder import (
     CannotFetchFile,
     CannotResumeHost,
-    CorruptBuildCookie,
     )
 from lp.buildmaster.tests.mock_slaves import (
     AbortingSlave,
