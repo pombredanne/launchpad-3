@@ -17,7 +17,6 @@ from operator import attrgetter
 from lp.archivepublisher.ddtp_tarball import DdtpTarballUpload
 from lp.archivepublisher.debian_installer import DebianInstallerUpload
 from lp.archivepublisher.dist_upgrader import DistUpgraderUpload
-from lp.archivepublisher.rosetta_translations import RosettaTranslationsUpload
 from lp.archivepublisher.uefi import UefiUpload
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.bulk import load_referencing
@@ -38,8 +37,6 @@ class CustomUploadsCopier:
         PackageUploadCustomFormat.DEBIAN_INSTALLER: DebianInstallerUpload,
         PackageUploadCustomFormat.DIST_UPGRADER: DistUpgraderUpload,
         PackageUploadCustomFormat.DDTP_TARBALL: DdtpTarballUpload,
-        PackageUploadCustomFormat.ROSETTA_TRANSLATIONS:
-            RosettaTranslationsUpload,
         PackageUploadCustomFormat.UEFI: UefiUpload,
         }
 
