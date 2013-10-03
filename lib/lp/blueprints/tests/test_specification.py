@@ -521,6 +521,9 @@ class SpecificationTests(TestCaseWithFactory):
         with person_logged_in(owner):
             spec.drafter = drafter
             address = owner.preferredemail.email
+            drafter_address = drafter.preferredemail.email
+        self.assertContentEqual(
+            [address, drafter_address], spec.notificationRecipientAddresses())
         # Remove the drafters access to the spec.
         artifact = self.factory.makeAccessArtifact(concrete=spec)
         getUtility(IAccessArtifactGrantSource).revokeByArtifact(
