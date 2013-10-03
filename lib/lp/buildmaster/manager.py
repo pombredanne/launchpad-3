@@ -413,9 +413,7 @@ class NewBuildersScanner:
         if clock is None:
             clock = reactor
         self._clock = clock
-        self.current_builders = [
-            vitals.name for vitals in
-            self.manager.builder_factory.iterVitals()]
+        self.current_builders = []
 
     def stop(self):
         """Terminate the LoopingCall."""
@@ -430,6 +428,9 @@ class NewBuildersScanner:
 
     def scan(self):
         """If a new builder appears, create a SlaveScanner for it."""
+        transaction.abort()
+        self.manager.builder_factory.update()
+        transaction.abort()
         new_builders = self.checkForNewBuilders()
         self.manager.addScanForBuilders(new_builders)
 
@@ -473,16 +474,9 @@ class BuilddManager(service.Service):
 
     def startService(self):
         """Service entry point, called when the application starts."""
-
-        # Get a list of builders and set up scanners on each one.
-
-        builders = [
-            vitals.name for vitals in self.builder_factory.iterVitals()]
-        self.addScanForBuilders(builders)
+        # Ask the NewBuildersScanner to add and start SlaveScanners for
+        # each current builder, and any added in the future.
         self.new_builders_scanner.scheduleScan()
-
-        # Events will now fire in the SlaveScanner objects to scan each
-        # builder.
 
     def stopService(self):
         """Callback for when we need to shut down."""

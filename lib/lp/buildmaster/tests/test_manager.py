@@ -903,14 +903,9 @@ class TestNewBuilders(TestCase):
     layer = LaunchpadZopelessLayer
 
     def _getScanner(self, clock=None):
-        return NewBuildersScanner(manager=BuilddManager(), clock=clock)
-
-    def test_init_stores_existing_builders(self):
-        # Make sure that NewBuildersScanner initializes itself properly
-        # by storing a list of existing builders.
-        all_builders = [builder.name for builder in getUtility(IBuilderSet)]
-        builder_scanner = self._getScanner()
-        self.assertEqual(all_builders, builder_scanner.current_builders)
+        nbs = NewBuildersScanner(manager=BuilddManager(), clock=clock)
+        nbs.checkForNewBuilders()
+        return nbs
 
     def test_scheduleScan(self):
         # Test that scheduleScan calls the "scan" method.
@@ -943,6 +938,7 @@ class TestNewBuilders(TestCase):
     def test_checkForNewBuilders_detects_builder_only_once(self):
         # checkForNewBuilders() only detects a new builder once.
         builder_scanner = self._getScanner()
+        self.assertEqual([], builder_scanner.checkForNewBuilders())
         LaunchpadObjectFactory().makeBuilder(name="sammy")
         self.assertEqual(["sammy"], builder_scanner.checkForNewBuilders())
         self.assertEqual([], builder_scanner.checkForNewBuilders())
