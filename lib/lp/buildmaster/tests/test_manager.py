@@ -458,17 +458,18 @@ class TestPrefetchedBuilderFactory(TestCaseWithFactory):
         pbf = PrefetchedBuilderFactory()
         self.assertEqual(builder, pbf[builder.name])
 
-    def test_prefetchData(self):
-        # prefetchData grabs all of the Builders and their BuildQueues
-        # in a single query.
+    def test_update(self):
+        # update grabs all of the Builders and their BuildQueues in a
+        # single query.
         builders = [self.factory.makeBuilder() for i in range(5)]
         for i in range(3):
             bq = self.factory.makeBinaryPackageBuild().queueBuild()
             bq.markAsBuilding(builders[i])
         pbf = PrefetchedBuilderFactory()
         transaction.commit()
+        pbf.update()
         with StormStatementRecorder() as recorder:
-            pbf.prefetchData()
+            pbf.update()
         self.assertThat(recorder, HasQueryCount(Equals(1)))
 
     def test_getVitals(self):
@@ -479,6 +480,7 @@ class TestPrefetchedBuilderFactory(TestCaseWithFactory):
         bq.markAsBuilding(builder)
         name = builder.name
         pbf = PrefetchedBuilderFactory()
+        pbf.update()
 
         def assertQuerylessVitals(comparator):
             expected_vitals = extract_vitals_from_db(builder)
@@ -503,7 +505,7 @@ class TestPrefetchedBuilderFactory(TestCaseWithFactory):
 
         # But the vitals will show the builder as idle if we ask the
         # factory to refetch.
-        pbf.prefetchData()
+        pbf.update()
         vitals = assertQuerylessVitals(self.assertEqual)
         self.assertIs(None, vitals.build_queue)
 
@@ -518,6 +520,7 @@ class TestPrefetchedBuilderFactory(TestCaseWithFactory):
             bq = self.factory.makeBinaryPackageBuild().queueBuild()
             bq.markAsBuilding(builders[i])
         pbf = PrefetchedBuilderFactory()
+        pbf.update()
 
         with StormStatementRecorder() as recorder:
             all_vitals = list(pbf.iterVitals())
@@ -538,11 +541,15 @@ class FakeBuildQueue:
 
 
 class MockBuilderFactory:
+    """A mock builder factory which uses a preset Builder and BuildQueue."""
 
     def __init__(self, builder, build_queue):
         self.updateTestData(builder, build_queue)
         self.get_call_count = 0
         self.getVitals_call_count = 0
+
+    def update(self):
+        return
 
     def updateTestData(self, builder, build_queue):
         self._builder = builder

@@ -46,25 +46,40 @@ BUILDD_MANAGER_LOG_NAME = "slave-scanner"
 
 
 class BuilderFactory:
+    """A dumb builder factory that just talks to the DB."""
+
+    def update(self):
+        """Update the factory's view of the world.
+
+        For the basic BuilderFactory this is a no-op, but others might do
+        something.
+        """
+        return
 
     def __getitem__(self, name):
+        """Get the named `Builder` Storm object."""
         return getUtility(IBuilderSet).getByName(name)
 
     def getVitals(self, name):
+        """Get the named `BuilderVitals` object."""
         return extract_vitals_from_db(self[name])
 
     def iterVitals(self):
+        """Iterate over all `BuilderVitals` objects."""
         return (
             extract_vitals_from_db(b)
             for b in getUtility(IBuilderSet).__iter__())
 
 
 class PrefetchedBuilderFactory:
+    """A smart builder factory that does efficient bulk queries.
 
-    def __init__(self):
-        self.prefetchData()
+    `getVitals` and `iterVitals` don't touch the DB directly. They work
+    from cached data updated by `update`.
+    """
 
-    def prefetchData(self):
+    def update(self):
+        """See `BuilderFactory`."""
         builders_and_bqs = IStore(Builder).using(
             Builder, LeftJoin(BuildQueue, BuildQueue.builderID == Builder.id)
             ).find((Builder, BuildQueue))
@@ -73,12 +88,15 @@ class PrefetchedBuilderFactory:
             for b, bq in builders_and_bqs)
 
     def __getitem__(self, name):
+        """See `BuilderFactory`."""
         return getUtility(IBuilderSet).getByName(name)
 
     def getVitals(self, name):
+        """See `BuilderFactory`."""
         return self.vitals_map[name]
 
     def iterVitals(self):
+        """See `BuilderFactory`."""
         return (b for n, b in sorted(self.vitals_map.iteritems()))
 
 
