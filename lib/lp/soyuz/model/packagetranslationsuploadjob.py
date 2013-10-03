@@ -31,6 +31,7 @@ from lp.soyuz.interfaces.packagetranslationsuploadjob import (
     IPackageTranslationsUploadJobSource,
     )
 from lp.soyuz.model.queue import PackageUpload
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
@@ -129,6 +130,10 @@ class PackageTranslationsUploadJob(PackageTranslationsUploadJobDerived):
     @property
     def packageupload(self):
         return PackageUpload.get(self.packageupload_id)
+
+    @property
+    def sourcepackagerelease(self):
+        return SourcePackageRelease.get(self.sourcepackagerelease_id)
 
     @property
     def libraryfilealias(self):

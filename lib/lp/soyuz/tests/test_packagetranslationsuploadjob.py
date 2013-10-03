@@ -40,42 +40,30 @@ from lp.translations.interfaces.translationimportqueue import (
 
 class LocalTestHelper(TestCaseWithFactory):
 
-    def makeJob(self, archive=None, sourcepackagerelease=None,
-                libraryfilealias=None, job_requester=None, tar_content=None):
-        if job_requester is None:
-            requester = self.factory.makePerson()
-        else:
-            requester = self.factory.makePerson(name=job_requester)
-        if archive is None:
-            archive = self.factory.makeArchive()
-        if sourcepackagerelease is None:
-            sourcepackagerelease = self.factory.makeSourcePackageRelease(
-                archive=archive)
-        if libraryfilealias is None:
-            libraryfilealias = self.makeTranslationsLFA(tar_content)
-
-        packageupload = self.makeCustomPackageUpload(archive=archive,
-                                                     tar_content=tar_content)
-        packageupload.addSource(sourcepackagerelease)
-
-        return (packageupload,
-                getUtility(IPackageTranslationsUploadJobSource).create(
-                    packageupload, sourcepackagerelease, libraryfilealias,
-                    requester))
-
-    def makeCustomPackageUpload(self, archive=None,
-                                pocket=None, tar_content=None):
-        """Make a `PackageUpload` with a `PackageUploadCustom` attached."""
-        distroseries = self.makeDistroSeries()
+    def makeJob(self, archive=None, distroseries=None, tar_content=None):
+        requester = self.factory.makePerson()
+        distroseries = self.factory.makeDistroSeries()
+        sourcepackagename = self.factory.getOrMakeSourcePackageName("foobar")
         if archive is None:
             archive = distroseries.main_archive
-        upload = self.factory.makePackageUpload(
-            distroseries=distroseries, archive=archive, pocket=pocket)
-        file_alias = self.makeTranslationsLFA(self, tar_content)
+        libraryfilealias = self.makeTranslationsLFA(tar_content)
+        self.factory.makeSourcePackage(sourcepackagename=sourcepackagename,
+            distroseries=distroseries, publish=True)
+        spr = self.factory.makeSourcePackageRelease(
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries)
+        upload = removeSecurityProxy(self.factory.makePackageUpload(
+            distroseries=distroseries))
+
+        upload.addSource(spr)
+
         upload.addCustom(
-            file_alias,
+            libraryfilealias,
             custom_type=PackageUploadCustomFormat.ROSETTA_TRANSLATIONS)
-        return upload
+
+        return (upload,
+                getUtility(IPackageTranslationsUploadJobSource).create(
+                    upload, spr, libraryfilealias, requester))
 
     def makeTranslationsLFA(self, tar_content=None):
         """Create an LibraryFileAlias containing dummy translation data."""
@@ -121,9 +109,6 @@ class TestPackageTranslationsUploadJob(LocalTestHelper):
         packageupload, job = self.makeJob(archive=archive)
         method = FakeMethod()
         removeSecurityProxy(job).attachTranslationFiles = method
-        packageupload, job = self.makeJob(
-            archive=archive,
-            sourcepackagerelease=packageupload.sourcepackagerelease)
         transaction.commit()
         job.run()
         self.assertEqual(method.call_count, 1)
@@ -192,9 +177,8 @@ class TestAttachTranslationFiles(LocalTestHelper):
         self.assertEqual(2, entries_in_queue)
 
     def test_attachTranslationFiles__translation_sharing(self):
-        # If translation sharing is enabled,
-        # SourcePackageRelease.attachTranslationFiles() only attaches
-        # templates.
+        # If translation sharing is enabled, attachTranslationFiles() only
+        # attaches templates.
         packageupload, job = self.makeJob()
         sourcepackage = packageupload.sourcepackagerelease.sourcepackage
         productseries = self.factory.makeProductSeries()

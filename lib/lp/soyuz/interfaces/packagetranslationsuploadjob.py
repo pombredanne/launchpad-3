@@ -28,7 +28,7 @@ class IPackageTranslationsUploadJob(IRunnableJob):
     def getErrorRecipients():
         """Return a list of email-ids to notify about upload errors."""
 
-    def attachTranslationFiles(self, by_maintainer):
+    def attachTranslationFiles(by_maintainer):
         """Attach a tarball with translations to be imported into Rosetta.
 
         :by_maintainer: indicates if the imported files where uploaded by
