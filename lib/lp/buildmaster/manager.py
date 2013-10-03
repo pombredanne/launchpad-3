@@ -404,7 +404,7 @@ class NewBuildersScanner:
     """If new builders appear, create a scanner for them."""
 
     # How often to check for new builders, in seconds.
-    SCAN_INTERVAL = 300
+    SCAN_INTERVAL = 15
 
     def __init__(self, manager, clock=None):
         self.manager = manager
