@@ -56,7 +56,6 @@ from lp.buildmaster.tests.mock_slaves import (
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.config import config
-from lp.services.database.sqlbase import flush_database_caches
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.testing import (
@@ -459,6 +458,19 @@ class TestPrefetchedBuilderFactory(TestCaseWithFactory):
         pbf = PrefetchedBuilderFactory()
         self.assertEqual(builder, pbf[builder.name])
 
+    def test_prefetchData(self):
+        # prefetchData grabs all of the Builders and their BuildQueues
+        # in a single query.
+        builders = [self.factory.makeBuilder() for i in range(5)]
+        for i in range(3):
+            bq = self.factory.makeBinaryPackageBuild().queueBuild()
+            bq.markAsBuilding(builders[i])
+        pbf = PrefetchedBuilderFactory()
+        transaction.commit()
+        with StormStatementRecorder() as recorder:
+            pbf.prefetchData()
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+
     def test_getVitals(self):
         # PrefetchedBuilderFactory.getVitals looks up the BuilderVitals
         # in a local cached map, without hitting the DB.
@@ -470,7 +482,7 @@ class TestPrefetchedBuilderFactory(TestCaseWithFactory):
 
         def assertQuerylessVitals(comparator):
             expected_vitals = extract_vitals_from_db(builder)
-            flush_database_caches()
+            transaction.commit()
             with StormStatementRecorder() as recorder:
                 got_vitals = pbf.getVitals(name)
                 comparator(expected_vitals, got_vitals)
