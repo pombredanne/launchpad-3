@@ -282,11 +282,13 @@ class SlaveScanner:
         on the current BuildQueue.
         """
         if vitals.build_queue != self._cached_build_queue:
-            behavior = self.behavior_factory(
-                vitals.build_queue, self.builders_cache[vitals.name],
-                None)
-            self._cached_build_cookie = (
-                behavior.getBuildCookie() if behavior else None)
+            if vitals.build_queue is not None:
+                behavior = self.behavior_factory(
+                    vitals.build_queue, self.builders_cache[vitals.name],
+                    None)
+                self._cached_build_cookie = behavior.getBuildCookie()
+            else:
+                self._cached_build_cookie = None
             self._cached_build_queue = vitals.build_queue
         return self._cached_build_cookie
 

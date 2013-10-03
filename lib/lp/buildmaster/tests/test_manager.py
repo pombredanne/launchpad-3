@@ -453,13 +453,20 @@ class FakeBuildQueue:
 class MockBuildersCache:
 
     def __init__(self, builder, build_queue):
+        self.updateTestData(builder, build_queue)
+        self.get_call_count = 0
+        self.getVitals_call_count = 0
+
+    def updateTestData(self, builder, build_queue):
         self._builder = builder
         self._build_queue = build_queue
 
     def __getitem__(self, name):
+        self.get_call_count += 1
         return self._builder
 
     def getVitals(self, name):
+        self.getVitals_call_count += 1
         return extract_vitals_from_db(self._builder, self._build_queue)
 
 
@@ -539,6 +546,43 @@ class TestSlaveScannerWithoutDB(TestCase):
         yield scanner.scan()
         self.assertEqual(['status', 'abort'], slave.call_log)
         self.assertEqual(0, interactor.updateBuild.call_count)
+
+    def test_getExpectedCookie_caches(self):
+        bc = MockBuildersCache(MockBuilder(), FakeBuildQueue())
+        scanner = SlaveScanner(
+            'mock', bc, BufferLogger(), interactor_factory=FakeMethod(None),
+            slave_factory=FakeMethod(None),
+            behavior_factory=FakeMethod(TrivialBehavior()))
+
+        def assertCounts(expected):
+            self.assertEqual(
+                expected,
+                (scanner.interactor_factory.call_count,
+                 scanner.behavior_factory.call_count,
+                 scanner.builders_cache.get_call_count))
+
+        # The first call will get a Builder and a BuildFarmJobBehavior.
+        assertCounts((0, 0, 0))
+        cookie1 = scanner.getExpectedCookie(bc.getVitals('foo'))
+        self.assertEqual('trivial', cookie1)
+        assertCounts((0, 1, 1))
+
+        # A second call with the same BuildQueue will not reretrieve them.
+        cookie2 = scanner.getExpectedCookie(bc.getVitals('foo'))
+        self.assertEqual(cookie1, cookie2)
+        assertCounts((0, 1, 1))
+
+        # But a call with a new BuildQueue will regrab.
+        bc.updateTestData(bc._builder, FakeBuildQueue())
+        cookie3 = scanner.getExpectedCookie(bc.getVitals('foo'))
+        self.assertEqual(cookie1, cookie3)
+        assertCounts((0, 2, 2))
+
+        # And unsetting the BuildQueue returns None again.
+        bc.updateTestData(bc._builder, None)
+        cookie4 = scanner.getExpectedCookie(bc.getVitals('foo'))
+        self.assertIs(None, cookie4)
+        assertCounts((0, 2, 2))
 
 
 class TestCancellationChecking(TestCaseWithFactory):
