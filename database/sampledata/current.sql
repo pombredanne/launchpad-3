@@ -969,23 +969,11 @@ INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner
 ALTER TABLE bugtracker ENABLE TRIGGER ALL;
 
 
-ALTER TABLE processorfamily DISABLE TRIGGER ALL;
-
-INSERT INTO processorfamily (id, name, title, description, restricted) VALUES (1, 'x86', 'Intel 386 compatible chips', 'Bring back the 8086!', false);
-INSERT INTO processorfamily (id, name, title, description, restricted) VALUES (2, 'powerpc', 'PowerPC compatible systems, G3 G4 etc', 'An architecture conceived by Motorola and developed further in cooperation with IBM. Was used very successfully by Apple for their PowerMac range, until 2007.', false);
-INSERT INTO processorfamily (id, name, title, description, restricted) VALUES (3, 'amd64', 'AMD64 and Intel EM64T and compatible systems', 'A 64-bit extension to the venerable x86 architecture, pioneered by AMD and later adopted by Intel as well.', false);
-INSERT INTO processorfamily (id, name, title, description, restricted) VALUES (4, 'hppa', 'PA-RISC Processors', 'The HP PA-RISC and compatible processors', false);
-INSERT INTO processorfamily (id, name, title, description, restricted) VALUES (5, 'arm', 'ARM Processors', 'The ARM and compatible processors', true);
-
-
-ALTER TABLE processorfamily ENABLE TRIGGER ALL;
-
-
 ALTER TABLE processor DISABLE TRIGGER ALL;
 
-INSERT INTO processor (id, family, name, title, description, restricted) VALUES (1, 1, '386', 'Intel 386', 'Intel 386 and its many derivatives and clones, the basic 32-bit chip in the x86 family', false);
-INSERT INTO processor (id, family, name, title, description, restricted) VALUES (2, 3, 'amd64', 'AMD 64bit', 'AMD 64bit', false);
-INSERT INTO processor (id, family, name, title, description, restricted) VALUES (3, 4, 'hppa', 'HPPA Processor', 'HPPA Processor', false);
+INSERT INTO processor (id, name, title, description, restricted) VALUES (1, '386', 'Intel 386', 'Intel 386 and its many derivatives and clones, the basic 32-bit chip in the x86 family', false);
+INSERT INTO processor (id, name, title, description, restricted) VALUES (2, 'amd64', 'AMD 64bit', 'AMD 64bit', false);
+INSERT INTO processor (id, name, title, description, restricted) VALUES (3, 'hppa', 'HPPA Processor', 'HPPA Processor', false);
 
 
 ALTER TABLE processor ENABLE TRIGGER ALL;
@@ -993,14 +981,14 @@ ALTER TABLE processor ENABLE TRIGGER ALL;
 
 ALTER TABLE distroarchseries DISABLE TRIGGER ALL;
 
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (1, 1, 1, 'i386', 1, true, 5, '2006-10-16 18:31:43.454475', true, true, 1);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (6, 3, 1, 'i386', 1, true, 1, '2006-10-16 18:31:43.456532', true, true, 1);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (7, 6, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457028', true, true, 1);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (8, 10, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457484', true, true, 1);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (9, 13, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457938', true, true, 1);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (10, 13, 3, 'amd64', 1, true, 0, '2006-10-16 18:31:43.458434', true, true, 2);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (11, 3, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.458892', false, true, 3);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (12, 1, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.459349', false, true, 3);
+INSERT INTO distroarchseries (id, distroseries, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (1, 1, 'i386', 1, true, 5, '2006-10-16 18:31:43.454475', true, true, 1);
+INSERT INTO distroarchseries (id, distroseries, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (6, 3, 'i386', 1, true, 1, '2006-10-16 18:31:43.456532', true, true, 1);
+INSERT INTO distroarchseries (id, distroseries, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (7, 6, 'i386', 1, true, 0, '2006-10-16 18:31:43.457028', true, true, 1);
+INSERT INTO distroarchseries (id, distroseries, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (8, 10, 'i386', 1, true, 0, '2006-10-16 18:31:43.457484', true, true, 1);
+INSERT INTO distroarchseries (id, distroseries, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (9, 13, 'i386', 1, true, 0, '2006-10-16 18:31:43.457938', true, true, 1);
+INSERT INTO distroarchseries (id, distroseries, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (10, 13, 'amd64', 1, true, 0, '2006-10-16 18:31:43.458434', true, true, 2);
+INSERT INTO distroarchseries (id, distroseries, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (11, 3, 'hppa', 1, false, 0, '2006-10-16 18:31:43.458892', false, true, 3);
+INSERT INTO distroarchseries (id, distroseries, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (12, 1, 'hppa', 1, false, 0, '2006-10-16 18:31:43.459349', false, true, 3);
 
 
 ALTER TABLE distroarchseries ENABLE TRIGGER ALL;
@@ -8810,9 +8798,6 @@ ALTER TABLE processacceptedbugsjob DISABLE TRIGGER ALL;
 
 
 ALTER TABLE processacceptedbugsjob ENABLE TRIGGER ALL;
-
-
-
 
 
 
