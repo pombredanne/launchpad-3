@@ -42,7 +42,7 @@ from lp.services.propertycache import get_property_cache
 BUILDD_MANAGER_LOG_NAME = "slave-scanner"
 
 
-class BuildersCache:
+class BuilderFactory:
 
     def __getitem__(self, name):
         return getUtility(IBuilderSet).getByName(name)
@@ -142,12 +142,12 @@ class SlaveScanner:
     # greater than abort_timeout in launchpad-buildd's slave BuildManager.
     CANCEL_TIMEOUT = 180
 
-    def __init__(self, builder_name, builders_cache, logger, clock=None,
+    def __init__(self, builder_name, builder_factory, logger, clock=None,
                  interactor_factory=BuilderInteractor,
                  slave_factory=BuilderInteractor.makeSlaveFromVitals,
                  behavior_factory=BuilderInteractor.getBuildBehavior):
         self.builder_name = builder_name
-        self.builders_cache = builders_cache
+        self.builder_factory = builder_factory
         self.logger = logger
         self.interactor_factory = interactor_factory
         self.slave_factory = slave_factory
@@ -211,8 +211,8 @@ class SlaveScanner:
                 failure.getTraceback()))
 
         # Decide if we need to terminate the job or reset/fail the builder.
-        vitals = self.builders_cache.getVitals(self.builder_name)
-        builder = self.builders_cache[self.builder_name]
+        vitals = self.builder_factory.getVitals(self.builder_name)
+        builder = self.builder_factory[self.builder_name]
         try:
             builder.handleFailure(self.logger)
             yield assessFailureCounts(
@@ -270,7 +270,7 @@ class SlaveScanner:
             vitals.build_queue.cancel()
             transaction.commit()
             value = yield interactor.resetOrFail(
-                vitals, slave, self.builders_cache[vitals.name], self.logger,
+                vitals, slave, self.builder_factory[vitals.name], self.logger,
                 e)
             # value is not None if we resumed a slave host.
             defer.returnValue(value is not None)
@@ -284,7 +284,7 @@ class SlaveScanner:
         if vitals.build_queue != self._cached_build_queue:
             if vitals.build_queue is not None:
                 behavior = self.behavior_factory(
-                    vitals.build_queue, self.builders_cache[vitals.name],
+                    vitals.build_queue, self.builder_factory[vitals.name],
                     None)
                 self._cached_build_cookie = behavior.getBuildCookie()
             else:
@@ -302,7 +302,7 @@ class SlaveScanner:
         # Commit and refetch the Builder object to ensure we have the
         # latest data from the DB.
         transaction.commit()
-        vitals = self.builders_cache.getVitals(self.builder_name)
+        vitals = self.builder_factory.getVitals(self.builder_name)
         interactor = self.interactor_factory()
         slave = self.slave_factory(vitals)
 
@@ -340,14 +340,14 @@ class SlaveScanner:
             # Scan the slave and get the logtail, or collect the build
             # if it's ready.  Yes, "updateBuild" is a bad name.
             yield interactor.updateBuild(
-                vitals, slave, self.builders_cache, self.behavior_factory)
+                vitals, slave, self.builder_factory, self.behavior_factory)
         elif vitals.manual:
             # If the builder is in manual mode, don't dispatch anything.
             self.logger.debug(
                 '%s is in manual mode, not dispatching.' % vitals.name)
         else:
             # See if there is a job we can dispatch to the builder slave.
-            builder = self.builders_cache[self.builder_name]
+            builder = self.builder_factory[self.builder_name]
             yield interactor.findAndStartJob(vitals, builder, slave)
             if builder.currentjob is not None:
                 # After a successful dispatch we can reset the
@@ -370,7 +370,8 @@ class NewBuildersScanner:
             clock = reactor
         self._clock = clock
         self.current_builders = [
-            vitals.name for vitals in self.manager.builders_cache.iterVitals()]
+            vitals.name for vitals in
+            self.manager.builder_factory.iterVitals()]
 
     def stop(self):
         """Terminate the LoopingCall."""
@@ -391,7 +392,8 @@ class NewBuildersScanner:
     def checkForNewBuilders(self):
         """See if any new builders were added."""
         new_builders = set(
-            vitals.name for vitals in self.manager.builders_cache.iterVitals())
+            vitals.name for vitals in
+            self.manager.builder_factory.iterVitals())
         old_builders = set(self.current_builders)
         extra_builders = new_builders.difference(old_builders)
         self.current_builders.extend(extra_builders)
@@ -403,7 +405,7 @@ class BuilddManager(service.Service):
 
     def __init__(self, clock=None):
         self.builder_slaves = []
-        self.builders_cache = BuildersCache()
+        self.builder_factory = BuilderFactory()
         self.logger = self._setupLogger()
         self.new_builders_scanner = NewBuildersScanner(
             manager=self, clock=clock)
@@ -430,7 +432,8 @@ class BuilddManager(service.Service):
 
         # Get a list of builders and set up scanners on each one.
 
-        builders = [vitals.name for vitals in self.builders_cache.iterVitals()]
+        builders = [
+            vitals.name for vitals in self.builder_factory.iterVitals()]
         self.addScanForBuilders(builders)
         self.new_builders_scanner.scheduleScan()
 
@@ -458,7 +461,7 @@ class BuilddManager(service.Service):
         """Set up scanner objects for the builders specified."""
         for builder in builders:
             slave_scanner = SlaveScanner(
-                builder, self.builders_cache, self.logger)
+                builder, self.builder_factory, self.logger)
             self.builder_slaves.append(slave_scanner)
             slave_scanner.startCycle()
 
