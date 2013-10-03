@@ -159,6 +159,11 @@ class SlaveScanner:
         self._clock = clock
         self.date_cancel = None
 
+        # We cache the build cookie, keyed on the BuildQueue, to avoid
+        # hitting the DB on every scan.
+        self._cached_build_cookie = None
+        self._cached_build_queue = None
+
     def startCycle(self):
         """Scan the builder and dispatch to it or deal with failures."""
         self.loop = LoopingCall(self.singleCycle)
@@ -270,6 +275,21 @@ class SlaveScanner:
             # value is not None if we resumed a slave host.
             defer.returnValue(value is not None)
 
+    def getExpectedCookie(self, vitals):
+        """Return the build cookie expected to be held by the slave.
+
+        Calculating this requires hitting the DB, so it's cached based
+        on the current BuildQueue.
+        """
+        if vitals.build_queue != self._cached_build_queue:
+            behavior = self.behavior_factory(
+                vitals.build_queue, self.builders_cache[vitals.name],
+                None)
+            self._cached_build_cookie = (
+                behavior.getBuildCookie() if behavior else None)
+            self._cached_build_queue = vitals.build_queue
+        return self._cached_build_cookie
+
     @defer.inlineCallbacks
     def scan(self):
         """Probe the builder and update/dispatch/collect as appropriate.
@@ -293,12 +313,8 @@ class SlaveScanner:
             cancelled = yield self.checkCancellation(vitals, slave, interactor)
             if cancelled:
                 return
-            behavior = self.behavior_factory(
-                vitals.build_queue, self.builders_cache[self.builder_name],
-                slave)
-            db_cookie = behavior.getBuildCookie() if behavior else None
             lost = yield interactor.rescueIfLost(
-                vitals, slave, db_cookie, self.logger)
+                vitals, slave, self.getExpectedCookie(vitals), self.logger)
             if lost:
                 lost_reason = '%s is lost' % vitals.name
 
