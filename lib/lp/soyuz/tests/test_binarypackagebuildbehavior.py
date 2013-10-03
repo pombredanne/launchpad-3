@@ -36,7 +36,7 @@ from lp.buildmaster.tests.test_buildfarmjobbehavior import (
     TestGetUploadMethodsMixin,
     TestHandleStatusMixin,
     )
-from lp.buildmaster.tests.test_manager import MockBuildersCache
+from lp.buildmaster.tests.test_manager import MockBuilderFactory
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     pocketsuffix,
@@ -339,9 +339,9 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
         self.addCleanup(self._cleanup)
 
     def updateBuild(self, candidate, slave):
-        bc = MockBuildersCache(self.builder, candidate)
+        bf = MockBuilderFactory(self.builder, candidate)
         return self.interactor.updateBuild(
-            bc.getVitals('foo'), slave, bc, self.interactor.getBuildBehavior)
+            bf.getVitals('foo'), slave, bf, self.interactor.getBuildBehavior)
 
     def assertBuildProperties(self, build):
         """Check that a build happened by making sure some of its properties

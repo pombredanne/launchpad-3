@@ -472,7 +472,7 @@ class BuilderInteractor(object):
 
     @classmethod
     @defer.inlineCallbacks
-    def updateBuild(cls, vitals, slave, builders_cache, behavior_factory):
+    def updateBuild(cls, vitals, slave, builder_factory, behavior_factory):
         """Verify the current build job status.
 
         Perform the required actions for each state.
@@ -503,7 +503,7 @@ class BuilderInteractor(object):
             transaction.commit()
         elif builder_status == 'BuilderStatus.WAITING':
             # Build has finished. Delegate handling to the build itself.
-            builder = builders_cache[vitals.name]
+            builder = builder_factory[vitals.name]
             behavior = behavior_factory(vitals.build_queue, builder, slave)
             behavior.updateSlaveStatus(status_sentence, status_dict)
             yield behavior.handleStatus(

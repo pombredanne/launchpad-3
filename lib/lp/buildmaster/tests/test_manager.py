@@ -37,7 +37,7 @@ from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.manager import (
     assessFailureCounts,
     BuilddManager,
-    BuildersCache,
+    BuilderFactory,
     NewBuildersScanner,
     SlaveScanner,
     )
@@ -127,7 +127,7 @@ class TestSlaveScannerScan(TestCase):
         if builder_name is None:
             builder_name = BOB_THE_BUILDER_NAME
         scanner = SlaveScanner(
-            builder_name, BuildersCache(), BufferLogger(), clock=clock)
+            builder_name, BuilderFactory(), BufferLogger(), clock=clock)
         scanner.logger.name = 'slave-scanner'
 
         return scanner
@@ -450,7 +450,7 @@ class FakeBuildQueue:
         self.reset = FakeMethod()
 
 
-class MockBuildersCache:
+class MockBuilderFactory:
 
     def __init__(self, builder, build_queue):
         self.updateTestData(builder, build_queue)
@@ -485,7 +485,7 @@ class TestSlaveScannerWithoutDB(TestCase):
         interactor.updateBuild = FakeMethod()
 
         scanner = SlaveScanner(
-            'mock', MockBuildersCache(MockBuilder(), bq), BufferLogger(),
+            'mock', MockBuilderFactory(MockBuilder(), bq), BufferLogger(),
             interactor_factory=FakeMethod(interactor),
             slave_factory=FakeMethod(slave),
             behavior_factory=FakeMethod(TrivialBehavior()))
@@ -509,7 +509,7 @@ class TestSlaveScannerWithoutDB(TestCase):
         interactor.updateBuild = FakeMethod()
 
         scanner = SlaveScanner(
-            'mock', MockBuildersCache(MockBuilder(), bq), BufferLogger(),
+            'mock', MockBuilderFactory(MockBuilder(), bq), BufferLogger(),
             interactor_factory=FakeMethod(interactor),
             slave_factory=FakeMethod(slave),
             behavior_factory=FakeMethod(TrivialBehavior()))
@@ -535,7 +535,7 @@ class TestSlaveScannerWithoutDB(TestCase):
         interactor.updateBuild = FakeMethod()
 
         scanner = SlaveScanner(
-            'mock', MockBuildersCache(MockBuilder(), None), BufferLogger(),
+            'mock', MockBuilderFactory(MockBuilder(), None), BufferLogger(),
             interactor_factory=FakeMethod(interactor),
             slave_factory=FakeMethod(slave),
             behavior_factory=FakeMethod(None))
@@ -548,9 +548,9 @@ class TestSlaveScannerWithoutDB(TestCase):
         self.assertEqual(0, interactor.updateBuild.call_count)
 
     def test_getExpectedCookie_caches(self):
-        bc = MockBuildersCache(MockBuilder(), FakeBuildQueue())
+        bf = MockBuilderFactory(MockBuilder(), FakeBuildQueue())
         scanner = SlaveScanner(
-            'mock', bc, BufferLogger(), interactor_factory=FakeMethod(None),
+            'mock', bf, BufferLogger(), interactor_factory=FakeMethod(None),
             slave_factory=FakeMethod(None),
             behavior_factory=FakeMethod(TrivialBehavior()))
 
@@ -559,28 +559,28 @@ class TestSlaveScannerWithoutDB(TestCase):
                 expected,
                 (scanner.interactor_factory.call_count,
                  scanner.behavior_factory.call_count,
-                 scanner.builders_cache.get_call_count))
+                 scanner.builder_factory.get_call_count))
 
         # The first call will get a Builder and a BuildFarmJobBehavior.
         assertCounts((0, 0, 0))
-        cookie1 = scanner.getExpectedCookie(bc.getVitals('foo'))
+        cookie1 = scanner.getExpectedCookie(bf.getVitals('foo'))
         self.assertEqual('trivial', cookie1)
         assertCounts((0, 1, 1))
 
         # A second call with the same BuildQueue will not reretrieve them.
-        cookie2 = scanner.getExpectedCookie(bc.getVitals('foo'))
+        cookie2 = scanner.getExpectedCookie(bf.getVitals('foo'))
         self.assertEqual(cookie1, cookie2)
         assertCounts((0, 1, 1))
 
         # But a call with a new BuildQueue will regrab.
-        bc.updateTestData(bc._builder, FakeBuildQueue())
-        cookie3 = scanner.getExpectedCookie(bc.getVitals('foo'))
+        bf.updateTestData(bf._builder, FakeBuildQueue())
+        cookie3 = scanner.getExpectedCookie(bf.getVitals('foo'))
         self.assertEqual(cookie1, cookie3)
         assertCounts((0, 2, 2))
 
         # And unsetting the BuildQueue returns None again.
-        bc.updateTestData(bc._builder, None)
-        cookie4 = scanner.getExpectedCookie(bc.getVitals('foo'))
+        bf.updateTestData(bf._builder, None)
+        cookie4 = scanner.getExpectedCookie(bf.getVitals('foo'))
         self.assertIs(None, cookie4)
         assertCounts((0, 2, 2))
 
@@ -604,7 +604,7 @@ class TestCancellationChecking(TestCaseWithFactory):
 
     def _getScanner(self, clock=None):
         scanner = SlaveScanner(
-            None, BuildersCache(), BufferLogger(), clock=clock)
+            None, BuilderFactory(), BufferLogger(), clock=clock)
         scanner.logger.name = 'slave-scanner'
         return scanner
 
