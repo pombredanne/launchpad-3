@@ -281,7 +281,7 @@ class SlaveScanner:
             by resuming a slave host, so that there is no need to update its
             status.
         """
-        if not vitals.build_queue:
+        if vitals.build_queue is None:
             self.date_cancel = None
             defer.returnValue(False)
         build = vitals.build_queue.specific_job.build
