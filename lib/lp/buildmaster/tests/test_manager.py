@@ -568,7 +568,7 @@ class TestCancellationChecking(TestCaseWithFactory):
         # If the builder is nonvirtual make sure we return False.
         self.builder.virtualized = False
         d = self._getScanner().checkCancellation(
-            self.vitals, self.builder, None, self.interactor)
+            self.vitals, None, self.interactor)
         return d.addCallback(self.assertFalse)
 
     def test_ignores_no_buildqueue(self):
@@ -577,13 +577,13 @@ class TestCancellationChecking(TestCaseWithFactory):
         buildqueue = self.builder.currentjob
         buildqueue.reset()
         d = self._getScanner().checkCancellation(
-            self.vitals, self.builder, None, self.interactor)
+            self.vitals, None, self.interactor)
         return d.addCallback(self.assertFalse)
 
     def test_ignores_build_not_cancelling(self):
         # If the active build is not in a CANCELLING state, ignore it.
         d = self._getScanner().checkCancellation(
-            self.vitals, self.builder, None, self.interactor)
+            self.vitals, None, self.interactor)
         return d.addCallback(self.assertFalse)
 
     @defer.inlineCallbacks
@@ -599,14 +599,14 @@ class TestCancellationChecking(TestCaseWithFactory):
         scanner = self._getScanner(clock=clock)
 
         result = yield scanner.checkCancellation(
-            self.vitals, self.builder, slave, self.interactor)
+            self.vitals, slave, self.interactor)
         self.assertNotIn("resume", slave.call_log)
         self.assertFalse(result)
         self.assertEqual(BuildStatus.CANCELLING, build.status)
 
         clock.advance(SlaveScanner.CANCEL_TIMEOUT)
         result = yield scanner.checkCancellation(
-            self.vitals, self.builder, slave, self.interactor)
+            self.vitals, slave, self.interactor)
         self.assertEqual(1, slave.call_log.count("resume"))
         self.assertTrue(result)
         self.assertEqual(BuildStatus.CANCELLED, build.status)
@@ -621,7 +621,7 @@ class TestCancellationChecking(TestCaseWithFactory):
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
         build.updateStatus(BuildStatus.CANCELLING)
         result = yield self._getScanner().checkCancellation(
-            self.vitals, self.builder, slave, self.interactor)
+            self.vitals, slave, self.interactor)
         self.assertEqual(1, slave.call_log.count("resume"))
         self.assertTrue(result)
         self.assertEqual(BuildStatus.CANCELLED, build.status)

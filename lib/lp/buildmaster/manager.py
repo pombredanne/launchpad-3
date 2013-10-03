@@ -222,7 +222,7 @@ class SlaveScanner:
             transaction.abort()
 
     @defer.inlineCallbacks
-    def checkCancellation(self, vitals, builder, slave, interactor):
+    def checkCancellation(self, vitals, slave, interactor):
         """See if there is a pending cancellation request.
 
         If the current build is in status CANCELLING then terminate it
@@ -265,7 +265,8 @@ class SlaveScanner:
             vitals.build_queue.cancel()
             transaction.commit()
             value = yield interactor.resetOrFail(
-                vitals, slave, builder, self.logger, e)
+                vitals, slave, self.builders_cache[vitals.name], self.logger,
+                e)
             # value is not None if we resumed a slave host.
             defer.returnValue(value is not None)
 
@@ -289,13 +290,12 @@ class SlaveScanner:
         if not vitals.builderok:
             lost_reason = '%s is disabled' % vitals.name
         else:
-            builder = self.builders_cache[self.builder_name]
-            cancelled = yield self.checkCancellation(
-                vitals, builder, slave, interactor)
+            cancelled = yield self.checkCancellation(vitals, slave, interactor)
             if cancelled:
                 return
             behavior = self.behavior_factory(
-                vitals.build_queue, builder, slave)
+                vitals.build_queue, self.builders_cache[self.builder_name],
+                slave)
             db_cookie = behavior.getBuildCookie() if behavior else None
             lost = yield interactor.rescueIfLost(
                 vitals, slave, db_cookie, self.logger)
