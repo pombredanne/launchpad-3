@@ -12,6 +12,7 @@ __all__ = [
 
 import logging
 
+from storm.expr import LeftJoin
 import transaction
 from twisted.application import service
 from twisted.internet import (
@@ -36,6 +37,8 @@ from lp.buildmaster.interfaces.builder import (
     IBuilderSet,
     )
 from lp.buildmaster.model.builder import Builder
+from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.services.database.interfaces import IStore
 from lp.services.propertycache import get_property_cache
 
 
@@ -54,6 +57,29 @@ class BuilderFactory:
         return (
             extract_vitals_from_db(b)
             for b in getUtility(IBuilderSet).__iter__())
+
+
+class PrefetchedBuilderFactory:
+
+    def __init__(self):
+        self.prefetchData()
+
+    def prefetchData(self):
+        builders_and_bqs = IStore(Builder).using(
+            Builder, LeftJoin(BuildQueue, BuildQueue.builderID == Builder.id)
+            ).find((Builder, BuildQueue))
+        self.vitals_map = dict(
+            (b.name, extract_vitals_from_db(b, bq))
+            for b, bq in builders_and_bqs)
+
+    def __getitem__(self, name):
+        return getUtility(IBuilderSet).getByName(name)
+
+    def getVitals(self, name):
+        return self.vitals_map[name]
+
+    def iterVitals(self):
+        return (b for n, b in sorted(self.vitals_map.iteritems()))
 
 
 @defer.inlineCallbacks

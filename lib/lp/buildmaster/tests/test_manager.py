@@ -12,6 +12,7 @@ from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
     )
+from testtools.matchers import Equals
 import transaction
 from twisted.internet import (
     defer,
@@ -39,6 +40,7 @@ from lp.buildmaster.manager import (
     BuilddManager,
     BuilderFactory,
     NewBuildersScanner,
+    PrefetchedBuilderFactory,
     SlaveScanner,
     )
 from lp.buildmaster.model.builder import Builder
@@ -54,11 +56,13 @@ from lp.buildmaster.tests.mock_slaves import (
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.config import config
+from lp.services.database.sqlbase import flush_database_caches
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.testing import (
     ANONYMOUS,
     login,
+    StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
     )
@@ -70,6 +74,7 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
+from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import BOB_THE_BUILDER_NAME
 
 
@@ -441,6 +446,76 @@ class TestSlaveScannerScan(TestCase):
         self.assertEqual(1, slave.call_log.count("abort"))
         self.assertEqual(1, slave.call_log.count("resume"))
         self.assertEqual(BuildStatus.CANCELLED, build.status)
+
+
+class TestPrefetchedBuilderFactory(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_get(self):
+        # PrefetchedBuilderFactory.__getitem__ is unoptimised, just
+        # querying and returning the named builder.
+        builder = self.factory.makeBuilder()
+        pbf = PrefetchedBuilderFactory()
+        self.assertEqual(builder, pbf[builder.name])
+
+    def test_getVitals(self):
+        # PrefetchedBuilderFactory.getVitals looks up the BuilderVitals
+        # in a local cached map, without hitting the DB.
+        builder = self.factory.makeBuilder()
+        bq = self.factory.makeBinaryPackageBuild().queueBuild()
+        bq.markAsBuilding(builder)
+        name = builder.name
+        pbf = PrefetchedBuilderFactory()
+
+        def assertQuerylessVitals(comparator):
+            expected_vitals = extract_vitals_from_db(builder)
+            flush_database_caches()
+            with StormStatementRecorder() as recorder:
+                got_vitals = pbf.getVitals(name)
+                comparator(expected_vitals, got_vitals)
+                comparator(expected_vitals.build_queue, got_vitals.build_queue)
+            self.assertThat(recorder, HasQueryCount(Equals(0)))
+            return got_vitals
+
+        # We can get the vitals of a builder from the factory without
+        # any DB queries.
+        vitals = assertQuerylessVitals(self.assertEqual)
+        self.assertIsNot(None, vitals.build_queue)
+
+        # If we cancel the BuildQueue to unassign it, the factory
+        # doesn't notice immediately.
+        bq.cancel()
+        vitals = assertQuerylessVitals(self.assertNotEqual)
+        self.assertIsNot(None, vitals.build_queue)
+
+        # But the vitals will show the builder as idle if we ask the
+        # factory to refetch.
+        pbf.prefetchData()
+        vitals = assertQuerylessVitals(self.assertEqual)
+        self.assertIs(None, vitals.build_queue)
+
+    def test_iterVitals(self):
+        # PrefetchedBuilderFactory.iterVitals looks up the details from
+        # the local cached map, without hitting the DB.
+
+        # Construct 5 new builders, 3 with builds. This is in addition
+        # to the 2 in sampledata, 1 with a build.
+        builders = [self.factory.makeBuilder() for i in range(5)]
+        for i in range(3):
+            bq = self.factory.makeBinaryPackageBuild().queueBuild()
+            bq.markAsBuilding(builders[i])
+        pbf = PrefetchedBuilderFactory()
+
+        with StormStatementRecorder() as recorder:
+            all_vitals = list(pbf.iterVitals())
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
+        # Compare the counts with what we expect, and the full result
+        # with the non-prefetching BuilderFactory.
+        self.assertEqual(7, len(all_vitals))
+        self.assertEqual(
+            4, len([v for v in all_vitals if v.build_queue is not None]))
+        self.assertContentEqual(BuilderFactory().iterVitals(), all_vitals)
 
 
 class FakeBuildQueue:
