@@ -49,7 +49,10 @@ from lp.registry.enums import (
     SharingPermission,
     SpecificationSharingPolicy,
     )
-from lp.registry.interfaces.accesspolicy import IAccessPolicySource
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactGrantSource,
+    IAccessPolicySource,
+    )
 from lp.security import (
     AdminSpecification,
     EditSpecificationByRelatedPeople,
@@ -303,8 +306,8 @@ class SpecificationTests(TestCaseWithFactory):
                 user, specification, error_expected)
 
     def test_ordinary_user_write_access(self):
-        # Oridnary users can change the whiteborad of public specifications.
-        # They cannot change other attributes of public speicifcaitons and
+        # Ordinary users can change the whiteborad of public specifications.
+        # They cannot change other attributes of public specifications and
         # no attributes of private specifications.
         specification = self.factory.makeSpecification()
         removeSecurityProxy(specification.target)._ensurePolicies(
@@ -462,8 +465,7 @@ class SpecificationTests(TestCaseWithFactory):
         with person_logged_in(owner):
             user = self.factory.makePerson()
             spec = self.factory.makeSpecification(
-                product=product,
-                information_type=InformationType.PROPRIETARY)
+                product=product, information_type=InformationType.PROPRIETARY)
             spec.subscribe(user, subscribed_by=owner)
             service = getUtility(IService, 'sharing')
             ignored, ignored, shared_specs = service.getVisibleArtifacts(
@@ -499,14 +501,31 @@ class SpecificationTests(TestCaseWithFactory):
         with person_logged_in(owner):
             user = self.factory.makePerson()
             spec = self.factory.makeSpecification(
-                product=product,
-                information_type=InformationType.PROPRIETARY)
+                product=product, information_type=InformationType.PROPRIETARY)
             spec.subscribe(user, subscribed_by=owner)
             spec.unsubscribe(user, unsubscribed_by=owner)
             service = getUtility(IService, 'sharing')
             ignored, ignored, shared_specs = service.getVisibleArtifacts(
                 user, specifications=[spec])
             self.assertEqual([], shared_specs)
+
+    def test_notificationRecipientAddresses_filters_based_on_sharing(self):
+        # notificationRecipientAddresses() won't return people who do not have
+        # access to the specification.
+        owner = self.factory.makePerson()
+        drafter = self.factory.makePerson()
+        spec = self.factory.makeSpecification(
+            owner=owner, information_type=InformationType.PROPRIETARY)
+        getUtility(IService, 'sharing').ensureAccessGrants(
+            [owner], owner, specifications=[spec], ignore_permissions=True)
+        with person_logged_in(owner):
+            spec.drafter = drafter
+            address = owner.preferredemail.email
+        # Remove the drafters access to the spec.
+        artifact = self.factory.makeAccessArtifact(concrete=spec)
+        getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+            [artifact], [drafter])
+        self.assertEqual([address], spec.notificationRecipientAddresses())
 
 
 class TestSpecificationSet(TestCaseWithFactory):
