@@ -82,7 +82,7 @@ class TestSlaveScannerScan(TestCase):
 
     This method uses the old framework for scanning and dispatching builds.
     """
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
     run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=20)
 
     def setUp(self):
@@ -97,7 +97,7 @@ class TestSlaveScannerScan(TestCase):
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         hoary = ubuntu.getSeries('hoary')
         test_publisher.setUpDefaultDistroSeries(hoary)
-        test_publisher.addFakeChroots()
+        test_publisher.addFakeChroots(db_only=True)
 
     def _resetBuilder(self, builder):
         """Reset the given builder and its job."""
@@ -308,7 +308,7 @@ class TestSlaveScannerScan(TestCase):
         naked_job.build.failure_count = job_count
         # The _scanFailed() calls abort, so make sure our existing
         # failure counts are persisted.
-        self.layer.txn.commit()
+        transaction.commit()
 
         # singleCycle() calls scan() which is our fake one that throws an
         # exception.
@@ -354,7 +354,7 @@ class TestSlaveScannerScan(TestCase):
         builder.failure_count = (
             Builder.RESET_THRESHOLD * Builder.RESET_FAILURE_THRESHOLD)
         builder.currentjob.reset()
-        self.layer.txn.commit()
+        transaction.commit()
 
         yield scanner.singleCycle()
         self.assertFalse(builder.builderok)
