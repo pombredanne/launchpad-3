@@ -123,15 +123,17 @@ class TestSlaveScannerScan(TestCase):
         self.assertEqual(build.status, BuildStatus.BUILDING)
         self.assertEqual(job.logtail, logtail)
 
-    def _getScanner(self, builder_name=None, clock=None):
+    def _getScanner(self, builder_name=None, clock=None, builder_factory=None):
         """Instantiate a SlaveScanner object.
 
         Replace its default logging handler by a testing version.
         """
         if builder_name is None:
             builder_name = BOB_THE_BUILDER_NAME
+        if builder_factory is None:
+            builder_factory = BuilderFactory()
         scanner = SlaveScanner(
-            builder_name, BuilderFactory(), BufferLogger(), clock=clock)
+            builder_name, builder_factory, BufferLogger(), clock=clock)
         scanner.logger.name = 'slave-scanner'
 
         return scanner
@@ -287,6 +289,37 @@ class TestSlaveScannerScan(TestCase):
         scanner = self._getScanner(builder_name=builder.name)
         d = scanner.scan()
         return assert_fails_with(d, xmlrpclib.Fault)
+
+    @defer.inlineCallbacks
+    def test_scan_skipped_if_builderfactory_stale(self):
+        # singleCycle does nothing if the BuilderFactory's update
+        # timestamp is older than the end of the previous scan. This
+        # prevents eg. a scan after a dispatch from failing to notice
+        # that a build has been dispatched.
+        pbf = PrefetchedBuilderFactory()
+        pbf.update()
+        scanner = self._getScanner(builder_factory=pbf)
+        fake_scan = FakeMethod()
+
+        def _fake_scan():
+            fake_scan()
+            return defer.succeed(None)
+        scanner.scan = _fake_scan
+        self.assertEqual(0, fake_scan.call_count)
+
+        # An initial cycle triggers a scan.
+        yield scanner.singleCycle()
+        self.assertEqual(1, fake_scan.call_count)
+
+        # But a subsequent cycle without updating BuilderFactory's data
+        # is a no-op.
+        yield scanner.singleCycle()
+        self.assertEqual(1, fake_scan.call_count)
+
+        # Updating the BuilderFactory causes scans to resume.
+        pbf.update()
+        yield scanner.singleCycle()
+        self.assertEqual(2, fake_scan.call_count)
 
     @defer.inlineCallbacks
     def _assertFailureCounting(self, builder_count, job_count,
@@ -903,7 +936,9 @@ class TestNewBuilders(TestCase):
     layer = LaunchpadZopelessLayer
 
     def _getScanner(self, clock=None):
-        nbs = NewBuildersScanner(manager=BuilddManager(), clock=clock)
+        nbs = NewBuildersScanner(
+            manager=BuilddManager(builder_factory=BuilderFactory()),
+            clock=clock)
         nbs.checkForNewBuilders()
         return nbs
 

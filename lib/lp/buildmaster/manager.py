@@ -10,6 +10,7 @@ __all__ = [
     'BUILDD_MANAGER_LOG_NAME',
     ]
 
+import datetime
 import logging
 
 from storm.expr import LeftJoin
@@ -56,6 +57,10 @@ class BuilderFactory:
         """
         return
 
+    @property
+    def date_updated(self):
+        return datetime.datetime.utcnow()
+
     def __getitem__(self, name):
         """Get the named `Builder` Storm object."""
         return getUtility(IBuilderSet).getByName(name)
@@ -78,6 +83,8 @@ class PrefetchedBuilderFactory:
     from cached data updated by `update`.
     """
 
+    date_updated = None
+
     def update(self):
         """See `BuilderFactory`."""
         builders_and_bqs = IStore(Builder).using(
@@ -86,6 +93,7 @@ class PrefetchedBuilderFactory:
         self.vitals_map = dict(
             (b.name, extract_vitals_from_db(b, bq))
             for b, bq in builders_and_bqs)
+        self.date_updated = datetime.datetime.utcnow()
 
     def __getitem__(self, name):
         """See `BuilderFactory`."""
@@ -202,6 +210,7 @@ class SlaveScanner:
             clock = reactor
         self._clock = clock
         self.date_cancel = None
+        self.date_scanned = None
 
         # We cache the build cookie, keyed on the BuildQueue, to avoid
         # hitting the DB on every scan.
@@ -220,11 +229,25 @@ class SlaveScanner:
         self.loop.stop()
 
     def singleCycle(self):
-        self.logger.debug("Scanning builder: %s" % self.builder_name)
-        d = self.scan()
+        # Inhibit scanning if the BuilderFactory hasn't updated since
+        # the last run. This doesn't matter for the base BuilderFactory,
+        # as it's always up to date, but PrefetchedBuilderFactory caches
+        # heavily, and we don't want to eg. forget that we dispatched a
+        # build in the previous cycle.
+        if (self.date_scanned is not None
+            and self.date_scanned > self.builder_factory.date_updated):
+            self.logger.debug(
+                "Skipping builder %s (cache out of date)" % self.builder_name)
+            return defer.succeed(None)
 
+        self.logger.debug("Scanning builder %s" % self.builder_name)
+        d = self.scan()
         d.addErrback(self._scanFailed)
+        d.addBoth(self._updateDateScanned)
         return d
+
+    def _updateDateScanned(self, ignored):
+        self.date_scanned = datetime.datetime.utcnow()
 
     @defer.inlineCallbacks
     def _scanFailed(self, failure):
@@ -448,9 +471,9 @@ class NewBuildersScanner:
 class BuilddManager(service.Service):
     """Main Buildd Manager service class."""
 
-    def __init__(self, clock=None):
+    def __init__(self, clock=None, builder_factory=None):
         self.builder_slaves = []
-        self.builder_factory = BuilderFactory()
+        self.builder_factory = builder_factory or PrefetchedBuilderFactory()
         self.logger = self._setupLogger()
         self.new_builders_scanner = NewBuildersScanner(
             manager=self, clock=clock)
