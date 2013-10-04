@@ -278,13 +278,14 @@ class TestLinkifyingProtocols(TestCaseWithFactory):
 
     def test_double_email_in_linkify_email(self):
         self.factory.makePerson(email='foo@example.org')
-        test_string = ' * Foo. <foo@example.org>\n * Bar <foo@example.org>'
+        test_string = (
+            ' * Foo. &lt;foo@example.org&gt;\n * Bar &lt;foo@example.org&gt;')
         html = FormattersAPI(test_string).linkify_email()
         expected_html = (
-            ' * Foo. <<a href="http://launchpad.dev/~person-name-100000" '
-            'class="sprite person">foo@example.org</a>>\n * Bar '
-            '<<a href="http://launchpad.dev/~person-name-100000" '
-            'class="sprite person">foo@example.org</a>>')
+            ' * Foo. &lt;<a href="http://launchpad.dev/~person-name-100000" '
+            'class="sprite person">foo@example.org</a>&gt;\n * Bar '
+            '&lt;<a href="http://launchpad.dev/~person-name-100000" '
+            'class="sprite person">foo@example.org</a>&gt;')
         self.assertEqual(expected_html, html)
 
 
