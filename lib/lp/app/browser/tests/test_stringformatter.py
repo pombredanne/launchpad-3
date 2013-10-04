@@ -22,6 +22,7 @@ from lp.app.browser.stringformatter import (
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
@@ -277,15 +278,15 @@ class TestLinkifyingProtocols(TestCaseWithFactory):
         self.assertEqual(expected_html, html)
 
     def test_double_email_in_linkify_email(self):
-        self.factory.makePerson(email='foo@example.org')
+        person = self.factory.makePerson(email='foo@example.org')
         test_string = (
             ' * Foo. &lt;foo@example.org&gt;\n * Bar &lt;foo@example.org&gt;')
         html = FormattersAPI(test_string).linkify_email()
+        url = canonical_url(person)
         expected_html = (
-            ' * Foo. &lt;<a href="http://launchpad.dev/~person-name-100000" '
-            'class="sprite person">foo@example.org</a>&gt;\n * Bar '
-            '&lt;<a href="http://launchpad.dev/~person-name-100000" '
-            'class="sprite person">foo@example.org</a>&gt;')
+            ' * Foo. &lt;<a href="%s" class="sprite person">foo@example.org'
+            '</a>&gt;\n * Bar &lt;<a href="%s" class="sprite person">'
+            'foo@example.org</a>&gt;' % (url, url))
         self.assertEqual(expected_html, html)
 
 
