@@ -8,10 +8,12 @@ high-level tests of rosetta-translations upload and queue manipulation.
 """
 
 import transaction
+from zope.security.proxy import removeSecurityProxy
 
 from lp.archivepublisher.rosetta_translations import (
     process_rosetta_translations,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.soyuz.model.packagetranslationsuploadjob import (
     PackageTranslationsUploadJob,
@@ -35,26 +37,41 @@ class TestRosettaTranslations(TestCaseWithFactory):
             tar_content)
         return self.factory.makeLibraryFileAlias(content=tarfile_content)
 
+    def makeAndPublishSourcePackage(self, sourcepackagename, distroseries):
+        sourcepackage = self.factory.makeSourcePackage(
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries,
+            sourcepackagename=sourcepackagename,
+            pocket=PackagePublishingPocket.RELEASE)
+        return spph
+
     def makeJobElements(self):
-        sourcepackagename = self.factory.makeSourcePackageName(name="foo")
-        packageupload = self.factory.makeSourcePackageUpload(
-            sourcepackagename=sourcepackagename)
+        distroseries = self.factory.makeDistroSeries()
+        sourcepackagename = "foo"
+        spph = self.makeAndPublishSourcePackage(
+            sourcepackagename=sourcepackagename, distroseries=distroseries)
+        packageupload = removeSecurityProxy(self.factory.makePackageUpload(
+            distroseries=distroseries, archive=distroseries.main_archive))
+        packageupload.addSource(spph.sourcepackagerelease)
+
         libraryfilealias = self.makeTranslationsLFA()
-        return packageupload, libraryfilealias
+        return spph, packageupload, libraryfilealias
 
     def test_basic(self):
-        packageupload, libraryfilealias = self.makeJobElements()
+        spph, packageupload, libraryfilealias = self.makeJobElements()
         transaction.commit()
         process_rosetta_translations(packageupload, libraryfilealias)
 
     def test_correct_job_is_created(self):
-        packageupload, libraryfilealias = self.makeJobElements()
+        latest_spph, packageupload, libraryfilealias = self.makeJobElements()
         transaction.commit()
         process_rosetta_translations(packageupload, libraryfilealias)
 
         jobs = list(PackageTranslationsUploadJob.iterReady())
         self.assertEqual(1, len(jobs))
 
-        self.assertEqual(packageupload.sourcepackagerelease,
-                jobs[0].sourcepackagerelease)
+        self.assertEqual(latest_spph.sourcepackagerelease,
+                         jobs[0].sourcepackagerelease)
         self.assertEqual(libraryfilealias, jobs[0].libraryfilealias)

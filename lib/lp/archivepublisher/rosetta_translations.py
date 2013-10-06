@@ -16,6 +16,7 @@ __all__ = [
 
 from zope.component import getUtility
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.customupload import CustomUpload
 from lp.archivepublisher.debversion import Version
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -37,8 +38,6 @@ class RosettaTranslationsUpload(CustomUpload):
     custom_type = "rosetta-translations"
 
     def process(self, packageupload, libraryfilealias):
-        sourcepackagerelease = packageupload.sourcepackagerelease
-
         # Ignore translations not with main distribution purposes.
         if packageupload.archive.purpose not in MAIN_ARCHIVE_PURPOSES:
             if self.logger is not None:
@@ -49,8 +48,12 @@ class RosettaTranslationsUpload(CustomUpload):
 
         # If the distroseries is 11.10 (oneiric) or later, the valid names
         # check is not required.  (See bug 788685.)
-        distroseries = sourcepackagerelease.upload_distroseries
+        distroseries = packageupload.distroseries
         do_names_check = Version(distroseries.version) < Version('11.10')
+
+        latest_publication = self._findSourcePublication(packageupload)
+        component_name = latest_publication.component.name
+        sourcepackagerelease = latest_publication.sourcepackagerelease
 
         valid_pockets = (
             PackagePublishingPocket.RELEASE, PackagePublishingPocket.SECURITY,
@@ -58,7 +61,7 @@ class RosettaTranslationsUpload(CustomUpload):
         valid_components = ('main', 'restricted')
         if (packageupload.pocket not in valid_pockets or
             (do_names_check and
-                sourcepackagerelease.component.name not in valid_components)):
+                component_name not in valid_components)):
             # XXX: CarlosPerelloMarin 2006-02-16 bug=31665:
             # This should be implemented using a more general rule to accept
             # different policies depending on the distribution.
@@ -68,8 +71,10 @@ class RosettaTranslationsUpload(CustomUpload):
             return
 
         blamee = packageupload.findPersonToNotify()
+        if blamee is None:
+            blamee = getUtility(ILaunchpadCelebrities).rosetta_experts
         getUtility(IPackageTranslationsUploadJobSource).create(
-            sourcepackagerelease, libraryfilealias, blamee)
+            packageupload, sourcepackagerelease, libraryfilealias, blamee)
 
     @staticmethod
     def parsePath(tarfile_path):
@@ -87,6 +92,13 @@ class RosettaTranslationsUpload(CustomUpload):
 
     def shouldInstall(self, filename):
         pass
+
+    def _findSourcePublication(self, packageupload):
+        """Find destination source publishing record of the packageupload."""
+        return packageupload.archive.getPublishedSources(
+            name=packageupload.package_name, exact_match=True,
+            distroseries=packageupload.distroseries,
+            pocket=packageupload.pocket).first()
 
 
 def process_rosetta_translations(packageupload, libraryfilealias, logger=None):
