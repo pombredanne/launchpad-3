@@ -17,7 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.librarian.model import LibraryFileAliasSet
 from lp.services.scripts.tests import run_script
-from lp.soyuz.model.sourcepackagerelease import (
+from lp.soyuz.model.packagetranslationsuploadjob import (
     _filter_ubuntu_translation_file,
     )
 from lp.testing import TestCaseWithFactory

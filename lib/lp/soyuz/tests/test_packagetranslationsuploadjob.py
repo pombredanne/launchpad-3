@@ -3,8 +3,8 @@
 
 __metaclass__ = type
 
-from testtools.content import text_content
 import transaction
+from testtools.content import text_content
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -13,7 +13,6 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.tests import block_on_job
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
-from lp.soyuz.enums import PackageUploadCustomFormat
 from lp.soyuz.interfaces.packagetranslationsuploadjob import (
     IPackageTranslationsUploadJob,
     IPackageTranslationsUploadJobSource,
@@ -53,13 +52,9 @@ class LocalTestHelper(TestCaseWithFactory):
             sourcepackagename=sourcepackagename,
             distroseries=distroseries)
         upload = removeSecurityProxy(self.factory.makePackageUpload(
-            distroseries=distroseries))
+            distroseries=distroseries, archive=archive))
 
         upload.addSource(spr)
-
-        upload.addCustom(
-            libraryfilealias,
-            custom_type=PackageUploadCustomFormat.ROSETTA_TRANSLATIONS)
 
         return (upload,
                 getUtility(IPackageTranslationsUploadJobSource).create(
