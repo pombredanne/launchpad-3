@@ -253,6 +253,7 @@ class TestSlaveScannerScan(TestCase):
         factory = LaunchpadObjectFactory()
         builder = factory.makeBuilder()
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
+        transaction.commit()
         scanner = self._getScanner(builder_name=builder.name)
         d = scanner.scan()
         return d.addCallback(self._checkNoDispatch, builder)
@@ -263,6 +264,7 @@ class TestSlaveScannerScan(TestCase):
         self._resetBuilder(builder)
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
         builder.manual = True
+        transaction.commit()
         scanner = self._getScanner()
         d = scanner.scan()
         d.addCallback(self._checkNoDispatch, builder)
@@ -275,6 +277,7 @@ class TestSlaveScannerScan(TestCase):
         self._resetBuilder(builder)
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
         builder.builderok = False
+        transaction.commit()
         scanner = self._getScanner()
         yield scanner.scan()
         # Because the builder is not ok, we can't use _checkNoDispatch.
@@ -286,6 +289,7 @@ class TestSlaveScannerScan(TestCase):
         self.patch(
             BuilderSlave, 'makeBuilderSlave', FakeMethod(BrokenSlave()))
         builder.failure_count = 0
+        transaction.commit()
         scanner = self._getScanner(builder_name=builder.name)
         d = scanner.scan()
         return assert_fails_with(d, xmlrpclib.Fault)
@@ -303,6 +307,7 @@ class TestSlaveScannerScan(TestCase):
         # relevant for this test.
         builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
         builder.builderok = False
+        transaction.commit()
 
         yield scanner.scan()
 
@@ -434,6 +439,7 @@ class TestSlaveScannerScan(TestCase):
         job = removeSecurityProxy(builder._findBuildCandidate())
         job.virtualized = True
         builder.virtualized = True
+        transaction.commit()
         yield scanner.singleCycle()
 
         # The failure_count will have been incremented on the builder, we
@@ -529,6 +535,7 @@ class TestPrefetchedBuilderFactory(TestCaseWithFactory):
         builder = self.factory.makeBuilder()
         bq = self.factory.makeBinaryPackageBuild().queueBuild()
         bq.markAsBuilding(builder)
+        transaction.commit()
         name = builder.name
         pbf = PrefetchedBuilderFactory()
         pbf.update()
@@ -570,6 +577,7 @@ class TestPrefetchedBuilderFactory(TestCaseWithFactory):
         for i in range(3):
             bq = self.factory.makeBinaryPackageBuild().queueBuild()
             bq.markAsBuilding(builders[i])
+        transaction.commit()
         pbf = PrefetchedBuilderFactory()
         pbf.update()
 

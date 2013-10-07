@@ -60,10 +60,10 @@ class BuilderFactory:
     def prescanUpdate(self):
         """Update the factory's view of the world before each scan.
 
-        For the basic BuilderFactory this means committing to ensure
-        that data retrieved is up to date.
+        For the basic BuilderFactory this means ending the transaction
+        to ensure that data retrieved is up to date.
         """
-        transaction.commit()
+        transaction.abort()
 
     @property
     def date_updated(self):
@@ -95,12 +95,14 @@ class PrefetchedBuilderFactory:
 
     def update(self):
         """See `BuilderFactory`."""
+        transaction.abort()
         builders_and_bqs = IStore(Builder).using(
             Builder, LeftJoin(BuildQueue, BuildQueue.builderID == Builder.id)
             ).find((Builder, BuildQueue))
         self.vitals_map = dict(
             (b.name, extract_vitals_from_db(b, bq))
             for b, bq in builders_and_bqs)
+        transaction.abort()
         self.date_updated = datetime.datetime.utcnow()
 
     def prescanUpdate(self):
@@ -465,9 +467,7 @@ class NewBuildersScanner:
 
     def scan(self):
         """If a new builder appears, create a SlaveScanner for it."""
-        transaction.abort()
         self.manager.builder_factory.update()
-        transaction.abort()
         new_builders = self.checkForNewBuilders()
         self.manager.addScanForBuilders(new_builders)
 
