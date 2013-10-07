@@ -216,12 +216,15 @@ BuilderVitals = namedtuple(
     ('name', 'url', 'virtualized', 'vm_host', 'builderok', 'manual',
      'build_queue'))
 
+_BQ_UNSPECIFIED = object()
 
-def extract_vitals_from_db(builder, build_queue=None):
+
+def extract_vitals_from_db(builder, build_queue=_BQ_UNSPECIFIED):
+    if build_queue == _BQ_UNSPECIFIED:
+        build_queue = builder.currentjob
     return BuilderVitals(
         builder.name, builder.url, builder.virtualized, builder.vm_host,
-        builder.builderok, builder.manual,
-        build_queue or builder.currentjob)
+        builder.builderok, builder.manual, build_queue)
 
 
 class BuilderInteractor(object):
