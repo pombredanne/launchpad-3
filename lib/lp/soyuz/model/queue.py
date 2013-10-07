@@ -910,6 +910,8 @@ class PackageUpload(SQLBase):
             # It may be a recipe upload.
         elif spr and spr.source_package_recipe_build:
             return spr.source_package_recipe_build.requester
+        elif self.contains_copy:
+            return self.package_copy_job.requester
         else:
             return None
 
