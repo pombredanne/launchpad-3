@@ -291,6 +291,24 @@ class TestSlaveScannerScan(TestCase):
         return assert_fails_with(d, xmlrpclib.Fault)
 
     @defer.inlineCallbacks
+    def test_scan_calls_builder_factory_prescanUpdate(self):
+        # SlaveScanner.scan() starts by calling
+        # BuilderFactory.prescanUpdate() to eg. perform necessary
+        # transaction management.
+        bf = BuilderFactory()
+        bf.prescanUpdate = FakeMethod()
+        scanner = self._getScanner(builder_factory=bf)
+
+        # Disable the builder so we don't try to use the slave. It's not
+        # relevant for this test.
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
+        builder.builderok = False
+
+        yield scanner.scan()
+
+        self.assertEqual(1, bf.prescanUpdate.call_count)
+
+    @defer.inlineCallbacks
     def test_scan_skipped_if_builderfactory_stale(self):
         # singleCycle does nothing if the BuilderFactory's update
         # timestamp is older than the end of the previous scan. This
@@ -582,6 +600,9 @@ class MockBuilderFactory:
         self.getVitals_call_count = 0
 
     def update(self):
+        return
+
+    def prescanUpdate(self):
         return
 
     def updateTestData(self, builder, build_queue):

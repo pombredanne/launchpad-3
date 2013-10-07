@@ -57,6 +57,14 @@ class BuilderFactory:
         """
         return
 
+    def prescanUpdate(self):
+        """Update the factory's view of the world before each scan.
+
+        For the basic BuilderFactory this means committing to ensure
+        that data retrieved is up to date.
+        """
+        transaction.commit()
+
     @property
     def date_updated(self):
         return datetime.datetime.utcnow()
@@ -94,6 +102,14 @@ class PrefetchedBuilderFactory:
             (b.name, extract_vitals_from_db(b, bq))
             for b, bq in builders_and_bqs)
         self.date_updated = datetime.datetime.utcnow()
+
+    def prescanUpdate(self):
+        """See `BuilderFactory`.
+
+        This is a no-op, as the data was already brought sufficiently up
+        to date by update().
+        """
+        return
 
     def __getitem__(self, name):
         """See `BuilderFactory`."""
@@ -366,9 +382,7 @@ class SlaveScanner:
         :return: A Deferred that fires when the scan is complete.
         """
         self.logger.debug("Scanning %s." % self.builder_name)
-        # Commit and refetch the Builder object to ensure we have the
-        # latest data from the DB.
-        transaction.commit()
+        self.builder_factory.prescanUpdate()
         vitals = self.builder_factory.getVitals(self.builder_name)
         interactor = self.interactor_factory()
         slave = self.slave_factory(vitals)
