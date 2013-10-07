@@ -10,8 +10,10 @@ __all__ = [
     'BUILDD_MANAGER_LOG_NAME',
     ]
 
+import datetime
 import logging
 
+from storm.expr import LeftJoin
 import transaction
 from twisted.application import service
 from twisted.internet import (
@@ -36,6 +38,8 @@ from lp.buildmaster.interfaces.builder import (
     IBuilderSet,
     )
 from lp.buildmaster.model.builder import Builder
+from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.services.database.interfaces import IStore
 from lp.services.propertycache import get_property_cache
 
 
@@ -43,17 +47,83 @@ BUILDD_MANAGER_LOG_NAME = "slave-scanner"
 
 
 class BuilderFactory:
+    """A dumb builder factory that just talks to the DB."""
+
+    def update(self):
+        """Update the factory's view of the world.
+
+        For the basic BuilderFactory this is a no-op, but others might do
+        something.
+        """
+        return
+
+    def prescanUpdate(self):
+        """Update the factory's view of the world before each scan.
+
+        For the basic BuilderFactory this means ending the transaction
+        to ensure that data retrieved is up to date.
+        """
+        transaction.abort()
+
+    @property
+    def date_updated(self):
+        return datetime.datetime.utcnow()
 
     def __getitem__(self, name):
+        """Get the named `Builder` Storm object."""
         return getUtility(IBuilderSet).getByName(name)
 
     def getVitals(self, name):
+        """Get the named `BuilderVitals` object."""
         return extract_vitals_from_db(self[name])
 
     def iterVitals(self):
+        """Iterate over all `BuilderVitals` objects."""
         return (
             extract_vitals_from_db(b)
             for b in getUtility(IBuilderSet).__iter__())
+
+
+class PrefetchedBuilderFactory:
+    """A smart builder factory that does efficient bulk queries.
+
+    `getVitals` and `iterVitals` don't touch the DB directly. They work
+    from cached data updated by `update`.
+    """
+
+    date_updated = None
+
+    def update(self):
+        """See `BuilderFactory`."""
+        transaction.abort()
+        builders_and_bqs = IStore(Builder).using(
+            Builder, LeftJoin(BuildQueue, BuildQueue.builderID == Builder.id)
+            ).find((Builder, BuildQueue))
+        self.vitals_map = dict(
+            (b.name, extract_vitals_from_db(b, bq))
+            for b, bq in builders_and_bqs)
+        transaction.abort()
+        self.date_updated = datetime.datetime.utcnow()
+
+    def prescanUpdate(self):
+        """See `BuilderFactory`.
+
+        This is a no-op, as the data was already brought sufficiently up
+        to date by update().
+        """
+        return
+
+    def __getitem__(self, name):
+        """See `BuilderFactory`."""
+        return getUtility(IBuilderSet).getByName(name)
+
+    def getVitals(self, name):
+        """See `BuilderFactory`."""
+        return self.vitals_map[name]
+
+    def iterVitals(self):
+        """See `BuilderFactory`."""
+        return (b for n, b in sorted(self.vitals_map.iteritems()))
 
 
 @defer.inlineCallbacks
@@ -158,6 +228,7 @@ class SlaveScanner:
             clock = reactor
         self._clock = clock
         self.date_cancel = None
+        self.date_scanned = None
 
         # We cache the build cookie, keyed on the BuildQueue, to avoid
         # hitting the DB on every scan.
@@ -176,11 +247,25 @@ class SlaveScanner:
         self.loop.stop()
 
     def singleCycle(self):
-        self.logger.debug("Scanning builder: %s" % self.builder_name)
-        d = self.scan()
+        # Inhibit scanning if the BuilderFactory hasn't updated since
+        # the last run. This doesn't matter for the base BuilderFactory,
+        # as it's always up to date, but PrefetchedBuilderFactory caches
+        # heavily, and we don't want to eg. forget that we dispatched a
+        # build in the previous cycle.
+        if (self.date_scanned is not None
+            and self.date_scanned > self.builder_factory.date_updated):
+            self.logger.debug(
+                "Skipping builder %s (cache out of date)" % self.builder_name)
+            return defer.succeed(None)
 
+        self.logger.debug("Scanning builder %s" % self.builder_name)
+        d = self.scan()
         d.addErrback(self._scanFailed)
+        d.addBoth(self._updateDateScanned)
         return d
+
+    def _updateDateScanned(self, ignored):
+        self.date_scanned = datetime.datetime.utcnow()
 
     @defer.inlineCallbacks
     def _scanFailed(self, failure):
@@ -237,7 +322,7 @@ class SlaveScanner:
             by resuming a slave host, so that there is no need to update its
             status.
         """
-        if not vitals.build_queue:
+        if vitals.build_queue is None:
             self.date_cancel = None
             defer.returnValue(False)
         build = vitals.build_queue.specific_job.build
@@ -299,9 +384,7 @@ class SlaveScanner:
         :return: A Deferred that fires when the scan is complete.
         """
         self.logger.debug("Scanning %s." % self.builder_name)
-        # Commit and refetch the Builder object to ensure we have the
-        # latest data from the DB.
-        transaction.commit()
+        self.builder_factory.prescanUpdate()
         vitals = self.builder_factory.getVitals(self.builder_name)
         interactor = self.interactor_factory()
         slave = self.slave_factory(vitals)
@@ -360,7 +443,7 @@ class NewBuildersScanner:
     """If new builders appear, create a scanner for them."""
 
     # How often to check for new builders, in seconds.
-    SCAN_INTERVAL = 300
+    SCAN_INTERVAL = 15
 
     def __init__(self, manager, clock=None):
         self.manager = manager
@@ -369,9 +452,7 @@ class NewBuildersScanner:
         if clock is None:
             clock = reactor
         self._clock = clock
-        self.current_builders = [
-            vitals.name for vitals in
-            self.manager.builder_factory.iterVitals()]
+        self.current_builders = []
 
     def stop(self):
         """Terminate the LoopingCall."""
@@ -386,6 +467,7 @@ class NewBuildersScanner:
 
     def scan(self):
         """If a new builder appears, create a SlaveScanner for it."""
+        self.manager.builder_factory.update()
         new_builders = self.checkForNewBuilders()
         self.manager.addScanForBuilders(new_builders)
 
@@ -403,9 +485,9 @@ class NewBuildersScanner:
 class BuilddManager(service.Service):
     """Main Buildd Manager service class."""
 
-    def __init__(self, clock=None):
+    def __init__(self, clock=None, builder_factory=None):
         self.builder_slaves = []
-        self.builder_factory = BuilderFactory()
+        self.builder_factory = builder_factory or PrefetchedBuilderFactory()
         self.logger = self._setupLogger()
         self.new_builders_scanner = NewBuildersScanner(
             manager=self, clock=clock)
@@ -429,16 +511,9 @@ class BuilddManager(service.Service):
 
     def startService(self):
         """Service entry point, called when the application starts."""
-
-        # Get a list of builders and set up scanners on each one.
-
-        builders = [
-            vitals.name for vitals in self.builder_factory.iterVitals()]
-        self.addScanForBuilders(builders)
+        # Ask the NewBuildersScanner to add and start SlaveScanners for
+        # each current builder, and any added in the future.
         self.new_builders_scanner.scheduleScan()
-
-        # Events will now fire in the SlaveScanner objects to scan each
-        # builder.
 
     def stopService(self):
         """Callback for when we need to shut down."""

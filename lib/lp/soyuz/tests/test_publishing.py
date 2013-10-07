@@ -131,11 +131,15 @@ class SoyuzTestPublisher:
         self.breezy_autotest_i386.addOrUpdateChroot(fake_chroot)
         self.breezy_autotest_hppa.addOrUpdateChroot(fake_chroot)
 
-    def addFakeChroots(self, distroseries=None):
+    def addFakeChroots(self, distroseries=None, db_only=False):
         """Add fake chroots for all the architectures in distroseries."""
         if distroseries is None:
             distroseries = self.distroseries
-        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
+        if db_only:
+            fake_chroot = self.factory.makeLibraryFileAlias(
+                filename='fake_chroot.tar.gz', db_only=True)
+        else:
+            fake_chroot = self.addMockFile('fake_chroot.tar.gz')
         for arch in distroseries.architectures:
             arch.addOrUpdateChroot(fake_chroot)
 
