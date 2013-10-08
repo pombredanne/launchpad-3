@@ -41,22 +41,11 @@ class IBuildFarmJobBehavior(Interface):
     def getBuildCookie():
         """Return a string which uniquely identifies the job."""
 
-    def updateSlaveStatus(status_sentence, status_dict):
-        """Update the slave status dict with custom values for this behavior.
-
-        :param status_sentence: The value returned by the build slave's
-           status() method.
-        :param status_dict: A dict of the processed slave status values
-           provided by all types: builder_status, build_id, and optionally
-           build_status or logtail. This should have any behaviour-specific
-           values added to it.
-        """
-
     def handleStatus(bq, status, status_dict):
         """Update the build from a WAITING slave result.
 
         :param bq: The `BuildQueue` currently being processed.
         :param status: The tail of the BuildStatus (eg. OK or PACKAGEFAIL).
         :param status_dict: Slave status dict from
-           `BuilderInteractor.slaveStatus` and `updateSlaveStatus`.
+           `BuilderInteractor.slaveStatus`.
         """
