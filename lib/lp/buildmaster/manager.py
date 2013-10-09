@@ -388,6 +388,10 @@ class SlaveScanner:
         vitals = self.builder_factory.getVitals(self.builder_name)
         interactor = self.interactor_factory()
         slave = self.slave_factory(vitals)
+        if vitals.builderok:
+            slave_status = yield slave.status_dict()
+        else:
+            slave_status = None
 
         # Confirm that the DB and slave sides are in a valid, mutually
         # agreeable state.
@@ -398,8 +402,10 @@ class SlaveScanner:
             cancelled = yield self.checkCancellation(vitals, slave, interactor)
             if cancelled:
                 return
+            assert slave_status is not None
             lost = yield interactor.rescueIfLost(
-                vitals, slave, self.getExpectedCookie(vitals), self.logger)
+                vitals, slave, slave_status, self.getExpectedCookie(vitals),
+                self.logger)
             if lost:
                 lost_reason = '%s is lost' % vitals.name
 
@@ -422,8 +428,10 @@ class SlaveScanner:
         if vitals.build_queue is not None:
             # Scan the slave and get the logtail, or collect the build
             # if it's ready.  Yes, "updateBuild" is a bad name.
+            assert slave_status is not None
             yield interactor.updateBuild(
-                vitals, slave, self.builder_factory, self.behavior_factory)
+                vitals, slave, slave_status, self.builder_factory,
+                self.behavior_factory)
         elif vitals.manual:
             # If the builder is in manual mode, don't dispatch anything.
             self.logger.debug(

@@ -248,7 +248,8 @@ class BuilderInteractor(object):
 
     @classmethod
     @defer.inlineCallbacks
-    def rescueIfLost(cls, vitals, slave, expected_cookie, logger=None):
+    def rescueIfLost(cls, vitals, slave, slave_status, expected_cookie,
+                     logger=None):
         """Reset the slave if its job information doesn't match the DB.
 
         This checks the build ID reported in the slave status against
@@ -261,9 +262,8 @@ class BuilderInteractor(object):
             False otherwise.
         """
         # Determine the slave's current build cookie.
-        status_dict = yield slave.status_dict()
-        status = status_dict['builder_status']
-        slave_cookie = status_dict.get('build_id')
+        status = slave_status['builder_status']
+        slave_cookie = slave_status.get('build_id')
 
         if slave_cookie == expected_cookie:
             # The master and slave agree about the current job. Continue.
@@ -423,13 +423,13 @@ class BuilderInteractor(object):
         defer.returnValue(candidate)
 
     @staticmethod
-    def extractBuildStatus(status_dict):
+    def extractBuildStatus(slave_status):
         """Read build status name.
 
-        :param status_dict: build status dict from BuilderSlave.status_dict.
+        :param slave_status: build status dict from BuilderSlave.status_dict.
         :return: the unqualified status name, e.g. "OK".
         """
-        status_string = status_dict['build_status']
+        status_string = slave_status['build_status']
         lead_string = 'BuildStatus.'
         assert status_string.startswith(lead_string), (
             "Malformed status string: '%s'" % status_string)
@@ -437,7 +437,8 @@ class BuilderInteractor(object):
 
     @classmethod
     @defer.inlineCallbacks
-    def updateBuild(cls, vitals, slave, builder_factory, behavior_factory):
+    def updateBuild(cls, vitals, slave, slave_status, builder_factory,
+                    behavior_factory):
         """Verify the current build job status.
 
         Perform the required actions for each state.
@@ -448,8 +449,7 @@ class BuilderInteractor(object):
         # impossible to get past rescueIfLost unless the slave matches
         # the DB, and this method isn't called unless the DB says
         # there's a job.
-        status = yield slave.status_dict()
-        builder_status = status['builder_status']
+        builder_status = slave_status['builder_status']
         if builder_status == 'BuilderStatus.BUILDING':
             # Build still building, collect the logtail.
             if vitals.build_queue.job.status != JobStatus.RUNNING:
@@ -458,7 +458,7 @@ class BuilderInteractor(object):
                 raise AssertionError(
                     "Job not running when assigned and slave building.")
             vitals.build_queue.logtail = encoding.guess(
-                str(status.get('logtail')))
+                str(slave_status.get('logtail')))
             transaction.commit()
         elif builder_status == 'BuilderStatus.ABORTING':
             # Build is being aborted.
@@ -470,7 +470,8 @@ class BuilderInteractor(object):
             builder = builder_factory[vitals.name]
             behavior = behavior_factory(vitals.build_queue, builder, slave)
             yield behavior.handleStatus(
-                vitals.build_queue, cls.extractBuildStatus(status), status)
+                vitals.build_queue, cls.extractBuildStatus(slave_status),
+                slave_status)
         else:
             raise AssertionError("Unknown status %s" % builder_status)
 
