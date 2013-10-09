@@ -246,19 +246,6 @@ class BuilderInteractor(object):
         behavior.setBuilder(builder, slave)
         return behavior
 
-    @staticmethod
-    @defer.inlineCallbacks
-    def slaveStatus(slave):
-        """Get the slave status for this builder.
-
-        :return: A Deferred which fires when the slave dialog is complete.
-            Its value is a dict containing at least builder_status, but
-            potentially other values included by the current build
-            behavior.
-        """
-        status = yield slave.status_dict()
-        defer.returnValue(status)
-
     @classmethod
     @defer.inlineCallbacks
     def rescueIfLost(cls, vitals, slave, expected_cookie, logger=None):
@@ -439,7 +426,7 @@ class BuilderInteractor(object):
     def extractBuildStatus(status_dict):
         """Read build status name.
 
-        :param status_dict: build status dict from slaveStatus.
+        :param status_dict: build status dict from BuilderSlave.status_dict.
         :return: the unqualified status name, e.g. "OK".
         """
         status_string = status_dict['build_status']
@@ -461,7 +448,7 @@ class BuilderInteractor(object):
         # impossible to get past rescueIfLost unless the slave matches
         # the DB, and this method isn't called unless the DB says
         # there's a job.
-        status = yield cls.slaveStatus(slave)
+        status = yield slave.status_dict()
         builder_status = status['builder_status']
         if builder_status == 'BuilderStatus.BUILDING':
             # Build still building, collect the logtail.

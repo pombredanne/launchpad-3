@@ -228,9 +228,9 @@ class TestBuilderInteractor(TestCase):
         self.assertEqual(['status_dict', 'abort'], building_slave.call_log)
 
 
-class TestBuilderInteractorSlaveStatus(TestCase):
-    # Verify what BuilderInteractor.slaveStatus returns with slaves in
-    # different states.
+class TestBuilderSlaveStatus(TestCase):
+    # Verify what BuilderSlave.status_dict returns with slaves in different
+    # states.
 
     run_tests_with = AsynchronousDeferredRunTest
 
@@ -238,7 +238,7 @@ class TestBuilderInteractorSlaveStatus(TestCase):
     def assertStatus(self, slave, builder_status=None, build_status=None,
                      build_id=False, logtail=False, filemap=None,
                      dependencies=None):
-        status = yield BuilderInteractor.slaveStatus(slave)
+        status = yield slave.status_dict()
 
         expected = {}
         if builder_status is not None:
@@ -260,21 +260,20 @@ class TestBuilderInteractorSlaveStatus(TestCase):
 
         self.assertEqual(expected, status)
 
-    def test_slaveStatus_idle_slave(self):
-        self.assertStatus(
-            OkSlave(), builder_status='BuilderStatus.IDLE')
+    def test_status_idle_slave(self):
+        self.assertStatus(OkSlave(), builder_status='BuilderStatus.IDLE')
 
-    def test_slaveStatus_building_slave(self):
+    def test_status_building_slave(self):
         self.assertStatus(
             BuildingSlave(), builder_status='BuilderStatus.BUILDING',
             build_id=True, logtail=True)
 
-    def test_slaveStatus_waiting_slave(self):
+    def test_status_waiting_slave(self):
         self.assertStatus(
             WaitingSlave(), builder_status='BuilderStatus.WAITING',
             build_status='BuildStatus.OK', build_id=True, filemap={})
 
-    def test_slaveStatus_aborting_slave(self):
+    def test_status_aborting_slave(self):
         self.assertStatus(
             AbortingSlave(), builder_status='BuilderStatus.ABORTING',
             build_id=True)

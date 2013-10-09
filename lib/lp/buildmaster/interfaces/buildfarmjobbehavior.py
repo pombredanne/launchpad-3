@@ -46,6 +46,5 @@ class IBuildFarmJobBehavior(Interface):
 
         :param bq: The `BuildQueue` currently being processed.
         :param status: The tail of the BuildStatus (eg. OK or PACKAGEFAIL).
-        :param status_dict: Slave status dict from
-           `BuilderInteractor.slaveStatus`.
+        :param status_dict: Slave status dict from `BuilderSlave.status_dict`.
         """
