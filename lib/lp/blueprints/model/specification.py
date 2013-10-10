@@ -566,8 +566,13 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
             person for person in related_people if person is not None]
         subscribers = [
             subscription.person for subscription in self.subscriptions]
+        notify_people = set(related_people + subscribers)
+        without_access = set(
+            getUtility(IService, 'sharing').getPeopleWithoutAccess(
+                self, notify_people))
+        notify_people -= without_access
         addresses = set()
-        for person in related_people + subscribers:
+        for person in notify_people:
             addresses.update(get_contact_email_addresses(person))
         return sorted(addresses)
 
