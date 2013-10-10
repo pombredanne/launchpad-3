@@ -3440,7 +3440,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeCopyJobPackageUpload(self, distroseries=None,
                                  sourcepackagename=None, source_archive=None,
-                                 target_pocket=None):
+                                 target_pocket=None, requester=None):
         """Make a `PackageUpload` with a `PackageCopyJob` attached."""
         if distroseries is None:
             distroseries = self.makeDistroSeries()
@@ -3453,7 +3453,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             source_archive=spph.archive,
             target_pocket=target_pocket,
             target_archive=distroseries.main_archive,
-            target_distroseries=distroseries)
+            target_distroseries=distroseries, requester=requester)
         job.addSourceOverride(SourceOverride(
             spr.sourcepackagename, spr.component, spr.section))
         try:
