@@ -883,9 +883,17 @@ class TestFailureAssessments(TestCaseWithFactory):
             self.slave, BuilderInteractor(), Exception(fail_notes))
 
     @defer.inlineCallbacks
-    def test_equal_failures_reset_job(self):
-        self.builder.gotFailure()
-        self.build.gotFailure()
+    def test_job_reset_threshold(self):
+        naked_build = removeSecurityProxy(self.build)
+        self.builder.failure_count = Builder.JOB_RESET_THRESHOLD - 1
+        naked_build.failure_count = Builder.JOB_RESET_THRESHOLD - 1
+
+        yield self._assessFailureCounts("failnotes")
+        self.assertIsNot(None, self.builder.currentjob)
+        self.assertEqual(self.build.status, BuildStatus.BUILDING)
+
+        self.builder.failure_count += 1
+        naked_build.failure_count += 1
 
         yield self._assessFailureCounts("failnotes")
         self.assertIs(None, self.builder.currentjob)

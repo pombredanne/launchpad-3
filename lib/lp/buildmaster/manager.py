@@ -146,11 +146,13 @@ def assessFailureCounts(logger, vitals, builder, slave, interactor, exception):
     if builder.failure_count == job_failure_count and current_job is not None:
         # If the failure count for the builder is the same as the
         # failure count for the job being built, then we cannot
-        # tell whether the job or the builder is at fault. The  best
-        # we can do is try them both again, and hope that the job
-        # runs against a different builder.
-        current_job.reset()
-        del get_property_cache(builder).currentjob
+        # tell whether the job or the builder is at fault. We retry the
+        # scan a few times, but once we give up the best we can do is
+        # reset the job and hope it runs against a different builder,
+        # giving us a judgement on which is at fault.
+        if builder.failure_count >= Builder.JOB_RESET_THRESHOLD:
+            current_job.reset()
+            del get_property_cache(builder).currentjob
         return
 
     if builder.failure_count > job_failure_count:
