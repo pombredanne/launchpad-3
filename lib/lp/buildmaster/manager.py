@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 import datetime
+import functools
 import logging
 
 from storm.expr import LeftJoin
@@ -127,7 +128,8 @@ class PrefetchedBuilderFactory:
 
 
 @defer.inlineCallbacks
-def assessFailureCounts(logger, vitals, builder, slave, interactor, exception):
+def assessFailureCounts(logger, vitals, builder, slave, interactor, retry,
+                        exception):
     """View builder/job failure_count and work out which needs to die.
 
     :return: A Deferred that fires either immediately or after a virtual
@@ -146,11 +148,13 @@ def assessFailureCounts(logger, vitals, builder, slave, interactor, exception):
     if builder.failure_count == job_failure_count and current_job is not None:
         # If the failure count for the builder is the same as the
         # failure count for the job being built, then we cannot
-        # tell whether the job or the builder is at fault. The  best
-        # we can do is try them both again, and hope that the job
-        # runs against a different builder.
-        current_job.reset()
-        del get_property_cache(builder).currentjob
+        # tell whether the job or the builder is at fault. We retry the
+        # scan a few times, but once we give up the best we can do is
+        # reset the job and hope it runs against a different builder,
+        # giving us a judgement on which is at fault.
+        if not retry or builder.failure_count >= Builder.JOB_RESET_THRESHOLD:
+            current_job.reset()
+            del get_property_cache(builder).currentjob
         return
 
     if builder.failure_count > job_failure_count:
@@ -259,8 +263,11 @@ class SlaveScanner:
             return defer.succeed(None)
 
         self.logger.debug("Scanning builder %s" % self.builder_name)
+        # Errors should normally be able to be retried a few times. Bits
+        # of scan() which don't want retries will call _scanFailed
+        # directly.
         d = self.scan()
-        d.addErrback(self._scanFailed)
+        d.addErrback(functools.partial(self._scanFailed, True))
         d.addBoth(self._updateDateScanned)
         return d
 
@@ -268,11 +275,12 @@ class SlaveScanner:
         self.date_scanned = datetime.datetime.utcnow()
 
     @defer.inlineCallbacks
-    def _scanFailed(self, failure):
+    def _scanFailed(self, retry, failure):
         """Deal with failures encountered during the scan cycle.
 
         1. Print the error in the log
         2. Increment and assess failure counts on the builder and job.
+           If asked to retry, a single failure may not be considered fatal.
 
         :return: A Deferred that fires either immediately or after a virtual
             slave has been reset.
@@ -302,7 +310,7 @@ class SlaveScanner:
             builder.handleFailure(self.logger)
             yield assessFailureCounts(
                 self.logger, vitals, builder, self.slave_factory(vitals),
-                self.interactor_factory(), failure.value)
+                self.interactor_factory(), retry, failure.value)
             transaction.commit()
         except Exception:
             # Catastrophic code failure! Not much we can do.
@@ -383,7 +391,6 @@ class SlaveScanner:
 
         :return: A Deferred that fires when the scan is complete.
         """
-        self.logger.debug("Scanning %s." % self.builder_name)
         self.builder_factory.prescanUpdate()
         vitals = self.builder_factory.getVitals(self.builder_name)
         interactor = self.interactor_factory()
@@ -395,6 +402,7 @@ class SlaveScanner:
         if not vitals.builderok:
             lost_reason = '%s is disabled' % vitals.name
         else:
+            self.logger.debug("Scanning %s." % self.builder_name)
             cancelled = yield self.checkCancellation(vitals, slave, interactor)
             if cancelled:
                 return
@@ -431,7 +439,12 @@ class SlaveScanner:
         else:
             # See if there is a job we can dispatch to the builder slave.
             builder = self.builder_factory[self.builder_name]
-            yield interactor.findAndStartJob(vitals, builder, slave)
+            # Try to dispatch the job. If it fails, don't attempt to
+            # just retry the scan; we need to reset the job so the
+            # dispatch will be reattempted.
+            d = interactor.findAndStartJob(vitals, builder, slave)
+            d.addErrback(functools.partial(self._scanFailed, False))
+            yield d
             if builder.currentjob is not None:
                 # After a successful dispatch we can reset the
                 # failure_count.

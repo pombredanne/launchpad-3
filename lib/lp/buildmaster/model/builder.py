@@ -84,6 +84,10 @@ class Builder(SQLBase):
     active = BoolCol(dbName='active', notNull=True, default=True)
     failure_count = IntCol(dbName='failure_count', default=0, notNull=True)
 
+    # The number of times a builder can consecutively fail before we
+    # reset its current job.
+    JOB_RESET_THRESHOLD = 3
+
     # The number of times a builder can consecutively fail before we try
     # resetting it (if virtual) or marking it builderok=False (if not).
     RESET_THRESHOLD = 5
