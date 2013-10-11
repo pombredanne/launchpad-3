@@ -77,11 +77,14 @@ class RosettaTranslationsUpload(CustomUpload):
             packageupload, sourcepackagerelease, libraryfilealias, blamee)
 
     @staticmethod
-    def parsePath(tarfile_path):
-        pass
+    def parseFilename(tarfile_name):
+        bits = tarfile_name.split("_")
+        if len(bits) != 3:
+            raise ValueError("%s is not NAME_VERSION_ARCH" % tarfile_name)
+        return tuple(bits)
 
-    def setComponents(self, tarfile_path):
-        pass
+    def setAttributes(self, tarfile_name):
+        self.package_name, _, _ = self.parseFilename(tarfile_name)
 
     def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
         pass
@@ -95,6 +98,8 @@ class RosettaTranslationsUpload(CustomUpload):
 
     def _findSourcePublication(self, packageupload):
         """Find destination source publishing record of the packageupload."""
+        if packageupload.package_name is None:
+            self.setAttributes(libraryfilealias.filename)
         return packageupload.archive.getPublishedSources(
             name=packageupload.package_name, exact_match=True,
             distroseries=packageupload.distroseries,

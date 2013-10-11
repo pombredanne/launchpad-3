@@ -21,6 +21,7 @@ from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
     ArchivePermissionType,
+    PackageUploadCustomFormat,
     PackageUploadStatus,
     SourcePackageFormat,
     )
@@ -47,7 +48,7 @@ class TestRosettaTranslations(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def makeTranslationsLFA(self, tar_content=None):
+    def makeTranslationsLFA(self, tar_content=None, filename=None):
         """Create an LibraryFileAlias containing dummy translation data."""
         if tar_content is None:
             tar_content = {
@@ -56,7 +57,8 @@ class TestRosettaTranslations(TestCaseWithFactory):
                 }
         tarfile_content = LaunchpadWriteTarFile.files_to_string(
             tar_content)
-        return self.factory.makeLibraryFileAlias(content=tarfile_content)
+        return self.factory.makeLibraryFileAlias(content=tarfile_content,
+                                                 filename=filename)
 
     def makeAndPublishSourcePackage(self, sourcepackagename, distroseries,
             archive=None):
@@ -75,6 +77,10 @@ class TestRosettaTranslations(TestCaseWithFactory):
     def makeJobElements(self):
         distroseries = self.factory.makeDistroSeries()
         sourcepackagename = "foo"
+        sourcepackage_version = "3.8.2-1ubuntu1"
+        filename = "%s_%s_i386_translations.tar.gz" % (sourcepackagename,
+            sourcepackage_version)
+
         spph = self.makeAndPublishSourcePackage(
             sourcepackagename=sourcepackagename, distroseries=distroseries)
         packageupload = removeSecurityProxy(self.factory.makePackageUpload(
@@ -82,15 +88,22 @@ class TestRosettaTranslations(TestCaseWithFactory):
             archive=distroseries.main_archive))
         packageupload.addSource(spph.sourcepackagerelease)
 
-        libraryfilealias = self.makeTranslationsLFA()
+        libraryfilealias = self.makeTranslationsLFA(filename=filename)
         return spph, packageupload, libraryfilealias
 
     def makeJobElementsFromCopyJob(self):
         orig_distroseries = self.factory.makeDistroSeries()
         sourcepackagename = "foo"
+        sourcepackage_version = "3.8.2-1ubuntu1"
+
+        filename = "%s_%s_i386_translations.tar.gz" % (sourcepackagename,
+            sourcepackage_version)
+
         distroseries = self.factory.makeDistroSeries()
         getUtility(ISourcePackageFormatSelectionSet).add(distroseries,
             SourcePackageFormat.FORMAT_1_0)
+
+        libraryfilealias = self.makeTranslationsLFA(filename=filename)
 
         spph_target = self.factory.makeSourcePackagePublishingHistory(
             distroseries=distroseries,
@@ -105,13 +118,18 @@ class TestRosettaTranslations(TestCaseWithFactory):
             component = spph_target.component.name
             target_archive.newComponentUploader(admin, component)
 
+        # It doesn't really return an upload when the package has an
+        # ancestry.
         upload = self.factory.makeCopyJobPackageUpload(distroseries,
-            sourcepackagename, target_pocket=PackagePublishingPocket.RELEASE,
+            sourcepackagename, source_archive=orig_distroseries.main_archive,
+            target_pocket=PackagePublishingPocket.RELEASE,
             requester=admin)
 
-        upload.addSource(spph_target.sourcepackagerelease)
+        upload = distroseries.getPackageUploads(
+            archive=distroseries.main_archive,
+            pocket=PackagePublishingPocket.RELEASE, name=sourcepackagename,
+            exact_match=True))
 
-        libraryfilealias = self.makeTranslationsLFA()
         return spph_target, upload, libraryfilealias
 
     def test_basic_from_copy(self):
