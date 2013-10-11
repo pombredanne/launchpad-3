@@ -73,8 +73,8 @@ class OkSlave:
         self.call_log = []
         self.arch_tag = arch_tag
 
-    def status(self):
-        return defer.succeed(('BuilderStatus.IDLE', ''))
+    def status_dict(self):
+        return defer.succeed({'builder_status': 'BuilderStatus.IDLE'})
 
     def ensurepresent(self, sha1, url, user=None, password=None):
         self.call_log.append(('ensurepresent', url, user, password))
@@ -133,11 +133,14 @@ class BuildingSlave(OkSlave):
         super(BuildingSlave, self).__init__()
         self.build_id = build_id
 
-    def status(self):
-        self.call_log.append('status')
+    def status_dict(self):
+        self.call_log.append('status_dict')
         buildlog = xmlrpclib.Binary("This is a build log")
-        return defer.succeed(
-            ('BuilderStatus.BUILDING', self.build_id, buildlog))
+        return defer.succeed({
+            'builder_status': 'BuilderStatus.BUILDING',
+            'build_id': self.build_id,
+            'logtail': buildlog,
+            })
 
     def getFile(self, sum, file_to_write):
         self.call_log.append('getFile')
@@ -167,11 +170,15 @@ class WaitingSlave(OkSlave):
         # can update this list as needed.
         self.valid_file_hashes = ['buildlog']
 
-    def status(self):
-        self.call_log.append('status')
-        return defer.succeed((
-            'BuilderStatus.WAITING', self.state, self.build_id, self.filemap,
-            self.dependencies))
+    def status_dict(self):
+        self.call_log.append('status_dict')
+        return defer.succeed({
+            'builder_status': 'BuilderStatus.WAITING',
+            'build_status': self.state,
+            'build_id': self.build_id,
+            'filemap': self.filemap,
+            'dependencies': self.dependencies,
+            })
 
     def getFile(self, hash, file_to_write):
         self.call_log.append('getFile')
@@ -187,9 +194,12 @@ class WaitingSlave(OkSlave):
 class AbortingSlave(OkSlave):
     """A mock slave that looks like it's in the process of aborting."""
 
-    def status(self):
-        self.call_log.append('status')
-        return defer.succeed(('BuilderStatus.ABORTING', '1-1'))
+    def status_dict(self):
+        self.call_log.append('status_dict')
+        return defer.succeed({
+            'builder_status': 'BuilderStatus.ABORTING',
+            'build_id': '1-1',
+            })
 
 
 class LostBuildingBrokenSlave:
@@ -201,9 +211,12 @@ class LostBuildingBrokenSlave:
     def __init__(self):
         self.call_log = []
 
-    def status(self):
-        self.call_log.append('status')
-        return defer.succeed(('BuilderStatus.BUILDING', '1000-10000'))
+    def status_dict(self):
+        self.call_log.append('status_dict')
+        return defer.succeed({
+            'builder_status': 'BuilderStatus.BUILDING',
+            'build_id': '1000-10000',
+            })
 
     def abort(self):
         self.call_log.append('abort')
@@ -220,8 +233,8 @@ class BrokenSlave:
     def __init__(self):
         self.call_log = []
 
-    def status(self):
-        self.call_log.append('status')
+    def status_dict(self):
+        self.call_log.append('status_dict')
         return defer.fail(xmlrpclib.Fault(8001, "Broken slave"))
 
 

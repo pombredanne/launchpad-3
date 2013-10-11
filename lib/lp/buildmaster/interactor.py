@@ -109,9 +109,9 @@ class BuilderSlave(object):
         """Return the protocol version and the builder methods supported."""
         return self._with_timeout(self._server.callRemote('info'))
 
-    def status(self):
+    def status_dict(self):
         """Return the status of the build daemon."""
-        return self._with_timeout(self._server.callRemote('status'))
+        return self._with_timeout(self._server.callRemote('status_dict'))
 
     def ensurepresent(self, sha1sum, url, username, password):
         # XXX: Nothing external calls this. Make it private.
@@ -246,29 +246,6 @@ class BuilderInteractor(object):
         behavior.setBuilder(builder, slave)
         return behavior
 
-    @staticmethod
-    @defer.inlineCallbacks
-    def slaveStatus(slave):
-        """Get the slave status for this builder.
-
-        :return: A Deferred which fires when the slave dialog is complete.
-            Its value is a dict containing at least builder_status, but
-            potentially other values included by the current build
-            behavior.
-        """
-        status_sentence = yield slave.status()
-        status = {'builder_status': status_sentence[0]}
-
-        # Extract detailed status and log information if present.
-        # Although build_id is also easily extractable here, there is no
-        # valid reason for anything to use it, so we exclude it.
-        if status['builder_status'] == 'BuilderStatus.WAITING':
-            status['build_status'] = status_sentence[1]
-        else:
-            if status['builder_status'] == 'BuilderStatus.BUILDING':
-                status['logtail'] = status_sentence[2]
-        defer.returnValue((status_sentence, status))
-
     @classmethod
     @defer.inlineCallbacks
     def rescueIfLost(cls, vitals, slave, expected_cookie, logger=None):
@@ -283,25 +260,10 @@ class BuilderInteractor(object):
             finished.  Its return value is True if the slave is lost,
             False otherwise.
         """
-        # 'ident_position' dict relates the position of the job identifier
-        # token in the sentence received from status(), according to the
-        # two statuses we care about. See lp:launchpad-buildd
-        # for further information about sentence format.
-        ident_position = {
-            'BuilderStatus.BUILDING': 1,
-            'BuilderStatus.ABORTING': 1,
-            'BuilderStatus.WAITING': 2
-            }
-
-        # Determine the slave's current build cookie. For BUILDING, ABORTING
-        # and WAITING we extract the string from the slave status
-        # sentence, and for IDLE it is None.
-        status_sentence = yield slave.status()
-        status = status_sentence[0]
-        if status not in ident_position.keys():
-            slave_cookie = None
-        else:
-            slave_cookie = status_sentence[ident_position[status]]
+        # Determine the slave's current build cookie.
+        status_dict = yield slave.status_dict()
+        status = status_dict['builder_status']
+        slave_cookie = status_dict.get('build_id')
 
         if slave_cookie == expected_cookie:
             # The master and slave agree about the current job. Continue.
@@ -464,7 +426,7 @@ class BuilderInteractor(object):
     def extractBuildStatus(status_dict):
         """Read build status name.
 
-        :param status_dict: build status dict from slaveStatus.
+        :param status_dict: build status dict from BuilderSlave.status_dict.
         :return: the unqualified status name, e.g. "OK".
         """
         status_string = status_dict['build_status']
@@ -486,9 +448,8 @@ class BuilderInteractor(object):
         # impossible to get past rescueIfLost unless the slave matches
         # the DB, and this method isn't called unless the DB says
         # there's a job.
-        statuses = yield cls.slaveStatus(slave)
-        status_sentence, status_dict = statuses
-        builder_status = status_dict['builder_status']
+        status = yield slave.status_dict()
+        builder_status = status['builder_status']
         if builder_status == 'BuilderStatus.BUILDING':
             # Build still building, collect the logtail.
             if vitals.build_queue.job.status != JobStatus.RUNNING:
@@ -497,7 +458,7 @@ class BuilderInteractor(object):
                 raise AssertionError(
                     "Job not running when assigned and slave building.")
             vitals.build_queue.logtail = encoding.guess(
-                str(status_dict.get('logtail')))
+                str(status.get('logtail')))
             transaction.commit()
         elif builder_status == 'BuilderStatus.ABORTING':
             # Build is being aborted.
@@ -508,10 +469,8 @@ class BuilderInteractor(object):
             # Build has finished. Delegate handling to the build itself.
             builder = builder_factory[vitals.name]
             behavior = behavior_factory(vitals.build_queue, builder, slave)
-            behavior.updateSlaveStatus(status_sentence, status_dict)
             yield behavior.handleStatus(
-                vitals.build_queue, cls.extractBuildStatus(status_dict),
-                status_dict)
+                vitals.build_queue, cls.extractBuildStatus(status), status)
         else:
             raise AssertionError("Unknown status %s" % builder_status)
 
