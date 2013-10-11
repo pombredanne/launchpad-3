@@ -59,7 +59,7 @@ class FakeBuildQueue:
 class MakeBehaviorMixin(object):
     """Provide common test methods."""
 
-    def makeBehavior(self, branch=None, use_fake_chroot=True):
+    def makeBehavior(self, branch=None, use_fake_chroot=True, **kwargs):
         """Create a TranslationTemplatesBuildBehavior.
 
         Anything that might communicate with build slaves and such
@@ -68,7 +68,7 @@ class MakeBehaviorMixin(object):
         specific_job = self.factory.makeTranslationTemplatesBuildJob(
             branch=branch)
         behavior = IBuildFarmJobBehavior(specific_job)
-        slave = WaitingSlave()
+        slave = WaitingSlave(**kwargs)
         behavior.setBuilder(self.factory.makeBuilder(), slave)
         if use_fake_chroot:
             lf = self.factory.makeLibraryFileAlias()
@@ -182,7 +182,8 @@ class TestTranslationTemplatesBuildBehavior(
 
     def test_handleStatus_OK(self):
         # Hopefully, a build will succeed and produce a tarball.
-        behavior = self.makeBehavior()
+        behavior = self.makeBehavior(
+            filemap={'translation-templates.tar.gz': 'foo'})
         behavior._uploadTarball = FakeMethod()
         queue_item = FakeBuildQueue(behavior)
         slave = behavior._slave
@@ -195,21 +196,14 @@ class TestTranslationTemplatesBuildBehavior(
             self.assertNotIn('clean', slave_call_log)
             self.assertEqual(0, behavior._uploadTarball.call_count)
 
-            return slave.status()
+            return slave.status_dict()
 
         def got_status(status):
-            slave_call_log = slave.call_log
-            slave_status = {
-                'builder_status': status[0],
-                'build_status': status[1],
-                'filemap': {'translation-templates.tar.gz': 'foo'},
-                }
             return (
                 behavior.handleStatus(
-                    queue_item,
-                    BuilderInteractor.extractBuildStatus(slave_status),
-                    slave_status),
-                slave_call_log)
+                    queue_item, BuilderInteractor.extractBuildStatus(status),
+                    status),
+                slave.call_log)
 
         def build_updated(ignored):
             self.assertEqual(BuildStatus.FULLYBUILT, behavior.build.status)
@@ -227,7 +221,7 @@ class TestTranslationTemplatesBuildBehavior(
 
     def test_handleStatus_failed(self):
         # Builds may also fail (and produce no tarball).
-        behavior = self.makeBehavior()
+        behavior = self.makeBehavior(state='BuildStatus.FAILEDTOBUILD')
         behavior._uploadTarball = FakeMethod()
         queue_item = FakeBuildQueue(behavior)
         slave = behavior._slave
@@ -235,24 +229,14 @@ class TestTranslationTemplatesBuildBehavior(
 
         def got_dispatch((status, info)):
             # Now that we've dispatched, get the status.
-            return slave.status()
+            return slave.status_dict()
 
         def got_status(status):
-            raw_status = (
-                'BuilderStatus.WAITING',
-                'BuildStatus.FAILEDTOBUILD',
-                status[2],
-                )
-            slave_status = {
-                'builder_status': raw_status[0],
-                'build_status': raw_status[1],
-                }
-            behavior.updateSlaveStatus(raw_status, slave_status)
-            self.assertNotIn('filemap', slave_status)
+            del status['filemap']
             return behavior.handleStatus(
                 queue_item,
-                BuilderInteractor.extractBuildStatus(slave_status),
-                slave_status),
+                BuilderInteractor.extractBuildStatus(status),
+                status),
 
         def build_updated(ignored):
             self.assertEqual(BuildStatus.FAILEDTOBUILD, behavior.build.status)
@@ -277,24 +261,14 @@ class TestTranslationTemplatesBuildBehavior(
         d = behavior.dispatchBuildToSlave(queue_item, logging)
 
         def got_dispatch((status, info)):
-            return slave.status()
+            return slave.status_dict()
 
         def got_status(status):
-            raw_status = (
-                'BuilderStatus.WAITING',
-                'BuildStatus.OK',
-                status[2],
-                )
-            slave_status = {
-                'builder_status': raw_status[0],
-                'build_status': raw_status[1],
-                }
-            behavior.updateSlaveStatus(raw_status, slave_status)
-            self.assertFalse('filemap' in slave_status)
+            del status['filemap']
             return behavior.handleStatus(
                 queue_item,
-                BuilderInteractor.extractBuildStatus(slave_status),
-                slave_status),
+                BuilderInteractor.extractBuildStatus(status),
+                status),
 
         def build_updated(ignored):
             self.assertEqual(BuildStatus.FULLYBUILT, behavior.build.status)
@@ -310,7 +284,8 @@ class TestTranslationTemplatesBuildBehavior(
     def test_handleStatus_uploads(self):
         productseries = self.makeProductSeriesWithBranchForTranslation()
         branch = productseries.branch
-        behavior = self.makeBehavior(branch=branch)
+        behavior = self.makeBehavior(
+            branch=branch, filemap={'translation-templates.tar.gz': 'foo'})
         queue_item = FakeBuildQueue(behavior)
         slave = behavior._slave
 
@@ -325,20 +300,13 @@ class TestTranslationTemplatesBuildBehavior(
 
         def got_dispatch((status, info)):
             slave.getFile = fake_getFile
-            slave.filemap = {'translation-templates.tar.gz': 'foo'}
-            return slave.status()
+            return slave.status_dict()
 
         def got_status(status):
-            slave_status = {
-                'builder_status': status[0],
-                'build_status': status[1],
-                'build_id': status[2],
-                }
-            behavior.updateSlaveStatus(status, slave_status)
             return behavior.handleStatus(
                 queue_item,
-                BuilderInteractor.extractBuildStatus(slave_status),
-                slave_status),
+                BuilderInteractor.extractBuildStatus(status),
+                status),
 
         def build_updated(ignored):
             self.assertEqual(BuildStatus.FULLYBUILT, behavior.build.status)

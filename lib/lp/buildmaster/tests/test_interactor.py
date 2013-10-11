@@ -192,7 +192,7 @@ class TestBuilderInteractor(TestCase):
         lost = yield BuilderInteractor.rescueIfLost(
             extract_vitals_from_db(MockBuilder()), waiting_slave, 'trivial')
         self.assertFalse(lost)
-        self.assertEqual(['status'], waiting_slave.call_log)
+        self.assertEqual(['status_dict'], waiting_slave.call_log)
 
     @defer.inlineCallbacks
     def test_recover_waiting_slave_with_bad_id(self):
@@ -205,7 +205,7 @@ class TestBuilderInteractor(TestCase):
         lost = yield BuilderInteractor.rescueIfLost(
             extract_vitals_from_db(MockBuilder()), waiting_slave, 'trivial')
         self.assertTrue(lost)
-        self.assertEqual(['status', 'clean'], waiting_slave.call_log)
+        self.assertEqual(['status_dict', 'clean'], waiting_slave.call_log)
 
     @defer.inlineCallbacks
     def test_recover_building_slave_with_good_id(self):
@@ -215,7 +215,7 @@ class TestBuilderInteractor(TestCase):
         lost = yield BuilderInteractor.rescueIfLost(
             extract_vitals_from_db(MockBuilder()), building_slave, 'trivial')
         self.assertFalse(lost)
-        self.assertEqual(['status'], building_slave.call_log)
+        self.assertEqual(['status_dict'], building_slave.call_log)
 
     @defer.inlineCallbacks
     def test_recover_building_slave_with_bad_id(self):
@@ -225,55 +225,58 @@ class TestBuilderInteractor(TestCase):
         lost = yield BuilderInteractor.rescueIfLost(
             extract_vitals_from_db(MockBuilder()), building_slave, 'trivial')
         self.assertTrue(lost)
-        self.assertEqual(['status', 'abort'], building_slave.call_log)
+        self.assertEqual(['status_dict', 'abort'], building_slave.call_log)
 
 
-class TestBuilderInteractorSlaveStatus(TestCase):
-    # Verify what BuilderInteractor.slaveStatus returns with slaves in
-    # different states.
+class TestBuilderSlaveStatus(TestCase):
+    # Verify what BuilderSlave.status_dict returns with slaves in different
+    # states.
 
     run_tests_with = AsynchronousDeferredRunTest
 
     @defer.inlineCallbacks
-    def assertStatus(self, slave, builder_status=None,
-                     build_status=None, logtail=False, filemap=None,
+    def assertStatus(self, slave, builder_status=None, build_status=None,
+                     build_id=False, logtail=False, filemap=None,
                      dependencies=None):
-        statuses = yield BuilderInteractor.slaveStatus(slave)
-        status_dict = statuses[1]
+        status = yield slave.status_dict()
 
         expected = {}
         if builder_status is not None:
             expected["builder_status"] = builder_status
         if build_status is not None:
             expected["build_status"] = build_status
-        if dependencies is not None:
+        if filemap is not None:
+            expected["filemap"] = filemap
             expected["dependencies"] = dependencies
 
-        # We don't care so much about the content of the logtail,
-        # just that it's there.
+        # We don't care so much about the build_id or the content of the
+        # logtail, just that they're there.
+        if build_id:
+            self.assertIn("build_id", status)
+            del status["build_id"]
         if logtail:
-            tail = status_dict.pop("logtail")
+            tail = status.pop("logtail")
             self.assertIsInstance(tail, xmlrpclib.Binary)
 
-        self.assertEqual(expected, status_dict)
+        self.assertEqual(expected, status)
 
-    def test_slaveStatus_idle_slave(self):
-        self.assertStatus(
-            OkSlave(), builder_status='BuilderStatus.IDLE')
+    def test_status_idle_slave(self):
+        self.assertStatus(OkSlave(), builder_status='BuilderStatus.IDLE')
 
-    def test_slaveStatus_building_slave(self):
+    def test_status_building_slave(self):
         self.assertStatus(
             BuildingSlave(), builder_status='BuilderStatus.BUILDING',
-            logtail=True)
+            build_id=True, logtail=True)
 
-    def test_slaveStatus_waiting_slave(self):
+    def test_status_waiting_slave(self):
         self.assertStatus(
             WaitingSlave(), builder_status='BuilderStatus.WAITING',
-            build_status='BuildStatus.OK', filemap={})
+            build_status='BuildStatus.OK', build_id=True, filemap={})
 
-    def test_slaveStatus_aborting_slave(self):
+    def test_status_aborting_slave(self):
         self.assertStatus(
-            AbortingSlave(), builder_status='BuilderStatus.ABORTING')
+            AbortingSlave(), builder_status='BuilderStatus.ABORTING',
+            build_id=True)
 
 
 class TestBuilderInteractorDB(TestCaseWithFactory):
@@ -441,28 +444,26 @@ class TestSlave(TestCase):
              ['sourcepackagerecipe',
               'translation-templates', 'binarypackage', 'debian']])
 
+    @defer.inlineCallbacks
     def test_initial_status(self):
-        # Calling 'status' returns the current status of the slave. The
+        # Calling 'status_dict' returns the current status of the slave. The
         # initial status is IDLE.
         self.slave_helper.getServerSlave()
         slave = self.slave_helper.getClientSlave()
-        d = slave.status()
-        return d.addCallback(self.assertEqual, [BuilderStatus.IDLE, ''])
+        status = yield slave.status_dict()
+        self.assertEqual(BuilderStatus.IDLE, status['builder_status'])
 
+    @defer.inlineCallbacks
     def test_status_after_build(self):
-        # Calling 'status' returns the current status of the slave. After a
-        # build has been triggered, the status is BUILDING.
+        # Calling 'status_dict' returns the current status of the slave.
+        # After a build has been triggered, the status is BUILDING.
         slave = self.slave_helper.getClientSlave()
         build_id = 'status-build-id'
-        d = self.slave_helper.triggerGoodBuild(slave, build_id)
-        d.addCallback(lambda ignored: slave.status())
-
-        def check_status(status):
-            self.assertEqual([BuilderStatus.BUILDING, build_id], status[:2])
-            [log_file] = status[2:]
-            self.assertIsInstance(log_file, xmlrpclib.Binary)
-
-        return d.addCallback(check_status)
+        yield self.slave_helper.triggerGoodBuild(slave, build_id)
+        status = yield slave.status_dict()
+        self.assertEqual(BuilderStatus.BUILDING, status['builder_status'])
+        self.assertEqual(build_id, status['build_id'])
+        self.assertIsInstance(status['logtail'], xmlrpclib.Binary)
 
     def test_ensurepresent_not_there(self):
         # ensurepresent checks to see if a file is there.
@@ -609,7 +610,7 @@ class TestSlaveTimeouts(TestCase):
         return self.assertCancelled(self.slave.info())
 
     def test_timeout_status(self):
-        return self.assertCancelled(self.slave.status())
+        return self.assertCancelled(self.slave.status_dict())
 
     def test_timeout_ensurepresent(self):
         return self.assertCancelled(

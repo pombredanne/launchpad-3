@@ -189,20 +189,3 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
                 "to the series status of %s." %
                     (build.title, build.id, build.pocket.name,
                      build.distroseries.name))
-
-    def updateSlaveStatus(self, raw_slave_status, status):
-        """Parse the recipe build specific status info into the status dict.
-
-        This includes:
-        * filemap => dictionary or None
-        * dependencies => string or None
-        """
-        build_status_with_files = (
-            'BuildStatus.OK',
-            'BuildStatus.PACKAGEFAIL',
-            'BuildStatus.DEPFAIL',
-            )
-        if (status['builder_status'] == 'BuilderStatus.WAITING' and
-            status['build_status'] in build_status_with_files):
-            status['filemap'] = raw_slave_status[3]
-            status['dependencies'] = raw_slave_status[4]
