@@ -8,7 +8,6 @@ high-level tests of rosetta-translations upload and queue manipulation.
 """
 
 import transaction
-from lazr.jobrunner.jobrunner import SuspendJobException
 from zope.security.proxy import removeSecurityProxy
 from zope.component import getUtility
 
@@ -16,32 +15,21 @@ from lp.archivepublisher.rosetta_translations import (
     process_rosetta_translations,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.job.interfaces.job import JobStatus
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
-from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
-    ArchivePermissionType,
+    ArchivePurpose,
     PackageUploadCustomFormat,
     PackageUploadStatus,
     SourcePackageFormat,
     )
-from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
-from lp.soyuz.interfaces.queue import IPackageUploadSet
-from lp.soyuz.model.packagecopyjob import IPackageCopyJobSource
+from lp.soyuz.interfaces.sourcepackageformat import (
+    ISourcePackageFormatSelectionSet,
+    )
 from lp.soyuz.model.packagetranslationsuploadjob import (
     PackageTranslationsUploadJob,
     )
 from lp.testing import TestCaseWithFactory, person_logged_in
-from lp.testing.dbuser import dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
-from lp.archiveuploader.uploadpolicy import (
-    findPolicyByName
-    )
-from lp.soyuz.model.archivepermission import ArchivePermission
-from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.sourcepackageformat import (
-    ISourcePackageFormatSelectionSet,
-    )
 
 
 class TestRosettaTranslations(TestCaseWithFactory):
@@ -62,7 +50,7 @@ class TestRosettaTranslations(TestCaseWithFactory):
 
     def makeAndPublishSourcePackage(self, sourcepackagename, distroseries,
             archive=None):
-        sourcepackage = self.factory.makeSourcePackage(
+        self.factory.makeSourcePackage(
             sourcepackagename=sourcepackagename,
             distroseries=distroseries)
         if archive is None:
@@ -89,27 +77,43 @@ class TestRosettaTranslations(TestCaseWithFactory):
         packageupload.addSource(spph.sourcepackagerelease)
 
         libraryfilealias = self.makeTranslationsLFA(filename=filename)
-        return spph, packageupload, libraryfilealias
+        return spph.sourcepackagerelease, packageupload, libraryfilealias
 
     def makeJobElementsFromCopyJob(self):
-        orig_distroseries = self.factory.makeDistroSeries()
-        sourcepackagename = "foo"
         sourcepackage_version = "3.8.2-1ubuntu1"
 
-        filename = "%s_%s_i386_translations.tar.gz" % (sourcepackagename,
-            sourcepackage_version)
-
-        distroseries = self.factory.makeDistroSeries()
+        das = self.factory.makeDistroArchSeries()
+        distroseries = das.distroseries
+        distroseries.nominatedarchindep = das
         getUtility(ISourcePackageFormatSelectionSet).add(distroseries,
             SourcePackageFormat.FORMAT_1_0)
 
-        libraryfilealias = self.makeTranslationsLFA(filename=filename)
-
-        spph_target = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries,
-            archive=distroseries.main_archive,
-            sourcepackagename=sourcepackagename,
+        bpb = self.factory.makeBinaryPackageBuild(
+            distroarchseries=distroseries.nominatedarchindep,
+            archive=self.factory.makeArchive(purpose=ArchivePurpose.PPA),
             pocket=PackagePublishingPocket.RELEASE)
+        bpr = self.factory.makeBinaryPackageRelease(build=bpb)
+        self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr, distroarchseries=bpb.distro_arch_series,
+            archive=bpb.archive, pocket=bpb.pocket)
+        bin_pu = self.factory.makePackageUpload(
+            status=PackageUploadStatus.DONE, archive=bpb.archive,
+            distroseries=distroseries)
+        bin_pu.addBuild(bpb)
+
+        filename = "%s_%s_i386_translations.tar.gz" % (
+            bpb.source_package_release.sourcepackagename.name,
+            sourcepackage_version)
+
+        libraryfilealias = self.makeTranslationsLFA(filename=filename)
+        bin_pu.addCustom(
+            libraryfilealias, PackageUploadCustomFormat.ROSETTA_TRANSLATIONS)
+
+        # Create ancestry in the target to avoid hitting New.
+        spph_target = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=bpb.source_package_release.sourcepackagename,
+            version='0', archive=distroseries.main_archive,
+            distroseries=distroseries, pocket=PackagePublishingPocket.RELEASE)
 
         target_archive = distroseries.main_archive
 
@@ -117,60 +121,56 @@ class TestRosettaTranslations(TestCaseWithFactory):
         with person_logged_in(target_archive.owner):
             component = spph_target.component.name
             target_archive.newComponentUploader(admin, component)
+            pass
 
-        # It doesn't really return an upload when the package has an
-        # ancestry.
-        upload = self.factory.makeCopyJobPackageUpload(distroseries,
-            sourcepackagename, source_archive=orig_distroseries.main_archive,
+        spr = bpb.source_package_release
+        job = self.factory.makePlainPackageCopyJob(
+            package_name=spr.sourcepackagename.name,
+            package_version=spr.version, source_archive=bpb.archive,
+            target_archive=distroseries.main_archive,
+            target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            requester=admin)
+            requester=admin, include_binaries=True)
 
-        upload = distroseries.getPackageUploads(
-            archive=distroseries.main_archive,
-            pocket=PackagePublishingPocket.RELEASE, name=sourcepackagename,
-            exact_match=True))
+        job.run()
 
-        return spph_target, upload, libraryfilealias
+        from storm.expr import Desc
+        from lp.soyuz.model.queue import PackageUpload
+        from lp.services.database.interfaces import IStore
+        upload = IStore(PackageUpload).find(PackageUpload).order_by(
+            Desc(PackageUpload.id)).first()
+
+        return spr, upload, libraryfilealias
 
     def test_basic_from_copy(self):
-        spph, pu, lfa = self.makeJobElementsFromCopyJob()
+        spr, pu, lfa = self.makeJobElementsFromCopyJob()
         transaction.commit()
-        self.assertTrue(pu.contains_copy)
         process_rosetta_translations(pu, lfa)
 
     def test_basic_from_upload(self):
-        spph, pu, lfa = self.makeJobElements()
-        self.assertFalse(pu.contains_copy)
+        spr, pu, lfa = self.makeJobElements()
         transaction.commit()
         process_rosetta_translations(pu, lfa)
 
     def test_correct_job_is_created_from_upload(self):
-        latest_spph, packageupload, libraryfilealias = self.makeJobElements()
+        spr, packageupload, libraryfilealias = self.makeJobElements()
         transaction.commit()
         process_rosetta_translations(packageupload, libraryfilealias)
 
         jobs = list(PackageTranslationsUploadJob.iterReady())
         self.assertEqual(1, len(jobs))
 
-        self.assertEqual(latest_spph.sourcepackagerelease,
-                         jobs[0].sourcepackagerelease)
+        self.assertEqual(spr, jobs[0].sourcepackagerelease)
         self.assertEqual(libraryfilealias, jobs[0].libraryfilealias)
 
     def test_correct_job_is_created_from_copy(self):
-        spph, pu, lfa = self.makeJobElementsFromCopyJob()
+        spr, packageupload, libraryfilealias = (
+            self.makeJobElementsFromCopyJob())
         transaction.commit()
-        self.assertEqual(pu.status, PackageUploadStatus.NEW)
-        pu.setAccepted()
-
-        job = getUtility(IPackageCopyJobSource).wrap(pu.package_copy_job)
-        self.assertEqual(job.status, JobStatus.SUSPENDED)
-        job.run()
-
         process_rosetta_translations(packageupload, libraryfilealias)
 
         jobs = list(PackageTranslationsUploadJob.iterReady())
         self.assertEqual(1, len(jobs))
 
-        self.assertEqual(latest_spph.sourcepackagerelease,
-                         jobs[0].sourcepackagerelease)
+        self.assertEqual(spr, jobs[0].sourcepackagerelease)
         self.assertEqual(libraryfilealias, jobs[0].libraryfilealias)
