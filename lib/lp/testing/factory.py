@@ -3440,7 +3440,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeCopyJobPackageUpload(self, distroseries=None,
                                  sourcepackagename=None, source_archive=None,
-                                 target_pocket=None, requester=None):
+                                 target_pocket=None, requester=None,
+                                 include_binaries=False):
         """Make a `PackageUpload` with a `PackageCopyJob` attached."""
         if distroseries is None:
             distroseries = self.makeDistroSeries()
@@ -3453,7 +3454,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             source_archive=spph.archive,
             target_pocket=target_pocket,
             target_archive=distroseries.main_archive,
-            target_distroseries=distroseries, requester=requester)
+            target_distroseries=distroseries, requester=requester,
+            include_binaries=include_binaries)
         job.addSourceOverride(SourceOverride(
             spr.sourcepackagename, spr.component, spr.section))
         try:
@@ -4217,7 +4219,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makePlainPackageCopyJob(
         self, package_name=None, package_version=None, source_archive=None,
         target_archive=None, target_distroseries=None, target_pocket=None,
-        requester=None):
+        requester=None, include_binaries=False):
         """Create a new `PlainPackageCopyJob`."""
         if package_name is None and package_version is None:
             package_name = self.makeSourcePackageName().name
@@ -4235,7 +4237,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(IPlainPackageCopyJobSource).create(
             package_name, source_archive, target_archive,
             target_distroseries, target_pocket,
-            package_version=package_version, requester=requester)
+            package_version=package_version, requester=requester,
+            include_binaries=include_binaries)
 
     def makeAccessPolicy(self, pillar=None,
                          type=InformationType.PROPRIETARY,
