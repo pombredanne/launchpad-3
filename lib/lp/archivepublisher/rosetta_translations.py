@@ -38,6 +38,7 @@ class RosettaTranslationsUpload(CustomUpload):
     custom_type = "rosetta-translations"
 
     def process(self, packageupload, libraryfilealias):
+        self.tarfile_path = libraryfilealias.filename
         # Ignore translations not with main distribution purposes.
         if packageupload.archive.purpose not in MAIN_ARCHIVE_PURPOSES:
             if self.logger is not None:
@@ -77,14 +78,18 @@ class RosettaTranslationsUpload(CustomUpload):
             packageupload, sourcepackagerelease, libraryfilealias, blamee)
 
     @staticmethod
-    def parseFilename(tarfile_name):
+    def parsePath(tarfile_name):
+        """Parses the lfa filename."""
         bits = tarfile_name.split("_")
-        if len(bits) != 3:
-            raise ValueError("%s is not NAME_VERSION_ARCH" % tarfile_name)
+        if len(bits) != 4:
+            raise ValueError(
+                "%s is not NAME_VERSION_ARCH_translations.tar.gz" %
+                tarfile_name)
         return tuple(bits)
 
-    def setAttributes(self, tarfile_name):
-        self.package_name, _, _ = self.parseFilename(tarfile_name)
+    def setComponents(self, tarfile_name):
+        """Sets the package name parsed from the lfa filename."""
+        self.package_name = self.parsePath(tarfile_name)[0]
 
     def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
         pass
@@ -99,7 +104,7 @@ class RosettaTranslationsUpload(CustomUpload):
     def _findSourcePublication(self, packageupload):
         """Find destination source publishing record of the packageupload."""
         if packageupload.package_name is None:
-            self.setAttributes(libraryfilealias.filename)
+            self.setComponents(self.tarfile_path)
         return packageupload.archive.getPublishedSources(
             name=packageupload.package_name, exact_match=True,
             distroseries=packageupload.distroseries,
