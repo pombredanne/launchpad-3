@@ -43,7 +43,7 @@ product's blueprints.
 
     >>> browser.getLink('Link to a blueprint').click()
 
-    >>> browser.getControl('Blueprint').value = ['canvas']
+    >>> browser.getControl('Blueprint').value = ['2']
     >>> browser.getControl('Continue').click()
     >>> printSpecBranchLinks(browser)
     Support &lt;canvas&gt; Objects
