@@ -16,6 +16,8 @@ from zope.interface import (
     implements,
     )
 
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.services.config import config
 from lp.services.database.interfaces import IStore
 from lp.services.job.interfaces.job import JobType
@@ -84,15 +86,19 @@ class PackageTranslationsUploadJobDerived(BaseRunnableJob):
         self.context = self
 
     @classmethod
-    def create(cls, packageupload, sourcepackagerelease, libraryfilealias,
+    def create(cls, distroseries, libraryfilealias,
+               has_sharing_translation_templates, sourcepackagename,
                requester):
         job = Job(
             base_job_type=JobType.UPLOAD_PACKAGE_TRANSLATIONS,
             requester=requester,
             base_json_data=simplejson.dumps(
-                {'packageupload': packageupload.id,
-                 'sourcepackagerelease': sourcepackagerelease.id,
-                 'libraryfilealias': libraryfilealias.id}))
+                {'distroseries': distroseries.id,
+                 'libraryfilealias': libraryfilealias.id,
+                 'has_sharing_translation_templates':
+                    has_sharing_translation_templates,
+                 'sourcepackagename': sourcepackagename.id,
+                 }))
         derived = cls(job)
         derived.celeryRunOnCommit()
         return derived
@@ -116,33 +122,38 @@ class PackageTranslationsUploadJob(PackageTranslationsUploadJobDerived):
     classProvides(IPackageTranslationsUploadJobSource)
 
     @property
-    def packageupload_id(self):
-        return simplejson.loads(self.base_json_data)['packageupload']
-
-    @property
-    def sourcepackagerelease_id(self):
-        return simplejson.loads(self.base_json_data)['sourcepackagerelease']
+    def distroseries_id(self):
+        return simplejson.loads(self.base_json_data)['distroseries']
 
     @property
     def libraryfilealias_id(self):
         return simplejson.loads(self.base_json_data)['libraryfilealias']
 
     @property
-    def packageupload(self):
-        return PackageUpload.get(self.packageupload_id)
+    def sourcepackagename_id(self):
+        return simplejson.loads(self.base_json_data)['sourcepackagename']
 
     @property
-    def sourcepackagerelease(self):
-        return SourcePackageRelease.get(self.sourcepackagerelease_id)
+    def distroseries(self):
+        return getUtility(IDistroSeriesSet).get(self.distroseries_id)
 
     @property
     def libraryfilealias(self):
         return getUtility(ILibraryFileAliasSet)[self.libraryfilealias_id]
 
+    @property
+    def sourcepackagename(self):
+        return getUtility(ISourcePackageNameSet).get(self.sourcepackagename_id)
+
+    @property
+    def has_sharing_translation_templates(self):
+        return simplejson.loads(
+            self.base_json_data)['has_sharing_translation_templates']
+
     def attachTranslationFiles(self, by_maintainer):
-        pu = self.packageupload
-        spr = self.sourcepackagerelease
-        only_templates = spr.sourcepackage.has_sharing_translation_templates
+        distroseries = self.distroseries
+        sourcepackagename = self.sourcepackagename
+        only_templates = self.has_sharing_translation_templates
         importer = self.requester
         tarball = self.libraryfilealias.read()
 
@@ -150,8 +161,8 @@ class PackageTranslationsUploadJob(PackageTranslationsUploadJobDerived):
 
         queue.addOrUpdateEntriesFromTarball(
             tarball, by_maintainer, importer,
-            sourcepackagename=spr.sourcepackagename,
-            distroseries=pu.distroseries,
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries,
             filename_filter=_filter_ubuntu_translation_file,
             only_templates=only_templates)
 

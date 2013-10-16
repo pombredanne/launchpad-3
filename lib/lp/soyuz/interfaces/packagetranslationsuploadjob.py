@@ -17,7 +17,8 @@ from lp.services.job.interfaces.job import (
 class IPackageTranslationsUploadJobSource(IJobSource):
     """An interface for acquiring IPackageTranslationsUploadJob."""
 
-    def create(packageupload, sourcepackagerelease, libraryfilealias,
+    def create(distroseries, libraryfilealias,
+               has_sharing_translations_template, sourcepackagename,
                requester):
         """Create new translations upload job for a source package release."""
 
