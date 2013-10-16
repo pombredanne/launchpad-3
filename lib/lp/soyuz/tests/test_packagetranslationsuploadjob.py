@@ -39,26 +39,29 @@ from lp.translations.interfaces.translationimportqueue import (
 
 class LocalTestHelper(TestCaseWithFactory):
 
-    def makeJob(self, archive=None, distroseries=None, tar_content=None):
+    def makeJob(self, has_sharing_translation_templates=False,
+                sourcepackagerelease=None, tar_content=None):
         requester = self.factory.makePerson()
-        distroseries = self.factory.makeDistroSeries()
-        sourcepackagename = self.factory.getOrMakeSourcePackageName("foobar")
-        if archive is None:
-            archive = distroseries.main_archive
+        if sourcepackagerelease is None:
+            distroseries = self.factory.makeDistroSeries()
+            sourcepackagename = self.factory.getOrMakeSourcePackageName(
+                "foobar")
+            self.factory.makeSourcePackage(sourcepackagename=sourcepackagename,
+                distroseries=distroseries, publish=True)
+            spr = self.factory.makeSourcePackageRelease(
+                sourcepackagename=sourcepackagename,
+                distroseries=distroseries)
+        else:
+            spr = sourcepackagerelease
+            distroseries = spr.upload_distroseries
+            sourcepackagename = spr.sourcepackagename
+
         libraryfilealias = self.makeTranslationsLFA(tar_content)
-        self.factory.makeSourcePackage(sourcepackagename=sourcepackagename,
-            distroseries=distroseries, publish=True)
-        spr = self.factory.makeSourcePackageRelease(
-            sourcepackagename=sourcepackagename,
-            distroseries=distroseries)
-        upload = removeSecurityProxy(self.factory.makePackageUpload(
-            distroseries=distroseries, archive=archive))
 
-        upload.addSource(spr)
-
-        return (upload,
-                getUtility(IPackageTranslationsUploadJobSource).create(
-                    upload, spr, libraryfilealias, requester))
+        return (spr, getUtility(IPackageTranslationsUploadJobSource).create(
+                    distroseries, libraryfilealias,
+                    has_sharing_translation_templates, sourcepackagename,
+                    requester))
 
     def makeTranslationsLFA(self, tar_content=None):
         """Create an LibraryFileAlias containing dummy translation data."""
@@ -100,19 +103,18 @@ class TestPackageTranslationsUploadJob(LocalTestHelper):
         self.assertEquals([], job.getErrorRecipients())
 
     def test_run(self):
-        archive = self.factory.makeArchive()
-        packageupload, job = self.makeJob(archive=archive)
+        _, job = self.makeJob()
         method = FakeMethod()
         removeSecurityProxy(job).attachTranslationFiles = method
         transaction.commit()
-        job.run()
+        _, job.run()
         self.assertEqual(method.call_count, 1)
 
     def test_smoke(self):
         tar_content = {
             'source/po/foobar.pot': 'FooBar template',
         }
-        packageupload, job = self.makeJob(tar_content=tar_content)
+        spr, job = self.makeJob(tar_content=tar_content)
         transaction.commit()
         out, err, exit_code = run_script(
             "LP_DEBUG_SQL=1 cronscripts/process-job-source.py -vv %s" % (
@@ -124,7 +126,7 @@ class TestPackageTranslationsUploadJob(LocalTestHelper):
         self.assertEqual(0, exit_code)
         translation_import_queue = getUtility(ITranslationImportQueue)
         entries_in_queue = translation_import_queue.getAllEntries(
-            target=packageupload.sourcepackagerelease.sourcepackage)
+            target=spr.sourcepackage)
 
         self.assertEqual(1, entries_in_queue.count())
         # Check if the file in tar_content is queued:
@@ -141,12 +143,12 @@ class TestViaCelery(LocalTestHelper):
             'jobs.celery.enabled_classes': 'PackageTranslationsUploadJob',
         }))
 
-        packageupload, job = self.makeJob()
+        spr, job = self.makeJob()
         with block_on_job(self):
             transaction.commit()
         translation_import_queue = getUtility(ITranslationImportQueue)
         entries_in_queue = translation_import_queue.getAllEntries(
-            target=packageupload.sourcepackagerelease.sourcepackage).count()
+            target=spr.sourcepackage).count()
         self.assertEqual(2, entries_in_queue)
 
 
@@ -159,10 +161,11 @@ class TestAttachTranslationFiles(LocalTestHelper):
         # If translation sharing is disabled, attachTranslationFiles() creates
         # a job in the translation import queue.
 
-        packageupload, job = self.makeJob()
-        spr = packageupload.sourcepackagerelease
+        spr, job = self.makeJob()
 
-        self.assertFalse(spr.sourcepackage.has_sharing_translation_templates)
+        self.assertFalse(
+            removeSecurityProxy(job).has_sharing_translation_templates)
+
         transaction.commit()
         with dbuser('upload_package_translations_job'):
             job.attachTranslationFiles(True)
@@ -174,15 +177,27 @@ class TestAttachTranslationFiles(LocalTestHelper):
     def test_attachTranslationFiles__translation_sharing(self):
         # If translation sharing is enabled, attachTranslationFiles() only
         # attaches templates.
-        packageupload, job = self.makeJob()
-        sourcepackage = packageupload.sourcepackagerelease.sourcepackage
+
+        distroseries = self.factory.makeDistroSeries()
+        sourcepackagename = self.factory.getOrMakeSourcePackageName(
+            "foobar")
+        self.factory.makeSourcePackage(sourcepackagename=sourcepackagename,
+            distroseries=distroseries, publish=True)
+        spr = self.factory.makeSourcePackageRelease(
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries)
+
         productseries = self.factory.makeProductSeries()
+        sourcepackage = spr.sourcepackage
 
         self.factory.makePOTemplate(productseries=productseries)
         with person_logged_in(sourcepackage.distroseries.owner):
             sourcepackage.setPackaging(
                 productseries, sourcepackage.distroseries.owner)
-        self.assertTrue(sourcepackage.has_sharing_translation_templates)
+
+        spr, job = self.makeJob(has_sharing_translation_templates=True,
+                sourcepackagerelease=spr)
+
         transaction.commit()
         with dbuser('upload_package_translations_job'):
             job.attachTranslationFiles(True)
