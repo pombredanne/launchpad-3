@@ -1587,7 +1587,7 @@ class BugTaskSet:
         values = [
             (bug, owner, key['product'], key['productseries'],
              key['distribution'], key['distroseries'],
-             key['sourcepackagename'], status, importance, assignee,
+             key['sourcepackagename'], BugTaskStatus.NEW, importance, assignee,
              milestone)
             for key in target_keys]
         tasks = create(
@@ -1600,6 +1600,8 @@ class BugTaskSet:
         del get_property_cache(bug).bugtasks
         for bugtask in tasks:
             bugtask.updateTargetNameCache()
+            # Transistion to the correct status.
+            bugtask.transitionToStatus(status, bugtask.owner)
             if bugtask.conjoined_slave:
                 bugtask._syncFromConjoinedSlave()
         removeSecurityProxy(bug)._reconcileAccess()

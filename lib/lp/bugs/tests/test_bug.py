@@ -245,12 +245,13 @@ class TestBugCreation(TestCaseWithFactory):
 
     def test_CreateBugParams_accepts_status(self):
         # The status of the initial bug task can be set using
-        # CreateBugParams
+        # CreateBugParams.
         owner = self.factory.makePerson()
         target = self.factory.makeProduct(owner=owner)
         bug = self.createBug(
             owner=owner, target=target, status=BugTaskStatus.TRIAGED)
         self.assertEqual(BugTaskStatus.TRIAGED, bug.default_bugtask.status)
+        self.assertIsNot(None, bug.default_bugtask.date_triaged)
 
     def test_CreateBugParams_rejects_not_allowed_importance_changes(self):
         # createBug() will reject any importance value passed by users
