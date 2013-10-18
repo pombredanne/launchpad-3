@@ -225,11 +225,14 @@ class IPublishingView(Interface):
 class IPublishingEdit(Interface):
     """Base interface for writeable Publishing classes."""
 
-    def requestDeletion(removed_by, removal_comment=None):
+    def requestDeletion(removed_by, removal_comment=None,
+                        immutable_check=True):
         """Delete this publication.
 
         :param removed_by: `IPerson` responsible for the removal.
         :param removal_comment: optional text describing the removal reason.
+        :param immutable_check: Check if deletion will modify a non-current
+            series.
         """
 
     @call_with(removed_by=REQUEST_USER)
