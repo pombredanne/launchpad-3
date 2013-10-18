@@ -887,6 +887,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def requestDeletion(self, removed_by, removal_comment=None,
                         immutable_check=True):
         """See `IPublishing`."""
+        # Fail if operation would modify an immutable suite (eg. the
+        # RELEASE pocket of a CURRENT series).
         if (immutable_check and
             not self.archive.canModifySuite(self.distroseries, self.pocket)):
             raise DeletionError(
