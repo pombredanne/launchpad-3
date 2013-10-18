@@ -45,7 +45,8 @@ def dominate_imported_source_packages(txn, logger, distro_name, series_name,
         # many Published publications as live versions, there is no
         # domination to do.  We skip these as an optimization.  Without
         # it, dominating a single Debian series takes hours.
-        # Set immutable_check to False, so we can change SUPPORTED series.
+        # Relax the immutability check, since Debian release suites don't
+        # become immutable on release as Launchpad normally expects.
         if pub_count != len(live_versions):
             logger.debug("Dominating %s.", package_name)
             dominator.dominateSourceVersions(

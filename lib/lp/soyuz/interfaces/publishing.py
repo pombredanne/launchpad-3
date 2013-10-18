@@ -231,8 +231,8 @@ class IPublishingEdit(Interface):
 
         :param removed_by: `IPerson` responsible for the removal.
         :param removal_comment: optional text describing the removal reason.
-        :param immutable_check: Check if deletion will modify a non-current
-            series.
+        :param immutable_check: Fail if operation would modify an immutable
+            suite (eg. the RELEASE pocket of a CURRENT series).
         """
 
     @call_with(removed_by=REQUEST_USER)
