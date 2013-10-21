@@ -36,6 +36,7 @@ from storm.expr import (
     LeftJoin,
     Or,
     Select,
+    SQL,
     )
 from storm.info import ClassAlias
 from storm.store import (
@@ -622,35 +623,23 @@ class POTemplate(SQLBase, RosettaStats):
         POTMsgSet, look through sharing templates as well.
         """
         clauses = [
-            'TranslationTemplateItem.potmsgset = POTMsgSet.id',
+            TranslationTemplateItem.potmsgsetID == POTMsgSet.id,
+            POTMsgSet.msgid_singular == msgid_singular,
+            POTMsgSet.msgid_plural == msgid_plural,
+            POTMsgSet.context == context,
             ]
-        clause_tables = ['TranslationTemplateItem']
         if sharing_templates:
             clauses.append(
-                'TranslationTemplateItem.potemplate in %s' % sqlvalues(
-                    self._sharing_ids))
+                TranslationTemplateItem.potemplateID.is_in(self._sharing_ids))
         else:
-            clauses.append(
-                'TranslationTemplateItem.potemplate = %s' % sqlvalues(self))
+            clauses.append(TranslationTemplateItem.potemplateID == self.id)
 
-        clauses.append(
-            'POTMsgSet.msgid_singular %s' % self._null_quote(msgid_singular))
-        clauses.append(
-            'POTMsgSet.msgid_plural %s' % self._null_quote(msgid_plural))
-        clauses.append(
-            'POTMsgSet.context %s' % self._null_quote(context))
-
-        result = POTMsgSet.select(
-            ' AND '.join(clauses),
-            clauseTables=clause_tables,
-            # If there are multiple messages, make the one from the
-            # current POTemplate be returned first.
-            orderBy=['(TranslationTemplateItem.POTemplate<>%s)' % (
-                sqlvalues(self))])[:2]
-        if not result.is_empty():
-            return result[0]
-        else:
-            return None
+        # If there are multiple messages, make the one from the
+        # current POTemplate be returned first.
+        order_by = SQL(
+            'TranslationTemplateItem.potemplate <> ?', params=(self.id,))
+        return IStore(POTMsgSet).find(
+            POTMsgSet, *clauses).order_by(order_by).first()
 
     def hasMessageID(self, msgid_singular, msgid_plural, context=None):
         """See `IPOTemplate`."""
