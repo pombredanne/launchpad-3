@@ -363,31 +363,29 @@ class POTemplate(SQLBase, RosettaStats):
     def relatives_by_source(self):
         """See `IPOTemplate`."""
         if self.productseries is not None:
-            return POTemplate.select(
-                'id <> %s AND productseries = %s AND iscurrent' % sqlvalues(
-                    self, self.productseries), orderBy=['name'])
+            return Store.of(self).find(
+                POTemplate,
+                POTemplate.id != self.id,
+                POTemplate.productseriesID == self.productseries.id,
+                POTemplate.iscurrent).order_by(POTemplate.name)
         elif (self.distroseries is not None and
               self.sourcepackagename is not None):
-            return POTemplate.select('''
-                id <> %s AND
-                distroseries = %s AND
-                sourcepackagename = %s AND
-                iscurrent
-                ''' % sqlvalues(
-                    self, self.distroseries, self.sourcepackagename),
-                orderBy=['name'])
+            return Store.of(self).find(
+                POTemplate,
+                POTemplate.id != self.id,
+                POTemplate.distroseriesID == self.distroseries.id,
+                POTemplate.sourcepackagenameID == self.sourcepackagename.id,
+                POTemplate.iscurrent).order_by(POTemplate.name)
         else:
             raise AssertionError('Unknown POTemplate source.')
 
     @property
     def language_count(self):
-        return Language.select('''
-            POFile.language = Language.id AND
-            POFile.currentcount + POFile.rosettacount > 0 AND
-            POFile.potemplate = %s
-            ''' % sqlvalues(self.id),
-            clauseTables=['POFile'],
-            distinct=True).count()
+        return IStore(Language).find(
+            Language,
+            POFile.language == Language.id,
+            POFile.currentcount + POFile.rosettacount > 0,
+            POFile.potemplateID == self.id).config(distinct=True).count()
 
     @cachedproperty
     def sourcepackage(self):

@@ -83,7 +83,7 @@
 
     <div class="yui-u">
       <div class="portlet"
-           tal:condition="context/relatives_by_source">
+           tal:condition="view/related_templates_by_source">
         <h3>Related templates</h3>
         <p id="potemplate-relatives">
           <span>Other templates here:</span>
