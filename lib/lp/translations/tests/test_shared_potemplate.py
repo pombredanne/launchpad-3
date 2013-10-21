@@ -242,13 +242,13 @@ class TestSharingPOTemplatesByRegex(TestCaseWithFactory):
         # Baseline test.
         self.assertContentEqual(
             ['foo', 'foo-bar', 'foo-two'],
-            self._makeAndFind(['foo', 'foo-bar', 'foo-two'], 'foo.*'))
+            self._makeAndFind(['foo', 'foo-bar', 'foo-two'], u'foo.*'))
 
     def test_getSharingPOTemplatesByRegex_not_all(self):
         # A template may not match.
         self.assertContentEqual(
             ['foo-bar', 'foo-two'],
-            self._makeAndFind(['foo', 'foo-bar', 'foo-two'], 'foo-.*'))
+            self._makeAndFind(['foo', 'foo-bar', 'foo-two'], u'foo-.*'))
 
     def test_getSharingPOTemplatesByRegex_all(self):
         # Not passing a pattern returns all templates.
@@ -260,19 +260,19 @@ class TestSharingPOTemplatesByRegex(TestCaseWithFactory):
         # A not matching pattern returns no templates.
         self.assertContentEqual(
             [],
-            self._makeAndFind(['foo', 'foo-bar', 'foo-two'], "doo.+dle"))
+            self._makeAndFind(['foo', 'foo-bar', 'foo-two'], u"doo.+dle"))
 
     def test_getSharingPOTemplatesByRegex_robustness_single_quotes(self):
         # Single quotes do not confuse the regex match.
         self.assertContentEqual(
             [],
-            self._makeAndFind(['foo', 'foo-bar', 'foo-two'], "'"))
+            self._makeAndFind(['foo', 'foo-bar', 'foo-two'], u"'"))
 
     def test_getSharingPOTemplatesByRegex_robustness_double_quotes(self):
         # Double quotes do not confuse the regex match.
         self.assertContentEqual(
             [],
-            self._makeAndFind(['foo', 'foo-bar', 'foo-two'], '"'))
+            self._makeAndFind(['foo', 'foo-bar', 'foo-two'], u'"'))
 
     def test_getSharingPOTemplatesByRegex_robustness_backslash(self):
         # A backslash at the end could escape enclosing quotes without
@@ -282,7 +282,7 @@ class TestSharingPOTemplatesByRegex(TestCaseWithFactory):
         product = self.factory.makeProduct()
         subset = getUtility(IPOTemplateSet).getSharingSubset(product=product)
         self.assertRaises(
-            DataError, list, subset.getSharingPOTemplatesByRegex("foo.*\\"))
+            DataError, list, subset.getSharingPOTemplatesByRegex(u"foo.*\\"))
 
 
 class TestMessageSharingProductPackage(TestCaseWithFactory):
