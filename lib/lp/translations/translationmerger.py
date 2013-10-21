@@ -274,7 +274,7 @@ class MessageSharingMerge(LaunchpadScript):
                 product=product, distribution=distribution,
                 sourcepackagename=sourcepackagename)
         equivalence_classes = subset.groupEquivalentPOTemplates(
-                                                self.options.template_names)
+            self.options.template_names.decode('utf-8'))
 
         class_count = len(equivalence_classes)
         log.info("Merging %d template equivalence classes." % class_count)

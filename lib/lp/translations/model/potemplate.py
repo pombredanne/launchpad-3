@@ -68,9 +68,7 @@ from lp.services.database.interfaces import (
     )
 from lp.services.database.sqlbase import (
     flush_database_updates,
-    quote,
     SQLBase,
-    sqlvalues,
     )
 from lp.services.helpers import shortlist
 from lp.services.mail.helpers import get_email_template
@@ -508,11 +506,11 @@ class POTemplate(SQLBase, RosettaStats):
 
     def languages(self):
         """See `IPOTemplate`."""
-        return Language.select("POFile.language = Language.id AND "
-                               "Language.code <> 'en' AND "
-                               "POFile.potemplate = %d" % self.id,
-                               clauseTables=['POFile', 'Language'],
-                               distinct=True)
+        return Store.of(self).find(
+            Language,
+            POFile.languageID == Language.id,
+            Language.code != u'en',
+            POFile.potemplateID == self.id).config(distinct=True)
 
     def getPOFileByPath(self, path):
         """See `IPOTemplate`."""
@@ -1258,13 +1256,6 @@ class POTemplateSet:
         for potemplate in res:
             yield potemplate
 
-    def getByIDs(self, ids):
-        """See `IPOTemplateSet`."""
-        values = ",".join(sqlvalues(*ids))
-        return POTemplate.select("POTemplate.id in (%s)" % values,
-            prejoins=["productseries", "distroseries", "sourcepackagename"],
-            orderBy=["POTemplate.id"])
-
     def getAllByName(self, name):
         """See `IPOTemplateSet`."""
         return POTemplate.selectBy(name=name, orderBy=['name', 'id'])
@@ -1384,13 +1375,14 @@ class POTemplateSet:
                     Product.id = ProductSeries.product
                 WHERE
                     POTemplate.iscurrent AND (
-                        Distribution.translations_usage IN %(usage)s OR
-                        Product.translations_usage IN %(usage)s)
+                        Distribution.translations_usage IN (?, ?) OR
+                        Product.translations_usage IN (?, ?))
                 ORDER BY POTemplate.id
             )
-            """ % {
-                'usage': sqlvalues(
-                    ServiceUsage.LAUNCHPAD, ServiceUsage.EXTERNAL)}
+            """,
+            params=(
+                ServiceUsage.LAUNCHPAD.value, ServiceUsage.EXTERNAL.value,
+                ServiceUsage.LAUNCHPAD.value, ServiceUsage.EXTERNAL.value)
         ).rowcount
 
 
@@ -1533,8 +1525,8 @@ class POTemplateSharingSubset(object):
         if name_pattern is None:
             templatename_clause = True
         else:
-            templatename_clause = (
-                "potemplate.name ~ %s" % sqlvalues(name_pattern))
+            templatename_clause = SQL(
+                "POTemplate.name ~ ?", params=(name_pattern,))
 
         return self._queryPOTemplates(templatename_clause)
 
