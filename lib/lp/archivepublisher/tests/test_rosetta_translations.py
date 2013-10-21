@@ -13,6 +13,7 @@ from zope.component import getUtility
 
 from lp.archivepublisher.rosetta_translations import (
     process_rosetta_translations,
+    RosettaTranslationsUpload,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
@@ -49,7 +50,7 @@ class TestRosettaTranslations(TestCaseWithFactory):
                                                  filename=filename)
 
     def makeAndPublishSourcePackage(self, sourcepackagename, distroseries,
-            archive=None):
+                                    archive=None):
         self.factory.makeSourcePackage(
             sourcepackagename=sourcepackagename,
             distroseries=distroseries)
@@ -62,12 +63,13 @@ class TestRosettaTranslations(TestCaseWithFactory):
             pocket=PackagePublishingPocket.RELEASE)
         return spph
 
-    def makeJobElements(self):
+    def makeJobElements(self, sourcepackagename=None):
         distroseries = self.factory.makeDistroSeries()
-        sourcepackagename = "foo"
+        if sourcepackagename is None:
+            sourcepackagename = "foo"
         sourcepackage_version = "3.8.2-1ubuntu1"
         filename = "%s_%s_i386_translations.tar.gz" % (sourcepackagename,
-            sourcepackage_version)
+                                                       sourcepackage_version)
 
         spph = self.makeAndPublishSourcePackage(
             sourcepackagename=sourcepackagename, distroseries=distroseries)
@@ -85,8 +87,8 @@ class TestRosettaTranslations(TestCaseWithFactory):
         das = self.factory.makeDistroArchSeries()
         distroseries = das.distroseries
         distroseries.nominatedarchindep = das
-        getUtility(ISourcePackageFormatSelectionSet).add(distroseries,
-            SourcePackageFormat.FORMAT_1_0)
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            distroseries, SourcePackageFormat.FORMAT_1_0)
 
         bpb = self.factory.makeBinaryPackageBuild(
             distroarchseries=distroseries.nominatedarchindep,
@@ -142,6 +144,55 @@ class TestRosettaTranslations(TestCaseWithFactory):
 
         return spr, upload, libraryfilealias
 
+    def test_parsePath(self):
+        filename = "foobar_3.8.2-1ubuntu1_i386_translations.tar.gz"
+        parsed_path = RosettaTranslationsUpload.parsePath(filename)
+        self.assertEqual(len(parsed_path), 4)
+        self.assertEqual(parsed_path[0], "foobar")
+
+    def test_malformed_filename_raises_parsePath_error(self):
+        filename = "this_is_clearly_wrong_translations.tar.gz"
+        self.assertRaises(ValueError, RosettaTranslationsUpload.parsePath,
+                          filename)
+
+    def test_setComponents(self):
+        rosetta_upload = RosettaTranslationsUpload()
+        self.assertIsNone(rosetta_upload.package_name)
+
+        filename1 = "foobar_3.8.2-1ubuntu1_i386_translations.tar.gz"
+        rosetta_upload.setComponents(filename1)
+        self.assertEqual(rosetta_upload.package_name, "foobar")
+
+        filename2 = "barfoo_3.8.2-1ubuntu1_i386_translations.tar.gz"
+        rosetta_upload.setComponents(filename2)
+        self.assertEqual(rosetta_upload.package_name, "barfoo")
+
+        filename3 = "barfoo_malformed_3.8.2-1ubuntu1_i386_translations.tar.gz"
+        self.assertRaises(ValueError, rosetta_upload.setComponents, filename3)
+
+    def test_package_name_from_packageupload(self):
+        spr, pu, lfa = self.makeJobElements(sourcepackagename="foobar")
+        self.assertEqual(pu.package_name, "foobar")
+
+        rosetta_upload = RosettaTranslationsUpload()
+        self.assertIsNone(rosetta_upload.package_name)
+
+        rosetta_upload.process(pu, lfa)
+        self.assertEqual(rosetta_upload.package_name, pu.package_name)
+
+    def test_package_name_from_lfa_filename(self):
+        filename = "hello_3.8.2-1ubuntu1_i386_translations.tar.gz"
+        lfa = self.makeTranslationsLFA(filename=filename)
+
+        rosetta_upload = RosettaTranslationsUpload()
+        self.assertIsNone(rosetta_upload.package_name)
+
+        nameless_pu = self.factory.makePackageUpload()
+        self.assertIsNone(nameless_pu.package_name)
+
+        rosetta_upload.process(nameless_pu, lfa)
+        self.assertEqual(rosetta_upload.package_name, "hello")
+
     def test_basic_from_copy(self):
         spr, pu, lfa = self.makeJobElementsFromCopyJob()
         transaction.commit()
@@ -160,8 +211,9 @@ class TestRosettaTranslations(TestCaseWithFactory):
         jobs = list(PackageTranslationsUploadJob.iterReady())
         self.assertEqual(1, len(jobs))
 
-        self.assertEqual(spr, jobs[0].sourcepackagerelease)
+        self.assertEqual(spr.upload_distroseries, jobs[0].distroseries)
         self.assertEqual(libraryfilealias, jobs[0].libraryfilealias)
+        self.assertEqual(spr.sourcepackagename, jobs[0].sourcepackagename)
 
     def test_correct_job_is_created_from_copy(self):
         spr, packageupload, libraryfilealias = (
@@ -172,5 +224,6 @@ class TestRosettaTranslations(TestCaseWithFactory):
         jobs = list(PackageTranslationsUploadJob.iterReady())
         self.assertEqual(1, len(jobs))
 
-        self.assertEqual(spr, jobs[0].sourcepackagerelease)
+        self.assertEqual(spr.upload_distroseries, jobs[0].distroseries)
         self.assertEqual(libraryfilealias, jobs[0].libraryfilealias)
+        self.assertEqual(spr.sourcepackagename, jobs[0].sourcepackagename)
