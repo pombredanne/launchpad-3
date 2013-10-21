@@ -56,6 +56,7 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.bulk import load_related
 from lp.services.database.collection import Collection
 from lp.services.database.constants import DEFAULT
 from lp.services.database.datetimecol import UtcDateTimeCol
@@ -420,70 +421,62 @@ class POTemplate(SQLBase, RosettaStats):
         """Return SQL clauses for finding POTMsgSets which belong
         to this POTemplate."""
         clauses = [
-            'TranslationTemplateItem.potemplate = %s' % sqlvalues(self),
-            'TranslationTemplateItem.potmsgset = POTMsgSet.id',
+            TranslationTemplateItem.potemplateID == self.id,
+            TranslationTemplateItem.potmsgsetID == POTMsgSet.id,
             ]
         return clauses
 
     def getPOTMsgSetByMsgIDText(self, singular_text, plural_text=None,
                                 only_current=False, context=None):
         """See `IPOTemplate`."""
-        clauses = self._getPOTMsgSetSelectionClauses()
-        if only_current:
-            clauses.append('TranslationTemplateItem.sequence > 0')
-        if context is not None:
-            clauses.append('context = %s' % sqlvalues(context))
-        else:
-            clauses.append('context IS NULL')
-
         # Find a message ID with the given text.
         try:
             singular_msgid = POMsgID.byMsgid(singular_text)
         except SQLObjectNotFound:
             return None
-        clauses.append('msgid_singular = %s' % sqlvalues(singular_msgid))
 
         # Find a message ID for the plural string.
+        plural_msgid = None
         if plural_text is not None:
             try:
                 plural_msgid = POMsgID.byMsgid(plural_text)
-                clauses.append('msgid_plural = %s' % sqlvalues(plural_msgid))
             except SQLObjectNotFound:
                 return None
-        else:
-            # You have to be explicit now.
-            clauses.append('msgid_plural IS NULL')
 
         # Find a message set with the given message ID.
-        return POTMsgSet.selectOne(' AND '.join(clauses),
-                                   clauseTables=['TranslationTemplateItem'])
+        clauses = self._getPOTMsgSetSelectionClauses()
+        clauses.extend([
+            POTMsgSet.msgid_singular == singular_msgid,
+            POTMsgSet.msgid_plural == plural_msgid,
+            POTMsgSet.context == context,
+            ])
+        if only_current:
+            clauses.append(TranslationTemplateItem.sequence > 0)
+        return Store.of(self).find(POTMsgSet, *clauses).one()
 
     def getPOTMsgSetBySequence(self, sequence):
         """See `IPOTemplate`."""
         assert sequence > 0, ('%r is out of range')
-
         clauses = self._getPOTMsgSetSelectionClauses()
-        clauses.append(
-            'TranslationTemplateItem.sequence = %s' % sqlvalues(sequence))
-
-        return POTMsgSet.selectOne(' AND '.join(clauses),
-                                   clauseTables=['TranslationTemplateItem'])
+        clauses.append(TranslationTemplateItem.sequence == sequence)
+        return Store.of(self).find(POTMsgSet, *clauses).one()
 
     def getPOTMsgSets(self, current=True, prefetch=True):
         """See `IPOTemplate`."""
         clauses = self._getPOTMsgSetSelectionClauses()
-
         if current:
             # Only count the number of POTMsgSet that are current.
-            clauses.append('TranslationTemplateItem.sequence > 0')
+            clauses.append(TranslationTemplateItem.sequence > 0)
+        result = Store.of(self).find(
+            POTMsgSet, *clauses).order_by(TranslationTemplateItem.sequence)
 
-        query = POTMsgSet.select(" AND ".join(clauses),
-                                 clauseTables=['TranslationTemplateItem'],
-                                 orderBy=['TranslationTemplateItem.sequence'])
         if prefetch:
-            query = query.prejoin(['msgid_singular', 'msgid_plural'])
-
-        return query
+            def prefetch_msgids(rows):
+                load_related(
+                    POMsgID, rows, ['msgid_singularID', 'msgid_pluralID'])
+            return DecoratedResultSet(result, pre_iter_hook=prefetch_msgids)
+        else:
+            return result
 
     def getTranslationCredits(self):
         """See `IPOTemplate`."""
@@ -510,10 +503,8 @@ class POTemplate(SQLBase, RosettaStats):
     def getPOTMsgSetByID(self, id):
         """See `IPOTemplate`."""
         clauses = self._getPOTMsgSetSelectionClauses()
-        clauses.append('POTMsgSet.id = %s' % sqlvalues(id))
-
-        return POTMsgSet.selectOne(' AND '.join(clauses),
-                                   clauseTables=['TranslationTemplateItem'])
+        clauses.append(POTMsgSet.id == id)
+        return Store.of(self).find(POTMsgSet, *clauses).one()
 
     def languages(self):
         """See `IPOTemplate`."""
@@ -537,15 +528,10 @@ class POTemplate(SQLBase, RosettaStats):
             # the usual get() followed by "is None"; the dict may contain None
             # values to indicate we looked for a POFile and found none.
             return self._cached_pofiles_by_language[language_code]
-
-        self._cached_pofiles_by_language[language_code] = POFile.selectOne("""
-            POFile.potemplate = %d AND
-            POFile.language = Language.id AND
-            Language.code = %s
-            """ % (self.id,
-                   quote(language_code)),
-            clauseTables=['Language'])
-
+        self._cached_pofiles_by_language[language_code] = Store.of(self).find(
+            POFile,
+            POFile.potemplateID == self.id, POFile.languageID == Language.id,
+            Language.code == language_code).one()
         return self._cached_pofiles_by_language[language_code]
 
     def getOtherSidePOTemplate(self):
@@ -607,12 +593,6 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             pofile.unreviewedCount()
 
-    def _null_quote(self, value):
-        if value is None:
-            return " IS NULL "
-        else:
-            return " = %s" % sqlvalues(value)
-
     def _getPOTMsgSetBy(self, msgid_singular, msgid_plural=None, context=None,
                         sharing_templates=False):
         """Look for a POTMsgSet by msgid_singular, msgid_plural, context.
@@ -647,11 +627,8 @@ class POTemplate(SQLBase, RosettaStats):
     def hasPluralMessage(self):
         """See `IPOTemplate`."""
         clauses = self._getPOTMsgSetSelectionClauses()
-        clauses.append(
-            'POTMsgSet.msgid_plural IS NOT NULL')
-        return bool(POTMsgSet.select(
-                ' AND '.join(clauses),
-                clauseTables=['TranslationTemplateItem']))
+        clauses.append(POTMsgSet.msgid_plural != None)
+        return not Store.of(self).find(POTMsgSet, *clauses).is_empty()
 
     def export(self):
         """See `IPOTemplate`."""
@@ -1388,7 +1365,7 @@ class POTemplateSet:
         """See `IPOTemplateSet`."""
         rowcount = IMasterStore(POTemplate).execute(
             "DELETE FROM SuggestivePOTemplate "
-            "WHERE potemplate = %s" % sqlvalues(potemplate)).rowcount
+            "WHERE potemplate = ?", params=(potemplate.id,)).rowcount
         return rowcount == 1
 
     def populateSuggestivePOTemplatesCache(self):
