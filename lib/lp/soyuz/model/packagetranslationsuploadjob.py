@@ -32,9 +32,6 @@ from lp.soyuz.interfaces.packagetranslationsuploadjob import (
     IPackageTranslationsUploadJob,
     IPackageTranslationsUploadJobSource,
     )
-from lp.soyuz.model.queue import PackageUpload
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
@@ -86,8 +83,7 @@ class PackageTranslationsUploadJobDerived(BaseRunnableJob):
         self.context = self
 
     @classmethod
-    def create(cls, distroseries, libraryfilealias,
-               has_sharing_translation_templates, sourcepackagename,
+    def create(cls, distroseries, libraryfilealias, sourcepackagename,
                requester):
         job = Job(
             base_job_type=JobType.UPLOAD_PACKAGE_TRANSLATIONS,
@@ -95,8 +91,6 @@ class PackageTranslationsUploadJobDerived(BaseRunnableJob):
             base_json_data=simplejson.dumps(
                 {'distroseries': distroseries.id,
                  'libraryfilealias': libraryfilealias.id,
-                 'has_sharing_translation_templates':
-                    has_sharing_translation_templates,
                  'sourcepackagename': sourcepackagename.id,
                  }))
         derived = cls(job)
@@ -145,15 +139,11 @@ class PackageTranslationsUploadJob(PackageTranslationsUploadJobDerived):
     def sourcepackagename(self):
         return getUtility(ISourcePackageNameSet).get(self.sourcepackagename_id)
 
-    @property
-    def has_sharing_translation_templates(self):
-        return simplejson.loads(
-            self.base_json_data)['has_sharing_translation_templates']
-
     def attachTranslationFiles(self, by_maintainer):
         distroseries = self.distroseries
         sourcepackagename = self.sourcepackagename
-        only_templates = self.has_sharing_translation_templates
+        only_templates = distroseries.getSourcePackage(
+            sourcepackagename).has_sharing_translation_templates
         importer = self.requester
         tarball = self.libraryfilealias.read()
 

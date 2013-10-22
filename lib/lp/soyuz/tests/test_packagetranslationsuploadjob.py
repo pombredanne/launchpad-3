@@ -39,15 +39,15 @@ from lp.translations.interfaces.translationimportqueue import (
 
 class LocalTestHelper(TestCaseWithFactory):
 
-    def makeJob(self, has_sharing_translation_templates=False,
-                sourcepackagerelease=None, tar_content=None):
+    def makeJob(self, sourcepackagerelease=None, tar_content=None):
         requester = self.factory.makePerson()
         if sourcepackagerelease is None:
             distroseries = self.factory.makeDistroSeries()
             sourcepackagename = self.factory.getOrMakeSourcePackageName(
                 "foobar")
             self.factory.makeSourcePackage(sourcepackagename=sourcepackagename,
-                distroseries=distroseries, publish=True)
+                                           distroseries=distroseries,
+                                           publish=True)
             spr = self.factory.makeSourcePackageRelease(
                 sourcepackagename=sourcepackagename,
                 distroseries=distroseries)
@@ -59,9 +59,7 @@ class LocalTestHelper(TestCaseWithFactory):
         libraryfilealias = self.makeTranslationsLFA(tar_content)
 
         return (spr, getUtility(IPackageTranslationsUploadJobSource).create(
-                    distroseries, libraryfilealias,
-                    has_sharing_translation_templates, sourcepackagename,
-                    requester))
+            distroseries, libraryfilealias, sourcepackagename, requester))
 
     def makeTranslationsLFA(self, tar_content=None):
         """Create an LibraryFileAlias containing dummy translation data."""
@@ -163,8 +161,7 @@ class TestAttachTranslationFiles(LocalTestHelper):
 
         spr, job = self.makeJob()
 
-        self.assertFalse(
-            removeSecurityProxy(job).has_sharing_translation_templates)
+        self.assertFalse(spr.sourcepackage.has_sharing_translation_templates)
 
         transaction.commit()
         with dbuser('upload_package_translations_job'):
@@ -182,7 +179,7 @@ class TestAttachTranslationFiles(LocalTestHelper):
         sourcepackagename = self.factory.getOrMakeSourcePackageName(
             "foobar")
         self.factory.makeSourcePackage(sourcepackagename=sourcepackagename,
-            distroseries=distroseries, publish=True)
+                                       distroseries=distroseries, publish=True)
         spr = self.factory.makeSourcePackageRelease(
             sourcepackagename=sourcepackagename,
             distroseries=distroseries)
@@ -195,8 +192,9 @@ class TestAttachTranslationFiles(LocalTestHelper):
             sourcepackage.setPackaging(
                 productseries, sourcepackage.distroseries.owner)
 
-        spr, job = self.makeJob(has_sharing_translation_templates=True,
-                sourcepackagerelease=spr)
+        spr, job = self.makeJob(sourcepackagerelease=spr)
+
+        self.assertTrue(spr.sourcepackage.has_sharing_translation_templates)
 
         transaction.commit()
         with dbuser('upload_package_translations_job'):
