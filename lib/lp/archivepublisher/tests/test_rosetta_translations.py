@@ -193,6 +193,13 @@ class TestRosettaTranslations(TestCaseWithFactory):
         rosetta_upload.process(nameless_pu, lfa)
         self.assertEqual(rosetta_upload.package_name, "hello")
 
+    def test_package_name_None_raises_error(self):
+        rosetta_upload = RosettaTranslationsUpload()
+        self.assertIsNone(rosetta_upload.package_name)
+
+        self.assertRaises(AssertionError,
+                          rosetta_upload._findSourcePublication, None)
+
     def test_basic_from_copy(self):
         spr, pu, lfa = self.makeJobElementsFromCopyJob()
         transaction.commit()

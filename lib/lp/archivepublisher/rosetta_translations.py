@@ -37,12 +37,13 @@ class RosettaTranslationsUpload(CustomUpload):
     """
     custom_type = "rosetta-translations"
 
-    def process(self, packageupload, libraryfilealias):
+    package_name = None
 
+    def process(self, packageupload, libraryfilealias):
         if packageupload.package_name is None:
             self.setComponents(libraryfilealias.filename)
         else:
-            self._package_name = packageupload.package_name
+            self.package_name = packageupload.package_name
 
         # Ignore translations not with main distribution purposes.
         if packageupload.archive.purpose not in MAIN_ARCHIVE_PURPOSES:
@@ -60,7 +61,6 @@ class RosettaTranslationsUpload(CustomUpload):
         latest_publication = self._findSourcePublication(packageupload)
         component_name = latest_publication.component.name
         spr = latest_publication.sourcepackagerelease
-        only_templates = spr.sourcepackage.has_sharing_translation_templates
 
         valid_pockets = (
             PackagePublishingPocket.RELEASE, PackagePublishingPocket.SECURITY,
@@ -81,14 +81,7 @@ class RosettaTranslationsUpload(CustomUpload):
         if blamee is None:
             blamee = getUtility(ILaunchpadCelebrities).rosetta_experts
         getUtility(IPackageTranslationsUploadJobSource).create(
-            distroseries, libraryfilealias, only_templates,
-            spr.sourcepackagename, blamee)
-
-    @property
-    def package_name(self):
-        if hasattr(self, "_package_name"):
-            return self._package_name
-        return None
+            distroseries, libraryfilealias, spr.sourcepackagename, blamee)
 
     @staticmethod
     def parsePath(tarfile_name):
@@ -102,7 +95,7 @@ class RosettaTranslationsUpload(CustomUpload):
 
     def setComponents(self, tarfile_name):
         """Sets the package name parsed from the lfa filename."""
-        self._package_name = self.parsePath(tarfile_name)[0]
+        self.package_name = self.parsePath(tarfile_name)[0]
 
     def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
         pass
@@ -116,6 +109,10 @@ class RosettaTranslationsUpload(CustomUpload):
 
     def _findSourcePublication(self, packageupload):
         """Find destination source publishing record of the packageupload."""
+        if self.package_name is None:
+            # If package_name is None, the query below will return the latest
+            # publication for any package. We don't want that.
+            raise AssertionError("package_name should not be None.")
         return packageupload.archive.getPublishedSources(
             name=self.package_name, exact_match=True,
             distroseries=packageupload.distroseries,
