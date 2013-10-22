@@ -250,8 +250,9 @@ class TestBugCreation(TestCaseWithFactory):
         target = self.factory.makeProduct(owner=owner)
         bug = self.createBug(
             owner=owner, target=target, status=BugTaskStatus.TRIAGED)
-        self.assertEqual(BugTaskStatus.TRIAGED, bug.default_bugtask.status)
-        self.assertIsNot(None, bug.default_bugtask.date_triaged)
+        bugtask = bug.default_bugtask
+        self.assertEqual(BugTaskStatus.TRIAGED, bugtask.status)
+        self.assertEqual(bugtask.date_triaged, bugtask.datecreated)
 
     def test_CreateBugParams_rejects_not_allowed_importance_changes(self):
         # createBug() will reject any importance value passed by users
