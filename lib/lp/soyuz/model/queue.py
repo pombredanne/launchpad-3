@@ -46,7 +46,6 @@ from lp.app.errors import NotFoundError
 # that it needs a bit of redesigning here around the publication stuff.
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUploadError
-from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -90,7 +89,6 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.interfaces.archive import (
     ComponentNotFound,
-    MAIN_ARCHIVE_PURPOSES,
     PriorityNotFound,
     SectionNotFound,
     )
@@ -98,9 +96,6 @@ from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJobSource
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
-from lp.soyuz.interfaces.packagetranslationsuploadjob import (
-    IPackageTranslationsUploadJobSource,
-    )
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     name_priority_map,
@@ -915,6 +910,8 @@ class PackageUpload(SQLBase):
             # It may be a recipe upload.
         elif spr and spr.source_package_recipe_build:
             return spr.source_package_recipe_build.requester
+        elif self.contains_copy:
+            return self.package_copy_job.requester
         else:
             return None
 
@@ -1423,38 +1420,11 @@ class PackageUploadCustom(SQLBase):
 
     def publishRosettaTranslations(self, logger=None):
         """See `IPackageUploadCustom`."""
-        sourcepackagerelease = self.packageupload.sourcepackagerelease
+        from lp.archivepublisher.rosetta_translations import (
+            process_rosetta_translations)
 
-        # Ignore translations not with main distribution purposes.
-        if self.packageupload.archive.purpose not in MAIN_ARCHIVE_PURPOSES:
-            debug(logger,
-                  "Skipping translations since its purpose is not "
-                  "in MAIN_ARCHIVE_PURPOSES.")
-            return
-
-        # If the distroseries is 11.10 (oneiric) or later, the valid names
-        # check is not required.  (See bug 788685.)
-        distroseries = sourcepackagerelease.upload_distroseries
-        do_names_check = Version(distroseries.version) < Version('11.10')
-
-        valid_pockets = (
-            PackagePublishingPocket.RELEASE, PackagePublishingPocket.SECURITY,
-            PackagePublishingPocket.UPDATES, PackagePublishingPocket.PROPOSED)
-        valid_components = ('main', 'restricted')
-        if (self.packageupload.pocket not in valid_pockets or
-            (do_names_check and
-            sourcepackagerelease.component.name not in valid_components)):
-            # XXX: CarlosPerelloMarin 2006-02-16 bug=31665:
-            # This should be implemented using a more general rule to accept
-            # different policies depending on the distribution.
-            # Ubuntu's MOTU told us that they are not able to handle
-            # translations like we do in main. We are going to import only
-            # packages in main.
-            return
-
-        blamee = self.packageupload.findPersonToNotify()
-        getUtility(IPackageTranslationsUploadJobSource).create(
-            sourcepackagerelease, self.libraryfilealias, blamee)
+        process_rosetta_translations(self.packageupload,
+                                     self.libraryfilealias, logger=logger)
 
     def publishStaticTranslations(self, logger=None):
         """See `IPackageUploadCustom`."""
