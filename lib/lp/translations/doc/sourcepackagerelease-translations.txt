@@ -66,11 +66,13 @@ for each import.
 
     >>> importer = factory.makePerson(name="maria")
 
-    >>> job1 = getUtility(IPackageTranslationsUploadJobSource).create(upload,
-    ...     spr_test, public_translation, importer)
+    >>> job1 = getUtility(IPackageTranslationsUploadJobSource).create(
+    ...     upload.distroseries, public_translation,
+    ...     spr_test.sourcepackagename, importer)
 
-    >>> job2 = getUtility(IPackageTranslationsUploadJobSource).create(upload,
-    ...     spr_test, restricted_translation, importer)
+    >>> job2 = getUtility(IPackageTranslationsUploadJobSource).create(
+    ...     upload.distroseries, restricted_translation,
+    ...     spr_test.sourcepackagename, importer)
 
     >>> job1.run()
     >>> job2.run()
