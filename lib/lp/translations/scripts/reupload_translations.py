@@ -93,7 +93,7 @@ class ReuploadPackageTranslations(LaunchpadScript):
     def _processPackage(self, package):
         """Get translations for `package` re-uploaded."""
         # Avoid circular imports.
-        from lp.soyuz.model.sourcepackagerelease import (
+        from lp.soyuz.model.packagetranslationsuploadjob import (
             _filter_ubuntu_translation_file)
 
         self.logger.info("Processing %s" % package.displayname)

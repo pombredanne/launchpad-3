@@ -4,7 +4,6 @@
 __metaclass__ = type
 __all__ = [
     'SourcePackageRelease',
-    '_filter_ubuntu_translation_file',
     ]
 
 
@@ -38,7 +37,6 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp.app.errors import NotFoundError
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archiveuploader.utils import determine_source_file_type
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import validate_public_person
@@ -77,41 +75,6 @@ from lp.soyuz.model.queue import (
     PackageUpload,
     PackageUploadSource,
     )
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue,
-    )
-
-
-def _filter_ubuntu_translation_file(filename):
-    """Filter for translation filenames in tarball.
-
-    Grooms filenames of translation files in tarball, returning None or
-    empty string for files that should be ignored.
-
-    Passed to `ITranslationImportQueue.addOrUpdateEntriesFromTarball`.
-    """
-    source_prefix = 'source/'
-    if not filename.startswith(source_prefix):
-        return None
-
-    filename = filename[len(source_prefix):]
-
-    blocked_prefixes = [
-        # Translations for use by debconf--not used in Ubuntu.
-        'debian/po/',
-        # Debian Installer translations--treated separately.
-        'd-i/',
-        # Documentation--not translatable in Launchpad.
-        'help/',
-        'man/po/',
-        'man/po4a/',
-        ]
-
-    for prefix in blocked_prefixes:
-        if filename.startswith(prefix):
-            return None
-
-    return filename
 
 
 class SourcePackageRelease(SQLBase):
@@ -541,24 +504,6 @@ class SourcePackageRelease(SQLBase):
             change += line
 
         return change
-
-    def attachTranslationFiles(self, tarball_alias, by_maintainer,
-                               importer=None):
-        """See ISourcePackageRelease."""
-        tarball = tarball_alias.read()
-
-        if importer is None:
-            importer = getUtility(ILaunchpadCelebrities).rosetta_experts
-
-        queue = getUtility(ITranslationImportQueue)
-
-        only_templates = self.sourcepackage.has_sharing_translation_templates
-        queue.addOrUpdateEntriesFromTarball(
-            tarball, by_maintainer, importer,
-            sourcepackagename=self.sourcepackagename,
-            distroseries=self.upload_distroseries,
-            filename_filter=_filter_ubuntu_translation_file,
-            only_templates=only_templates)
 
     def getDiffTo(self, to_sourcepackagerelease):
         """See ISourcePackageRelease."""

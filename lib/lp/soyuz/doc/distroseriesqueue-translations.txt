@@ -158,6 +158,14 @@ An upload to the RELEASE pocket will add items to the import queue:
     >>> from lp.soyuz.enums import PackageUploadStatus
     >>> queue_item = dapper.getPackageUploads(
     ...     status=PackageUploadStatus.NEW)[0]
+
+The source package needs to be published because rosetta translations
+publisher will query for the latest publication to know the destination
+component.
+
+    >>> spph = factory.makeSourcePackagePublishingHistory(
+    ...     sourcepackagerelease=queue_item.sourcepackagerelease,
+    ...     distroseries=queue_item.distroseries, pocket=queue_item.pocket)
     >>> queue_item.customfiles[0].publish()
 
 When publish() runs, it creates a PackageTranslationsUploadJob that will
@@ -169,22 +177,24 @@ able to verify the imported files.
 
     >>> runPendingPackageTranslationsUploadJob()
 
-As we can see from the translation import queue content.
+As we can see from the translation import queue content. The importer isn't
+the sourcepackagerelease creator, but the person pointed by
+findPersonToNotify, or rosetta-admins.
 
     >>> for entry in translation_import_queue.getAllEntries(target=ubuntu):
     ...     print '%s/%s by %s: %s' % (
     ...         entry.distroseries.name, entry.sourcepackagename.name,
     ...         entry.importer.name, entry.path)
-    dapper/pmount by ubuntu-team: po/es_ES.po
-    dapper/pmount by ubuntu-team: po/ca.po
-    dapper/pmount by ubuntu-team: po/de.po
-    dapper/pmount by ubuntu-team: po/cs.po
-    dapper/pmount by ubuntu-team: po/es.po
-    dapper/pmount by ubuntu-team: po/fr.po
-    dapper/pmount by ubuntu-team: po/hr.po
-    dapper/pmount by ubuntu-team: po/nb.po
-    dapper/pmount by ubuntu-team: po/pmount.pot
-    dapper/pmount by ubuntu-team: po/it_IT.po
+    dapper/pmount by rosetta-admins: po/es_ES.po
+    dapper/pmount by rosetta-admins: po/ca.po
+    dapper/pmount by rosetta-admins: po/de.po
+    dapper/pmount by rosetta-admins: po/cs.po
+    dapper/pmount by rosetta-admins: po/es.po
+    dapper/pmount by rosetta-admins: po/fr.po
+    dapper/pmount by rosetta-admins: po/hr.po
+    dapper/pmount by rosetta-admins: po/nb.po
+    dapper/pmount by rosetta-admins: po/pmount.pot
+    dapper/pmount by rosetta-admins: po/it_IT.po
 
 # Abort the transaction so we can check the same upload in a different
 # pocket.
@@ -201,6 +211,10 @@ An upload to the BACKPORTS pocket will not add items to the import queue:
     >>> dapper = distro_series_set.queryByName(ubuntu, 'dapper')
     >>> queue_item = dapper.getPackageUploads(PackageUploadStatus.NEW)[0]
     >>> queue_item.pocket = PackagePublishingPocket.BACKPORTS
+    >>> spph = factory.makeSourcePackagePublishingHistory(
+    ...     sourcepackagerelease=queue_item.sourcepackagerelease,
+    ...     distroseries=queue_item.distroseries, pocket=queue_item.pocket)
+
     >>> queue_item.customfiles[0].publish()
 
 # And this time, we see that there are no entries imported in the queue.
@@ -217,6 +231,10 @@ But an upload to the UPDATE pocket will add items to the import queue:
     >>> dapper = distro_series_set.queryByName(ubuntu, 'dapper')
     >>> queue_item = dapper.getPackageUploads(PackageUploadStatus.NEW)[0]
     >>> queue_item.pocket = PackagePublishingPocket.UPDATES
+    >>> spph = factory.makeSourcePackagePublishingHistory(
+    ...     sourcepackagerelease=queue_item.sourcepackagerelease,
+    ...     distroseries=queue_item.distroseries, pocket=queue_item.pocket)
+
     >>> queue_item.customfiles[0].publish()
     >>> runPendingPackageTranslationsUploadJob()
 
@@ -226,16 +244,16 @@ As we can see from the translation import queue content.
     ...     print '%s/%s by %s: %s' % (
     ...         entry.distroseries.name, entry.sourcepackagename.name,
     ...         entry.importer.name, entry.path)
-    dapper/pmount by ubuntu-team: po/es_ES.po
-    dapper/pmount by ubuntu-team: po/ca.po
-    dapper/pmount by ubuntu-team: po/de.po
-    dapper/pmount by ubuntu-team: po/cs.po
-    dapper/pmount by ubuntu-team: po/es.po
-    dapper/pmount by ubuntu-team: po/fr.po
-    dapper/pmount by ubuntu-team: po/hr.po
-    dapper/pmount by ubuntu-team: po/nb.po
-    dapper/pmount by ubuntu-team: po/pmount.pot
-    dapper/pmount by ubuntu-team: po/it_IT.po
+    dapper/pmount by rosetta-admins: po/es_ES.po
+    dapper/pmount by rosetta-admins: po/ca.po
+    dapper/pmount by rosetta-admins: po/de.po
+    dapper/pmount by rosetta-admins: po/cs.po
+    dapper/pmount by rosetta-admins: po/es.po
+    dapper/pmount by rosetta-admins: po/fr.po
+    dapper/pmount by rosetta-admins: po/hr.po
+    dapper/pmount by rosetta-admins: po/nb.po
+    dapper/pmount by rosetta-admins: po/pmount.pot
+    dapper/pmount by rosetta-admins: po/it_IT.po
 
 # Let's abort the transaction so we can check the same upload in a different
 # pocket.
@@ -260,16 +278,16 @@ As we can see from the translation import queue content.
     ...     print '%s/%s by %s: %s' % (
     ...         entry.distroseries.name, entry.sourcepackagename.name,
     ...         entry.importer.name, entry.path)
-    dapper/pmount by ubuntu-team: po/es_ES.po
-    dapper/pmount by ubuntu-team: po/ca.po
-    dapper/pmount by ubuntu-team: po/de.po
-    dapper/pmount by ubuntu-team: po/cs.po
-    dapper/pmount by ubuntu-team: po/es.po
-    dapper/pmount by ubuntu-team: po/fr.po
-    dapper/pmount by ubuntu-team: po/hr.po
-    dapper/pmount by ubuntu-team: po/nb.po
-    dapper/pmount by ubuntu-team: po/pmount.pot
-    dapper/pmount by ubuntu-team: po/it_IT.po
+    dapper/pmount by rosetta-admins: po/es_ES.po
+    dapper/pmount by rosetta-admins: po/ca.po
+    dapper/pmount by rosetta-admins: po/de.po
+    dapper/pmount by rosetta-admins: po/cs.po
+    dapper/pmount by rosetta-admins: po/es.po
+    dapper/pmount by rosetta-admins: po/fr.po
+    dapper/pmount by rosetta-admins: po/hr.po
+    dapper/pmount by rosetta-admins: po/nb.po
+    dapper/pmount by rosetta-admins: po/pmount.pot
+    dapper/pmount by rosetta-admins: po/it_IT.po
 
 # Let's abort the transaction so we can check the same upload in a different
 # component.
