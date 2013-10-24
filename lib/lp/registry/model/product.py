@@ -105,12 +105,12 @@ from lp.bugs.interfaces.bugtarget import (
     BUG_POLICY_DEFAULT_TYPES,
     )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
-from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     OfficialBugTagTargetMixin,
     )
 from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.bugtaskflat import BugTaskFlat
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
@@ -482,12 +482,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         store = Store.of(self)
         series_ids = [series.id for series in self.series]
         non_proprietary_bugs = store.find(
-            Bug,
-            Not(Bug.information_type.is_in(PROPRIETARY_INFORMATION_TYPES)),
-            BugTask.bug == Bug.id,
+            BugTaskFlat,
+            Not(BugTaskFlat.information_type.is_in(
+                PROPRIETARY_INFORMATION_TYPES)),
             Or(
-                BugTask.product == self.id,
-                BugTask.productseriesID.is_in(series_ids)))
+                BugTaskFlat.product == self.id,
+                BugTaskFlat.productseries_id.is_in(series_ids)))
         if not non_proprietary_bugs.is_empty():
             yield CannotChangeInformationType(
                 'Some bugs are neither proprietary nor embargoed.')
