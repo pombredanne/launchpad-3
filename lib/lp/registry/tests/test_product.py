@@ -539,7 +539,7 @@ class TestProduct(TestCaseWithFactory):
                         raise errors[0]
 
     def test_checkInformationType_questions(self):
-        # Proprietary products must not have questions
+        # Proprietary products must not have questions.
         product = self.factory.makeProduct()
         for info_type in PROPRIETARY_INFORMATION_TYPES:
             with person_logged_in(product.owner):
@@ -549,12 +549,12 @@ class TestProduct(TestCaseWithFactory):
         for info_type in PROPRIETARY_INFORMATION_TYPES:
             with person_logged_in(product.owner):
                 error, = list(product.checkInformationType(info_type))
-            with ExpectedException(CannotChangeInformationType,
-                                   'This project has questions.'):
+            with ExpectedException(
+                CannotChangeInformationType, 'This project has questions.'):
                 raise error
 
     def test_checkInformationType_translations(self):
-        # Proprietary products must not have translations
+        # Proprietary products must not have translations.
         productseries = self.factory.makeProductSeries()
         product = productseries.product
         for info_type in PROPRIETARY_INFORMATION_TYPES:
@@ -565,12 +565,12 @@ class TestProduct(TestCaseWithFactory):
         for info_type in PROPRIETARY_INFORMATION_TYPES:
             with person_logged_in(product.owner):
                 error, = list(product.checkInformationType(info_type))
-            with ExpectedException(CannotChangeInformationType,
-                                   'This project has translations.'):
+            with ExpectedException(
+                CannotChangeInformationType, 'This project has translations.'):
                 raise error
 
     def test_checkInformationType_queued_translations(self):
-        # Proprietary products must not have queued translations
+        # Proprietary products must not have queued translations.
         productseries = self.factory.makeProductSeries()
         product = productseries.product
         entry = self.factory.makeTranslationImportQueueEntry(
@@ -578,8 +578,9 @@ class TestProduct(TestCaseWithFactory):
         for info_type in PROPRIETARY_INFORMATION_TYPES:
             with person_logged_in(product.owner):
                 error, = list(product.checkInformationType(info_type))
-            with ExpectedException(CannotChangeInformationType,
-                                   'This project has queued translations.'):
+            with ExpectedException(
+                CannotChangeInformationType,
+                'This project has queued translations.'):
                 raise error
         removeSecurityProxy(entry).delete(entry.id)
         with person_logged_in(product.owner):
@@ -598,7 +599,8 @@ class TestProduct(TestCaseWithFactory):
             productseries.translations_autoimport_mode = mode
             for info_type in PROPRIETARY_INFORMATION_TYPES:
                 error, = list(product.checkInformationType(info_type))
-                with ExpectedException(CannotChangeInformationType,
+                with ExpectedException(
+                    CannotChangeInformationType,
                     'Some product series have translation imports enabled.'):
                     raise error
         productseries.translations_autoimport_mode = (
@@ -606,6 +608,21 @@ class TestProduct(TestCaseWithFactory):
         for info_type in PROPRIETARY_INFORMATION_TYPES:
             self.assertContentEqual(
                 [], product.checkInformationType(info_type))
+
+    def test_checkInformationType_series_only_bugs(self):
+        # A product with bugtasks that are only targetted to a series can
+        # not change information type.
+        series = self.factory.makeProductSeries()
+        bug = self.factory.makeBug(target=series.product)
+        with person_logged_in(series.owner):
+            bug.addTask(series.owner, series)
+            bug.default_bugtask.delete()
+            for info_type in PROPRIETARY_INFORMATION_TYPES:
+                error, = list(series.product.checkInformationType(info_type))
+                with ExpectedException(
+                    CannotChangeInformationType,
+                    'Some bugs are neither proprietary nor embargoed.'):
+                    raise error
 
     def test_private_forbids_translations(self):
         owner = self.factory.makePerson()
@@ -671,7 +688,7 @@ class TestProduct(TestCaseWithFactory):
             [ap.type for ap in aps])
 
     def test_product_information_type_default(self):
-        # Default information_type is PUBLIC
+        # Default information_type is PUBLIC.
         owner = self.factory.makePerson()
         product = getUtility(IProductSet).createProduct(
             owner, 'fnord', 'Fnord', 'Fnord', 'test 1', 'test 2')
@@ -769,7 +786,7 @@ class TestProduct(TestCaseWithFactory):
                         product.answers_usage = usage
 
     def test_answers_for_public(self):
-        # Enabling answers is permitted while information_type is PUBLIC
+        # Enabling answers is permitted while information_type is PUBLIC.
         product = self.factory.makeProduct(
             information_type=InformationType.PUBLIC)
         self.assertEqual(ServiceUsage.UNKNOWN, product.answers_usage)

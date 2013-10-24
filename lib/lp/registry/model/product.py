@@ -478,20 +478,23 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if not public_specs.is_empty():
             # Unlike bugs and branches, specifications cannot be USERDATA or a
             # security type.
-            yield CannotChangeInformationType(
-                'Some blueprints are public.')
+            yield CannotChangeInformationType('Some blueprints are public.')
         store = Store.of(self)
-        non_proprietary_bugs = store.find(Bug,
+        series_ids = [series.id for series in self.series]
+        non_proprietary_bugs = store.find(
+            Bug,
             Not(Bug.information_type.is_in(PROPRIETARY_INFORMATION_TYPES)),
-            BugTask.bug == Bug.id, BugTask.product == self.id)
+            BugTask.bug == Bug.id,
+            Or(
+                BugTask.product == self.id,
+                BugTask.productseriesID.is_in(series_ids)))
         if not non_proprietary_bugs.is_empty():
             yield CannotChangeInformationType(
                 'Some bugs are neither proprietary nor embargoed.')
         # Default returns all public branches.
         non_proprietary_branches = store.find(
             Branch, Branch.product == self.id,
-            Not(Branch.information_type.is_in(PROPRIETARY_INFORMATION_TYPES))
-        )
+            Not(Branch.information_type.is_in(PROPRIETARY_INFORMATION_TYPES)))
         if not non_proprietary_branches.is_empty():
             yield CannotChangeInformationType(
                 'Some branches are neither proprietary nor embargoed.')
