@@ -3648,6 +3648,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                            scheduleddeletiondate=None,
                                            ancestor=None,
                                            creator=None,
+                                           spr_creator=None,
                                            **kwargs):
         """Make a `SourcePackagePublishingHistory`.
 
@@ -3698,7 +3699,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if sourcepackagerelease is None:
             sourcepackagerelease = self.makeSourcePackageRelease(
                 archive=archive, distroseries=distroseries,
-                date_uploaded=date_uploaded, **kwargs)
+                date_uploaded=date_uploaded, creator=spr_creator, **kwargs)
 
         admins = getUtility(ILaunchpadCelebrities).admin
         with person_logged_in(admins.teamowner):

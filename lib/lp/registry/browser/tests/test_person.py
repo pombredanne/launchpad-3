@@ -1055,7 +1055,7 @@ class TestPersonRelatedPackagesFailedBuild(TestCaseWithFactory):
         ppa = self.factory.makeArchive(owner=self.user)
         spph = self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename='foo', version='666',
-            creator=self.user, maintainer=self.user, archive=ppa)
+            spr_creator=self.user, maintainer=self.user, archive=ppa)
         das = self.factory.makeDistroArchSeries(
             distroseries=spph.distroseries, architecturetag='cyr128')
         self.build = self.factory.makeBinaryPackageBuild(
