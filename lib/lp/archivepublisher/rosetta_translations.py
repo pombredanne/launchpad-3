@@ -77,11 +77,9 @@ class RosettaTranslationsUpload(CustomUpload):
             # packages in main.
             return
 
-        blamee = packageupload.findPersonToNotify()
-        if blamee is None:
-            blamee = (packageupload.findPersonToNotify() or
-                      latest_publication.creator or
-                      getUtility(ILaunchpadCelebrities).rosetta_experts)
+        blamee = (packageupload.findPersonToNotify() or
+                  latest_publication.creator or
+                  getUtility(ILaunchpadCelebrities).rosetta_experts)
 
         getUtility(IPackageTranslationsUploadJobSource).create(
             distroseries, libraryfilealias, spr.sourcepackagename, blamee)
