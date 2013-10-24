@@ -159,13 +159,16 @@ An upload to the RELEASE pocket will add items to the import queue:
     >>> queue_item = dapper.getPackageUploads(
     ...     status=PackageUploadStatus.NEW)[0]
 
+    >>> spph_creator = factory.makePerson(name="john-doe")
+
 The source package needs to be published because rosetta translations
 publisher will query for the latest publication to know the destination
 component.
 
     >>> spph = factory.makeSourcePackagePublishingHistory(
     ...     sourcepackagerelease=queue_item.sourcepackagerelease,
-    ...     distroseries=queue_item.distroseries, pocket=queue_item.pocket)
+    ...     distroseries=queue_item.distroseries, pocket=queue_item.pocket,
+    ...     creator=spph_creator)
     >>> queue_item.customfiles[0].publish()
 
 When publish() runs, it creates a PackageTranslationsUploadJob that will
@@ -177,24 +180,25 @@ able to verify the imported files.
 
     >>> runPendingPackageTranslationsUploadJob()
 
-As we can see from the translation import queue content. The importer isn't
-the sourcepackagerelease creator, but the person pointed by
-findPersonToNotify, or rosetta-admins.
+As we can see from the translation import queue content, the importer is
+the person pointed by findPersonToNotify, or the latest spph creator,
+or rosetta-admins. In this case, as findPersonToNotify returns nothing,
+the spph creator is the requester.
 
     >>> for entry in translation_import_queue.getAllEntries(target=ubuntu):
     ...     print '%s/%s by %s: %s' % (
     ...         entry.distroseries.name, entry.sourcepackagename.name,
     ...         entry.importer.name, entry.path)
-    dapper/pmount by rosetta-admins: po/es_ES.po
-    dapper/pmount by rosetta-admins: po/ca.po
-    dapper/pmount by rosetta-admins: po/de.po
-    dapper/pmount by rosetta-admins: po/cs.po
-    dapper/pmount by rosetta-admins: po/es.po
-    dapper/pmount by rosetta-admins: po/fr.po
-    dapper/pmount by rosetta-admins: po/hr.po
-    dapper/pmount by rosetta-admins: po/nb.po
-    dapper/pmount by rosetta-admins: po/pmount.pot
-    dapper/pmount by rosetta-admins: po/it_IT.po
+    dapper/pmount by john-doe: po/es_ES.po
+    dapper/pmount by john-doe: po/ca.po
+    dapper/pmount by john-doe: po/de.po
+    dapper/pmount by john-doe: po/cs.po
+    dapper/pmount by john-doe: po/es.po
+    dapper/pmount by john-doe: po/fr.po
+    dapper/pmount by john-doe: po/hr.po
+    dapper/pmount by john-doe: po/nb.po
+    dapper/pmount by john-doe: po/pmount.pot
+    dapper/pmount by john-doe: po/it_IT.po
 
 # Abort the transaction so we can check the same upload in a different
 # pocket.
@@ -238,7 +242,8 @@ But an upload to the UPDATE pocket will add items to the import queue:
     >>> queue_item.customfiles[0].publish()
     >>> runPendingPackageTranslationsUploadJob()
 
-As we can see from the translation import queue content.
+As we can see from the translation import queue content, as the publication
+has no creator specified, it falls back to rosetta-admins as the requester.
 
     >>> for entry in translation_import_queue.getAllEntries(target=ubuntu):
     ...     print '%s/%s by %s: %s' % (
