@@ -245,6 +245,9 @@ But an upload to the UPDATE pocket will add items to the import queue:
 As we can see from the translation import queue content, as the publication
 has no creator specified, it falls back to rosetta-admins as the requester.
 
+    >>> print spph.creator
+    None
+
     >>> for entry in translation_import_queue.getAllEntries(target=ubuntu):
     ...     print '%s/%s by %s: %s' % (
     ...         entry.distroseries.name, entry.sourcepackagename.name,
