@@ -483,8 +483,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         series_ids = [series.id for series in self.series]
         non_proprietary_bugs = store.find(
             BugTaskFlat,
-            Not(BugTaskFlat.information_type.is_in(
-                PROPRIETARY_INFORMATION_TYPES)),
+            BugTaskFlat.information_type.is_in(FREE_INFORMATION_TYPES),
             Or(
                 BugTaskFlat.product == self.id,
                 BugTaskFlat.productseries_id.is_in(series_ids)))
