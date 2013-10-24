@@ -3647,6 +3647,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                            date_uploaded=UTC_NOW,
                                            scheduleddeletiondate=None,
                                            ancestor=None,
+                                           creator=None,
+                                           spr_creator=None,
                                            **kwargs):
         """Make a `SourcePackagePublishingHistory`.
 
@@ -3667,6 +3669,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param scheduleddeletiondate: The date where the publication
             is scheduled to be removed.
         :param ancestor: The publication ancestor parameter.
+        :param creator: The publication creator.
         :param **kwargs: All other parameters are passed through to the
             makeSourcePackageRelease call if needed.
         """
@@ -3696,14 +3699,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if sourcepackagerelease is None:
             sourcepackagerelease = self.makeSourcePackageRelease(
                 archive=archive, distroseries=distroseries,
-                date_uploaded=date_uploaded, **kwargs)
+                date_uploaded=date_uploaded, creator=spr_creator, **kwargs)
 
         admins = getUtility(ILaunchpadCelebrities).admin
         with person_logged_in(admins.teamowner):
             spph = getUtility(IPublishingSet).newSourcePublication(
                 archive, sourcepackagerelease, distroseries,
                 sourcepackagerelease.component, sourcepackagerelease.section,
-                pocket, ancestor)
+                pocket, ancestor=ancestor, creator=creator)
 
         naked_spph = removeSecurityProxy(spph)
         naked_spph.status = status
