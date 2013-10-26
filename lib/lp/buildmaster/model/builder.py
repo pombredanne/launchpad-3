@@ -130,9 +130,15 @@ class Builder(SQLBase):
         self.builderok = False
         self.failnotes = reason
 
-    def getBuildRecords(self, build_state=None, name=None, arch_tag=None,
-                        user=None, binary_only=True):
+    def getBuildRecords(self, build_state=None, name=None, pocket=None,
+                        arch_tag=None, user=None, binary_only=True):
         """See IHasBuildRecords."""
+        if pocket:
+            # Present in our signature to fulfil the IHasBuildRecords
+            # interface, but nonsensical here.
+            raise IncompatibleArguments(
+                "The 'pocket' parameter can only be used in the context of a "
+                "distribution.")
         if binary_only:
             return getUtility(IBinaryPackageBuildSet).getBuildsForBuilder(
                 self.id, build_state, name, arch_tag, user)
