@@ -4,6 +4,14 @@ An anonymous user visits the +builds page. He can see a summary of the
 builder state. In the sampledata, the builder 'bob' is building
 'mozilla-firefox'.
 
+    >>> from zope.component import getUtility
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
+
+    >>> login('foo.bar@canonical.com')
+    >>> bob_builder = getUtility(IBuilderSet)['bob']
+    >>> bob_builder.version = "100"
+    >>> logout()
+
     >>> anon_browser.mech_browser.set_handle_equiv(False)
     >>> anon_browser.open("http://launchpad.dev/builders")
     >>> anon_browser.getLink("bob").click()
@@ -51,6 +59,7 @@ location.
     Owner: Launchpad Buildd Admins
     Mode: This builder is in auto-mode and accepting jobs from the
     auto-build system.
+    Version: 100
 
 The builder status is now displayed as normal text and not as as a
 notification alert.
@@ -144,6 +153,7 @@ automatic (AUTO) mode.
     Owner: Launchpad Buildd Admins
     Mode: This builder is in auto-mode and accepting jobs from the
     auto-build system. Switch to manual-mode
+    Version: 100
 
 He clicks on the Toggle mode button to put the builder into manual mode.
 
@@ -158,6 +168,7 @@ He can see now, in the details portlet that the builder is in manual-mode.
     ...
     Mode: This builder is in manual-mode and not accepting jobs from the
     auto-build system. Switch to auto-mode
+    ...
 
 And a relevant notification is displayed after the mode toggle.
 
