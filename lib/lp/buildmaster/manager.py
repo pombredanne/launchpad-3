@@ -385,6 +385,13 @@ class SlaveScanner:
             self._cached_build_queue = vitals.build_queue
         return self._cached_build_cookie
 
+    def updateVersion(self, vitals, slave_status):
+        """Update the DB's record of the slave version if necessary."""
+        version = slave_status.get("builder_version")
+        if version != vitals.version:
+            self.builder_factory[self.builder_name].version = version
+            transaction.commit()
+
     @defer.inlineCallbacks
     def scan(self):
         """Probe the builder and update/dispatch/collect as appropriate.
@@ -407,6 +414,7 @@ class SlaveScanner:
         if not vitals.builderok:
             lost_reason = '%s is disabled' % vitals.name
         else:
+            self.updateVersion(vitals, slave_status)
             cancelled = yield self.checkCancellation(vitals, slave, interactor)
             if cancelled:
                 return
