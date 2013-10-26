@@ -22,7 +22,10 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCaseWithFactory,
+    verifyObject,
+    )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -34,10 +37,9 @@ class TestBuilder(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_providesInterface(self):
-        # Builder provides IBuilder
+    def test_implements_IBuilder(self):
         builder = self.factory.makeBuilder()
-        self.assertProvides(builder, IBuilder)
+        self.assertTrue(verifyObject(IBuilder, builder))
 
     def test_default_values(self):
         builder = self.factory.makeBuilder()
