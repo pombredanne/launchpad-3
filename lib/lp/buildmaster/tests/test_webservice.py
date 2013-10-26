@@ -73,7 +73,11 @@ class TestBuilderEntry(TestCaseWithFactory):
 
         logout()
         results = self.webservice.named_get(
-            api_url(builder), 'getBuildRecords',
+            api_url(builder), 'getBuildRecords', pocket='Release',
             api_version='devel').jsonBody()
         self.assertEqual(
             [build_title], [entry['title'] for entry in results['entries']])
+        results = self.webservice.named_get(
+            api_url(builder), 'getBuildRecords', pocket='Proposed',
+            api_version='devel').jsonBody()
+        self.assertEqual(0, len(results['entries']))

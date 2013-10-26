@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """BinaryPackageBuild interfaces."""
@@ -311,7 +311,7 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
         :param builder: An optional `IBuilder`.
         """
 
-    def getBuildsForBuilder(builder_id, status=None, name=None,
+    def getBuildsForBuilder(builder_id, status=None, name=None, pocket=None,
                             arch_tag=None):
         """Return build records touched by a builder.
 
@@ -320,6 +320,8 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
             will be returned.
         :param name: If name is provided, only builds which correspond to a
             matching sourcepackagename will be returned (SQL LIKE).
+        :param pocket: If pocket is provided, only builds for that pocket
+            will be returned.
         :param arch_tag: If arch_tag is provided, only builds for that
             architecture will be returned.
         :return: a `ResultSet` representing the requested builds.

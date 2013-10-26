@@ -133,20 +133,14 @@ class Builder(SQLBase):
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
                         arch_tag=None, user=None, binary_only=True):
         """See IHasBuildRecords."""
-        if pocket:
-            # Present in our signature to fulfil the IHasBuildRecords
-            # interface, but nonsensical here.
-            raise IncompatibleArguments(
-                "The 'pocket' parameter can only be used in the context of a "
-                "distribution.")
         if binary_only:
             return getUtility(IBinaryPackageBuildSet).getBuildsForBuilder(
-                self.id, build_state, name, arch_tag, user)
+                self.id, build_state, name, pocket, arch_tag, user)
         else:
-            if arch_tag is not None or name is not None:
+            if arch_tag is not None or name is not None or pocket is not None:
                 raise IncompatibleArguments(
-                    "The 'arch_tag' and 'name' parameters can be used only "
-                    "with binary_only=True.")
+                    "The 'arch_tag', 'name', and 'pocket' parameters can be "
+                    "used only with binary_only=True.")
             return getUtility(IBuildFarmJobSet).getBuildsForBuilder(
                 self, status=build_state, user=user)
 

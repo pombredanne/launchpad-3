@@ -17,6 +17,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import OAuthPermission
@@ -349,7 +350,8 @@ class BaseTestCaseWithThreeBuilds(TestCaseWithFactory):
             self.factory.makeBinaryPackageBuild(
                 archive=self.ds.main_archive, distroarchseries=i386_das),
             self.factory.makeBinaryPackageBuild(
-                archive=self.ds.main_archive, distroarchseries=i386_das),
+                archive=self.ds.main_archive, distroarchseries=i386_das,
+                pocket=PackagePublishingPocket.PROPOSED),
             self.factory.makeBinaryPackageBuild(
                 archive=self.ds.main_archive, distroarchseries=hppa_das),
             ]
@@ -436,6 +438,15 @@ class TestBuildSetGetBuildsForBuilder(BaseTestCaseWithThreeBuilds):
         builds = self.build_set.getBuildsForBuilder(self.builder.id,
                                                     arch_tag="i386")
         self.assertContentEqual(builds, i386_builds)
+
+    def test_getBuildsForBuilder_by_pocket(self):
+        # Results can be filtered by pocket.
+        builds = self.build_set.getBuildsForBuilder(
+            self.builder.id, pocket=PackagePublishingPocket.RELEASE)
+        self.assertContentEqual([self.builds[0], self.builds[2]], builds)
+        builds = self.build_set.getBuildsForBuilder(
+            self.builder.id, pocket=PackagePublishingPocket.PROPOSED)
+        self.assertContentEqual([self.builds[1]], builds)
 
 
 class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
