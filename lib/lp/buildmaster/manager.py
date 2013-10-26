@@ -396,6 +396,7 @@ class SlaveScanner:
         interactor = self.interactor_factory()
         slave = self.slave_factory(vitals)
         if vitals.builderok:
+            self.logger.debug("Scanning %s." % self.builder_name)
             slave_status = yield slave.status_dict()
         else:
             slave_status = None
@@ -406,7 +407,6 @@ class SlaveScanner:
         if not vitals.builderok:
             lost_reason = '%s is disabled' % vitals.name
         else:
-            self.logger.debug("Scanning %s." % self.builder_name)
             cancelled = yield self.checkCancellation(vitals, slave, interactor)
             if cancelled:
                 return
