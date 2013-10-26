@@ -58,6 +58,16 @@ class TestDistroArchSeriesWebservice(TestCaseWithFactory):
         #See note above regarding testing of length of .entries
         self.assertEqual(1, len(ws_distroseries.architectures.entries))
 
+    def test_getBuildRecords(self):
+        das = self.factory.makeDistroArchSeries()
+        build = self.factory.makeBinaryPackageBuild(distroarchseries=das)
+        build_title = build.title
+        user = self.factory.makePerson()
+        launchpad = launchpadlib_for("testing", user)
+        ws_das = ws_object(launchpad, das)
+        self.assertEqual(
+            [build_title], [entry.title for entry in ws_das.getBuildRecords()])
+
     def test_setChroot_removeChroot_random_user(self):
         # Random users are not allowed to set or remove chroots.
         das = self.factory.makeDistroArchSeries()
