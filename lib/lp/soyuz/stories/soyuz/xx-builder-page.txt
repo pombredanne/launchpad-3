@@ -1,4 +1,5 @@
-= Builder page =
+Builder page
+============
 
 An anonymous user visits the +builds page. He can see a summary of the
 builder state. In the sampledata, the builder 'bob' is building
@@ -66,7 +67,8 @@ notification alert.
 
     >>> print_feedback_messages(anon_browser.contents)
 
-== Builder Actions ==
+Builder Actions
+---------------
 
 All builder actions require authorization, some launchpad.Edit, some
 launchpad.Admin, both are only granted to members of
@@ -195,7 +197,8 @@ notification.
     The builder &quot;Bob The Builder&quot; was updated successfully.
 
 
-== Marking a builder as inactive ==
+Marking a builder as inactive
+-----------------------------
 
 The builder administrators can hide a builder from the public list
 when they judge it convenient, for instance, when the builder present
@@ -248,7 +251,8 @@ But Celso can access the deactivated builder via its URL.
     Bob The Builder : Build Farm
 
 
-== Actions permissions ==
+Actions permissions
+-------------------
 
 Normal users, such as No Privileges Person are not shown the
 Change details link.
