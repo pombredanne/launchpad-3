@@ -35,6 +35,7 @@ Each builder has a number of properties exposed:
     name
     title
     url
+    version
     virtualized
     vm_host
 

@@ -47,7 +47,8 @@ class MockBuilder:
     """Emulates a IBuilder class."""
 
     def __init__(self, name='mock-builder', builderok=True, manual=False,
-                 virtualized=True, vm_host=None, url='http://fake:0000'):
+                 virtualized=True, vm_host=None, url='http://fake:0000',
+                 version=None):
         self.currentjob = None
         self.builderok = builderok
         self.manual = manual
@@ -56,6 +57,7 @@ class MockBuilder:
         self.virtualized = virtualized
         self.vm_host = vm_host
         self.failnotes = None
+        self.version = version
 
     def failBuilder(self, reason):
         self.builderok = False
@@ -69,12 +71,16 @@ class OkSlave:
 
     The architecture tag can be customised during initialization."""
 
-    def __init__(self, arch_tag=I386_ARCHITECTURE_NAME):
+    def __init__(self, arch_tag=I386_ARCHITECTURE_NAME, version=None):
         self.call_log = []
         self.arch_tag = arch_tag
+        self.version = version
 
     def status_dict(self):
-        return defer.succeed({'builder_status': 'BuilderStatus.IDLE'})
+        slave_status = {'builder_status': 'BuilderStatus.IDLE'}
+        if self.version is not None:
+            slave_status['builder_version'] = self.version
+        return defer.succeed(slave_status)
 
     def ensurepresent(self, sha1, url, user=None, password=None):
         self.call_log.append(('ensurepresent', url, user, password))

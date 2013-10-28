@@ -451,6 +451,31 @@ class TestSlaveScannerScan(TestCase):
         self.assertEqual(build.status, BuildStatus.NEEDSBUILD)
 
     @defer.inlineCallbacks
+    def test_update_slave_version(self):
+        # If the reported slave version differs from the DB's record of it,
+        # then scanning the builder updates the DB.
+        slave = OkSlave(version="100")
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
+        builder.version = "99"
+        self._resetBuilder(builder)
+        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
+        scanner = self._getScanner()
+        yield scanner.scan()
+        self.assertEqual("100", builder.version)
+
+    def test_updateVersion_no_op(self):
+        # If the slave version matches the DB, then updateVersion does not
+        # touch the DB.
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
+        builder.version = "100"
+        transaction.commit()
+        vitals = extract_vitals_from_db(builder)
+        scanner = self._getScanner()
+        with StormStatementRecorder() as recorder:
+            scanner.updateVersion(vitals, {"builder_version": "100"})
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
+
+    @defer.inlineCallbacks
     def test_cancelling_a_build(self):
         # When scanning an in-progress build, if its state is CANCELLING
         # then the build should be aborted, and eventually stopped and moved
