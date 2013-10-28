@@ -13,6 +13,7 @@ import tempfile
 from storm.store import Store
 from testtools.deferredruntest import AsynchronousDeferredRunTest
 import transaction
+from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -338,10 +339,13 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
         # hang around between test runs.
         self.addCleanup(self._cleanup)
 
+    @defer.inlineCallbacks
     def updateBuild(self, candidate, slave):
         bf = MockBuilderFactory(self.builder, candidate)
-        return self.interactor.updateBuild(
-            bf.getVitals('foo'), slave, bf, self.interactor.getBuildBehavior)
+        slave_status = yield slave.status_dict()
+        yield self.interactor.updateBuild(
+            bf.getVitals('foo'), slave, slave_status, bf,
+            self.interactor.getBuildBehavior)
 
     def assertBuildProperties(self, build):
         """Check that a build happened by making sure some of its properties
