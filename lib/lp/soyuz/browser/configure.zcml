@@ -430,9 +430,6 @@
         <browser:page
             template="../templates/builder-index.pt"
             name="+index"/>
-        <browser:page
-            template="../templates/builder-portlet-details.pt"
-            name="+portlet-details"/>
     </browser:pages>
     <browser:pages
         for="lp.buildmaster.interfaces.builder.IBuilder"
