@@ -10,6 +10,7 @@ __all__ = [
     ]
 
 from collections import defaultdict
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
 from lp.services.job.interfaces.job import JobStatus
@@ -17,7 +18,6 @@ from lp.services.job.interfaces.job import JobStatus
 
 def get_builder_data():
     """How many working builders are there, how are they configured?"""
-    from lp.buildmaster.model.buildqueue import BuildQueue
     builder_data = """
         SELECT processor, virtualized, COUNT(id) FROM builder
         WHERE builderok = TRUE AND manual = FALSE
@@ -50,7 +50,6 @@ def normalize_virtualization(virtualized):
 def get_free_builders_count(processor, virtualized):
     """How many builders capable of running jobs for the given processor
     and virtualization combination are idle/free at present?"""
-    from lp.buildmaster.model.buildqueue import BuildQueue
     query = """
         SELECT COUNT(id) FROM builder
         WHERE
@@ -78,7 +77,6 @@ def get_head_job_platform(bq):
     :return: A (processor, virtualized) tuple which is the head job's
     platform or None if the JOI is the head job.
     """
-    from lp.buildmaster.model.buildqueue import BuildQueue
     my_platform = (
         getattr(bq.processor, 'id', None),
         normalize_virtualization(bq.virtualized))
@@ -115,7 +113,6 @@ def estimate_time_to_next_builder(bq):
     :return: The estimated number of seconds untils a builder capable of
         running the head job becomes available.
     """
-    from lp.buildmaster.model.buildqueue import BuildQueue
     head_job_platform = get_head_job_platform(bq)
 
     # Return a zero delay if we still have free builders available for the
@@ -222,7 +219,6 @@ def estimate_job_delay(bq, builder_stats):
     :return: An integer value holding the sum of delays (in seconds)
         caused by the jobs that are ahead of and competing with the JOI.
     """
-    from lp.buildmaster.model.buildqueue import BuildQueue
     def jobs_compete_for_builders(a, b):
         """True if the two jobs compete for builders."""
         a_processor, a_virtualized = a

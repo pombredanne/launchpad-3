@@ -33,11 +33,6 @@ from lp.buildmaster.interfaces.buildqueue import (
     IBuildQueue,
     IBuildQueueSet,
     )
-from lp.buildmaster.queuedepth import (
-    estimate_job_delay,
-    estimate_time_to_next_builder,
-    get_builder_data,
-    )
 from lp.services.database.bulk import load_related
 from lp.services.database.constants import DEFAULT
 from lp.services.database.enumcol import EnumCol
@@ -200,6 +195,12 @@ class BuildQueue(SQLBase):
               (divided by the number of machines in the respective
               build pool)
         """
+        from lp.buildmaster.queuedepth import (
+            estimate_job_delay,
+            estimate_time_to_next_builder,
+            get_builder_data,
+            )
+
         # This method may only be invoked for pending jobs.
         if self.job.status != JobStatus.WAITING:
             raise AssertionError(
