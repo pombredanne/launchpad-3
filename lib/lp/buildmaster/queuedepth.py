@@ -10,6 +10,10 @@ __all__ = [
     ]
 
 from collections import defaultdict
+import datetime
+
+from pytz import utc
+
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
@@ -96,7 +100,7 @@ def get_head_job_platform(bq):
     return (my_platform if result is None else result)
 
 
-def estimate_time_to_next_builder(bq):
+def estimate_time_to_next_builder(bq, now=None):
     """Estimate time until next builder becomes available.
 
     For the purpose of estimating the dispatch time of the job of interest
@@ -123,7 +127,7 @@ def estimate_time_to_next_builder(bq):
 
     head_job_processor, head_job_virtualized = head_job_platform
 
-    now = bq._now()
+    now = now or datetime.datetime.now(utc)
     delay_query = """
         SELECT MIN(
             CASE WHEN

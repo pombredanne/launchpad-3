@@ -183,7 +183,7 @@ class BuildQueue(SQLBase):
         self.specific_job.jobCancel()
         self.destroySelf()
 
-    def getEstimatedJobStartTime(self):
+    def getEstimatedJobStartTime(self, now=None):
         """See `IBuildQueue`.
 
         The estimated dispatch time for the build farm job at hand is
@@ -219,18 +219,18 @@ class BuildQueue(SQLBase):
 
         # Get the minimum time duration until the next builder becomes
         # available.
-        min_wait_time = estimate_time_to_next_builder(self)
+        min_wait_time = estimate_time_to_next_builder(self, now=now)
 
         # A job will not get dispatched in less than 5 seconds no matter what.
         start_time = max(5, min_wait_time + sum_of_delays)
-        result = self._now() + timedelta(seconds=start_time)
-
+        result = (
+            (now or datetime.now(pytz.utc)) + timedelta(seconds=start_time))
         return result
 
     @staticmethod
     def _now():
         """Return current time (UTC).  Overridable for test purposes."""
-        return datetime.now(pytz.UTC)
+        return datetime.now(pytz.utc)
 
 
 class BuildQueueSet(object):

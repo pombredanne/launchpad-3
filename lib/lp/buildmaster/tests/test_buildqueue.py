@@ -25,9 +25,7 @@ from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.model.builder import specific_job_classes
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobMixin
-from lp.buildmaster.model.buildqueue import (
-    BuildQueue,
-    )
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.queuedepth import (
     estimate_job_delay,
     estimate_time_to_next_builder,
@@ -40,8 +38,8 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
-from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.interfaces.processor import IProcessorSet
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
@@ -122,10 +120,9 @@ def print_build_setup(builds):
 
 def check_mintime_to_builder(test, bq, min_time):
     """Test the estimated time until a builder becomes available."""
-    # Monkey-patch BuildQueueSet._now() so it returns a constant time stamp
-    # that's not too far in the future. This avoids spurious test failures.
-    monkey_patch_the_now_property(bq)
-    delay = estimate_time_to_next_builder(removeSecurityProxy(bq))
+    time_stamp = bq.job.date_started or datetime.now(utc)
+    delay = estimate_time_to_next_builder(
+        removeSecurityProxy(bq), now=time_stamp)
     test.assertTrue(
         delay <= min_time,
         "Wrong min time to next available builder (%s > %s)"
@@ -159,28 +156,9 @@ def builders_for_job(job):
     return builder_data[(getattr(job.processor, 'id', None), job.virtualized)]
 
 
-def monkey_patch_the_now_property(buildqueue):
-    """Patch BuildQueue._now() so it returns a constant time stamp.
-
-    This avoids spurious test failures.
-    """
-    # Use the date/time the job started if available.
-    naked_buildqueue = removeSecurityProxy(buildqueue)
-    if buildqueue.job.date_started:
-        time_stamp = buildqueue.job.date_started
-    else:
-        time_stamp = naked_buildqueue._now()
-
-    naked_buildqueue._now = FakeMethod(result=time_stamp)
-    return time_stamp
-
-
 def check_estimate(test, job, delay_in_seconds):
-    """Does the dispatch time estimate match the expectation?"""
-    # Monkey-patch BuildQueueSet._now() so it returns a constant time stamp.
-    # This avoids spurious test failures.
-    time_stamp = monkey_patch_the_now_property(job)
-    estimate = job.getEstimatedJobStartTime()
+    time_stamp = job.job.date_started or datetime.now(utc)
+    estimate = job.getEstimatedJobStartTime(now=time_stamp)
     if delay_in_seconds is None:
         test.assertEquals(
             delay_in_seconds, estimate,
@@ -1173,7 +1151,8 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         # match.
         flex_build, flex_job = find_job(self, 'flex', '386')
         self.assertEquals(
-            (None, False), get_head_job_platform(removeSecurityProxy(flex_job)))
+            (None, False),
+            get_head_job_platform(removeSecurityProxy(flex_job)))
         # delay is 960 (= 16*60) + 222 seconds
         check_delay_for_job(self, flex_job, 1182)
 
