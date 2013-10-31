@@ -27,7 +27,13 @@ from lp.buildmaster.model.builder import specific_job_classes
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobMixin
 from lp.buildmaster.model.buildqueue import (
     BuildQueue,
+    )
+from lp.buildmaster.queuedepth import (
+    estimate_job_delay,
+    estimate_time_to_next_builder,
     get_builder_data,
+    get_free_builders_count,
+    get_head_job_platform,
     )
 from lp.services.database.interfaces import IStore
 from lp.soyuz.enums import (
@@ -119,7 +125,7 @@ def check_mintime_to_builder(test, bq, min_time):
     # Monkey-patch BuildQueueSet._now() so it returns a constant time stamp
     # that's not too far in the future. This avoids spurious test failures.
     monkey_patch_the_now_property(bq)
-    delay = removeSecurityProxy(bq)._estimateTimeToNextBuilder()
+    delay = estimate_time_to_next_builder(removeSecurityProxy(bq))
     test.assertTrue(
         delay <= min_time,
         "Wrong min time to next available builder (%s > %s)"
@@ -136,8 +142,8 @@ def set_remaining_time_for_running_job(bq, remainder):
 def check_delay_for_job(test, the_job, delay):
     # Obtain the builder statistics pertaining to this job.
     builder_data = get_builder_data()
-    estimated_delay = removeSecurityProxy(the_job)._estimateJobDelay(
-        builder_data)
+    estimated_delay = estimate_job_delay(
+        removeSecurityProxy(the_job), builder_data)
     test.assertEqual(delay, estimated_delay)
 
 
@@ -463,36 +469,36 @@ class TestBuilderData(SingleArchBuildsBase):
             4, builder_stats[(self.x86_proc.id, False)],
             "The number of native x86 builders is wrong")
         # Initially all 4 builders are free.
-        free_count = bq._getFreeBuildersCount(
+        free_count = get_free_builders_count(
             build.processor, build.is_virtualized)
         self.assertEqual(4, free_count)
         # Once we assign a build to one of them we should see the free
         # builders count drop by one.
         assign_to_builder(self, 'postgres', 1)
-        free_count = bq._getFreeBuildersCount(
+        free_count = get_free_builders_count(
             build.processor, build.is_virtualized)
         self.assertEqual(3, free_count)
         # When we assign another build to one of them we should see the free
         # builders count drop by one again.
         assign_to_builder(self, 'gcc', 2)
-        free_count = bq._getFreeBuildersCount(
+        free_count = get_free_builders_count(
             build.processor, build.is_virtualized)
         self.assertEqual(2, free_count)
         # Let's use up another builder.
         assign_to_builder(self, 'apg', 3)
-        free_count = bq._getFreeBuildersCount(
+        free_count = get_free_builders_count(
             build.processor, build.is_virtualized)
         self.assertEqual(1, free_count)
         # And now for the last one.
         assign_to_builder(self, 'flex', 4)
-        free_count = bq._getFreeBuildersCount(
+        free_count = get_free_builders_count(
             build.processor, build.is_virtualized)
         self.assertEqual(0, free_count)
         # If we reset the 'flex' build the builder that was assigned to it
         # will be free again.
         build, bq = find_job(self, 'flex')
         bq.reset()
-        free_count = removeSecurityProxy(bq)._getFreeBuildersCount(
+        free_count = get_free_builders_count(
             build.processor, build.is_virtualized)
         self.assertEqual(1, free_count)
 
@@ -1134,7 +1140,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         flex_build, flex_job = find_job(self, 'flex', 'hppa')
         # The head job platform is the one of job #21 (xxr-openssh-client).
         self.assertEquals(
-            (None, True), removeSecurityProxy(flex_job)._getHeadJobPlatform())
+            (None, True), get_head_job_platform(removeSecurityProxy(flex_job)))
         # The delay will be 900 (= 15*60) + 332 seconds
         check_delay_for_job(self, flex_job, 1232)
 
@@ -1157,7 +1163,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
 
         # The newly added 'xxr-gwibber' job is the new head job now.
         self.assertEquals(
-            (None, None), removeSecurityProxy(flex_job)._getHeadJobPlatform())
+            (None, None), get_head_job_platform(removeSecurityProxy(flex_job)))
         # The newly added 'xxr-gwibber' job now weighs in as well and the
         # delay is 900 (= 15*60) + (332+111)/2 seconds
         check_delay_for_job(self, flex_job, 1121)
@@ -1167,8 +1173,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         # match.
         flex_build, flex_job = find_job(self, 'flex', '386')
         self.assertEquals(
-            (None, False),
-            removeSecurityProxy(flex_job)._getHeadJobPlatform())
+            (None, False), get_head_job_platform(removeSecurityProxy(flex_job)))
         # delay is 960 (= 16*60) + 222 seconds
         check_delay_for_job(self, flex_job, 1182)
 
