@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'BuildStatus',
+    'BuildQueueStatus',
     'BuildFarmJobType',
     ]
 
