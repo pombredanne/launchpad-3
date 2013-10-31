@@ -9,10 +9,7 @@ __all__ = [
     'specific_job_classes',
     ]
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
+from datetime import datetime
 from itertools import groupby
 from operator import attrgetter
 
@@ -184,48 +181,9 @@ class BuildQueue(SQLBase):
         self.destroySelf()
 
     def getEstimatedJobStartTime(self, now=None):
-        """See `IBuildQueue`.
-
-        The estimated dispatch time for the build farm job at hand is
-        calculated from the following ingredients:
-            * the start time for the head job (job at the
-              head of the respective build queue)
-            * the estimated build durations of all jobs that
-              precede the job of interest (JOI) in the build queue
-              (divided by the number of machines in the respective
-              build pool)
-        """
-        from lp.buildmaster.queuedepth import (
-            estimate_job_delay,
-            estimate_time_to_next_builder,
-            get_builder_data,
-            )
-
-        # This method may only be invoked for pending jobs.
-        if self.job.status != JobStatus.WAITING:
-            raise AssertionError(
-                "The start time is only estimated for pending jobs.")
-
-        builder_stats = get_builder_data()
-        platform = (getattr(self.processor, 'id', None), self.virtualized)
-        if builder_stats[platform] == 0:
-            # No builders that can run the job at hand
-            #   -> no dispatch time estimation available.
-            return None
-
-        # Get the sum of the estimated run times for *pending* jobs that are
-        # ahead of us in the queue.
-        sum_of_delays = estimate_job_delay(self, builder_stats)
-
-        # Get the minimum time duration until the next builder becomes
-        # available.
-        min_wait_time = estimate_time_to_next_builder(self, now=now)
-
-        # A job will not get dispatched in less than 5 seconds no matter what.
-        start_time = max(5, min_wait_time + sum_of_delays)
-        result = (
-            (now or datetime.now(pytz.utc)) + timedelta(seconds=start_time))
-        return result
+        """See `IBuildQueue`."""
+        from lp.buildmaster.queuedepth import estimate_job_start_time
+        return estimate_job_start_time(self, now)
 
     @staticmethod
     def _now():
