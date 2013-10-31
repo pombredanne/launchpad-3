@@ -169,6 +169,7 @@ class BuildQueue(SQLBase):
         self.builder = builder
         if self.job.status != JobStatus.RUNNING:
             self.job.start()
+        self.status = BuildQueueStatus.RUNNING
         self.specific_job.jobStarted()
         if builder is not None:
             del get_property_cache(builder).currentjob
@@ -179,6 +180,7 @@ class BuildQueue(SQLBase):
         self.builder = None
         if self.job.status != JobStatus.WAITING:
             self.job.queue()
+        self.status = BuildQueueStatus.WAITING
         self.job.date_started = None
         self.job.date_finished = None
         self.logtail = None

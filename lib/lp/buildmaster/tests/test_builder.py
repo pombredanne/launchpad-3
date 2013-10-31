@@ -6,7 +6,10 @@
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildQueueStatus,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
@@ -133,6 +136,7 @@ class TestFindBuildCandidateGeneralCases(TestFindBuildCandidateBase):
         candidate = removeSecurityProxy(
             self.frog_builder).acquireBuildCandidate()
         self.assertEqual(JobStatus.RUNNING, candidate.job.status)
+        self.assertEqual(BuildQueueStatus.RUNNING, candidate.status)
 
 
 class TestFindBuildCandidatePPAWithSingleBuilder(TestCaseWithFactory):
