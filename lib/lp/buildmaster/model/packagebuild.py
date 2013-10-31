@@ -123,8 +123,8 @@ class PackageBuildMixin(BuildFarmJobMixin):
         processor = specific_job.processor
         queue_entry = BuildQueue(
             estimated_duration=duration_estimate,
-            job_type=self.job_type,
-            job=job, processor=processor,
+            build_farm_job=self.build_farm_job,
+            job_type=self.job_type, job=job, processor=processor,
             virtualized=specific_job.virtualized)
         Store.of(self).add(queue_entry)
         return queue_entry

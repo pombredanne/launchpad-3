@@ -97,6 +97,10 @@ class IBuildQueue(Interface):
     def cancel():
         """Cancel this job, it will not be re-dispatched."""
 
+    build_farm_job = Reference(
+        IBuildFarmJob, title=_("Build farm job"),
+        description=_("Associated generic BuildFarmJob DB object."))
+
     specific_job = Reference(
         IBuildFarmJob, title=_("Job"),
         description=_("Data and operations common to all build farm jobs."))

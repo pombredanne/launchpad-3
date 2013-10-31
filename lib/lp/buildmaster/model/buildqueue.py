@@ -68,11 +68,13 @@ class BuildQueue(SQLBase):
     _table = "BuildQueue"
     _defaultOrder = "id"
 
-    def __init__(self, job, job_type=DEFAULT,  estimated_duration=DEFAULT,
-                 virtualized=DEFAULT, processor=DEFAULT, lastscore=None):
-        super(BuildQueue, self).__init__(job_type=job_type, job=job,
-            virtualized=virtualized, processor=processor,
-            estimated_duration=estimated_duration, lastscore=lastscore)
+    def __init__(self, build_farm_job, job, job_type=DEFAULT,
+                 estimated_duration=DEFAULT, virtualized=DEFAULT,
+                 processor=DEFAULT, lastscore=None):
+        super(BuildQueue, self).__init__(build_farm_job=build_farm_job,
+            job_type=job_type, job=job, virtualized=virtualized,
+            processor=processor, estimated_duration=estimated_duration,
+            lastscore=lastscore)
         if lastscore is None and self.specific_job is not None:
             self.score()
 

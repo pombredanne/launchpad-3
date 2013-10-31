@@ -137,6 +137,7 @@ class TranslationTemplatesBuildJob(BuildFarmJobOld, BranchJobDerived):
 
         build_queue_entry = BuildQueue(
             estimated_duration=duration_estimate,
+            build_farm_job=build.build_farm_job,
             job_type=BuildFarmJobType.TRANSLATIONTEMPLATESBUILD,
             job=specific_job.job, processor=build.processor)
         IMasterStore(BuildQueue).add(build_queue_entry)

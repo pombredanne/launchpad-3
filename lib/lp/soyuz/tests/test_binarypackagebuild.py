@@ -65,6 +65,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         # BinaryPackageBuild can create the queue entry for itself.
         bq = self.build.queueBuild()
         self.assertProvides(bq, IBuildQueue)
+        self.assertEqual(self.build.build_farm_job, bq.build_farm_job)
         self.assertProvides(bq.specific_job, IBuildPackageJob)
         self.assertEqual(self.build.is_virtualized, bq.virtualized)
         self.assertIsNotNone(bq.processor)

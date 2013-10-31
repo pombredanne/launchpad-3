@@ -82,6 +82,8 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         buildqueue = queueset.get(job_id)
 
         self.assertIsInstance(buildqueue, BuildQueue)
+        self.assertEqual(
+            self.specific_job.build.build_farm_job, buildqueue.build_farm_job)
         self.assertEqual(job_id, get_job_id(buildqueue.job))
 
     def test_BuildQueue_for_arch(self):
