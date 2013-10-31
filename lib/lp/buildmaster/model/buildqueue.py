@@ -25,10 +25,15 @@ from sqlobject import (
     IntervalCol,
     StringCol,
     )
+from storm.properties import Int
+from storm.references import Reference
 from zope.component import getSiteManager
 from zope.interface import implements
 
-from lp.buildmaster.enums import BuildFarmJobType
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildQueueStatus,
+    )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.interfaces.buildqueue import (
     IBuildQueue,
@@ -109,6 +114,10 @@ class BuildQueue(SQLBase):
             estimated_duration=estimated_duration, lastscore=lastscore)
         if lastscore is None and self.specific_job is not None:
             self.score()
+
+    build_farm_job_id = Int(name='build_farm_job')
+    build_farm_job = Reference(build_farm_job_id, 'BuildFarmJob.id')
+    status = EnumCol(enum=BuildQueueStatus, default=BuildQueueStatus.WAITING)
 
     job = ForeignKey(dbName='job', foreignKey='Job', notNull=True)
     job_type = EnumCol(

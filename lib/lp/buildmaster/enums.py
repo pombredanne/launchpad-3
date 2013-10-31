@@ -147,3 +147,38 @@ class BuildFarmJobType(DBEnumeratedType):
 
         Generate translation templates from a bazaar branch.
         """)
+
+
+class BuildQueueStatus(DBEnumeratedType):
+    """Build queue status.
+
+    The status of a job in the build farm queue. The queue record only
+    exists while the job is running or waiting to run.
+
+    Not to be confused with BuildStatus, which is persistent and
+    includes values to represent the result of a completed job.
+    """
+
+    WAITING = DBItem(0, """
+        Waiting
+
+        The job is waiting to be run.
+        """)
+
+    RUNNING = DBItem(1, """
+        Running
+
+        The job is currently running.
+        """)
+
+    CANCELLING = DBItem(2, """
+        Cancelling
+
+        The job has been cancelled, so should be terminated.
+        """)
+
+    SUSPENDED = DBItem(3, """
+        Suspended
+
+        The job is suspended, so should not be run.
+        """)
