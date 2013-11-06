@@ -24,7 +24,7 @@ from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
 from lp.buildmaster.tests.mock_slaves import WaitingSlave
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
@@ -55,9 +55,9 @@ class TestBuildFarmJobBehaviorBase(TestCaseWithFactory):
 
     def _makeBuild(self):
         """Create a `Build` object."""
-        x86 = getUtility(IProcessorFamilySet).getByName('x86')
+        x86 = getUtility(IProcessorSet).getByName('386')
         distroarchseries = self.factory.makeDistroArchSeries(
-            architecturetag='x86', processorfamily=x86)
+            architecturetag='x86', processor=x86)
         distroseries = distroarchseries.distroseries
         archive = self.factory.makeArchive(
             distribution=distroseries.distribution)
@@ -135,9 +135,9 @@ class TestHandleStatusMixin:
         self.build.buildqueue_record.markAsBuilding(self.builder)
         self.slave = WaitingSlave('BuildStatus.OK')
         self.slave.valid_file_hashes.append('test_file_hash')
-        self.interactor = BuilderInteractor(self.builder, self.slave)
-        self.behavior = removeSecurityProxy(
-            self.interactor._current_build_behavior)
+        self.interactor = BuilderInteractor()
+        self.behavior = self.interactor.getBuildBehavior(
+            self.build.buildqueue_record, self.builder, self.slave)
 
         # We overwrite the buildmaster root to use a temp directory.
         tempdir = tempfile.mkdtemp()
@@ -253,9 +253,8 @@ class TestHandleStatusMixin:
 
     def test_handleStatus_ABORTED_recovers_building(self):
         self.builder.vm_host = "fake_vm_host"
-        self.interactor = BuilderInteractor(self.builder, self.slave)
-        self.behavior = removeSecurityProxy(
-            self.interactor._current_build_behavior)
+        self.behavior = self.interactor.getBuildBehavior(
+            self.build.buildqueue_record, self.builder, self.slave)
         self.build.updateStatus(BuildStatus.BUILDING)
 
         def got_status(ignored):

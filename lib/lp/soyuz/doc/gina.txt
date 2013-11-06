@@ -35,7 +35,7 @@ Get the current counts of stuff in the database:
 
 Create a distribution release and an arch release for breezy:
 
-    >>> from lp.soyuz.model.processor import ProcessorFamily
+    >>> from lp.soyuz.interfaces.processor import IProcessorSet
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> ubuntu = celebs.ubuntu
@@ -49,9 +49,9 @@ Create a distribution release and an arch release for breezy:
     ...     hoary, celebs.launchpad_developers)
     >>> login(ANONYMOUS)
 
-    >>> pf = ProcessorFamily.selectOneBy(name="x86")
     >>> breezy_i386 = breezy.newArch(
-    ...     processorfamily=pf, architecturetag="i386", official=True,
+    ...     processor=getUtility(IProcessorSet).getByName('386'),
+    ...     architecturetag="i386", official=True,
     ...     owner=celebs.launchpad_developers)
     >>> import transaction
     >>> transaction.commit()
@@ -402,8 +402,8 @@ priority was correctly munged to "extra":
     386
     >>> print ed.build.status
     Successfully built
-    >>> print ed.build.distro_arch_series.processorfamily.name
-    x86
+    >>> print ed.build.distro_arch_series.processor.name
+    386
     >>> print ed.build.distro_arch_series.architecturetag
     i386
     >>> print ed.priority
@@ -724,9 +724,9 @@ if no binaries get imported by mistake. However this is not required
 in production, i.e., just creating 'lenny' should suffice for the
 source-only import to happen.
 
-    >>> pf = ProcessorFamily.selectOneBy(name="x86")
     >>> lenny_i386 = lenny.newArch(
-    ...     processorfamily=pf, architecturetag="i386", official=True,
+    ...     processor=getUtility(IProcessorSet).getByName('386'),
+    ...     architecturetag="i386", official=True,
     ...     owner=celebs.launchpad_developers)
 
 We will also store the number of binaries already published in debian

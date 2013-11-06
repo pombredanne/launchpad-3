@@ -35,8 +35,7 @@ a file-like object to demonstrate this.
 No Privileges Person sees a notice on the bug page stating that the file
 was attached.
 
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(user_browser.contents)
     Thank you for your bug report.
     The file &quot;example.txt&quot; was attached to the bug report.
 

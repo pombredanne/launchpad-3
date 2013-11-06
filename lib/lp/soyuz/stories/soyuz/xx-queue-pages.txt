@@ -259,8 +259,7 @@ Inspect the ACCEPTED queue:
     >>> anon_browser.getControl(
     ...     name="queue_state", index=0).displayValue = ['Accepted']
     >>> anon_browser.getControl("Update").click()
-    >>> for message in get_feedback_messages(anon_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(anon_browser.contents)
     The Accepted queue is empty.
 
 Now we act on the queue, which requires admin or upload_manager permission.
@@ -362,9 +361,7 @@ a double post.
     >>> duplicate_submission_browser.getControl(
     ...     name="QUEUE_ID").value = [str(bar_queue_id)]
     >>> duplicate_submission_browser.getControl(name="Accept").click()
-    >>> for message in get_feedback_messages(
-    ...     duplicate_submission_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(duplicate_submission_browser.contents)
     FAILED: bar (Unable to accept queue item due to status.)
 
 No emails are sent in this case:
@@ -380,8 +377,7 @@ Let's accept mozilla-firefox so we can see it in the accepted queue:
     ...    "http://localhost/ubuntu/breezy-autotest/+queue")
     >>> upload_manager_browser.getControl(name="QUEUE_ID").value = ['1']
     >>> upload_manager_browser.getControl(name="Accept").click()
-    >>> for message in get_feedback_messages(upload_manager_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(upload_manager_browser.contents)
     OK: mozilla-firefox
 
 The item is moved to the ACCEPTED queue:
@@ -418,8 +414,7 @@ Accept "cnews" source:
 
     >>> upload_manager_browser.getControl(name="QUEUE_ID").value = ['9']
     >>> upload_manager_browser.getControl(name="Accept").click()
-    >>> for message in get_feedback_messages(upload_manager_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(upload_manager_browser.contents)
     OK: cnews
 
 And the page is still on the Unapproved list:
@@ -470,9 +465,7 @@ And now accepts the checked items:
 He sees the informational message that confirms the details of what was
 overridden:
 
-    >>> for message in sorted(get_feedback_messages(
-    ...     upload_manager_browser.contents)):
-    ...     print message
+    >>> print_feedback_messages(upload_manager_browser.contents)
     OK: netapplet(restricted/admin)
     OK: pmount(restricted/admin/extra)
 
@@ -524,8 +517,7 @@ Rejecting 'alsa-utils' source:
     >>> upload_manager_browser.getControl(name='rejection_comment').value = (
     ...     'Foo')
     >>> upload_manager_browser.getControl(name="Reject").click()
-    >>> for message in get_feedback_messages(upload_manager_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(upload_manager_browser.contents)
     OK: alsa-utils
 
     >>> print_queue(upload_manager_browser.contents)

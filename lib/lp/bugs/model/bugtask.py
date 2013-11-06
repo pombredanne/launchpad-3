@@ -46,7 +46,6 @@ from storm.expr import (
     Cast,
     Count,
     Exists,
-    Join,
     LeftJoin,
     Not,
     Or,
@@ -519,10 +518,7 @@ class BugTask(SQLBase):
     @property
     def related_tasks(self):
         """See `IBugTask`."""
-        other_tasks = [
-            task for task in self.bug.bugtasks if task != self]
-
-        return other_tasks
+        return [task for task in self.bug.bugtasks if task != self]
 
     @property
     def pillar(self):
@@ -878,11 +874,13 @@ class BugTask(SQLBase):
             else:
                 new_status = BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE
 
-        if self._status == new_status:
+        self._setStatusDateProperties(self.status, new_status, when=when)
+        
+    def _setStatusDateProperties(self, old_status, new_status, when=None):
+        if old_status == new_status:
             # No change in the status, so nothing to do.
             return
 
-        old_status = self.status
         self._status = new_status
 
         if new_status == BugTaskStatus.UNKNOWN:
@@ -897,7 +895,6 @@ class BugTask(SQLBase):
             self.date_triaged = None
             self.date_fix_committed = None
             self.date_fix_released = None
-
             return
 
         if when is None:
@@ -1354,20 +1351,6 @@ class BugTaskSet:
                                 str(task_id))
         return bugtask
 
-    def getBugTasks(self, bug_ids):
-        """See `IBugTaskSet`."""
-        from lp.bugs.model.bug import Bug
-        store = IStore(Bug)
-        origin = [BugTask, Join(Bug, BugTask.bug == Bug.id)]
-        columns = (Bug, BugTask)
-        result = store.using(*origin).find(columns, Bug.id.is_in(bug_ids))
-        bugs_and_tasks = {}
-        for bug, task in result:
-            if bug not in bugs_and_tasks:
-                bugs_and_tasks[bug] = []
-            bugs_and_tasks[bug].append(task)
-        return bugs_and_tasks
-
     def getBugTaskTags(self, bugtasks):
         """See `IBugTaskSet`"""
         # Import locally to avoid circular imports.
@@ -1616,6 +1599,10 @@ class BugTaskSet:
             bugtask.updateTargetNameCache()
             if bugtask.conjoined_slave:
                 bugtask._syncFromConjoinedSlave()
+            else:
+                # Set date_* properties, if we're not conjoined.
+                bugtask._setStatusDateProperties(
+                    BugTaskStatus.NEW, status, when=bugtask.datecreated)
         removeSecurityProxy(bug)._reconcileAccess()
         return tasks
 

@@ -77,7 +77,6 @@ Attempting to change the PPA to public is thwarted.
 
    >>> admin_browser.getControl(name='field.private').value = False
    >>> admin_browser.getControl('Save').click()
-    >>> for error in get_feedback_messages(admin_browser.contents):
-    ...     print error
-    There is 1 error.
-    Private teams may not have public archives.
+   >>> print_feedback_messages(admin_browser.contents)
+   There is 1 error.
+   Private teams may not have public archives.

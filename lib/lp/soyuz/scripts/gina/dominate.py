@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Retirement of packages that are removed upstream."""
@@ -45,10 +45,13 @@ def dominate_imported_source_packages(txn, logger, distro_name, series_name,
         # many Published publications as live versions, there is no
         # domination to do.  We skip these as an optimization.  Without
         # it, dominating a single Debian series takes hours.
+        # Relax the immutability check, since Debian release suites don't
+        # become immutable on release as Launchpad normally expects.
         if pub_count != len(live_versions):
             logger.debug("Dominating %s.", package_name)
             dominator.dominateSourceVersions(
-                series, pocket, package_name, live_versions)
+                series, pocket, package_name, live_versions,
+                immutable_check=False)
             txn.commit()
         else:
             logger.debug2(

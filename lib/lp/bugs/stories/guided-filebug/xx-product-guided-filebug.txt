@@ -107,8 +107,7 @@ This one matches, so we mark it as affecting us.
     >>> print user_browser.url
     http://bugs.launchpad.dev/firefox/+bug/1
 
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(user_browser.contents)
     This bug has been marked as affecting you.
 
 It's also possible to subscribe to the suggested duplicates. This is
@@ -128,8 +127,7 @@ set to ensure that we get subscribed to the bug.
     >>> user_browser.getControl(
     ...     "Yes, this is the bug I'm trying to report").click()
 
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(user_browser.contents)
     This bug is already marked as affecting you.
     You have subscribed to this bug report.
 

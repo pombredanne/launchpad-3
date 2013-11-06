@@ -62,6 +62,7 @@ from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.helpers import is_tar_filename
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -309,7 +310,7 @@ class POTemplateView(LaunchpadView,
         return (translation_group is not None and
                 translation_group.translation_guide_url is not None)
 
-    @property
+    @cachedproperty
     def related_templates_by_source(self):
         by_source = list(
             self.context.relatives_by_source[:self.SHOW_RELATED_TEMPLATES])

@@ -151,7 +151,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         for das in dases:
             build = self.factory.makeBinaryPackageBuild(
                 source_package_release=spph.sourcepackagerelease,
-                distroarchseries=das, processor=das.default_processor)
+                distroarchseries=das, processor=das.processor)
             bpr = self.factory.makeBinaryPackageRelease(
                 binarypackagename=package.name, build=build,
                 component=component, architecturespecific=True,

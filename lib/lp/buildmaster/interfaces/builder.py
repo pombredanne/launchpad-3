@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'BuildDaemonError',
-    'CorruptBuildCookie',
     'BuildSlaveFailure',
     'CannotBuild',
     'CannotFetchFile',
@@ -69,13 +68,6 @@ class CannotFetchFile(BuildDaemonError):
 
 class ProtocolVersionMismatch(BuildDaemonError):
     """The build slave had a protocol version. This is a serious error."""
-
-
-class CorruptBuildCookie(BuildDaemonError):
-    """The build slave is working with mismatched information.
-
-    It needs to be rescued.
-    """
 
 
 class CannotResumeHost(BuildDaemonError):
@@ -167,6 +159,10 @@ class IBuilder(IHasOwner):
     failure_count = exported(Int(
         title=_('Failure Count'), required=False, default=0,
        description=_("Number of consecutive failures for this builder.")))
+
+    version = exported(Text(
+        title=_('Version'), required=False,
+        description=_('The version of launchpad-buildd on the slave.')))
 
     def gotFailure():
         """Increment failure_count on the builder."""

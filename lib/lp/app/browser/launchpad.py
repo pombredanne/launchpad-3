@@ -145,10 +145,7 @@ from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.interfaces.processor import (
-    IProcessorFamilySet,
-    IProcessorSet,
-    )
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.translations.interfaces.translationimportqueue import (
@@ -679,7 +676,6 @@ class LaunchpadRootNavigation(Navigation):
         'package-sets': IPackagesetSet,
         'people': IPersonSet,
         'pillars': IPillarNameSet,
-        '+processor-families': IProcessorFamilySet,
         '+processors': IProcessorSet,
         'projects': IProductSet,
         'projectgroups': IProjectGroupSet,

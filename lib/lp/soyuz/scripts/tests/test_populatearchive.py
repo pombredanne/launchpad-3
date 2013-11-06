@@ -463,7 +463,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             exception_type=SoyuzScriptError,
             exception_text="Invalid origin archive name: '//'")
 
-    def testInvalidProcessorFamilyName(self):
+    def testInvalidProcessorName(self):
         """Try copy archive population with an invalid architecture tag.
 
         This test should provoke a `SoyuzScriptError` exception.
@@ -474,11 +474,11 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             exception_type=SoyuzScriptError,
             exception_text="Invalid architecture tag: 'wintel'")
 
-    def testFamiliesForExistingArchives(self):
-        """Try specifying processor family names for existing archive.
+    def testProcessorsForExistingArchives(self):
+        """Try specifying processor names for existing archive.
 
-        The user is not supposed to specify processor families on the command
-        line for existing copy archives. The processor families will be read
+        The user is not supposed to specify processor on the command
+        line for existing copy archives. The processor will be read
         from the database instead. Please see also the end of the
         testMultipleArchTags test.
 
@@ -549,7 +549,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             exception_text=(
                 "error: archive 'hello-1' already exists for 'ubuntu'."))
 
-    def testMissingProcessorFamily(self):
+    def testMissingProcessor(self):
         """Try copy archive population without a single architecture tag.
 
         This test should provoke a `SoyuzScriptError` exception.

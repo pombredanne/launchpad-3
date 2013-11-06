@@ -25,18 +25,17 @@ class TestBuildPrivacy(TestCaseWithFactory):
         super(TestBuildPrivacy, self).setUp()
         # Add everything we need to create builds.
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-        pf = self.factory.makeProcessorFamily()
-        pf_proc = pf.addProcessor(self.factory.getUniqueString(), '', '')
+        processor = self.factory.makeProcessor()
         distroseries = self.factory.makeDistroSeries()
         das = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, processorfamily=pf,
+            distroseries=distroseries, processor=processor,
             supports_virtualized=True)
         with person_logged_in(self.admin):
             publisher = SoyuzTestPublisher()
             publisher.prepareBreezyAutotest()
             distroseries.nominatedarchindep = das
             publisher.addFakeChroots(distroseries=distroseries)
-            self.factory.makeBuilder(processor=pf_proc)
+            self.factory.makeBuilder(processor=processor)
         self.public_archive = self.factory.makeArchive()
         self.private_archive = self.factory.makeArchive(private=True)
         # Create one public and one private build.

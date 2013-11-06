@@ -166,8 +166,7 @@ specify the person to subscribe.  The person field is required.
     ...     '5000 lines']
     >>> browser.getControl('Subscribe').click()
 
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(browser.contents)
     There is 1 error.
     Required input is missing.
 

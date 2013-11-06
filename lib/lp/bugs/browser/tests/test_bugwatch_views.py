@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BugWatch views."""
@@ -40,6 +40,16 @@ class TestBugWatchEditView(TestCaseWithFactory):
         # An unlinked bugwatch can be deleted.
         bwid = self.bug_watch.id
         form = {'field.actions.delete': 'Delete Bug Watch'}
+        getUtility(ILaunchBag).add(self.bug_task.bug)
+        view = create_initialized_view(self.bug_watch, '+edit', form=form)
+        self.assertContentEqual([], view.errors)
+        self.assertRaises(NotFoundError, getUtility(IBugWatchSet).get, bwid)
+
+    def test_can_delete_watch_with_invalid_url(self):
+        bwid = self.bug_watch.id
+        form = {
+            'field.url': 'foobarbaz',
+            'field.actions.delete': 'Delete Bug Watch'}
         getUtility(ILaunchBag).add(self.bug_task.bug)
         view = create_initialized_view(self.bug_watch, '+edit', form=form)
         self.assertContentEqual([], view.errors)
