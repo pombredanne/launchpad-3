@@ -24,8 +24,7 @@ redirect back to the PPA page with a feedback message:
     >>> print cprov_browser.url
     http://launchpad.dev/~cprov/+archive/ppa
 
-    >>> for msg in get_feedback_messages(cprov_browser.contents):
-    ...     print msg
+    >>> print_feedback_messages(cprov_browser.contents)
     Only private archives can have subscribers.
 
 Setup private PPAs for both Celso and Mark:

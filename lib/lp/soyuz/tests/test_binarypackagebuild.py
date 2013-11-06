@@ -33,7 +33,6 @@ from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
-from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     api_url,
@@ -420,13 +419,7 @@ class TestBuildSetGetBuildsForBuilder(BaseTestCaseWithThreeBuilds):
         self.build_set = getUtility(IBinaryPackageBuildSet)
 
         # Create a 386 builder
-        owner = self.factory.makePerson()
-        processor_family = ProcessorFamilySet().getByProcessorName('386')
-        processor = processor_family.processors[0]
-
-        self.builder = self.factory.makeBuilder(
-            processor, 'http://example.com', 'Newbob', 'New Bob the Builder',
-            owner=owner)
+        self.builder = self.factory.makeBuilder()
 
         # Ensure that our builds were all built by the test builder.
         for build in self.builds:

@@ -396,9 +396,7 @@ Then delete the 'source2' package.
     ...     "Deletion comment").value = "Bug 184490"
     >>> admin_browser.getControl("Request Deletion").click()
 
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(admin_browser.contents)
     Source and binaries deleted by Foo Bar:
     source2 666 in breezy-autotest
     Deletion comment: Bug 184490

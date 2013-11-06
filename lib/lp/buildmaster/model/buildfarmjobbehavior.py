@@ -57,12 +57,6 @@ class BuildFarmJobBehaviorBase:
         """The default behavior is a no-op."""
         pass
 
-    def updateSlaveStatus(self, raw_slave_status, status):
-        """See `IBuildFarmJobBehavior`.
-
-        The default behavior is that we don't add any extra values."""
-        pass
-
     def getBuildCookie(self):
         """See `IPackageBuild`."""
         return '%s-%s' % (self.build.job_type.name, self.build.id)

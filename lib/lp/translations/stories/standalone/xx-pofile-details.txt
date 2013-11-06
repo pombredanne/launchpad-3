@@ -115,17 +115,17 @@ Manually filtering by non-existent user warns the user of the problem.
 
     >>> anon_browser.open('http://translations.launchpad.dev/evolution/trunk/'
     ...                   '+pots/evolution-2.2/es/+filter?person=danilo')
-    >>> get_feedback_messages(anon_browser.contents)
-    [u'Requested person not found.',
-    u'This person has made no contributions to this file.']
+    >>> print_feedback_messages(anon_browser.contents)
+    Requested person not found.
+    This person has made no contributions to this file.
 
 If a person to filter by is not specified, user is notified of that.
 
     >>> anon_browser.open('http://translations.launchpad.dev/evolution/trunk/'
     ...                   '+pots/evolution-2.2/es/+filter')
-    >>> get_feedback_messages(anon_browser.contents)
-    [u'No person to filter by specified.',
-    u'This person has made no contributions to this file.']
+    >>> print_feedback_messages(anon_browser.contents)
+    No person to filter by specified.
+    This person has made no contributions to this file.
 
 
 Merged accounts

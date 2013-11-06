@@ -1029,9 +1029,9 @@ class BaseDoCopyTests:
         nobby = self.factory.makeDistroSeries(
             distribution=self.test_publisher.ubuntutest, name='nobby')
         for arch in archs:
-            pf = self.factory.makeProcessorFamily(name='my_%s' % arch)
+            processor = self.factory.makeProcessor(name='my_%s' % arch)
             self.factory.makeDistroArchSeries(
-                distroseries=nobby, architecturetag=arch, processorfamily=pf)
+                distroseries=nobby, architecturetag=arch, processor=processor)
         nobby.nominatedarchindep = nobby[archs[0]]
         self.test_publisher.addFakeChroots(nobby)
         return nobby
@@ -1736,7 +1736,7 @@ class TestCopyBuildRecords(TestCaseWithFactory):
         for das in self.series.architectures:
             self.factory.makeDistroArchSeries(
                 distroseries=new_series, architecturetag=das.architecturetag,
-                processorfamily=das.processorfamily)
+                processor=das.processor)
         new_series.nominatedarchindep = new_series[
             self.series.nominatedarchindep.architecturetag]
         new_das = self.factory.makeDistroArchSeries(distroseries=new_series)

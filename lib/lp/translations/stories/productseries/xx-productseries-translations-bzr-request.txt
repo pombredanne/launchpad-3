@@ -58,7 +58,7 @@ The request is made by clicking on a button labeled
     >>> browser.getControl("Request one-time import").click()
     >>> print browser.url
     http://translations.launchpad.dev/evolution/trunk
-    >>> print "\n".join(get_feedback_messages(browser.contents))
+    >>> print_feedback_messages(browser.contents)
     The import has been requested.
 
 == The request page without a branch ==

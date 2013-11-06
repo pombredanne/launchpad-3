@@ -94,7 +94,7 @@ dogfood:
 	pg_restore --list ${DOGFOOD_DUMP} | grep -v 'TRIGGER public _sl_' \
 	    > ${DUMPLIST}
 	pg_restore --dbname=${DOGFOOD_DBNAME} --no-acl --no-owner \
-	    --use-list=${DUMPLIST} ${EXIT_ON_ERROR} ${DOGFOOD_DUMP}
+	    --use-list=${DUMPLIST} ${EXIT_ON_ERROR} ${MULTIPROC} ${DOGFOOD_DUMP}
 	rm ${DUMPLIST}
 	../schema/upgrade.py -d ${DOGFOOD_DBNAME}
 	../schema/security.py -d ${DOGFOOD_DBNAME}

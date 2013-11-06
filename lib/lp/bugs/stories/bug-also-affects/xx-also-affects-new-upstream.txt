@@ -42,7 +42,7 @@ for the user to use as the affected upstream.
     >>> print user_browser.title
     Register project affected by...
 
-    >>> print "\n".join(get_feedback_messages(user_browser.contents))
+    >>> print_feedback_messages(user_browser.contents)
     There are some projects using the bug tracker you specified. One of
     these may be the one you were trying to register.
     >>> control = user_browser.getControl(name='field.existing_product')
@@ -75,7 +75,9 @@ this bug.
     >>> user_browser.getControl('Use Existing Project').click()
     >>> print user_browser.title
     Register project affected by...
-    >>> print get_feedback_messages(user_browser.contents)[-1]
+    >>> print_feedback_messages(user_browser.contents)
+    There is 1 error.
+    ...
     A fix for this bug has already been requested for The Foo Project
 
 Now we'll tell Launchpad to not use the existing upstream as we want to report
@@ -106,7 +108,7 @@ user and ask him to check if it's correct.
     >>> user_browser.getControl('Continue').click()
     >>> print user_browser.title
     Register project affected by...
-    >>> print "\n".join(get_feedback_messages(user_browser.contents))
+    >>> print_feedback_messages(user_browser.contents)
     There is 1 error.
     Launchpad does not recognize the bug tracker at this URL.
 

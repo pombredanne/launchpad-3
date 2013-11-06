@@ -87,8 +87,7 @@ shown as one of the authorized ones.
     >>> my_browser.getControl('Revoke Authorization', index=2).click()
     >>> print my_browser.title
     Authorized applications...
-    >>> for message in get_feedback_messages(my_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(my_browser.contents)
     Authorization revoked successfully.
 
     >>> my_browser.open('http://launchpad.dev/~salgado/+oauth-tokens')

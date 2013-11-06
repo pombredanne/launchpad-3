@@ -68,9 +68,7 @@ class DistroArchSeries(SQLBase):
 
     distroseries = ForeignKey(dbName='distroseries',
         foreignKey='DistroSeries', notNull=True)
-    processorfamily = ForeignKey(dbName='processorfamily',
-        foreignKey='ProcessorFamily', notNull=True)
-    processor_id = Int(name='processor', allow_none=True)
+    processor_id = Int(name='processor', allow_none=False)
     processor = Reference(processor_id, Processor.id)
     architecturetag = StringCol(notNull=True)
     official = BoolCol(notNull=True)
@@ -90,27 +88,10 @@ class DistroArchSeries(SQLBase):
         return self.getBinaryPackage(name)
 
     @property
-    def default_processor(self):
-        """See `IDistroArchSeries`."""
-        # XXX cprov 2005-08-31:
-        # This could possibly be better designed; let's think about it in
-        # the future. Pick the first processor we found for this
-        # distroarchseries.processorfamily. The data model should
-        # change to have a default processor for a processorfamily
-        return self.processors[0]
-
-    @property
-    def processors(self):
-        """See `IDistroArchSeries`."""
-        return Processor.selectBy(family=self.processorfamily, orderBy='id')
-
-    @property
     def title(self):
         """See `IDistroArchSeries`."""
         return '%s for %s (%s)' % (
-            self.distroseries.title, self.architecturetag,
-            self.processorfamily.name
-            )
+            self.distroseries.title, self.architecturetag, self.processor.name)
 
     @property
     def displayname(self):

@@ -56,11 +56,8 @@ class IDistroArchSeriesPublic(IHasOwner):
             IDistroSeries,
             title=_("The context distroseries"),
             required=False, readonly=False))
-    processorfamily = Choice(
-        title=_("Processor Family"),
-        required=True, vocabulary='ProcessorFamily')
     processor = Choice(
-        title=_("Processor"), required=False, vocabulary='Processor')
+        title=_("Processor"), required=True, vocabulary='Processor')
     architecturetag = exported(
         TextLine(
             title=_("Architecture Tag"),
@@ -129,12 +126,6 @@ class IDistroArchSeriesPublic(IHasOwner):
                 'True if this distroarchseries is the NominatedArchIndep '
                 'one.')),
         exported_as="is_nominated_arch_indep")
-    default_processor = Attribute(
-        "Return the DistroArchSeries default processor, by picking the "
-        "first processor inside its processorfamily.")
-    processors = Attribute(
-        "The group of Processors for this DistroArchSeries.processorfamily."
-        )
     main_archive = exported(
         Reference(
             Interface,  # Really IArchive, circular import fixed below.

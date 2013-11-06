@@ -38,6 +38,7 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.publishing import (
     DeletionError,
     IPublishingSet,
@@ -49,7 +50,6 @@ from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.distroseriesdifferencejob import find_waiting_jobs
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
-from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
@@ -118,23 +118,28 @@ class SoyuzTestPublisher:
             self.breezy_autotest_i386 = self.breezy_autotest['i386']
         except NotFoundError:
             self.breezy_autotest_i386 = self.breezy_autotest.newArch(
-                'i386', ProcessorFamily.get(1), False, self.person,
-                supports_virtualized=True)
+                'i386', getUtility(IProcessorSet).getByName('386'), False,
+                self.person, supports_virtualized=True)
         try:
             self.breezy_autotest_hppa = self.breezy_autotest['hppa']
         except NotFoundError:
             self.breezy_autotest_hppa = self.breezy_autotest.newArch(
-                'hppa', ProcessorFamily.get(4), False, self.person)
+                'hppa', getUtility(IProcessorSet).getByName('hppa'), False,
+                self.person)
         self.breezy_autotest.nominatedarchindep = self.breezy_autotest_i386
         fake_chroot = self.addMockFile('fake_chroot.tar.gz')
         self.breezy_autotest_i386.addOrUpdateChroot(fake_chroot)
         self.breezy_autotest_hppa.addOrUpdateChroot(fake_chroot)
 
-    def addFakeChroots(self, distroseries=None):
+    def addFakeChroots(self, distroseries=None, db_only=False):
         """Add fake chroots for all the architectures in distroseries."""
         if distroseries is None:
             distroseries = self.distroseries
-        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
+        if db_only:
+            fake_chroot = self.factory.makeLibraryFileAlias(
+                filename='fake_chroot.tar.gz', db_only=True)
+        else:
+            fake_chroot = self.addMockFile('fake_chroot.tar.gz')
         for arch in distroseries.architectures:
             arch.addOrUpdateChroot(fake_chroot)
 
@@ -837,17 +842,14 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         self.distroseries = self.factory.makeDistroSeries(
             distribution=self.distro, name="crazy")
         self.archive = self.factory.makeArchive()
-        self.avr_family = self.factory.makeProcessorFamily(
-            name="avr", restricted=True)
-        self.factory.makeProcessor(self.avr_family, "avr2001")
+        self.avr = self.factory.makeProcessor(name="avr2001", restricted=True)
         self.avr_distroarch = self.factory.makeDistroArchSeries(
-            architecturetag='avr', processorfamily=self.avr_family,
+            architecturetag='avr', processor=self.avr,
             distroseries=self.distroseries, supports_virtualized=True)
-        self.sparc_family = self.factory.makeProcessorFamily(name="sparc",
-            restricted=False)
-        self.factory.makeProcessor(self.sparc_family, "sparc64")
+        self.sparc = self.factory.makeProcessor(
+            name="sparc64", restricted=False)
         self.sparc_distroarch = self.factory.makeDistroArchSeries(
-            architecturetag='sparc', processorfamily=self.sparc_family,
+            architecturetag='sparc', processor=self.sparc,
             distroseries=self.distroseries, supports_virtualized=True)
         self.distroseries.nominatedarchindep = self.sparc_distroarch
         self.addFakeChroots(self.distroseries)
@@ -883,7 +885,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         an explicit ArchiveArch association with the archive.
         """
         available_archs = [self.sparc_distroarch, self.avr_distroarch]
-        getUtility(IArchiveArchSet).new(self.archive, self.avr_family)
+        getUtility(IArchiveArchSet).new(self.archive, self.avr)
         pubrec = self.getPubSource(architecturehintlist='any')
         self.assertEqual(
             [self.sparc_distroarch, self.avr_distroarch],
@@ -922,7 +924,7 @@ class BuildRecordCreationTests(TestNativePublishingBase):
         architecture to architectures that are unrestricted or
         explicitly associated with the archive.
         """
-        getUtility(IArchiveArchSet).new(self.archive, self.avr_family)
+        getUtility(IArchiveArchSet).new(self.archive, self.avr)
         pubrec = self.getPubSource(architecturehintlist='any')
         builds = pubrec.createMissingBuilds()
         self.assertEqual(2, len(builds))

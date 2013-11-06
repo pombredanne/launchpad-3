@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from doctest import DocTestSuite
@@ -11,6 +11,7 @@ import transaction
 
 from lp.archiveuploader.tagfiles import parse_tagfile
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import DevNullLogger
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
@@ -48,6 +49,9 @@ class FakePackagesMap:
 class TestGina(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
+
+    def assertPublishingStates(self, spphs, states):
+        self.assertEqual(states, [pub.status for pub in spphs])
 
     def test_dominate_imported_source_packages_dominates_imports(self):
         # dominate_imported_source_packages dominates the source
@@ -91,14 +95,12 @@ class TestGina(TestCaseWithFactory):
         dominate_imported_source_packages(
             txn, logger, series.distribution.name, series.name, pocket,
             FakePackagesMap({package.name: [{'Version': '1.1.1'}]}))
-        self.assertEqual([
+        states = [
             PackagePublishingStatus.SUPERSEDED,
             PackagePublishingStatus.SUPERSEDED,
-            PackagePublishingStatus.PUBLISHED,
-            PackagePublishingStatus.DELETED,
-            PackagePublishingStatus.PENDING,
-            ],
-            [pub.status for pub in spphs])
+            PackagePublishingStatus.PUBLISHED, PackagePublishingStatus.DELETED,
+            PackagePublishingStatus.PENDING]
+        self.assertPublishingStates(spphs, states)
 
     def test_dominate_imported_source_packages_dominates_deletions(self):
         # dominate_imported_source_packages dominates the source
@@ -126,12 +128,34 @@ class TestGina(TestCaseWithFactory):
         # The older, superseded release stays superseded; but the
         # releases that dropped out of the imported Sources list without
         # known successors are marked deleted.
-        self.assertEqual([
-            PackagePublishingStatus.SUPERSEDED,
-            PackagePublishingStatus.DELETED,
-            PackagePublishingStatus.DELETED,
-            ],
-            [pub.status for pub in pubs])
+        self.assertPublishingStates(
+            pubs, [PackagePublishingStatus.SUPERSEDED,
+            PackagePublishingStatus.DELETED, PackagePublishingStatus.DELETED])
+
+    def test_dominate_imported_sources_dominates_supported_series(self):
+        series = self.factory.makeDistroSeries()
+        pocket = PackagePublishingPocket.RELEASE
+        package = self.factory.makeSourcePackageName()
+        pubs = [
+            self.factory.makeSourcePackagePublishingHistory(
+                archive=series.main_archive, distroseries=series,
+                pocket=pocket, status=PackagePublishingStatus.PUBLISHED,
+                sourcepackagerelease=self.factory.makeSourcePackageRelease(
+                    sourcepackagename=package, version=version))
+            for version in ['1.0', '1.1', '1.1a']]
+
+        # In this scenario, 1.0 is a superseded release.
+        pubs[0].supersede()
+        # Now set the series to SUPPORTED.
+        series.status = SeriesStatus.SUPPORTED
+        logger = DevNullLogger()
+        txn = FakeTransaction()
+        dominate_imported_source_packages(
+            txn, logger, series.distribution.name, series.name, pocket,
+            FakePackagesMap({}))
+        self.assertPublishingStates(
+            pubs, [PackagePublishingStatus.SUPERSEDED,
+            PackagePublishingStatus.DELETED, PackagePublishingStatus.DELETED])
 
 
 class TestSourcePackageData(TestCaseWithFactory):

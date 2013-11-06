@@ -599,12 +599,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         :param available_archs: Architectures to consider
         :return: Sequence of `IDistroArch` instances.
         """
-        # Return all distroarches with unrestricted processor families or with
-        # processor families the archive is explicitly associated with.
+        # Return all distroarches with unrestricted processors or with
+        # processors the archive is explicitly associated with.
         return [distroarch for distroarch in available_archs
-            if not distroarch.processorfamily.restricted or
-               distroarch.processorfamily in
-                    self.archive.enabled_restricted_families]
+            if not distroarch.processor.restricted or
+               distroarch.processor in
+                    self.archive.enabled_restricted_processors]
 
     def createMissingBuilds(self, architectures_available=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
@@ -884,9 +884,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                     diff.diff_content, self.archive).http_url
         return None
 
-    def requestDeletion(self, removed_by, removal_comment=None):
+    def requestDeletion(self, removed_by, removal_comment=None,
+                        immutable_check=True):
         """See `IPublishing`."""
-        if not self.archive.canModifySuite(self.distroseries, self.pocket):
+        # Fail if operation would modify an immutable suite (eg. the
+        # RELEASE pocket of a CURRENT series).
+        if (immutable_check and
+            not self.archive.canModifySuite(self.distroseries, self.pocket)):
             raise DeletionError(
                 "Cannot delete publications from suite '%s'" %
                 self.distroseries.getSuite(self.pocket))

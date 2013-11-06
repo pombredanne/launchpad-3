@@ -43,7 +43,7 @@ product's blueprints.
 
     >>> browser.getLink('Link to a blueprint').click()
 
-    >>> browser.getControl('Blueprint').value = ['canvas']
+    >>> browser.getControl('Blueprint').value = ['2']
     >>> browser.getControl('Continue').click()
     >>> printSpecBranchLinks(browser)
     Support &lt;canvas&gt; Objects
@@ -85,8 +85,7 @@ Again, attempting to link to the same branch gives an error.
     >>> browser.getLink('Link to another branch').click()
     >>> browser.getControl('Branch').value = '~mark/firefox/release-0.8'
     >>> browser.getControl('Continue').click()
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print message
+    >>> print_feedback_messages(browser.contents)
     There is 1 error.
     This branch has already been linked to the blueprint
 

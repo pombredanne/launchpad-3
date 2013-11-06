@@ -61,8 +61,7 @@ an error message will be displayed.
     >>> user_browser.getControl('Summary').value
     ''
     >>> user_browser.getControl('Continue').click()
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(user_browser.contents)
     There is 1 error.
     You must enter a summary of your problem.
 
@@ -139,8 +138,7 @@ summary he provided.
 If the user doesn't provide details, he'll get an error message:
 
     >>> user_browser.getControl('Post Question').click()
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(user_browser.contents)
     There is 1 error.
     You must provide details about your problem.
 
@@ -149,8 +147,7 @@ first step:
 
     >>> user_browser.getControl('Summary').value = ''
     >>> user_browser.getControl('Post Question').click()
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(user_browser.contents)
     There are 2 errors.
     You must enter a summary of your problem.
 

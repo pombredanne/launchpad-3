@@ -11,22 +11,14 @@ __all__ = [
 
 from lazr.restful.declarations import (
     export_as_webservice_entry,
-    export_operation_as,
-    export_read_operation,
     exported,
-    operation_parameters,
-    operation_returns_collection_of,
-    rename_parameters_as,
     )
 from lazr.restful.fields import Reference
 from zope.interface import (
     Attribute,
     Interface,
     )
-from zope.schema import (
-    Int,
-    TextLine,
-    )
+from zope.schema import TextLine
 
 from lp import _
 from lp.answers.interfaces.questiontarget import IQuestionTarget
@@ -34,7 +26,6 @@ from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
     IHasOfficialBugTags,
     )
-from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     )
@@ -180,21 +171,6 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
         See https://bugs.launchpad.net/soyuz/+bug/236922 for a plan
         on how this criteria will be centrally encoded.
         """)
-
-    @rename_parameters_as(quantity='limit')
-    @operation_parameters(
-        quantity=Int(
-            title=_("The maximum number of bug tasks to return"),
-            min=1))
-    @operation_returns_collection_of(IBugTask)
-    @export_operation_as(name="getBugTasks")
-    @export_read_operation()
-    def bugtasks(quantity=None):
-        """Bug tasks on this source package, sorted newest first.
-
-        If needed, you can limit the number of bugtasks you are interested
-        in using the quantity parameter.
-        """
 
     def __eq__(other):
         """IDistributionSourcePackage comparison method.
