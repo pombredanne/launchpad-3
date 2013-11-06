@@ -207,8 +207,7 @@ Setup this embarrasing story.
 
     >>> browser.getControl('Further information').value = 'Test Bug 1'
     >>> browser.getControl('Submit').click()
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(browser.contents)
     Thank you for your bug report...
 
     >>> bug_1_url = browser.url
@@ -220,8 +219,7 @@ Setup this embarrasing story.
 
     >>> browser.getControl('Further information').value = 'Test Bug 2'
     >>> browser.getControl('Submit').click()
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(browser.contents)
     Thank you for your bug report...
 
     >>> bug_2_url = browser.url

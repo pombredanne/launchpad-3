@@ -39,7 +39,7 @@ from lp.testing.pages import (
     extract_text,
     find_main_content,
     find_tag_by_id,
-    get_feedback_messages,
+    print_feedback_messages,
     )
 
 
@@ -145,7 +145,7 @@ def setUp(test):
     test.globs['browser'] = Browser()
     test.globs['find_tag_by_id'] = find_tag_by_id
     test.globs['find_main_content'] = find_main_content
-    test.globs['get_feedback_messages'] = get_feedback_messages
+    test.globs['print_feedback_messages'] = print_feedback_messages
     test.globs['extract_text'] = extract_text
 
 

@@ -58,7 +58,7 @@ class PackageCloner:
     implements(IPackageCloner)
 
     def clonePackages(self, origin, destination, distroarchseries_list=None,
-                      proc_families=None, sourcepackagenames=None,
+                      processors=None, sourcepackagenames=None,
                       always_create=False):
         """Copies packages from origin to destination package location.
 
@@ -73,8 +73,8 @@ class PackageCloner:
             distroarchseries instances.
         @param distroarchseries_list: the binary packages will be copied
             for the distroarchseries pairs specified (if any).
-        @param proc_families: the processor families to create builds for.
-        @type proc_families: Iterable
+        @param processors: the processors to create builds for.
+        @type processors: Iterable
         @param sourcepackagenames: the sourcepackages to copy to the
             destination
         @type sourcepackagenames: Iterable
@@ -94,22 +94,21 @@ class PackageCloner:
                     origin, destination, origin_das, destination_das,
                     sourcepackagenames)
 
-        if proc_families is None:
-            proc_families = []
+        if processors is None:
+            processors = []
 
         self._create_missing_builds(
             destination.distroseries, destination.archive,
-            distroarchseries_list, proc_families, always_create)
+            distroarchseries_list, processors, always_create)
 
-    def _create_missing_builds(
-        self, distroseries, archive, distroarchseries_list,
-        proc_families, always_create):
+    def _create_missing_builds(self, distroseries, archive,
+                               distroarchseries_list, processors,
+                               always_create):
         """Create builds for all cloned source packages.
 
         :param distroseries: the distro series for which to create builds.
         :param archive: the archive for which to create builds.
-        :param proc_families: the list of processor families for
-            which to create builds.
+        :param processors: the list of processors for which to create builds.
         """
         # Avoid circular imports.
         from lp.soyuz.interfaces.publishing import active_publishing_status
@@ -119,9 +118,9 @@ class PackageCloner:
         architectures = list(distroseries.architectures)
 
         # Filter the list of DistroArchSeries so that only the ones
-        # specified in proc_families remain
+        # specified in processors remain.
         architectures = [architecture for architecture in architectures
-             if architecture.processorfamily in proc_families]
+             if architecture.processor in processors]
 
         if len(architectures) == 0:
             return
@@ -264,17 +263,13 @@ class PackageCloner:
             """ % sqlvalues(
                 PackagePublishingStatus.SUPERSEDED, UTC_NOW))
 
-        def get_family(archivearch):
-            """Extract the processor family from an `IArchiveArch`."""
-            return removeSecurityProxy(archivearch).processorfamily
-
-        proc_families = [
-            get_family(archivearch) for archivearch
+        processors = [
+            removeSecurityProxy(archivearch).processor for archivearch
             in getUtility(IArchiveArchSet).getByArchive(destination.archive)]
 
         self._create_missing_builds(
             destination.distroseries, destination.archive, (),
-            proc_families, False)
+            processors, False)
 
     def _compute_packageset_delta(self, origin):
         """Given a source/target archive find obsolete or missing packages.

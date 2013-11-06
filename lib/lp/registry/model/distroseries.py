@@ -349,24 +349,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getDistroArchSeriesByProcessor(self, processor):
         """See `IDistroSeries`."""
-        # XXX: JRV 2010-01-14: This should ideally use storm to find the
-        # distroarchseries rather than iterating over all of them, but
-        # I couldn't figure out how to do that - and a trivial for loop
-        # isn't expensive given there's generally less than a dozen
-        # architectures.
-        for architecture in self.architectures:
-            if architecture.processorfamily == processor.family:
-                return architecture
-        return None
+        return Store.of(self).find(
+            DistroArchSeries,
+            DistroArchSeries.distroseriesID == self.id,
+            DistroArchSeries.processor_id == processor.id).one()
 
     @property
     def enabled_architectures(self):
-        store = Store.of(self)
-        results = store.find(
+        return Store.of(self).find(
             DistroArchSeries,
             DistroArchSeries.distroseries == self,
-            DistroArchSeries.enabled == True)
-        return results.order_by(DistroArchSeries.architecturetag)
+            DistroArchSeries.enabled == True).order_by(
+                DistroArchSeries.architecturetag)
 
     @property
     def buildable_architectures(self):
@@ -1109,15 +1103,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # results will only see DSBPs
         return DecoratedResultSet(package_caches, result_to_dsbp)
 
-    def newArch(self, architecturetag, processorfamily, official, owner,
+    def newArch(self, architecturetag, processor, official, owner,
                 supports_virtualized=False, enabled=True):
         """See `IDistroSeries`."""
-        distroarchseries = DistroArchSeries(
-            architecturetag=architecturetag, processorfamily=processorfamily,
-            processor=processorfamily.processors[0], official=official,
-            distroseries=self, owner=owner,
+        return DistroArchSeries(
+            architecturetag=architecturetag, processor=processor,
+            official=official, distroseries=self, owner=owner,
             supports_virtualized=supports_virtualized, enabled=enabled)
-        return distroarchseries
 
     def newMilestone(self, name, dateexpected=None, summary=None,
                      code_name=None, tags=None):

@@ -305,14 +305,15 @@ class BugContextMenu(ContextMenu):
         if self.context.bug.isMuted(user):
             text = "Unmute bug mail"
             icon = 'unmute'
+            summary = (
+                'Unmute this bug so that you will receive emails about it.')
         else:
             text = "Mute bug mail"
             icon = 'mute'
+            summary = (
+                'Mute this bug so that you will not receive emails about it.')
 
-        return Link(
-            '+mute', text, icon=icon, summary=(
-                "Mute this bug so that you will not receive emails "
-                "about it."))
+        return Link('+mute', text, icon=icon, summary=summary)
 
     def nominate(self):
         """Return the 'Target/Nominate for series' Link."""

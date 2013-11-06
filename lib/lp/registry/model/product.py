@@ -105,12 +105,12 @@ from lp.bugs.interfaces.bugtarget import (
     BUG_POLICY_DEFAULT_TYPES,
     )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
-from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     OfficialBugTagTargetMixin,
     )
 from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.bugtaskflat import BugTaskFlat
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
@@ -478,20 +478,22 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if not public_specs.is_empty():
             # Unlike bugs and branches, specifications cannot be USERDATA or a
             # security type.
-            yield CannotChangeInformationType(
-                'Some blueprints are public.')
+            yield CannotChangeInformationType('Some blueprints are public.')
         store = Store.of(self)
-        non_proprietary_bugs = store.find(Bug,
-            Not(Bug.information_type.is_in(PROPRIETARY_INFORMATION_TYPES)),
-            BugTask.bug == Bug.id, BugTask.product == self.id)
+        series_ids = [series.id for series in self.series]
+        non_proprietary_bugs = store.find(
+            BugTaskFlat,
+            BugTaskFlat.information_type.is_in(FREE_INFORMATION_TYPES),
+            Or(
+                BugTaskFlat.product == self.id,
+                BugTaskFlat.productseries_id.is_in(series_ids)))
         if not non_proprietary_bugs.is_empty():
             yield CannotChangeInformationType(
                 'Some bugs are neither proprietary nor embargoed.')
         # Default returns all public branches.
         non_proprietary_branches = store.find(
             Branch, Branch.product == self.id,
-            Not(Branch.information_type.is_in(PROPRIETARY_INFORMATION_TYPES))
-        )
+            Not(Branch.information_type.is_in(PROPRIETARY_INFORMATION_TYPES)))
         if not non_proprietary_branches.is_empty():
             yield CannotChangeInformationType(
                 'Some branches are neither proprietary nor embargoed.')

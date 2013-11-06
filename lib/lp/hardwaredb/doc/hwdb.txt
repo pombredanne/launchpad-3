@@ -717,11 +717,11 @@ are returned.
 
 It is also possible to search for a distroseries and architecture.
 
-    >>> from lp.soyuz.interfaces.processor import IProcessorFamilySet
-    >>> amd64 = getUtility(IProcessorFamilySet).getByName('amd64')
+    >>> from lp.soyuz.interfaces.processor import IProcessorSet
+    >>> amd64 = getUtility(IProcessorSet).getByName('amd64')
     >>> warty_amd64 = factory.makeDistroArchSeries(
     ...     distroseries=warty, architecturetag='amd64',
-    ...     processorfamily=amd64)
+    ...     processor=amd64)
     >>> submission = factory.makeHWSubmission(distroarchseries=warty_amd64)
     >>> for submission in hw_submission_set.search(distroseries=warty, architecture='amd64'):
     ...     print '%s %s ' % (

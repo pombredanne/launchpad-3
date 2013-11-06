@@ -223,15 +223,7 @@ class ImporterHandler:
             raise DataSetupError("Error finding distroarchseries for %s/%s"
                                  % (self.distroseries.name, archtag))
 
-        # XXX kiko 2005-11-07: Is this really a selectOneBy? Can't there
-        # be multiple proessors per family?
-        processor = Processor.selectOneBy(familyID=dar.processorfamily.id)
-        if not processor:
-            raise DataSetupError("Unable to find a processor from the "
-                                 "processor family %s chosen from %s/%s"
-                                 % (dar.processorfamily.name,
-                                    self.distroseries.name, archtag))
-
+        processor = dar.processor
         info = {'distroarchseries': dar, 'processor': processor}
         self.archinfo[archtag] = info
 

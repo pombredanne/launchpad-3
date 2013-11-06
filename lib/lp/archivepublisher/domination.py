@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive Domination class.
@@ -364,7 +364,8 @@ class Dominator:
         self.logger = logger
         self.archive = archive
 
-    def dominatePackage(self, sorted_pubs, live_versions, generalization):
+    def dominatePackage(self, sorted_pubs, live_versions, generalization,
+                        immutable_check=True):
         """Dominate publications for a single package.
 
         The latest publication for any version in `live_versions` stays
@@ -432,7 +433,7 @@ class Dominator:
                 # This publication is no longer live, but there is no
                 # newer version to supersede it either.  Therefore it
                 # must be deleted.
-                pub.requestDeletion(None)
+                pub.requestDeletion(None, immutable_check=immutable_check)
                 self.logger.debug2("Deleting version %s.", version)
             else:
                 # This publication is superseded.  This is what we're
@@ -759,7 +760,7 @@ class Dominator:
         return query.order_by(Desc(SPR.version), Desc(SPPH.datecreated))
 
     def dominateSourceVersions(self, distroseries, pocket, package_name,
-                               live_versions):
+                               live_versions, immutable_check=True):
         """Dominate source publications based on a set of "live" versions.
 
         Active publications for the "live" versions will remain active.  All
@@ -778,7 +779,9 @@ class Dominator:
         generalization = GeneralizedPublication(is_source=True)
         pubs = self.findPublishedSPPHs(distroseries, pocket, package_name)
         pubs = generalization.sortPublications(pubs)
-        self.dominatePackage(pubs, live_versions, generalization)
+        self.dominatePackage(
+            pubs, live_versions, generalization,
+            immutable_check=immutable_check)
 
     def judge(self, distroseries, pocket):
         """Judge superseded sources and binaries."""

@@ -444,10 +444,7 @@ says that.
   >>> evo_owner_browser.getControl('Upload').click()
   >>> evo_owner_browser.url
   'http://translations.launchpad.dev/evolution/trunk/+translations-upload'
-  >>> msgs = get_feedback_messages(evo_owner_browser.contents)
-  >>> print len(msgs)
-  1
-  >>> print msgs[0]
+  >>> print_feedback_messages(evo_owner_browser.contents)
   Upload ignored.  The tarball you uploaded did not contain...
 
 Bad filter_extension

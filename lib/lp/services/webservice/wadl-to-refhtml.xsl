@@ -399,10 +399,6 @@
                 <xsl:text>/+processors/</xsl:text>
                 <var>&lt;processor.name&gt;</var>
             </xsl:when>
-            <xsl:when test="@id = 'processor_family'">
-                <xsl:text>/+processor-families/</xsl:text>
-                <var>&lt;processor_family.name&gt;</var>
-            </xsl:when>
             <xsl:when test="@id = 'product_release'">
                 <xsl:text>/</xsl:text>
                 <var>&lt;product.name&gt;</var>

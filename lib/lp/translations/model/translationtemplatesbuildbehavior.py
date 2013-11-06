@@ -118,12 +118,6 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                 tarball, False, branch.owner, productseries=series,
                 approver_factory=TranslationBuildApprover)
 
-    def updateSlaveStatus(self, raw_slave_status, status):
-        """See `IBuildFarmJobBehavior`."""
-        if status['builder_status'] == 'BuilderStatus.WAITING':
-            if len(raw_slave_status) >= 4:
-                status['filemap'] = raw_slave_status[3]
-
     @defer.inlineCallbacks
     def handleStatus(self, queue_item, status, slave_status):
         """Deal with a finished build job.

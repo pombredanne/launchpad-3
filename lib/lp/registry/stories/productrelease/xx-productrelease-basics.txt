@@ -63,8 +63,8 @@ Only one release can be created for each milestone.
 
     >>> browser.open(
     ...     'http://launchpad.dev/firefox/+milestone/1.0/+addrelease')
-    >>> print get_feedback_messages(browser.contents)
-    [u'A project release already exists for this milestone.']
+    >>> print_feedback_messages(browser.contents)
+    A project release already exists for this milestone.
 
 The milestone deactivation notice is not shown when the user selects the
 the "Keep the milestone <name> active" checkbox.
@@ -76,11 +76,9 @@ the "Keep the milestone <name> active" checkbox.
     >>> browser.getControl("Date released").value = '2009-01-01'
     >>> browser.getControl("Keep the bar milestone active.").selected = True
     >>> browser.getControl('Create release').click()
-    >>> print get_feedback_messages(browser.contents)
-    []
+    >>> print_feedback_messages(browser.contents)
     >>> browser.open('http://launchpad.dev/firefox/trunk/bar')
-    >>> print get_feedback_messages(browser.contents)
-    []
+    >>> print_feedback_messages(browser.contents)
 
 
 == Checking releases with the same version ==
