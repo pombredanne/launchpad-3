@@ -21,6 +21,8 @@ from lp.services.config import config
 
 SWIFT_CONTAINER_PREFIX = 'librarian_'
 
+ONE_DAY = 24 * 60 * 60
+
 
 def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
     '''Copy a range of Librarian files from disk into Swift.
@@ -71,7 +73,7 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
 
             # Skip files which have been modified recently, as they
             # may be uploads still in progress.
-            if os.path.getmtime(fs_path) > time.time() - (60 * 60):
+            if os.path.getmtime(fs_path) > time.time() - ONE_DAY:
                 log.debug('Skipping recent upload %s' % fs_path)
                 continue
 
