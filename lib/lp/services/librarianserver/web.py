@@ -118,8 +118,7 @@ class LibraryFileAliasResource(resource.Resource):
 
         token = request.args.get('token', [None])[0]
         path = request.path
-        swift_enabled = getFeatureFlag('librarian.swift.enabled') or False
-        if swift_enabled:
+        if getFeatureFlag('librarian.swift.enabled'):
             deferred = deferToThread(
                 self._getFileAlias_swift, self.aliasID, token, path)
             deferred.addCallback(
