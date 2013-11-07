@@ -11,6 +11,7 @@ __all__ = [
 
 from contextlib import contextmanager
 import os.path
+import re
 import sys
 import time
 
@@ -64,8 +65,17 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
 
         log.debug('Scanning {0} for matching files'.format(dirpath))
 
+        _filename_re = re.compile('^[0-9a-f]{2}$')
+
         for filename in sorted(filenames):
             fs_path = os.path.join(dirpath, filename)
+
+            # Skip any files with names that are not two hex digits.
+            # This is noise in the filesystem database.
+            if _filename_re.match(filename) is None:
+                log.debug('Skipping noise %s' % fs_path)
+                continue
+
             if fs_path < start_fs_path:
                 continue
             if fs_path > end_fs_path:
