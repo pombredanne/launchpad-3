@@ -25,6 +25,7 @@ class UbuntuMaintenance(object):
 
     # architectures we support (but not for LTS time)
     SUPPORTED_ARCHES = PRIMARY_ARCHES + [
+        "armel",
         "armhf",
         "arm64",
         ]
