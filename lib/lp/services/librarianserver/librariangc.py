@@ -711,30 +711,33 @@ def delete_unwanted_disk_files(con):
             )
 
 
-def swift_files():
+def swift_files(max_lfc_id):
     """Generate the (container, name) of all files stored in Swift.
 
     Results are yielded in numerical order.
     """
+    final_container = swift.swift_location(max_lfc_id)[0]
+
     with swift.connection() as swift_connection:
-        try:
-            container_num = 0
-            while True:
-                # We generate the container names, rather than query the
-                # server, because the mock Swift implementation doesn't
-                # support that operation.
-                container = swift.SWIFT_CONTAINER_PREFIX + str(container_num)
+        # We generate the container names, rather than query the
+        # server, because the mock Swift implementation doesn't
+        # support that operation.
+        container_num = -1
+        container = None
+        while container != final_container:
+            container_num += 1
+            container = swift.SWIFT_CONTAINER_PREFIX + str(container_num)
+            try:
                 names = sorted(
                     swift_connection.get_container(
                         container, full_listing=True)[1],
                     key=lambda x: int(x['name']))
                 for name in names:
                     yield (container, name)
-                container_num += 1
-        except swiftclient.ClientException as x:
-            if x.http_status == 404:
-                return
-            raise
+            except swiftclient.ClientException as x:
+                if x.http_status == 404:
+                    continue
+                raise
 
 
 def delete_unwanted_swift_files(con):
@@ -742,6 +745,11 @@ def delete_unwanted_swift_files(con):
     assert getFeatureFlag('librarian.swift.enabled')
 
     cur = con.cursor()
+
+    # Get the largest LibraryFileContent id in the database. This lets
+    # us know when to stop looking in Swift for more files.
+    cur.execute("SELECT max(id) FROM LibraryFileContent")
+    max_lfc_id = cur.fetchone()[0]
 
     # Calculate all stored LibraryFileContent ids that we want to keep.
     # Results are ordered so we don't have to suck them all in at once.
@@ -759,7 +767,7 @@ def delete_unwanted_swift_files(con):
     removed_count = 0
     content_id = next_wanted_content_id = -1
 
-    for container, obj in swift_files():
+    for container, obj in swift_files(max_lfc_id):
         name = obj['name']
         content_id = int(name)
 
