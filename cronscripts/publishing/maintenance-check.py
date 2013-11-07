@@ -24,7 +24,10 @@ class UbuntuMaintenance(object):
         ]
 
     # architectures we support (but not for LTS time)
-    SUPPORTED_ARCHES = PRIMARY_ARCHES + ["armel"]
+    SUPPORTED_ARCHES = PRIMARY_ARCHES + [
+        "armhf",
+        "arm64",
+        ]
 
     # what defines the seeds is documented in wiki.ubuntu.com/SeedManagement
     SERVER_SEEDS = [
