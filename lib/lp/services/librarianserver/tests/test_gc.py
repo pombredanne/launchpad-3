@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import calendar
 from cStringIO import StringIO
 from datetime import datetime, timedelta
 import os
@@ -89,6 +90,7 @@ class TestLibrarianGarbageCollectionBase:
                 if not os.path.exists(os.path.dirname(path)):
                     os.makedirs(os.path.dirname(path))
                 open(path, 'w').write('whatever')
+                os.utime(path, (0,0))  # Ancient past, so never considered new.
         self.ztm.abort()
 
         self.con = connect(
@@ -132,6 +134,11 @@ class TestLibrarianGarbageCollectionBase:
         f2.date_created = self.ancient_past
         f1.content.datecreated = self.ancient_past
         f2.content.datecreated = self.ancient_past
+
+        # Set the time on disk to match the database timestamp.
+        utime = calendar.timegm(self.ancient_past.utctimetuple())
+        os.utime(librariangc.get_file_path(f1.contentID), (utime, utime))
+        os.utime(librariangc.get_file_path(f2.contentID), (utime, utime))
 
         del f1, f2
 
@@ -303,7 +310,7 @@ class TestLibrarianGarbageCollectionBase:
         librariangc.expire_aliases(self.con)
 
         self.ztm.begin()
-        # Make sure f1 is still there and has content. This ensures that
+        # Make sure f1 is still there and has content. This ID that
         # our stay of execution is still working.
         f1 = LibraryFileAlias.get(self.f1_id)
         self.assert_(f1.content is not None)
