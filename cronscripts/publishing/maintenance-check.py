@@ -105,6 +105,24 @@ class QuantalUbuntuMaintenance(UbuntuMaintenance):
         ]
 
 
+class TrustyUbuntuMaintenance(UbuntuMaintenance):
+    """ The support timeframe for the 14.04 (trusty) LTS release.
+        This changes the timeframe for desktop packages from 3y to 5y
+    """
+
+    # lts support timeframe, order is important, least supported must be last
+    # time, seeds
+    SUPPORT_TIMEFRAME = [
+        ("5y", UbuntuMaintenance.SERVER_SEEDS),
+        ("5y", UbuntuMaintenance.DESKTOP_SEEDS),
+        ("9m", UbuntuMaintenance.SUPPORTED_SEEDS),
+        ]
+
+    # on a LTS this is significant, it defines what names get LTS support
+    DISTRO_NAMES = [
+        "ubuntu",
+        ]
+        
 OneiricUbuntuMaintenance = QuantalUbuntuMaintenance
 
 
