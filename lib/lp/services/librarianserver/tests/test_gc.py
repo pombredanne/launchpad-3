@@ -310,7 +310,7 @@ class TestLibrarianGarbageCollectionBase:
         librariangc.expire_aliases(self.con)
 
         self.ztm.begin()
-        # Make sure f1 is still there and has content. This ID that
+        # Make sure f1 is still there and has content. This ensures that
         # our stay of execution is still working.
         f1 = LibraryFileAlias.get(self.f1_id)
         self.assert_(f1.content is not None)
