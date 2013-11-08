@@ -10,6 +10,7 @@ __all__ = [
     ]
 
 from contextlib import contextmanager
+import hashlib
 import os.path
 import re
 import sys
@@ -115,19 +116,26 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
                 swift_connection.put_container(container)
 
             try:
-                swift_connection.head_object(container, obj_name)
+                headers = swift_connection.head_object(container, obj_name)
                 log.debug(
                     "{0} already exists in Swift({1}, {2})".format(
                         lfc, container, obj_name))
+                if ('x-object-manifest' not in headers and
+                        int(headers['content-length'])
+                        != os.path.getsize(fs_path)):
+                    raise AssertionError(
+                        '{0} has incorrect size in Swift'.format(lfc))
             except swiftclient.ClientException as x:
                 if x.http_status != 404:
                     raise
                 log.info(
                     'Putting {0} into Swift ({1}, {2})'.format(
                         lfc, container, obj_name))
-                swift_connection.put_object(
-                    container, obj_name,
-                    open(fs_path, 'rb'), os.path.getsize(fs_path))
+                md5_stream = HashStream(open(fs_path, 'rb'))
+                md5_hash = swift_connection.put_object(
+                    container, obj_name, md5_stream, os.path.getsize(fs_path))
+                assert md5_stream.hash.hexdigest() == md5_hash, (
+                    "Swift upload returned invalid hash for {0}".format(lfc))
 
             if remove:
                 os.unlink(fs_path)
@@ -217,6 +225,18 @@ class SwiftStream:
 
     def tell(self):
         return self._offset
+
+
+class HashStream:
+    """Read a file while calculating a checksum as we go."""
+    def __init__(self, stream, hash_factory=hashlib.md5):
+        self._stream = stream
+        self.hash = hash_factory()
+
+    def read(self, size=-1):
+        chunk = self._stream.read()
+        self.hash.update(chunk)
+        return chunk
 
 
 class ConnectionPool:
