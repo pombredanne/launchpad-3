@@ -183,7 +183,7 @@ class BuildQueue(SQLBase):
     def getEstimatedJobStartTime(self, now=None):
         """See `IBuildQueue`."""
         from lp.buildmaster.queuedepth import estimate_job_start_time
-        return estimate_job_start_time(self, now)
+        return estimate_job_start_time(self, now or self._now())
 
     @staticmethod
     def _now():
