@@ -57,6 +57,8 @@ from lp.bugs.scripts.checkwatches.scheduler import (
     BugWatchScheduler,
     MAX_SAMPLE_SIZE,
     )
+from lp.buildmaster.enums import BuildQueueStatus
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
@@ -99,6 +101,7 @@ from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import EmailAddress
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.librarian.model import TimeLimitedToken
 from lp.services.log.logger import PrefixFilter
@@ -1359,6 +1362,38 @@ class UnusedAccessPolicyPruner(TunableLoop):
         transaction.commit()
 
 
+class BuildQueueMigrator(TunableLoop):
+    """Populate the status and build_farm_job columns of BuildQueue."""
+
+    maximum_chunk_size = 5000
+
+    status_map = {
+        JobStatus.WAITING: BuildQueueStatus.WAITING,
+        JobStatus.RUNNING: BuildQueueStatus.RUNNING,
+        JobStatus.SUSPENDED: BuildQueueStatus.SUSPENDED,
+        }
+
+    def __init__(self, log, abort_time=None):
+        super(BuildQueueMigrator, self).__init__(log, abort_time)
+        self.start_at = 1
+        self.store = IMasterStore(BuildQueue)
+
+    def findBuildQueues(self):
+        return self.store.find(
+            BuildQueue, BuildQueue.id >= self.start_at).order_by(BuildQueue.id)
+
+    def isDone(self):
+        return self.findBuildQueues().is_empty()
+
+    def __call__(self, chunk_size):
+        bqs = list(self.findBuildQueues()[:chunk_size])
+        for bq in bqs:
+            bq.build_farm_job = bq.specific_job.build.build_farm_job
+            bq.status = self.status_map[bq.job.status]
+        self.start_at = bqs[-1].id + 1
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1613,6 +1648,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
+        BuildQueueMigrator,
         ]
     experimental_tunable_loops = []
 
