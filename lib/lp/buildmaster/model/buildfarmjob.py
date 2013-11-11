@@ -6,6 +6,7 @@ __all__ = [
     'BuildFarmJob',
     'BuildFarmJobMixin',
     'BuildFarmJobOld',
+    'SpecificBuildFarmJobSourceMixin',
     ]
 
 import datetime
