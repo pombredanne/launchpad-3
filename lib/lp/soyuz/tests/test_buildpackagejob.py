@@ -197,41 +197,12 @@ class TestBuildPackageJob(TestBuildJobBase):
             removeSecurityProxy(bq).estimated_duration = timedelta(
                 seconds=duration)
 
-    def test_processor(self):
-        # Test that BuildPackageJob returns the correct processor.
-        build, bq = find_job(self, 'gcc', '386')
-        bpj = bq.specific_job
-        self.assertEqual(bpj.processor.id, 1)
-        build, bq = find_job(self, 'bison', 'hppa')
-        bpj = bq.specific_job
-        self.assertEqual(bpj.processor.id, 3)
-
-    def test_virtualized(self):
-        # Test that BuildPackageJob returns the correct virtualized flag.
-        build, bq = find_job(self, 'apg', '386')
-        bpj = bq.specific_job
-        self.assertEqual(bpj.virtualized, False)
-        build, bq = find_job(self, 'flex', 'hppa')
-        bpj = bq.specific_job
-        self.assertEqual(bpj.virtualized, False)
-
     def test_providesInterfaces(self):
         # Ensure that a BuildPackageJob generates an appropriate cookie.
         build, bq = find_job(self, 'gcc', '386')
         build_farm_job = bq.specific_job
         self.assertProvides(build_farm_job, IBuildPackageJob)
         self.assertProvides(build_farm_job, IBuildFarmBuildJob)
-
-    def test_jobStarted(self):
-        # Starting a build updates the status.
-        build, bq = find_job(self, 'gcc', '386')
-        build_package_job = bq.specific_job
-        build_package_job.jobStarted()
-        self.assertEqual(
-            BuildStatus.BUILDING, build_package_job.build.status)
-        self.assertIsNot(None, build_package_job.build.date_started)
-        self.assertIsNot(None, build_package_job.build.date_first_dispatched)
-        self.assertIs(None, build_package_job.build.date_finished)
 
 
 class TestBuildPackageJobScore(TestCaseWithFactory):

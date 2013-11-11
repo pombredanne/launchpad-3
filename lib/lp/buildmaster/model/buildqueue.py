@@ -24,7 +24,10 @@ from sqlobject import (
 from zope.component import getSiteManager
 from zope.interface import implements
 
-from lp.buildmaster.enums import BuildFarmJobType
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.interfaces.buildqueue import (
     IBuildQueue,
@@ -158,7 +161,7 @@ class BuildQueue(SQLBase):
         self.builder = builder
         if self.job.status != JobStatus.RUNNING:
             self.job.start()
-        self.specific_job.jobStarted()
+        self.specific_job.build.updateStatus(BuildStatus.BUILDING)
         if builder is not None:
             del get_property_cache(builder).currentjob
 
@@ -171,13 +174,13 @@ class BuildQueue(SQLBase):
         self.job.date_started = None
         self.job.date_finished = None
         self.logtail = None
-        self.specific_job.jobReset()
+        self.specific_job.build.updateStatus(BuildStatus.NEEDSBUILD)
         if builder is not None:
             del get_property_cache(builder).currentjob
 
     def cancel(self):
         """See `IBuildQueue`."""
-        self.specific_job.jobCancel()
+        self.specific_job.build.updateStatus(BuildStatus.CANCELLED)
         self.destroySelf()
 
     def getEstimatedJobStartTime(self, now=None):

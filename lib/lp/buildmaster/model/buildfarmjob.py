@@ -50,9 +50,6 @@ class BuildFarmJobOld:
 
     implements(IBuildFarmJobOld)
 
-    processor = None
-    virtualized = None
-
     @staticmethod
     def preloadBuildFarmJobs(jobs):
         """Preload the build farm jobs to which the given jobs will delegate.
@@ -92,19 +89,6 @@ class BuildFarmJobOld:
     def postprocessCandidate(job, logger):
         """See `IBuildFarmJobOld`."""
         return True
-
-    def jobStarted(self):
-        """See `IBuildFarmJobOld`."""
-        # XXX wgrant: builder should be set here.
-        self.build.updateStatus(BuildStatus.BUILDING)
-
-    def jobReset(self):
-        """See `IBuildFarmJob`."""
-        self.build.updateStatus(BuildStatus.NEEDSBUILD)
-
-    def jobCancel(self):
-        """See `IBuildFarmJob`."""
-        self.build.updateStatus(BuildStatus.CANCELLED)
 
 
 class BuildFarmJob(Storm):

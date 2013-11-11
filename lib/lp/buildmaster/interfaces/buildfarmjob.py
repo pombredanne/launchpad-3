@@ -59,30 +59,8 @@ class IBuildFarmJobOld(Interface):
     BuildQueue have been transitioned to the new database schema.
     """
 
-    processor = Reference(
-        IProcessor, title=_("Processor"), required=False, readonly=True,
-        description=_(
-            "The Processor required by this build farm job. "
-            "This should be None for processor-independent job types."))
-
-    virtualized = Bool(
-        title=_('Virtualized'), required=False, readonly=True,
-        description=_(
-            "The virtualization setting required by this build farm job. "
-            "This should be None for job types that do not care whether "
-            "they run virtualized."))
-
     def score():
         """Calculate a job score appropriate for the job type in question."""
-
-    def jobStarted():
-        """'Job started' life cycle event, handle as appropriate."""
-
-    def jobReset():
-        """'Job reset' life cycle event, handle as appropriate."""
-
-    def jobCancel():
-        """'Job cancel' life cycle event."""
 
     def addCandidateSelectionCriteria(processor, virtualized):
         """Provide a sub-query to refine the candidate job selection.
