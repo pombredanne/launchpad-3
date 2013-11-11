@@ -1361,6 +1361,16 @@ class TestBranchDeletion(TestCaseWithFactory):
         getUtility(ITranslationTemplatesBuildJobSource).create(branch)
         branch.destroySelf(break_references=True)
 
+    def test_related_TranslationTemplatesBuild_cleaned_out(self):
+        # A TranslationTemplatesBuild for the branch is deleted even if
+        # the corresponding BranchJob doesn't reference the branch. This
+        # is critical as TTBs will soon not have BranchJobs.
+        branch = self.factory.makeAnyBranch()
+        job = getUtility(ITranslationTemplatesBuildJobSource).create(branch)
+        Store.of(branch).find(BuildQueue, job=job.job).one().job = None
+        job.destroySelf()
+        branch.destroySelf(break_references=True)
+
     def test_linked_translations_branch_cleared(self):
         # The translations_branch of a series that is linked to the branch
         # should be cleared.

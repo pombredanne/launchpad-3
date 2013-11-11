@@ -82,7 +82,7 @@ class BuildQueue(SQLBase):
     build_farm_job = Reference(build_farm_job_id, 'BuildFarmJob.id')
     status = EnumCol(enum=BuildQueueStatus, default=BuildQueueStatus.WAITING)
 
-    job = ForeignKey(dbName='job', foreignKey='Job', notNull=True)
+    job = ForeignKey(dbName='job', foreignKey='Job')
     job_type = EnumCol(
         enum=BuildFarmJobType, notNull=True,
         default=BuildFarmJobType.PACKAGEBUILD, dbName='job_type')
