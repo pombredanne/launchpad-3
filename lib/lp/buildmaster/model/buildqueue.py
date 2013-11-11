@@ -22,6 +22,7 @@ from sqlobject import (
     IntervalCol,
     StringCol,
     )
+from storm.store import Store
 from zope.component import getSiteManager
 from zope.interface import implements
 
@@ -160,8 +161,9 @@ class BuildQueue(SQLBase):
         job = self.job
         specific_job = self.specific_job
         builder = self.builder
-        SQLBase.destroySelf(self)
+        Store.of(self).remove(self)
         specific_job.cleanUp()
+        Store.of(self).flush()
         job.destroySelf()
         if builder is not None:
             del get_property_cache(builder).currentjob
