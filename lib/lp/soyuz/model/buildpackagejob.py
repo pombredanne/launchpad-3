@@ -94,16 +94,6 @@ class BuildPackageJob(BuildFarmJobOld, Storm):
 
         return score
 
-    @property
-    def processor(self):
-        """See `IBuildFarmJob`."""
-        return self.build.processor
-
-    @property
-    def virtualized(self):
-        """See `IBuildFarmJob`."""
-        return self.build.is_virtualized
-
     @classmethod
     def preloadJobsData(cls, jobs):
         from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
