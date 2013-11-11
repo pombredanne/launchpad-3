@@ -80,16 +80,6 @@ class BuildFarmJobOld:
         """
         Store.of(self).remove(self)
 
-    @staticmethod
-    def addCandidateSelectionCriteria(processor, virtualized):
-        """See `IBuildFarmJobOld`."""
-        return ('')
-
-    @staticmethod
-    def postprocessCandidate(job, logger):
-        """See `IBuildFarmJobOld`."""
-        return True
-
 
 class BuildFarmJob(Storm):
     """A base implementation for `IBuildFarmJob` classes."""
@@ -231,6 +221,19 @@ class BuildFarmJobMixin:
     def gotFailure(self):
         """See `IBuildFarmJob`."""
         self.failure_count += 1
+
+
+class SpecificBuildFarmJobSourceMixin:
+
+    @staticmethod
+    def addCandidateSelectionCriteria(processor, virtualized):
+        """See `ISpecificBuildFarmJobSource`."""
+        return ('')
+
+    @staticmethod
+    def postprocessCandidate(job, logger):
+        """See `ISpecificBuildFarmJobSource`."""
+        return True
 
 
 class BuildFarmJobSet:

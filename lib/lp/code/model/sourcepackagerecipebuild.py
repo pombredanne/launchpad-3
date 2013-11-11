@@ -43,6 +43,7 @@ from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.model.buildfarmjob import (
     BuildFarmJob,
     BuildFarmJobOld,
+    SpecificBuildFarmJobSourceMixin,
     )
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import PackageBuildMixin
@@ -78,7 +79,8 @@ from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
-class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
+class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
+                               PackageBuildMixin, Storm):
 
     __storm_table__ = 'SourcePackageRecipeBuild'
 

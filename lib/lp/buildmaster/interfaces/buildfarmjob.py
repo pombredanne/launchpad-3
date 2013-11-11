@@ -62,42 +62,6 @@ class IBuildFarmJobOld(Interface):
     def score():
         """Calculate a job score appropriate for the job type in question."""
 
-    def addCandidateSelectionCriteria(processor, virtualized):
-        """Provide a sub-query to refine the candidate job selection.
-
-        Return a sub-query to narrow down the list of candidate jobs.
-        The sub-query will become part of an "outer query" and is free to
-        refer to the `BuildQueue` and `Job` tables already utilized in the
-        latter.
-
-        Example (please see the `BuildPackageJob` implementation for a
-        complete example):
-
-            SELECT TRUE
-            FROM Archive, Build, BuildPackageJob, DistroArchSeries
-            WHERE
-            BuildPackageJob.job = Job.id AND
-            ..
-
-        :param processor: the type of processor that the candidate jobs are
-            expected to run on.
-        :param virtualized: whether the candidate jobs are expected to run on
-            the `processor` natively or inside a virtual machine.
-        :return: a string containing a sub-query that narrows down the list of
-            candidate jobs.
-        """
-
-    def postprocessCandidate(job, logger):
-        """True if the candidate job is fine and should be dispatched
-        to a builder, False otherwise.
-
-        :param job: The `BuildQueue` instance to be scrutinized.
-        :param logger: The logger to use.
-
-        :return: True if the candidate job should be dispatched
-            to a builder, False otherwise.
-        """
-
     def getByJob(job):
         """Get the specific `IBuildFarmJob` for the given `Job`.
 
@@ -304,6 +268,42 @@ class ISpecificBuildFarmJobSource(Interface):
 
         :param build_farm_job: A BuildFarmJob for which to get the concrete
             job.
+        """
+
+    def addCandidateSelectionCriteria(processor, virtualized):
+        """Provide a sub-query to refine the candidate job selection.
+
+        Return a sub-query to narrow down the list of candidate jobs.
+        The sub-query will become part of an "outer query" and is free to
+        refer to the `BuildQueue` and `Job` tables already utilized in the
+        latter.
+
+        Example (please see the `BuildPackageJob` implementation for a
+        complete example):
+
+            SELECT TRUE
+            FROM Archive, Build, BuildPackageJob, DistroArchSeries
+            WHERE
+            BuildPackageJob.job = Job.id AND
+            ..
+
+        :param processor: the type of processor that the candidate jobs are
+            expected to run on.
+        :param virtualized: whether the candidate jobs are expected to run on
+            the `processor` natively or inside a virtual machine.
+        :return: a string containing a sub-query that narrows down the list of
+            candidate jobs.
+        """
+
+    def postprocessCandidate(job, logger):
+        """True if the candidate job is fine and should be dispatched
+        to a builder, False otherwise.
+
+        :param job: The `BuildQueue` instance to be scrutinized.
+        :param logger: The logger to use.
+
+        :return: True if the candidate job should be dispatched
+            to a builder, False otherwise.
         """
 
 

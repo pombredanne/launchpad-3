@@ -44,12 +44,16 @@ from lp.buildmaster.enums import (
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.model.builder import Builder
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.model.buildfarmjob import (
+    BuildFarmJob,
+    SpecificBuildFarmJobSourceMixin,
+    )
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import PackageBuildMixin
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.config import config
 from lp.services.database.bulk import load_related
@@ -75,7 +79,10 @@ from lp.services.mail.sendmail import (
     simple_sendmail,
     )
 from lp.services.webapp import canonical_url
-from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     CannotBeRescored,
@@ -825,7 +832,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         return changes.signer
 
 
-class BinaryPackageBuildSet:
+class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
     implements(IBinaryPackageBuildSet)
 
     def new(self, distro_arch_series, source_package_release, processor,
@@ -1204,3 +1211,75 @@ class BinaryPackageBuildSet:
         return IStore(BinaryPackageBuild).using(*origin).find(
             (BuildQueue, Builder, BuildPackageJob),
             BinaryPackageBuild.id.is_in(build_ids))
+
+    @staticmethod
+    def addCandidateSelectionCriteria(processor, virtualized):
+        """See `ISpecificBuildFarmJobSource`."""
+        private_statuses = (
+            PackagePublishingStatus.PUBLISHED,
+            PackagePublishingStatus.SUPERSEDED,
+            PackagePublishingStatus.DELETED,
+            )
+        return """
+            SELECT TRUE FROM Archive, BinaryPackageBuild, BuildPackageJob,
+                             DistroArchSeries
+            WHERE
+            BuildPackageJob.job = Job.id AND
+            BuildPackageJob.build = BinaryPackageBuild.id AND
+            BinaryPackageBuild.distro_arch_series =
+                DistroArchSeries.id AND
+            BinaryPackageBuild.archive = Archive.id AND
+            ((Archive.private IS TRUE AND
+              EXISTS (
+                  SELECT SourcePackagePublishingHistory.id
+                  FROM SourcePackagePublishingHistory
+                  WHERE
+                      SourcePackagePublishingHistory.distroseries =
+                         DistroArchSeries.distroseries AND
+                      SourcePackagePublishingHistory.sourcepackagerelease =
+                         BinaryPackageBuild.source_package_release AND
+                      SourcePackagePublishingHistory.archive = Archive.id AND
+                      SourcePackagePublishingHistory.status IN %s))
+              OR
+              archive.private IS FALSE) AND
+            BinaryPackageBuild.status = %s
+        """ % sqlvalues(private_statuses, BuildStatus.NEEDSBUILD)
+
+    @staticmethod
+    def postprocessCandidate(job, logger):
+        """See `ISpecificBuildFarmJobSource`."""
+        # Mark build records targeted to old source versions as SUPERSEDED
+        # and build records target to SECURITY pocket or against an OBSOLETE
+        # distroseries without a flag as FAILEDTOBUILD.
+        # Builds in those situation should not be built because they will
+        # be wasting build-time.  In the former case, there is already a
+        # newer source; the latter case needs an overhaul of the way
+        # security builds are handled (by copying from a PPA) to avoid
+        # creating duplicate builds.
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
+        distroseries = build.distro_arch_series.distroseries
+        if (
+            build.pocket == PackagePublishingPocket.SECURITY or
+            (distroseries.status == SeriesStatus.OBSOLETE and
+                not build.archive.permit_obsolete_series_uploads)):
+            # We never build anything in the security pocket, or for obsolete
+            # series without the flag set.
+            logger.debug(
+                "Build %s FAILEDTOBUILD, queue item %s REMOVED"
+                % (build.id, job.id))
+            build.updateStatus(BuildStatus.FAILEDTOBUILD)
+            job.destroySelf()
+            return False
+
+        publication = build.current_source_publication
+        if publication is None:
+            # The build should be superseded if it no longer has a
+            # current publishing record.
+            logger.debug(
+                "Build %s SUPERSEDED, queue item %s REMOVED"
+                % (build.id, job.id))
+            build.updateStatus(BuildStatus.SUPERSEDED)
+            job.destroySelf()
+            return False
+
+        return True

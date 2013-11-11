@@ -7,6 +7,7 @@ __all__ = [
     'BuildQueue',
     'BuildQueueSet',
     'specific_job_classes',
+    'specific_build_farm_job_sources',
     ]
 
 from datetime import datetime
@@ -28,7 +29,10 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJob,
+    ISpecificBuildFarmJobSource,
+    )
 from lp.buildmaster.interfaces.buildqueue import (
     IBuildQueue,
     IBuildQueueSet,
@@ -59,6 +63,26 @@ def specific_job_classes():
         job_classes[job_enum] = job_class
 
     return job_classes
+
+
+def specific_build_farm_job_sources():
+    """Sources for specific jobs that may run on the build farm."""
+    job_sources = dict()
+    # Get all components that implement the `ISpecificBuildFarmJobSource`
+    # interface.
+    components = getSiteManager()
+    implementations = sorted(
+        components.getUtilitiesFor(ISpecificBuildFarmJobSource))
+    # The above yields a collection of 2-tuples where the first element
+    # is the name of the `BuildFarmJobType` enum and the second element
+    # is the implementing class respectively.
+    for job_enum_name, job_source in implementations:
+        if not job_enum_name:
+            continue
+        job_enum = getattr(BuildFarmJobType, job_enum_name)
+        job_sources[job_enum] = job_source
+
+    return job_sources
 
 
 class BuildQueue(SQLBase):
