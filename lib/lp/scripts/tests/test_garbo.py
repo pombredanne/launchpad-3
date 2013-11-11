@@ -1049,9 +1049,12 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         store.execute(
             "UPDATE BuildQueue SET status = NULL, build_farm_job = NULL")
         self.assertEqual(5, count_bq_empties())
+        IMasterStore(FeatureFlag).add(FeatureFlag(
+            u'default', 0, u'buildmaster.buildqueuemigrator.enabled',
+            u'please'))
         self.runHourly()
-        #self.assertEqual(0, count_bq_empties())
         self.assertThat(get_bq_bits(), ContainsAll(expected))
+        self.assertEqual(0, count_bq_empties())
 
     def test_VoucherRedeemer(self):
         switch_dbuser('testadmin')

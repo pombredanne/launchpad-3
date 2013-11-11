@@ -1383,7 +1383,9 @@ class BuildQueueMigrator(TunableLoop):
             BuildQueue, BuildQueue.id >= self.start_at).order_by(BuildQueue.id)
 
     def isDone(self):
-        return self.findBuildQueues().is_empty()
+        return (
+            not getFeatureFlag('buildmaster.buildqueuemigrator.enabled')
+            or self.findBuildQueues().is_empty())
 
     def __call__(self, chunk_size):
         bqs = list(self.findBuildQueues()[:chunk_size])
