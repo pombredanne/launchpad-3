@@ -17,7 +17,9 @@ from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.job.model.job import Job
+from lp.services.log.logger import DevNullLogger
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.soyuz.enums import (
@@ -31,7 +33,10 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     )
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.binarypackagebuild import (
+    BinaryPackageBuild,
+    BinaryPackageBuildSet,
+    )
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
@@ -497,3 +502,42 @@ class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
         logout()
         entry = self.webservice.get(build_url, api_version='devel').jsonBody()
         self.assertEndsWith(entry['builder_link'], builder_url)
+
+
+class TestPostprocessCandidate(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeBuildJob(self, pocket="RELEASE"):
+        build = self.factory.makeBinaryPackageBuild(pocket=pocket)
+        return build.queueBuild()
+
+    def test_release_job(self):
+        job = self.makeBuildJob()
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
+        self.assertTrue(BinaryPackageBuildSet.postprocessCandidate(job, None))
+        self.assertEqual(BuildStatus.NEEDSBUILD, build.status)
+
+    def test_security_job_is_failed(self):
+        job = self.makeBuildJob(pocket="SECURITY")
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
+        BinaryPackageBuildSet.postprocessCandidate(job, DevNullLogger())
+        self.assertEqual(BuildStatus.FAILEDTOBUILD, build.status)
+
+    def test_obsolete_job_without_flag_is_failed(self):
+        job = self.makeBuildJob()
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
+        distroseries = build.distro_arch_series.distroseries
+        removeSecurityProxy(distroseries).status = SeriesStatus.OBSOLETE
+        BinaryPackageBuildSet.postprocessCandidate(job, DevNullLogger())
+        self.assertEqual(BuildStatus.FAILEDTOBUILD, build.status)
+
+    def test_obsolete_job_with_flag_is_not_failed(self):
+        job = self.makeBuildJob()
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
+        distroseries = build.distro_arch_series.distroseries
+        archive = build.archive
+        removeSecurityProxy(distroseries).status = SeriesStatus.OBSOLETE
+        removeSecurityProxy(archive).permit_obsolete_series_uploads = True
+        BinaryPackageBuildSet.postprocessCandidate(job, DevNullLogger())
+        self.assertEqual(BuildStatus.NEEDSBUILD, build.status)
