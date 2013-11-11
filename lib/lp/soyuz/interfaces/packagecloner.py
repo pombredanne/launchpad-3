@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Interfaces related to bulk copying of publishing history data."""
 
 __metaclass__ = type
@@ -18,7 +16,7 @@ class IPackageCloner(Interface):
     """Copies publishing history data across archives."""
 
     def clonePackages(origin, destination, distroarchseries_list=None,
-                    proc_families=None, sourcepackagenames=None,
+                    processors=None, sourcepackagenames=None,
                     always_create=False):
         """Copy packages from origin to destination.
 
@@ -29,8 +27,7 @@ class IPackageCloner(Interface):
         :param destination: the location to which the data is to be copied.
         :param distroarchseries_list: the binary packages will be copied
             for the distroarchseries pairs specified (if any).
-        :param proc_families: the processor families that builds will be
-            created for.
+        :param processors: the processors that builds will be created for.
         :param sourcepackagenames: the source packages which are to be
             copied.
         :param always_create: if builds should always be created.

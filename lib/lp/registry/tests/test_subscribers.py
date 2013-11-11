@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from datetime import datetime
 
+from lazr.restful.utils import get_current_browser_request
 import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -22,7 +23,7 @@ from lp.registry.subscribers import (
     LicenseNotification,
     product_licenses_modified,
     )
-from lp.services.webapp.publisher import get_current_browser_request
+from lp.services.webapp.escaping import html_escape
 from lp.testing import (
     login_person,
     logout,
@@ -220,7 +221,8 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         self.assertIs(True, result)
         request = get_current_browser_request()
         self.assertEqual(1, len(request.response.notifications))
-        self.assertIn(message, request.response.notifications[0].message)
+        self.assertIn(
+            html_escape(message), request.response.notifications[0].message)
         self.assertIn(
             '<a href="https://help.launchpad.net/CommercialHosting">',
             request.response.notifications[0].message)

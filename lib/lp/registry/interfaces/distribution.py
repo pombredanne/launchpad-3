@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces including and related to IDistribution."""
@@ -76,6 +76,7 @@ from lp.bugs.interfaces.structuralsubscription import (
     )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
+from lp.registry.interfaces.distroseries import DistroSeriesNameField
 from lp.registry.interfaces.karma import IKarmaContext
 from lp.registry.interfaces.milestone import (
     ICanGetMilestonesDirectly,
@@ -208,8 +209,8 @@ class IDistributionPublic(
             required=True))
     domainname = exported(
         TextLine(
-            title=_("Domain name"),
-            description=_("The distro's domain name."), required=True),
+            title=_("Web site URL"),
+            description=_("The distro's web site URL."), required=True),
         exported_as='domain_name')
     owner = exported(
         PublicPersonChoice(
@@ -362,6 +363,13 @@ class IDistributionPublic(
         description=_("Redirect release pocket uploads to proposed pocket"),
         readonly=False, required=True))
 
+    development_series_alias = exported(DistroSeriesNameField(
+        title=_("Alias for development series"),
+        description=_(
+            "If set, an alias for the current development series in this "
+            "distribution."),
+        constraint=name_validator, readonly=False, required=False))
+
     def getArchiveIDList(archive=None):
         """Return a list of archive IDs suitable for sqlvalues() or quote().
 
@@ -396,12 +404,20 @@ class IDistributionPublic(
     def getDevelopmentSeries():
         """Return the DistroSeries which are marked as in development."""
 
+    def resolveSeriesAlias(name):
+        """Resolve a series alias.
+
+        :param name: The name to resolve.
+        :raises NoSuchDistroSeries: If there is no match.
+        """
+
     @operation_parameters(
         name_or_version=TextLine(title=_("Name or version"), required=True))
     # Really IDistroSeries, see _schema_circular_imports.py.
     @operation_returns_entry(Interface)
+    @call_with(follow_aliases=True)
     @export_read_operation()
-    def getSeries(name_or_version):
+    def getSeries(name_or_version, follow_aliases=False):
         """Return the series with the name or version given.
 
         :param name_or_version: The `IDistroSeries.name` or
@@ -494,7 +510,7 @@ class IDistributionPublic(
             and the value is a `IDistributionSourcePackageRelease`.
         """
 
-    def getDistroSeriesAndPocket(distroseriesname):
+    def getDistroSeriesAndPocket(distroseriesname, follow_aliases=False):
         """Return a (distroseries,pocket) tuple which is the given textual
         distroseriesname in this distribution."""
 

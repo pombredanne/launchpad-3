@@ -9,7 +9,7 @@ XMLRPC instance.
     >>> from lp.xmlrpc.interfaces import IPrivateApplication
     >>> from lp.code.interfaces.codehosting import (
     ...     ICodehostingApplication)
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
 
     >>> private_root = getUtility(IPrivateApplication)
     >>> verifyObject(

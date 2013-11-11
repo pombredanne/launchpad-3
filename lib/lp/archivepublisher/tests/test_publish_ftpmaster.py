@@ -33,7 +33,7 @@ from lp.registry.interfaces.pocket import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 from lp.services.log.logger import (
     BufferLogger,
     DevNullLogger,
@@ -1046,6 +1046,8 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         new_series = self.factory.makeDistroSeries(
             distribution=distro, previous_series=old_series,
             status=SeriesStatus.FROZEN)
+        self.factory.makeDistroArchSeries(
+            distroseries=new_series, architecturetag='i386')
         custom_upload = self.factory.makeCustomPackageUpload(
             distroseries=old_series,
             custom_type=PackageUploadCustomFormat.DEBIAN_INSTALLER,

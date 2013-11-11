@@ -1,7 +1,9 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+
 from doctest import DocTestSuite
+from email.mime.multipart import MIMEMultipart
 import logging
 import os
 import unittest
@@ -11,17 +13,20 @@ from testtools.matchers import (
     Is,
     )
 import transaction
+from zope.interface import implements
 from zope.security.management import setSecurityPolicy
 
 from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.services.mail import helpers
+from lp.services.mail.handlers import mail_handlers
 from lp.services.mail.incoming import (
     authenticateEmail,
     extract_addresses,
     handleMail,
     ORIGINAL_TO_HEADER,
     )
+from lp.services.mail.interfaces import IMailHandler
 from lp.services.mail.sendmail import MailController
 from lp.services.mail.stub import TestMailer
 from lp.services.mail.tests.helpers import testmails_path
@@ -35,7 +40,19 @@ from lp.testing.mail_helpers import pop_notifications
 from lp.testing.systemdocs import LayeredDocFileSuite
 
 
-class TestIncoming(TestCaseWithFactory):
+class FakeHandler:
+    implements(IMailHandler)
+
+    def __init__(self, allow_unknown_users=True):
+        self.allow_unknown_users = allow_unknown_users
+        self.handledMails = []
+
+    def process(self, mail, to_addr, filealias):
+        self.handledMails.append(mail)
+        return True
+
+
+class IncomingTestCase(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
@@ -92,7 +109,7 @@ class TestIncoming(TestCaseWithFactory):
         self.assertIn("was 55 MB and the limit is 10 MB.", body)
 
     def test_invalid_to_addresses(self):
-        """Invalid To: header should not be handled as an OOPS."""
+        # Invalid To: header should not be handled as an OOPS.
         raw_mail = open(os.path.join(
             testmails_path, 'invalid-to-header.txt')).read()
         # Due to the way handleMail works, even if we pass a valid To header
@@ -102,6 +119,64 @@ class TestIncoming(TestCaseWithFactory):
         TestMailer().send("from@example.com", "to@example.com", raw_mail)
         handleMail()
         self.assertEqual([], self.oopses)
+
+    def makeSentMessage(self, sender, to, subject='subject', body='body',
+                           cc=None, handler_domain=None):
+        if handler_domain is None:
+            extra, handler_domain = to.split('@')
+        test_handler = FakeHandler()
+        mail_handlers.add(handler_domain, test_handler)
+        message = MIMEMultipart()
+        message['Message-Id'] = '<message-id>'
+        message['To'] = to
+        message['From'] = sender
+        message['Subject'] = subject
+        if cc is not None:
+            message['Cc'] = cc
+        message.set_payload(body)
+        TestMailer().send(sender, to, message.as_string())
+        return message, test_handler
+
+    def test_invalid_from_address_no_at(self):
+        # Invalid From: header such as no "@" is handled.
+        message, test_handler = self.makeSentMessage(
+            'me_at_eg.dom', 'test@lp.dev')
+        handleMail()
+        self.assertEqual([], self.oopses)
+        self.assertEqual(1, len(test_handler.handledMails))
+        self.assertEqual('me_at_eg.dom', test_handler.handledMails[0]['From'])
+
+    def test_invalid_cc_address_no_at(self):
+        # Invalid From: header such as no "@" is handled.
+        message, test_handler = self.makeSentMessage(
+            'me@eg.dom', 'test@lp.dev', cc='me_at_eg.dom')
+        handleMail()
+        self.assertEqual([], self.oopses)
+        self.assertEqual(1, len(test_handler.handledMails))
+        self.assertEqual('me_at_eg.dom', test_handler.handledMails[0]['Cc'])
+
+    def test_invalid_from_address_unicode(self):
+        # Invalid From: header such as no "@" is handled.
+        message, test_handler = self.makeSentMessage(
+            'm\xeda@eg.dom', 'test@lp.dev')
+        handleMail()
+        self.assertEqual([], self.oopses)
+        self.assertEqual(1, len(test_handler.handledMails))
+        self.assertEqual('m\xeda@eg.dom', test_handler.handledMails[0]['From'])
+
+    def test_invalid_cc_address_unicode(self):
+        # Invalid Cc: header such as no "@" is handled.
+        message, test_handler = self.makeSentMessage(
+            'me@eg.dom', 'test@lp.dev', cc='m\xeda@eg.dom')
+        handleMail()
+        self.assertEqual([], self.oopses)
+        self.assertEqual(1, len(test_handler.handledMails))
+        self.assertEqual('m\xeda@eg.dom', test_handler.handledMails[0]['Cc'])
+
+
+class AuthenticateEmailTestCase(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
 
     def test_bad_signature_timestamp(self):
         """If the signature is nontrivial future-dated, it's not trusted."""

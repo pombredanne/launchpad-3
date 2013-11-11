@@ -15,10 +15,10 @@ from zope.schema.vocabulary import SimpleTerm
 
 from lp.blueprints.model.specification import Specification
 from lp.services.webapp.interfaces import ILaunchBag
-from lp.services.webapp.vocabulary import NamedSQLObjectVocabulary
+from lp.services.webapp.vocabulary import SQLObjectVocabularyBase
 
 
-class SpecificationVocabulary(NamedSQLObjectVocabulary):
+class SpecificationVocabulary(SQLObjectVocabularyBase):
     """List specifications for the current product or distribution in
     ILaunchBag, EXCEPT for the current spec in LaunchBag if one exists.
     """
@@ -50,6 +50,7 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
                 # the widget is currently used to select new dependencies,
                 # and we do not want to introduce circular dependencies.
                 if launchbag.specification is not None:
-                    if spec in launchbag.specification.all_blocked:
+                    user = getattr(launchbag, 'user', None)
+                    if spec in launchbag.specification.all_blocked(user=user):
                         continue
-                yield SimpleTerm(spec, spec.name, spec.title)
+                yield SimpleTerm(spec, spec.id, spec.title)

@@ -103,7 +103,7 @@ in the Launchpad.
     'test bug'
     >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print message.renderContents()
-    There is no project named 'invalid' registered in Launchpad
+    There is no project named &#x27;invalid&#x27; registered in Launchpad
 
 If the user doesn't know what name to write, he can use the 'Choose'
 link if the browser supports javascript. The test browser does not

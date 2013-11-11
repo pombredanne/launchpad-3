@@ -1,7 +1,5 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213,E0602
 
 """Interfaces related to bugs."""
 
@@ -385,6 +383,9 @@ class IBugView(Interface):
             value_type=Reference(schema=IMessage)),
         exported_as='messages'))
 
+    def getSpecifications(user):
+        """List of related specifications that the user can view."""
+
     def _indexed_messages(include_content=False, include_parents=False):
         """Low level query for getting bug messages.
 
@@ -687,14 +688,14 @@ class IBugView(Interface):
 class IBugEdit(Interface):
     """IBug attributes that require launchpad.Edit permission."""
 
-    @call_with(owner=REQUEST_USER)
+    @call_with(owner=REQUEST_USER, from_api=True)
     @operation_parameters(
         data=Bytes(constraint=attachment_size_constraint),
         comment=Text(), filename=TextLine(), is_patch=Bool(),
         content_type=TextLine(), description=Text())
     @export_factory_operation(IBugAttachment, [])
     def addAttachment(owner, data, comment, filename, is_patch=False,
-                      content_type=None, description=None):
+                      content_type=None, description=None, from_api=False):
         """Attach a file to this bug.
 
         :owner: An IPerson.

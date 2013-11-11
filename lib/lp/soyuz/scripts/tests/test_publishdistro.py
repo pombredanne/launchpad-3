@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for publish-distro.py script."""
@@ -30,7 +30,6 @@ from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
-    BinaryPackageFormat,
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
@@ -275,51 +274,6 @@ class TestPublishDistro(TestNativePublishingBase):
         pub_source.sync()
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
 
-    def testPublishPrimaryDebug(self):
-        # 'ubuntutest' (default testing distribution) has no DEBUG
-        # archive, Thus an error is raised.
-        self.assertRaises(
-            OptionValueError,
-            self.runPublishDistro, ['--primary-debug'])
-
-        # The DEBUG repository path was not created.
-        ubuntutest = getUtility(IDistributionSet)['ubuntutest']
-        root_dir = getUtility(
-            IPublisherConfigSet).getByDistribution(ubuntutest).root_dir
-        repo_path = os.path.join(
-            root_dir, 'ubuntutest-debug')
-        self.assertNotExists(repo_path)
-
-        # We will create the DEBUG archive for ubuntutest, so it can
-        # be published.
-        debug_archive = getUtility(IArchiveSet).new(
-            purpose=ArchivePurpose.DEBUG, owner=ubuntutest.owner,
-            distribution=ubuntutest)
-
-        # We will also create a source & binary pair of pending
-        # publications. Only the DDEB (binary) will be moved to
-        # the DEBUG archive, exactly as it would happen in normal
-        # operation, see nascentupload-ddebs.txt.
-        self.prepareBreezyAutotest()
-        pub_binaries = self.getPubBinaries(format=BinaryPackageFormat.DDEB)
-        for binary in pub_binaries:
-            binary.archive = debug_archive
-
-        # Commit setup changes, so the script can operate on them.
-        self.layer.txn.commit()
-
-        # After publication, the DDEB is published and indexed.
-        self.runPublishDistro(['--primary-debug'])
-
-        debug_pool_path = os.path.join(repo_path, 'pool/main/f/foo')
-        self.assertEqual(
-            os.listdir(debug_pool_path), ['foo-bin_666_all.ddeb'])
-
-        debug_index_path = os.path.join(
-            repo_path, 'dists/breezy-autotest/main/binary-i386/Packages')
-        self.assertEqual(
-            open(debug_index_path).readlines()[0], 'Package: foo-bin\n')
-
     def testPublishCopyArchive(self):
         """Run publish-distro in copy archive mode.
 
@@ -411,12 +365,14 @@ class FakeArchive:
 class FakePublisher:
     """A very simple fake `Publisher`."""
     def __init__(self):
+        self.setupArchiveDirs = FakeMethod()
         self.A_publish = FakeMethod()
         self.A2_markPocketsWithDeletionsDirty = FakeMethod()
         self.B_dominate = FakeMethod()
         self.C_doFTPArchive = FakeMethod()
         self.C_writeIndexes = FakeMethod()
         self.D_writeReleaseFiles = FakeMethod()
+        self.createSeriesAliases = FakeMethod()
 
 
 class TestPublishDistroMethods(TestCaseWithFactory):
@@ -499,12 +455,6 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         self.assertEqual(
             1,
             self.makeScript(args=['--private-ppa']).countExclusiveOptions())
-
-    def test_countExclusiveOptions_counts_primary_debug(self):
-        # countExclusiveOptions includes the "primary-debug" option.
-        self.assertEqual(
-            1,
-            self.makeScript(args=['--primary-debug']).countExclusiveOptions())
 
     def test_countExclusiveOptions_counts_copy_archive(self):
         # countExclusiveOptions includes the "copy-archive" option.
@@ -660,38 +610,6 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         self.assertContentEqual(
             expected_suites, script.findAllowedSuites(series.distribution))
 
-    def test_getDebugArchive_returns_list(self):
-        # getDebugArchive returns a list of one archive.  Fits in more
-        # regularly with the other methods to find archives.
-        distro = self.makeDistro()
-        script = self.makeScript(distro)
-        debug_archive = self.factory.makeArchive(
-            distro, purpose=ArchivePurpose.DEBUG)
-        self.assertEqual([debug_archive], script.getDebugArchive(distro))
-
-    def test_getDebugArchive_raises_if_not_found(self):
-        # If getDebugArchive doesn't find a debug archive, that's an
-        # OptionValueError.
-        distro = self.makeDistro()
-        script = self.makeScript(distro)
-        self.assertRaises(OptionValueError, script.getDebugArchive, distro)
-
-    def test_getDebugArchive_ignores_other_archive_purposes(self):
-        # getDebugArchive does not return archives that aren't debug
-        # archives.
-        distro = self.makeDistro()
-        script = self.makeScript(distro)
-        self.factory.makeArchive(distro, purpose=ArchivePurpose.PARTNER)
-        self.assertRaises(OptionValueError, script.getDebugArchive, distro)
-
-    def test_getDebugArchive_ignores_other_distros(self):
-        # getDebugArchive won't return an archive for the wrong
-        # distribution.
-        distro = self.makeDistro()
-        self.factory.makeArchive(purpose=ArchivePurpose.DEBUG)
-        script = self.makeScript(distro)
-        self.assertRaises(OptionValueError, script.getDebugArchive, distro)
-
     def test_getCopyArchives_returns_list(self):
         # getCopyArchives returns a list of archives.
         distro = self.makeDistro()
@@ -818,14 +736,6 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         script = self.makeScript(distro, ['--ppa'])
         self.assertContentEqual([], script.getTargetArchives(distro))
 
-    def test_getTargetArchives_gets_primary_debug_archive(self):
-        # If the selected exclusive option is "primary-debug,"
-        # getTargetArchives looks for a debug archive.
-        distro = self.makeDistro()
-        debug = self.factory.makeArchive(distro, purpose=ArchivePurpose.DEBUG)
-        script = self.makeScript(distro, ['--primary-debug'])
-        self.assertContentEqual([debug], script.getTargetArchives(distro))
-
     def test_getTargetArchives_gets_copy_archives(self):
         # If the selected exclusive option is "copy-archive,"
         # getTargetArchives looks for a copy archive.
@@ -858,11 +768,11 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         # nothing and return False to indicate the fact.
         distro = self.makeDistro()
         archive = self.factory.makeArchive(
-            distro, purpose=ArchivePurpose.DEBUG)
+            distro, purpose=ArchivePurpose.PARTNER)
         script = self.makeScript(distro)
         deletion_done = script.deleteArchive(archive, None)
         self.assertFalse(deletion_done)
-        self.assertContentEqual([archive], script.getDebugArchive(distro))
+        self.assertEqual(archive, distro.getArchiveByComponent('partner'))
 
     def test_publishArchive_drives_publisher(self):
         # publishArchive puts a publisher through its paces.  This work

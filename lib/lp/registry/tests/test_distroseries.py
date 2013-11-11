@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for distroseries."""
@@ -11,6 +11,7 @@ __all__ = [
 
 from logging import getLogger
 
+from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -19,6 +20,7 @@ from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.interfaces import IStore
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -32,12 +34,12 @@ from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease,
     )
 from lp.soyuz.interfaces.publishing import active_publishing_status
-from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     ANONYMOUS,
     login,
     person_logged_in,
+    StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
     )
@@ -45,6 +47,7 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.testing.matchers import HasQueryCount
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
@@ -202,24 +205,23 @@ class TestDistroSeries(TestCaseWithFactory):
         self.assertEqual(suite, distroseries.getSuite(pocket))
 
     def test_getDistroArchSeriesByProcessor(self):
-        # A IDistroArchSeries can be retrieved by processor
+        # A IDistroArchSeries can be retrieved by processor.
         distroseries = self.factory.makeDistroSeries()
-        processorfamily = ProcessorFamilySet().getByName('x86')
+        processor = self.factory.makeProcessor()
         distroarchseries = self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag='i386',
-            processorfamily=processorfamily)
-        self.assertEquals(distroarchseries,
-            distroseries.getDistroArchSeriesByProcessor(
-                processorfamily.processors[0]))
+            processor=processor)
+        self.assertEquals(
+            distroarchseries,
+            distroseries.getDistroArchSeriesByProcessor(processor))
 
     def test_getDistroArchSeriesByProcessor_none(self):
         # getDistroArchSeriesByProcessor returns None when no distroarchseries
         # is found
         distroseries = self.factory.makeDistroSeries()
-        processorfamily = ProcessorFamilySet().getByName('x86')
-        self.assertIs(None,
-            distroseries.getDistroArchSeriesByProcessor(
-                processorfamily.processors[0]))
+        processor = self.factory.makeProcessor()
+        self.assertIs(
+            None, distroseries.getDistroArchSeriesByProcessor(processor))
 
     def test_getDerivedSeries(self):
         dsp = self.factory.makeDistroSeriesParent()
@@ -323,6 +325,35 @@ class TestDistroSeries(TestCaseWithFactory):
         """Publishing to UPDATES in a DEVELOPMENT series is allowed."""
         self.assertTrue(self.checkLegalPocket(
             SeriesStatus.CURRENT, PackagePublishingPocket.UPDATES))
+
+    def test_valid_specifications_query_count(self):
+        distroseries = self.factory.makeDistroSeries()
+        distribution = distroseries.distribution
+        spec1 = self.factory.makeSpecification(
+            distribution=distribution, goal=distroseries)
+        spec2 = self.factory.makeSpecification(
+            distribution=distribution, goal=distroseries)
+        for i in range(5):
+            self.factory.makeSpecificationWorkItem(specification=spec1)
+            self.factory.makeSpecificationWorkItem(specification=spec2)
+        IStore(spec1.__class__).flush()
+        IStore(spec1.__class__).invalidate()
+        with StormStatementRecorder() as recorder:
+            for spec in distroseries.api_valid_specifications:
+                spec.workitems_text
+        self.assertThat(recorder, HasQueryCount(Equals(4)))
+
+    def test_valid_specifications_preloading_excludes_deleted_workitems(self):
+        distroseries = self.factory.makeDistroSeries()
+        spec = self.factory.makeSpecification(
+            distribution=distroseries.distribution, goal=distroseries)
+        self.factory.makeSpecificationWorkItem(
+            specification=spec, deleted=True)
+        self.factory.makeSpecificationWorkItem(specification=spec)
+        workitems = [
+            s.workitems_text
+            for s in distroseries.api_valid_specifications]
+        self.assertContentEqual([spec.workitems_text], workitems)
 
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):

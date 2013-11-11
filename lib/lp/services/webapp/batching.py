@@ -25,10 +25,7 @@ from storm.expr import (
 from storm.properties import PropertyColumn
 from storm.store import EmptyResultSet
 from storm.zope.interfaces import IResultSet
-from zope.component import (
-    adapts,
-    getUtility,
-    )
+from zope.component import adapts
 from zope.interface import implements
 from zope.interface.common.sequence import IFiniteSequence
 from zope.security.proxy import (
@@ -39,11 +36,7 @@ from zope.security.proxy import (
 
 from lp.services.config import config
 from lp.services.database.decoratedresultset import DecoratedResultSet
-from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
-    )
+from lp.services.database.interfaces import ISlaveStore
 from lp.services.database.sqlbase import (
     convert_storm_clause_to_string,
     sqlvalues,
@@ -591,6 +584,7 @@ class StormRangeFactory:
     @cachedproperty
     def rough_length(self):
         """See `IRangeFactory."""
+        from lp.services.librarian.model import LibraryFileAlias
         # get_select_expr() requires at least one column as a parameter.
         # getorderBy() already knows about columns that can appear
         # in the result set, so let's use them. Moreover, for SELECT
@@ -602,8 +596,7 @@ class StormRangeFactory:
         select = removeSecurityProxy(self.plain_resultset).get_select_expr(
             *columns)
         explain = 'EXPLAIN ' + convert_storm_clause_to_string(select)
-        store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
-        result = store.execute(explain)
+        result = ISlaveStore(LibraryFileAlias).execute(explain)
         _rows_re = re.compile("rows=(\d+)\swidth=")
         first_line = result.get_one()[0]
         match = _rows_re.search(first_line)

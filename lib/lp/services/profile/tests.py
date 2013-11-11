@@ -14,21 +14,21 @@ import os
 import random
 import unittest
 
-from zope.app.publication.interfaces import (
-    BeforeTraverseEvent,
-    EndRequestEvent,
-    )
 from zope.component import (
     getSiteManager,
     queryUtility,
     )
 from zope.error.interfaces import IErrorReportingUtility
+from zope.publisher.interfaces import (
+    EndRequestEvent,
+    StartRequestEvent,
+    )
+from zope.traversing.interfaces import BeforeTraverseEvent
 
 from lp.services.features.testing import FeatureFixture
 from lp.services.profile import profile
 import lp.services.webapp.adapter as da
 from lp.services.webapp.errorlog import ErrorReportingUtility
-from lp.services.webapp.interfaces import StartRequestEvent
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     layers,

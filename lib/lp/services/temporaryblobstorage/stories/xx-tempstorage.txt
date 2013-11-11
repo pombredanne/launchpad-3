@@ -17,7 +17,8 @@ middle of the data so we can ensure binary data is handled correctly.
     >>> anon_browser.getControl('Continue').click()
 
     >>> import re
-    >>> match = re.search('Your ticket is "([\w-]+)"', anon_browser.contents)
+    >>> match = re.search(
+    ...     'Your ticket is &quot;([\w-]+)&quot;', anon_browser.contents)
     >>> match is not None
     True
     >>> ticket = match.group(1)

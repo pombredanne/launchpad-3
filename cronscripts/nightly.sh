@@ -29,9 +29,8 @@ echo $(date): Grabbed lock >> $LOGFILE
 echo $(date): Expiring memberships >> $LOGFILE
 python -S flag-expired-memberships.py -q --log-file=DEBUG:$LOGDIR/flag-expired-memberships.log
 
-## Disabled per Bug #1050191, StuartBishop 20121130
-## echo $(date): Allocating revision karma >> $LOGFILE
-## python -S allocate-revision-karma.py -q --log-file=DEBUG:$LOGDIR/allocate-revision-karma.log
+echo $(date): Allocating revision karma >> $LOGFILE
+python -S allocate-revision-karma.py -q --log-file=DEBUG:$LOGDIR/allocate-revision-karma.log
 
 echo $(date): Recalculating karma >> $LOGFILE
 python -S foaf-update-karma-cache.py -q --log-file=INFO:$LOGDIR/foaf-update-karma-cache.log

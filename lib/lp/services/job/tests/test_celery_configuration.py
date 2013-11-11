@@ -25,8 +25,9 @@ class TestCeleryConfiguration(TestCase):
         # Four queues are defined; the binding key for each queue is
         # just the queue name.
         queue_names = [
-            'branch_write_job', 'branch_write_job_slow', 'celerybeat', 'job',
-            'job_slow']
+            'branch_write_job', 'branch_write_job_slow',
+            'bzrsyncd_job', 'bzrsyncd_job_slow', 'celerybeat',
+            'launchpad_job', 'launchpad_job_slow']
         queues = config['CELERY_QUEUES']
         self.assertEqual(queue_names, sorted(queues))
         for name in queue_names:
@@ -41,7 +42,7 @@ class TestCeleryConfiguration(TestCase):
         self.assertEqual('/', config['BROKER_VHOST'])
         self.assertFalse(config['CELERY_CREATE_MISSING_QUEUES'])
         self.assertEqual('job', config['CELERY_DEFAULT_EXCHANGE'])
-        self.assertEqual('job', config['CELERY_DEFAULT_QUEUE'])
+        self.assertEqual('launchpad_job', config['CELERY_DEFAULT_QUEUE'])
         self.assertEqual(
             ('lp.services.job.celeryjob', ), config['CELERY_IMPORTS'])
         self.assertEqual('amqp', config['CELERY_RESULT_BACKEND'])
@@ -64,10 +65,10 @@ class TestCeleryConfiguration(TestCase):
         from lp.services.job.celeryconfig import configure
         expected = {
             'concurrency': 3,
-            'fallback': 'job_slow',
+            'fallback': 'launchpad_job_slow',
             'timeout': 300,
             }
-        config = configure(['celeryd', '-Q', 'job'])
+        config = configure(['celeryd', '-Q', 'launchpad_job'])
         self.check_default_common_parameters(config)
         self.check_job_specific_celeryd_configuration(expected, config)
         config = configure(['celeryd', '-Q', 'branch_write_job'])
@@ -82,7 +83,7 @@ class TestCeleryConfiguration(TestCase):
             'fallback': None,
             'timeout': 86400,
             }
-        config = configure(['celeryd', '-Q', 'job_slow'])
+        config = configure(['celeryd', '-Q', 'launchpad_job_slow'])
         self.check_default_common_parameters(config)
         self.check_job_specific_celeryd_configuration(expected, config)
         config = configure(['celeryd', '-Q', 'branch_write_job_slow'])
@@ -99,12 +100,12 @@ class TestCeleryConfiguration(TestCase):
             )
         with changed_config(
             """
-            [job_slow]
-            fallback_queue: job
+            [launchpad_job_slow]
+            fallback_queue: launchpad_job
         """):
             error = (
-                "Circular chain of fallback queues: job already in "
-                "['job', 'job_slow']"
+                "Circular chain of fallback queues: launchpad_job already in "
+                "['launchpad_job', 'launchpad_job_slow']"
                 )
             self.assertRaisesWithContent(
                 ConfigurationError, error, configure, [''])
@@ -133,7 +134,7 @@ class TestCeleryConfiguration(TestCase):
         error = 'A celeryd instance may serve only one queue.'
         self.assertRaisesWithContent(
             ConfigurationError, error, configure,
-            ['celeryd', '--queue=job,branch_write_job'])
+            ['celeryd', '--queue=launchpad_job,branch_write_job'])
 
     def test_unconfigured_queue_for_celeryd(self):
         # An exception is raised when celeryd is started for a queue that

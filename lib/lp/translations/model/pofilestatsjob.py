@@ -25,11 +25,7 @@ from zope.interface import (
     )
 
 from lp.services.config import config
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.model.job import Job
@@ -44,7 +40,7 @@ class POFileStatsJob(StormBase, BaseRunnableJob):
 
     __storm_table__ = 'POFileStatsJob'
 
-    config = config.pofile_stats
+    config = config.IPOFileStatsJobSource
 
     # Instances of this class are runnable jobs.
     implements(IRunnableJob)
@@ -98,8 +94,7 @@ class POFileStatsJob(StormBase, BaseRunnableJob):
     @staticmethod
     def iterReady():
         """See `IJobSource`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find((POFileStatsJob),
+        return IStore(POFileStatsJob).find((POFileStatsJob),
             And(POFileStatsJob.job == Job.id,
                 Job.id.is_in(Job.ready_jobs)))
 

@@ -395,7 +395,6 @@ some results.
 This feed is the most useful of them all. Any bug search can be turned into
 a feed.
 
-    >>> import cgi
     >>> url = ("http://feeds.launchpad.dev/bugs/+bugs.atom?"
     ...        "field.searchtext=&search=Search+Bug+Reports&"
     ...        "field.scope=all&field.scope.target=")
@@ -432,7 +431,8 @@ to True.
     >>> print feed_id
     tag:launchpad.net,2008:/+bugs.atom?field.scope.target=&amp;field.scope=all&amp;field.searchtext=&amp;search=Search+Bug+Reports
 
-    >>> print cgi.escape(browser.url)
+    >>> from lp.services.webapp.escaping import html_escape
+    >>> print html_escape(browser.url)
     http://feeds.launchpad.dev/bugs/+bugs.atom?field.scope.target=&amp;field.scope=all&amp;field.searchtext=&amp;search=Search+Bug+Reports
 
     >>> self_links = parse_links(browser.contents, 'self')

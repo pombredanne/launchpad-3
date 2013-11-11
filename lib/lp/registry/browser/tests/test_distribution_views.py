@@ -10,7 +10,7 @@ from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.browser.distribution import DistributionPublisherConfigView
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
     login,
     login_celebrity,
@@ -105,8 +105,7 @@ class TestDistroAddView(TestCaseWithFactory):
         self.simple_user = self.factory.makePerson()
         self.admin = login_celebrity('admin')
         self.distributionset = getUtility(IDistributionSet)
-        proc_family_set = getUtility(IProcessorFamilySet)
-        self.restricted_families = proc_family_set.getRestricted()
+        self.restricted_processors = getUtility(IProcessorSet).getRestricted()
 
     def getDefaultAddDict(self):
         return {
@@ -118,8 +117,8 @@ class TestDistroAddView(TestCaseWithFactory):
             'field.domainname': 'newbuntu',
             'field.members': self.simple_user.name,
             'field.require_virtualized': '',
-            'field.enabled_restricted_families': [family.name
-                for family in self.restricted_families],
+            'field.enabled_restricted_processors': [processor.name
+                for processor in self.restricted_processors],
             'field.actions.save': 'Save',
             }
 
@@ -142,16 +141,16 @@ class TestDistroAddView(TestCaseWithFactory):
         widget = view.widgets['require_virtualized']
         self.assertEqual(False, widget._getCurrentValue())
 
-    def test_add_distro_init_value_enabled_restricted_families(self):
+    def test_add_distro_init_value_enabled_restricted_processors(self):
         view = create_initialized_view(
             self.distributionset, '+add', principal=self.admin,
             method='GET')
 
-        widget = view.widgets['enabled_restricted_families']
+        widget = view.widgets['enabled_restricted_processors']
         self.assertContentEqual(
-            self.restricted_families, widget._getCurrentValue())
+            self.restricted_processors, widget._getCurrentValue())
         self.assertContentEqual(
-            self.restricted_families,
+            self.restricted_processors,
             [item.value for item in widget.vocabulary])
 
     def test_add_distro_require_virtualized(self):
@@ -166,16 +165,16 @@ class TestDistroAddView(TestCaseWithFactory):
             False,
             distribution.main_archive.require_virtualized)
 
-    def test_add_distro_enabled_restricted_families(self):
+    def test_add_distro_enabled_restricted_processors(self):
         creation_form = self.getDefaultAddDict()
-        creation_form['field.enabled_restricted_families'] = []
+        creation_form['field.enabled_restricted_processors'] = []
         create_initialized_view(
             self.distributionset, '+add', principal=self.admin,
             method='POST', form=creation_form)
 
         distribution = self.distributionset.getByName('newbuntu')
         self.assertContentEqual(
-            [], distribution.main_archive.enabled_restricted_families)
+            [], distribution.main_archive.enabled_restricted_processors)
 
 
 class TestDistroEditView(TestCaseWithFactory):
@@ -187,8 +186,7 @@ class TestDistroEditView(TestCaseWithFactory):
         super(TestDistroEditView, self).setUp()
         self.admin = login_celebrity('admin')
         self.distribution = self.factory.makeDistribution()
-        proc_family_set = getUtility(IProcessorFamilySet)
-        self.restricted_families = proc_family_set.getRestricted()
+        self.restricted_processors = getUtility(IProcessorSet).getRestricted()
 
     def test_edit_distro_init_value_require_virtualized(self):
         view = create_initialized_view(
@@ -200,18 +198,18 @@ class TestDistroEditView(TestCaseWithFactory):
             self.distribution.main_archive.require_virtualized,
             widget._getCurrentValue())
 
-    def test_edit_distro_init_value_enabled_restricted_families(self):
-        self.distribution.main_archive.enabled_restricted_families = (
-            self.restricted_families)
+    def test_edit_distro_init_value_enabled_restricted_processors(self):
+        self.distribution.main_archive.enabled_restricted_processors = (
+            self.restricted_processors)
         view = create_initialized_view(
             self.distribution, '+edit', principal=self.admin,
             method='GET')
 
-        widget = view.widgets['enabled_restricted_families']
+        widget = view.widgets['enabled_restricted_processors']
         self.assertContentEqual(
-            self.restricted_families, widget._getCurrentValue())
+            self.restricted_processors, widget._getCurrentValue())
         self.assertContentEqual(
-            self.restricted_families,
+            self.restricted_processors,
             [item.value for item in widget.vocabulary])
 
     def getDefaultEditDict(self):
@@ -221,8 +219,8 @@ class TestDistroEditView(TestCaseWithFactory):
             'field.summary': 'newbuntu',
             'field.description': 'newbuntu',
             'field.require_virtualized.used': u'',
-            'field.enabled_restricted_families': [family.name
-                for family in self.restricted_families],
+            'field.enabled_restricted_processors': [processor.name
+                for processor in self.restricted_processors],
             'field.actions.change': 'Change',
             }
 
@@ -238,19 +236,18 @@ class TestDistroEditView(TestCaseWithFactory):
             True,
             self.distribution.main_archive.require_virtualized)
 
-    def test_change_enabled_restricted_families(self):
+    def test_change_enabled_restricted_processors(self):
         edit_form = self.getDefaultEditDict()
-        edit_form['field.enabled_restricted_families'] = []
+        edit_form['field.enabled_restricted_processors'] = []
 
-        self.distribution.main_archive.enabled_restricted_families = (
-            self.restricted_families)
+        self.distribution.main_archive.enabled_restricted_processors = (
+            self.restricted_processors)
         create_initialized_view(
             self.distribution, '+edit', principal=self.admin,
             method='POST', form=edit_form)
 
         self.assertContentEqual(
-            [],
-            self.distribution.main_archive.enabled_restricted_families)
+            [], self.distribution.main_archive.enabled_restricted_processors)
 
     def test_package_derivatives_email(self):
         # Test that the edit form allows changing package_derivatives_email

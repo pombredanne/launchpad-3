@@ -72,7 +72,8 @@ class TestDistroSeriesQueueDistUpgrader(TestNativePublishingBase):
         transaction.commit()
         # Reject from accepted queue (unlikely, would normally be from
         # unapproved or new).
-        upload.queue_root.rejectFromQueue(logger=self.logger)
+        upload.queue_root.rejectFromQueue(
+            self.factory.makePerson(), logger=self.logger)
         self.assertEqual("REJECTED", upload.queue_root.status.name)
         # Accept from rejected queue (also unlikely, but only for testing).
         upload.queue_root.acceptFromQueue(logger=self.logger)

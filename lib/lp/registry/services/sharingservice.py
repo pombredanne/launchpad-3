@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes for pillar and artifact sharing service."""
@@ -71,7 +71,7 @@ from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.bulk import load
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.stormexpr import ColumnSelect
 from lp.services.searchbuilder import any
 from lp.services.webapp.authorization import (
@@ -227,10 +227,20 @@ class SharingService:
 
         return bugtasks, branches, specifications
 
-    def userHasGrantsOnPillar(self, pillar, user):
+    def checkPillarArtifactAccess(self, pillar, user):
         """See `ISharingService`."""
-        return not self.getArtifactGrantsForPersonOnPillar(
-            pillar, user).is_empty()
+        tables = [
+            AccessPolicyGrantFlat,
+            Join(
+                TeamParticipation,
+                TeamParticipation.teamID == AccessPolicyGrantFlat.grantee_id),
+            Join(
+                AccessPolicy,
+                AccessPolicy.id == AccessPolicyGrantFlat.policy_id)]
+        return not IStore(AccessPolicyGrantFlat).using(*tables).find(
+            AccessPolicyGrantFlat,
+            AccessPolicy.product_id == pillar.id,
+            TeamParticipation.personID == user.id).is_empty()
 
     @available_with_permission('launchpad.Driver', 'pillar')
     def getSharedBugs(self, pillar, person, user):
@@ -439,17 +449,24 @@ class SharingService:
         # default to Public.
         # If the branch sharing policy is EMBARGOED_OR_PROPRIETARY, then we
         # do not allow any other policies.
-        allowed_policies = []
-        if (pillar.branch_sharing_policy !=
-                BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY):
-            allowed_policies = [BranchSharingPolicy.PUBLIC]
-            # Commercial projects also allow proprietary branches.
-            if (IProduct.providedBy(pillar)
-                and pillar.has_current_commercial_subscription):
-                allowed_policies.extend([
+        allowed_policies = [BranchSharingPolicy.PUBLIC]
+        # Commercial projects also allow proprietary branches.
+        if (IProduct.providedBy(pillar)
+            and pillar.has_current_commercial_subscription):
+
+            if pillar.private:
+                allowed_policies = [
+                    BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+                    BranchSharingPolicy.PROPRIETARY,
+                ]
+            else:
+                allowed_policies = [
+                    BranchSharingPolicy.PUBLIC,
                     BranchSharingPolicy.PUBLIC_OR_PROPRIETARY,
                     BranchSharingPolicy.PROPRIETARY_OR_PUBLIC,
-                    BranchSharingPolicy.PROPRIETARY])
+                    BranchSharingPolicy.PROPRIETARY,
+                ]
+
         if (pillar.branch_sharing_policy and
             not pillar.branch_sharing_policy in allowed_policies):
             allowed_policies.append(pillar.branch_sharing_policy)
@@ -464,10 +481,20 @@ class SharingService:
         # Commercial projects also allow proprietary bugs.
         if (IProduct.providedBy(pillar)
             and pillar.has_current_commercial_subscription):
-            allowed_policies.extend([
-                BugSharingPolicy.PUBLIC_OR_PROPRIETARY,
-                BugSharingPolicy.PROPRIETARY_OR_PUBLIC,
-                BugSharingPolicy.PROPRIETARY])
+
+            if pillar.private:
+                allowed_policies = [
+                    BugSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+                    BugSharingPolicy.PROPRIETARY,
+                ]
+            else:
+                allowed_policies = [
+                    BugSharingPolicy.PUBLIC,
+                    BugSharingPolicy.PUBLIC_OR_PROPRIETARY,
+                    BugSharingPolicy.PROPRIETARY_OR_PUBLIC,
+                    BugSharingPolicy.PROPRIETARY,
+                ]
+
         if (pillar.bug_sharing_policy and
             not pillar.bug_sharing_policy in allowed_policies):
             allowed_policies.append(pillar.bug_sharing_policy)
@@ -482,10 +509,20 @@ class SharingService:
         # Commercial projects also allow proprietary specifications.
         if (IProduct.providedBy(pillar)
             and pillar.has_current_commercial_subscription):
-            allowed_policies.extend([
-                SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY,
-                SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC,
-                SpecificationSharingPolicy.PROPRIETARY])
+
+            if pillar.private:
+                allowed_policies = [
+                    SpecificationSharingPolicy.EMBARGOED_OR_PROPRIETARY,
+                    SpecificationSharingPolicy.PROPRIETARY,
+                ]
+            else:
+                allowed_policies = [
+                    SpecificationSharingPolicy.PUBLIC,
+                    SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY,
+                    SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC,
+                    SpecificationSharingPolicy.PROPRIETARY,
+                ]
+
         if (pillar.specification_sharing_policy and
             not pillar.specification_sharing_policy in allowed_policies):
             allowed_policies.append(pillar.specification_sharing_policy)

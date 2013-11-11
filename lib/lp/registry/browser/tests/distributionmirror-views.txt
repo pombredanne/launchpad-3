@@ -314,7 +314,7 @@ A mirror that have been probed cannot be deleted.
     []
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
-    This mirror has been probed and thus can't be deleted.
+    This mirror has been probed and thus can&#x27;t be deleted.
 
 Deletion is permanent.
 

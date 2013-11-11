@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The vocabularies relating to dependencies of specifications."""
@@ -9,9 +9,8 @@ __all__ = [
     'SpecificationDependenciesVocabulary',
     ]
 
-from operator import attrgetter
-
 from storm.locals import (
+    And,
     SQL,
     Store,
     )
@@ -23,16 +22,22 @@ from lp.blueprints.model.specification import (
     recursive_blocked_query,
     Specification,
     )
+from lp.blueprints.model.specificationdependency import (
+    SpecificationDependency,
+    )
+from lp.blueprints.model.specificationsearch import (
+    get_specification_privacy_filter,
+    )
 from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.services.database.sqlbase import quote
+from lp.services.database.stormexpr import fti_search
 from lp.services.webapp import (
     canonical_url,
     urlparse,
     )
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.vocabulary import (
     CountableIterator,
     IHugeVocabulary,
-    NamedSQLObjectVocabulary,
     SQLObjectVocabularyBase,
     )
 
@@ -77,7 +82,8 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         """
         if spec is None or spec == self.context:
             return False
-        return spec not in set(self.context.all_blocked)
+        user = getattr(getUtility(ILaunchBag), 'user', None)
+        return spec not in set(self.context.all_blocked(user=user))
 
     def _order_by(self):
         """Look at the context to provide grouping.
@@ -116,8 +122,10 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
 
     def _exclude_blocked_query(self):
         """Return the select statement to exclude already blocked specs."""
-        return SQL("Specification.id not in (WITH %s select id from blocked)"
-                   % recursive_blocked_query(self.context))
+        user = getattr(getUtility(ILaunchBag), 'user', None)
+        return SQL(
+            "Specification.id not in (WITH %s select id from blocked)" % (
+                recursive_blocked_query(user)), params=(self.context.id,))
 
     def toTerm(self, obj):
         if obj.target == self.context.target:
@@ -180,7 +188,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
 
         return Store.of(self.context).find(
             Specification,
-            SQL('Specification.fti @@ ftq(%s)' % quote(query)),
+            fti_search(Specification, query),
             self._exclude_blocked_query(),
             ).order_by(self._order_by())
 
@@ -192,13 +200,16 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         return self._is_valid_candidate(obj)
 
 
-class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
+class SpecificationDependenciesVocabulary(SQLObjectVocabularyBase):
     """List specifications on which the current specification depends."""
 
     _table = Specification
     _orderBy = 'title'
 
-    def __iter__(self):
-        for spec in sorted(
-            self.context.dependencies, key=attrgetter('title')):
-            yield SimpleTerm(spec, spec.name, spec.title)
+    @property
+    def _filter(self):
+        user = getattr(getUtility(ILaunchBag), 'user', None)
+        return And(
+            SpecificationDependency.specificationID == self.context.id,
+            SpecificationDependency.dependencyID == Specification.id,
+            *get_specification_privacy_filter(user))

@@ -5,9 +5,9 @@
 
 __metaclass__ = type
 
-from cgi import escape
 import unittest
 
+from lp.services.webapp.escaping import html_escape
 from lp.translations.interfaces.translationimporter import (
     TranslationFormatSyntaxError,
     )
@@ -51,7 +51,7 @@ class XpiHeaderTestCase(unittest.TestCase):
         if contributors is None:
             contributors = []
         contributor_xml = [
-            "<em:contributor>%s</em:contributor>" % escape(person)
+            "<em:contributor>%s</em:contributor>" % html_escape(person)
             for person in contributors]
 
         insertions = {'contributors': '\n'.join(contributor_xml)}

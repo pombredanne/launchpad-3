@@ -31,7 +31,10 @@ from zope.interface import (
     Interface,
     )
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    isinstance as zope_isinstance,
+    removeSecurityProxy,
+    )
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -44,11 +47,10 @@ from lp.app.errors import (
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJobSet,
     InconsistentBuildFarmJobError,
     ISpecificBuildFarmJobSource,
     )
-from lp.buildmaster.interfaces.packagebuild import IPackageBuild
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
@@ -143,19 +145,6 @@ class BuildNavigationMixin:
         try:
             return getUtility(ISourcePackageRecipeBuildSource).getByID(
                 build_id)
-        except NotFoundError:
-            return None
-
-    @stepthrough('+buildjob')
-    def traverse_buildjob(self, name):
-        try:
-            job_id = int(name)
-        except ValueError:
-            return None
-        try:
-            build_job = getUtility(IBuildFarmJobSet).getByID(job_id)
-            return self.redirectSubTree(
-                canonical_url(build_job.getSpecificJob()))
         except NotFoundError:
             return None
 
@@ -346,10 +335,10 @@ class BuildView(LaunchpadView):
         queue_record = self.context.buildqueue_record
         if queue_record.job.status == JobStatus.WAITING:
             start_time = queue_record.getEstimatedJobStartTime()
-            if start_time is None:
-                return None
         else:
             start_time = queue_record.job.date_started
+        if start_time is None:
+            return None
         duration = queue_record.estimated_duration
         return start_time + duration
 
@@ -478,9 +467,7 @@ def setupCompleteBuilds(batch):
     Return a list of built CompleteBuild instances, or empty
     list if no builds were contained in the received batch.
     """
-    builds = getSpecificJobs(
-        [build.build_farm_job if IPackageBuild.providedBy(build) else build
-            for build in batch])
+    builds = getSpecificJobs(batch)
     if not builds:
         return []
 
@@ -509,37 +496,37 @@ def setupCompleteBuilds(batch):
 def getSpecificJobs(jobs):
     """Return the specific build jobs associated with each of the jobs
         in the provided job list.
+
+    If the job is already a specific job, it will be returned unchanged.
     """
     builds = []
     key = attrgetter('job_type.name')
-    sorted_jobs = sorted(jobs, key=key)
+    nonspecific_jobs = sorted(
+        (job for job in jobs if zope_isinstance(job, BuildFarmJob)), key=key)
     job_builds = {}
-    for job_type_name, grouped_jobs in groupby(sorted_jobs, key=key):
+    for job_type_name, grouped_jobs in groupby(nonspecific_jobs, key=key):
         # Fetch the jobs in batches grouped by their job type.
         source = getUtility(
             ISpecificBuildFarmJobSource, job_type_name)
         builds = [build for build
             in source.getByBuildFarmJobs(list(grouped_jobs))
             if build is not None]
-        is_binary_package_build = IBinaryPackageBuildSet.providedBy(
-            source)
         for build in builds:
-            if is_binary_package_build:
-                job_builds[build.package_build.build_farm_job.id] = build
-            else:
-                try:
-                    job_builds[build.build_farm_job.id] = build
-                except Unauthorized:
-                    # If the build farm job is private, we will get an
-                    # Unauthorized exception; we only use
-                    # removeSecurityProxy to get the id of build_farm_job
-                    # but the corresponding build returned in the list
-                    # will be 'None'.
-                    naked_build = removeSecurityProxy(build)
-                    job_builds[naked_build.build_farm_job.id] = None
+            try:
+                job_builds[build.build_farm_job.id] = build
+            except Unauthorized:
+                # If the build farm job is private, we will get an
+                # Unauthorized exception; we only use
+                # removeSecurityProxy to get the id of build_farm_job
+                # but the corresponding build returned in the list
+                # will be 'None'.
+                naked_build = removeSecurityProxy(build)
+                job_builds[naked_build.build_farm_job.id] = None
     # Return the corresponding builds.
     try:
-        return [job_builds[job.id] for job in jobs]
+        return [
+            job_builds[job.id]
+            if zope_isinstance(job, BuildFarmJob) else job for job in jobs]
     except KeyError:
         raise InconsistentBuildFarmJobError(
             "Could not find all the related specific jobs.")

@@ -542,7 +542,7 @@ And if we ask just for specs, we get the incomplete ones.
 
 We can filter for specifications that contain specific text:
 
-    >>> for spec in kubuntu.specifications(None, filter=['package']):
+    >>> for spec in kubuntu.specifications(None, filter=[u'package']):
     ...     print spec.name
     revu
 
@@ -562,7 +562,7 @@ We can get only valid specs (those that are not obsolete or superseded):
     ...         spec.definition_status = (
     ...             SpecificationDefinitionStatus.SUPERSEDED)
     ...     shim = spec.updateLifecycleStatus(owner)
-    >>> for spec in kubuntu._valid_specifications:
+    >>> for spec in kubuntu.valid_specifications():
     ...     print spec.name
     kde-desktopfile-langpacks
 

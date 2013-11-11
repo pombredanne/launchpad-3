@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -18,14 +18,12 @@ from lp.code.interfaces.branchjob import IBranchJob
 from lp.code.model.branchjob import BranchJob
 from lp.code.model.directbranchcommit import DirectBranchCommit
 from lp.codehosting.scanner import events
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.job.model.job import Job
-from lp.services.webapp.testing import verifyObject
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCaseWithFactory,
+    verifyObject,
+    )
 from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
@@ -93,27 +91,9 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         buildqueue = queueset.get(job_id)
 
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        expected_processor = (
-            ubuntu.currentseries.nominatedarchindep.default_processor)
-
-        self.assertEquals(expected_processor, buildqueue.processor)
-
-    def test_getName(self):
-        # Each job gets a unique name.
-        other_job = self.jobset.create(self.branch)
-        self.assertNotEqual(self.specific_job.getName(), other_job.getName())
-
-    def test_getTitle(self):
-        self.jobset.create(self.branch)
-        self.assertEqual(
-            '%s translation templates build' % self.branch.bzr_identity,
-            self.specific_job.getTitle())
-
-    def test_getLogFileName(self):
-        # Each job has a unique log file name.
-        other_job = self.jobset.create(self.branch)
-        self.assertNotEqual(
-            self.specific_job.getLogFileName(), other_job.getLogFileName())
+        self.assertEquals(
+            ubuntu.currentseries.nominatedarchindep.processor,
+            buildqueue.processor)
 
     def test_score(self):
         # For now, these jobs always score themselves at 2510.  In the
@@ -124,7 +104,7 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         # TranslationTemplatesBuildJob has its own customized cleanup
         # behaviour, since it's actually a BranchJob.
         job = removeSecurityProxy(self.specific_job.job)
-        buildqueue = getUtility(IBuildQueueSet).getByJob(job)
+        buildqueue = IStore(BuildQueue).find(BuildQueue, job=job).one()
 
         job_id = job.id
         store = Store.of(job)
@@ -275,7 +255,7 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
 
         self.jobsource.scheduleTranslationTemplatesBuild(branch)
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(BranchJob)
         branchjobs = list(store.find(BranchJob, BranchJob.branch == branch))
         self.assertEqual(1, len(branchjobs))
         self.assertEqual(branch, branchjobs[0].branch)

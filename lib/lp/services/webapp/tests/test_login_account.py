@@ -65,7 +65,7 @@ class TestLoginAndLogout(TestCaseWithFactory):
         # 'accountid'.
         self.failUnlessEqual(
             session['launchpad.authenticateduser']['accountid'],
-            self.principal.id)
+            int(self.principal.id))
 
         # Ensure we are using cookie auth.
         self.assertIsNotNone(

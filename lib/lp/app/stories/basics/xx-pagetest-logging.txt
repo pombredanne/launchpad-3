@@ -8,4 +8,4 @@ pagetests-access.log file.
     >>> log = open('logs/pagetests-access.log').read()
     >>> print log.strip().split('\n')[-1]
     127.0.0.88 - ... "launchpad.dev" [...] "GET / HTTP/1.1" 200 ...
-    "Anonymous" "RootObject:index.html" "localhost" "Python-urllib/..."
+    "Anonymous" "RootObject:index.html" "" "Python-urllib/..."

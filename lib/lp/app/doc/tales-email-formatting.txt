@@ -107,7 +107,6 @@ of text that start with '>>> ' are exempted from the 'foldable-quoted'
 rules. Note that when '>>> ' occurs inside an existing quoted passage
 it will be folded because they are a continuation of a quote (see
 the preceding nested quoting test).
-# XXX sinzui 2007-08-13 bug=132263:
 # Passages may be wrongly be interpreted as Python because they start
 # with '>>> '. The formatter does not check that next and previous
 # lines of text consistently uses '>>> ' as Python would.
@@ -122,7 +121,7 @@ the preceding nested quoting test).
     ...               '\n')
     >>> print test_tales('foo/fmt:email-to-html',
     ...                  foo='\n'.join([python, not_python]))
-    <p>&gt;&gt;&gt; tz = pytz.timezone(<wbr />"Asia/Calcutta"...
+    <p>&gt;&gt;&gt; tz = pytz.timezone(<wbr />&quot;Asia/Calcutta&quot;...
     &gt;&gt;&gt; mydate = datetime.<wbr />datetime(<wbr />2007, 2, ...
     2007-02-18 15:35:00+05:30</p>
     <p><span class="foldable-quoted">&gt; This line really is a quoted ...
@@ -174,7 +173,7 @@ output and not fold it.
     >>> print test_tales('foo/fmt:email-to-html',
     ...                  foo='\n'.join([bad_dpkg]))
     <p>When dpkg output is in text, possibly tampered with,<br />
-    we must take care to identify '|' quoted passages.<br />
+    we must take care to identify &#x27;|&#x27; quoted passages.<br />
     $ Desired=<wbr />Unknown/<wbr />Install/<wbr />Remove/...
     |<br />
     &nbsp;Status=<wbr />Not/Installed/<wbr />Config-...

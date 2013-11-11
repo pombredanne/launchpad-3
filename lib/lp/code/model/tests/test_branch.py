@@ -1,7 +1,5 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=F0401,E1002
 
 """Tests for Branches."""
 
@@ -132,7 +130,7 @@ from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.tests import (
     block_on_job,
@@ -162,7 +160,7 @@ from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
     AppServerLayer,
     CeleryBranchWriteJobLayer,
-    CeleryJobLayer,
+    CeleryBzrsyncdJobLayer,
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -333,7 +331,7 @@ class TestBranchChanged(TestCaseWithFactory):
 
 class TestBranchJobViaCelery(TestCaseWithFactory):
 
-    layer = CeleryJobLayer
+    layer = CeleryBzrsyncdJobLayer
 
     def test_branchChanged_via_celery(self):
         """Running a job via Celery succeeds and emits expected output."""
@@ -1575,10 +1573,10 @@ class TestBranchDeletionConsequences(TestCase):
         spec2.linkBranch(self.branch, self.branch.owner)
         spec2_branch_id = self.branch.spec_links[1].id
         self.branch.destroySelf(break_references=True)
-        self.assertRaises(SQLObjectNotFound, SpecificationBranch.get,
-                          spec1_branch_id)
-        self.assertRaises(SQLObjectNotFound, SpecificationBranch.get,
-                          spec2_branch_id)
+        self.assertRaises(
+            SQLObjectNotFound, SpecificationBranch.get, spec1_branch_id)
+        self.assertRaises(
+            SQLObjectNotFound, SpecificationBranch.get, spec2_branch_id)
 
     def test_branchWithSeriesRequirements(self):
         """Deletion requirements for a series' branch are right."""

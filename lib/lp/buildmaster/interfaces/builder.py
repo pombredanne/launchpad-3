@@ -1,7 +1,5 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 """Builder interfaces."""
 
@@ -9,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'BuildDaemonError',
-    'CorruptBuildCookie',
     'BuildSlaveFailure',
     'CannotBuild',
     'CannotFetchFile',
@@ -40,7 +37,6 @@ from zope.interface import (
     )
 from zope.schema import (
     Bool,
-    Field,
     Int,
     Text,
     TextLine,
@@ -51,7 +47,6 @@ from lp.app.validators.name import name_validator
 from lp.app.validators.url import builder_url_validator
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import (
-    Description,
     PersonChoice,
     Title,
     )
@@ -73,13 +68,6 @@ class CannotFetchFile(BuildDaemonError):
 
 class ProtocolVersionMismatch(BuildDaemonError):
     """The build slave had a protocol version. This is a serious error."""
-
-
-class CorruptBuildCookie(BuildDaemonError):
-    """The build slave is working with mismatched information.
-
-    It needs to be rescued.
-    """
 
 
 class CannotResumeHost(BuildDaemonError):
@@ -117,7 +105,7 @@ class IBuilder(IHasOwner):
         schema=IProcessor,
         description=_('Build Slave Processor, used to identify '
                       'which jobs can be built by this device.')),
-        as_of='devel', readonly=True)
+        as_of='devel')
 
     owner = exported(PersonChoice(
         title=_('Owner'), required=True, vocabulary='ValidOwner',
@@ -166,17 +154,15 @@ class IBuilder(IHasOwner):
         title=_('Publicly Visible'), required=True, default=True,
         description=_('Whether or not to present the builder publicly.')))
 
-    slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
-
     currentjob = Attribute("BuildQueue instance for job being processed.")
 
     failure_count = exported(Int(
         title=_('Failure Count'), required=False, default=0,
        description=_("Number of consecutive failures for this builder.")))
 
-    current_build_behavior = Field(
-        title=u"The current behavior of the builder for the current job.",
-        required=False)
+    version = exported(Text(
+        title=_('Version'), required=False,
+        description=_('The version of launchpad-buildd on the slave.')))
 
     def gotFailure():
         """Increment failure_count on the builder."""
@@ -187,152 +173,26 @@ class IBuilder(IHasOwner):
     def failBuilder(reason):
         """Mark builder as failed for a given reason."""
 
-    def verifySlaveBuildCookie(slave_build_id):
-        """Verify that a slave's build cookie is consistent.
+    def acquireBuildCandidate():
+        """Acquire a build candidate in an atomic fashion.
 
-        This should delegate to the current `IBuildFarmJobBehavior`.
+        When retrieiving a candidate we need to mark it as building
+        immediately so that it is not dispatched by another builder in the
+        build manager.
+
+        We can consider this to be atomic because although the build manager
+        is a Twisted app and gives the appearance of doing lots of things at
+        once, it's still single-threaded so no more than one builder scan
+        can be in this code at the same time.
+
+        If there's ever more than one build manager running at once, then
+        this code will need some sort of mutex.
         """
 
-    def transferSlaveFileToLibrarian(file_sha1, filename, private):
-        """Transfer a file from the slave to the librarian.
+    def handleFailure(logger):
+        """Handle buildd slave failures.
 
-        :param file_sha1: The file's sha1, which is how the file is addressed
-            in the slave XMLRPC protocol. Specially, the file_sha1 'buildlog'
-            will cause the build log to be retrieved and gzipped.
-        :param filename: The name of the file to be given to the librarian
-            file alias.
-        :param private: True if the build is for a private archive.
-        :return: A Deferred that calls back with a librarian file alias.
-        """
-
-    def getBuildQueue():
-        """Return a `BuildQueue` if there's an active job on this builder.
-
-        :return: A BuildQueue, or None.
-        """
-
-    def getCurrentBuildFarmJob():
-        """Return a `BuildFarmJob` for this builder."""
-
-    # All methods below here return Deferred.
-
-    def isAvailable():
-        """Whether or not a builder is available for building new jobs.
-
-        :return: A Deferred that fires with True or False, depending on
-            whether the builder is available or not.
-        """
-
-    def rescueIfLost(logger=None):
-        """Reset the slave if its job information doesn't match the DB.
-
-        This checks the build ID reported in the slave status against the
-        database. If it isn't building what we think it should be, the current
-        build will be aborted and the slave cleaned in preparation for a new
-        task. The decision about the slave's correctness is left up to
-        `IBuildFarmJobBehavior.verifySlaveBuildCookie`.
-
-        :return: A Deferred that fires when the dialog with the slave is
-            finished.  It does not have a return value.
-        """
-
-    def updateStatus(logger=None):
-        """Update the builder's status by probing it.
-
-        :return: A Deferred that fires when the dialog with the slave is
-            finished.  It does not have a return value.
-        """
-
-    def cleanSlave():
-        """Clean any temporary files from the slave.
-
-        :return: A Deferred that fires when the dialog with the slave is
-            finished.  It does not have a return value.
-        """
-
-    def requestAbort():
-        """Ask that a build be aborted.
-
-        This takes place asynchronously: Actually killing everything running
-        can take some time so the slave status should be queried again to
-        detect when the abort has taken effect. (Look for status ABORTED).
-
-        :return: A Deferred that fires when the dialog with the slave is
-            finished.  It does not have a return value.
-        """
-
-    def resumeSlaveHost():
-        """Resume the slave host to a known good condition.
-
-        Issues 'builddmaster.vm_resume_command' specified in the configuration
-        to resume the slave.
-
-        :raises: CannotResumeHost: if builder is not virtual or if the
-            configuration command has failed.
-
-        :return: A Deferred that fires when the resume operation finishes,
-            whose value is a (stdout, stderr) tuple for success, or a Failure
-            whose value is a CannotResumeHost exception.
-        """
-
-    def slaveStatus():
-        """Get the slave status for this builder.
-
-        :return: A Deferred which fires when the slave dialog is complete.
-            Its value is a dict containing at least builder_status, but
-            potentially other values included by the current build
-            behavior.
-        """
-
-    def slaveStatusSentence():
-        """Get the slave status sentence for this builder.
-
-        :return: A Deferred which fires when the slave dialog is complete.
-            Its value is a  tuple with the first element containing the
-            slave status, build_id-queue-id and then optionally more
-            elements depending on the status.
-        """
-
-    def updateBuild(queueItem):
-        """Verify the current build job status.
-
-        Perform the required actions for each state.
-
-        :return: A Deferred that fires when the slave dialog is finished.
-        """
-
-    def startBuild(build_queue_item, logger):
-        """Start a build on this builder.
-
-        :param build_queue_item: A BuildQueueItem to build.
-        :param logger: A logger to be used to log diagnostic information.
-
-        :return: A Deferred that fires after the dispatch has completed whose
-            value is None, or a Failure that contains an exception
-            explaining what went wrong.
-        """
-
-    def handleTimeout(logger, error_message):
-        """Handle buildd slave communication timeout situations.
-
-        In case of a virtualized/PPA buildd slave an attempt will be made
-        to reset it first (using `resumeSlaveHost`). Only if that fails
-        will it be (marked as) failed (using `failBuilder`).
-
-        Conversely, a non-virtualized buildd slave will be (marked as)
-        failed straightaway.
-
-        :param logger: The logger object to be used for logging.
-        :param error_message: The error message to be used for logging.
-        :return: A Deferred that fires after the virtual slave was resumed
-            or immediately if it's a non-virtual slave.
-        """
-
-    def findAndStartJob():
-        """Find a job to run and send it to the buildd slave.
-
-        :return: A Deferred whose value is the `IBuildQueue` instance
-            found or None if no job was found.
+        Increment builder and (if possible) job failure counts.
         """
 
 

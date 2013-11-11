@@ -46,4 +46,5 @@ actually refers to a Specification.
     >>> meetings = soup.find('unscheduled').findAll('meeting')
     >>> for meeting in meetings:
     ...     print "%(id)s: %(name)s, %(lpurl)s" % meeting
+    3: svg-support, .../+spec/svg-support
     1: extension-manager-upgrades, .../+spec/extension-manager-upgrades

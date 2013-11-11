@@ -14,8 +14,6 @@ __all__ = [
     'PackageUploadFile',
     'SourceUploadFile',
     'UdebBinaryUploadFile',
-    'UploadError',
-    'UploadWarning',
     'splitComponentAndSection',
     ]
 
@@ -34,6 +32,7 @@ from lp.app.errors import NotFoundError
 from lp.archivepublisher.ddtp_tarball import DdtpTarballUpload
 from lp.archivepublisher.debian_installer import DebianInstallerUpload
 from lp.archivepublisher.dist_upgrader import DistUpgraderUpload
+from lp.archivepublisher.rosetta_translations import RosettaTranslationsUpload
 from lp.archivepublisher.uefi import UefiUpload
 from lp.archiveuploader.utils import (
     determine_source_file_type,
@@ -46,6 +45,7 @@ from lp.archiveuploader.utils import (
     re_taint_free,
     re_valid_pkg_name,
     re_valid_version,
+    UploadError,
     )
 from lp.buildmaster.enums import BuildStatus
 from lp.services.encoding import guess as guess_encoding
@@ -63,14 +63,6 @@ from lp.soyuz.model.files import SourceFileMixin
 
 
 apt_pkg.init_system()
-
-
-class UploadError(Exception):
-    """All upload errors are returned in this form."""
-
-
-class UploadWarning(Warning):
-    """All upload warnings are returned in this form."""
 
 
 class TarFileDateChecker:
@@ -122,7 +114,6 @@ class NascentUploadFile:
     The filename, along with information about it, is kept here.
     """
     new = False
-    sha_digest = None
 
     # Files need their content type for creating in the librarian.
     # This maps endings of filenames onto content types we may encounter
@@ -135,10 +126,10 @@ class NascentUploadFile:
         ".tar.gz": "application/gzipped-tar",
         }
 
-    def __init__(self, filepath, digest, size, component_and_section,
+    def __init__(self, filepath, checksums, size, component_and_section,
                  priority_name, policy, logger):
         self.filepath = filepath
-        self.digest = digest
+        self.checksums = checksums
         self.priority_name = priority_name
         self.policy = policy
         self.logger = logger
@@ -207,13 +198,10 @@ class NascentUploadFile:
                 "Invalid character(s) in filename: '%s'." % self.filename)
 
     def checkSizeAndCheckSum(self):
-        """Check the md5sum and size of the nascent file.
+        """Check the size and checksums of the nascent file.
 
-        Raise UploadError if the digest or size does not match or if the
+        Raise UploadError if the size or checksums do not match or if the
         file is not found on the disk.
-
-        Populate self.sha_digest with the calculated sha1 digest of the
-        file on disk.
         """
         if not self.exists_on_disk:
             raise UploadError(
@@ -222,30 +210,27 @@ class NascentUploadFile:
 
         # Read in the file and compute its md5 and sha1 checksums and remember
         # the size of the file as read-in.
-        digest = hashlib.md5()
-        sha_cksum = hashlib.sha1()
+        digesters = dict((n, hashlib.new(n)) for n in self.checksums.keys())
         ckfile = open(self.filepath, "r")
         size = 0
         for chunk in filechunks(ckfile):
-            digest.update(chunk)
-            sha_cksum.update(chunk)
+            for digester in digesters.itervalues():
+                digester.update(chunk)
             size += len(chunk)
         ckfile.close()
 
         # Check the size and checksum match what we were told in __init__
-        if digest.hexdigest() != self.digest:
-            raise UploadError(
-                "File %s mentioned in the changes has a checksum mismatch. "
-                "%s != %s" % (self.filename, digest.hexdigest(), self.digest))
+        for n in sorted(self.checksums.keys()):
+            if digesters[n].hexdigest() != self.checksums[n]:
+                raise UploadError(
+                    "File %s mentioned in the changes has a %s mismatch. "
+                    "%s != %s" % (
+                        self.filename, n, digesters[n].hexdigest(),
+                        self.checksums[n]))
         if size != self.size:
             raise UploadError(
                 "File %s mentioned in the changes has a size mismatch. "
                 "%s != %s" % (self.filename, size, self.size))
-
-        # The sha_digest is used later when verifying packages mentioned
-        # in the DSC file; it's used to compare versus files in the
-        # Librarian.
-        self.sha_digest = sha_cksum.hexdigest()
 
 
 class CustomUploadFile(NascentUploadFile):
@@ -279,6 +264,8 @@ class CustomUploadFile(NascentUploadFile):
         PackageUploadCustomFormat.DEBIAN_INSTALLER: DebianInstallerUpload,
         PackageUploadCustomFormat.DIST_UPGRADER: DistUpgraderUpload,
         PackageUploadCustomFormat.DDTP_TARBALL: DdtpTarballUpload,
+        PackageUploadCustomFormat.ROSETTA_TRANSLATIONS:
+            RosettaTranslationsUpload,
         PackageUploadCustomFormat.UEFI: UefiUpload,
         }
 
@@ -327,7 +314,7 @@ class CustomUploadFile(NascentUploadFile):
 class PackageUploadFile(NascentUploadFile):
     """Base class to model sources and binary files contained in a upload. """
 
-    def __init__(self, filepath, digest, size, component_and_section,
+    def __init__(self, filepath, md5, size, component_and_section,
                  priority_name, package, version, changes, policy, logger):
         """Check presence of the component and section from an uploaded_file.
 
@@ -336,7 +323,7 @@ class PackageUploadFile(NascentUploadFile):
         Even if they might be overridden in the future.
         """
         super(PackageUploadFile, self).__init__(
-            filepath, digest, size, component_and_section, priority_name,
+            filepath, md5, size, component_and_section, priority_name,
             policy, logger)
         self.package = package
         self.version = version
@@ -419,10 +406,7 @@ class SourceUploadFile(SourceFileMixin, PackageUploadFile):
     def checkBuild(self, build):
         """See PackageUploadFile."""
         # The master verifies the status to confirm successful upload.
-        build.status = BuildStatus.FULLYBUILT
-        # If this upload is successful, any existing log is wrong and
-        # unuseful.
-        build.upload_log = None
+        build.updateStatus(BuildStatus.FULLYBUILT)
 
         # Sanity check; raise an error if the build we've been
         # told to link to makes no sense.
@@ -483,11 +467,11 @@ class BaseBinaryUploadFile(PackageUploadFile):
     source_name = None
     source_version = None
 
-    def __init__(self, filepath, digest, size, component_and_section,
+    def __init__(self, filepath, md5, size, component_and_section,
                  priority_name, package, version, changes, policy, logger):
 
         PackageUploadFile.__init__(
-            self, filepath, digest, size, component_and_section,
+            self, filepath, md5, size, component_and_section,
             priority_name, package, version, changes, policy, logger)
 
         if self.priority_name not in self.priority_map:
@@ -865,7 +849,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         build = sourcepackagerelease.getBuildByArch(
             dar, self.policy.archive)
         if build is not None:
-            build.status = BuildStatus.FULLYBUILT
+            build.updateStatus(BuildStatus.FULLYBUILT)
             self.logger.debug("Updating build for %s: %s" % (
                 dar.architecturetag, build.id))
         else:
@@ -886,14 +870,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 "Upload to unknown architecture %s for distroseries %s" %
                 (self.archtag, self.policy.distroseries))
 
-        # Ensure gathered binary is related to a FULLYBUILT build
-        # record. It will be check in slave-scanner procedure to
-        # certify that the build was processed correctly.
-        build.status = BuildStatus.FULLYBUILT
-        # Also purge any previous failed upload_log stored, so its
-        # content can be garbage-collected since it's not useful
-        # anymore.
-        build.upload_log = None
+        build.updateStatus(BuildStatus.FULLYBUILT)
 
         # Sanity check; raise an error if the build we've been
         # told to link to makes no sense.

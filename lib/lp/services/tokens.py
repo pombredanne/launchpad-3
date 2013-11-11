@@ -12,7 +12,7 @@ __all__ = [
 
 import random
 
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 
 
 def create_token(token_length):

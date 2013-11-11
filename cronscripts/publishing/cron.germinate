@@ -16,7 +16,7 @@ GENERATE=$LAUNCHPADROOT/cronscripts/generate-extra-overrides.py
 MAINTAINCE_CHECK=$LAUNCHPADROOT/cronscripts/publishing/maintenance-check.py
 
 FLAVOURS="ubuntu kubuntu kubuntu-active edubuntu xubuntu mythbuntu lubuntu"
-FLAVOURS="$FLAVOURS ubuntustudio"
+FLAVOURS="$FLAVOURS ubuntustudio ubuntu-gnome"
 
 ## Check to see if another germinate run is in progress
 

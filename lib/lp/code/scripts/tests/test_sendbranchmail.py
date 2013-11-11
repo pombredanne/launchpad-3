@@ -49,31 +49,15 @@ class TestSendbranchmail(TestCaseWithFactory):
             branch, 1, 'from@example.org', 'body', 'foo')
         transaction.commit()
         retcode, stdout, stderr = run_script(
-            'cronscripts/sendbranchmail.py', [])
+            'cronscripts/process-job-source.py', ['IRevisionMailJobSource'])
         self.assertTextMatchesExpressionIgnoreWhitespace(
             'INFO    '
-            'Creating lockfile: /var/lock/launchpad-sendbranchmail.lock\n'
+            'Creating lockfile: /var/lock/launchpad-process-job-source-'
+            'IRevisionMailJobSource.lock\n'
+            'INFO    Running synchronously.\n'
             'INFO    Running <REVISION_MAIL branch job \(\d+\) for .*?> '
             '\(ID %d\) in status Waiting\n'
-            'INFO    Ran 1 RevisionMailJobs.\n' % mail_job.job.id, stderr)
-        self.assertEqual('', stdout)
-        self.assertEqual(0, retcode)
-
-    def test_sendbranchmail_handles_oops(self):
-        """Ensure sendbranchmail runs and sends email."""
-        self.useTempBzrHome()
-        branch = self.factory.makeBranch()
-        RevisionsAddedJob.create(
-            branch, 'rev1', 'rev2', 'from@example.org')
-        transaction.commit()
-        retcode, stdout, stderr = run_script(
-            'cronscripts/sendbranchmail.py', [])
-        self.assertIn(
-            'INFO    '
-            'Creating lockfile: /var/lock/launchpad-sendbranchmail.lock\n',
-            stderr)
-        self.assertIn('INFO    Job resulted in OOPS:', stderr)
-        self.assertIn('INFO    Ran 0 RevisionMailJobs.\n', stderr)
+            'INFO    Ran 1 RevisionMailJob jobs.\n' % mail_job.job.id, stderr)
         self.assertEqual('', stdout)
         self.assertEqual(0, retcode)
 
@@ -90,13 +74,15 @@ class TestSendbranchmail(TestCaseWithFactory):
             branch, 'rev1', 'rev2', 'from@example.org')
         transaction.commit()
         retcode, stdout, stderr = run_script(
-            'cronscripts/sendbranchmail.py', [])
+            'cronscripts/process-job-source.py', ['IRevisionsAddedJobSource'])
         self.assertTextMatchesExpressionIgnoreWhitespace(
             'INFO    '
-            'Creating lockfile: /var/lock/launchpad-sendbranchmail.lock\n'
+            'Creating lockfile: /var/lock/launchpad-process-job-source-'
+            'IRevisionsAddedJobSource.lock\n'
+            'INFO    Running synchronously.\n'
             'INFO    Running <REVISIONS_ADDED_MAIL branch job \(\d+\) '
             'for .*?> \(ID %d\) in status Waiting\n'
-            'INFO    Ran 1 RevisionMailJobs.\n' % job.job.id,
+            'INFO    Ran 1 RevisionsAddedJob jobs.\n' % job.job.id,
             stderr)
         self.assertEqual('', stdout)
         self.assertEqual(0, retcode)

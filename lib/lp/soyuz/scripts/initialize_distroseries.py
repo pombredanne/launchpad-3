@@ -21,7 +21,7 @@ from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
 from lp.services.database import bulk
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 from lp.services.database.sqlbase import sqlvalues
 from lp.services.helpers import ensure_unicode
 from lp.soyuz.adapters.packagelocation import PackageLocation
@@ -380,12 +380,12 @@ class InitializeDistroSeries:
                 sqlvalues(self.arches))
         self._store.execute("""
             INSERT INTO DistroArchSeries
-            (distroseries, processorfamily, architecturetag, owner, official,
+            (distroseries, processor, architecturetag, owner, official,
              supports_virtualized)
-            SELECT %s, processorfamily, architecturetag, %s,
+            SELECT %s, processor, architecturetag, %s,
                 bool_and(official), bool_or(supports_virtualized)
             FROM DistroArchSeries WHERE enabled = TRUE %s
-            GROUP BY processorfamily, architecturetag
+            GROUP BY processor, architecturetag
             """ % (sqlvalues(self.distroseries, self.distroseries.owner)
             + (das_filter, )))
         self._store.flush()
@@ -499,7 +499,7 @@ class InitializeDistroSeries:
         We copy all PENDING and PUBLISHED records as PENDING into our own
         publishing records.
 
-        We copy only the RELEASE pocket in the PRIMARY and DEBUG archives.
+        We copy only the RELEASE pocket in the PRIMARY archive.
         """
         archive_set = getUtility(IArchiveSet)
 
@@ -516,8 +516,7 @@ class InitializeDistroSeries:
 
             distroarchseries_list = distroarchseries_lists[parent]
             for archive in parent.distribution.all_distro_archives:
-                if archive.purpose not in (
-                    ArchivePurpose.PRIMARY, ArchivePurpose.DEBUG):
+                if archive.purpose != ArchivePurpose.PRIMARY:
                     continue
 
                 target_archive = archive_set.getByDistroPurpose(
@@ -532,15 +531,14 @@ class InitializeDistroSeries:
                     destination = PackageLocation(
                         target_archive, self.distroseries.distribution,
                         self.distroseries, PackagePublishingPocket.RELEASE)
-                    proc_families = None
+                    processors = None
                     if self.rebuild:
-                        proc_families = [
-                            das[1].processorfamily
-                            for das in distroarchseries_list]
+                        processors = [
+                            das[1].processor for das in distroarchseries_list]
                         distroarchseries_list = ()
                     getUtility(IPackageCloner).clonePackages(
                         origin, destination, distroarchseries_list,
-                        proc_families, spns, self.rebuild)
+                        processors, spns, self.rebuild)
                 else:
                     # There is only one available pocket in an unreleased
                     # series.

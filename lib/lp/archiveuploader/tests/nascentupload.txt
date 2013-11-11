@@ -751,7 +751,7 @@ sigining key reference as an IGPGKey:
     >>> bar_ok.is_rejected
     False
 
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.registry.interfaces.gpg import IGPGKey
     >>> from lp.registry.interfaces.person import IPersonSet
 

@@ -127,7 +127,6 @@ class LibraryFileAliasResource(resource.Resource):
     def _getFileAlias(self, aliasID, token, path):
         try:
             alias = self.storage.getFileAlias(aliasID, token, path)
-            alias.updateLastAccessed()
             return (alias.contentID, alias.filename,
                 alias.mimetype, alias.date_created, alias.restricted)
         except LookupError:

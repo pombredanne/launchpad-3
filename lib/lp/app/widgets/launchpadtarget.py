@@ -4,22 +4,21 @@
 __metaclass__ = type
 
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form import (
-    CustomWidgetFactory,
-    InputWidget,
-    )
-from zope.app.form.browser.widget import (
-    BrowserWidget,
-    renderElement,
-    )
-from zope.app.form.interfaces import (
+from zope.component import getUtility
+from zope.formlib.interfaces import (
     ConversionError,
     IInputWidget,
     InputErrors,
     MissingInputError,
+    WidgetInputError,
     )
-from zope.app.form.utility import setUpWidget
-from zope.component import getUtility
+from zope.formlib.utility import setUpWidget
+from zope.formlib.widget import (
+    BrowserWidget,
+    CustomWidgetFactory,
+    InputWidget,
+    renderElement,
+    )
 from zope.interface import implements
 from zope.schema import Choice
 
@@ -52,6 +51,9 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
 
     def getDistributionVocabulary(self):
         return 'Distribution'
+    
+    def getProductVocabulary(self):
+        return 'Product'
 
     def setUpSubWidgets(self):
         if self._widgets_set_up:
@@ -59,7 +61,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
         fields = [
             Choice(
                 __name__='product', title=u'Project',
-                required=True, vocabulary='Product'),
+                required=True, vocabulary=self.getProductVocabulary()),
             Choice(
                 __name__='distribution', title=u"Distribution",
                 required=True, vocabulary=self.getDistributionVocabulary(),
@@ -95,7 +97,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
         return self.name in self.request.form
 
     def hasValidInput(self):
-        """See zope.app.form.interfaces.IInputWidget."""
+        """See zope.formlib.interfaces.IInputWidget."""
         try:
             self.getInputValue()
             return True
@@ -103,22 +105,25 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
             return False
 
     def getInputValue(self):
-        """See zope.app.form.interfaces.IInputWidget."""
+        """See zope.formlib.interfaces.IInputWidget."""
         self.setUpSubWidgets()
         form_value = self.request.form_ng.getOne(self.name)
         if form_value == 'product':
             try:
                 return self.product_widget.getInputValue()
             except MissingInputError:
-                self._error = LaunchpadValidationError(
-                    'Please enter a project name')
+                self._error = WidgetInputError(
+                    self.name, self.label,
+                    LaunchpadValidationError('Please enter a project name'))
                 raise self._error
             except ConversionError:
                 entered_name = self.request.form_ng.getOne(
                     "%s.product" % self.name)
-                self._error = LaunchpadValidationError(
-                    "There is no project named '%s' registered in"
-                    " Launchpad" % entered_name)
+                self._error = WidgetInputError(
+                    self.name, self.label,
+                    LaunchpadValidationError(
+                        "There is no project named '%s' registered in"
+                        " Launchpad" % entered_name))
                 raise self._error
         elif form_value == 'package':
             try:
@@ -126,9 +131,11 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
             except ConversionError:
                 entered_name = self.request.form_ng.getOne(
                     "%s.distribution" % self.name)
-                self._error = LaunchpadValidationError(
-                    "There is no distribution named '%s' registered in"
-                    " Launchpad" % entered_name)
+                self._error = WidgetInputError(
+                    self.name, self.label,
+                    LaunchpadValidationError(
+                        "There is no distribution named '%s' registered in"
+                        " Launchpad" % entered_name))
                 raise self._error
             if self.package_widget.hasInput():
                 try:
@@ -145,9 +152,11 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                 except (ConversionError, NotFoundError):
                     entered_name = self.request.form_ng.getOne(
                         '%s.package' % self.name)
-                    self._error = LaunchpadValidationError(
-                        "There is no package named '%s' published in %s."
-                         % (entered_name, distribution.displayname))
+                    self._error = WidgetInputError(
+                        self.name, self.label,
+                        LaunchpadValidationError(
+                            "There is no package named '%s' published in %s."
+                            % (entered_name, distribution.displayname)))
                     raise self._error
                 return dsp
             else:
@@ -172,7 +181,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
             raise AssertionError('Not a valid value: %r' % value)
 
     def __call__(self):
-        """See zope.app.form.interfaces.IBrowserWidget."""
+        """See zope.formlib.interfaces.IBrowserWidget."""
         self.setUpSubWidgets()
         self.setUpOptions()
         return self.template()

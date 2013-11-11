@@ -161,7 +161,7 @@ preferred languages.
     >>> browser.getControl('Save').click()
     >>> for message in find_tags_by_class(browser.contents, 'message'):
     ...     print extract_text(message)
-    Added Spanish to Landscape Developers's preferred languages.
+    Added Spanish to Landscape Developers&#x27;s preferred languages.
 
 
 == Admins may set a Person's languages ==
@@ -183,7 +183,7 @@ Person's page to do it himself.
     >>> admin_browser.getControl('Save').click()
     >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print extract_text(message)
-    Added Esperanto to No Privileges Person's preferred languages.
+    Added Esperanto to No Privileges Person&#x27;s preferred languages.
 
 
 The personal page nags

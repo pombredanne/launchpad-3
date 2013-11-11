@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -244,14 +244,13 @@ class StructuralSubscriptionView(LaunchpadFormView):
             self.request.response.addNotification(
                 'You have subscribed to "%s". You will now receive an '
                 'e-mail each time someone reports or changes one of '
-                'its public bugs.' % target.displayname)
+                'its bugs.' % target.displayname)
         elif is_subscribed and not subscribe:
             target.removeBugSubscription(self.user, self.user)
             self.request.response.addNotification(
                 'You have unsubscribed from "%s". You '
                 'will no longer automatically receive e-mail about '
-                'changes to its public bugs.'
-                % target.displayname)
+                'changes to its bugs.' % target.displayname)
         else:
             # The subscription status did not change: nothing to do.
             pass

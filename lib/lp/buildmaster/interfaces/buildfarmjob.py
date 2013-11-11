@@ -1,7 +1,5 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 """Interface for Soyuz build farm jobs."""
 
@@ -60,6 +58,7 @@ class IBuildFarmJobOld(Interface):
     IBuildFarmJob) once all the corresponding *Build classes and the
     BuildQueue have been transitioned to the new database schema.
     """
+
     processor = Reference(
         IProcessor, title=_("Processor"), required=False, readonly=True,
         description=_(
@@ -76,23 +75,11 @@ class IBuildFarmJobOld(Interface):
     def score():
         """Calculate a job score appropriate for the job type in question."""
 
-    def getLogFileName():
-        """The preferred file name for this job's log."""
-
-    def getName():
-        """An appropriate name for this job."""
-
-    def getTitle():
-        """A string to identify and describe the job to users."""
-
     def jobStarted():
         """'Job started' life cycle event, handle as appropriate."""
 
     def jobReset():
         """'Job reset' life cycle event, handle as appropriate."""
-
-    def jobAborted():
-        """'Job aborted' life cycle event, handle as appropriate."""
 
     def jobCancel():
         """'Job cancel' life cycle event."""
@@ -147,33 +134,43 @@ class IBuildFarmJobOld(Interface):
         has entries associated with `job`s.
         """
 
-    def generateSlaveBuildCookie():
-        """Produce a cookie for the slave as a token of the job it's doing.
-
-        The cookie need not be unique, but should be hard for a
-        compromised slave to guess.
-
-        :return: a hard-to-guess ASCII string that can be reproduced
-            accurately based on this job's properties.
-        """
-
-    def makeJob():
-        """Create the specific job relating this with an lp.services.job.
-
-        XXX 2010-04-26 michael.nelson bug=567922
-        Once all *Build classes are using BuildFarmJob we can lose the
-        'specific_job' attributes and simply have a reference to the
-        services job directly on the BuildFarmJob.
-        """
-
     def cleanUp():
         """Job's finished.  Delete its supporting data."""
 
 
-class IBuildFarmJob(IBuildFarmJobOld):
+class IBuildFarmJobDB(Interface):
+    """Operations on a `BuildFarmJob` DB row.
+
+    This is deprecated while it's flattened into the concrete implementations.
+    """
+
+    id = Attribute('The build farm job ID.')
+
+    job_type = Choice(
+        title=_("Job type"), required=True, readonly=True,
+        vocabulary=BuildFarmJobType,
+        description=_("The specific type of job."))
+
+
+class IBuildFarmJob(Interface):
     """Operations that jobs for the build farm must implement."""
 
     id = Attribute('The build farm job ID.')
+
+    build_farm_job = Attribute('Generic build farm job record')
+
+    processor = Reference(
+        IProcessor, title=_("Processor"), required=False, readonly=True,
+        description=_(
+            "The Processor required by this build farm job. "
+            "This should be None for processor-independent job types."))
+
+    virtualized = Bool(
+        title=_('Virtualized'), required=False, readonly=True,
+        description=_(
+            "The virtualization setting required by this build farm job. "
+            "This should be None for job types that do not care whether "
+            "they run virtualized."))
 
     date_created = exported(
         Datetime(
@@ -184,9 +181,12 @@ class IBuildFarmJob(IBuildFarmJobOld):
         as_of="beta",
         )
 
-    date_started = Datetime(
-        title=_("Date started"), required=False, readonly=True,
-        description=_("The timestamp when the build farm job was started."))
+    date_started = exported(
+        Datetime(
+            title=_("Date started"), required=False, readonly=True,
+            description=_(
+                "The timestamp when the build farm job was started.")),
+        as_of="devel")
 
     date_finished = exported(
         Datetime(
@@ -197,10 +197,12 @@ class IBuildFarmJob(IBuildFarmJobOld):
         as_of="beta",
         )
 
-    duration = Timedelta(
-        title=_("Duration"), required=False,
-        description=_("Duration interval, calculated when the "
-                      "result gets collected."))
+    duration = exported(
+        Timedelta(
+            title=_("Duration"), required=False, readonly=True,
+            description=_("Duration interval, calculated when the "
+                          "result gets collected.")),
+        as_of="devel")
 
     date_first_dispatched = exported(
         Datetime(
@@ -259,11 +261,26 @@ class IBuildFarmJob(IBuildFarmJobOld):
         default=0,
         description=_("Number of consecutive failures for this job."))
 
-    def getSpecificJob():
-        """Return the specific build job associated with this record.
+    def makeJob():
+        """Create the specific job relating this with an lp.services.job.
 
-        :raises InconsistentBuildFarmJobError: if a specific job could not be
-            returned.
+        XXX 2010-04-26 michael.nelson bug=567922
+        Once all *Build classes are using BuildFarmJob we can lose the
+        'specific_job' attributes and simply have a reference to the
+        services job directly on the BuildFarmJob.
+        """
+
+    def setLog(log):
+        """Set the `LibraryFileAlias` that contains the job log."""
+
+    def updateStatus(status, builder=None, slave_status=None,
+                     date_started=None, date_finished=None):
+        """Update job metadata when the build status changes.
+
+        This automatically handles setting status, date_finished, builder,
+        dependencies. Later it will manage the denormalised search schema.
+
+        date_started and date_finished override the default (now).
         """
 
     def gotFailure():
@@ -315,8 +332,8 @@ class ISpecificBuildFarmJobSource(Interface):
 class IBuildFarmJobSource(Interface):
     """A utility of BuildFarmJob used to create _things_."""
 
-    def new(job_type, status=None, processor=None,
-            virtualized=None):
+    def new(job_type, status=None, processor=None, virtualized=None,
+            builder=None):
         """Create a new `IBuildFarmJob`.
 
         :param job_type: A `BuildFarmJobType` item.
@@ -324,6 +341,7 @@ class IBuildFarmJobSource(Interface):
         :param processor: An optional processor for this job.
         :param virtualized: An optional boolean indicating whether
             this job should be run virtualized.
+        :param builder: An optional `IBuilder`.
         """
 
 
@@ -340,6 +358,11 @@ class IBuildFarmJobSet(Interface):
         :return: a `ResultSet` representing the requested builds.
         """
 
-    def getByID(job_id):
-        """Look up a `IBuildFarmJob` record by id.
+    def getBuildsForArchive(archive, status=None):
+        """Return `IBuildFarmJob` records targeted to a given `IArchive`.
+
+        :param archive: The archive for which builds will be returned.
+        :param status: If status is provided, only builders with that
+            status will be returned.
+        :return: a `ResultSet` representing the requested `IBuildFarmJobs`.
         """

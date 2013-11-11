@@ -45,16 +45,18 @@ There are currently no people registered for the sprint:
     >>> view.attendees
     []
 
-While there are three sprints registered for the ubz sprint, only one
-has been accepted.  So that is the only one that is exposed by the view:
+While there are three sprints registered for the ubz sprint, only two
+have a priority above LOW, so they are the only ones exposed by the view:
 
     >>> ubz.specificationLinks().count()
     3
 
     >>> len(view.specifications)
-    1
+    2
 
-    >>> print view.specifications[0]['spec'].name
+    >>> for spec in view.specifications:
+    ...     print spec['spec'].name
+    svg-support
     extension-manager-upgrades
 
 We now subscribe Sample Person to the Extension Manager Upgrades spec
@@ -72,7 +74,7 @@ specification assignee is listed (the drafter would be too if one was
 assigned).
 
     >>> sorted(person['name']
-    ...     for person in view.specifications[0]['interested'])
+    ...     for person in view.specifications[1]['interested'])
     [u'carlos']
 
 This is because sample person has not registered as an attendee of the
@@ -86,7 +88,7 @@ sprint.  If we add them as an attendee, then they will be available:
     >>> view = getMultiAdapter((ubz, request), name='+temp-meeting-export')
     >>> view.initialize()
     >>> sorted(person['name']
-    ...     for person in view.specifications[0]['interested'])
+    ...     for person in view.specifications[1]['interested'])
     [u'carlos', u'name12']
 
 The person is also included in the list of attendees:
@@ -141,7 +143,5 @@ specs:
 
     >>> view = getMultiAdapter((ubz, request), name='+temp-meeting-export')
     >>> view.initialize()
-    >>> view.specifications
-    []
-
-
+    >>> len(view.specifications)
+    1

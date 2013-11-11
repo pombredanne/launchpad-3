@@ -28,21 +28,20 @@ __all__ = [
 
 from operator import attrgetter
 import re
-from xml.sax.saxutils import escape
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import copy_field
 from lazr.restful.utils import smartquote
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser import (
-    TextAreaWidget,
-    TextWidget,
-    )
-from zope.app.form.browser.widget import renderElement
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.formlib.widget import renderElement
+from zope.formlib.widgets import (
+    TextAreaWidget,
+    TextWidget,
+    )
 from zope.interface import (
     alsoProvides,
     implements,
@@ -76,7 +75,10 @@ from lp.answers.interfaces.questiontarget import (
     IAnswersFrontPageSearchForm,
     IQuestionTarget,
     )
-from lp.answers.vocabulary import UsesAnswersDistributionVocabulary
+from lp.answers.vocabulary import (
+    UsesAnswersDistributionVocabulary,
+    UsesAnswersProductVocabulary,
+    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -85,11 +87,15 @@ from lp.app.browser.launchpadform import (
     safe_action,
     )
 from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.enums import ServiceUsage
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import (
+    ILaunchpadCelebrities,
+    IServiceUsage,
+    )
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.app.widgets.project import ProjectScopeWidget
@@ -641,6 +647,15 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
         """Return True if similar FAQs or questions were found."""
         return self.similar_questions or self.similar_faqs
 
+    @property
+    def context_uses_answers(self):
+        """Return True if the context uses launchpad as an answer forum."""
+        usage = IServiceUsage(self.context)
+        if usage is not None:             
+            return usage.answers_usage == ServiceUsage.LAUNCHPAD
+        else:
+            return False
+
     @action(_('Continue'))
     def continue_action(self, action, data):
         """Search for questions and FAQs similar to the entered summary."""
@@ -726,6 +741,9 @@ class QuestionChangeStatusView(LaunchpadFormView):
 
 class QuestionTargetWidget(LaunchpadTargetWidget):
     """A targeting widget that is aware of pillars that use Answers."""
+
+    def getProductVocabulary(self):
+        return 'UsesAnswersProduct'
 
     def getDistributionVocabulary(self):
         distro = self.context.context.distribution
@@ -1324,9 +1342,9 @@ class SearchableFAQRadioWidget(LaunchpadRadioWidget):
 
         # Display self._messageNoValue radio button since an existing
         # FAQ may not be relevant. This logic is copied from
-        # zope/app/form/browser/itemswidgets.py except that we have
-        # to prepend the value at the end of this method to prevent
-        # the insert in the for-loop above from going to the top of the list.
+        # zope/formlib/itemswidgets.py except that we have to prepend
+        # the value at the end of this method to prevent the insert in
+        # the for-loop above from going to the top of the list.
         missing = self._toFormValue(self.context.missing_value)
 
         if self._displayItemForMissingValue and not self.context.required:
@@ -1366,12 +1384,13 @@ class SearchableFAQRadioWidget(LaunchpadRadioWidget):
         if selected:
             attributes['checked'] = 'checked'
         input = renderElement(u'input', **attributes)
-        button = '<label style="font-weight: normal">%s&nbsp;%s:</label>' % (
-            input, escape(term.token))
-        link = '<a href="%s">%s</a>' % (
-            canonical_url(term.value), escape(term.title))
+        button = structured(
+            '<label style="font-weight: normal">%s&nbsp;%s:</label>',
+            structured(input), term.token)
+        link = structured(
+            '<a href="%s">%s</a>', canonical_url(term.value), term.title)
 
-        return "\n".join([button, link])
+        return "\n".join([button.escapedtext, link.escapedtext])
 
     def renderSearchWidget(self):
         """Render the search entry field and the button."""

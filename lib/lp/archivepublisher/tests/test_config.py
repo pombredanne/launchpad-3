@@ -72,26 +72,6 @@ class TestGetPubConfig(TestCaseWithFactory):
             self.root + "/ubuntutest-temp", partner_config.temproot)
         self.assertEqual(archiveroot + "-uefi", partner_config.uefiroot)
 
-    def test_debug_config(self):
-        # The publisher configuration for DEBUG archives points to
-        # directories beside PRIMARY repository ones, but the distribution
-        # part is modified to be clearly different than the PRIMARY one.
-        debug_archive = getUtility(IArchiveSet).new(
-            purpose=ArchivePurpose.DEBUG, owner=self.ubuntutest.owner,
-            distribution=self.ubuntutest)
-        debug_config = getPubConfig(debug_archive)
-        self.assertEqual(self.root, debug_config.distroroot)
-        archiveroot = self.root + "/ubuntutest-debug"
-        self.assertEqual(archiveroot, debug_config.archiveroot)
-        self.assertEqual(archiveroot + "/pool", debug_config.poolroot)
-        self.assertEqual(archiveroot + "/dists", debug_config.distsroot)
-        self.assertIsNone(debug_config.overrideroot)
-        self.assertIsNone(debug_config.cacheroot)
-        self.assertIsNone(debug_config.miscroot)
-        self.assertIsNone(debug_config.germinateroot)
-        self.assertEqual(self.root + "/ubuntutest-temp", debug_config.temproot)
-        self.assertEqual(archiveroot + "-uefi", debug_config.uefiroot)
-
     def test_copy_config(self):
         # In the case of copy archives (used for rebuild testing) the
         # archiveroot is of the form

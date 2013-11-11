@@ -48,7 +48,7 @@ class TestQuestionMessageVisibility(
         # The author of the comment can see the hidden comment.
         context = self.makeHiddenMessage()
         view = self.getView(context=context, user=self.commenter)
-        self.assertIn(self.comment_text, view.contents)
+        self.assertIn(self.html_comment_text, view.contents)
 
 
 class TestHideQuestionMessageControls(

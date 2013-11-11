@@ -145,7 +145,7 @@ The notification contains the escaped bug title.
     >>> for notification in request.response.notifications:
     ...     print notification.message.encode('utf8')
     Added link to bug #2:
-    ...&lt;script&gt;window.alert("Hello!")&lt;/script&gt;....
+    ...&lt;script&gt;window.alert(&quot;Hello!&quot;)&lt;/script&gt;....
 
 
 == Cleanup ==

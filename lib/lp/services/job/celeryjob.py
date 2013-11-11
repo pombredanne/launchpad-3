@@ -29,11 +29,12 @@ from zope.component import getUtility
 from lp.code.model.branchjob import BranchScanJob
 from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.config import dbconfig
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.features import (
     install_feature_controller,
     make_script_feature_controller,
     )
+from lp.services.mail.sendmail import set_immediate_mail_delivery
 from lp.services.job.model.job import (
     Job,
     UniversalJobSource,
@@ -139,6 +140,7 @@ def ensure_zcml():
         return
     transaction.abort()
     scripts.execute_zcml_for_scripts(use_web_security=False)
+    set_immediate_mail_delivery(True)
     needs_zcml = False
 
 

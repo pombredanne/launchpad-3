@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,W0401,W0231
-
 """Standard validators.
 
 validators in here should be dead simple, as they are mirrored inside
@@ -13,10 +11,10 @@ See README.txt for discussion
 
 __metaclass__ = type
 
-from zope.app.form.browser.exception import (
+from zope.formlib.exception import (
     WidgetInputErrorView as Z3WidgetInputErrorView,
     )
-from zope.app.form.interfaces import IWidgetInputError
+from zope.formlib.interfaces import IWidgetInputError
 from zope.interface import (
     implements,
     Interface,
@@ -52,14 +50,15 @@ class LaunchpadValidationError(ValidationError):
     """
     implements(ILaunchpadValidationError)
 
-    def __init__(self, message):
+    def __init__(self, message, already_escaped=False):
         """Create a LaunchpadValidationError instance.
 
         `message` should be an HTML quoted string. Extra arguments
         will be HTML quoted and merged into the message using standard
         Python string interpolation.
         """
-        message = html_escape(message)
+        if not already_escaped:
+            message = html_escape(message)
         # We stuff our message into self.args (a list) because this
         # is an exception, and exceptions use self.args (and the form
         # machinery expects it to be here).
@@ -100,7 +99,7 @@ class WidgetInputErrorView(Z3WidgetInputErrorView):
         If the error implements provides a snippet() method, just return it.
         Otherwise return the error message.
 
-        >>> from zope.app.form.interfaces import WidgetInputError
+        >>> from zope.formlib.interfaces import WidgetInputError
         >>> from lp.services.webapp.escaping import structured
         >>> bold_error = LaunchpadValidationError(structured("<b>Foo</b>"))
         >>> err = WidgetInputError("foo", "Foo", bold_error)

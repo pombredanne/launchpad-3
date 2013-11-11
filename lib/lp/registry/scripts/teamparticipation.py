@@ -24,36 +24,18 @@ from itertools import (
     )
 
 import transaction
-from zope.component import getUtility
 
 from lp.registry.interfaces.teammembership import ACTIVE_STATES
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    SLAVE_FLAVOR,
+    IMasterStore,
+    ISlaveStore,
     )
 from lp.services.database.sqlbase import (
     quote,
     sqlvalues,
     )
 from lp.services.scripts.base import LaunchpadScriptFailure
-
-
-def get_master_store():
-    """Return a master store.
-
-    Errors in `TeamPartipation` must be fixed in the master.
-    """
-    return getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-
-
-def get_slave_store():
-    """Return a slave store.
-
-    Errors in `TeamPartipation` can be detected using a replicated copy.
-    """
-    return getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
 
 
 def check_teamparticipation_circular(log):
@@ -69,7 +51,7 @@ def check_teamparticipation_circular(log):
            AND tp.person = tp2.team
            AND tp.id != tp2.id;
         """
-    circular_references = list(get_slave_store().execute(query))
+    circular_references = list(ISlaveStore(TeamParticipation).execute(query))
     if len(circular_references) > 0:
         raise LaunchpadScriptFailure(
             "Circular references found: %s" % circular_references)
@@ -109,7 +91,8 @@ def execute_long_query(store, log, interval, query):
 
 def fetch_team_participation_info(log):
     """Fetch people, teams, memberships and participations."""
-    slurp = partial(execute_long_query, get_slave_store(), log, 10000)
+    slurp = partial(
+        execute_long_query, ISlaveStore(TeamParticipation), log, 10000)
 
     people = dict(
         slurp(
@@ -228,7 +211,7 @@ def fix_teamparticipation_consistency(log, errors):
          WHERE team = %(team)s
            AND person IN %(people)s
         """)
-    store = get_master_store()
+    store = IMasterStore(TeamParticipation)
     for error in errors:
         if error.type == "missing":
             for person in error.people:

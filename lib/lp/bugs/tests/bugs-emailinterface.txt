@@ -981,7 +981,8 @@ An error message is sent if a nonexistent bug id is given.
 
 
 If the specified bug already is a duplicate, an error message is sent,
-telling you that you what bug it's a duplicate of.
+telling you that you what bug it's a duplicate of.  Due to bug #1088358
+the error is escaped as if it was HTML.
 
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> bug_two.duplicateof is None
@@ -999,7 +1000,7 @@ telling you that you what bug it's a duplicate of.
         duplicate 4
     ...
     Bug 4 is already a duplicate of bug 2. You can only
-    mark a bug report as duplicate of one that isn't a
+    mark a bug report as duplicate of one that isn&#x27;t a
     duplicate itself.
     ...
 

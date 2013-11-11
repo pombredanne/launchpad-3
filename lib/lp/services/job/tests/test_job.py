@@ -14,7 +14,7 @@ import transaction
 
 from lp.code.model.branchmergeproposaljob import CodeReviewCommentEmailJob
 from lp.services.database.constants import UTC_NOW
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
@@ -24,11 +24,11 @@ from lp.services.job.model.job import (
     Job,
     UniversalJobSource,
     )
-from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
+    verifyObject,
     )
 from lp.testing.layers import ZopelessDatabaseLayer
 from lp.testing.matchers import HasQueryCount

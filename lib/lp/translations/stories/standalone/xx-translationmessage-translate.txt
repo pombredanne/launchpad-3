@@ -196,7 +196,7 @@ First what we represent in the form when there is no translation:
 
     >>> print find_tag_by_id(
     ...     browser.contents, 'msgset_142_singular').renderContents()
-    Migrating `<code>%s</code>':
+    Migrating `<code>%s</code>&#x27;:
 
     >>> print find_tag_by_id(
     ...     browser.contents, 'msgset_142_es_translation_0').renderContents()
@@ -250,7 +250,7 @@ The message is still without translation:
 
     >>> print find_tag_by_id(
     ...     browser.contents, 'msgset_142_singular').renderContents()
-    Migrating `<code>%s</code>':
+    Migrating `<code>%s</code>&#x27;:
 
     >>> print find_tag_by_id(
     ...     browser.contents, 'msgset_142_es_translation_0').renderContents()
@@ -284,7 +284,7 @@ Check that the message #13 has the new value we submitted.
 
     >>> print find_tag_by_id(
     ...     browser.contents, 'msgset_142_singular').renderContents()
-    Migrating `<code>%s</code>':
+    Migrating `<code>%s</code>&#x27;:
 
     >>> print find_tag_by_id(
     ...     browser.contents, 'msgset_142_es_translation_0').renderContents()

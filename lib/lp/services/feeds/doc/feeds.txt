@@ -26,8 +26,8 @@ The zcml `browser:feeds` directive describes a feed view.
     >>> from zope.configuration import xmlconfig
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser">
+    ...   <include package="zope.component" file="meta.zcml" />
     ...   <include package="lp.services.webapp" file="meta.zcml" />
-    ...   <include package="zope.app.zcmlfiles" file="meta.zcml" />
     ...   <browser:feeds
     ...       module="lp.services.feeds.tests.helper"
     ...       classes="ThingFeedView"
@@ -39,7 +39,7 @@ Get the view from a `thing` on 'thing-feed' for a request.
 
     >>> from zope.component import getMultiAdapter
     >>> from lp.services.webapp.servers import LaunchpadTestRequest
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
 
     >>> request = LaunchpadTestRequest()
 
@@ -138,13 +138,13 @@ be escaped using xml entities such as "&lt;".
     >>> from lp.services.feeds.feed import FeedTypedData
     >>> text = FeedTypedData("<b> and &nbsp; and &amp;")
     >>> text.content
-    '&lt;b&gt; and &amp;nbsp; and &amp;amp;'
+    u'&lt;b&gt; and &amp;nbsp; and &amp;amp;'
     >>> text2 = FeedTypedData("<b> and &nbsp; and &amp;", content_type="text")
     >>> text2.content
-    '&lt;b&gt; and &amp;nbsp; and &amp;amp;'
+    u'&lt;b&gt; and &amp;nbsp; and &amp;amp;'
     >>> html = FeedTypedData("<b> and &nbsp; and &amp;", content_type="html")
     >>> html.content
-    '&lt;b&gt; and &amp;nbsp; and &amp;amp;'
+    u'&lt;b&gt; and &amp;nbsp; and &amp;amp;'
 
 Since xhtml is valid xml, the "<" and ">" characters do not need to be
 escaped. However, xhtml supports many more entities than xml, and Internet
@@ -157,7 +157,7 @@ we are testing xhtml encoding here in case we need it in the future.
     >>> xhtml = FeedTypedData("<b> and &nbsp; and &amp;</b><hr/>",
     ...               content_type="xhtml")
     >>> xhtml.content
-    u'<b> and \xa0 and &</b><hr />'
+    u'<b> and \xa0 and &amp;</b><hr />'
 
 
 == validate_feed() helper function ==

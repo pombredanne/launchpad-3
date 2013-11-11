@@ -268,13 +268,17 @@
             <browser:page
                 name="+listing-compact"
                 template="../templates/specification-listing-compact.pt"/>
-            <browser:page
-                name="+portlet-dependencies"
-                template="../templates/specification-portlet-dependencies.pt"/>
-            <browser:page
-                name="+portlet-blocked"
-                template="../templates/specification-portlet-blocked.pt"/>
         </browser:pages>
+        <browser:page
+            for="lp.blueprints.browser.specificationdependency.SpecificationDependencyTreeView"
+            name="+portlet-dependencies"
+            template="../templates/specification-portlet-dependencies.pt"
+            permission="zope.Public"/>
+        <browser:page
+            for="lp.blueprints.browser.specificationdependency.SpecificationDependencyTreeView"
+            name="+portlet-blocked"
+            template="../templates/specification-portlet-blocked.pt"
+            permission="zope.Public"/>
         <browser:page
             name="+secrecy"
             for="lp.blueprints.interfaces.specification.ISpecification"

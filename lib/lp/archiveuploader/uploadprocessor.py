@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code for 'processing' 'uploads'. Also see nascentupload.py.
@@ -60,12 +60,12 @@ from lp.app.errors import NotFoundError
 from lp.archiveuploader.nascentupload import (
     EarlyReturnUploadError,
     NascentUpload,
-    UploadError,
     )
 from lp.archiveuploader.uploadpolicy import (
     BuildDaemonUploadPolicy,
     UploadPolicyError,
     )
+from lp.archiveuploader.utils import UploadError
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import ISpecificBuildFarmJobSource
 from lp.code.interfaces.sourcepackagerecipebuild import (
@@ -681,7 +681,7 @@ class BuildUploadHandler(UploadHandler):
             result = UploadStatusEnum.FAILED
         if (result != UploadStatusEnum.ACCEPTED or
             not self.build.verifySuccessfulUpload()):
-            self.build.status = BuildStatus.FAILEDTOUPLOAD
+            self.build.updateStatus(BuildStatus.FAILEDTOUPLOAD)
         if self.build.status != BuildStatus.FULLYBUILT:
             if recipe_deleted:
                 # For a deleted recipe, no need to notify that uploading has
@@ -743,7 +743,7 @@ def _getDistributionAndSuite(parts, exc_type):
 
     suite_name = parts[1]
     try:
-        distribution.getDistroSeriesAndPocket(suite_name)
+        distribution.getDistroSeriesAndPocket(suite_name, follow_aliases=True)
     except NotFoundError:
         raise exc_type("Could not find suite '%s'." % suite_name)
 

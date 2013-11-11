@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -97,6 +97,12 @@
       <allow interface=".interfaces.persontransferjob.IPersonMergeJobSource"/>
     </securedutility>
 
+    <securedutility
+        component=".model.persontransferjob.PersonDeactivateJob"
+        provides=".interfaces.persontransferjob.IPersonDeactivateJobSource">
+      <allow interface=".interfaces.persontransferjob.IPersonDeactivateJobSource"/>
+    </securedutility>
+
     <class class=".model.persontransferjob.PersonTransferJob">
         <allow interface=".interfaces.persontransferjob.IPersonTransferJob"/>
     </class>
@@ -107,6 +113,10 @@
 
     <class class=".model.persontransferjob.PersonMergeJob">
       <allow interface=".interfaces.persontransferjob.IPersonMergeJob"/>
+    </class>
+
+    <class class=".model.persontransferjob.PersonDeactivateJob">
+      <allow interface=".interfaces.persontransferjob.IPersonDeactivateJob"/>
     </class>
 
     <!-- IProductNotificationJob -->
@@ -1035,18 +1045,23 @@
                 bugtasks
                 code_name
                 dateexpected
-                displayname
                 distribution
                 distroseries
                 getSpecifications
                 getTags
                 getTagsData
-                name
                 product
                 product_release
                 productseries
                 series_target
                 summary
+                all_specifications
+                "/>
+        <require
+            permission="launchpad.LimitedView"
+            attributes="
+                displayname
+                name
                 target
                 title
                 "/>
@@ -1268,11 +1283,10 @@
         <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.product.IProductEditRestricted"/>
-        <allow
-            interface="lp.app.interfaces.informationtype.IInformationType"/>
         <require
             permission="launchpad.Edit"
             set_schema="lp.app.interfaces.informationtype.IInformationType"/>
+        <allow attributes="information_type" />
         <require
             permission="launchpad.Edit"
             set_attributes="answers_usage blueprints_usage codehosting_usage
@@ -1445,8 +1459,9 @@
         <require
             permission="launchpad.View"
             attributes="
-                _all_specifications
-                _valid_specifications
+                visible_specifications
+                valid_specifications
+                api_valid_specifications
                 getAllowedSpecificationInformationTypes
                 getDefaultSpecificationInformationType
                 specifications" />
@@ -1565,6 +1580,9 @@
         <allow
             interface="lp.registry.interfaces.productseries.IProductSeriesPublic"/>
         <require
+            permission="launchpad.LimitedView"
+            interface="lp.registry.interfaces.productseries.IProductSeriesLimitedView"/>
+        <require
             permission="launchpad.View"
             interface="lp.registry.interfaces.productseries.IProductSeriesView"/>
         <require
@@ -1574,7 +1592,7 @@
             permission="launchpad.View"
             interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <require
-            permission="launchpad.View"
+            permission="launchpad.LimitedView"
             interface="lp.bugs.interfaces.bugtarget.ISeriesBugTarget"/>
         <require
             permission="launchpad.Edit"
@@ -1589,14 +1607,44 @@
             set_attributes="importstatus rcstype cvsroot cvsmodule
                             cvstarfileurl cvsbranch svnrepository"/>
 
-        <!-- IStructuralSubscriptionTarget -->
+        <!-- IStructuralSubscriptionTarget
 
+             Most attributes of IStructuralSubscriptionTargetRead require
+             launchpad.View, some require launchpad.LimitedView -->
+        <require
+            permission="launchpad.LimitedView"
+            attributes="
+                parent_subscription_target"/>
         <require
             permission="launchpad.View"
-            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
+            attributes="
+                bug_subscriptions
+                getSubscription
+                getSubscriptions
+                target_type_display
+                userCanAlterBugSubscription
+                userCanAlterSubscription
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyAllowedPerson"
             interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+
+        <!-- IBugTarget -->
+        <require
+             permission="launchpad.LimitedView"
+             attributes="
+                 bugtargetdisplayname"/>>
+        <require
+             permission="launchpad.View"
+             attributes="
+                 bug_reported_acknowledgement
+                 bug_reporting_guidelines
+                 bugtargetname
+                 createBug
+                 enable_bugfiling_duplicate_search
+                 getBugTaskWeightFunction
+                 pillar
+                 searchTasks"/>
 
     </class>
     <adapter
@@ -1666,6 +1714,7 @@
                 bug_reported_acknowledgement
                 bug_reporting_guidelines
                 description
+                development_series_alias
                 displayname
                 driver
                 enable_bug_expiration
@@ -1839,10 +1888,13 @@
         <allow
             interface="lp.registry.interfaces.productrelease.IProductReleasePublic"/>
         <require
+            permission="launchpad.View"
+            interface="lp.registry.interfaces.productrelease.IProductReleaseView"/>
+        <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.productrelease.IProductReleaseEditRestricted"/>
         <require
-            permission="zope.Public"
+            permission="launchpad.Edit"
             set_schema="lp.registry.interfaces.productrelease.IProductRelease"/>
     </class>
     <adapter

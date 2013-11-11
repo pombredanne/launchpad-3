@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 __metaclass__ = type
 
 __all__ = [
@@ -19,8 +17,6 @@ __all__ = [
     'MirrorStatus',
     'UnableToFetchCDImageFileList',
     ]
-
-from cgi import escape
 
 from lazr.enum import (
     DBEnumeratedType,
@@ -63,7 +59,10 @@ from lp.services.fields import (
     URIField,
     Whiteboard,
     )
-from lp.services.webapp.escaping import structured
+from lp.services.webapp.escaping import (
+    html_escape,
+    structured,
+    )
 from lp.services.worlddata.interfaces.country import ICountry
 
 # The number of hours before we bother probing a mirror again
@@ -285,8 +284,8 @@ class DistroMirrorURIField(URIField):
             message = _(
                 'The distribution mirror <a href="${url}">${mirror}</a> '
                 'is already registered with this URL.',
-                mapping={'url': canonical_url(mirror),
-                         'mirror': escape(mirror.title)})
+                mapping={'url': html_escape(canonical_url(mirror)),
+                         'mirror': html_escape(mirror.title)})
             raise LaunchpadValidationError(structured(message))
 
 

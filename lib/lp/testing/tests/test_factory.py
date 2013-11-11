@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the Launchpad object factory."""
@@ -25,7 +25,7 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.suitesourcepackage import ISuiteSourcePackage
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.soyuz.enums import (
@@ -833,11 +833,14 @@ class TestFactoryWithLibrarian(TestCaseWithFactory):
     def test_makeCopyJobPackageUpload_passes_on_args(self):
         distroseries = self.factory.makeDistroSeries()
         spn = self.factory.makeSourcePackageName()
+        source_archive = self.factory.makeArchive()
         pu = self.factory.makeCopyJobPackageUpload(
-            distroseries=distroseries, sourcepackagename=spn)
+            distroseries=distroseries, sourcepackagename=spn,
+            source_archive=source_archive)
         job = removeSecurityProxy(pu.package_copy_job)
         self.assertEqual(distroseries, pu.distroseries)
         self.assertEqual(distroseries.distribution, pu.archive.distribution)
+        self.assertEqual(source_archive, job.source_archive)
         self.assertEqual(distroseries, job.target_distroseries)
         self.assertEqual(spn.name, job.package_name)
 

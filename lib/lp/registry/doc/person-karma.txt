@@ -18,7 +18,7 @@ product or a distribution), so that we know to what a user contributes to and
 what users are the top contributors for a given product/distribution.
 
     >>> from zope.component import getUtility
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.karma import IKarma
     >>> from lp.registry.interfaces.person import IPersonSet

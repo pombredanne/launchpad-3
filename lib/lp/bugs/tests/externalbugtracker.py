@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0231,E0702,W0108
-
 """Helper classes for testing ExternalSystem."""
 
 __metaclass__ = type
@@ -26,6 +24,7 @@ import urlparse
 import xmlrpclib
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.bugs.externalbugtracker import (
     BATCH_SIZE_UNLIMITED,
@@ -62,7 +61,7 @@ from lp.bugs.scripts import debbugs
 from lp.bugs.xmlrpc.bug import ExternalBugTrackerTokenAPI
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
-from lp.testing import celebrity_logged_in
+from lp.testing import admin_logged_in
 from lp.testing.dbuser import lp_dbuser
 from lp.testing.systemdocs import ordered_dict_as_string
 
@@ -152,10 +151,11 @@ def convert_python_status(status, resolution):
 
 def set_bugwatch_error_type(bug_watch, error_type):
     """Set the last_error_type field of a bug watch to a given error type."""
-    with celebrity_logged_in('admin'):
-        bug_watch.remotestatus = None
-        bug_watch.last_error_type = error_type
-        bug_watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
+    naked = removeSecurityProxy(bug_watch)
+    naked.remotestatus = None
+    naked.last_error_type = error_type
+    with admin_logged_in():
+        naked.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
 
 
 class TestExternalBugTracker(ExternalBugTracker):

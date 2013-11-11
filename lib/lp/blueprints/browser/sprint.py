@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Sprint views."""
@@ -29,8 +29,8 @@ from StringIO import StringIO
 
 from lazr.restful.utils import smartquote
 import pytz
-from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
+from zope.formlib.widgets import TextAreaWidget
 from zope.interface import implements
 
 from lp import _
@@ -47,7 +47,6 @@ from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsView,
     )
 from lp.blueprints.enums import (
-    SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationPriority,
     SpecificationSort,
@@ -466,19 +465,13 @@ class SprintMeetingExportView(LaunchpadView):
         for spec in self.context.specifications(
             self.user, filter=[SpecificationFilter.ACCEPTED]):
 
-            # skip sprints with no priority or less than low:
+            # Skip sprints with no priority or less than LOW.
             if spec.priority < SpecificationPriority.UNDEFINED:
-                continue
-
-            if (spec.definition_status not in
-                [SpecificationDefinitionStatus.NEW,
-                 SpecificationDefinitionStatus.DISCUSSION,
-                 SpecificationDefinitionStatus.DRAFT]):
                 continue
             model_specs.append(spec)
 
         people = defaultdict(dict)
-        # Attendees per specification
+        # Attendees per specification.
         for subscription in load_referencing(SpecificationSubscription,
                 model_specs, ['specificationID']):
             if subscription.personID not in attendee_set:
@@ -492,12 +485,12 @@ class SprintMeetingExportView(LaunchpadView):
         for spec in model_specs:
             # Get the list of attendees that will attend the sprint.
             spec_people = people[spec.id]
-            if spec.assigneeID is not None:
-                spec_people[spec.assigneeID] = True
-                attendee_set.add(spec.assigneeID)
-            if spec.drafterID is not None:
-                spec_people[spec.drafterID] = True
-                attendee_set.add(spec.drafterID)
+            if spec.assignee is not None:
+                spec_people[spec.assignee.id] = True
+                attendee_set.add(spec.assignee.id)
+            if spec.drafter is not None:
+                spec_people[spec.drafter.id] = True
+                attendee_set.add(spec.drafter.id)
         people_by_id = dict((person.id, person) for person in
             getUtility(IPersonSet).getPrecachedPersonsFromIDs(attendee_set))
         self.specifications = [
@@ -507,9 +500,9 @@ class SprintMeetingExportView(LaunchpadView):
                 ) for spec in model_specs]
 
     def render(self):
-        self.request.response.setHeader('content-type',
-                                        'application/xml;charset=utf-8')
-        body = LaunchpadView.render(self)
+        self.request.response.setHeader(
+            'content-type', 'application/xml;charset=utf-8')
+        body = super(SprintMeetingExportView, self).render()
         return body.encode('utf-8')
 
 

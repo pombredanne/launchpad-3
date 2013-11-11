@@ -1,7 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0213,E0211
 
 """Interfaces including and related to IJob."""
 
@@ -13,6 +11,7 @@ __all__ = [
     'IRunnableJob',
     'ITwistedJobSource',
     'JobStatus',
+    'JobType',
     ]
 
 
@@ -38,7 +37,7 @@ from lp.registry.interfaces.person import IPerson
 
 
 class JobStatus(DBEnumeratedType):
-    """Values that ICodeImportJob.state can take."""
+    """Values that IJob.status can take."""
 
     WAITING = DBItem(0, """
         Waiting
@@ -68,6 +67,22 @@ class JobStatus(DBEnumeratedType):
         Suspended
 
         The job is suspended, so should not be run.
+        """)
+
+
+class JobType(DBEnumeratedType):
+
+    GENERATE_PACKAGE_DIFF = DBItem(0, """
+        Generate Package Diff
+
+        Job to generate the diff between two SourcePackageReleases.
+        """)
+
+    UPLOAD_PACKAGE_TRANSLATIONS = DBItem(1, """
+        Upload Package Translations
+
+        Job to upload package translations files and attach them to a
+        SourcePackageRelease.
         """)
 
 
@@ -108,6 +123,16 @@ class IJob(Interface):
     is_pending = Bool(
         title=_("Whether or not this job's status is such that it "
                 "could eventually complete."))
+
+    is_runnable = Bool(
+        title=_("Whether or not this job is ready to be run immediately."))
+
+    base_json_data = Attribute("A dict of data about the job.")
+
+    base_job_type = Choice(
+        vocabulary=JobType, readonly=True,
+        description=_("What type of job this is, only used for jobs that "
+            "do not have their own tables."))
 
     def acquireLease(duration=300):
         """Acquire the lease for this Job, or raise LeaseHeld."""

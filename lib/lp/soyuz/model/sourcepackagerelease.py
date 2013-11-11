@@ -1,12 +1,9 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
     'SourcePackageRelease',
-    '_filter_ubuntu_translation_file',
     ]
 
 
@@ -31,6 +28,7 @@ from sqlobject import (
 from storm.expr import Join
 from storm.info import ClassAlias
 from storm.locals import (
+    Desc,
     Int,
     Reference,
     )
@@ -39,7 +37,6 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp.app.errors import NotFoundError
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archiveuploader.utils import determine_source_file_type
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import validate_public_person
@@ -56,16 +53,19 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.helpers import shortlist
 from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
+from lp.soyuz.interfaces.packagediffjob import IPackageDiffJobSource
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
@@ -75,41 +75,6 @@ from lp.soyuz.model.queue import (
     PackageUpload,
     PackageUploadSource,
     )
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue,
-    )
-
-
-def _filter_ubuntu_translation_file(filename):
-    """Filter for translation filenames in tarball.
-
-    Grooms filenames of translation files in tarball, returning None or
-    empty string for files that should be ignored.
-
-    Passed to `ITranslationImportQueue.addOrUpdateEntriesFromTarball`.
-    """
-    source_prefix = 'source/'
-    if not filename.startswith(source_prefix):
-        return None
-
-    filename = filename[len(source_prefix):]
-
-    blocked_prefixes = [
-        # Translations for use by debconf--not used in Ubuntu.
-        'debian/po/',
-        # Debian Installer translations--treated separately.
-        'd-i/',
-        # Documentation--not translatable in Launchpad.
-        'help/',
-        'man/po/',
-        'man/po4a/',
-        ]
-
-    for prefix in blocked_prefixes:
-        if filename.startswith(prefix):
-            return None
-
-    return filename
 
 
 class SourcePackageRelease(SQLBase):
@@ -167,8 +132,6 @@ class SourcePackageRelease(SQLBase):
         joinColumn='sourcepackagerelease', orderBy="libraryfile")
     publishings = SQLMultipleJoin('SourcePackagePublishingHistory',
         joinColumn='sourcepackagerelease', orderBy="-datecreated")
-    package_diffs = SQLMultipleJoin(
-        'PackageDiff', joinColumn='to_source', orderBy="-date_requested")
 
     _user_defined_fields = StringCol(dbName='user_defined_fields')
 
@@ -211,6 +174,12 @@ class SourcePackageRelease(SQLBase):
             return []
         return simplejson.loads(self._user_defined_fields)
 
+    @cachedproperty
+    def package_diffs(self):
+        return list(Store.of(self).find(
+            PackageDiff, to_source=self).order_by(
+                Desc(PackageDiff.date_requested)))
+
     @property
     def builds(self):
         """See `ISourcePackageRelease`."""
@@ -220,13 +189,11 @@ class SourcePackageRelease(SQLBase):
         # sourcepackagerelease.
         return BinaryPackageBuild.select("""
             source_package_release = %s AND
-            package_build = packagebuild.id AND
-            archive.id = packagebuild.archive AND
-            packagebuild.build_farm_job = buildfarmjob.id AND
+            archive.id = binarypackagebuild.archive AND
             archive.purpose IN %s
             """ % sqlvalues(self.id, MAIN_ARCHIVE_PURPOSES),
-            orderBy=['-buildfarmjob.date_created', 'id'],
-            clauseTables=['Archive', 'PackageBuild', 'BuildFarmJob'])
+            orderBy=['-date_created', 'id'],
+            clauseTables=['Archive'])
 
     @property
     def age(self):
@@ -291,14 +258,13 @@ class SourcePackageRelease(SQLBase):
     @property
     def current_publishings(self):
         """See ISourcePackageRelease."""
-        from lp.soyuz.model.distroseriessourcepackagerelease \
-            import DistroSeriesSourcePackageRelease
+        from lp.soyuz.model.distroseriessourcepackagerelease import (
+            DistroSeriesSourcePackageRelease)
         return [DistroSeriesSourcePackageRelease(pub.distroseries, self)
                 for pub in self.publishings]
 
-    @property
+    @cachedproperty
     def published_archives(self):
-        """See `ISourcePackageRelease`."""
         archives = set(
             pub.archive for pub in self.publishings.prejoin(['archive']))
         return sorted(archives, key=operator.attrgetter('id'))
@@ -353,11 +319,9 @@ class SourcePackageRelease(SQLBase):
     def createBuild(self, distro_arch_series, pocket, archive, processor=None,
                     status=None):
         """See ISourcePackageRelease."""
-        # Guess a processor if one is not provided
+        # If a processor is not provided, use the DAS' processor.
         if processor is None:
-            pf = distro_arch_series.processorfamily
-            # We guess at the first processor in the family
-            processor = shortlist(pf.processors)[0]
+            processor = distro_arch_series.processor
 
         if status is None:
             status = BuildStatus.NEEDSBUILD
@@ -442,16 +406,10 @@ class SourcePackageRelease(SQLBase):
         # If there was no published binary we have to try to find a
         # suitable build in all possible location across the distroseries
         # inheritance tree. See below.
-        clause_tables = [
-            'BuildFarmJob',
-            'PackageBuild',
-            'DistroArchSeries',
-            ]
+        clause_tables = ['DistroArchSeries']
         queries = [
-            "BinaryPackageBuild.package_build = PackageBuild.id AND "
-            "PackageBuild.build_farm_job = BuildFarmJob.id AND "
             "DistroArchSeries.id = BinaryPackageBuild.distro_arch_series AND "
-            "PackageBuild.archive = %s AND "
+            "BinaryPackageBuild.archive = %s AND "
             "DistroArchSeries.architecturetag = %s AND "
             "BinaryPackageBuild.source_package_release = %s" % (
             sqlvalues(archive.id, distroarchseries.architecturetag, self))]
@@ -462,7 +420,7 @@ class SourcePackageRelease(SQLBase):
 
         return BinaryPackageBuild.selectFirst(
             query, clauseTables=clause_tables,
-            orderBy=['-BuildFarmJob.date_created'])
+            orderBy=['-date_created'])
 
     def override(self, component=None, section=None, urgency=None):
         """See ISourcePackageRelease."""
@@ -503,7 +461,7 @@ class SourcePackageRelease(SQLBase):
             Join(PackageUpload,
                  PackageUploadSource.packageuploadID == PackageUpload.id),
             Join(LibraryFileAlias,
-                 LibraryFileAlias.id == PackageUpload.changesfileID),
+                 LibraryFileAlias.id == PackageUpload.changes_file_id),
             Join(LibraryFileContent,
                  LibraryFileContent.id == LibraryFileAlias.contentID),
             ]
@@ -547,24 +505,6 @@ class SourcePackageRelease(SQLBase):
 
         return change
 
-    def attachTranslationFiles(self, tarball_alias, by_maintainer,
-                               importer=None):
-        """See ISourcePackageRelease."""
-        tarball = tarball_alias.read()
-
-        if importer is None:
-            importer = getUtility(ILaunchpadCelebrities).rosetta_experts
-
-        queue = getUtility(ITranslationImportQueue)
-
-        only_templates = self.sourcepackage.has_sharing_translation_templates
-        queue.addOrUpdateEntriesFromTarball(
-            tarball, by_maintainer, importer,
-            sourcepackagename=self.sourcepackagename,
-            distroseries=self.upload_distroseries,
-            filename_filter=_filter_ubuntu_translation_file,
-            only_templates=only_templates)
-
     def getDiffTo(self, to_sourcepackagerelease):
         """See ISourcePackageRelease."""
         return PackageDiff.selectOneBy(
@@ -576,8 +516,7 @@ class SourcePackageRelease(SQLBase):
 
         if candidate is not None:
             raise PackageDiffAlreadyRequested(
-                "%s was already requested by %s"
-                % (candidate.title, candidate.requester.displayname))
+                "%s has already been requested" % candidate.title)
 
         if self.sourcepackagename.name == 'udev':
             # XXX 2009-11-23 Julian bug=314436
@@ -587,9 +526,14 @@ class SourcePackageRelease(SQLBase):
         else:
             status = PackageDiffStatus.PENDING
 
-        return PackageDiff(
+        Store.of(to_sourcepackagerelease).flush()
+        del get_property_cache(to_sourcepackagerelease).package_diffs
+        packagediff = PackageDiff(
             from_source=self, to_source=to_sourcepackagerelease,
             requester=requester, status=status)
+        if status == PackageDiffStatus.PENDING:
+            getUtility(IPackageDiffJobSource).create(packagediff)
+        return packagediff
 
     def aggregate_changelog(self, since_version):
         """See `ISourcePackagePublishingHistory`."""

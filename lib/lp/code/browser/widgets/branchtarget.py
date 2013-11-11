@@ -8,18 +8,19 @@ __all__ = [
     ]
 
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form import InputWidget
-from zope.app.form.browser.widget import (
-    BrowserWidget,
-    renderElement,
-    )
-from zope.app.form.interfaces import (
+from zope.formlib.interfaces import (
     ConversionError,
     IInputWidget,
     InputErrors,
     MissingInputError,
+    WidgetInputError,
     )
-from zope.app.form.utility import setUpWidget
+from zope.formlib.utility import setUpWidget
+from zope.formlib.widget import (
+    BrowserWidget,
+    InputWidget,
+    renderElement,
+    )
 from zope.interface import implements
 from zope.schema import Choice
 
@@ -74,7 +75,7 @@ class BranchTargetWidget(BrowserWidget, InputWidget):
         return self.name in self.request.form
 
     def hasValidInput(self):
-        """See zope.app.form.interfaces.IInputWidget."""
+        """See zope.formlib.interfaces.IInputWidget."""
         try:
             self.getInputValue()
             return True
@@ -82,20 +83,24 @@ class BranchTargetWidget(BrowserWidget, InputWidget):
             return False
 
     def getInputValue(self):
-        """See zope.app.form.interfaces.IInputWidget."""
+        """See zope.formlib.interfaces.IInputWidget."""
         self.setUpSubWidgets()
         form_value = self.request.form_ng.getOne(self.name)
         if form_value == 'product':
             try:
                 return self.product_widget.getInputValue()
             except MissingInputError:
-                raise LaunchpadValidationError('Please enter a project name')
+                raise WidgetInputError(
+                    self.name, self.label,
+                    LaunchpadValidationError('Please enter a project name'))
             except ConversionError:
                 entered_name = self.request.form_ng.getOne(
                     "%s.product" % self.name)
-                raise LaunchpadValidationError(
-                    "There is no project named '%s' registered in"
-                    " Launchpad" % entered_name)
+                raise WidgetInputError(
+                    self.name, self.label,
+                    LaunchpadValidationError(
+                        "There is no project named '%s' registered in"
+                        " Launchpad" % entered_name))
         elif form_value == 'personal':
             return '+junk'
         else:
@@ -116,7 +121,7 @@ class BranchTargetWidget(BrowserWidget, InputWidget):
             raise AssertionError('Not a valid value: %r' % value)
 
     def error(self):
-        """See zope.app.form.interfaces.IBrowserWidget."""
+        """See zope.formlib.interfaces.IBrowserWidget."""
         try:
             if self.hasInput():
                 self.getInputValue()
@@ -125,7 +130,7 @@ class BranchTargetWidget(BrowserWidget, InputWidget):
         return super(BranchTargetWidget, self).error()
 
     def __call__(self):
-        """See zope.app.form.interfaces.IBrowserWidget."""
+        """See zope.formlib.interfaces.IBrowserWidget."""
         self.setUpSubWidgets()
         self.setUpOptions()
         return self.template()

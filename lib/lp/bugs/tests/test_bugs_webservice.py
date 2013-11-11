@@ -400,20 +400,36 @@ class BugSetTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_default_sharing_policy_proprietary(self):
-        # Verify the path through user submission, to MaloneApplication to
-        # BugSet, and back to the user creates a private bug according
-        # to the project's bug sharing policy.
+    def makeAPITarget(self, bug_policy):
         project = self.factory.makeProduct(
             licenses=[License.OTHER_PROPRIETARY])
         target_url = api_url(project)
         with person_logged_in(project.owner):
-            project.setBugSharingPolicy(
-                BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
+            project.setBugSharingPolicy(bug_policy)
+        return target_url
+
+    def getBugsCollection(self):
         webservice = launchpadlib_for('test', 'salgado')
-        bugs_collection = webservice.load('/bugs')
+        return webservice.load('/bugs')
+
+    def test_default_sharing_policy_proprietary(self):
+        # Verify the path through user submission, to MaloneApplication to
+        # BugSet, and back to the user creates a private bug according
+        # to the project's bug sharing policy.
+        target_url = self.makeAPITarget(BugSharingPolicy.PROPRIETARY_OR_PUBLIC)
+        bugs_collection = self.getBugsCollection()
         bug = bugs_collection.createBug(
             target=target_url, title='title', description='desc')
+        self.assertEqual('Proprietary', bug.information_type)
+
+    def test_override_default_sharing_policy_proprietary(self):
+        # A Proprietary bug can be created if the porject's bug sharing policy
+        # permits it.
+        target_url = self.makeAPITarget(BugSharingPolicy.PUBLIC_OR_PROPRIETARY)
+        bugs_collection = self.getBugsCollection()
+        bug = bugs_collection.createBug(
+            target=target_url, title='title', description='desc',
+            information_type='Proprietary')
         self.assertEqual('Proprietary', bug.information_type)
 
 

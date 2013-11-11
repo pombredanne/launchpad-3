@@ -1,14 +1,10 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test BuildQueue features."""
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
+from datetime import timedelta
 
-import pytz
 from simplejson import dumps
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -17,17 +13,16 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
+from lp.services.log.logger import DevNullLogger
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
+from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.soyuz.interfaces.buildpackagejob import (
     COPY_ARCHIVE_SCORE_PENALTY,
@@ -37,8 +32,9 @@ from lp.soyuz.interfaces.buildpackagejob import (
     SCORE_BY_POCKET,
     SCORE_BY_URGENCY,
     )
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
-from lp.soyuz.model.processor import ProcessorFamilySet
+from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     anonymous_logged_in,
@@ -97,12 +93,11 @@ class TestBuildJobBase(TestCaseWithFactory):
         self.i8 = self.factory.makeBuilder(name='i386-n-8', virtualized=False)
         self.i9 = self.factory.makeBuilder(name='i386-n-9', virtualized=False)
 
-        processor_fam = ProcessorFamilySet().getByName('hppa')
-        proc = processor_fam.processors[0]
+        processor = getUtility(IProcessorSet).getByName('hppa')
         self.h6 = self.factory.makeBuilder(
-            name='hppa-n-6', processor=proc, virtualized=False)
+            name='hppa-n-6', processor=processor, virtualized=False)
         self.h7 = self.factory.makeBuilder(
-            name='hppa-n-7', processor=proc, virtualized=False)
+            name='hppa-n-7', processor=processor, virtualized=False)
 
         self.builders = dict()
         # x86 native
@@ -157,7 +152,7 @@ class TestBuildPackageJob(TestBuildJobBase):
         # j=job, p=processor, v=virtualized, e=estimated_duration, s=score
 
         # First mark all builds in the sample data as already built.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(BinaryPackageBuild)
         sample_data = store.find(BinaryPackageBuild)
         for build in sample_data:
             build.buildstate = BuildStatus.FULLYBUILT
@@ -220,11 +215,6 @@ class TestBuildPackageJob(TestBuildJobBase):
         bpj = bq.specific_job
         self.assertEqual(bpj.virtualized, False)
 
-    def test_getTitle(self):
-        # Test that BuildPackageJob returns the title of the build.
-        build, bq = find_job(self, 'gcc', '386')
-        self.assertEqual(bq.specific_job.getTitle(), build.title)
-
     def test_providesInterfaces(self):
         # Ensure that a BuildPackageJob generates an appropriate cookie.
         build, bq = find_job(self, 'gcc', '386')
@@ -237,8 +227,11 @@ class TestBuildPackageJob(TestBuildJobBase):
         build, bq = find_job(self, 'gcc', '386')
         build_package_job = bq.specific_job
         build_package_job.jobStarted()
-        self.failUnlessEqual(
+        self.assertEqual(
             BuildStatus.BUILDING, build_package_job.build.status)
+        self.assertIsNot(None, build_package_job.build.date_started)
+        self.assertIsNot(None, build_package_job.build.date_first_dispatched)
+        self.assertIs(None, build_package_job.build.date_finished)
 
 
 class TestBuildPackageJobScore(TestCaseWithFactory):
@@ -476,3 +469,42 @@ class TestBuildPackageJobScore(TestCaseWithFactory):
         with anonymous_logged_in():
             self.assertScoreWriteableByTeam(
                 archive, getUtility(ILaunchpadCelebrities).commercial_admin)
+
+
+class TestBuildPackageJobPostProcess(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeBuildJob(self, pocket="RELEASE"):
+        build = self.factory.makeBinaryPackageBuild(pocket=pocket)
+        return build.queueBuild()
+
+    def test_release_job(self):
+        job = self.makeBuildJob()
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
+        self.assertTrue(BuildPackageJob.postprocessCandidate(job, None))
+        self.assertEqual(BuildStatus.NEEDSBUILD, build.status)
+
+    def test_security_job_is_failed(self):
+        job = self.makeBuildJob(pocket="SECURITY")
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
+        BuildPackageJob.postprocessCandidate(job, DevNullLogger())
+        self.assertEqual(BuildStatus.FAILEDTOBUILD, build.status)
+
+    def test_obsolete_job_without_flag_is_failed(self):
+        job = self.makeBuildJob()
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
+        distroseries = build.distro_arch_series.distroseries
+        removeSecurityProxy(distroseries).status = SeriesStatus.OBSOLETE
+        BuildPackageJob.postprocessCandidate(job, DevNullLogger())
+        self.assertEqual(BuildStatus.FAILEDTOBUILD, build.status)
+
+    def test_obsolete_job_with_flag_is_not_failed(self):
+        job = self.makeBuildJob()
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
+        distroseries = build.distro_arch_series.distroseries
+        archive = build.archive
+        removeSecurityProxy(distroseries).status = SeriesStatus.OBSOLETE
+        removeSecurityProxy(archive).permit_obsolete_series_uploads = True
+        BuildPackageJob.postprocessCandidate(job, DevNullLogger())
+        self.assertEqual(BuildStatus.NEEDSBUILD, build.status)

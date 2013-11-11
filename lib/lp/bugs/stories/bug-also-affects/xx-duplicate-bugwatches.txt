@@ -77,8 +77,7 @@ duplicates.
     ...     'mozilla-firefox')
     >>> user_browser.getControl('URL').value = debian_bug
     >>> user_browser.getControl('Continue').click()
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...   print message
+    >>> print_feedback_messages(user_browser.contents)
     Bug #8 also links to the added bug watch (debbugs #42).
 
 The notification links to the bug in question.

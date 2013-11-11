@@ -126,7 +126,7 @@ The first criteria is search_text. It will select FAQs matching the
 keywords specified. Keywords are looked for in the title, content and
 keywords field of the FAQ.
 
-    >>> for faq in collection.searchFAQs(search_text='install'):
+    >>> for faq in collection.searchFAQs(search_text=u'install'):
     ...     print faq.title
     How do I install Foo?
     How do I play the Game of Life?
@@ -160,7 +160,7 @@ You can combine multiple criterias. Only FAQs matching all the criterias
  will be returned.
 
     >>> for faq in collection.searchFAQs(
-    ...         search_text='install', owner=no_priv):
+    ...         search_text=u'install', owner=no_priv):
     ...     print faq.title
     How do I install Foo?
     How do I play the Game of Life?
@@ -176,7 +176,7 @@ date of creation (most recent first):
 
     >>> from lp.answers.interfaces.faqcollection import FAQSort
     >>> for faq in collection.searchFAQs(
-    ...         search_text='install', sort=FAQSort.NEWEST_FIRST):
+    ...         search_text=u'install', sort=FAQSort.NEWEST_FIRST):
     ...     print faq.title
     How do I play the Game of Life?
     How do I make money quickly off the Internet?

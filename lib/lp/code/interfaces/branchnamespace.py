@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0213,E0211
-
 """Interface for a branch namespace."""
 
 __metaclass__ = type
@@ -124,10 +122,12 @@ class IBranchNamespacePolicy(Interface):
         :return: An `InformationType`.
         """
 
-    def validateRegistrant(registrant):
+    def validateRegistrant(registrant, branch=None):
         """Check that the registrant can create a branch on this namespace.
 
         :param registrant: An `IPerson`.
+        :param branch: An optional `IBranch` to also check when working
+            with imported branches.
         :raises BranchCreatorNotMemberOfOwnerTeam: if the namespace owner is
             a team, and the registrant is not in that team.
         :raises BranchCreatorNotOwner: if the namespace owner is an individual

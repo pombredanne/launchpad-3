@@ -11,11 +11,11 @@ __all__ = [
 
 from lazr.restful.interfaces import IWebServiceClientRequest
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.component import (
     adapts,
     getUtility,
     )
+from zope.formlib.itemswidgets import RadioWidget
 from zope.interface import (
     implements,
     Interface,

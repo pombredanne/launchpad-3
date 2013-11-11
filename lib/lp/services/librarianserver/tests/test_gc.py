@@ -122,10 +122,6 @@ class TestLibrarianGarbageCollection(TestCase):
         self.failIfEqual(f1_id, f2_id)
         self.failIfEqual(f1.contentID, f2.contentID)
 
-        # Set the last accessed time into the past so they will be garbage
-        # collected
-        f1.last_accessed = self.ancient_past
-        f2.last_accessed = self.ancient_past
         f1.date_created = self.ancient_past
         f2.date_created = self.ancient_past
         f1.content.datecreated = self.ancient_past
@@ -191,8 +187,8 @@ class TestLibrarianGarbageCollection(TestCase):
         f2 = LibraryFileAlias.get(self.f2_id)
         self.assertEqual(f1.content, f2.content)
 
-        # Flag one of our LibraryFileAliases as being recently accessed
-        f1.last_accessed = self.recent_past
+        # Flag one of our LibraryFileAliases as being recently created
+        f1.date_created = self.recent_past
 
         del f1
         del f2
@@ -641,8 +637,8 @@ class TestBlobCollection(TestCase):
 
         # First a blob that has been unclaimed and expired.
         cur.execute("""
-            INSERT INTO LibraryFileContent (filesize, sha1, md5)
-            VALUES (666, 'whatever', 'whatever')
+            INSERT INTO LibraryFileContent (filesize, sha1, md5, sha256)
+            VALUES (666, 'whatever', 'whatever', 'whatever')
             """)
         cur.execute("""SELECT currval('libraryfilecontent_id_seq')""")
         self.expired_lfc_id = cur.fetchone()[0]
@@ -681,8 +677,8 @@ class TestBlobCollection(TestCase):
         # Next a blob that has expired, but claimed and now linked to
         # elsewhere in the database
         cur.execute("""
-            INSERT INTO LibraryFileContent (filesize, sha1, md5)
-            VALUES (666, 'whatever', 'whatever')
+            INSERT INTO LibraryFileContent (filesize, sha1, md5, sha256)
+            VALUES (666, 'whatever', 'whatever', 'whatever')
             """)
         cur.execute("""SELECT currval('libraryfilecontent_id_seq')""")
         self.expired2_lfc_id = cur.fetchone()[0]
@@ -717,8 +713,8 @@ class TestBlobCollection(TestCase):
 
         # And a non expired blob
         cur.execute("""
-            INSERT INTO LibraryFileContent (filesize, sha1, md5)
-            VALUES (666, 'whatever', 'whatever')
+            INSERT INTO LibraryFileContent (filesize, sha1, md5, sha256)
+            VALUES (666, 'whatever', 'whatever', 'whatever')
             """)
         cur.execute("""SELECT currval('libraryfilecontent_id_seq')""")
         self.unexpired_lfc_id = cur.fetchone()[0]

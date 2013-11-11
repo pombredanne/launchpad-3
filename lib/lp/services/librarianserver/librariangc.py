@@ -288,8 +288,7 @@ class UnreferencedLibraryFileAliasPruner:
     This is the second step in a full garbage collection sweep. We determine
     which LibraryFileAlias entries are not being referenced by other objects
     in the database and delete them, if they are expired (expiry in the past
-    or NULL), and if they have not been recently accessed (last_access over
-    one week in the past).
+    or NULL).
     """
     implements(ITunableLoop)
 
@@ -343,13 +342,12 @@ class UnreferencedLibraryFileAliasPruner:
                 alias integer UNIQUE)
             """)
         # Calculate the set of unreferenced LibraryFileAlias.
-        # We also exclude all unexpired and recently accessed
-        # records - we don't remove them even if they are unlinked. We
-        # currently don't remove stuff until it has been expired for
-        # more than one week, but we will change this if disk space
-        # becomes short and it actually will make a noticeable
-        # difference. We handle excluding recently created content
-        # here rather than earlier when creating the
+        # We also exclude all unexpired records - we don't remove them
+        # even if they are unlinked. We currently don't remove stuff
+        # until it has been expired for more than one week, but we will
+        # change this if disk space becomes short and it actually will
+        # make a noticeable difference. We handle excluding recently
+        # created content here rather than earlier when creating the
         # ReferencedLibraryFileAlias table to handle uploads going on
         # while this script is running.
         cur.execute("""
@@ -362,9 +360,6 @@ class UnreferencedLibraryFileAliasPruner:
                          CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
                              - interval '1 week'
                     )
-                    AND last_accessed <
-                        CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-                            - interval '1 week'
                     AND date_created <
                         CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
                             - interval '1 week'

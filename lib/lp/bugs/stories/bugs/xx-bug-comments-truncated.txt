@@ -65,11 +65,11 @@ The whole comment is visible on this page:
     <div class="boardCommentBody">
     <div class="comment-text" itemprop="commentText"><p>This
       would be a real killer feature. If there is already code
-      to make it possible, why aren't there tons of press announcements
+      to make it possible, why aren&#x27;t there tons of press announcements
       about the secuirty possibilities. Imagine - no more embarrassing
       emails for Mr Gates... everything they delete would actually
-      disappear! I'm sure Redmond will switch over as soon as they hear
-      about this. It's not a bug, it's a feature!</p></div>
+      disappear! I&#x27;m sure Redmond will switch over as soon as they hear
+      about this. It&#x27;s not a bug, it&#x27;s a feature!</p></div>
     </div>
 
     >>> config_data  = config.pop('max_comment_data')

@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functions dealing with mails coming into Launchpad."""
@@ -391,8 +391,7 @@ def report_oops(file_alias_url=None, error_msg=None):
     return report['id']
 
 
-def handleMail(trans=transaction,
-               signature_timestamp_checker=None):
+def handleMail(trans=transaction, signature_timestamp_checker=None):
 
     log = logging.getLogger('process-mail')
     mailbox = getUtility(IMailBox)
@@ -486,7 +485,6 @@ def handle_one_mail(log, mail, file_alias, file_alias_url,
     handled as a known error condition, in which case a reply will have been
     sent if appropriate.
     """
-
     log.debug('processing mail from %r message-id %r' %
         (mail['from'], mail['message-id']))
 
@@ -552,5 +550,4 @@ def handle_one_mail(log, mail, file_alias, file_alias_url,
 
     handled = handler.process(mail, email_addr, file_alias)
     if not handled:
-        raise AssertionError(
-            "Handler found, but message was not handled")
+        raise AssertionError("Handler found, but message was not handled")

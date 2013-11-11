@@ -46,7 +46,7 @@ from smtplib import SMTP
 import sys
 
 from lazr.restful.utils import get_current_browser_request
-from zope.app import zapi
+from zope.component import getUtility
 from zope.security.proxy import (
     isinstance as zisinstance,
     removeSecurityProxy,
@@ -511,7 +511,7 @@ def raw_sendmail(from_addr, to_addrs, raw_message, message_detail):
     assert not isinstance(to_addrs, basestring), 'to_addrs must be a sequence'
     assert isinstance(raw_message, str), 'Not a plain string'
     assert raw_message.decode('ascii'), 'Not ASCII - badly encoded message'
-    mailer = zapi.getUtility(IMailDelivery, 'Mail')
+    mailer = getUtility(IMailDelivery, 'Mail')
     request = get_current_browser_request()
     timeline = get_request_timeline(request)
     action = timeline.start("sendmail", message_detail)

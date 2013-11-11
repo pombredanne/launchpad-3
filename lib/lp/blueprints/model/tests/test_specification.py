@@ -33,6 +33,7 @@ from lp.registry.enums import (
     )
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.model.milestone import Milestone
+from lp.services.propertycache import get_property_cache
 from lp.services.mail import stub
 from lp.services.webapp import canonical_url
 from lp.testing import (
@@ -52,19 +53,19 @@ class TestSpecificationDependencies(TestCaseWithFactory):
 
     def test_no_deps(self):
         blueprint = self.factory.makeBlueprint()
-        self.assertThat(list(blueprint.dependencies), Equals([]))
-        self.assertThat(list(blueprint.all_deps), Equals([]))
-        self.assertThat(list(blueprint.blocked_specs), Equals([]))
-        self.assertThat(list(blueprint.all_blocked), Equals([]))
+        self.assertThat(list(blueprint.getDependencies()), Equals([]))
+        self.assertThat(list(blueprint.all_deps()), Equals([]))
+        self.assertThat(list(blueprint.getBlockedSpecs()), Equals([]))
+        self.assertThat(list(blueprint.all_blocked()), Equals([]))
 
     def test_single_dependency(self):
         do_first = self.factory.makeBlueprint()
         do_next = self.factory.makeBlueprint()
         do_next.createDependency(do_first)
-        self.assertThat(list(do_first.blocked_specs), Equals([do_next]))
-        self.assertThat(list(do_first.all_blocked), Equals([do_next]))
-        self.assertThat(list(do_next.dependencies), Equals([do_first]))
-        self.assertThat(list(do_next.all_deps), Equals([do_first]))
+        self.assertThat(list(do_first.getBlockedSpecs()), Equals([do_next]))
+        self.assertThat(list(do_first.all_blocked()), Equals([do_next]))
+        self.assertThat(list(do_next.getDependencies()), Equals([do_first]))
+        self.assertThat(list(do_next.all_deps()), Equals([do_first]))
 
     def test_linear_dependency(self):
         do_first = self.factory.makeBlueprint()
@@ -72,14 +73,12 @@ class TestSpecificationDependencies(TestCaseWithFactory):
         do_next.createDependency(do_first)
         do_last = self.factory.makeBlueprint()
         do_last.createDependency(do_next)
-        self.assertThat(sorted(do_first.blocked_specs), Equals([do_next]))
+        self.assertThat(sorted(do_first.getBlockedSpecs()), Equals([do_next]))
         self.assertThat(
-            sorted(do_first.all_blocked),
-            Equals(sorted([do_next, do_last])))
-        self.assertThat(sorted(do_last.dependencies), Equals([do_next]))
+            sorted(do_first.all_blocked()), Equals(sorted([do_next, do_last])))
+        self.assertThat(sorted(do_last.getDependencies()), Equals([do_next]))
         self.assertThat(
-            sorted(do_last.all_deps),
-            Equals(sorted([do_first, do_next])))
+            sorted(do_last.all_deps()), Equals(sorted([do_first, do_next])))
 
     def test_diamond_dependency(self):
         #             do_first
@@ -96,17 +95,64 @@ class TestSpecificationDependencies(TestCaseWithFactory):
         do_last.createDependency(do_next_lhs)
         do_last.createDependency(do_next_rhs)
         self.assertThat(
-            sorted(do_first.blocked_specs),
+            sorted(do_first.getBlockedSpecs()),
             Equals(sorted([do_next_lhs, do_next_rhs])))
         self.assertThat(
-            sorted(do_first.all_blocked),
+            sorted(do_first.all_blocked()),
             Equals(sorted([do_next_lhs, do_next_rhs, do_last])))
         self.assertThat(
-            sorted(do_last.dependencies),
+            sorted(do_last.getDependencies()),
             Equals(sorted([do_next_lhs, do_next_rhs])))
         self.assertThat(
-            sorted(do_last.all_deps),
+            sorted(do_last.all_deps()),
             Equals(sorted([do_first, do_next_lhs, do_next_rhs])))
+
+    def test_all_deps_filters(self):
+        # all_deps, when provided a user, shows only the dependencies the user
+        # can see.
+        sharing_policy = SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner, specification_sharing_policy=sharing_policy)
+        root = self.factory.makeBlueprint(product=product)
+        proprietary_dep = self.factory.makeBlueprint(
+            product=product, information_type=InformationType.PROPRIETARY)
+        public_dep = self.factory.makeBlueprint(product=product)
+        root.createDependency(proprietary_dep)
+        root.createDependency(public_dep)
+        # Anonymous (no user) requests only get public dependencies
+        self.assertEqual([public_dep], root.all_deps())
+        # The owner of the product can see everything.
+        self.assertEqual(
+            [proprietary_dep, public_dep], root.all_deps(user=owner))
+        # A random person can't see the proprietary dependency.
+        self.assertEqual(
+            [public_dep], root.all_deps(user=self.factory.makePerson()))
+
+    def test_all_blocked_filters(self):
+        # all_blocked, when provided a user, shows only the blocked specs the
+        # user can see.
+        sharing_policy = SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner, specification_sharing_policy=sharing_policy)
+        root = self.factory.makeBlueprint(product=product)
+        proprietary_blocked = self.factory.makeBlueprint(
+            product=product, information_type=InformationType.PROPRIETARY)
+        public_blocked = self.factory.makeBlueprint(product=product)
+        proprietary_blocked.createDependency(root)
+        public_blocked.createDependency(root)
+        # Anonymous (no user) requests only get public blocked specs.
+        self.assertEqual(
+            [public_blocked], root.all_blocked())
+        # The owner of the product can see everything.
+        self.assertEqual(
+            [proprietary_blocked, public_blocked],
+            root.all_blocked(user=owner))
+        # A random person can't see the proprietary blocked spec.
+        self.assertEqual(
+            [public_blocked],
+            root.all_blocked(user=self.factory.makePerson()))
 
 
 class TestSpecificationSubscriptionSort(TestCaseWithFactory):
@@ -154,7 +200,7 @@ class TestSpecificationValidation(TestCaseWithFactory):
         existing = self.factory.makeSpecification(
                 specurl=u'http://ubuntu.com/foo',
                 title='<script>alert("foo");</script>')
-        cleaned_title = '&lt;script&gt;alert("foo");&lt;/script&gt;'
+        cleaned_title = '&lt;script&gt;alert(&quot;foo&quot;);&lt;/script&gt;'
         spec = self.factory.makeSpecification()
         url = canonical_url(existing)
         field = ISpecification['specurl'].bind(spec)
@@ -177,10 +223,9 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
         stub.test_emails = []
         spec = self.factory.makeSpecification()
         old_spec = Snapshot(spec, providing=providedBy(spec))
-        status = SpecificationWorkItemStatus.TODO
         new_work_item = {
             'title': u'A work item',
-            'status': status,
+            'status': SpecificationWorkItemStatus.TODO,
             'assignee': None,
             'milestone': None,
             'sequence': 0
@@ -188,10 +233,9 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
 
         login_person(spec.owner)
         spec.updateWorkItems([new_work_item])
-        # In production this notification is fired by lazr.restful for changes
-        # in the specification form and notify(ObjectModifiedEvent(...)) for
-        # changes in the +workitems form. We need to do it ourselves in this
-        # test.
+        # For API requests, lazr.restful does the notify() call, for this test
+        # we need to call ourselves.
+        transaction.commit()
         notify(ObjectModifiedEvent(
             spec, old_spec, edited_fields=['workitems_text']))
         transaction.commit()
@@ -455,7 +499,7 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         spec.updateWorkItems([work_item1_data, work_item2_data])
 
         # And after calling updateWorkItems() we have 2 work items.
-        self.assertEqual(2, spec.work_items.count())
+        self.assertEqual(2, len(spec.work_items))
 
         # The data dicts we pass to updateWorkItems() have no sequence because
         # that's taken from their position on the list, so we update our data
@@ -478,7 +522,7 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         # Create two work-items in our database.
         wi1_data = self._createWorkItemAndReturnDataDict(spec)
         wi2_data = self._createWorkItemAndReturnDataDict(spec)
-        self.assertEqual(2, spec.work_items.count())
+        self.assertEqual(2, len(spec.work_items))
 
         # These are the work items we'll be inserting.
         new_wi1_data = dict(
@@ -501,7 +545,7 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         new_wi2_data['sequence'] = 2
         wi2_data['sequence'] = 3
 
-        self.assertEqual(4, spec.work_items.count())
+        self.assertEqual(4, len(spec.work_items))
         for data, obj in zip(work_items, list(spec.work_items)):
             self.assertThat(obj, MatchesStructure.byEquality(**data))
 
@@ -526,8 +570,8 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         new_wi2_data['sequence'] = 2
         wi2_data['sequence'] = 3
 
-        self.assertEqual(4, spec.work_items.count())
-        for data, obj in zip(work_items, list(spec.work_items)):
+        self.assertEqual(4, len(spec.work_items))
+        for data, obj in zip(work_items, spec.work_items):
             self.assertThat(obj, MatchesStructure.byEquality(**data))
 
         return spec, work_items
@@ -541,7 +585,7 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         work_items.append(new_wi3_data)
         spec.updateWorkItems(work_items)
 
-        self.assertEqual(5, spec.work_items.count())
+        self.assertEqual(5, len(spec.work_items))
         for data, obj in zip(work_items, list(spec.work_items)):
             self.assertThat(obj, MatchesStructure.byEquality(**data))
 
@@ -552,7 +596,7 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         work_items.pop()
         spec.updateWorkItems(work_items)
 
-        self.assertEqual(3, spec.work_items.count())
+        self.assertEqual(3, len(spec.work_items))
         for data, obj in zip(work_items, list(spec.work_items)):
             self.assertThat(obj, MatchesStructure.byEquality(**data))
 
@@ -561,7 +605,7 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         login_person(spec.owner)
         # Create a work-item in our database.
         wi_data = self._createWorkItemAndReturnDataDict(spec)
-        self.assertEqual(1, spec.work_items.count())
+        self.assertEqual(1, len(spec.work_items))
 
         # This time we're only changing the existing work item; we'll change
         # its assignee and status.
@@ -569,29 +613,29 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
                             assignee=spec.owner))
         spec.updateWorkItems([wi_data])
 
-        self.assertEqual(1, spec.work_items.count())
+        self.assertEqual(1, len(spec.work_items))
         self.assertThat(
             spec.work_items[0], MatchesStructure.byEquality(**wi_data))
 
     def test_updateWorkItems_deletes_all_if_given_empty_list(self):
         work_item = self.factory.makeSpecificationWorkItem()
         spec = work_item.specification
-        self.assertEqual(1, spec.work_items.count())
+        self.assertEqual(1, len(spec.work_items))
         spec.updateWorkItems([])
-        self.assertEqual(0, spec.work_items.count())
+        self.assertEqual(0, len(spec.work_items))
 
     def test_updateWorkItems_marks_removed_ones_as_deleted(self):
         spec = self.factory.makeSpecification()
         self._createWorkItemAndReturnDataDict(spec)
         wi2_data = self._createWorkItemAndReturnDataDict(spec)
-        self.assertEqual(2, spec.work_items.count())
+        self.assertEqual(2, len(spec.work_items))
         login_person(spec.owner)
 
         # We have two work items in the DB but now we want to update them to
         # keep just the second one. The first will be deleted and the sequence
         # of the second will be changed.
         spec.updateWorkItems([wi2_data])
-        self.assertEqual(1, spec.work_items.count())
+        self.assertEqual(1, len(spec.work_items))
         wi2_data['sequence'] = 0
         self.assertThat(
             spec.work_items[0], MatchesStructure.byEquality(**wi2_data))
@@ -603,12 +647,14 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         Return a dict with the title, status, assignee, milestone and sequence
         attributes of the spec.
         """
-        if spec.work_items.count() == 0:
+        del get_property_cache(spec).work_items
+        if len(spec.work_items) == 0:
             sequence = 0
         else:
             sequence = max(wi.sequence for wi in spec.work_items) + 1
         wi = self.factory.makeSpecificationWorkItem(
             specification=spec, sequence=sequence)
+        del get_property_cache(spec).work_items
         return dict(
             title=wi.title, status=wi.status, assignee=wi.assignee,
             milestone=wi.milestone, sequence=sequence)

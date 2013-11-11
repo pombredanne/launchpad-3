@@ -1,7 +1,5 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=C0322,F0401
 
 """Views, navigation and actions for BranchMergeProposals."""
 
@@ -42,13 +40,13 @@ from lazr.restful.interfaces import (
     IWebServiceClientRequest,
     )
 import simplejson
-from zope.app.form.browser import TextAreaWidget
 from zope.component import (
     adapts,
     getMultiAdapter,
     getUtility,
     )
 from zope.formlib import form
+from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
     implements,
     Interface,
@@ -107,6 +105,7 @@ from lp.services.fields import (
     Summary,
     Whiteboard,
     )
+from lp.services.librarian.interfaces.client import LibrarianServerError
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
@@ -517,9 +516,18 @@ class BranchMergeProposalStatusMixin:
 class DiffRenderingMixin:
     """A mixin class for handling diff text."""
 
+    @property
+    def diff_available(self):
+        """Is the preview diff available from the librarian?"""
+        if getattr(self, '_diff_available', None) is None:
+            # Load the cache so that the answer is known.
+            self.preview_diff_text
+        return self._diff_available
+
     @cachedproperty
     def preview_diff_text(self):
         """Return a (hopefully) intelligently encoded review diff."""
+        self._diff_available = True
         preview_diff = self.preview_diff
         if preview_diff is None:
             return None
@@ -527,6 +535,9 @@ class DiffRenderingMixin:
             diff = preview_diff.text.decode('utf-8')
         except UnicodeDecodeError:
             diff = preview_diff.text.decode('windows-1252', 'replace')
+        except LibrarianServerError:
+            self._diff_available = False
+            diff = ''
         # Strip off the trailing carriage returns.
         return diff.rstrip('\n')
 
@@ -708,8 +719,12 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     def has_bug_or_spec(self):
         """Return whether or not the merge proposal has a linked bug or spec.
         """
-        branch = self.context.source_branch
-        return self.linked_bugtasks or branch.spec_links
+        return self.linked_bugtasks or self.spec_links
+
+    @property
+    def spec_links(self):
+        return list(
+            self.context.source_branch.getSpecificationLinks(self.user))
 
     @cachedproperty
     def linked_bugtasks(self):

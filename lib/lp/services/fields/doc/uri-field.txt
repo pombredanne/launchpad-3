@@ -36,7 +36,7 @@ valid URI:
   >>> field.validate(u'not-a-uri')
   Traceback (most recent call last):
     ...
-  LaunchpadValidationError: "not-a-uri" is not a valid URI
+  LaunchpadValidationError: &quot;not-a-uri&quot; is not a valid URI
 
 
 === Scheme Restrictions ===
@@ -50,7 +50,7 @@ will result in a validation error:
   >>> sftp_only.validate(u'http://launchpad.net/')
   Traceback (most recent call last):
     ...
-  LaunchpadValidationError: The URI scheme "http" is not allowed.
+  LaunchpadValidationError: The URI scheme &quot;http&quot; is not allowed.
   Only URIs with the following schemes may be used: sftp
 
 
@@ -176,7 +176,7 @@ standard text widget with the following differences:
 
 This widget is registered as an input widget:
 
-  >>> from zope.app.form.interfaces import IInputWidget
+  >>> from zope.formlib.interfaces import IInputWidget
   >>> from zope.component import getMultiAdapter
   >>> from lp.app.widgets.textwidgets import URIWidget
   >>> from lp.services.webapp.servers import LaunchpadTestRequest

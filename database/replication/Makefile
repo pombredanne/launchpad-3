@@ -57,6 +57,12 @@ stagingsetup:
 	${STAGING_PGBOUNCER} -c 'kill launchpad_staging'
 	${STAGING_PGBOUNCER} -c 'kill launchpad_staging_slave'
 	-${PGMASSACRE} lpmain_staging
+
+	# Quickly clear out the session DB.
+	${STAGING_PGBOUNCER} -c 'kill session_staging'
+	psql -d session_staging -c 'TRUNCATE sessiondata CASCADE;'
+	${STAGING_PGBOUNCER} -c 'resume session_staging'
+
 	# Create the DB with the desired default tablespace.
 	${CREATEDB} --tablespace ${STAGING_TABLESPACE} lpmain_staging
 	# Restore the database. We need to restore permissions, despite
@@ -88,7 +94,7 @@ dogfood:
 	pg_restore --list ${DOGFOOD_DUMP} | grep -v 'TRIGGER public _sl_' \
 	    > ${DUMPLIST}
 	pg_restore --dbname=${DOGFOOD_DBNAME} --no-acl --no-owner \
-	    --use-list=${DUMPLIST} ${EXIT_ON_ERROR} ${DOGFOOD_DUMP}
+	    --use-list=${DUMPLIST} ${EXIT_ON_ERROR} ${MULTIPROC} ${DOGFOOD_DUMP}
 	rm ${DUMPLIST}
 	../schema/upgrade.py -d ${DOGFOOD_DBNAME}
 	../schema/security.py -d ${DOGFOOD_DBNAME}

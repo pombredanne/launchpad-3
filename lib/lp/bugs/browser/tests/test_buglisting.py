@@ -11,6 +11,7 @@ from soupmatchers import (
     )
 from zope.component import getUtility
 
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
@@ -434,3 +435,55 @@ class TestBugTaskSearchListingViewSP(TestBugTaskSearchListingViewDSP):
         def _getBugTarget(self, dsp):
             """Return the current `ISourcePackage` for the dsp."""
             return dsp.development_version
+
+
+class TestPersonBugListing(BrowserTestCase):
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonBugListing, self).setUp()
+        self.user = self.factory.makePerson()
+        self.private_product_owner = self.factory.makePerson()
+        self.private_product = self.factory.makeProduct(
+            owner=self.private_product_owner,
+            information_type=InformationType.PROPRIETARY)
+
+    def test_grant_for_bug_with_task_for_private_product(self):
+        # A person's own bug page is correctly rendered when the person
+        # is subscribed to a bug with a task for a propritary product.
+        with person_logged_in(self.private_product_owner):
+            bug = self.factory.makeBug(
+                target=self.private_product, owner=self.private_product_owner)
+            bug.subscribe(self.user, subscribed_by=self.private_product_owner)
+        url = canonical_url(self.user, rootsite='bugs')
+        # Just ensure that no exception occurs when the page is rendered.
+        self.getUserBrowser(url, user=self.user)
+
+    def test_grant_for_bug_with_task_for_private_product_series(self):
+        # A person's own bug page is correctly rendered when the person
+        # is subscribed to a bug with a task for a propritary product series.
+        with person_logged_in(self.private_product_owner):
+            series = self.factory.makeProductSeries(
+                product=self.private_product)
+            bug = self.factory.makeBug(
+                target=self.private_product, series=series,
+                owner=self.private_product_owner)
+            bug.subscribe(self.user, subscribed_by=self.private_product_owner)
+        url = canonical_url(self.user, rootsite='bugs')
+        # Just ensure that no exception occurs when the page is rendered.
+        self.getUserBrowser(url, user=self.user)
+
+    def test_grant_for_bug_with_task_for_private_product_and_milestone(self):
+        # A person's own bug page is correctly rendered when the person
+        # is subscribed to a bug with a task for a propritary product and
+        # a milestone.
+        with person_logged_in(self.private_product_owner):
+            milestone = self.factory.makeMilestone(
+                product=self.private_product)
+            bug = self.factory.makeBug(
+                target=self.private_product, milestone=milestone,
+                owner=self.private_product_owner)
+            bug.subscribe(self.user, subscribed_by=self.private_product_owner)
+        url = canonical_url(self.user, rootsite='bugs')
+        # Just ensure that no exception occurs when the page is rendered.
+        self.getUserBrowser(url, user=self.user)

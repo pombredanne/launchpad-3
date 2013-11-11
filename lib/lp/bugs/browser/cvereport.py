@@ -12,7 +12,6 @@ __all__ = [
 
 from zope.component import getUtility
 
-from lp.app.browser.stringformatter import escape
 from lp.bugs.browser.bugtask import BugTaskListingItem
 from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
@@ -23,6 +22,7 @@ from lp.bugs.interfaces.cve import ICveSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.helpers import shortlist
 from lp.services.webapp import LaunchpadView
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.publisher import canonical_url
 
 
@@ -133,5 +133,6 @@ class CVEReportView(LaunchpadView):
         of CVEs.
         """
         return '<br />\n'.join(
-            cve_link_template % (cve['url'], escape(cve['displayname']))
+            structured(
+                cve_link_template, cve['url'], cve['displayname']).escapedtext
             for cve in cves)

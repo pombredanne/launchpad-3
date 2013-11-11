@@ -1,6 +1,5 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
 
 """Job classes related to BranchMergeProposals are in here.
 
@@ -8,9 +7,7 @@ This includes both jobs for the proposals themselves, or jobs that are
 creating proposals, or diffs relating to the proposals.
 """
 
-
 __metaclass__ = type
-
 
 __all__ = [
     'BranchMergeProposalJob',
@@ -90,10 +87,8 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
+    IMasterStore,
+    IStore,
     )
 from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import JobStatus
@@ -209,8 +204,7 @@ class BranchMergeProposalJob(StormBase):
         BranchMergeProposalJob whose property "foo" is equal to "bar"'.
         """
         assert len(kwargs) > 0
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(klass, **kwargs)
+        return IStore(klass).find(klass, **kwargs)
 
     @classmethod
     def get(klass, key):
@@ -218,8 +212,7 @@ class BranchMergeProposalJob(StormBase):
 
         :raises: SQLObjectNotFound
         """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        instance = store.get(klass, key)
+        instance = IStore(klass).get(klass, key)
         if instance is None:
             raise SQLObjectNotFound(
                 'No occurrence of %s has key %s' % (klass.__name__, key))
@@ -280,8 +273,7 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
     def iterReady(klass):
         """Iterate through all ready BranchMergeProposalJobs."""
         from lp.code.model.branch import Branch
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        jobs = store.find(
+        jobs = IMasterStore(Branch).find(
             (BranchMergeProposalJob),
             And(BranchMergeProposalJob.job_type == klass.class_job_type,
                 BranchMergeProposalJob.job == Job.id,
@@ -317,7 +309,7 @@ class MergeProposalNeedsReviewEmailJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_NEEDS_REVIEW
 
-    config = config.merge_proposal_jobs
+    config = config.IBranchMergeProposalJobSource
 
     def run(self):
         """See `IMergeProposalNeedsReviewEmailJob`."""
@@ -346,7 +338,9 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF
 
-    config = config.merge_proposal_jobs
+    task_queue = 'bzrsyncd_job'
+
+    config = config.IBranchMergeProposalJobSource
 
     user_error_types = (UpdatePreviewDiffNotReady, )
 
@@ -374,11 +368,8 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         """See `IRunnableJob`."""
         self.checkReady()
         with server(get_ro_server(), no_replace=True):
-            preview = PreviewDiff.fromBranchMergeProposal(
-                self.branch_merge_proposal)
-        with BranchMergeProposalDelta.monitor(
-            self.branch_merge_proposal):
-            self.branch_merge_proposal.preview_diff = preview
+            with BranchMergeProposalDelta.monitor(self.branch_merge_proposal):
+                PreviewDiff.fromBranchMergeProposal(self.branch_merge_proposal)
 
     def getOperationDescription(self):
         return ('generating the diff for a merge proposal')
@@ -401,7 +392,7 @@ class CodeReviewCommentEmailJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.CODE_REVIEW_COMMENT_EMAIL
 
-    config = config.merge_proposal_jobs
+    config = config.IBranchMergeProposalJobSource
 
     def run(self):
         """See `IRunnableJob`."""
@@ -454,7 +445,7 @@ class ReviewRequestedEmailJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.REVIEW_REQUEST_EMAIL
 
-    config = config.merge_proposal_jobs
+    config = config.IBranchMergeProposalJobSource
 
     def run(self):
         """See `IRunnableJob`."""
@@ -521,7 +512,7 @@ class MergeProposalUpdatedEmailJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_UPDATED
 
-    config = config.merge_proposal_jobs
+    config = config.IBranchMergeProposalJobSource
 
     def run(self):
         """See `IRunnableJob`."""
@@ -588,7 +579,9 @@ class GenerateIncrementalDiffJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.GENERATE_INCREMENTAL_DIFF
 
-    config = config.merge_proposal_jobs
+    task_queue = 'bzrsyncd_job'
+
+    config = config.IBranchMergeProposalJobSource
 
     def acquireLease(self, duration=600):
         return self.job.acquireLease(duration)
@@ -650,13 +643,6 @@ class BranchMergeProposalJobSource(BaseRunnableJobSource):
     classProvides(IBranchMergeProposalJobSource)
 
     @staticmethod
-    @contextlib.contextmanager
-    def contextManager():
-        """See `IJobSource`."""
-        errorlog.globalErrorUtility.configure('merge_proposal_jobs')
-        yield
-
-    @staticmethod
     def get(job_id):
         """Get a job by id.
 
@@ -671,7 +657,6 @@ class BranchMergeProposalJobSource(BaseRunnableJobSource):
     @staticmethod
     def iterReady(job_type=None):
         from lp.code.model.branch import Branch
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         SourceBranch = ClassAlias(Branch)
         TargetBranch = ClassAlias(Branch)
         clauses = [
@@ -684,7 +669,7 @@ class BranchMergeProposalJobSource(BaseRunnableJobSource):
             ]
         if job_type is not None:
             clauses.append(BranchMergeProposalJob.job_type == job_type)
-        jobs = store.find(
+        jobs = IMasterStore(Branch).find(
             (BranchMergeProposalJob, Job, BranchMergeProposal,
              SourceBranch, TargetBranch), And(*clauses))
         # Order by the job status first (to get running before waiting), then

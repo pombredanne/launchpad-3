@@ -7,9 +7,9 @@ using Launchpad to track its bugs. We don't expect users to set the
 remote_product themselves, so we have a script that tries to set this
 automatically.
 
-    >>> from lp.services.database.interfaces import (
-    ...     IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE)
-    >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    >>> from lp.registry.model.product import Product
+    >>> from lp.services.database.interfaces import IStore
+    >>> store = IStore(Product)
     >>> store.execute("UPDATE Product SET remote_product = 'not-None'")
     <storm...>
 

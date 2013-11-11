@@ -29,7 +29,7 @@ The active mailing lists vocabulary matches and returns only those
 mailing lists which are active.
 
     >>> list_vocabulary = get_naked_vocab(None, 'ActiveMailingList')
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.services.webapp.vocabulary import IHugeVocabulary
     >>> verifyObject(IHugeVocabulary, list_vocabulary)
     True
@@ -602,9 +602,8 @@ INACTIVE_ACCOUNT_STATUSES is part of the vocabulary, though.
     >>> naked_cprov.merged = None
     >>> checked_count = 0
     >>> for status in INACTIVE_ACCOUNT_STATUSES:
-    ...     naked_cprov.account_status = status
-    ...     naked_cprov.syncUpdate()
-    ...     checked_count += int(cprov in vocab)
+    ...     person = factory.makePerson(account_status=status)
+    ...     checked_count += int(person in vocab)
     >>> checked_count == len(INACTIVE_ACCOUNT_STATUSES)
     True
 
@@ -711,10 +710,10 @@ PRIVATE_TEAM 'myteam' is not included in the results.
 Valid teams do not include teams that have been merged.
 
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.registry.personmerge import merge_people
     >>> ignored = login_person(foo_bar)
     >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
-    >>> person_set.merge(
-    ...     ephemeral, registry_experts, reviewer=ephemeral.teamowner)
+    >>> merge_people(ephemeral, registry_experts, reviewer=ephemeral.teamowner)
     >>> ignored = login_person(sample_person)
     >>> sorted(person.name for person in vocab.search('team'))
     [u'hwdb-team', u'name18', u'name20', u'name21',
@@ -967,6 +966,7 @@ will be returned.
      (u'Launchpad Beta Testers', u'Launchpad Beta Testers Owner'),
      (u'Launchpad Buildd Admins', u'Foo Bar'),
      (u'Launchpad Developers', u'Foo Bar'),
+     (u'Launchpad PPA Self Admins', u'Commercial Subscription Admins'),
      (u'Launchpad Users', u'Sample Person'),
      (u'Mailing List Experts', u'Launchpad Administrators'),
      (u'Mirror Administrators', u'Mark Shuttleworth'),
@@ -1051,8 +1051,8 @@ All 'valid' persons who are not a team.
     'Select a Person'
 
     >>> people = vocab.search(None)
-    >>> people.count() > 0
-    True
+    >>> people.is_empty()
+    False
 
     >>> invalid_people = [
     ...     person for person in people if not person.is_valid_person]

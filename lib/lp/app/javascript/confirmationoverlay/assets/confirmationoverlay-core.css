@@ -32,7 +32,3 @@ div.yui3-lp-app-confirmationoverlay-actions {
 .yui3-lp-app-confirmationoverlay-form-header {
     margin-top: 1em;
     }
-
-.yui3-lp-app-confirmationoverlay a.close-button {
-    visibility: hidden;
-    }

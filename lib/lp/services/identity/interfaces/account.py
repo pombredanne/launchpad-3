@@ -1,20 +1,20 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
 """Account interfaces."""
 
 __metaclass__ = type
 
 __all__ = [
     'AccountStatus',
+    'AccountStatusError',
     'AccountSuspendedError',
     'AccountCreationRationale',
     'IAccount',
-    'IAccountPrivate',
     'IAccountPublic',
     'IAccountSet',
     'IAccountSpecialRestricted',
+    'IAccountViewRestricted',
     'INACTIVE_ACCOUNT_STATUSES',
     ]
 
@@ -33,8 +33,10 @@ from zope.schema import (
     Int,
     Text,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from lp import _
+from lp.app.validators import LaunchpadValidationError
 from lp.services.fields import StrippedTextLine
 
 
@@ -202,21 +204,61 @@ class AccountCreationRationale(DBEnumeratedType):
         """)
 
 
+class AccountStatusError(LaunchpadValidationError):
+    """The account status cannot change to the proposed status."""
+
+
+class AccountStatusChoice(Choice):
+    """A valid status and transition."""
+
+    transitions = {
+        AccountStatus.NOACCOUNT: [AccountStatus.ACTIVE],
+        AccountStatus.ACTIVE: [
+            AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED],
+        AccountStatus.DEACTIVATED: [AccountStatus.ACTIVE],
+        AccountStatus.SUSPENDED: [AccountStatus.DEACTIVATED],
+        }
+
+    def constraint(self, value):
+        """See `IField`."""
+        if not IAccount.providedBy(self.context):
+            # This object is initializing.
+            return True
+        if self.context.status == value:
+            return True
+        return value in self.transitions[self.context.status]
+
+    def _validate(self, value):
+        """See `IField`.
+
+        Ensure the value is a valid transition for current AccountStatus.
+
+        :raises AccountStatusError: When self.constraint() returns False.
+        """
+        if not self.constraint(value):
+            raise AccountStatusError(
+                "The status cannot change from %s to %s" %
+                (removeSecurityProxy(self.context).status, value))
+        super(AccountStatusChoice, self)._validate(value)
+
+
 class IAccountPublic(Interface):
     """Public information on an `IAccount`."""
+
     id = Int(title=_('ID'), required=True, readonly=True)
 
     displayname = StrippedTextLine(
         title=_('Display Name'), required=True, readonly=False,
         description=_("Your name as you would like it displayed."))
 
-    status = Choice(
+    status = AccountStatusChoice(
         title=_("The status of this account"), required=True,
         readonly=False, vocabulary=AccountStatus)
 
 
-class IAccountPrivate(Interface):
+class IAccountViewRestricted(Interface):
     """Private information on an `IAccount`."""
+
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
 
@@ -225,10 +267,6 @@ class IAccountPrivate(Interface):
         readonly=True, values=AccountCreationRationale.items)
 
     openid_identifiers = Attribute(_("Linked OpenId Identifiers"))
-
-
-class IAccountSpecialRestricted(Interface):
-    """Attributes of `IAccount` protected with launchpad.Special."""
 
     date_status_set = Datetime(
         title=_('Date status last modified.'),
@@ -247,7 +285,7 @@ class IAccountSpecialRestricted(Interface):
         """
 
 
-class IAccount(IAccountPublic, IAccountPrivate, IAccountSpecialRestricted):
+class IAccount(IAccountPublic, IAccountViewRestricted):
     """Interface describing an `Account`."""
 
 

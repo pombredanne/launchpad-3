@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -47,6 +47,7 @@ from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.verification.tests.logintoken import get_token_url_from_email
 from lp.services.webapp import canonical_url
+from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.enums import (
@@ -58,9 +59,7 @@ from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
-    celebrity_logged_in,
     login,
-    login_celebrity,
     login_person,
     monkey_patch,
     person_logged_in,
@@ -79,6 +78,7 @@ from lp.testing.layers import (
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import (
     extract_text,
+    find_tag_by_id,
     setupBrowserForUser,
     )
 from lp.testing.views import (
@@ -194,9 +194,8 @@ class TestPersonIndexView(BrowserTestCase):
             'name="robots" content="noindex,nofollow"' in markup)
 
     def test_is_probationary_or_invalid_user_with_invalid(self):
-        person = self.factory.makePerson()
-        with celebrity_logged_in('admin'):
-            person.account.status = AccountStatus.NOACCOUNT
+        person = self.factory.makePerson(
+            account_status=AccountStatus.NOACCOUNT)
         observer = self.factory.makePerson()
         view = create_initialized_view(person, '+index', principal=observer)
         self.assertIs(True, view.is_probationary_or_invalid_user)
@@ -479,7 +478,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         self.assertIsNotNone(token)
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
-        expected_msg = (
+        expected_msg = html_escape(
             u"A confirmation message has been sent to '%s'."
             " Follow the instructions in that message to confirm"
             " that the address is yours. (If the message doesn't arrive in a"
@@ -525,7 +524,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         view = create_initialized_view(self.person, '+editemails', form=form)
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
-        expected_msg = (
+        expected_msg = html_escape(
             u"An e-mail message was sent to '%s' "
             "with instructions on how to confirm that it belongs to you."
             % added_email)
@@ -575,7 +574,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         view = create_initialized_view(self.person, '+editemails', form=form)
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
-        expected_msg = (
+        expected_msg = html_escape(
             u"The email address '%s' has been removed." % added_email)
         self.assertEqual(expected_msg, notifications[0].message)
 
@@ -587,7 +586,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
             }
         view = create_initialized_view(self.person, '+editemails', form=form)
         error_msg = view.errors[0]
-        expected_msg = (
+        expected_msg = html_escape(
             "You can't remove %s because it's your contact email address."
             % self.valid_email_address)
         self.assertEqual(expected_msg, error_msg)
@@ -634,16 +633,17 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
     def test_email_string_validation_invalid_email(self):
         """+editemails should warn when provided data is not an email."""
         not_an_email = 'foo'
-        expected_msg = u"'foo' doesn't seem to be a valid email address."
+        expected_msg = html_escape(
+            u"'foo' doesn't seem to be a valid email address.")
         self._assertEmailAndError(not_an_email, expected_msg)
 
     def test_email_string_validation_is_escaped(self):
         """+editemails should escape output to prevent XSS."""
         xss_email = "foo@example.com<script>window.alert('XSS')</script>"
         expected_msg = (
-            u"'foo@example.com&lt;script&gt;"
-            "window.alert('XSS')&lt;/script&gt;'"
-            " doesn't seem to be a valid email address.")
+            u"&#x27;foo@example.com&lt;script&gt;"
+            "window.alert(&#x27;XSS&#x27;)&lt;/script&gt;&#x27;"
+            " doesn&#x27;t seem to be a valid email address.")
         self._assertEmailAndError(xss_email, expected_msg)
 
     def test_edit_email_login_redirect(self):
@@ -654,34 +654,6 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         expected_url = (
             '%s/+editemails/+login?reauth=1' % canonical_url(self.person))
         self.assertEqual(expected_url, response.getHeader('location'))
-
-
-class PersonAdministerViewTestCase(TestPersonRenameFormMixin,
-                                   TestCaseWithFactory):
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(PersonAdministerViewTestCase, self).setUp()
-        self.person = self.factory.makePerson()
-        login_celebrity('admin')
-        self.ppa = self.factory.makeArchive(owner=self.person)
-        self.view = create_initialized_view(self.person, '+review')
-
-    def test_init_admin(self):
-        # An admin sees all the fields.
-        self.assertEqual('Review person', self.view.label)
-        self.assertEqual(
-            ['name', 'displayname', 'personal_standing',
-             'personal_standing_reason'],
-            self.view.field_names)
-
-    def test_init_registry_expert(self):
-        # Registry experts do not see the displayname field.
-        login_celebrity('registry_experts')
-        self.view.setUpFields()
-        self.assertEqual(
-            ['name', 'personal_standing', 'personal_standing_reason'],
-            self.view.field_names)
 
 
 class TestPersonParticipationView(TestCaseWithFactory):
@@ -970,6 +942,48 @@ class TestPersonPPAPackagesView(TestCaseWithFactory):
             self.view.max_results_to_display)
 
 
+class PersonOwnedTeamsViewTestCase(TestCaseWithFactory):
+    """Test +owned-teams view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_properties(self):
+        # The batch is created when the view is initialized.
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=owner)
+        view = create_initialized_view(owner, '+owned-teams')
+        self.assertEqual('Owned teams', view.page_title)
+        self.assertEqual('team', view.batchnav._singular_heading)
+        self.assertEqual([team], view.batch)
+
+    def test_page_text_with_teams(self):
+        # When the person owns teams, the page shows a a listing
+        # table. There is always a link to the team participation page.
+        owner = self.factory.makePerson(name='snarf')
+        self.factory.makeTeam(owner=owner, name='pting')
+        with person_logged_in(owner):
+            view = create_initialized_view(
+                owner, '+owned-teams', principal=owner)
+            markup = view()
+        soup = find_tag_by_id(markup, 'maincontent')
+        participation_link = 'http://launchpad.dev/~snarf/+participation'
+        self.assertIsNotNone(soup.find('a', {'href': participation_link}))
+        self.assertIsNotNone(soup.find('table', {'id': 'owned-teams'}))
+        self.assertIsNotNone(soup.find('a', {'href': '/~pting'}))
+        self.assertIsNotNone(soup.find('table', {'class': 'upper-batch-nav'}))
+        self.assertIsNotNone(soup.find('table', {'class': 'lower-batch-nav'}))
+
+    def test_page_text_without_teams(self):
+        # When the person does not own teams, the page states the case.
+        owner = self.factory.makePerson(name='pting')
+        with person_logged_in(owner):
+            view = create_initialized_view(
+                owner, '+owned-teams', principal=owner)
+            markup = view()
+        soup = find_tag_by_id(markup, 'maincontent')
+        self.assertIsNotNone(soup.find('p', {'id': 'no-teams'}))
+
+
 class TestPersonSynchronisedPackagesView(TestCaseWithFactory):
     """Test the synchronised packages view."""
 
@@ -1039,13 +1053,16 @@ class TestPersonRelatedPackagesFailedBuild(TestCaseWithFactory):
         publisher = SoyuzTestPublisher()
         publisher.prepareBreezyAutotest()
         ppa = self.factory.makeArchive(owner=self.user)
-        src_pub = publisher.getPubSource(
-            creator=self.user, maintainer=self.user, archive=ppa)
-        binaries = publisher.getPubBinaries(
-            pub_source=src_pub)
-        self.build = binaries[0].binarypackagerelease.build
-        self.build.status = BuildStatus.FAILEDTOBUILD
-        self.build.archive = publisher.distroseries.main_archive
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename='foo', version='666',
+            spr_creator=self.user, maintainer=self.user, archive=ppa)
+        das = self.factory.makeDistroArchSeries(
+            distroseries=spph.distroseries, architecturetag='cyr128')
+        self.build = self.factory.makeBinaryPackageBuild(
+            source_package_release=spph.sourcepackagerelease,
+            archive=spph.distroseries.distribution.main_archive,
+            distroarchseries=das)
+        self.build.updateStatus(BuildStatus.FAILEDTOBUILD)
         # Update the releases cache table.
         switch_dbuser('garbo_frequently')
         job = PopulateLatestPersonSourcePackageReleaseCache(FakeLogger())
@@ -1059,7 +1076,7 @@ class TestPersonRelatedPackagesFailedBuild(TestCaseWithFactory):
         self.view = create_view(self.user, name='+related-packages')
         html = self.view()
         self.assertIn(
-            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
+            '<a href="/ubuntu/+source/foo/666/+build/%d">cyr128</a>' % (
                 self.build.id), html)
 
     def test_related_ppa_packages_with_failed_build(self):
@@ -1067,7 +1084,7 @@ class TestPersonRelatedPackagesFailedBuild(TestCaseWithFactory):
         self.view = create_view(self.user, name='+ppa-packages')
         html = self.view()
         self.assertIn(
-            '<a href="/ubuntutest/+source/foo/666/+build/%d">i386</a>' % (
+            '<a href="/ubuntu/+source/foo/666/+build/%d">cyr128</a>' % (
                 self.build.id), html)
 
 
@@ -1146,8 +1163,7 @@ class TestPersonDeactivateAccountView(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
     form = {
         'field.comment': 'Gotta go.',
-        'field.actions.deactivate': 'Deactivate My Account',
-        }
+        'field.actions.deactivate': 'Deactivate My Account'}
 
     def test_deactivate_user_active(self):
         user = self.factory.makePerson()
@@ -1164,7 +1180,7 @@ class TestPersonDeactivateAccountView(TestCaseWithFactory):
     def test_deactivate_user_already_deactivated(self):
         deactivated_user = self.factory.makePerson()
         login_person(deactivated_user)
-        deactivated_user.deactivateAccount('going.')
+        deactivated_user.deactivate(comment='going.')
         view = create_initialized_view(
             deactivated_user, '+deactivate-account', form=self.form)
         self.assertEqual(1, len(view.errors))

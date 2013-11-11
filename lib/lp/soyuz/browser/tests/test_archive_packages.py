@@ -1,8 +1,6 @@
 # Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=F0401
-
 """Unit tests for TestP3APackages."""
 
 __metaclass__ = type
@@ -13,6 +11,7 @@ __all__ = [
 
 import re
 
+from BeautifulSoup import BeautifulSoup
 import soupmatchers
 from testtools.matchers import (
     Equals,
@@ -58,7 +57,6 @@ class TestP3APackages(TestCaseWithFactory):
         super(TestP3APackages, self).setUp()
         self.private_ppa = self.factory.makeArchive(description='Foo')
         login('admin@canonical.com')
-        self.private_ppa.buildd_secret = 'blah'
         self.private_ppa.private = True
         self.joe = self.factory.makePerson(name='joe')
         self.fred = self.factory.makePerson(name='fred')
@@ -71,14 +69,6 @@ class TestP3APackages(TestCaseWithFactory):
         """A person with no subscription will not be able to view +packages
         """
         login_person(self.fred)
-        self.assertRaises(
-            Unauthorized, create_initialized_view, self.private_ppa,
-            "+packages")
-
-    def test_packages_unauthorized_subscriber(self):
-        """A person with a subscription will not be able to view +packages
-        """
-        login_person(self.joe)
         self.assertRaises(
             Unauthorized, create_initialized_view, self.private_ppa,
             "+packages")
@@ -392,6 +382,22 @@ class TestPPAPackagesJobNotifications(TestCaseWithFactory):
                 attrs={'class': 'pending-job', 'job_id': job3.id}),
             )
         self.assertThat(html, packages_matches)
+        self.assertEquals(
+            [], BeautifulSoup(html).findAll(
+                'span', text=re.compile('Showing 5 of .')))
+
+    def test_job_notifications_display_multiple_is_capped(self):
+        jobs = [self.makeJob('package%d' % i) for i in range(7)]
+        with person_logged_in(self.archive.owner):
+            view = create_initialized_view(
+                self.archive, "+packages", principal=self.archive.owner)
+            soup = BeautifulSoup(view.render())
+        self.assertEquals([],
+            soup.findAll(
+                'div', attrs={'class': 'pending-job', 'job_id': jobs[-1].id}))
+        self.assertEquals(
+            [u'Showing 5 of 7'],
+            soup.findAll('span', text=re.compile('Showing 5 of .')))
 
     def test_job_notifications_display_owner_is_team(self):
         team = self.factory.makeTeam()
@@ -434,14 +440,13 @@ class TestP3APackagesQueryCount(TestCaseWithFactory):
 
     def test_ppa_index_queries_count(self):
         def ppa_index_render():
-            with person_logged_in(self.person):
+            with person_logged_in(self.team.teamowner):
                 view = create_initialized_view(
-                    self.private_ppa, '+index',
-                    principal=self.person)
+                    self.private_ppa, '+index', principal=self.team.teamowner)
                 view.page_title = "title"
                 view.render()
         recorder1, recorder2 = record_two_runs(
             ppa_index_render, self.createPackage, 2, 3)
 
         self.assertThat(
-            recorder2, HasQueryCount(LessThan(recorder1.count + 1)))
+            recorder2, HasQueryCount(LessThan(recorder1.count + 2)))

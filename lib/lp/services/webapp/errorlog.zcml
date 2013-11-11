@@ -21,11 +21,11 @@
 
     <utility
         provides="zope.error.interfaces.IErrorReportingUtility"
-        component="lp.services.webapp.errorlog.globalErrorUtility" 
+        component="lp.services.webapp.errorlog.globalErrorUtility"
         />
 
     <subscriber
-        for="zope.app.publication.interfaces.IEndRequestEvent"
+        for="zope.publisher.interfaces.IEndRequestEvent"
         handler="lp.services.webapp.errorlog.end_request"
         />
 

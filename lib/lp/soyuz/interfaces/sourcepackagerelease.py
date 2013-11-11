@@ -1,8 +1,6 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Source package release interfaces."""
 
 __metaclass__ = type
@@ -209,19 +207,6 @@ class ISourcePackageRelease(Interface):
 
         All arguments are optional and can be set individually. A non-passed
         argument remains untouched.
-        """
-
-    def attachTranslationFiles(tarball_alias, by_maintainer, importer=None):
-        """Attach a tarball with translations to be imported into Rosetta.
-
-        :tarball_alias: is a Librarian alias that references to a tarball with
-            translations.
-        :by_maintainer: indicates if the imported files where uploaded by
-            the maintainer of the project or package.
-        :importer: is the person that did the import.
-
-        raise DownloadFailed if we are not able to fetch the file from
-            :tarball_alias:.
         """
 
     package_diffs = Attribute(

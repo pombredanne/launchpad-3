@@ -8,6 +8,7 @@ from textwrap import dedent
 from zope.security.interfaces import ForbiddenAttribute
 
 from lp.bugs.errors import InvalidDuplicateValue
+from lp.services.webapp.escaping import html_escape
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 
@@ -61,12 +62,12 @@ class TestMarkDuplicateValidation(TestCaseWithFactory):
             """ % (
                 self.dupe_bug.id, self.dupe_bug.duplicateof.id))
         self.assertDuplicateError(
-            self.possible_dupe, self.dupe_bug, msg)
+            self.possible_dupe, self.dupe_bug, html_escape(msg))
 
     def test_error_duplicate_to_itself(self):
         # Test that a bug cannot be marked its own duplicate
-        msg = dedent(u"""
-            You can't mark a bug as a duplicate of itself.""")
+        msg = html_escape(dedent(u"""
+            You can't mark a bug as a duplicate of itself."""))
         self.assertDuplicateError(self.bug, self.bug, msg)
 
 

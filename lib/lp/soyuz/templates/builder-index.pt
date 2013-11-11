@@ -70,6 +70,10 @@
                   Switch to x-mode</button>
               </form>
             </dd>
+            <tal:version tal:condition="context/version">
+              <dt>Version:</dt>
+              <dd tal:content="context/version" />
+            </tal:version>
           </dl>
         </div><!-- portlet -->
       </div><!-- yui-u -->

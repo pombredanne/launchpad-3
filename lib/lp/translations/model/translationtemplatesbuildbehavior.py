@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An `IBuildFarmJobBehavior` for `TranslationTemplatesBuildJob`.
@@ -11,15 +11,15 @@ __all__ = [
     'TranslationTemplatesBuildBehavior',
     ]
 
-import datetime
+import logging
 import os
+import re
 import tempfile
 
-import pytz
+import transaction
 from twisted.internet import defer
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
@@ -45,6 +45,14 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
     # Filename for the tarball of templates that the slave builds.
     templates_tarball_path = 'translation-templates.tar.gz'
 
+    unsafe_chars = '[^a-zA-Z0-9_+-]'
+
+    def getLogFileName(self):
+        """See `IBuildFarmJob`."""
+        safe_name = re.sub(
+            self.unsafe_chars, '_', self.buildfarmjob.branch.unique_name)
+        return "translationtemplates_%s_%d.txt" % (safe_name, self.build.id)
+
     def dispatchBuildToSlave(self, build_queue_item, logger):
         """See `IBuildFarmJobBehavior`."""
         chroot = self._getChroot()
@@ -53,11 +61,9 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             raise CannotBuild("Unable to find a chroot for %s" %
                               distroarchseries.displayname)
         chroot_sha1 = chroot.content.sha1
-        d = self._builder.slave.cacheFile(logger, chroot)
+        d = self._slave.cacheFile(logger, chroot)
 
         def got_cache_file(ignored):
-            cookie = self.buildfarmjob.generateSlaveBuildCookie()
-
             args = {
                 'arch_tag': self._getDistroArchSeries().architecturetag,
                 'branch_url': self.buildfarmjob.branch.composePublicURL(),
@@ -65,8 +71,9 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
             filemap = {}
 
-            return self._builder.slave.build(
-                cookie, self.build_type, chroot_sha1, filemap, args)
+            return self._slave.build(
+                self.getBuildCookie(), self.build_type, chroot_sha1, filemap,
+                args)
         return d.addCallback(got_cache_file)
 
     def _getChroot(self):
@@ -80,7 +87,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         """See `IBuildFarmJobBehavior`."""
         logger.info(
             "Starting templates build %s for %s." % (
-            self.buildfarmjob.getName(),
+            self.getBuildCookie(),
             self.buildfarmjob.branch.bzr_identity))
 
     def _readTarball(self, buildqueue, filemap, logger):
@@ -94,11 +101,9 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             logger.error("Did not find templates tarball in slave output.")
             return defer.succeed(None)
 
-        slave = removeSecurityProxy(buildqueue.builder.slave)
-
         fd, fname = tempfile.mkstemp()
         tarball_file = os.fdopen(fd, 'wb')
-        d = slave.getFile(slave_filename, tarball_file)
+        d = self._slave.getFile(slave_filename, tarball_file)
         # getFile will close the file object.
         return d.addCallback(lambda ignored: fname)
 
@@ -113,43 +118,9 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                 tarball, False, branch.owner, productseries=series,
                 approver_factory=TranslationBuildApprover)
 
-    def updateSlaveStatus(self, raw_slave_status, status):
-        """See `IBuildFarmJobBehavior`."""
-        if status['builder_status'] == 'BuilderStatus.WAITING':
-            if len(raw_slave_status) >= 4:
-                status['filemap'] = raw_slave_status[3]
-
-    def setBuildStatus(self, status):
-        self.build.status = status
-
-    @staticmethod
-    def getLogFromSlave(templates_build, queue_item):
-        """See `IPackageBuild`."""
-        SLAVE_LOG_FILENAME = 'buildlog'
-        builder = queue_item.builder
-        d = builder.transferSlaveFileToLibrarian(
-            SLAVE_LOG_FILENAME,
-            templates_build.buildfarmjob.getLogFileName(),
-            False)
-        return d
-
-    @staticmethod
-    def storeBuildInfo(build, queue_item, build_status):
-        """See `IPackageBuild`."""
-        def got_log(lfa_id):
-            build.build.log = lfa_id
-            build.build.builder = queue_item.builder
-            build.build.date_started = queue_item.date_started
-            # XXX cprov 20060615 bug=120584: Currently buildduration includes
-            # the scanner latency, it should really be asking the slave for
-            # the duration spent building locally.
-            build.build.date_finished = datetime.datetime.now(pytz.UTC)
-
-        d = build.getLogFromSlave(build, queue_item)
-        return d.addCallback(got_log)
-
-    def updateBuild_WAITING(self, queue_item, slave_status, logtail, logger):
-        """Deal with a finished ("WAITING" state, perversely) build job.
+    @defer.inlineCallbacks
+    def handleStatus(self, queue_item, status, slave_status):
+        """Deal with a finished build job.
 
         Retrieves tarball and logs from the slave, then cleans up the
         slave so it's ready for a next job and destroys the queue item.
@@ -157,56 +128,52 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         If this fails for whatever unforeseen reason, a future run will
         retry it.
         """
-        build_status = self.extractBuildStatus(slave_status)
-
+        from lp.buildmaster.manager import BUILDD_MANAGER_LOG_NAME
+        logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
         logger.info(
-            "Templates generation job %s for %s finished with status %s." % (
-            queue_item.specific_job.getName(),
+            "Processing finished %s build %s (%s) from builder %s" % (
+            status, self.getBuildCookie(),
             queue_item.specific_job.branch.bzr_identity,
-            build_status))
+            queue_item.builder.name))
 
-        def clean_slave(ignored):
-            d = queue_item.builder.cleanSlave()
-            return d.addCallback(lambda ignored: queue_item.destroySelf())
+        if status == 'OK':
+            self.build.updateStatus(
+                BuildStatus.UPLOADING, builder=queue_item.builder)
+            transaction.commit()
+            logger.debug("Processing successful templates build.")
+            filemap = slave_status.get('filemap')
+            filename = yield self._readTarball(queue_item, filemap, logger)
 
-        def got_tarball(filename):
             # XXX 2010-11-12 bug=674575
             # Please make addOrUpdateEntriesFromTarball() take files on
             # disk; reading arbitrarily sized files into memory is
             # dangerous.
             if filename is None:
                 logger.error("Build produced no tarball.")
-                self.setBuildStatus(BuildStatus.FULLYBUILT)
-                return
+                self.build.updateStatus(BuildStatus.FULLYBUILT)
+            else:
+                tarball_file = open(filename)
+                try:
+                    tarball = tarball_file.read()
+                    if tarball is None:
+                        logger.error("Build produced empty tarball.")
+                    else:
+                        logger.debug(
+                            "Uploading translation templates tarball.")
+                        self._uploadTarball(
+                            queue_item.specific_job.branch, tarball, logger)
+                        logger.debug("Upload complete.")
+                finally:
+                    self.build.updateStatus(BuildStatus.FULLYBUILT)
+                    tarball_file.close()
+                    os.remove(filename)
+        else:
+            self.build.updateStatus(
+                BuildStatus.FAILEDTOBUILD, builder=queue_item.builder)
+        transaction.commit()
 
-            tarball_file = open(filename)
-            try:
-                tarball = tarball_file.read()
-                if tarball is None:
-                    logger.error("Build produced empty tarball.")
-                else:
-                    logger.debug("Uploading translation templates tarball.")
-                    self._uploadTarball(
-                        queue_item.specific_job.branch, tarball, logger)
-                    logger.debug("Upload complete.")
-            finally:
-                self.setBuildStatus(BuildStatus.FULLYBUILT)
-                tarball_file.close()
-                os.remove(filename)
+        yield self.storeLogFromSlave(build_queue=queue_item)
 
-        def build_info_stored(ignored):
-            if build_status == 'OK':
-                self.setBuildStatus(BuildStatus.UPLOADING)
-                logger.debug("Processing successful templates build.")
-                filemap = slave_status.get('filemap')
-                d = self._readTarball(queue_item, filemap, logger)
-                d.addCallback(got_tarball)
-                d.addCallback(clean_slave)
-                return d
-
-            self.setBuildStatus(BuildStatus.FAILEDTOBUILD)
-            return clean_slave(None)
-
-        d = self.storeBuildInfo(self, queue_item, build_status)
-        d.addCallback(build_info_stored)
-        return d
+        yield self._slave.clean()
+        queue_item.destroySelf()
+        transaction.commit()

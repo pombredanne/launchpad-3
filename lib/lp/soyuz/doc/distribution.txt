@@ -12,18 +12,6 @@ objects for the distribution.
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> debian = getUtility(IDistributionSet).getByName('debian')
 
-(Create some data that is depended upon by later tests. It was part of a
-test "narrative" that was converted to unit tests.... for obvious reasons.)
-
-    >>> from lp.soyuz.tests.ppa import publishToPPA
-    >>> publishToPPA(
-    ...     person_name='cprov',
-    ...     sourcepackage_name='at', sourcepackage_version='0.00',
-    ...     binarypackage_version='3.14156',
-    ...     distribution_name='ubuntutest',
-    ...     distroseries_name='hoary-test',
-    ...     publishing_status=PackagePublishingStatus.PUBLISHED)
-
 
 Handling Personal Package Archives
 ----------------------------------
@@ -68,7 +56,7 @@ further information see doc/package-cache.txt.
 There is only one 'active' PPA:
 
     >>> cprov.archive.getPublishedSources().count()
-    4
+    3
 
     >>> mark.archive.getPublishedSources().count()
     1
@@ -89,19 +77,19 @@ and its  'contents description' (see package-cache.txt).
     mark: packages to help the humanity (you know, ubuntu)
     no-priv: I am not allowed to say, I have no privs.
 
-    >>> result = ubuntu.searchPPAs(text='friend')
+    >>> result = ubuntu.searchPPAs(text=u'friend')
     >>> [archive.owner.name for archive in result]
     [u'cprov']
 
-    >>> result = ubuntu.searchPPAs(text='oink')
+    >>> result = ubuntu.searchPPAs(text=u'oink')
     >>> [archive.owner.name for archive in result]
     []
 
-    >>> result = ubuntu.searchPPAs(text='packages')
+    >>> result = ubuntu.searchPPAs(text=u'packages')
     >>> [archive.owner.name for archive in result]
     [u'cprov', u'mark']
 
-    >>> result = ubuntu.searchPPAs(text='help')
+    >>> result = ubuntu.searchPPAs(text=u'help')
     >>> [archive.owner.name for archive in result]
     [u'cprov', u'mark']
 
@@ -111,11 +99,11 @@ Including 'inactive' PPAs:
     >>> [archive.owner.name for archive in result]
     [u'cprov', u'mark', u'no-priv']
 
-    >>> result = ubuntu.searchPPAs(text='priv', show_inactive=True)
+    >>> result = ubuntu.searchPPAs(text=u'priv', show_inactive=True)
     >>> [archive.owner.name for archive in result]
     [u'no-priv']
 
-    >>> result = ubuntu.searchPPAs(text='ubuntu', show_inactive=True)
+    >>> result = ubuntu.searchPPAs(text=u'ubuntu', show_inactive=True)
     >>> [archive.owner.name for archive in result]
     [u'mark']
 
@@ -125,10 +113,11 @@ The searchPPAs() method only returns the PPAs of active users.
     >>> login('admin@canonical.com')
     >>> no_priv.account.status = AccountStatus.SUSPENDED
 
-    >>> result = ubuntu.searchPPAs(text='priv', show_inactive=True)
+    >>> result = ubuntu.searchPPAs(text=u'priv', show_inactive=True)
     >>> [archive for archive in result]
     []
 
+    >>> no_priv.account.status = AccountStatus.DEACTIVATED
     >>> no_priv.account.status = AccountStatus.ACTIVE
 
 
@@ -219,7 +208,7 @@ source to another location within the PPA.
 Publishing the record will exclude Celso's PPA from pending-publication
 state:
 
-    >>> src_pub.status = PackagePublishingStatus.PUBLISHED
+    >>> src_pub.setPublished()
 
     >>> ubuntu.getPendingPublicationPPAs().count()
     0
@@ -235,9 +224,19 @@ source.
     >>> pending_ppa.id == cprov.archive.id
     True
 
-    >>> login('mark@example.com')
+If scheduleddeletiondate or dateremoved are set then the PPA is no
+longer pending. process-death-row will do the rest.
+
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.services.database.constants import UTC_NOW
-    >>> src_pub.scheduleddeletiondate = UTC_NOW
+    >>> login('mark@example.com')
+    >>> removeSecurityProxy(src_pub).scheduleddeletiondate = UTC_NOW
+    >>> ubuntu.getPendingPublicationPPAs().count()
+    0
+    >>> removeSecurityProxy(src_pub).scheduleddeletiondate = None
+    >>> ubuntu.getPendingPublicationPPAs().count()
+    1
+    >>> removeSecurityProxy(src_pub).dateremoved = UTC_NOW
     >>> ubuntu.getPendingPublicationPPAs().count()
     0
 
@@ -245,7 +244,10 @@ A binary pending publication also moves a PPA to the pending-publication
 state. In order to test this behaviour we will copy some binaries within
 Celso's PPA.
 
-    >>> cprov_bin = cprov.archive.getAllPublishedBinaries()[0]
+    >>> cprov_bin = factory.makeBinaryPackagePublishingHistory(
+    ...     archive=cprov.archive, status=PackagePublishingStatus.PUBLISHED)
+    >>> spr = cprov_bin.binarypackagerelease.build.source_package_release
+    >>> spr.publishings[0].setPublished()
     >>> pending_binaries = cprov_bin.copyTo(
     ...     warty, pocket_release, cprov.archive)
 
@@ -265,7 +267,7 @@ Publishing the binaries will exclude Celso's PPA from pending-
 publication results:
 
     >>> for pub in pending_binaries:
-    ...     pub.status = PackagePublishingStatus.PUBLISHED
+    ...     pub.setPublished()
 
     >>> ubuntu.getPendingPublicationPPAs().count()
     0
@@ -281,7 +283,13 @@ A binary deletion will also make Celso's PPA pending publication.
     True
 
     >>> login('mark@example.com')
-    >>> bin_pub.scheduleddeletiondate = UTC_NOW
+    >>> removeSecurityProxy(bin_pub).scheduleddeletiondate = UTC_NOW
+    >>> ubuntu.getPendingPublicationPPAs().count()
+    0
+    >>> removeSecurityProxy(bin_pub).scheduleddeletiondate = None
+    >>> ubuntu.getPendingPublicationPPAs().count()
+    1
+    >>> removeSecurityProxy(bin_pub).dateremoved = UTC_NOW
     >>> ubuntu.getPendingPublicationPPAs().count()
     0
 

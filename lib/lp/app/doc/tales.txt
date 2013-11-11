@@ -95,20 +95,17 @@ personal package archives (PPAs).
     >>> print test_tales("ppa/image:icon", ppa=mark.archive)
     <img ... src="/@@/ppa-icon" />
 
-Then distribution main archives (primary, partner and debug).
+Then distribution main archives (primary and partner).
 
     >>> from lp.registry.interfaces.distribution import (
     ...      IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> [primary, partner, debug] = ubuntu.all_distro_archives
+    >>> [primary, partner] = ubuntu.all_distro_archives
 
     >>> print test_tales("archive/image:icon", archive=primary)
     <img ... src="/@@/distribution" />
 
     >>> print test_tales("archive/image:icon", archive=partner)
-    <img ... src="/@@/distribution" />
-
-    >>> print test_tales("archive/image:icon", archive=debug)
     <img ... src="/@@/distribution" />
 
 And finally Copy archives.
@@ -160,8 +157,8 @@ them.
     ...     name='pppa', private=True, owner=owner)
 
     >>> print test_tales("ppa/fmt:link", ppa=private_ppa)
-    <a href="/~joe/+archive/pppa" class="sprite ppa-icon private">PPA named pppa
-    for Joe Smith</a>
+    <a href="/~joe/+archive/pppa" class="sprite ppa-icon private">PPA named
+    pppa for Joe Smith</a>
 
     >>> login(ANONYMOUS)
 
@@ -180,6 +177,30 @@ a subscription to the PPA.
     >>> print test_tales("ppa/fmt:reference", ppa=private_ppa)
     ppa:joe/pppa
 
+The same 'link' formatter works for distribution archives, with a
+different sprite.  The link target for main archives (primary and
+partner) is the distribution rather than the archive, as the archives
+would just redirect anyway.
+
+    >>> print test_tales("archive/fmt:link", archive=primary)
+    <a href="/ubuntu" class="sprite distribution">Primary Archive for Ubuntu
+    Linux</a>
+
+    >>> print test_tales("archive/fmt:link", archive=partner)
+    <a href="/ubuntu" class="sprite distribution">Partner Archive for Ubuntu
+    Linux</a>
+
+    >>> print test_tales("archive/fmt:link", archive=copy)
+    <a href="/ubuntu/+archive/rebuild" class="sprite distribution">Copy
+    archive rebuild for Mark Shuttleworth</a>
+
+The 'reference' formatter is meaningless for non-PPA archives.
+
+    >>> test_tales("archive/fmt:reference", archive=primary)
+    Traceback (most recent call last):
+    ...
+    NotImplementedError: No reference implementation for non-PPA archive ...
+
 We also have icons for builds which may have different dimensions.
 
     >>> login('admin@canonical.com')
@@ -197,15 +218,14 @@ The 'Needs building' build is 14x14:
 
 The 'building' build is 14x14:
 
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.buildmaster.enums import BuildStatus
-    >>> removeSecurityProxy(build).status = BuildStatus.BUILDING
+    >>> build.updateStatus(BuildStatus.BUILDING)
     >>> print test_tales("build/image:icon", build=build)
     <img width="14" height="14"...src="/@@/processing" />
 
 But the 'failed to build' build is 16x14:
 
-    >>> removeSecurityProxy(build).status = BuildStatus.FAILEDTOBUILD
+    >>> build.updateStatus(BuildStatus.FAILEDTOBUILD)
     >>> print test_tales("build/image:icon", build=build)
     <img width="16" height="14"...src="/@@/build-failed" />
 
@@ -266,7 +286,7 @@ To preserve newlines in text when displaying as HTML, use fmt:nl_to_br:
 
     >>> test_tales('foo/fmt:nl_to_br',
     ...             foo='icicle\nbicycle\ntricycle & troika')
-    'icicle<br />\nbicycle<br />\ntricycle &amp; troika'
+    u'icicle<br />\nbicycle<br />\ntricycle &amp; troika'
 
 To "<pre>" format a string, use fmt:nice_pre:
 
@@ -274,16 +294,16 @@ To "<pre>" format a string, use fmt:nice_pre:
     >>> pprint.pprint(textwrap.wrap(
     ...     test_tales('foo/fmt:nice_pre', foo='hello & goodbye')
     ...    ))
-    ['<pre class="wrap">hello &amp; goodbye</pre>']
+    [u'<pre class="wrap">hello &amp; goodbye</pre>']
 
 Add manual word breaks to long words in a string:
 
     >>> test_tales('foo/fmt:break-long-words', foo='short words')
-    'short words'
+    u'short words'
 
     >>> test_tales('foo/fmt:break-long-words',
     ...     foo='<http://launchpad.net/products/launchpad>')
-    '&lt;http:/<wbr />/launchpad.<wbr />...<wbr />launchpad&gt;'
+    u'&lt;http:/<wbr />/launchpad.<wbr />...<wbr />launchpad&gt;'
 
 To get a int with its thousands separated by a comma, use fmt:intcomma.
 
@@ -447,7 +467,7 @@ Person's displayname will be escaped; averting a XSS vulnerability.
     ...     "Sample Person<br/><script>alert('XSS')</script>")
     >>> test_tales("person/fmt:link", person=sample_person)
     u'<a href=".../~name12"...>Sample
-      Person&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
+      Person&lt;br/&gt;&lt;script&gt;alert(&#x27;XSS&#x27;)&lt;/script&gt;</a>'
 
 The fmt:link formatter takes an additional view_name component to extend
 the link:
@@ -527,11 +547,11 @@ title might be interpreted by the browser.
     >>> bug.title = "Opps<br/><script>alert('XSS')</script>"
     >>> test_tales("bug/fmt:link", bug=getUtility(IBugSet).get(1))
     u'<a href=".../bugs/1" ...>Bug #1:
-      Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
+      Opps&lt;br/&gt;&lt;script&gt;alert(&#x27;XSS&#x27;)&lt;/script&gt;</a>'
 
     >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
     u'<a href=".../firefox/+bug/1" ...>Bug #1:
-      Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
+      Opps&lt;br/&gt;&lt;script&gt;alert(&#x27;XSS&#x27;)&lt;/script&gt;</a>'
 
 
 Branch subscriptions
@@ -781,7 +801,7 @@ which help when hiding email addresses from users who are not logged in.
     external-title-link -->
       u'&lt;email address hidden&gt; bug tracker'
     aliases -->
-      [u'http://bugs.vikingsrool.no/', u'mailto:&lt;email address hidden&gt;']
+      [u'http://bugs.vikingsrool.no/', u'mailto:<email address hidden>']
 
     >>> login('test@canonical.com')
 
@@ -1019,10 +1039,10 @@ Escaping strings
 To escape a string you should use fmt:escape.
 
     >>> test_tales('foo/fmt:escape', foo='some value')
-    'some value'
+    u'some value'
 
     >>> test_tales('foo/fmt:escape', foo='some <br /> value')
-    'some &lt;br /&gt; value'
+    u'some &lt;br /&gt; value'
 
 
 CSS ids

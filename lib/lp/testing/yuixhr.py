@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Fixture code for YUITest + XHR integration testing."""
@@ -164,22 +164,6 @@ class YUITestFixtureControllerView(LaunchpadView):
     TEARDOWN = 'TEARDOWN'
     INDEX = 'INDEX'
 
-    yui_block_no_combo = dedent("""\
-        <script type="text/javascript"
-            src="/+icing/rev%(revno)s/build/launchpad.js"></script>
-
-        <script type="text/javascript">
-            YUI.GlobalConfig = {
-                fetchCSS: false,
-                timeout: 50,
-                ignore: [
-                    'yui2-yahoo', 'yui2-event', 'yui2-dom',
-                    'yui2-calendar','yui2-dom-event'
-                ]
-            }
-       </script>
-    """)
-
     yui_block_combo = dedent("""\
        <script type="text/javascript"
            src="/+yuitest/build/js/yui/yui/yui-min.js"></script>
@@ -203,32 +187,12 @@ class YUITestFixtureControllerView(LaunchpadView):
                         // comes from including lp/meta.js
                         modules: LP_MODULES,
                         fetchCSS: false
-                    },
-                    yui2: {
-                        combine: true,
-                        base: '/+yuitest/build/js/yui2/',
-                        fetchCSS: false,
-                        modules: {
-                            'yui2-yahoo': {
-                                path: 'yahoo/yahoo.js'
-                            },
-                            'yui2-event': {
-                                path: 'event/event.js'
-                            },
-                            'yui2-dom': {
-                                path: 'dom/dom.js'
-                            },
-                            'yui2-calendar': {
-                                path: 'calendar/calendar.js'
-                            },
-                            'yui2-dom-event': {
-                                path: 'yahoo-dom-event/yahoo-dom-event.js'
-                            }
-                        }
                     }
                 }
             }
         </script>
+        <script type="text/javascript"
+            src="/+yuitest/build/js/lp/app/testing/testrunner.js"></script>
     """)
 
     page_template = dedent("""\
@@ -237,12 +201,6 @@ class YUITestFixtureControllerView(LaunchpadView):
           <head>
             <title>Test</title>
             %(javascript_block)s
-            <script type="text/javascript">
-              // we need this to create a single YUI instance all events and
-              // code talks across. All instances of YUI().use should be
-              // based off of LPJS instead.
-              LPJS = new YUI();
-            </script>
             <link rel="stylesheet"
               href="/+yuitest/build/js/yui/console/assets/console-core.css"/>
             <link rel="stylesheet"
@@ -254,15 +212,15 @@ class YUITestFixtureControllerView(LaunchpadView):
           </head>
         <body class="yui3-skin-sam">
           <div id="log"></div>
+          <ul id="suites"><li>%(test_namespace)s</li></ul>
           <p>Want to re-run your test?</p>
           <ul>
             <li><a href="?">Reload test JS</a></li>
             <li><a href="?reload=1">Reload test JS and the associated
                                     Python fixtures</a></li>
           </ul>
-          <p>Don't forget to run <code>make jsbuild</code> and then do a
-             hard reload of this page if you change a file that is built
-             into launchpad.js!</p>
+          <p>Don't forget to run <code>make jsbuild</code> if you change a
+             comboloaded file.</p>
           <p>If you change Python code other than the fixtures, you must
              restart the server.  Sorry.</p>
         </body>
@@ -274,8 +232,6 @@ class YUITestFixtureControllerView(LaunchpadView):
         <html>
           <head>
           <title>YUI XHR Tests</title>
-          <script type="text/javascript"
-            src="/+icing/rev%(revno)s/build/launchpad.js"></script>
           <link rel="stylesheet"
             href="/+icing/yui/assets/skins/sam/skin.css"/>
           <link rel="stylesheet" href="/+icing/rev%(revno)s/combo.css"/>
@@ -433,6 +389,7 @@ class YUITestFixtureControllerView(LaunchpadView):
                 reload(module)
         return self.page_template % dict(
             test_module='/+yuitest/%s.js' % self.traversed_path,
+            test_namespace=self.traversed_path.replace('/', '.'),
             revno=revno,
             javascript_block=self.renderYUI())
 
@@ -487,12 +444,9 @@ class YUITestFixtureControllerView(LaunchpadView):
         to load launchpad.js, else we need launchpad.js for things to run.
 
         """
-        if self.request.features.getFlag('js.combo_loader.enabled'):
-            return self.yui_block_combo % dict(
-                revno=revno,
-                combo_url=self.combo_url)
-        else:
-            return self.yui_block_no_combo % dict(revno=revno)
+        return self.yui_block_combo % dict(
+            revno=revno,
+            combo_url=self.combo_url)
 
     def render(self):
         return getattr(self, 'render' + self.action)()

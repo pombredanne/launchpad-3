@@ -6,8 +6,14 @@
 __metaclass__ = type
 
 __all__ = [
+    'determine_binary_file_type',
+    'determine_source_file_type',
     'DpkgSourceError',
     'extract_dpkg_source',
+    'get_source_file_extension',
+    'parse_and_merge_file_lists',
+    'ParseMaintError',
+    'prefix_multi_line_string',
     're_taint_free',
     're_isadeb',
     're_issource',
@@ -18,15 +24,13 @@ __all__ = [
     're_valid_pkg_name',
     're_changes_file_name',
     're_extract_src_version',
-    'get_source_file_extension',
-    'determine_binary_file_type',
-    'determine_source_file_type',
-    'prefix_multi_line_string',
     'safe_fix_maintainer',
-    'ParseMaintError',
+    'UploadError',
+    'UploadWarning',
     ]
 
 
+from collections import defaultdict
 import email.Header
 import os
 import re
@@ -38,6 +42,14 @@ from lp.services.encoding import (
     guess as guess_encoding,
     )
 from lp.soyuz.enums import BinaryPackageFileType
+
+
+class UploadError(Exception):
+    """All upload errors are returned in this form."""
+
+
+class UploadWarning(Warning):
+    """All upload warnings are returned in this form."""
 
 
 class DpkgSourceError(Exception):
@@ -293,3 +305,85 @@ def extract_dpkg_source(dsc_filepath, target, vendor=None):
     if result != 0:
         dpkg_output = prefix_multi_line_string(output, "  ")
         raise DpkgSourceError(result=result, output=dpkg_output, command=args)
+
+
+def parse_file_list(s, field_name, count):
+    if s is None:
+        return None
+    processed = []
+    for line in s.strip().split('\n'):
+        split = line.strip().split()
+        if len(split) != count:
+            raise UploadError(
+                "Wrong number of fields in %s field line." % field_name)
+        processed.append(split)
+    return processed
+
+
+def merge_file_lists(files, checksums_sha1, checksums_sha256, changes=True):
+    """Merge Files, Checksums-Sha1 and Checksums-Sha256 fields.
+
+    Turns lists of (MD5, size, [extras, ...,] filename),
+    (SHA1, size, filename) and (SHA256, size, filename) into a list of
+    (filename, {algo: hash}, size, [extras, ...], filename).
+
+    Duplicate filenames, size conflicts, and files with missing hashes
+    will cause an UploadError.
+
+    'extras' is (section, priority) if changes=True, otherwise it is omitted.
+    """
+    # Preprocess the additional hashes, counting each (filename, size)
+    # that we see.
+    file_hashes = defaultdict(dict)
+    hash_files = defaultdict(lambda: defaultdict(int))
+    for (algo, checksums) in [
+            ('SHA1', checksums_sha1), ('SHA256', checksums_sha256)]:
+        if checksums is None:
+            continue
+        for hash, size, filename in checksums:
+            file_hashes[filename][algo] = hash
+            hash_files[algo][(filename, size)] += 1
+
+    # Produce a file list containing all of the present hashes, counting
+    # each filename and (filename, size) that we see. We'll throw away
+    # the complete list later if we discover that there are duplicates
+    # or mismatches with the Checksums-* fields.
+    complete_files = []
+    file_counter = defaultdict(int)
+    for attrs in files:
+        if changes:
+            md5, size, section, priority, filename = attrs
+        else:
+            md5, size, filename = attrs
+        file_hashes[filename]['MD5'] = md5
+        file_counter[filename] += 1
+        hash_files['MD5'][(filename, size)] += 1
+        if changes:
+            complete_files.append(
+                (filename, file_hashes[filename], size, section, priority))
+        else:
+            complete_files.append(
+                (filename, file_hashes[filename], size))
+
+    # Ensure that each filename was only listed in Files once.
+    if set(file_counter.itervalues()) - set([1]):
+        raise UploadError("Duplicate filenames in Files field.")
+
+    # Ensure that the Checksums-Sha1 and Checksums-Sha256 fields, if
+    # present, list the same filenames and sizes as the Files field.
+    for field, algo in [
+            ('Checksums-Sha1', 'SHA1'), ('Checksums-Sha256', 'SHA256')]:
+        if algo in hash_files and hash_files[algo] != hash_files['MD5']:
+            raise UploadError("Mismatch between %s and Files fields." % field)
+    return complete_files
+
+
+def parse_and_merge_file_lists(tag_dict, changes=True):
+    files_lines = parse_file_list(
+        tag_dict['Files'], 'Files', 5 if changes else 3)
+    sha1_lines = parse_file_list(
+        tag_dict.get('Checksums-Sha1'), 'Checksums-Sha1', 3)
+    sha256_lines = parse_file_list(
+        tag_dict.get('Checksums-Sha256'), 'Checksums-Sha256', 3)
+    return merge_file_lists(
+        files_lines, sha1_lines, sha256_lines, changes=changes)

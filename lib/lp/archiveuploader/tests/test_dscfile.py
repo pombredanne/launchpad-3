@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from collections import namedtuple
 import os
 
 from lp.archiveuploader.dscfile import (
@@ -13,12 +14,17 @@ from lp.archiveuploader.dscfile import (
     find_changelog,
     find_copyright,
     format_to_file_checker_map,
+    SignableTagFile,
     unpack_source,
     )
 from lp.archiveuploader.nascentuploadfile import UploadError
-from lp.archiveuploader.tests import datadir
+from lp.archiveuploader.tests import (
+    datadir,
+    getPolicy,
+    )
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.registry.model.person import Person
 from lp.services.log.logger import (
     BufferLogger,
     DevNullLogger,
@@ -28,7 +34,10 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.layers import LaunchpadZopelessLayer
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 ORIG_TARBALL = SourcePackageFileType.ORIG_TARBALL
@@ -114,6 +123,71 @@ class TestDscFile(TestCase):
             error.args[0], "debian/changelog file too large, 10MiB max")
 
 
+class FakeChangesFile:
+    architectures = ['source']
+
+
+class TestDSCFileWithDatabase(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_checkFiles_verifies_additional_hashes(self):
+        """Test that checkFiles detects SHA1 and SHA256 mismatches."""
+        policy = getPolicy(
+            name="sync", distro="ubuntu", distroseries="hoary")
+        path = datadir(os.path.join(
+            'suite', 'badhash_1.0-1_broken_dsc', 'badhash_1.0-1.dsc'))
+        dsc = DSCFile(
+            path, {}, 426, 'main/editors', 'priority',
+            'badhash', '1.0-1', FakeChangesFile(), policy, DevNullLogger())
+        errors = [e[0] for e in dsc.verify()]
+        self.assertEqual(
+            ['File badhash_1.0-1.tar.gz mentioned in the changes has a SHA256'
+             ' mismatch. a29ec2370df83193c3fb2cc9e1287dbfe9feba04108ccfa490bb'
+             'e20ea66f3d08 != aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+             'aaaaaaaaaaaaaaaaa',
+             'Files specified in DSC are broken or missing, skipping package '
+             'unpack verification.'],
+            errors)
+
+
+class TestSignableTagFile(TestCaseWithFactory):
+    """Test `SignableTagFile`, a helper mixin."""
+
+    layer = ZopelessDatabaseLayer
+
+    def makeSignableTagFile(self):
+        """Create a minimal `SignableTagFile` object."""
+        FakePolicy = namedtuple(
+            'FakePolicy',
+            ['pocket', 'distroseries', 'create_people'])
+        tagfile = SignableTagFile()
+        tagfile.logger = DevNullLogger()
+        tagfile.policy = FakePolicy(None, None, create_people=True)
+        tagfile._dict = {
+            'Source': 'arbitrary-source-package-name',
+            'Version': '1.0',
+            }
+        return tagfile
+
+    def test_parseAddress_finds_addressee(self):
+        tagfile = self.makeSignableTagFile()
+        email = self.factory.getUniqueEmailAddress()
+        person = self.factory.makePerson(email=email)
+        self.assertEqual(person, tagfile.parseAddress(email)['person'])
+
+    def test_parseAddress_creates_addressee_for_unknown_address(self):
+        unknown_email = self.factory.getUniqueEmailAddress()
+        results = self.makeSignableTagFile().parseAddress(unknown_email)
+        self.assertEqual(unknown_email, results['email'])
+        self.assertIsInstance(results['person'], Person)
+
+    def test_parseAddress_raises_UploadError_if_address_is_malformed(self):
+        self.assertRaises(
+            UploadError,
+            self.makeSignableTagFile().parseAddress, "invalid@bad-address")
+
+
 class TestDscFileLibrarian(TestCaseWithFactory):
     """Tests for DscFile that may use the Librarian."""
 
@@ -129,7 +203,7 @@ class TestDscFileLibrarian(TestCaseWithFactory):
         policy.distroseries = self.factory.makeDistroSeries()
         policy.archive = self.factory.makeArchive()
         policy.distro = policy.distroseries.distribution
-        return DSCFile(dsc_path, 'digest', 0, 'main/editors',
+        return DSCFile(dsc_path, {}, 0, 'main/editors',
             'priority', 'package', 'version', Changes, policy, logger)
 
     def test_ReadOnlyCWD(self):

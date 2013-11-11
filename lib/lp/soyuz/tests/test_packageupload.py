@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Build features."""
@@ -27,7 +27,7 @@ from lp.archiveuploader.tests import datadir
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.mail import stub
@@ -116,6 +116,8 @@ class PackageUploadTestCase(TestCaseWithFactory):
         upload.addSource(spr)
         self.assertEqual(spr.sourcepackagename.name, upload.package_name)
         self.assertEqual(spr.version, upload.package_version)
+        self.assertEqual(spr.name, upload.searchable_names)
+        self.assertContentEqual([spr.version], upload.searchable_versions)
 
     def test_publish_sets_packageupload(self):
         # Publishing a PackageUploadSource will pass itself to the source
@@ -306,14 +308,14 @@ class PackageUploadTestCase(TestCaseWithFactory):
         self.assertEqual("UNAPPROVED", upload_two.status.name)
 
         # Rejecting the second upload works.
-        upload_two.rejectFromQueue()
+        upload_two.rejectFromQueue(self.factory.makePerson())
         self.assertEqual("REJECTED", upload_two.status.name)
 
     def test_rejectFromQueue_source_sends_email(self):
         # Rejecting a source package sends an email to the uploader.
         self.test_publisher.prepareBreezyAutotest()
         upload, uploader = self.makeSourcePackageUpload()
-        upload.rejectFromQueue()
+        upload.rejectFromQueue(self.factory.makePerson())
         self.assertEqual(1, len(stub.test_emails))
         self.assertEmail([format_address_for_person(uploader)])
 
@@ -321,7 +323,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         # Rejecting a binary package sends an email to the uploader.
         self.test_publisher.prepareBreezyAutotest()
         upload, uploader = self.makeBuildPackageUpload()
-        upload.rejectFromQueue()
+        upload.rejectFromQueue(self.factory.makePerson())
         self.assertEqual(1, len(stub.test_emails))
         self.assertEmail([format_address_for_person(uploader)])
 
@@ -332,8 +334,20 @@ class PackageUploadTestCase(TestCaseWithFactory):
         upload, _ = self.makeSourcePackageUpload(
             pocket=PackagePublishingPocket.PROPOSED,
             section_name="translations")
-        upload.rejectFromQueue()
+        upload.rejectFromQueue(self.factory.makePerson())
         self.assertEqual(0, len(stub.test_emails))
+
+    def test_rejectFromQueue_source_with_reason(self):
+        # Rejecting a source package with a reason includes it in the email to
+        # the uploader.
+        self.test_publisher.prepareBreezyAutotest()
+        upload, uploader = self.makeSourcePackageUpload()
+        person = self.factory.makePerson()
+        upload.rejectFromQueue(user=person, comment='Because.')
+        self.assertEqual(1, len(stub.test_emails))
+        self.assertIn(
+            'Rejected:\nRejected by %s: Because.' % person.displayname,
+            stub.test_emails[0][-1])
 
 
 class TestPackageUploadPrivacy(TestCaseWithFactory):
@@ -443,7 +457,7 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
         # rejectFromQueue will reject the upload and fail the copy job.
         pu, pcj = self.makeUploadWithPackageCopyJob()
 
-        pu.rejectFromQueue()
+        pu.rejectFromQueue(self.factory.makePerson())
 
         self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
         self.assertEqual(JobStatus.FAILED, pcj.status)
@@ -459,9 +473,45 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
         upload, job = self.makeUploadWithPackageCopyJob()
         self.assertEqual(job.package_name, upload.package_name)
         self.assertEqual(job.package_version, upload.package_version)
+        self.assertEqual(job.package_name, upload.searchable_names)
+        self.assertContentEqual(
+            [job.package_version], upload.searchable_versions)
+
+    def test_searchables_for_builds(self):
+        distroseries = self.factory.makeDistroSeries()
+        upload = self.factory.makeBuildPackageUpload(distroseries)
+        build = self.factory.makeBinaryPackageBuild()
+        self.factory.makeBinaryPackageRelease(build=build)
+        upload.addBuild(build)
+        name_array = [
+            b.build.binarypackages[0].name for b in upload.builds]
+        name_array.extend(
+            [b.build.source_package_release.name for b in upload.builds])
+        names = ' '.join(sorted(name_array))
+        self.assertEqual(names, upload.searchable_names)
+        self.assertContentEqual(
+            [b.build.binarypackages[0].version for b in upload.builds],
+            upload.searchable_versions)
+
+    def test_searchables_for_builds_duplication(self):
+        distroseries = self.factory.makeDistroSeries()
+        spr = self.factory.makeSourcePackageRelease()
+        bpn = self.factory.makeBinaryPackageName(name=spr.name)
+        binary = self.factory.makeBuildPackageUpload(
+            distroseries=distroseries, binarypackagename=bpn,
+            source_package_release=spr)
+        self.assertEqual(spr.name, binary.searchable_names)
+
+    def test_searchables_for_custom(self):
+        distroseries = self.factory.makeDistroSeries()
+        upload = self.factory.makeCustomPackageUpload(distroseries)
+        self.assertEqual(
+            upload.searchable_names,
+            upload.customfiles[0].libraryfilealias.filename)
+        self.assertEqual([], upload.searchable_versions)
 
     def test_displayarchs_for_copy_job_is_sync(self):
-        # For copy jobs, displayarchs is "source."
+        # For copy jobs, displayarchs is "sync."
         upload, job = self.makeUploadWithPackageCopyJob()
         self.assertEqual('sync', upload.displayarchs)
 
@@ -494,81 +544,75 @@ class TestPackageUploadSet(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
+    def setUp(self):
+        super(TestPackageUploadSet, self).setUp()
+        self.upload_set = getUtility(IPackageUploadSet)
+
     def test_PackageUploadSet_implements_IPackageUploadSet(self):
-        upload_set = getUtility(IPackageUploadSet)
-        self.assertThat(upload_set, Provides(IPackageUploadSet))
+        self.assertThat(self.upload_set, Provides(IPackageUploadSet))
 
     def test_getAll_returns_source_upload(self):
         distroseries = self.factory.makeDistroSeries()
         upload = self.factory.makeSourcePackageUpload(distroseries)
-        upload_set = getUtility(IPackageUploadSet)
-        self.assertContentEqual([upload], upload_set.getAll(distroseries))
+        self.assertContentEqual([upload], self.upload_set.getAll(distroseries))
 
     def test_getAll_returns_build_upload(self):
         distroseries = self.factory.makeDistroSeries()
         upload = self.factory.makeBuildPackageUpload(distroseries)
-        upload_set = getUtility(IPackageUploadSet)
-        self.assertContentEqual([upload], upload_set.getAll(distroseries))
+        self.assertContentEqual([upload], self.upload_set.getAll(distroseries))
 
     def test_getAll_returns_custom_upload(self):
         distroseries = self.factory.makeDistroSeries()
         upload = self.factory.makeCustomPackageUpload(distroseries)
-        upload_set = getUtility(IPackageUploadSet)
-        self.assertContentEqual([upload], upload_set.getAll(distroseries))
+        self.assertContentEqual([upload], self.upload_set.getAll(distroseries))
 
     def test_getAll_returns_copy_job_upload(self):
         distroseries = self.factory.makeDistroSeries()
         upload = self.factory.makeCopyJobPackageUpload(distroseries)
-        upload_set = getUtility(IPackageUploadSet)
-        self.assertContentEqual([upload], upload_set.getAll(distroseries))
+        self.assertContentEqual([upload], self.upload_set.getAll(distroseries))
 
     def test_getAll_filters_by_distroseries(self):
         distroseries = self.factory.makeDistroSeries()
         self.factory.makeSourcePackageUpload(distroseries)
         other_series = self.factory.makeDistroSeries()
-        upload_set = getUtility(IPackageUploadSet)
-        self.assertContentEqual([], upload_set.getAll(other_series))
+        self.assertContentEqual([], self.upload_set.getAll(other_series))
 
     def test_getAll_matches_created_since_date(self):
         distroseries = self.factory.makeDistroSeries()
         upload = self.factory.makeSourcePackageUpload(distroseries)
         yesterday = upload.date_created - timedelta(1)
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
             [upload],
-            upload_set.getAll(distroseries, created_since_date=yesterday))
+            self.upload_set.getAll(distroseries, created_since_date=yesterday))
 
     def test_getAll_filters_by_created_since_date(self):
         distroseries = self.factory.makeDistroSeries()
         upload = self.factory.makeSourcePackageUpload(distroseries)
         tomorrow = upload.date_created + timedelta(1)
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [], upload_set.getAll(distroseries, created_since_date=tomorrow))
+            [],
+            self.upload_set.getAll(distroseries, created_since_date=tomorrow))
 
     def test_getAll_matches_status(self):
         distroseries = self.factory.makeDistroSeries()
         upload = self.factory.makeSourcePackageUpload(distroseries)
         status = upload.status
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [upload], upload_set.getAll(distroseries, status=status))
+            [upload], self.upload_set.getAll(distroseries, status=status))
 
     def test_getAll_filters_by_status(self):
         distroseries = self.factory.makeDistroSeries()
         self.factory.makeSourcePackageUpload(distroseries)
         status = PackageUploadStatus.DONE
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [], upload_set.getAll(distroseries, status=status))
+            [], self.upload_set.getAll(distroseries, status=status))
 
     def test_getAll_matches_pocket(self):
         distroseries = self.factory.makeDistroSeries()
         upload = self.factory.makeSourcePackageUpload(distroseries)
         pocket = upload.pocket
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [upload], upload_set.getAll(distroseries, pocket=pocket))
+            [upload], self.upload_set.getAll(distroseries, pocket=pocket))
 
     def test_getAll_filters_by_pocket(self):
         def find_different_pocket_than(pocket):
@@ -579,19 +623,17 @@ class TestPackageUploadSet(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         upload = self.factory.makeSourcePackageUpload(distroseries)
         pocket = find_different_pocket_than(upload.pocket)
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [], upload_set.getAll(distroseries, pocket=pocket))
+            [], self.upload_set.getAll(distroseries, pocket=pocket))
 
     def test_getAll_matches_custom_type(self):
         distroseries = self.factory.makeDistroSeries()
         custom_type = PackageUploadCustomFormat.DDTP_TARBALL
         upload = self.factory.makeCustomPackageUpload(
             distroseries, custom_type=custom_type)
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
             [upload],
-            upload_set.getAll(distroseries, custom_type=custom_type))
+            self.upload_set.getAll(distroseries, custom_type=custom_type))
 
     def test_getAll_filters_by_custom_type(self):
         distroseries = self.factory.makeDistroSeries()
@@ -599,78 +641,69 @@ class TestPackageUploadSet(TestCaseWithFactory):
         other_type = PackageUploadCustomFormat.ROSETTA_TRANSLATIONS
         self.factory.makeCustomPackageUpload(
             distroseries, custom_type=one_type)
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [], upload_set.getAll(distroseries, custom_type=other_type))
+            [], self.upload_set.getAll(distroseries, custom_type=other_type))
 
     def test_getAll_matches_source_upload_by_package_name(self):
         distroseries = self.factory.makeDistroSeries()
         spn = self.factory.makeSourcePackageName()
         upload = self.factory.makeSourcePackageUpload(
             distroseries, sourcepackagename=spn)
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [upload], upload_set.getAll(distroseries, name=spn.name))
+            [upload], self.upload_set.getAll(distroseries, name=spn.name))
 
     def test_getAll_filters_source_upload_by_package_name(self):
         distroseries = self.factory.makeDistroSeries()
         self.factory.makeSourcePackageUpload(distroseries)
         other_name = self.factory.makeSourcePackageName().name
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [], upload_set.getAll(distroseries, name=other_name))
+            [], self.upload_set.getAll(distroseries, name=other_name))
 
     def test_getAll_matches_build_upload_by_package_name(self):
         distroseries = self.factory.makeDistroSeries()
         bpn = self.factory.makeBinaryPackageName()
         upload = self.factory.makeBuildPackageUpload(
             distroseries, binarypackagename=bpn)
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [upload], upload_set.getAll(distroseries, name=bpn.name))
+            [upload], self.upload_set.getAll(distroseries, name=bpn.name))
 
     def test_getAll_filters_build_upload_by_package_name(self):
         distroseries = self.factory.makeDistroSeries()
         self.factory.makeBuildPackageUpload(distroseries)
         other_name = self.factory.makeBinaryPackageName().name
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [], upload_set.getAll(distroseries, name=other_name))
+            [], self.upload_set.getAll(distroseries, name=other_name))
 
     def test_getAll_matches_custom_upload_by_file_name(self):
         distroseries = self.factory.makeDistroSeries()
         filename = self.factory.getUniqueUnicode()
         upload = self.factory.makeCustomPackageUpload(
             distroseries, filename=filename)
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [upload], upload_set.getAll(distroseries, name=filename))
+            [upload], self.upload_set.getAll(distroseries, name=filename))
 
     def test_getAll_filters_custom_upload_by_file_name(self):
         distroseries = self.factory.makeDistroSeries()
         filename = self.factory.getUniqueString()
         self.factory.makeCustomPackageUpload(distroseries, filename=filename)
         other_name = self.factory.getUniqueUnicode()
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [], upload_set.getAll(distroseries, name=other_name))
+            [], self.upload_set.getAll(distroseries, name=other_name))
 
     def test_getAll_matches_copy_job_upload_by_package_name(self):
         distroseries = self.factory.makeDistroSeries()
         spn = self.factory.makeSourcePackageName()
         upload = self.factory.makeCopyJobPackageUpload(
             distroseries, sourcepackagename=spn)
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [upload], upload_set.getAll(distroseries, name=spn.name))
+            [upload], self.upload_set.getAll(distroseries, name=spn.name))
 
     def test_getAll_filters_copy_job_upload_by_package_name(self):
         distroseries = self.factory.makeDistroSeries()
         self.factory.makeCopyJobPackageUpload(distroseries)
         other_name = self.factory.makeSourcePackageName().name
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [], upload_set.getAll(distroseries, name=other_name))
+            [], self.upload_set.getAll(distroseries, name=other_name))
 
     def test_getAll_without_exact_match_matches_substring_of_name(self):
         distroseries = self.factory.makeDistroSeries()
@@ -678,19 +711,18 @@ class TestPackageUploadSet(TestCaseWithFactory):
         upload = self.factory.makeSourcePackageUpload(
             distroseries, sourcepackagename=spn)
         partial_name = spn.name[:-1]
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [upload], upload_set.getAll(distroseries, name=partial_name))
+            [upload], self.upload_set.getAll(distroseries, name=partial_name))
 
     def test_getAll_with_exact_match_matches_exact_name(self):
         distroseries = self.factory.makeDistroSeries()
         spn = self.factory.makeSourcePackageName()
         upload = self.factory.makeSourcePackageUpload(
             distroseries, sourcepackagename=spn)
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
             [upload],
-            upload_set.getAll(distroseries, name=spn.name, exact_match=True))
+            self.upload_set.getAll(
+                distroseries, name=spn.name, exact_match=True))
 
     def test_getAll_with_exact_match_does_not_match_substring_of_name(self):
         distroseries = self.factory.makeDistroSeries()
@@ -698,100 +730,80 @@ class TestPackageUploadSet(TestCaseWithFactory):
         self.factory.makeSourcePackageUpload(
             distroseries, sourcepackagename=spn)
         partial_name = spn.name[:-1]
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
             [],
-            upload_set.getAll(
+            self.upload_set.getAll(
                 distroseries, name=partial_name, exact_match=True))
 
     def test_getAll_without_exact_match_escapes_name(self):
         distroseries = self.factory.makeDistroSeries()
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [], upload_set.getAll(distroseries, name=u"'"))
+            [], self.upload_set.getAll(distroseries, name=u"'"))
 
     def test_getAll_with_exact_match_escapes_name(self):
         distroseries = self.factory.makeDistroSeries()
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [], upload_set.getAll(distroseries, name=u"'", exact_match=True))
+            [], self.upload_set.getAll(
+                distroseries, name=u"'", exact_match=True))
 
     def test_getAll_matches_source_upload_by_version(self):
         distroseries = self.factory.makeDistroSeries()
         upload = self.factory.makeSourcePackageUpload(distroseries)
         version = upload.displayversion
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [upload], upload_set.getAll(distroseries, version=version))
+            [upload], self.upload_set.getAll(distroseries, version=version))
 
     def test_getAll_filters_source_upload_by_version(self):
         distroseries = self.factory.makeDistroSeries()
         self.factory.makeSourcePackageUpload(distroseries)
         other_version = self.factory.getUniqueUnicode()
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [], upload_set.getAll(distroseries, version=other_version))
+            [], self.upload_set.getAll(distroseries, version=other_version))
 
     def test_getAll_matches_build_upload_by_version(self):
         distroseries = self.factory.makeDistroSeries()
         upload = self.factory.makeBuildPackageUpload(distroseries)
         version = upload.displayversion
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [upload], upload_set.getAll(distroseries, version=version))
+            [upload], self.upload_set.getAll(distroseries, version=version))
 
     def test_getAll_filters_build_upload_by_version(self):
         distroseries = self.factory.makeDistroSeries()
         other_version = self.factory.getUniqueUnicode()
         self.factory.makeBuildPackageUpload(distroseries)
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [], upload_set.getAll(distroseries, version=other_version))
+            [], self.upload_set.getAll(distroseries, version=other_version))
 
     def test_getAll_version_filter_ignores_custom_uploads(self):
         distroseries = self.factory.makeDistroSeries()
         other_version = self.factory.getUniqueUnicode()
         self.factory.makeCustomPackageUpload(distroseries)
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [], upload_set.getAll(distroseries, version=other_version))
+            [], self.upload_set.getAll(distroseries, version=other_version))
 
-    def test_getAll_version_filter_ignores_copy_job_uploads(self):
-        # Version match for package copy jobs is not implemented at the
-        # moment.
+    def test_getAll_version_filter_finds_copy_job_uploads(self):
         distroseries = self.factory.makeDistroSeries()
         upload = self.factory.makeCopyJobPackageUpload(distroseries)
         version = upload.package_copy_job.package_version
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
-            [], upload_set.getAll(distroseries, version=version))
-
-    def test_getAll_without_exact_match_matches_substring_of_version(self):
-        distroseries = self.factory.makeDistroSeries()
-        upload = self.factory.makeSourcePackageUpload(distroseries)
-        version = upload.displayversion[1:-1]
-        upload_set = getUtility(IPackageUploadSet)
-        self.assertContentEqual(
-            [upload], upload_set.getAll(distroseries, version=version))
+            [upload], self.upload_set.getAll(distroseries, version=version))
 
     def test_getAll_with_exact_match_matches_exact_version(self):
         distroseries = self.factory.makeDistroSeries()
         upload = self.factory.makeSourcePackageUpload(distroseries)
         version = upload.displayversion
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
             [upload],
-            upload_set.getAll(
+            self.upload_set.getAll(
                 distroseries, version=version, exact_match=True))
 
     def test_getAll_w_exact_match_does_not_match_substring_of_version(self):
         distroseries = self.factory.makeDistroSeries()
         upload = self.factory.makeSourcePackageUpload(distroseries)
         version = upload.displayversion[1:-1]
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
             [],
-            upload_set.getAll(
+            self.upload_set.getAll(
                 distroseries, version=version, exact_match=True))
 
     def test_getAll_can_combine_version_and_name(self):
@@ -799,10 +811,9 @@ class TestPackageUploadSet(TestCaseWithFactory):
         spn = self.factory.makeSourcePackageName()
         upload = self.factory.makeSourcePackageUpload(
             distroseries, sourcepackagename=spn)
-        upload_set = getUtility(IPackageUploadSet)
         self.assertContentEqual(
             [upload],
-            upload_set.getAll(
+            self.upload_set.getAll(
                 distroseries, name=spn.name, version=upload.displayversion))
 
     def test_getAll_orders_in_reverse_historical_order(self):
@@ -845,7 +856,7 @@ class TestPackageUploadSet(TestCaseWithFactory):
         # If the PackageUpload has no changesfile, we can still reject it.
         pu = self.factory.makePackageUpload()
         pu.changesfile = None
-        pu.rejectFromQueue()
+        pu.rejectFromQueue(self.factory.makePerson())
         self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
 
 
@@ -900,6 +911,13 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
                 filename = "%s_%s.%s" % (spr.name, spr.version, extension)
                 lfa = self.factory.makeLibraryFileAlias(filename=filename)
                 spr.addFile(lfa)
+        transaction.commit()
+        return upload, self.load(upload, person)
+
+    def makeCopyJobPackageUpload(self, person, **kwargs):
+        with person_logged_in(person):
+            upload = self.factory.makeCopyJobPackageUpload(
+                distroseries=self.distroseries, **kwargs)
         transaction.commit()
         return upload, self.load(upload, person)
 
@@ -1293,3 +1311,34 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
             "customformat": "raw-translations",
             }
         self.assertEqual(expected_custom, ws_binaries[-1])
+
+    def test_copy_info(self):
+        # API clients can inspect properties of copies, including the source
+        # archive.
+        person = self.makeQueueAdmin([self.universe])
+        archive = self.factory.makeArchive()
+        upload, ws_upload = self.makeCopyJobPackageUpload(
+            person, sourcepackagename="hello", source_archive=archive)
+
+        self.assertFalse(ws_upload.contains_source)
+        self.assertFalse(ws_upload.contains_build)
+        self.assertTrue(ws_upload.contains_copy)
+        self.assertEqual("hello", ws_upload.display_name)
+        self.assertEqual("sync", ws_upload.display_arches)
+        self.assertEqual("hello", ws_upload.package_name)
+        with person_logged_in(person):
+            archive_url = api_url(archive)
+        self.assertEndsWith(ws_upload.copy_source_archive_link, archive_url)
+
+    def test_getPackageUploads_query_count(self):
+        person = self.makeQueueAdmin([self.universe])
+        uploads = []
+        for i in range(5):
+            upload, _ = self.makeBinaryPackageUpload(
+                person, component=self.universe)
+            uploads.append(upload)
+        ws_distroseries = self.load(self.distroseries, person)
+        IStore(uploads[0].__class__).invalidate()
+        with StormStatementRecorder() as recorder:
+            ws_distroseries.getPackageUploads()
+        self.assertThat(recorder, HasQueryCount(Equals(32)))

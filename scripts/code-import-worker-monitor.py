@@ -15,7 +15,6 @@ This script is usually run by the code-import-dispatcher cronscript.
 __metaclass__ = type
 
 
-# pylint: disable-msg=W0403
 import _pythonpath
 
 import os

@@ -10,7 +10,6 @@ __all__ = [
     'SourcePackageReleaseView',
     ]
 
-import cgi
 import re
 
 from lp.app.browser.stringformatter import (
@@ -18,6 +17,7 @@ from lp.app.browser.stringformatter import (
     linkify_bug_numbers,
     )
 from lp.services.webapp import LaunchpadView
+from lp.services.webapp.escaping import html_escape
 
 
 def obfuscate_email(user, text):
@@ -55,7 +55,7 @@ def linkify_changelog(user, changelog, preloaded_person_data=None):
     # CGI Escape the changelog here before further replacements
     # insert HTML. Email obfuscation does not insert HTML but can insert
     # characters that must be escaped.
-    changelog = cgi.escape(changelog)
+    changelog = html_escape(changelog)
 
     # Any email addresses remaining in the changelog were not obfuscated,
     # so we linkify them here.

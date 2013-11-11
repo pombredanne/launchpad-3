@@ -33,9 +33,10 @@ If an invalid tag name is entered, an error message will be displayed.
 
     >>> for tag in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print tag.renderContents()
-    '!!invalid!!' isn't a valid tag name. Tags must start with a
-    letter or number and be lowercase. The characters "+", "-" and "."
-    are also allowed after the first character.
+    &#x27;!!invalid!!&#x27; isn&#x27;t a valid tag name. Tags must start
+    with a letter or number and be lowercase. The characters
+    &quot;+&quot;, &quot;-&quot; and &quot;.&quot; are also allowed
+    after the first character.
 
 
 == Cross-Site Scripting, or XSS ==
@@ -67,7 +68,7 @@ The error message is also valid and correctly escaped:
     >>> for tag in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print tag.prettify()
     <div class="message">
-    '&lt;script&gt;alert("cheezburger");&lt;/script&gt;' isn't ...
+    &#x27;&lt;script&gt;alert(&quot;cheezburger&quot;);&lt;/script&gt;&#x27; isn&#x27;t ...
     </div>
 
 The script we tried to inject is not present, unescaped, anywhere in

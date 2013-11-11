@@ -22,7 +22,11 @@ from lp.app.browser.stringformatter import (
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import ILaunchBag
-from lp.testing import TestCase
+from lp.services.webapp.publisher import canonical_url
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.pages import find_tags_by_class
 
@@ -160,7 +164,9 @@ class TestLinkifyingBugs(TestCase):
             linkify_bug_numbers(text))
 
 
-class TestLinkifyingProtocols(TestCase):
+class TestLinkifyingProtocols(TestCaseWithFactory):
+    
+    layer = DatabaseFunctionalLayer
 
     def test_normal_set(self):
         test_strings = [
@@ -222,12 +228,12 @@ class TestLinkifyingProtocols(TestCase):
     def test_protocol_alone_does_not_link(self):
         test_string = "This doesn't link: apt:"
         html = FormattersAPI(test_string).text_to_html()
-        expected_html = "<p>This doesn't link: apt:</p>"
+        expected_html = "<p>This doesn&#x27;t link: apt:</p>"
         self.assertEqual(expected_html, html)
 
         test_string = "This doesn't link: http://"
         html = FormattersAPI(test_string).text_to_html()
-        expected_html = "<p>This doesn't link: http://</p>"
+        expected_html = "<p>This doesn&#x27;t link: http://</p>"
         self.assertEqual(expected_html, html)
 
     def test_apt_is_linked(self):
@@ -252,7 +258,7 @@ class TestLinkifyingProtocols(TestCase):
         test_string = "This doesn't become a link: file://some/file.txt"
         html = FormattersAPI(test_string).text_to_html()
         expected_html = (
-            "<p>This doesn't become a link: "
+            "<p>This doesn&#x27;t become a link: "
             "file://<wbr />some/file.<wbr />txt</p>")
         self.assertEqual(expected_html, html)
 
@@ -260,15 +266,27 @@ class TestLinkifyingProtocols(TestCase):
         test_string = "This doesn't become a link: http://www.example.com/"
         html = FormattersAPI(test_string).text_to_html(linkify_text=False)
         expected_html = (
-            "<p>This doesn't become a link: http://www.example.com/</p>")
+            "<p>This doesn&#x27;t become a link: http://www.example.com/</p>")
         self.assertEqual(expected_html, html)
 
     def test_no_link_html_code_with_linkify_text_false(self):
         test_string = '<a href="http://example.com/">http://example.com/</a>'
         html = FormattersAPI(test_string).text_to_html(linkify_text=False)
         expected_html = (
-            '<p>&lt;a href="http://example.com/"&gt;'
+            '<p>&lt;a href=&quot;http://example.com/&quot;&gt;'
             'http://example.com/&lt;/a&gt;</p>')
+        self.assertEqual(expected_html, html)
+
+    def test_double_email_in_linkify_email(self):
+        person = self.factory.makePerson(email='foo@example.org')
+        test_string = (
+            ' * Foo. &lt;foo@example.org&gt;\n * Bar &lt;foo@example.org&gt;')
+        html = FormattersAPI(test_string).linkify_email()
+        url = canonical_url(person)
+        expected_html = (
+            ' * Foo. &lt;<a href="%s" class="sprite person">foo@example.org'
+            '</a>&gt;\n * Bar &lt;<a href="%s" class="sprite person">'
+            'foo@example.org</a>&gt;' % (url, url))
         self.assertEqual(expected_html, html)
 
 

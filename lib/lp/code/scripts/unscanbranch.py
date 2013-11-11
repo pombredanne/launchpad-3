@@ -13,7 +13,7 @@ from zope.component import getUtility
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.model.branchjob import BranchScanJob
 from lp.code.model.branchrevision import BranchRevision
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.scripts.base import LaunchpadScript
 
 

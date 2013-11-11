@@ -1,7 +1,5 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-# pylint: disable-msg=F0401
-
 """Browser code for PO templates."""
 
 __metaclass__ = type
@@ -25,7 +23,6 @@ __all__ = [
     'BaseSeriesTemplatesView',
     ]
 
-import cgi
 import datetime
 import operator
 import os.path
@@ -65,6 +62,7 @@ from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.helpers import is_tar_filename
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -76,7 +74,10 @@ from lp.services.webapp import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.services.webapp.escaping import structured
+from lp.services.webapp.escaping import (
+    html_escape,
+    structured,
+    )
 from lp.services.webapp.interfaces import (
     ICanonicalUrlData,
     ILaunchBag,
@@ -309,7 +310,7 @@ class POTemplateView(LaunchpadView,
         return (translation_group is not None and
                 translation_group.translation_guide_url is not None)
 
-    @property
+    @cachedproperty
     def related_templates_by_source(self):
         by_source = list(
             self.context.relatives_by_source[:self.SHOW_RELATED_TEMPLATES])
@@ -492,9 +493,9 @@ class POTemplateUploadView(LaunchpadView, TranslationsMixin):
                     'be imported, %s will be reviewed manually by an '
                     'administrator in the coming few days.  You can track '
                     'your upload\'s status in the '
-                    '<a href="%s/+imports">Translation Import Queue</a>' % (
-                        num, plural_s, plural_s, itthey,
-                        canonical_url(self.context.translationtarget))))
+                    '<a href="%s/+imports">Translation Import Queue</a>',
+                    num, plural_s, plural_s, itthey,
+                    canonical_url(self.context.translationtarget)))
                 if len(conflicts) > 0:
                     if len(conflicts) == 1:
                         warning = (
@@ -509,10 +510,12 @@ class POTemplateUploadView(LaunchpadView, TranslationsMixin):
                             "%s files could not be uploaded because their "
                             "names matched multiple existing uploads, for "
                             "different templates.", len(conflicts))
+                        conflict_str = structured(
+                            "</li><li>".join(["%s" % len(conflicts)]),
+                            *conflicts)
                         ul_conflicts = structured(
                             "The conflicting file names were:<br /> "
-                            "<ul><li>%s</li></ul>" % (
-                            "</li><li>".join(map(cgi.escape, conflicts))))
+                            "<ul><li>%s</li></ul>", conflict_str)
                     self.request.response.addWarningNotification(
                         structured(
                         "%s  This makes it "
@@ -981,7 +984,7 @@ class BaseSeriesTemplatesView(LaunchpadView):
     def _renderSourcePackage(self, template):
         """Render the `SourcePackageName` for `template`."""
         if self.is_distroseries:
-            return cgi.escape(template.sourcepackagename.name)
+            return html_escape(template.sourcepackagename.name)
         else:
             return None
 
@@ -992,7 +995,7 @@ class BaseSeriesTemplatesView(LaunchpadView):
         :param url: The cached URL for `template`.
         :return: HTML for a link to `template`.
         """
-        text = '<a href="%s">%s</a>' % (url, cgi.escape(template.name))
+        text = '<a href="%s">%s</a>' % (url, html_escape(template.name))
         if not template.iscurrent:
             text += ' (inactive)'
         return text
@@ -1009,7 +1012,7 @@ class BaseSeriesTemplatesView(LaunchpadView):
         if sourcepackagename is None:
             sourcepackagename = template.sourcepackagename
         # Build the edit link.
-        escaped_source = cgi.escape(sourcepackagename.name)
+        escaped_source = html_escape(sourcepackagename.name)
         source_url = '+source/%s' % escaped_source
         details_url = source_url + '/+sharing-details'
         edit_link = (
@@ -1018,8 +1021,8 @@ class BaseSeriesTemplatesView(LaunchpadView):
 
         # If all the conditions are met for sharing...
         if packaging and upstream and other_template is not None:
-            escaped_series = cgi.escape(productseries.name)
-            escaped_template = cgi.escape(template.name)
+            escaped_series = html_escape(productseries.name)
+            escaped_template = html_escape(template.name)
             pot_url = ('/%s/%s/+pots/%s' %
                 (escaped_source, escaped_series, escaped_template))
             return (edit_link + '<a href="%s">%s/%s</a>'

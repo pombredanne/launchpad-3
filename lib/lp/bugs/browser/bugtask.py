@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTask-related browser views."""
@@ -76,10 +76,7 @@ from zope import (
     component,
     formlib,
     )
-from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser.itemswidgets import RadioWidget
-from zope.app.form.interfaces import InputErrors
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.authentication.interfaces import IUnauthenticatedPrincipal
 from zope.component import (
     ComponentLookupError,
     getAdapter,
@@ -88,6 +85,9 @@ from zope.component import (
     queryMultiAdapter,
     )
 from zope.event import notify
+from zope.formlib.interfaces import InputErrors
+from zope.formlib.itemswidgets import RadioWidget
+from zope.formlib.widget import CustomWidgetFactory
 from zope.interface import (
     implementer,
     implements,
@@ -277,7 +277,10 @@ from lp.services.webapp.authorization import (
     )
 from lp.services.webapp.batching import TableBatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
-from lp.services.webapp.escaping import structured
+from lp.services.webapp.escaping import (
+    html_escape,
+    structured,
+    )
 from lp.services.webapp.interfaces import ILaunchBag
 
 
@@ -306,12 +309,13 @@ def bugtarget_renderer(context, field, request):
     """Render a bugtarget as a link."""
 
     def render(value):
-        html = """<span>
-          <a href="%(href)s" class="%(class)s">%(displayname)s</a>
-        </span>""" % {
-            'href': canonical_url(context.target),
-            'class': ObjectImageDisplayAPI(context.target).sprite_css(),
-            'displayname': cgi.escape(context.bugtargetdisplayname)}
+        html = structured(
+            """<span>
+            <a href="%(href)s" class="%(css_class)s">%(displayname)s</a>
+            </span>""",
+            href=canonical_url(context.target),
+            css_class=ObjectImageDisplayAPI(context.target).sprite_css(),
+            displayname=context.bugtargetdisplayname).escapedtext
         return html
     return render
 
@@ -585,25 +589,18 @@ class BugTaskNavigation(Navigation):
 
     @stepthrough('comments')
     def traverse_comments(self, name):
-        """Traverse to a comment by id."""
+        """Traverse to a comment by index."""
         if not name.isdigit():
             return None
         index = int(name)
-        comments = get_comments_for_bugtask(self.context)
-        # I couldn't find a way of using index to restrict the queries
-        # in get_comments_for_bugtask in a way that wasn't horrible, and
-        # it wouldn't really save us a lot in terms of database time, so
-        # I have chosed to use this simple solution for now.
-        #   -- kiko, 2006-07-11
-        try:
-            comment = comments[index]
-            if (comment.visible
-                or check_permission('launchpad.Admin', self.context)):
-                return comment
-            else:
-                return None
-        except IndexError:
-            return None
+        # Ask the DB to slice out just the comment that we need.
+        comments = get_comments_for_bugtask(
+            self.context, slice_info=[slice(index, index + 1)])
+        if (comments and
+            (comments[0].visible
+             or check_permission('launchpad.Admin', self.context))):
+            return comments[0]
+        return None
 
     @stepthrough('nominations')
     def traverse_nominations(self, nomination_id):
@@ -2279,8 +2276,6 @@ class BugListingBatchNavigator(TableBatchNavigator):
 
     def __init__(self, tasks, request, columns_to_show, size,
                  target_context=None):
-        # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem
-        # rules to a mixin so that MilestoneView and others can use it.
         self.request = request
         self.target_context = target_context
         self.user = getUtility(ILaunchBag).user
@@ -3147,74 +3142,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             return 'Project, distribution, package, or series subscriber'
         else:
             return None
-
-    def getSortLink(self, colname):
-        """Return a link that can be used to sort results by colname."""
-        form = self.request.form
-        sortlink = ""
-        if form.get("search") is None:
-            # There is no search criteria to preserve.
-            sortlink = "%s?search=Search&orderby=%s" % (
-                str(self.request.URL), colname)
-            return sortlink
-
-        # XXX: kiko 2005-08-23:
-        # Is it not possible to get the exact request supplied and
-        # just sneak a "-" in front of the orderby argument, if it
-        # exists? If so, the code below could be a lot simpler.
-
-        # There is search criteria to preserve.
-        sortlink = str(self.request.URL) + "?"
-        for fieldname in form:
-            fieldvalue = form.get(fieldname)
-            if isinstance(fieldvalue, (list, tuple)):
-                fieldvalue = [value.encode("utf-8") for value in fieldvalue]
-            else:
-                fieldvalue = fieldvalue.encode("utf-8")
-
-            if fieldname != "orderby":
-                sortlink += "%s&" % urllib.urlencode(
-                    {fieldname: fieldvalue}, doseq=True)
-
-        sorted, ascending = self._getSortStatus(colname)
-        if sorted and ascending:
-            # If we are currently ascending, revert the direction
-            colname = "-" + colname
-
-        sortlink += "orderby=%s" % colname
-
-        return sortlink
-
-    def getSortedColumnCSSClass(self, colname):
-        """Return a class appropriate for sorted columns"""
-        sorted, ascending = self._getSortStatus(colname)
-        if not sorted:
-            return ""
-        if ascending:
-            return "sorted ascending"
-        return "sorted descending"
-
-    def _getSortStatus(self, colname):
-        """Finds out if the list is sorted by the column specified.
-
-        Returns a tuple (sorted, ascending), where sorted is true if the
-        list is currently sorted by the column specified, and ascending
-        is true if sorted in ascending order.
-        """
-        current_sort_column = self.request.form.get("orderby")
-        if current_sort_column is None:
-            return (False, False)
-
-        ascending = True
-        sorted = True
-        if current_sort_column.startswith("-"):
-            ascending = False
-            current_sort_column = current_sort_column[1:]
-
-        if current_sort_column != colname:
-            sorted = False
-
-        return (sorted, ascending)
 
     def shouldShowTargetName(self):
         """Should the bug target name be displayed in the list of results?
@@ -4342,8 +4269,8 @@ class BugActivityItem:
         if attribute == 'title':
             # We display summary changes as a unified diff, replacing
             # \ns with <br />s so that the lines are separated properly.
-            diff = cgi.escape(
-                get_unified_diff(self.oldvalue, self.newvalue, 72), True)
+            diff = html_escape(
+                get_unified_diff(self.oldvalue, self.newvalue, 72))
             return diff.replace("\n", "<br />")
 
         elif attribute == 'description':
@@ -4355,7 +4282,7 @@ class BugActivityItem:
         elif attribute == 'tags':
             # We special-case tags because we can work out what's been
             # added and what's been removed.
-            return cgi.escape(self._formatted_tags_change).replace(
+            return html_escape(self._formatted_tags_change).replace(
                 '\n', '<br />')
 
         elif attribute == 'assignee':
@@ -4363,14 +4290,14 @@ class BugActivityItem:
                 if return_dict[key] is None:
                     return_dict[key] = 'nobody'
                 else:
-                    return_dict[key] = cgi.escape(return_dict[key])
+                    return_dict[key] = html_escape(return_dict[key])
 
         elif attribute == 'milestone':
             for key in return_dict:
                 if return_dict[key] is None:
                     return_dict[key] = 'none'
                 else:
-                    return_dict[key] = cgi.escape(return_dict[key])
+                    return_dict[key] = html_escape(return_dict[key])
 
         elif attribute == 'bug task deleted':
             return self.oldvalue
@@ -4380,7 +4307,7 @@ class BugActivityItem:
             # Since we don't necessarily know what they are, we escape
             # them.
             for key in return_dict:
-                return_dict[key] = cgi.escape(return_dict[key])
+                return_dict[key] = html_escape(return_dict[key])
 
         return "%(old_value)s &#8594; %(new_value)s" % return_dict
 

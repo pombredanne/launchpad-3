@@ -1,9 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# We use global in this module.
-# pylint: disable-msg=W0602
-
 __metaclass__ = type
 
 from functools import partial
@@ -57,15 +54,13 @@ from lp.services.config import (
     )
 from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
+    IMasterObject,
+    IMasterStore,
     IRequestExpired,
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
     SLAVE_FLAVOR,
-    )
-from lp.services.database.lpstorm import (
-    IMasterObject,
-    IMasterStore,
     )
 from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.database.postgresql import ConnectionString
@@ -89,6 +84,7 @@ __all__ = [
     'RequestExpired',
     'set_request_started',
     'clear_request_started',
+    'get_request_remaining_seconds',
     'get_request_statements',
     'get_request_start_time',
     'get_request_duration',
@@ -441,7 +437,6 @@ def break_main_thread_db_access(*ignored):
     for using connections from the main thread.
     """
     # Record the ID of the main thread.
-    # pylint: disable-msg=W0603
     global _main_thread_id
     _main_thread_id = thread.get_ident()
 
@@ -476,7 +471,6 @@ class LaunchpadDatabase(Postgres):
         # or main_slave.
         # We don't invoke the superclass constructor as it has a very limited
         # opinion on what uri is.
-        # pylint: disable-msg=W0231
         self._uri = uri
         # A unique name for this database connection.
         self.name = uri.database
@@ -587,7 +581,6 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
     """Storm tracer class to keep statement execution time bounded."""
 
     def __init__(self):
-        # pylint: disable-msg=W0231
         # The parent class __init__ just sets the granularity
         # attribute, which we are handling with a property.
         pass

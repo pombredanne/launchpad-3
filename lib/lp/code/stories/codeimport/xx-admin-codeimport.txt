@@ -124,8 +124,7 @@ This is true for Subversion imports,
     >>> import_browser.getControl('URL').value = \
     ...     'svn://user:password@svn-new.example.com/fooix/trunk'
     >>> import_browser.getControl('Update').click()
-    >>> for message in get_feedback_messages(import_browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(import_browser.contents)
     The code import has been updated.
 
 bzr-svn imports,
@@ -134,8 +133,7 @@ bzr-svn imports,
     >>> import_browser.getControl('URL').value = \
     ...     'svn://user:password@svn-new.example.com/bzr-svn/trunk'
     >>> import_browser.getControl('Update').click()
-    >>> for message in get_feedback_messages(import_browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(import_browser.contents)
     The code import has been updated.
 
 CVS imports,
@@ -146,8 +144,7 @@ CVS imports,
     >>> import_browser.getControl('Module').value = \
     ...     'fooix2'
     >>> import_browser.getControl('Update').click()
-    >>> for message in get_feedback_messages(import_browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(import_browser.contents)
     The code import has been updated.
 
 Git imports,
@@ -156,8 +153,7 @@ Git imports,
     >>> import_browser.getControl('URL').value = \
     ...     'git://user:password@git-new.example.org/fooix'
     >>> import_browser.getControl('Update').click()
-    >>> for message in get_feedback_messages(import_browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(import_browser.contents)
     The code import has been updated.
 
 and imports targetting source packages.
@@ -166,8 +162,7 @@ and imports targetting source packages.
     >>> import_browser.getControl('URL').value = \
     ...     'http://metal.example.org/zap'
     >>> import_browser.getControl('Update').click()
-    >>> for message in get_feedback_messages(import_browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(import_browser.contents)
     The code import has been updated.
 
 
@@ -179,8 +174,7 @@ Invalidating an import
     >>> print_import_details(import_browser)
     Import Status: Invalid
     ...
-    >>> for message in get_feedback_messages(import_browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(import_browser.contents)
     The code import has been set as invalid.
 
 
@@ -192,8 +186,7 @@ Suspending an import
     >>> print_import_details(import_browser)
     Import Status: Suspended
     ...
-    >>> for message in get_feedback_messages(import_browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(import_browser.contents)
     The code import has been suspended.
 
 
@@ -205,8 +198,7 @@ Marking an import as failing
     >>> print_import_details(import_browser)
     Import Status: Failed
     ...
-    >>> for message in get_feedback_messages(import_browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(import_browser.contents)
     The code import has been marked as failing.
 
 
@@ -307,8 +299,7 @@ to run ASAP and the fact that the import has been requested is
 displayed.
 
     >>> sample_person_browser.getControl('Import Now').click()
-    >>> for msg in get_feedback_messages(sample_person_browser.contents):
-    ...     print msg
+    >>> print_feedback_messages(sample_person_browser.contents)
     Import will run as soon as possible.
     >>> print_import_details(sample_person_browser)
     Import Status: Reviewed

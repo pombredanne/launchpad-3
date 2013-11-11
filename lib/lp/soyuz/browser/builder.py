@@ -21,9 +21,9 @@ __all__ = [
 import operator
 
 from lazr.restful.utils import smartquote
-from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.event import notify
+from zope.formlib.widgets import TextWidget
 from zope.lifecycleevent import ObjectCreatedEvent
 
 from lp import _
@@ -39,7 +39,7 @@ from lp.buildmaster.interfaces.builder import (
     IBuilderSet,
     )
 from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,

@@ -33,6 +33,7 @@ from lp.registry.interfaces.teammembership import (
     )
 from lp.services.propertycache import get_property_cache
 from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.publisher import canonical_url
 from lp.soyuz.enums import ArchiveStatus
 from lp.testing import (
@@ -104,13 +105,13 @@ class TestProposedTeamMembersEditView(TestCaseWithFactory):
         """
         failed_names = ', '.join([team.displayname for team in failed])
         if len(failed) == 1:
-            failed_message = (
+            failed_message = html_escape(
                 u'%s is a member of the following team, '
                 'so it could not be accepted:  %s.  '
                 'You need to "Decline" that team.' %
                 (joinee.displayname, failed_names))
         else:
-            failed_message = (
+            failed_message = html_escape(
                 u'%s is a member of the following teams, '
                 'so they could not be accepted:  %s.  '
                 'You need to "Decline" those teams.' %
@@ -466,29 +467,6 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
             TeamMembershipRenewalPolicy.ONDEMAND, team.renewal_policy)
 
 
-class TeamAdminisiterViewTestCase(TestTeamPersonRenameFormMixin,
-                                  TestCaseWithFactory):
-
-    layer = LaunchpadFunctionalLayer
-    view_name = '+review'
-
-    def test_init_admin(self):
-        # An admin sees all the fields.
-        team = self.factory.makeTeam()
-        login_celebrity('admin')
-        view = create_initialized_view(team, name=self.view_name)
-        self.assertEqual('Review team', view.label)
-        self.assertEqual(
-            ['name', 'displayname'], view.field_names)
-
-    def test_init_registry_expert(self):
-        # Registry experts do not see the displayname field.
-        team = self.factory.makeTeam()
-        login_celebrity('registry_experts')
-        view = create_initialized_view(team, name=self.view_name)
-        self.assertEqual(['name'], view.field_names)
-
-
 class TestTeamAddView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -814,7 +792,8 @@ class TestTeamMemberAddView(TestCaseWithFactory):
         view = create_initialized_view(self.team, "+addmember", form=form)
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
-            "You can't add a team that doesn't have any active members.",
+            html_escape(
+                "You can't add a team that doesn't have any active members."),
             view.errors[0])
 
     def test_no_TeamMembershipTransitionError(self):

@@ -12,11 +12,12 @@ __all__ = [
 
 from cStringIO import StringIO
 
-# Z3 doesn't make this available as a utility.
-from zope.app import zapi
 from zope.app.publication.requestpublicationregistry import factoryRegistry
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
-from zope.component import getUtility
+from zope.authentication.interfaces import IUnauthenticatedPrincipal
+from zope.component import (
+    getGlobalSiteManager,
+    getUtility,
+    )
 from zope.interface import providedBy
 from zope.publisher.interfaces.browser import IDefaultSkin
 from zope.security.management import restoreInteraction
@@ -104,7 +105,7 @@ def test_traverse(url):
     # removal of any created and uncommitted objects.
 
     # Set the default layer.
-    adapters = zapi.getGlobalSiteManager().adapters
+    adapters = getGlobalSiteManager().adapters
     layer = adapters.lookup((providedBy(request),), IDefaultSkin, '')
     if layer is not None:
         layers.setAdditionalLayer(request, layer)

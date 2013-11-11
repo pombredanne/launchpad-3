@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -16,16 +16,13 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
+from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.bulk import load_related
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
-from lp.soyuz.enums import (
-    ArchivePurpose,
-    PackagePublishingStatus,
-    )
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildpackagejob import (
     COPY_ARCHIVE_SCORE_PENALTY,
@@ -36,11 +33,10 @@ from lp.soyuz.interfaces.buildpackagejob import (
     SCORE_BY_URGENCY,
     )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 from lp.soyuz.model.packageset import Packageset
 
 
-class BuildPackageJob(BuildFarmJobOldDerived, Storm):
+class BuildPackageJob(BuildFarmJobOld, Storm):
     """See `IBuildPackageJob`."""
     implements(IBuildPackageJob)
 
@@ -56,12 +52,6 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
     def __init__(self, build, job):
         self.build, self.job = build, job
         super(BuildPackageJob, self).__init__()
-
-    def _set_build_farm_job(self):
-        """Setup the IBuildFarmJob delegate.
-
-        We override this to provide a delegate specific to package builds."""
-        self.build_farm_job = BuildFarmBuildJob(self.build)
 
     @staticmethod
     def preloadBuildFarmJobs(jobs):
@@ -109,33 +99,6 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
 
         return score
 
-    def getLogFileName(self):
-        """See `IBuildPackageJob`."""
-        sourcename = self.build.source_package_release.name
-        version = self.build.source_package_release.version
-        # we rely on previous storage of current buildstate
-        # in the state handling methods.
-        state = self.build.status.name
-
-        dar = self.build.distro_arch_series
-        distroname = dar.distroseries.distribution.name
-        distroseriesname = dar.distroseries.name
-        archname = dar.architecturetag
-
-        # logfilename format:
-        # buildlog_<DISTRIBUTION>_<DISTROSeries>_<ARCHITECTURE>_\
-        # <SOURCENAME>_<SOURCEVERSION>_<BUILDSTATE>.txt
-        # as:
-        # buildlog_ubuntu_dapper_i386_foo_1.0-ubuntu0_FULLYBUILT.txt
-        # it fix request from bug # 30617
-        return ('buildlog_%s-%s-%s.%s_%s_%s.txt' % (
-            distroname, distroseriesname, archname, sourcename, version,
-            state))
-
-    def getName(self):
-        """See `IBuildPackageJob`."""
-        return self.build.source_package_release.name
-
     @property
     def processor(self):
         """See `IBuildFarmJob`."""
@@ -162,16 +125,15 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
             PackagePublishingStatus.SUPERSEDED,
             PackagePublishingStatus.DELETED,
             )
-        sub_query = """
+        return """
             SELECT TRUE FROM Archive, BinaryPackageBuild, BuildPackageJob,
-                             PackageBuild, BuildFarmJob, DistroArchSeries
+                             DistroArchSeries
             WHERE
             BuildPackageJob.job = Job.id AND
             BuildPackageJob.build = BinaryPackageBuild.id AND
             BinaryPackageBuild.distro_arch_series =
                 DistroArchSeries.id AND
-            BinaryPackageBuild.package_build = PackageBuild.id AND
-            PackageBuild.archive = Archive.id AND
+            BinaryPackageBuild.archive = Archive.id AND
             ((Archive.private IS TRUE AND
               EXISTS (
                   SELECT SourcePackagePublishingHistory.id
@@ -185,71 +147,32 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
                       SourcePackagePublishingHistory.status IN %s))
               OR
               archive.private IS FALSE) AND
-            PackageBuild.build_farm_job = BuildFarmJob.id AND
-            BuildFarmJob.status = %s
+            BinaryPackageBuild.status = %s
         """ % sqlvalues(private_statuses, BuildStatus.NEEDSBUILD)
-
-        # Ensure that if BUILDING builds exist for the same
-        # public ppa archive and architecture and another would not
-        # leave at least 20% of them free, then we don't consider
-        # another as a candidate.
-        #
-        # This clause selects the count of currently building builds on
-        # the arch in question, then adds one to that total before
-        # deriving a percentage of the total available builders on that
-        # arch.  It then makes sure that percentage is under 80.
-        #
-        # The extra clause is only used if the number of available
-        # builders is greater than one, or nothing would get dispatched
-        # at all.
-        num_arch_builders = getUtility(IBuilderSet).getBuildersForQueue(
-            processor, virtualized).count()
-        if num_arch_builders > 1:
-            sub_query += """
-            AND Archive.id NOT IN (
-                SELECT Archive.id
-                FROM PackageBuild, BuildFarmJob, Archive,
-                    BinaryPackageBuild, DistroArchSeries
-                WHERE
-                    PackageBuild.build_farm_job = BuildFarmJob.id
-                    AND BinaryPackageBuild.package_build = PackageBuild.id
-                    AND BinaryPackageBuild.distro_arch_series
-                        = DistroArchSeries.id
-                    AND DistroArchSeries.processorfamily = %s
-                    AND BuildFarmJob.status = %s
-                    AND PackageBuild.archive = Archive.id
-                    AND Archive.purpose = %s
-                    AND Archive.private IS FALSE
-                GROUP BY Archive.id
-                HAVING (
-                    (count(*)+1) * 100.0 / %s
-                    ) >= 80
-                )
-            """ % sqlvalues(
-                processor.family, BuildStatus.BUILDING,
-                ArchivePurpose.PPA, num_arch_builders)
-
-        return sub_query
 
     @staticmethod
     def postprocessCandidate(job, logger):
         """See `IBuildFarmJob`."""
         # Mark build records targeted to old source versions as SUPERSEDED
-        # and build records target to SECURITY pocket as FAILEDTOBUILD.
+        # and build records target to SECURITY pocket or against an OBSOLETE
+        # distroseries without a flag as FAILEDTOBUILD.
         # Builds in those situation should not be built because they will
         # be wasting build-time.  In the former case, there is already a
         # newer source; the latter case needs an overhaul of the way
         # security builds are handled (by copying from a PPA) to avoid
         # creating duplicate builds.
-        build_set = getUtility(IBinaryPackageBuildSet)
-
-        build = build_set.getByQueueEntry(job)
-        if build.pocket == PackagePublishingPocket.SECURITY:
-            # We never build anything in the security pocket.
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
+        distroseries = build.distro_arch_series.distroseries
+        if (
+            build.pocket == PackagePublishingPocket.SECURITY or
+            (distroseries.status == SeriesStatus.OBSOLETE and
+                not build.archive.permit_obsolete_series_uploads)):
+            # We never build anything in the security pocket, or for obsolete
+            # series without the flag set.
             logger.debug(
                 "Build %s FAILEDTOBUILD, queue item %s REMOVED"
                 % (build.id, job.id))
-            build.status = BuildStatus.FAILEDTOBUILD
+            build.updateStatus(BuildStatus.FAILEDTOBUILD)
             job.destroySelf()
             return False
 
@@ -260,7 +183,7 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
             logger.debug(
                 "Build %s SUPERSEDED, queue item %s REMOVED"
                 % (build.id, job.id))
-            build.status = BuildStatus.SUPERSEDED
+            build.updateStatus(BuildStatus.SUPERSEDED)
             job.destroySelf()
             return False
 

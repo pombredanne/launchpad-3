@@ -49,7 +49,7 @@ class TestArchivePrivacy(TestCaseWithFactory):
         with person_logged_in(ppa.owner):
             # XXX: jml 2012-06-11: We actually want this to be allowed, but I
             # can't think of any way to grant this without also granting other
-            # attributes that have launchpad.Commercial.
+            # attributes that have launchpad.Admin.
             self.assertRaises(Unauthorized, setattr, ppa, 'private', True)
 
     def test_admin_changing_privacy(self):

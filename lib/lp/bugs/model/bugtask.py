@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes that implement IBugTask and its related interfaces."""
@@ -46,7 +46,6 @@ from storm.expr import (
     Cast,
     Count,
     Exists,
-    Join,
     LeftJoin,
     Not,
     Or,
@@ -131,12 +130,7 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.nl_search import nl_phrase_search
 from lp.services.database.sqlbase import (
     block_implicit_flushes,
@@ -524,10 +518,7 @@ class BugTask(SQLBase):
     @property
     def related_tasks(self):
         """See `IBugTask`."""
-        other_tasks = [
-            task for task in self.bug.bugtasks if task != self]
-
-        return other_tasks
+        return [task for task in self.bug.bugtasks if task != self]
 
     @property
     def pillar(self):
@@ -883,11 +874,13 @@ class BugTask(SQLBase):
             else:
                 new_status = BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE
 
-        if self._status == new_status:
+        self._setStatusDateProperties(self.status, new_status, when=when)
+        
+    def _setStatusDateProperties(self, old_status, new_status, when=None):
+        if old_status == new_status:
             # No change in the status, so nothing to do.
             return
 
-        old_status = self.status
         self._status = new_status
 
         if new_status == BugTaskStatus.UNKNOWN:
@@ -902,7 +895,6 @@ class BugTask(SQLBase):
             self.date_triaged = None
             self.date_fix_committed = None
             self.date_fix_released = None
-
             return
 
         if when is None:
@@ -1022,13 +1014,13 @@ class BugTask(SQLBase):
                 (assignee is None and self.userCanUnassign(user)) or
                 self.userCanSetAnyAssignee(user)))
 
-    def transitionToAssignee(self, assignee):
+    def transitionToAssignee(self, assignee, validate=True):
         """See `IBugTask`."""
         if assignee == self.assignee:
             # No change to the assignee, so nothing to do.
             return
 
-        if not self.canTransitionToAssignee(assignee):
+        if validate and not self.canTransitionToAssignee(assignee):
             raise UserCannotEditBugTaskAssignee(
                 'Regular users can assign and unassign only themselves and '
                 'their teams. Only project owners, bug supervisors, drivers '
@@ -1359,20 +1351,6 @@ class BugTaskSet:
                                 str(task_id))
         return bugtask
 
-    def getBugTasks(self, bug_ids):
-        """See `IBugTaskSet`."""
-        from lp.bugs.model.bug import Bug
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        origin = [BugTask, Join(Bug, BugTask.bug == Bug.id)]
-        columns = (Bug, BugTask)
-        result = store.using(*origin).find(columns, Bug.id.is_in(bug_ids))
-        bugs_and_tasks = {}
-        for bug, task in result:
-            if bug not in bugs_and_tasks:
-                bugs_and_tasks[bug] = []
-            bugs_and_tasks[bug].append(task)
-        return bugs_and_tasks
-
     def getBugTaskTags(self, bugtasks):
         """See `IBugTaskSet`"""
         # Import locally to avoid circular imports.
@@ -1621,6 +1599,10 @@ class BugTaskSet:
             bugtask.updateTargetNameCache()
             if bugtask.conjoined_slave:
                 bugtask._syncFromConjoinedSlave()
+            else:
+                # Set date_* properties, if we're not conjoined.
+                bugtask._setStatusDateProperties(
+                    BugTaskStatus.NEW, status, when=bugtask.datecreated)
         removeSecurityProxy(bug)._reconcileAccess()
         return tasks
 

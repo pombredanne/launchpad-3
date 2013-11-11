@@ -18,12 +18,12 @@ __all__ = [
 import math
 
 from lazr.enum import IEnumeratedType
-from zope.app.form.browser import MultiCheckBoxWidget
-from zope.app.form.browser.itemswidgets import (
+from zope.formlib.itemswidgets import (
     DropdownWidget,
     RadioWidget,
     )
-from zope.app.form.browser.widget import renderElement
+from zope.formlib.widget import renderElement
+from zope.formlib.widgets import MultiCheckBoxWidget
 from zope.schema.interfaces import IChoice
 from zope.schema.vocabulary import SimpleVocabulary
 

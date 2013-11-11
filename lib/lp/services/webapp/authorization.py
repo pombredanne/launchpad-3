@@ -3,6 +3,17 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'available_with_permission',
+    'check_permission',
+    'clear_cache',
+    'iter_authorization',
+    'LaunchpadPermissiveSecurityPolicy',
+    'LaunchpadSecurityPolicy',
+    'LAUNCHPAD_SECURITY_POLICY_CACHE_KEY',
+    'precache_permission_for_objects',
+    ]
+
 from collections import (
     deque,
     Iterable,
@@ -10,13 +21,13 @@ from collections import (
 import warnings
 import weakref
 
-from zope.app.security.principalregistry import UnauthenticatedPrincipal
 from zope.browser.interfaces import IView
 from zope.component import (
     getUtility,
     queryAdapter,
     )
 from zope.interface import classProvides
+from zope.principalregistry.principalregistry import UnauthenticatedPrincipal
 from zope.proxy import removeAllProxies
 from zope.publisher.interfaces import IApplicationRequest
 from zope.security.checker import CheckerPublic

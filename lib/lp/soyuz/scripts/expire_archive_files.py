@@ -3,20 +3,13 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=C0103,W0403
-
-from zope.component import getUtility
-
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.model.archive import Archive
 
-# PPAs that we never want to expire.
+# PPA owners that we never want to expire.
 BLACKLISTED_PPAS = """
 adobe-isv
 chelsea-team
@@ -36,6 +29,13 @@ bzr-beta-ppa
 bzr-nightly-ppa
 """.split()
 
+# Particular PPAs (not owners, unlike the whitelist) that should be
+# expired even if they're private.
+WHITELISTED_PPAS = """
+landscape/lds-trunk
+kubuntu-ninjas/ppa
+""".split()
+
 
 class ArchiveExpirer(LaunchpadCronScript):
     """Helper class for expiring old PPA binaries.
@@ -44,6 +44,7 @@ class ArchiveExpirer(LaunchpadCronScript):
     will be marked for immediate expiry.
     """
     blacklist = BLACKLISTED_PPAS
+    whitelist = WHITELISTED_PPAS
 
     def add_my_options(self):
         """Add script command line options."""
@@ -97,14 +98,16 @@ class ArchiveExpirer(LaunchpadCronScript):
                 AND p.id = a.owner
                 AND (
                     (p.name IN %s AND a.purpose = %s)
-                    OR a.private IS TRUE
+                    OR (a.private IS TRUE
+                        AND (p.name || '/' || a.name) NOT IN %s)
                     OR a.purpose NOT IN %s
                     OR dateremoved >
                         CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s
                     OR dateremoved IS NULL);
             """ % sqlvalues(
                 stay_of_execution, archive_types, self.blacklist,
-                ArchivePurpose.PPA, archive_types, stay_of_execution))
+                ArchivePurpose.PPA, self.whitelist, archive_types,
+                stay_of_execution))
 
         lfa_ids = results.get_all()
         return lfa_ids
@@ -150,7 +153,8 @@ class ArchiveExpirer(LaunchpadCronScript):
                 AND p.id = a.owner
                 AND (
                     (p.name IN %(blacklist)s AND a.purpose = %(ppa)s)
-                    OR a.private IS TRUE
+                    OR (a.private IS TRUE
+                        AND (p.name || '/' || a.name) NOT IN %(whitelist)s)
                     OR a.purpose NOT IN %(archive_types)s
                     OR dateremoved > (
                         CURRENT_TIMESTAMP AT TIME ZONE 'UTC' -
@@ -160,6 +164,7 @@ class ArchiveExpirer(LaunchpadCronScript):
                 stay_of_execution=stay_of_execution,
                 archive_types=archive_types,
                 blacklist=self.blacklist,
+                whitelist=self.whitelist,
                 ppa=ArchivePurpose.PPA))
 
         lfa_ids = results.get_all()
@@ -170,8 +175,7 @@ class ArchiveExpirer(LaunchpadCronScript):
         num_days = self.options.num_days
         self.logger.info("Expiring files up to %d days ago" % num_days)
 
-        self.store = getUtility(IStoreSelector).get(
-            MAIN_STORE, DEFAULT_FLAVOR)
+        self.store = IStore(Archive)
 
         lfa_ids = self.determineSourceExpirables(num_days)
         lfa_ids.extend(self.determineBinaryExpirables(num_days))
@@ -201,4 +205,3 @@ class ArchiveExpirer(LaunchpadCronScript):
             self.txn.commit()
 
         self.logger.info('Finished PPA binary expiration')
-

@@ -35,7 +35,7 @@ We can see two potential series candidates, the "trunk" and the "1.0" series.
 
     >>> print find_main_content(browser.contents)
     <...
-    <option selected="selected" value="">(no value)</option>
+    <option selected="selected" value="">(nothing selected)</option>
     <option value="2">firefox 1.0</option>
     <option value="1">firefox trunk</option>
     ...
@@ -47,6 +47,7 @@ so the targeting should NOT be automatically approved.
   >>> print http(r"""
   ... POST /firefox/+spec/svg-support/+setproductseries HTTP/1.1
   ... Authorization: Basic celso.providelo@canonical.com:test
+  ... Referer: https://launchpad.dev/
   ... Content-Type: multipart/form-data; boundary=---------------------------26999413214087432371486976730
   ...
   ... -----------------------------26999413214087432371486976730
@@ -91,6 +92,7 @@ OK, we will also pitch the e4x spec to the same series:
   >>> print http(r"""
   ... POST /firefox/+spec/e4x/+setproductseries HTTP/1.1
   ... Authorization: Basic celso.providelo@canonical.com:test
+  ... Referer: https://launchpad.dev/
   ... Content-Type: multipart/form-data; boundary=---------------------------26999413214087432371486976730
   ...
   ... -----------------------------26999413214087432371486976730
@@ -180,6 +182,7 @@ because we are an admin, then we will move it back.
   >>> print http(r"""
   ... POST /firefox/+spec/svg-support/+setproductseries HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: https://launchpad.dev/
   ... Content-Type: multipart/form-data; boundary=---------------------------26999413214087432371486976730
   ...
   ... -----------------------------26999413214087432371486976730
@@ -222,6 +225,7 @@ And lets put it back:
   >>> print http(r"""
   ... POST /firefox/+spec/svg-support/+setproductseries HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: https://launchpad.dev/
   ... Content-Type: multipart/form-data; boundary=---------------------------26999413214087432371486976730
   ...
   ... -----------------------------26999413214087432371486976730

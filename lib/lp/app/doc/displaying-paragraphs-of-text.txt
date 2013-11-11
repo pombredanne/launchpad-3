@@ -14,12 +14,12 @@ Basics
     ...         '\n'
     ...         'This is another paragraph.')
     >>> test_tales('foo/fmt:text-to-html', foo=text)
-    '<p>This is a paragraph.</p>\n<p>This is another paragraph.</p>'
+    u'<p>This is a paragraph.</p>\n<p>This is another paragraph.</p>'
 
     >>> text = ('This is a line.\n'
     ...         'This is another line.')
     >>> test_tales('foo/fmt:text-to-html', foo=text)
-    '<p>This is a line.<br />\nThis is another line.</p>'
+    u'<p>This is a line.<br />\nThis is another line.</p>'
 
     >>> text = (
     ...     'This is a paragraph that has been hard-wrapped by an e-mail'
@@ -48,15 +48,15 @@ Basics
     ...     "that's fine, they're not important anyway.\n"
     ...     )
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p>&nbsp;1. Here's an example<br />
+    <p>&nbsp;1. Here&#x27;s an example<br />
     &nbsp;2. where a list is followed by a paragraph.<br />
-    &nbsp;&nbsp;&nbsp;Leading spaces in a line or paragraph are presented, which means converting them to &amp;nbsp;. Trailing spaces are passed through as-is, which means browsers will ignore them, but that's fine, they're not important anyway.</p>
+    &nbsp;&nbsp;&nbsp;Leading spaces in a line or paragraph are presented, which means converting them to &amp;nbsp;. Trailing spaces are passed through as-is, which means browsers will ignore them, but that&#x27;s fine, they&#x27;re not important anyway.</p>
 
     >>> text = (
     ...     'This is a little paragraph all by itself. How cute!'
     ...     )
     >>> test_tales('foo/fmt:text-to-html', foo=text)
-    '<p>This is a little paragraph all by itself. How cute!</p>'
+    u'<p>This is a little paragraph all by itself. How cute!</p>'
 
     >>> text = (
     ...     'Here are two paragraphs with lots of whitespace between them.\n'
@@ -67,7 +67,7 @@ Basics
     ...     'But they\'re still just two paragraphs.')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p>Here are two paragraphs with lots of whitespace between them.</p>
-    <p>But they're still just two paragraphs.</p>
+    <p>But they&#x27;re still just two paragraphs.</p>
 
 If a line begins with whitespace, it will not be merged with the
 previous line.  This aids in the display of code samples:
@@ -84,10 +84,10 @@ previous line.  This aids in the display of code samples:
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p>This is a code sample written in Python.<br />
     &nbsp;&nbsp;&nbsp;&nbsp;def messageCount(self):<br />
-    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"""See IRosettaStats."""<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&quot;&quot;&quot;See IRosettaStats.&quot;&quot;&quot;<br />
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return self.potemplate<wbr />.messageCount(<wbr />)</p>
     <p>&nbsp;&nbsp;&nbsp;&nbsp;def currentCount(self, language=None):<br />
-    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"""See IRosettaStats."""<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&quot;&quot;&quot;See IRosettaStats.&quot;&quot;&quot;<br />
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return self.currentCount</p>
 
 Testing a bunch of URL links.
@@ -181,7 +181,7 @@ fmt:text-to-html knows how to linkify URLs:
     <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://<wbr />localhost/<wbr />bar/baz/<wbr />foo.bar.<wbr />html?a=<wbr />b&amp;b=a</a>,<br />
     <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://<wbr />localhost/<wbr />bar/baz/<wbr />foo.bar.<wbr />html?a=<wbr />b&amp;b=a</a>;<br />
     <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://<wbr />localhost/<wbr />bar/baz/<wbr />foo.bar.<wbr />html?a=<wbr />b&amp;b=a</a>:<br />
-    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a:b;c@d_e%f~g#h,j!k-l+m$n*o'p">http://<wbr />localhost/<wbr />bar/baz/<wbr />foo.bar.<wbr />html?a=<wbr />b&amp;b=a:b;<wbr />c@d_e%f~<wbr />g#h,j!k-<wbr />l+m$n*o'<wbr />p</a><br />
+    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a:b;c@d_e%f~g#h,j!k-l+m$n*o&#x27;p">http://<wbr />localhost/<wbr />bar/baz/<wbr />foo.bar.<wbr />html?a=<wbr />b&amp;b=a:b;<wbr />c@d_e%f~<wbr />g#h,j!k-<wbr />l+m$n*o&#x27;<wbr />p</a><br />
     <a rel="nofollow" href="http://www.searchtools.com/test/urls/(parens).html">http://<wbr />www.searchtools<wbr />.com/test/<wbr />urls/(parens)<wbr />.html</a><br />
     <a rel="nofollow" href="http://www.searchtools.com/test/urls/-dash.html">http://<wbr />www.searchtools<wbr />.com/test/<wbr />urls/-dash.<wbr />html</a><br />
     <a rel="nofollow" href="http://www.searchtools.com/test/urls/_underscore.html">http://<wbr />www.searchtools<wbr />.com/test/<wbr />urls/_underscor<wbr />e.html</a><br />
@@ -521,7 +521,7 @@ url to demonstrate quoting in the HTML attribute.
     >>> sorted(matchobj.groupdict().items())
     [('bug', None), ('url', 'y"y')]
     >>> FormattersAPI._linkify_substitution(matchobj)
-    '<a rel="nofollow" href="y&quot;y">y"y</a>'
+    u'<a rel="nofollow" href="y&quot;y">y&quot;y</a>'
 
 When we have a bug reference, the 'bug' group is used as the text of the link,
 and the 'bugnum' is used to look up the bug.

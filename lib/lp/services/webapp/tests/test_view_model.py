@@ -1,4 +1,5 @@
-# Copyright 2011 Canonical Ltd.  All rights reserved.
+# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the user requested oops using ++oops++ traversal."""
 
@@ -102,9 +103,8 @@ class TestJsonModelView(BrowserTestCase):
         xmlconfig.string("""
           <configure
               xmlns:browser="http://namespaces.zope.org/browser">
-              <include package="lp.services.webapp"
-                  file="meta.zcml" />
-              <include package="zope.app.zcmlfiles" file="meta.zcml" />
+              <include package="zope.browserpage" file="meta.zcml" />
+              <include package="lp.services.webapp" file="meta.zcml" />
               <browser:page
                 name="+modeltest"
                 for="lp.registry.interfaces.product.IProduct"

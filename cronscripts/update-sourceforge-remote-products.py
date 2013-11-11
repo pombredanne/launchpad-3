@@ -5,7 +5,6 @@
 
 """Cron job to update remote_products using SourceForge project data."""
 
-# pylint: disable-msg=W0403
 import _pythonpath
 
 import time

@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Archive features."""
@@ -34,11 +34,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import clear_property_cache
@@ -59,6 +55,7 @@ from lp.soyuz.interfaces.archive import (
     CannotCopy,
     CannotUploadToPocket,
     CannotUploadToPPA,
+    CannotUploadToSeries,
     IArchiveSet,
     InsufficientUploadRights,
     InvalidPocketForPartnerArchive,
@@ -75,8 +72,11 @@ from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
-from lp.soyuz.model.archive import validate_ppa
+from lp.soyuz.interfaces.processor import IProcessorSet
+from lp.soyuz.model.archive import (
+    Archive,
+    validate_ppa,
+    )
 from lp.soyuz.model.archivepermission import (
     ArchivePermission,
     ArchivePermissionSet,
@@ -285,71 +285,6 @@ class TestSeriesWithSources(TestCaseWithFactory):
         self.assertEqual([series1, series2], archive.series_with_sources)
 
 
-class TestGetSourcePackageReleases(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def createArchiveWithBuilds(self, statuses):
-        archive = self.factory.makeArchive()
-        sprs = []
-        for status in statuses:
-            sourcepackagerelease = self.factory.makeSourcePackageRelease()
-            self.factory.makeBinaryPackageBuild(
-                source_package_release=sourcepackagerelease,
-                archive=archive, status=status)
-            sprs.append(sourcepackagerelease)
-        self.factory.makeSourcePackageRelease()
-        return archive, sprs
-
-    def test_getSourcePackageReleases_with_no_params(self):
-        # With no params all source package releases are returned.
-        archive, sprs = self.createArchiveWithBuilds(
-            [BuildStatus.NEEDSBUILD, BuildStatus.FULLYBUILT])
-        self.assertContentEqual(
-            sprs, archive.getSourcePackageReleases())
-
-    def test_getSourcePackageReleases_with_buildstatus(self):
-        # Results are filtered by the specified buildstatus.
-        archive, sprs = self.createArchiveWithBuilds(
-            [BuildStatus.NEEDSBUILD, BuildStatus.FULLYBUILT])
-        self.assertContentEqual(
-            [sprs[0]], archive.getSourcePackageReleases(
-                build_status=BuildStatus.NEEDSBUILD))
-
-
-class TestCorrespondingDebugArchive(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def testPrimaryDebugArchiveIsDebug(self):
-        distribution = self.factory.makeDistribution()
-        primary = self.factory.makeArchive(
-            distribution=distribution, purpose=ArchivePurpose.PRIMARY)
-        debug = self.factory.makeArchive(
-            distribution=distribution, purpose=ArchivePurpose.DEBUG)
-        self.assertEqual(primary.debug_archive, debug)
-
-    def testPartnerDebugArchiveIsSelf(self):
-        partner = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
-        self.assertEqual(partner.debug_archive, partner)
-
-    def testCopyDebugArchiveIsSelf(self):
-        copy = self.factory.makeArchive(purpose=ArchivePurpose.COPY)
-        self.assertEqual(copy.debug_archive, copy)
-
-    def testDebugDebugArchiveIsSelf(self):
-        debug = self.factory.makeArchive(purpose=ArchivePurpose.DEBUG)
-        self.assertEqual(debug.debug_archive, debug)
-
-    def testPPADebugArchiveIsSelf(self):
-        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        self.assertEqual(ppa.debug_archive, ppa)
-
-    def testMissingPrimaryDebugArchiveIsNone(self):
-        primary = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        self.assertIs(primary.debug_archive, None)
-
-
 class TestArchiveEnableDisable(TestCaseWithFactory):
     """Test the enable and disable methods of Archive."""
 
@@ -359,21 +294,17 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         # Return the count for archive build jobs with the given status.
         query = """
             SELECT COUNT(Job.id)
-            FROM BinaryPackageBuild, BuildPackageJob, BuildQueue, Job,
-                 PackageBuild, BuildFarmJob
+            FROM BinaryPackageBuild, BuildPackageJob, BuildQueue, Job
             WHERE
                 BuildPackageJob.build = BinaryPackageBuild.id
                 AND BuildPackageJob.job = BuildQueue.job
                 AND Job.id = BuildQueue.job
-                AND BinaryPackageBuild.package_build = PackageBuild.id
-                AND PackageBuild.archive = %s
-                AND PackageBuild.build_farm_job = BuildFarmJob.id
-                AND BuildFarmJob.status = %s
+                AND BinaryPackageBuild.archive = %s
+                AND BinaryPackageBuild.status = %s
                 AND Job.status = %s;
         """ % sqlvalues(archive, BuildStatus.NEEDSBUILD, status)
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.execute(query).get_one()[0]
+        return IStore(Archive).execute(query).get_one()[0]
 
     def assertNoBuildJobsHaveStatus(self, archive, status):
         # Check that that the jobs attached to this archive do not have this
@@ -851,9 +782,25 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         # can upload basically whatever they want to that component, even if
         # the package doesn't exist yet.
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        person, component = self.makePersonWithComponentPermission(
-            archive)
+        person, component = self.makePersonWithComponentPermission(archive)
         self.assertCanUpload(archive, person, None, component=component)
+
+    def test_checkUpload_obsolete_series(self):
+        distroseries = self.factory.makeDistroSeries(
+            status=SeriesStatus.OBSOLETE)
+        self.assertCannotUpload(
+            CannotUploadToSeries, distroseries.distribution.main_archive,
+            self.factory.makePerson(), None, distroseries=distroseries)
+
+    def test_checkUpload_obsolete_series_with_flag(self):
+        distroseries = self.factory.makeDistroSeries(
+            status=SeriesStatus.OBSOLETE)
+        archive = distroseries.distribution.main_archive
+        person, component = self.makePersonWithComponentPermission(archive)
+        removeSecurityProxy(archive).permit_obsolete_series_uploads = True
+        self.assertCanUpload(
+            archive, person, None, distroseries=distroseries,
+            component=component)
 
     def makePackageToUpload(self, distroseries):
         sourcepackagename = self.factory.makeSourcePackageName()
@@ -951,8 +898,7 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
         self.publisher = SoyuzTestPublisher()
         self.publisher.prepareBreezyAutotest()
 
-        self.store = getUtility(IStoreSelector).get(
-            MAIN_STORE, DEFAULT_FLAVOR)
+        self.store = IStore(Archive)
 
         self.archive = self.factory.makeArchive()
         self.bpr_1 = self.publisher.getPubBinaries(
@@ -1048,7 +994,7 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
 
 
 class TestEnabledRestrictedBuilds(TestCaseWithFactory):
-    """Ensure that restricted architecture family builds can be allowed and
+    """Ensure that restricted architectures builds can be allowed and
     disallowed correctly."""
 
     layer = LaunchpadZopelessLayer
@@ -1060,46 +1006,47 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         self.publisher.prepareBreezyAutotest()
         self.archive = self.factory.makeArchive()
         self.archive_arch_set = getUtility(IArchiveArchSet)
-        self.arm = getUtility(IProcessorFamilySet).getByName('arm')
+        self.arm = self.factory.makeProcessor(name='arm', restricted=True)
 
     def test_default(self):
         """By default, ARM builds are not allowed as ARM is restricted."""
         self.assertEqual(0,
             self.archive_arch_set.getByArchive(
                 self.archive, self.arm).count())
-        self.assertContentEqual([], self.archive.enabled_restricted_families)
+        self.assertContentEqual([], self.archive.enabled_restricted_processors)
 
     def test_get_uses_archivearch(self):
         """Adding an entry to ArchiveArch for ARM and an archive will
-        enable enabled_restricted_families for arm for that archive."""
-        self.assertContentEqual([], self.archive.enabled_restricted_families)
+        enable enabled_restricted_processors for arm for that archive."""
+        self.assertContentEqual([], self.archive.enabled_restricted_processors)
         self.archive_arch_set.new(self.archive, self.arm)
-        self.assertEqual([self.arm],
-                list(self.archive.enabled_restricted_families))
+        self.assertEqual(
+            [self.arm], list(self.archive.enabled_restricted_processors))
 
     def test_get_returns_restricted_only(self):
         """Adding an entry to ArchiveArch for something that is not
-        restricted does not make it show up in enabled_restricted_families.
+        restricted does not make it show up in enabled_restricted_processors.
         """
-        self.assertContentEqual([], self.archive.enabled_restricted_families)
-        self.archive_arch_set.new(self.archive,
-            getUtility(IProcessorFamilySet).getByName('amd64'))
-        self.assertContentEqual([], self.archive.enabled_restricted_families)
+        self.assertContentEqual([], self.archive.enabled_restricted_processors)
+        self.archive_arch_set.new(
+            self.archive, getUtility(IProcessorSet).getByName('amd64'))
+        self.assertContentEqual([], self.archive.enabled_restricted_processors)
 
     def test_set(self):
         """The property remembers its value correctly and sets ArchiveArch."""
-        self.archive.enabled_restricted_families = [self.arm]
-        allowed_restricted_families = self.archive_arch_set.getByArchive(
+        self.archive.enabled_restricted_processors = [self.arm]
+        allowed_restricted_processors = self.archive_arch_set.getByArchive(
             self.archive, self.arm)
-        self.assertEqual(1, allowed_restricted_families.count())
+        self.assertEqual(1, allowed_restricted_processors.count())
         self.assertEqual(
-            self.arm, allowed_restricted_families[0].processorfamily)
-        self.assertEqual([self.arm], self.archive.enabled_restricted_families)
-        self.archive.enabled_restricted_families = []
-        self.assertEqual(0,
-            self.archive_arch_set.getByArchive(
-                self.archive, self.arm).count())
-        self.assertContentEqual([], self.archive.enabled_restricted_families)
+            self.arm, allowed_restricted_processors[0].processor)
+        self.assertEqual(
+            [self.arm], self.archive.enabled_restricted_processors)
+        self.archive.enabled_restricted_processors = []
+        self.assertEqual(
+            0,
+            self.archive_arch_set.getByArchive(self.archive, self.arm).count())
+        self.assertContentEqual([], self.archive.enabled_restricted_processors)
 
 
 class TestBuilddSecret(TestCaseWithFactory):
@@ -1120,7 +1067,7 @@ class TestBuilddSecret(TestCaseWithFactory):
         login(ANONYMOUS)
         e = self.assertRaises(
             Unauthorized, setattr, self.archive, "buildd_secret", "boing")
-        self.assertEqual("launchpad.Commercial", e.args[2])
+        self.assertEqual("launchpad.Admin", e.args[2])
 
     def test_commercial_admin_can_set_buildd_secret(self):
         with celebrity_logged_in("commercial_admin"):
@@ -2208,7 +2155,8 @@ class TestCopyPackage(TestCaseWithFactory):
             target_archive.copyPackage(
                 source_name, version, source_archive, to_pocket.name,
                 to_series=to_series.name, include_binaries=False,
-                person=target_archive.owner, sponsored=sponsored)
+                person=target_archive.owner, sponsored=sponsored,
+                phased_update_percentage=30)
 
         # The source should not be published yet in the target_archive.
         published = target_archive.getPublishedSources(
@@ -2229,7 +2177,8 @@ class TestCopyPackage(TestCaseWithFactory):
             target_pocket=to_pocket,
             include_binaries=False,
             sponsored=sponsored,
-            copy_policy=PackageCopyPolicy.INSECURE))
+            copy_policy=PackageCopyPolicy.INSECURE,
+            phased_update_percentage=30))
 
     def test_copyPackage_disallows_non_primary_archive_uploaders(self):
         # If copying to a primary archive and you're not an uploader for
@@ -2962,8 +2911,7 @@ class TestSigningKeyPropagation(TestCaseWithFactory):
             owner=person, purpose=ArchivePurpose.PPA, name="ppa")
         self.assertEqual(ppa, person.archive)
         self.factory.makeGPGKey(person)
-        with celebrity_logged_in("admin"):
-            person.archive.signing_key = person.gpg_keys[0]
+        removeSecurityProxy(person.archive).signing_key = person.gpg_keys[0]
         ppa_with_key = self.factory.makeArchive(
             owner=person, purpose=ArchivePurpose.PPA)
         self.assertEqual(person.gpg_keys[0], ppa_with_key.signing_key)

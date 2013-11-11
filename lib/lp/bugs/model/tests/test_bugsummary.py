@@ -25,7 +25,7 @@ from lp.bugs.model.bugsummary import (
     )
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.enums import SharingPermission
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer

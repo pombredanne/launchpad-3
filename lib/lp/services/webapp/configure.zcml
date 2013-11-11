@@ -9,11 +9,10 @@
     i18n_domain="launchpad">
 
     <include file="servers.zcml" />
-    <!-- Included via override-includes, as we are overriding a default
-         Z3 component
     <include file="errorlog.zcml" />
-    -->
     <include file="bug-5133.zcml" />
+
+    <browser:defaultView name="index.html" />
 
     <class class="lp.services.webapp.servers.LaunchpadBrowserRequest">
       <allow
@@ -154,7 +153,7 @@
         />
 
     <subscriber
-        for="zope.app.publication.interfaces.IBeforeTraverseEvent"
+        for="zope.traversing.interfaces.IBeforeTraverseEvent"
         handler="lp.services.webapp.launchbag.set_developer_in_launchbag_before_traversal"
         />
 
@@ -194,17 +193,17 @@
          to the correct Store for that tables replication set.
       -->
     <adapter
-        provides="lp.services.database.lpstorm.IStore"
+        provides="lp.services.database.interfaces.IStore"
         for="zope.interface.Interface"
         factory="lp.services.webapp.adapter.get_store"
         />
     <adapter
-        provides="lp.services.database.lpstorm.IMasterStore"
+        provides="lp.services.database.interfaces.IMasterStore"
         for="zope.interface.Interface"
         factory="lp.services.webapp.adapter.get_master_store"
         />
     <adapter
-        provides="lp.services.database.lpstorm.ISlaveStore"
+        provides="lp.services.database.interfaces.ISlaveStore"
         for="zope.interface.Interface"
         factory="lp.services.webapp.adapter.get_slave_store"
         />
@@ -212,17 +211,17 @@
          We have no way of specifying that all subclasses of
          storm.locals.Storm implement an Interface. -->
     <adapter
-        provides="lp.services.database.lpstorm.IMasterObject"
+        provides="lp.services.database.interfaces.IMasterObject"
         for="zope.interface.Interface"
         trusted="yes"
         factory="lp.services.webapp.adapter.get_object_from_master_store"
         />
     <class class="storm.store.Store">
-        <implements interface="lp.services.database.lpstorm.IStore" />
+        <implements interface="lp.services.database.interfaces.IStore" />
         <allow attributes="get" />
     </class>
     <class class="lp.services.database.sqlbase.SQLBase">
-        <implements interface="lp.services.database.lpstorm.IDBObject" />
+        <implements interface="lp.services.database.interfaces.IDBObject" />
     </class>
 
     <!-- Default favicon -->
@@ -259,14 +258,6 @@
         methods="opstats"
         permission="zope.Public"
         name="+opstats"
-        />
-
-    <browser:page
-        for="*"
-        name="bag"
-        template="templates/launchbag-debug.pt"
-        permission="zope.Public"
-        class="lp.services.webapp.launchbag.LaunchBagView"
         />
 
     <!-- Resource unnamed view, allowing Z3 preferred spelling
@@ -383,12 +374,12 @@
         />
 
     <subscriber
-        for="zope.app.publication.interfaces.IBeforeTraverseEvent"
+        for="zope.traversing.interfaces.IBeforeTraverseEvent"
         handler="lp.services.webapp.sigusr1.before_traverse"
         />
 
     <subscriber
-        for="zope.app.publication.interfaces.IEndRequestEvent"
+        for="zope.publisher.interfaces.IEndRequestEvent"
         handler="lp.services.webapp.sigusr1.end_request"
         />
 
@@ -403,7 +394,7 @@
       type="zope.publisher.interfaces.browser.IBrowserRequest"
       for="zope.schema.interfaces.IChoice
         lp.services.webapp.vocabulary.IHugeVocabulary"
-      provides="zope.app.form.interfaces.IInputWidget"
+      provides="zope.formlib.interfaces.IInputWidget"
       factory="lp.app.widgets.popup.VocabularyPickerWidget"
       permission="zope.Public"
       />
@@ -413,17 +404,17 @@
       type="zope.publisher.interfaces.browser.IBrowserRequest"
       for="lp.services.fields.PersonChoice
         lp.services.webapp.vocabulary.IHugeVocabulary"
-      provides="zope.app.form.interfaces.IInputWidget"
+      provides="zope.formlib.interfaces.IInputWidget"
       factory="lp.app.widgets.popup.PersonPickerWidget"
       permission="zope.Public"
       />
 
-    <!-- Define the widget used by fields that use BranchVocabularyBase. -->
+    <!-- Define the widget used by fields that use BranchVocabulary. -->
     <view
       type="zope.publisher.interfaces.browser.IBrowserRequest"
       for="zope.schema.interfaces.IChoice
-        lp.code.vocabularies.branch.BranchVocabularyBase"
-      provides="zope.app.form.interfaces.IInputWidget"
+        lp.code.vocabularies.branch.BranchVocabulary"
+      provides="zope.formlib.interfaces.IInputWidget"
       factory="lp.code.browser.widgets.branch.BranchPopupWidget"
       permission="zope.Public"
       />

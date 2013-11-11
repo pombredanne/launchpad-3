@@ -30,7 +30,7 @@ from paste.httpexceptions import (
     )
 import transaction
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.authentication.interfaces import IUnauthenticatedPrincipal
 from zope.component import (
     getSiteManager,
     getUtility,
@@ -499,7 +499,7 @@ def logInPrincipal(request, principal, email, when=None):
     request.setPrincipal(principal)
     if when is None:
         when = datetime.utcnow()
-    authdata['accountid'] = principal.id
+    authdata['accountid'] = int(principal.id)
     authdata['logintime'] = when
     authdata['login'] = email
     notify(CookieAuthLoggedInEvent(request, email))

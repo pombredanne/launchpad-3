@@ -51,5 +51,4 @@ def checkLibraryForFile(path, filename):
     digest = digester.hexdigest()
     openfile.close()
     librarian = getUtility(ILibraryFileAliasSet)
-    return librarian.findBySHA1(digest).count() > 0
-
+    return not librarian.findBySHA1(digest).is_empty()

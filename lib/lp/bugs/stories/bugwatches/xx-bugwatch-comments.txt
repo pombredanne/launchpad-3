@@ -18,8 +18,8 @@ These comments can be displayed like any other comments on a bug. Bug
     <p>Hi!...Usually CD-ROMs are handled in /etc/fstab, so this might
     not even be a...pmount bug...
     ----------------------------------------
-    <p>I'll be happy to add the info you request to the bug report if it
-    will...
+    <p>I&#x27;ll be happy to add the info you request to the bug report
+    if it will...
     ----------------------------------------
 
 The comments imported for a watch can be seen on that watch's +comments
@@ -43,6 +43,6 @@ The ordinary user can't see these comments:
     <p>Hi!...Usually CD-ROMs are handled in /etc/fstab, so this might
     not even be a...pmount bug...
     ----------------------------------------
-    <p>I'll be happy to add the info you request to the bug report if it
-    will...
+    <p>I&#x27;ll be happy to add the info you request to the bug report
+    if it will...
     ----------------------------------------

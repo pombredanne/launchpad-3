@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
@@ -14,7 +14,6 @@ import logging
 from StringIO import StringIO
 import time
 
-import pytz
 from pytz import UTC
 from storm.expr import (
     In,
@@ -22,7 +21,6 @@ from storm.expr import (
     Min,
     Not,
     SQL,
-    Update,
     )
 from storm.locals import (
     Int,
@@ -55,14 +53,16 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.code.model.diff import Diff
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.commercialsubscription import CommercialSubscription
-from lp.registry.model.product import Product
+from lp.registry.model.teammembership import TeamMembership
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
     BulkPruner,
@@ -85,12 +85,7 @@ from lp.services.database.constants import (
     THIRTY_DAYS_AGO,
     UTC_NOW,
     )
-from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 from lp.services.features.model import FeatureFlag
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
@@ -172,7 +167,7 @@ class TestBulkPruner(TestCase):
     def setUp(self):
         super(TestBulkPruner, self).setUp()
 
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store = IMasterStore(CommercialSubscription)
         self.store.execute("CREATE TABLE BulkFoo (id serial PRIMARY KEY)")
 
         for i in range(10):
@@ -609,8 +604,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         pruner = OpenIDConsumerAssociationPruner
         table_name = pruner.table_name
         switch_dbuser('testadmin')
-        store_selector = getUtility(IStoreSelector)
-        store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
+        store = IMasterStore(CommercialSubscription)
         now = time.time()
         # Create some associations in the past with lifetimes
         for delta in range(0, 20):
@@ -633,7 +627,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.runFrequently()
 
         switch_dbuser('testadmin')
-        store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
+        store = IMasterStore(CommercialSubscription)
         # Confirm all the rows we know should have been expired have
         # been expired. These are the ones that would be expired using
         # the test start time as 'now'.
@@ -648,6 +642,30 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         num_unexpired = store.execute(
             "SELECT COUNT(*) FROM %s" % table_name).get_one()[0]
         self.failUnless(num_unexpired > 0)
+
+    def test_PreviewDiffPruner(self):
+        switch_dbuser('testadmin')
+        mp1 = self.factory.makeBranchMergeProposal()
+        now = datetime.now(UTC)
+        self.factory.makePreviewDiff(
+            merge_proposal=mp1, date_created=now - timedelta(hours=2))
+        self.factory.makePreviewDiff(
+            merge_proposal=mp1, date_created=now - timedelta(hours=1))
+        mp1_diff = self.factory.makePreviewDiff(merge_proposal=mp1)
+        mp2 = self.factory.makeBranchMergeProposal()
+        mp2_diff = self.factory.makePreviewDiff(merge_proposal=mp2)
+        self.runDaily()
+        mp1_diff_ids = [removeSecurityProxy(p).id for p in mp1.preview_diffs]
+        mp2_diff_ids = [removeSecurityProxy(p).id for p in mp2.preview_diffs]
+        self.assertEqual([mp1_diff.id], mp1_diff_ids)
+        self.assertEqual([mp2_diff.id], mp2_diff_ids)
+
+    def test_DiffPruner(self):
+        switch_dbuser('testadmin')
+        diff_id = removeSecurityProxy(self.factory.makeDiff()).id
+        self.runDaily()
+        store = IMasterStore(Diff)
+        self.assertContentEqual([], store.find(Diff, Diff.id == diff_id))
 
     def test_RevisionAuthorEmailLinker(self):
         switch_dbuser('testadmin')
@@ -738,6 +756,25 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.assertIsNot(
             personset.getByName('test-unlinked-person-new'), None)
         self.assertIs(personset.getByName('test-unlinked-person-old'), None)
+
+    def test_TeamMembershipPruner(self):
+        # Garbo should remove team memberships for meregd users and teams.
+        switch_dbuser('testadmin')
+        merged_user = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[merged_user])
+        merged_team = self.factory.makeTeam()
+        team.addMember(
+            merged_team, team.teamowner, status=TeamMembershipStatus.PROPOSED)
+        # This is fast and dirty way to place the user and team in a
+        # merged state to verify what the TeamMembershipPruner sees.
+        removeSecurityProxy(merged_user).merged = self.factory.makePerson()
+        removeSecurityProxy(merged_team).merged = self.factory.makeTeam()
+        store = Store.of(team)
+        store.flush()
+        result = store.find(TeamMembership, TeamMembership.team == team.id)
+        self.assertEqual(3, result.count())
+        self.runDaily()
+        self.assertContentEqual([team.teamowner], [tm.person for tm in result])
 
     def test_BugNotificationPruner(self):
         # Create some sample data
@@ -958,8 +995,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         template = self.factory.makePOTemplate()
         self.runDaily()
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        count, = store.execute("""
+        count, = IMasterStore(CommercialSubscription).execute("""
             SELECT count(*)
             FROM SuggestivePOTemplate
             WHERE potemplate = %s
@@ -969,7 +1005,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
 
     def test_BugSummaryJournalRollup(self):
         switch_dbuser('testadmin')
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        store = IMasterStore(CommercialSubscription)
 
         # Generate a load of entries in BugSummaryJournal.
         store.execute("UPDATE BugTask SET status=42")
@@ -989,7 +1025,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
 
     def test_VoucherRedeemer(self):
         switch_dbuser('testadmin')
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
         voucher_proxy = TestSalesforceVoucherProxy()
         self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
@@ -1006,15 +1041,14 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.runFrequently()
 
         # There should now be 0 pending vouchers in Launchpad.
-        num_rows = store.find(
+        num_rows = IMasterStore(CommercialSubscription).find(
             CommercialSubscription,
             Like(CommercialSubscription.sales_system_id, u'pending-%')
             ).count()
         self.assertThat(num_rows, Equals(0))
         # Salesforce should also now have redeemed the voucher.
         unredeemed_ids = [
-            voucher.voucher_id
-            for voucher in voucher_proxy.getUnredeemedVouchers(mark)]
+            v.voucher_id for v in voucher_proxy.getUnredeemedVouchers(mark)]
         self.assertNotIn(redeemed_id, unredeemed_ids)
 
     def test_UnusedPOTMsgSetPruner_removes_obsolete_message_sets(self):
@@ -1148,24 +1182,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             [InformationType.PRIVATESECURITY, InformationType.PROPRIETARY],
             self.getAccessPolicyTypes(product))
 
-    def test_ProductInformationTypeDefault(self):
-        switch_dbuser('testadmin')
-        # Set all existing projects to something other than None or 1.
-        store = IMasterStore(Product)
-        store.execute(Update(
-            {Product._information_type: 2}))
-        store.flush()
-        # Make a new product without an information_type.
-        product = self.factory.makeProduct()
-        store.execute(Update(
-            {Product._information_type: None}, Product.id == product.id))
-        store.flush()
-        self.assertEqual(1, store.find(Product,
-            Product._information_type == None).count())
-        self.runDaily()
-        self.assertEqual(0, store.find(Product,
-            Product._information_type == None).count())
-
     def test_PopulateLatestPersonSourcePackageReleaseCache(self):
         switch_dbuser('testadmin')
         # Make some same test data - we create published source package
@@ -1182,28 +1198,28 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         spr1 = self.factory.makeSourcePackageRelease(
             creator=creators[0], maintainer=maintainers[0],
             distroseries=distroseries, sourcepackagename=spn,
-            date_uploaded=datetime(2010, 12, 1, tzinfo=pytz.UTC))
+            date_uploaded=datetime(2010, 12, 1, tzinfo=UTC))
         self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED,
             sourcepackagerelease=spr1)
         spr2 = self.factory.makeSourcePackageRelease(
             creator=creators[0], maintainer=maintainers[1],
             distroseries=distroseries, sourcepackagename=spn,
-            date_uploaded=datetime(2010, 12, 2, tzinfo=pytz.UTC))
+            date_uploaded=datetime(2010, 12, 2, tzinfo=UTC))
         self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED,
             sourcepackagerelease=spr2)
         spr3 = self.factory.makeSourcePackageRelease(
             creator=creators[1], maintainer=maintainers[0],
             distroseries=distroseries, sourcepackagename=spn,
-            date_uploaded=datetime(2010, 12, 3, tzinfo=pytz.UTC))
+            date_uploaded=datetime(2010, 12, 3, tzinfo=UTC))
         self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED,
             sourcepackagerelease=spr3)
         spr4 = self.factory.makeSourcePackageRelease(
             creator=creators[1], maintainer=maintainers[1],
             distroseries=distroseries, sourcepackagename=spn,
-            date_uploaded=datetime(2010, 12, 4, tzinfo=pytz.UTC))
+            date_uploaded=datetime(2010, 12, 4, tzinfo=UTC))
         spph_1 = self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED,
             sourcepackagerelease=spr4)
@@ -1227,7 +1243,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             self.assertEqual(spr.creator, record.creator)
             self.assertIsNone(record.maintainer_id)
             self.assertEqual(
-                spr.dateuploaded, pytz.UTC.localize(record.dateuploaded))
+                spr.dateuploaded, UTC.localize(record.dateuploaded))
 
         def _assert_release_by_maintainer(maintainer, spr):
             release_records = store.find(
@@ -1238,7 +1254,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             self.assertEqual(spr.maintainer, record.maintainer)
             self.assertIsNone(record.creator_id)
             self.assertEqual(
-                spr.dateuploaded, pytz.UTC.localize(record.dateuploaded))
+                spr.dateuploaded, UTC.localize(record.dateuploaded))
 
         _assert_release_by_creator(creators[0], spr2)
         _assert_release_by_creator(creators[1], spr4)
@@ -1255,7 +1271,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         spr5 = self.factory.makeSourcePackageRelease(
             creator=creators[1], maintainer=maintainers[1],
             distroseries=distroseries, sourcepackagename=spn,
-            date_uploaded=datetime(2010, 12, 5, tzinfo=pytz.UTC))
+            date_uploaded=datetime(2010, 12, 5, tzinfo=UTC))
         spph_2 = self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED,
             sourcepackagerelease=spr5)

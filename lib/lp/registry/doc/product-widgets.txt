@@ -275,7 +275,7 @@ presented ordered to appear in a 3 column list.
     Educational Community Licence view licence
     Public Domain view licence
     Artistic Licence 2.0 view licence
-    GNU GFDL no options view licence
+    GNU FDL no options view licence
     Python Licence view licence
     Common Public Licence view licence
     Mozilla Public Licence view licence
@@ -287,7 +287,7 @@ presented ordered to appear in a 3 column list.
 
 
     >>> print extract_text(find_tag_by_id(html, 'special'))
-    I don't know yet
+    I don&#x27;t know yet
     Other/Proprietary
     Other/Open Source
 
@@ -372,7 +372,7 @@ But not all of them.
     >>> print_checked_items(license_widget(), links=True)
     [ ] Apache Licence ... <http://www.opensource.org/licenses/apache2.0.php>
     ...
-    [ ] I don't know yet
+    [ ] I don&#x27;t know yet
     [ ] Other/Proprietary
     [ ] Other/Open Source
 

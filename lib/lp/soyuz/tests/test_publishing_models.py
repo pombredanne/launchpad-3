@@ -4,14 +4,15 @@
 """Test model and set utilities used for publishing."""
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
-from lp.services.database.constants import UTC_NOW
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.webapp.publisher import canonical_url
-from lp.soyuz.enums import BinaryPackageFileType
+from lp.soyuz.enums import (
+    BinaryPackageFileType,
+    BinaryPackageFormat,
+    )
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     PackagePublishingStatus,
@@ -35,7 +36,7 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
 
         # Ensure all the builds have been built.
         for build in self.builds:
-            removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
+            build.updateStatus(BuildStatus.FULLYBUILT)
         self.publishing_set = getUtility(IPublishingSet)
 
     def _getBuildsForResults(self, results):
@@ -52,9 +53,12 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
 
     def test_getUnpublishedBuildsForSources_one_published(self):
         # If we publish a binary for a build, it is no longer returned.
-        bpr = self.publisher.uploadBinaryForBuild(self.builds[0], 'gedit')
-        self.publisher.publishBinaryInArchive(
-            bpr, self.sources[0].archive,
+        bpr = self.factory.makeBinaryPackageRelease(
+            build=self.builds[0], architecturespecific=True)
+        self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr, archive=self.sources[0].archive,
+            distroarchseries=self.builds[0].distro_arch_series,
+            pocket=self.sources[0].pocket,
             status=PackagePublishingStatus.PUBLISHED)
 
         results = self.publishing_set.getUnpublishedBuildsForSources(
@@ -69,12 +73,14 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
 
         # Publish the binaries for gedit as superseded, explicitly setting
         # the date published.
-        bpr = self.publisher.uploadBinaryForBuild(self.builds[0], 'gedit')
-        bpphs = self.publisher.publishBinaryInArchive(
-            bpr, self.sources[0].archive,
-            status=PackagePublishingStatus.SUPERSEDED)
-        for bpph in bpphs:
-            bpph.datepublished = UTC_NOW
+        bpr = self.factory.makeBinaryPackageRelease(
+            build=self.builds[0], architecturespecific=True)
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagerelease=bpr, archive=self.sources[0].archive,
+            distroarchseries=self.builds[0].distro_arch_series,
+            pocket=self.sources[0].pocket,
+            status=PackagePublishingStatus.PUBLISHED)
+        bpph.supersede()
 
         results = self.publishing_set.getUnpublishedBuildsForSources(
             self.sources)
@@ -86,14 +92,21 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
 
     def test_getChangesFileLFA(self):
         # The getChangesFileLFA() method finds the right LFAs.
+        for spph, name in zip(self.sources, ('foo', 'bar', 'baz')):
+            pu = self.factory.makePackageUpload(
+                archive=spph.sourcepackagerelease.upload_archive,
+                distroseries=spph.sourcepackagerelease.upload_distroseries,
+                changes_filename='%s_666_source.changes' % name)
+            pu.addSource(spph.sourcepackagerelease)
+            pu.setDone()
+
         lfas = (
             self.publishing_set.getChangesFileLFA(hist.sourcepackagerelease)
             for hist in self.sources)
         urls = [lfa.http_url for lfa in lfas]
-        self.assert_(urls[0].endswith('/94/gedit_666_source.changes'))
-        self.assert_(urls[1].endswith('/96/firefox_666_source.changes'))
-        self.assert_(urls[2].endswith(
-            '/98/getting-things-gnome_666_source.changes'))
+        self.assert_(urls[0].endswith('/foo_666_source.changes'))
+        self.assert_(urls[1].endswith('/bar_666_source.changes'))
+        self.assert_(urls[2].endswith('/baz_666_source.changes'))
 
 
 class TestSourcePackagePublishingHistory(TestCaseWithFactory):
@@ -144,34 +157,67 @@ class TestBinaryPackagePublishingHistory(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def test_binaryFileUrls_no_binaries(self):
-        bpr = self.factory.makeBinaryPackageRelease()
-        bpph = self.factory.makeBinaryPackagePublishingHistory(
-            binarypackagerelease=bpr)
-        expected_urls = []
-        self.assertContentEqual(expected_urls, bpph.binaryFileUrls())
-
-    def get_urls_for_binarypackagerelease(self, bpr, archive):
-        return [ProxiedLibraryFileAlias(f.libraryfile, archive).http_url
+    def get_urls_for_bpph(self, bpph, include_meta=False):
+        bpr = bpph.binarypackagerelease
+        archive = bpph.archive
+        urls = [ProxiedLibraryFileAlias(f.libraryfile, archive).http_url
             for f in bpr.files]
 
-    def test_binaryFileUrls_one_binary(self):
+        if include_meta:
+            meta = [(
+                f.libraryfile.content.filesize,
+                f.libraryfile.content.sha1,
+            ) for f in bpr.files]
+
+            return [dict(url=url, size=size, sha1=sha1)
+                for url, (size, sha1) in zip(urls, meta)]
+        return urls
+
+    def make_bpph(self, num_binaries=1):
         archive = self.factory.makeArchive(private=False)
         bpr = self.factory.makeBinaryPackageRelease()
-        self.factory.makeBinaryPackageFile(binarypackagerelease=bpr)
-        bpph = self.factory.makeBinaryPackagePublishingHistory(
+        filetypes = [BinaryPackageFileType.DEB, BinaryPackageFileType.DDEB]
+        for count in range(num_binaries):
+            self.factory.makeBinaryPackageFile(binarypackagerelease=bpr,
+                                               filetype=filetypes[count % 2])
+        return self.factory.makeBinaryPackagePublishingHistory(
             binarypackagerelease=bpr, archive=archive)
-        expected_urls = self.get_urls_for_binarypackagerelease(bpr, archive)
-        self.assertContentEqual(expected_urls, bpph.binaryFileUrls())
+
+    def test_binaryFileUrls_no_binaries(self):
+        bpph = self.make_bpph(num_binaries=0)
+
+        urls = bpph.binaryFileUrls()
+
+        self.assertContentEqual([], urls)
+
+    def test_binaryFileUrls_one_binary(self):
+        bpph = self.make_bpph(num_binaries=1)
+
+        urls = bpph.binaryFileUrls()
+
+        self.assertContentEqual(self.get_urls_for_bpph(bpph), urls)
 
     def test_binaryFileUrls_two_binaries(self):
-        archive = self.factory.makeArchive(private=False)
-        bpr = self.factory.makeBinaryPackageRelease()
-        self.factory.makeBinaryPackageFile(
-            binarypackagerelease=bpr, filetype=BinaryPackageFileType.DEB)
-        self.factory.makeBinaryPackageFile(
-            binarypackagerelease=bpr, filetype=BinaryPackageFileType.DDEB)
+        bpph = self.make_bpph(num_binaries=2)
+
+        urls = bpph.binaryFileUrls()
+
+        self.assertContentEqual(self.get_urls_for_bpph(bpph), urls)
+
+    def test_binaryFileUrls_include_meta(self):
+        bpph = self.make_bpph(num_binaries=2)
+
+        urls = bpph.binaryFileUrls(include_meta=True)
+
+        self.assertContentEqual(
+            self.get_urls_for_bpph(bpph, include_meta=True), urls)
+
+    def test_is_debug_false_for_deb(self):
         bpph = self.factory.makeBinaryPackagePublishingHistory(
-            binarypackagerelease=bpr, archive=archive)
-        expected_urls = self.get_urls_for_binarypackagerelease(bpr, archive)
-        self.assertContentEqual(expected_urls, bpph.binaryFileUrls())
+            binpackageformat=BinaryPackageFormat.DEB)
+        self.assertFalse(bpph.is_debug)
+
+    def test_is_debug_true_for_ddeb(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory(
+            binpackageformat=BinaryPackageFormat.DDEB)
+        self.assertTrue(bpph.is_debug)

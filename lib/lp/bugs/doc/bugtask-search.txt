@@ -394,8 +394,7 @@ Another way of sorting searches is by bug heat.
     >>> for task in ubuntu_tasks:
     ...     removeSecurityProxy(task.bug).heat = task.bug.id
     >>> transaction.commit()
-    >>> params = BugTaskSearchParams(
-    ...     orderby='-heat', user=None)
+    >>> params = BugTaskSearchParams(orderby='-heat', user=None)
     >>> ubuntu_tasks = ubuntu.searchTasks(params)
     >>> for bugtask in ubuntu_tasks:
     ...     bug = bugtask.bug

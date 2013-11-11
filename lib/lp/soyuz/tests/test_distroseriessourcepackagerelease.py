@@ -38,7 +38,8 @@ class TestDistroSeriesSourcePackageRelease(TestCaseWithFactory):
             source_package_release=self.sourcepackagerelease,
             distroarchseries=self.distroarchseries)
         bp_release = self.factory.makeBinaryPackageRelease(
-            build=bp_build, binarypackagename=name)
+            build=bp_build, binarypackagename=name,
+            version=self.factory.getUniqueString())
         sourcepackagename = self.sourcepackagerelease.sourcepackagename
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=sourcepackagename,

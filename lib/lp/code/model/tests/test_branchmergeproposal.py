@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchMergeProposals."""
@@ -65,7 +65,6 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.database.constants import UTC_NOW
 from lp.services.webapp import canonical_url
-from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     ExpectedException,
     launchpadlib_for,
@@ -73,6 +72,7 @@ from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
+    verifyObject,
     WebServiceTestCase,
     ws_object,
     )
@@ -953,31 +953,37 @@ class TestMergeProposalNotification(TestCaseWithFactory):
     def test_getNotificationRecipients_privacy(self):
         # If a user can see only one of the source and target branches, then
         # they do not get email about the proposal.
-        bmp = self.factory.makeBranchMergeProposal()
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        source = self.factory.makeBranch(owner=owner, product=product)
+        target = self.factory.makeBranch(owner=owner, product=product)
+        bmp = self.factory.makeBranchMergeProposal(
+            source_branch=source, target_branch=target)
         # Subscribe eric to the source branch only.
         eric = self.factory.makePerson()
-        bmp.source_branch.subscribe(
+        source.subscribe(
             eric, BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL, eric)
         # Subscribe bob to the target branch only.
         bob = self.factory.makePerson()
-        bmp.target_branch.subscribe(
+        target.subscribe(
             bob, BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL, bob)
         # Subscribe charlie to both.
         charlie = self.factory.makePerson()
-        bmp.source_branch.subscribe(
+        source.subscribe(
             charlie, BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL, charlie)
-        bmp.target_branch.subscribe(
+        target.subscribe(
             charlie, BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL, charlie)
         # Make both branches private.
-        for branch in (bmp.source_branch, bmp.target_branch):
+        for branch in (source, target):
             removeSecurityProxy(branch).transitionToInformationType(
                 InformationType.USERDATA, branch.owner, verify_policy=False)
-        recipients = bmp.getNotificationRecipients(
-            CodeReviewNotificationLevel.FULL)
+        with person_logged_in(owner):
+            recipients = bmp.getNotificationRecipients(
+                CodeReviewNotificationLevel.FULL)
         self.assertNotIn(bob, recipients)
         self.assertNotIn(eric, recipients)
         self.assertIn(charlie, recipients)
@@ -1837,8 +1843,7 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
             preview_diff_id,
             removeSecurityProxy(merge_proposal.preview_diff).id)
         self.assertNotEqual(
-            diff_id,
-            removeSecurityProxy(merge_proposal.preview_diff).diff_id)
+            diff_id, removeSecurityProxy(merge_proposal.preview_diff).diff_id)
 
 
 class TestNextPreviewDiffJob(TestCaseWithFactory):
@@ -2038,18 +2043,20 @@ class TestWebservice(WebServiceTestCase):
 
     def test_getMergeProposals_with_merged_revnos(self):
         """Specifying merged revnos selects the correct merge proposal."""
-        mp = self.factory.makeBranchMergeProposal()
+        registrant = self.factory.makePerson()
+        mp = self.factory.makeBranchMergeProposal(registrant=registrant)
         launchpad = launchpadlib_for(
-            'test', mp.registrant,
+            'test', registrant,
             service_root=self.layer.appserver_root_url('api'))
 
-        with person_logged_in(mp.registrant):
+        with person_logged_in(registrant):
             mp.markAsMerged(merged_revno=123)
             transaction.commit()
             target = ws_object(launchpad, mp.target_branch)
             mp = ws_object(launchpad, mp)
-        self.assertEqual([mp], list(target.getMergeProposals(
-            status=['Merged'], merged_revnos=[123])))
+        self.assertEqual(
+            [mp], list(target.getMergeProposals(
+                status=['Merged'], merged_revnos=[123])))
 
     def test_getRelatedBugTasks(self):
         """Test the getRelatedBugTasks API."""
@@ -2059,8 +2066,7 @@ class TestWebservice(WebServiceTestCase):
         transaction.commit()
         bmp = self.wsObject(db_bmp)
         bugtask = self.wsObject(db_bug.default_bugtask)
-        self.assertEqual(
-            [bugtask], list(bmp.getRelatedBugTasks()))
+        self.assertEqual([bugtask], list(bmp.getRelatedBugTasks()))
 
     def test_setStatus_invalid_transition(self):
         """Emit BadRequest when an invalid transition is requested."""

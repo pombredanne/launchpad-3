@@ -30,7 +30,7 @@ to give the data to the +filebug page.
 
     >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print message.renderContents()
-    Your ticket is "..."
+    Your ticket is &quot;...&quot;
 
 To avoid having the tool from parsing the HTML page, the token is
 returned as a X-Launchpad-Blob-Token header in the response as well:

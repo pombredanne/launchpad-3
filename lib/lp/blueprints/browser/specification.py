@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Specification views."""
@@ -57,15 +57,15 @@ from lazr.restful.interfaces import (
     IWebServiceClientRequest,
     )
 from zope import component
-from zope.app.form.browser import (
-    TextAreaWidget,
-    TextWidget,
-    )
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.formlib.form import Fields
+from zope.formlib.widgets import (
+    TextAreaWidget,
+    TextWidget,
+    )
 from zope.interface import (
     implementer,
     Interface,
@@ -125,7 +125,6 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.services.config import config
-from lp.services.features import getFeatureFlag
 from lp.services.fields import WorkItemsText
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
@@ -144,21 +143,12 @@ from lp.services.webapp.menu import (
     )
 
 
-INFORMATION_TYPE_FLAG = 'blueprints.information_type.enabled'
-
-
 class INewSpecification(Interface):
     """A schema for a new specification."""
 
     use_template(ISpecification, include=[
-        'name',
-        'title',
-        'specurl',
-        'summary',
-        'assignee',
-        'drafter',
-        'approver',
-        ])
+        'name', 'title', 'specurl', 'summary', 'assignee', 'drafter',
+        'approver'])
 
     definition_status = Choice(
         title=_('Definition Status'),
@@ -225,8 +215,6 @@ class NewSpecificationView(LaunchpadFormView):
         Does nothing if the user cannot select different information types or
         the feature flag is not enabled.
         """
-        if not getFeatureFlag(INFORMATION_TYPE_FLAG):
-            return fields
         if len(self.info_types) < 2:
             return fields
         info_type_field = copy_field(ISpecification['information_type'],
@@ -318,10 +306,6 @@ class NewSpecificationView(LaunchpadFormView):
     def validate(self, data):
         """See `LaunchpadFormView`.`"""
         super(NewSpecificationView, self).validate(data)
-        self.validate_information_type(data)
-
-    def validate_information_type(self, data):
-        """Validate the information type is allowed for this context."""
         information_type = data.get('information_type', None)
         if information_type is None:
             # We rely on the model to set the correct default value.
@@ -519,14 +503,11 @@ class SpecificationActionMenu(NavigationMenu, SpecificationEditLinksMixin):
 class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
 
     usedfor = ISpecification
-    links = ['edit', 'people', 'status', 'priority',
-             'whiteboard', 'proposegoal', 'workitems',
-             'milestone', 'subscription',
-             'addsubscriber',
-             'linkbug', 'unlinkbug', 'linkbranch',
-             'adddependency', 'removedependency',
-             'dependencytree', 'linksprint', 'supersede',
-             'retarget', 'information_type']
+    links = ['edit', 'people', 'status', 'priority', 'whiteboard',
+             'proposegoal', 'workitems', 'milestone', 'subscription',
+             'addsubscriber', 'linkbug', 'unlinkbug', 'linkbranch',
+             'adddependency', 'removedependency', 'dependencytree',
+             'linksprint', 'supersede', 'retarget', 'information_type']
 
     @enabled_with_permission('launchpad.Edit')
     def milestone(self):
@@ -599,13 +580,13 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
     @enabled_with_permission('launchpad.Edit')
     def removedependency(self):
         text = 'Remove dependency'
-        enabled = bool(self.context.dependencies)
+        enabled = bool(self.context.getDependencies(self.user))
         return Link('+removedependency', text, icon='remove', enabled=enabled)
 
     def dependencytree(self):
         text = 'Show dependencies'
-        enabled = (bool(self.context.dependencies) or
-                   bool(self.context.blocked_specs))
+        enabled = (bool(self.context.getDependencies(self.user)) or
+                   bool(self.context.getBlockedSpecs(self.user)))
         return Link('+deptree', text, icon='info', enabled=enabled)
 
     @enabled_with_permission('launchpad.AnyPerson')
@@ -625,7 +606,7 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
 
     @enabled_with_permission('launchpad.AnyPerson')
     def linkbranch(self):
-        if self.context.linked_branches.count() > 0:
+        if len(self.context.linked_branches) > 0:
             text = 'Link to another branch'
         else:
             text = 'Link a related branch'
@@ -643,7 +624,8 @@ class SpecificationSimpleView(InformationTypePortletMixin, LaunchpadView):
 
     @cachedproperty
     def has_dep_tree(self):
-        return self.context.dependencies or self.context.blocked_specs
+        return (self.context.getDependencies(self.user) or
+            self.context.getBlockedSpecs(self.user))
 
     @cachedproperty
     def linked_branches(self):
@@ -1112,10 +1094,11 @@ class SpecGraph:
     # containing one '%s' replacement marker.
     url_pattern_for_testing = None
 
-    def __init__(self):
+    def __init__(self, user=None):
         self.nodes = set()
         self.edges = set()
         self.root_node = None
+        self.user = user
 
     def newNode(self, spec, root=False):
         """Return a new node based on the given spec.
@@ -1166,7 +1149,8 @@ class SpecGraph:
         """Add nodes for the specs that the given spec depends on,
         transitively.
         """
-        get_related_specs_fn = attrgetter('dependencies')
+        def get_related_specs_fn(spec):
+            return spec.getDependencies(self.user)
 
         def link_nodes_fn(node, dependency):
             self.link(dependency, node)
@@ -1174,7 +1158,8 @@ class SpecGraph:
 
     def addBlockedNodes(self, spec):
         """Add nodes for specs that the given spec blocks, transitively."""
-        get_related_specs_fn = attrgetter('blocked_specs')
+        def get_related_specs_fn(spec):
+            return spec.getBlockedSpecs(self.user)
 
         def link_nodes_fn(node, blocked_spec):
             self.link(node, blocked_spec)
@@ -1405,7 +1390,7 @@ class SpecificationTreeGraphView(LaunchpadView):
     def makeSpecGraph(self):
         """Return a SpecGraph object rooted on the spec that is self.context.
         """
-        graph = SpecGraph()
+        graph = SpecGraph(self.user)
         graph.newNode(self.context, root=True)
         graph.addDependencyNodes(self.context)
         graph.addBlockedNodes(self.context)
@@ -1437,6 +1422,9 @@ class SpecificationTreeGraphView(LaunchpadView):
         process.stdin.close()
         output = process.stdout.read()
         err = process.stderr.read()
+        # XXX Abel Deuring 2012-12-06, bug 1087314
+        # err may just contain a warning, while the image might be rendered
+        # correctly. We should not raise an error in this case.
         if err:
             raise ProblemRenderingGraph(err, output)
         return output
@@ -1530,16 +1518,13 @@ class SpecificationLinkBranchView(LaunchpadFormView):
 
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
-        self.context.linkBranch(branch=data['branch'],
-                                registrant=self.user)
+        self.context.linkBranch(branch=data['branch'], registrant=self.user)
 
     @property
     def next_url(self):
         return canonical_url(self.context)
 
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context)
+    cancel_url = next_url
 
 
 class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
@@ -1593,8 +1578,7 @@ def starter_xhtml_representation(context, field, request):
         if starter is None:
             return ''
         date_formatter = DateTimeFormatterAPI(context.date_started)
-        return "%s %s" % (
-            format_link(starter), date_formatter.displaydate())
+        return "%s %s" % (format_link(starter), date_formatter.displaydate())
     return render
 
 
@@ -1608,6 +1592,5 @@ def completer_xhtml_representation(context, field, request):
         if completer is None:
             return ''
         date_formatter = DateTimeFormatterAPI(context.date_completed)
-        return "%s %s" % (
-            format_link(completer), date_formatter.displaydate())
+        return "%s %s" % (format_link(completer), date_formatter.displaydate())
     return render

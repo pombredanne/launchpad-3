@@ -12,11 +12,12 @@ Create a builder working on a TranslationTemplatesBuild for a branch.
     >>> from testtools.monkey import patch
     >>> from zope.component import getUtility
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.buildmaster.model.buildqueue import BuildQueue
+    >>> from lp.app.enums import ServiceUsage
+    >>> from lp.buildmaster.interactor import BuilderSlave
+    >>> from lp.services.database.interfaces import IStore
     >>> from lp.services.librarian.interfaces import (
     ...     ILibraryFileAliasSet)
-    >>> from lp.app.enums import ServiceUsage
-    >>> from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-    >>> from lp.buildmaster.model.builder import BuilderSlave
     >>> from lp.testing.factory import (
     ...     remove_security_proxy_and_shout_at_engineer)
     >>> from lp.testing.fakemethod import FakeMethod
@@ -45,7 +46,8 @@ Create a builder working on a TranslationTemplatesBuild for a branch.
     >>> naked_productseries.translations_autoimport_mode = (
     ...     TranslationsBranchImportMode.IMPORT_TEMPLATES)
     >>> specific_job = factory.makeTranslationTemplatesBuildJob(branch=branch)
-    >>> buildqueue = getUtility(IBuildQueueSet).getByJob(specific_job.job)
+    >>> buildqueue = IStore(BuildQueue).find(
+    ...     BuildQueue, job=specific_job.job).one()
 
     >>> fake_chroot = getUtility(ILibraryFileAliasSet)[1]
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -97,8 +99,8 @@ There's a detailed page for the build record.
     >>> print extract_text(find_main_content(user_browser.contents))
     P...
     Build status
-        Needs building
-        Not started yet.
+        Currently building
+        Started ...
     Build details
         Branch: lp://dev/...
         Not imported anywhere.
@@ -123,8 +125,8 @@ product series.
     >>> print extract_text(find_main_content(user_browser.contents))
     P...
     Build status
-        Needs building
-        Not started yet.
+        Currently building
+        Started ...
     Build details
         Branch: lp://dev/...
         For import into: qblark trunk series
@@ -141,16 +143,12 @@ A completed translation templates build job shows up in the builder's
 build history.
 
     >>> login(ANONYMOUS)
-    >>> from datetime import datetime, timedelta
-    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from datetime import timedelta
     >>> from lp.buildmaster.enums import BuildStatus
-    >>> from pytz import utc
-    >>> naked_job = removeSecurityProxy(build.build_farm_job)
-    >>> naked_job.builder = builder
-    >>> naked_job.date_started = datetime(2010, 9, 14, 8, 0, tzinfo=utc)
-    >>> naked_job.date_finished = naked_job.date_started + timedelta(
-    ...     seconds=300)
-    >>> naked_job.status = BuildStatus.FULLYBUILT
+    >>> build.updateStatus(BuildStatus.BUILDING, builder=builder)
+    >>> build.updateStatus(
+    ...     BuildStatus.FULLYBUILT,
+    ...     date_finished=build.date_started + timedelta(seconds=300))
     >>> logout()
 
     >>> user_browser.open(builder_page)

@@ -46,6 +46,7 @@ from lp.code.xmlrpc.codehosting import (
 from lp.codehosting.inmemory import InMemoryFrontend
 from lp.services.database.constants import UTC_NOW
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
+from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.testing import (
     ANONYMOUS,
@@ -325,8 +326,11 @@ class CodehostingTest(TestCaseWithFactory):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct()
         invalid_name = 'invalid name!'
-        message = ("Invalid branch name '%s'. %s"
-                   % (invalid_name, BRANCH_NAME_VALIDATION_ERROR_MESSAGE))
+        # LaunchpadValidationError unfortunately assumes its output is
+        # always HTML, so it ends up double-escaped in XML-RPC faults.
+        message = html_escape(
+            "Invalid branch name '%s'. %s"
+            % (invalid_name, BRANCH_NAME_VALIDATION_ERROR_MESSAGE))
         fault = self.codehosting_api.createBranch(
             owner.id, escape(
                 '/~%s/%s/%s' % (owner.name, product.name, invalid_name)))
@@ -337,9 +341,12 @@ class CodehostingTest(TestCaseWithFactory):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct()
         invalid_name = u'invalid\N{LATIN SMALL LETTER E WITH ACUTE}'
-        message = ("Invalid branch name '%s'. %s"
-                   % (invalid_name.encode('utf-8'),
-                      str(BRANCH_NAME_VALIDATION_ERROR_MESSAGE)))
+        # LaunchpadValidationError unfortunately assumes its output is
+        # always HTML, so it ends up double-escaped in XML-RPC faults.
+        message = html_escape(
+            "Invalid branch name '%s'. %s"
+            % (invalid_name, BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+            ).encode('utf-8')
         fault = self.codehosting_api.createBranch(
             owner.id, escape(
                 '/~%s/%s/%s' % (owner.name, product.name, invalid_name)))

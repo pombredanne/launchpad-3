@@ -107,9 +107,7 @@ Please note that the 'deletion_comment' field (which is optional) is empty.
     >>> admin_browser.getControl(name='field.name_filter').value = ''
     >>> admin_browser.getControl(name='field.selected_sources').value = ['31']
     >>> admin_browser.getControl("Request Deletion").click()
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(admin_browser.contents)
     Source and binaries deleted by Foo Bar:
     iceweasel 1.0 in breezy-autotest
     Deletion comment: None
@@ -117,6 +115,8 @@ Please note that the 'deletion_comment' field (which is optional) is empty.
 The single package in mark's archive was deleted successfully.
 
     >>> print_ppa_packages(admin_browser.contents)
+    Source             Published   Status     Series   Section  Build Status
+    iceweasel...(...)  2007-07-09  Deleted    ...
 
 Now back to cprov's archive for the remaining tests.
 
@@ -129,9 +129,7 @@ is issued.
 
     >>> admin_browser.getControl("Deletion comment").value = "DO IT"
     >>> admin_browser.getControl("Request Deletion").click()
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(admin_browser.contents)
     There is 1 error.
     No sources selected.
 
@@ -150,27 +148,19 @@ entirely readable content.
     ...     "Deletion comment").value = "DO <where is my XSS ?> IT"
     >>> admin_browser.getControl("Request Deletion").click()
 
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(admin_browser.contents)
     Source and binaries deleted by Foo Bar:
     cdrkit 1.0 in breezy-autotest
     Deletion comment: DO &lt;where is my XSS ?&gt; IT
 
     >>> print_ppa_packages(admin_browser.contents)
     Source             Published   Status     Series   Section  Build Status
+    cdrkit - 1.0       2007-07-09  Deleted    ...      Editors  i386
     iceweasel...(...)  2007-07-09  Published  Warty    Editors  i386
     pmount - 0.1-1     2007-07-09  Published  Warty    Editors
 
 Here we can check for maliciously submitted forms containing
 invalid data.
-
-An already deleted source:
-
-    >>> admin_browser.getControl(name='field.selected_sources').value = ['27']
-    Traceback (most recent call last):
-    ...
-    ItemNotFoundError: insufficient items with name '27'
 
 An nonexistent source:
 
@@ -235,17 +225,26 @@ Multiple packages can be deleted in one single batch.
     >>> admin_browser.getControl("Deletion comment").value = "DO IT AGAIN !"
     >>> admin_browser.getControl("Request Deletion").click()
 
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(admin_browser.contents)
     Source and binaries deleted by Foo Bar:
     iceweasel 1.0 in warty
     pmount 0.1-1 in warty
     Deletion comment: DO IT AGAIN !
 
+    >>> from lp.services.database.constants import UTC_NOW
+    >>> from lp.services.database.interfaces import IStore
+    >>> from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+    >>> IStore(SourcePackagePublishingHistory).find(
+    ...     SourcePackagePublishingHistory,
+    ...     SourcePackagePublishingHistory.id.is_in([27, 28, 29])).set(
+    ...         scheduleddeletiondate=UTC_NOW)
+    >>> transaction.commit()
+
 The page doesn't present the form anymore, since there are no sources
 available for deletion.
 
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/~cprov/+archive/ppa/+delete-packages')
     >>> main_content = find_main_content(admin_browser.contents)
     >>> print extract_text(
     ...   find_tags_by_class(str(main_content), 'top-portlet')[0])
@@ -449,9 +448,7 @@ source and binaries are marked as DELETED and the corresponding
     >>> user_browser.getControl("Deletion comment").value = deletion_comment
     >>> user_browser.getControl("Request Deletion").click()
 
-    >>> messages = get_feedback_messages(user_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(user_browser.contents)
     Source and binaries deleted by No Privileges Person:
     foo 1.0 in hoary
     Deletion comment: Deletion of a number of base pairs that is ...
@@ -498,11 +495,12 @@ to download them directly from librarian and the links are below.
 Remove the just deleted publication from disk setting its
 'dateremoved' attribute.
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> login('foo.bar@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> deleted_pub = no_priv.archive.getPublishedSources(
     ...     status=PackagePublishingStatus.DELETED).first()
-    >>> deleted_pub.dateremoved = deleted_pub.datecreated
+    >>> removeSecurityProxy(deleted_pub).dateremoved = deleted_pub.datecreated
     >>> logout()
 
     >>> from lp.services.database.sqlbase import flush_database_updates

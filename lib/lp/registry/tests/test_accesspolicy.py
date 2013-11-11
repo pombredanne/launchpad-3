@@ -24,7 +24,7 @@ from lp.registry.interfaces.accesspolicy import (
     )
 from lp.registry.model.accesspolicy import reconcile_access_for_artifact
 from lp.registry.model.person import Person
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import Provides

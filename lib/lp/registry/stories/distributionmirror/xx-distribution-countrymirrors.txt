@@ -20,7 +20,7 @@ archive mirrors, plus the canonical one.
     >>> print browser.headers['X-REQUEST-HTTP_X_FORWARDED_FOR']
     83.196.46.77
     >>> print browser.headers['X-REQUEST-REMOTE_ADDR']
-    None
+    127.0.0.1
     >>> sorted(browser.contents.split('\n'))
     ['http://archive.ubuntu.com/ubuntu/',
      'http://localhost:11375/archive-mirror/',

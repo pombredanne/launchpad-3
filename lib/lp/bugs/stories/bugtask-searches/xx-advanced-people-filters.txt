@@ -56,16 +56,16 @@ If we enter an invalid assignee, we'll get a nice error message.
     >>> anon_browser.getControl(name='field.assignee').value = (
     ...     'invalid-assignee')
     >>> anon_browser.getControl('Search', index=0).click()
-    >>> get_feedback_messages(anon_browser.contents)
-    [u"There's no person with the name or email address 'invalid-assignee'."]
+    >>> print_feedback_messages(anon_browser.contents)
+    There&#x27;s no person with the name or email address &#x27;invalid-assignee&#x27;.
 
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/~name12/+reportedbugs?advanced=1')
     >>> anon_browser.getControl(name='field.assignee').value = (
     ...     'invalid-assignee')
     >>> anon_browser.getControl('Search', index=0).click()
-    >>> get_feedback_messages(anon_browser.contents)
-    [u"There's no person with the name or email address 'invalid-assignee'."]
+    >>> print_feedback_messages(anon_browser.contents)
+    There&#x27;s no person with the name or email address &#x27;invalid-assignee&#x27;.
 
 
 Searching by reporter
@@ -93,15 +93,16 @@ and invalid searches don't OOPS:
     >>> anon_browser.getControl(name='field.bug_reporter').value = (
     ...     'invalid-reporter')
     >>> anon_browser.getControl('Search', index=0).click()
-    >>> get_feedback_messages(anon_browser.contents)
-    [u"There's no person with the name or email address 'invalid-reporter'."]
+    >>> print_feedback_messages(anon_browser.contents)
+    There&#x27;s no person with the name or email address &#x27;invalid-reporter&#x27;.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/~name12/+assignedbugs')
     >>> anon_browser.getControl(name='field.bug_reporter').value = (
     ...     'invalid-reporter')
     >>> anon_browser.getControl('Search', index=0).click()
-    >>> get_feedback_messages(anon_browser.contents)
-    [u"There's no person with the name or email address 'invalid-reporter'."]
+    >>> print_feedback_messages(anon_browser.contents)
+    There&#x27;s no person with the name or email address
+    &#x27;invalid-reporter&#x27;.
 
 
 Searching for a bug commenter's bugs
@@ -120,7 +121,7 @@ displayed.
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print message.renderContents()
-    There's no person with the name or email address 'non-existent'.
+    There&#x27;s no person with the name or email address &#x27;non-existent&#x27;.
 
 Entering an existing person shows all bugs that person has commented on.
 
@@ -177,7 +178,7 @@ displayed:
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
     ...     print message.renderContents()
-    There's no person with the name or email address 'non-existent'.
+    There&#x27;s no person with the name or email address &#x27;non-existent&#x27;.
 
 Entering an existing person shows all bugs for packages or products that
 the person is subscribed to. To demonstrate, we'll begin with a user who
@@ -207,8 +208,7 @@ product:
 
     >>> browser.getControl('Further information').value = 'Test Bug 1'
     >>> browser.getControl('Submit').click()
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(browser.contents)
     Thank you for your bug report...
 
     >>> bug_1_url = browser.url
@@ -218,8 +218,7 @@ product:
     >>> browser.getControl('Continue').click()
     >>> browser.getControl('Further information').value = 'Test Bug 2'
     >>> browser.getControl('Submit').click()
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(browser.contents)
     Thank you for your bug report...
 
     >>> bug_2_url = browser.url
@@ -233,8 +232,7 @@ Next we'll subscribe our user to the first bug we've just registered:
 
     >>> browser.getControl('Person').value = subscriber
     >>> browser.getControl('Subscribe user').click()
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(browser.contents)
     No Privileges Person has been subscribed to this bug...
 
 Now if we repeat our earlier search for bugs our user is subscribed to,
@@ -257,8 +255,7 @@ Next we'll subscribe our user to the second bug we've just registered:
 
     >>> browser.getControl('Person').value = subscriber
     >>> browser.getControl('Subscribe user').click()
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(browser.contents)
     No Privileges Person has been subscribed to this bug...
 
 Finally, if we repeat our earlier search for bugs our user is subscribed

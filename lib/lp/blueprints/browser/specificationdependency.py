@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for SpecificationDependency."""
@@ -23,6 +23,7 @@ from lp.blueprints.interfaces.specificationdependency import (
     ISpecificationDependency,
     ISpecificationDependencyRemoval,
     )
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
@@ -92,8 +93,25 @@ class SpecificationDependencyRemoveView(LaunchpadFormView):
 
 
 class SpecificationDependencyTreeView(LaunchpadView):
+
     label = "Blueprint dependency tree"
 
     @property
     def page_title(self):
         return self.label
+
+    @cachedproperty
+    def all_blocked(self):
+        return self.context.all_blocked(self.user)
+
+    @cachedproperty
+    def all_deps(self):
+        return self.context.all_deps(self.user)
+
+    @cachedproperty
+    def dependencies(self):
+        return self.context.getDependencies(self.user)
+
+    @cachedproperty
+    def blocked_specs(self):
+        return self.context.getBlockedSpecs(self.user)

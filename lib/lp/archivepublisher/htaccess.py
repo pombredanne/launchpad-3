@@ -3,8 +3,6 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=C0103,W0403
-
 """Writing of htaccess and htpasswd files."""
 
 __metaclass__ = type
@@ -21,7 +19,7 @@ from operator import itemgetter
 import os
 
 from lp.registry.model.person import Person
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 
 

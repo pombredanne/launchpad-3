@@ -18,7 +18,7 @@
     </ul>
 </div>
 
-<div tal:condition="context/required:launchpad.Edit">
+<div tal:condition="view/allow_series_translation">
   <div class="portlet" id="portlet-untranslatable-branches"
        tal:condition="view/untranslatable_series">
     <h3>Set up translations for a series</h3>

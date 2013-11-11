@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
@@ -39,9 +39,7 @@ from storm.expr import (
     Min,
     Or,
     Row,
-    Select,
     SQL,
-    Update,
     )
 from storm.info import ClassAlias
 from storm.store import EmptyResultSet
@@ -62,6 +60,10 @@ from lp.bugs.scripts.checkwatches.scheduler import (
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.code.model.diff import (
+    Diff,
+    PreviewDiff,
+    )
 from lp.code.model.revision import (
     RevisionAuthor,
     RevisionCache,
@@ -70,6 +72,7 @@ from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
+from lp.registry.model.teammembership import TeamMembership
 from lp.services.config import config
 from lp.services.database import postgresql
 from lp.services.database.bulk import (
@@ -77,12 +80,7 @@ from lp.services.database.bulk import (
     dbify_value,
     )
 from lp.services.database.constants import UTC_NOW
-from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 from lp.services.database.sqlbase import (
     cursor,
     session_store,
@@ -143,8 +141,7 @@ ONE_DAY_IN_SECONDS = 24 * 60 * 60
 # provide convenient access to that state data.
 def load_garbo_job_state(job_name):
     # Load the json state data for the given job name.
-    store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-    job_data = store.execute(
+    job_data = IMasterStore(Person).execute(
         "SELECT json_data FROM GarboJobState WHERE name = ?",
         params=(unicode(job_name),)).get_one()
     if job_data:
@@ -154,7 +151,7 @@ def load_garbo_job_state(job_name):
 
 def save_garbo_job_state(job_name, job_data):
     # Save the json state data for the given job name.
-    store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    store = IMasterStore(Person)
     json_data = simplejson.dumps(job_data, ensure_ascii=False)
     result = store.execute(
         "UPDATE GarboJobState SET json_data = ? WHERE name = ?",
@@ -378,6 +375,32 @@ class OAuthNoncePruner(BulkPruner):
         """
 
 
+class PreviewDiffPruner(BulkPruner):
+    """A BulkPruner to remove old PreviewDiffs.
+
+    We remove all but the latest PreviewDiff for each BranchMergeProposal.
+    """
+    target_table_class = PreviewDiff
+    ids_to_prune_query = """
+        SELECT id
+            FROM
+            (SELECT PreviewDiff.id,
+                rank() OVER (PARTITION BY PreviewDiff.branch_merge_proposal
+                ORDER BY PreviewDiff.date_created DESC) AS pos
+            FROM previewdiff) AS ss
+        WHERE pos > 1
+        """
+
+
+class DiffPruner(BulkPruner):
+    """A BulkPruner to remove all unreferenced Diffs."""
+    target_table_class = Diff
+    ids_to_prune_query = """
+        SELECT id FROM diff EXCEPT (SELECT diff FROM previewdiff UNION ALL
+            SELECT diff FROM incrementaldiff)
+        """
+
+
 class UnlinkedAccountPruner(BulkPruner):
     """Remove Account records not linked to a Person."""
     target_table_class = Account
@@ -400,7 +423,7 @@ class BugSummaryJournalRollup(TunableLoop):
 
     def __init__(self, log, abort_time=None):
         super(BugSummaryJournalRollup, self).__init__(log, abort_time)
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store = IMasterStore(Bug)
 
     def isDone(self):
         has_more = self.store.execute(
@@ -426,7 +449,7 @@ class VoucherRedeemer(TunableLoop):
 
     def __init__(self, log, abort_time=None):
         super(VoucherRedeemer, self).__init__(log, abort_time)
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store = IMasterStore(CommercialSubscription)
 
     @cachedproperty
     def _salesforce_proxy(self):
@@ -492,7 +515,7 @@ class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
     def __init__(self, log, abort_time=None):
         super_cl = super(PopulateLatestPersonSourcePackageReleaseCache, self)
         super_cl.__init__(log, abort_time)
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store = IMasterStore(LatestPersonSourcePackageReleaseCache)
         # Keep a record of the processed source package release id and data
         # type (creator or maintainer) so we know where to job got up to.
         self.last_spph_id = 0
@@ -651,7 +674,7 @@ class OpenIDConsumerNoncePruner(TunableLoop):
 
     def __init__(self, log, abort_time=None):
         super(OpenIDConsumerNoncePruner, self).__init__(log, abort_time)
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store = IMasterStore(OpenIDConsumerNonce)
         self.earliest_timestamp = self.store.find(
             Min(OpenIDConsumerNonce.timestamp)).one()
         utc_now = int(time.mktime(time.gmtime()))
@@ -687,7 +710,7 @@ class OpenIDConsumerAssociationPruner(TunableLoop):
 
     def __init__(self, log, abort_time=None):
         super(OpenIDConsumerAssociationPruner, self).__init__(log, abort_time)
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store = IMasterStore(OpenIDConsumerNonce)
 
     def __call__(self, chunksize):
         result = self.store.execute("""
@@ -1005,6 +1028,24 @@ class PersonPruner(TunableLoop):
                 % chunk_size)
 
 
+class TeamMembershipPruner(BulkPruner):
+    """Remove team memberships for merged people.
+
+    People merge can leave team membership records behind because:
+        * The membership duplicates another membership.
+        * The membership would have created a cyclic relationshop.
+        * The operation avoid a race condition.
+    """
+    target_table_class = TeamMembership
+    ids_to_prune_query = """
+        SELECT TeamMembership.id
+        FROM TeamMembership, Person
+        WHERE
+            TeamMembership.person = person.id
+            AND person.merged IS NOT NULL
+        """
+
+
 class BugNotificationPruner(BulkPruner):
     """Prune `BugNotificationRecipient` records no longer of interest.
 
@@ -1185,33 +1226,6 @@ class OldTimeLimitedTokenDeleter(TunableLoop):
                 % ONE_DAY_IN_SECONDS)).remove()
         transaction.commit()
         self._update_oldest()
-
-
-class ProductInformationTypeDefault(TunableLoop):
-    """Set all Product.information_type to Public."""
-
-    maximum_chunk_size = 1000
-
-    def __init__(self, log, abort_time=None):
-        super(ProductInformationTypeDefault, self).__init__(
-            log, abort_time)
-        self.rows_updated = None
-        self.store = IMasterStore(Product)
-
-    def isDone(self):
-        """See `TunableLoop`."""
-        return self.rows_updated == 0
-
-    def __call__(self, chunk_size):
-        """See `TunableLoop`."""
-        subselect = Select(
-            Product.id, Product._information_type == None,
-            limit=chunk_size)
-        result = self.store.execute(
-            Update({Product._information_type: 1},
-            Product.id.is_in(subselect)))
-        transaction.commit()
-        self.rows_updated = result.rowcount
 
 
 class SuggestiveTemplatesCacheUpdater(TunableLoop):
@@ -1418,9 +1432,8 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
             else:
                 break
 
-        # If the script ran out of time, warn.
         if self.get_remaining_script_time() < 0:
-            self.logger.warn(
+            self.logger.info(
                 "Script aborted after %d seconds.", self.script_timeout)
 
         if tunable_loops:
@@ -1630,12 +1643,14 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,
         ScrubPOFileTranslator,
-        ProductInformationTypeDefault,
         SuggestiveTemplatesCacheUpdater,
+        TeamMembershipPruner,
         POTranslationPruner,
         UnlinkedAccountPruner,
         UnusedAccessPolicyPruner,
         UnusedPOTMsgSetPruner,
+        PreviewDiffPruner,
+        DiffPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,

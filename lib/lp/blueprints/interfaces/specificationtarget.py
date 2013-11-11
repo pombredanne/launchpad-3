@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Interfaces for things which have Specifications."""
 
 __metaclass__ = type
@@ -39,7 +37,7 @@ class IHasSpecifications(Interface):
     associated with them, and you can use this interface to query those.
     """
 
-    _all_specifications = exported(doNotSnapshot(
+    visible_specifications = exported(doNotSnapshot(
         CollectionField(
             title=_("All specifications"),
             value_type=Reference(schema=Interface),  # ISpecification, really.
@@ -49,7 +47,7 @@ class IHasSpecifications(Interface):
                 'approval or completion, for this object.'))),
         exported_as="all_specifications", as_of="devel")
 
-    _valid_specifications = exported(doNotSnapshot(
+    api_valid_specifications = exported(doNotSnapshot(
         CollectionField(
             title=_("Valid specifications"),
             value_type=Reference(schema=Interface),  # ISpecification, really.
@@ -61,7 +59,8 @@ class IHasSpecifications(Interface):
         exported_as="valid_specifications", as_of="devel")
 
     def specifications(user, quantity=None, sort=None, filter=None,
-                       prejoin_people=True):
+                       need_people=True, need_branches=True,
+                       need_workitems=False):
         """Specifications for this target.
 
         The user specifies which user to use for calculation of visibility.
@@ -75,9 +74,15 @@ class IHasSpecifications(Interface):
         it will show all specs, in others, all approved specs, and in
         others, all incomplete specs.
 
-        If prejoin_people=False is specified, then the assignee, drafter
-        and approver will not be prejoined. This can be used in
-        situations in which these are not rendered.
+        If need_people is True, then the assignee, drafter and approver will
+        be preloaded, if need_branches is True, linked_branches will be
+        preloaded, and if need_workitems is True, work_items will be preloaded.
+        """
+
+    def valid_specifications(**kwargs):
+        """Valid specifications for this target.
+
+        Any kwargs are passed to specifications.
         """
 
 

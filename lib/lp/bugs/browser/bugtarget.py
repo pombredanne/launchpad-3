@@ -20,7 +20,6 @@ __all__ = [
     "product_to_productbugconfiguration",
     ]
 
-import cgi
 from cStringIO import StringIO
 from datetime import datetime
 from functools import partial
@@ -35,10 +34,10 @@ from pytz import timezone
 from simplejson import dumps
 from sqlobject import SQLObjectNotFound
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser import TextWidget
-from zope.app.form.interfaces import InputErrors
 from zope.component import getUtility
 from zope.formlib.form import Fields
+from zope.formlib.interfaces import InputErrors
+from zope.formlib.widgets import TextWidget
 from zope.interface import (
     alsoProvides,
     implements,
@@ -602,8 +601,8 @@ class FileBugViewBase(LaunchpadFormView):
                     comment=attachment_comment, is_patch=data['patch'])
 
                 notifications.append(
-                    'The file "%s" was attached to the bug report.' %
-                        cgi.escape(filename))
+                    'The file "%s" was attached to the bug report.'
+                    % filename)
 
             for attachment in extra_data.attachments:
                 bug.linkAttachment(
@@ -612,8 +611,8 @@ class FileBugViewBase(LaunchpadFormView):
                     comment=attachment_comment,
                     send_notifications=False)
                 notifications.append(
-                    'The file "%s" was attached to the bug report.' %
-                        cgi.escape(attachment['file_alias'].filename))
+                    'The file "%s" was attached to the bug report.'
+                    % attachment['file_alias'].filename)
 
         if extra_data.subscribers:
             # Subscribe additional subscribers to this bug

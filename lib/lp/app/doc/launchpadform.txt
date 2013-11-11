@@ -130,7 +130,7 @@ In some cases we will want to use a custom widget for a particular
 field.  These can be installed easily with the "custom_widgets"
 attribute:
 
-  >>> from zope.app.form.browser import TextWidget
+  >>> from zope.formlib.widgets import TextWidget
   >>> from lp.app.browser.launchpadform import custom_widget
 
   >>> class FormTestView3(LaunchpadFormView):
@@ -260,9 +260,9 @@ Check that widget specific errors can be reported:
   >>> view.setUpWidgets()
   >>> data = {}
   >>> view._validate(None, data)
-  [u'your password must not be "password"']
+  [u'your password must not be &quot;password&quot;']
   >>> view.widget_errors
-  {'password': u'your password must not be "password"'}
+  {'password': u'your password must not be &quot;password&quot;'}
 
 The base template used for LaunchpadFormView classes takes care of
 displaying these errors in the appropriate locations.

@@ -257,9 +257,7 @@ def _has_published_binaries(archive, distroarchseries, pocket):
     published_binaries = archive.getAllPublishedBinaries(
         distroarchseries=distroarchseries,
         status=PackagePublishingStatus.PUBLISHED)
-    # XXX cprov 20080923 bug=246200: This count should be replaced
-    # by bool() (__non_zero__) when storm implementation gets fixed.
-    return published_binaries.count() > 0
+    return not published_binaries.is_empty()
 
 
 def _get_binary_sources_list_line(archive, distroarchseries, pocket,

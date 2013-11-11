@@ -171,10 +171,9 @@ with an error message.
 
     >>> print user_browser.url
     http://answers.launchpad.dev/firefox/+question/2/+linkfaq
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(user_browser.contents)
     There is 1 error.
-    You didn't modify the linked FAQ.
+    You didn&#x27;t modify the linked FAQ.
 
 To remove the FAQ, the user selects the 'No existing...' option and
 submit the form again.
@@ -187,7 +186,7 @@ The new message was added to the question:
     >>> print extract_text(find_tags_by_class(
     ...     user_browser.contents, 'boardCommentBody')[-1]).encode(
     ...     'ascii', 'backslashreplace')
-    Sorry, this document doesn't really answer your question.
+    Sorry, this document doesn&#x27;t really answer your question.
 
 The link was also removed from the details portlet:
 

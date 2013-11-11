@@ -10,13 +10,13 @@ import simplejson
 from lp.code.errors import InvalidMergeQueueConfig
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.model.branchmergequeue import BranchMergeQueue
-from lp.services.database.lpstorm import IStore
-from lp.services.webapp.testing import verifyObject
+from lp.services.database.interfaces import IStore
 from lp.testing import (
     ANONYMOUS,
     launchpadlib_for,
     person_logged_in,
     TestCaseWithFactory,
+    verifyObject,
     ws_object,
     )
 from lp.testing.layers import (

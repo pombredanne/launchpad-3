@@ -1,7 +1,5 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213,F0401,W0611
 
 """Branch interfaces."""
 
@@ -25,7 +23,6 @@ __all__ = [
     'WrongNumberOfReviewTypeArguments',
     ]
 
-from cgi import escape
 import httplib
 import re
 
@@ -71,7 +68,6 @@ from zope.schema import (
 
 from lp import _
 from lp.app.enums import InformationType
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
 from lp.code.bzr import (
     BranchFormat,
@@ -94,7 +90,10 @@ from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.role import (
+    IHasOwner,
+    IPersonRoles,
+    )
 from lp.services.config import config
 from lp.services.fields import (
     PersonChoice,
@@ -102,7 +101,10 @@ from lp.services.fields import (
     URIField,
     Whiteboard,
     )
-from lp.services.webapp.escaping import structured
+from lp.services.webapp.escaping import (
+    html_escape,
+    structured,
+    )
 from lp.services.webapp.interfaces import ITableBatchNavigator
 
 
@@ -164,13 +166,14 @@ class BranchURIField(URIField):
             message = _(
                 "For Launchpad to mirror a branch, the original branch "
                 "cannot be on <code>${domain}</code>.",
-                mapping={'domain': escape(launchpad_domain)})
+                mapping={'domain': html_escape(launchpad_domain)})
             raise LaunchpadValidationError(structured(message))
 
         for hostname in get_blacklisted_hostnames():
             if uri.underDomain(hostname):
                 message = _(
-                    'Launchpad cannot mirror branches from %s.' % hostname)
+                    'Launchpad cannot mirror branches from %s.'
+                    % html_escape(hostname))
                 raise LaunchpadValidationError(structured(message))
 
         # As well as the check against the config, we also need to check
@@ -180,7 +183,7 @@ class BranchURIField(URIField):
             message = _(
                 "For Launchpad to mirror a branch, the original branch "
                 "cannot be on <code>${domain}</code>.",
-                mapping={'domain': escape(constraint_text)})
+                mapping={'domain': html_escape(constraint_text)})
             raise LaunchpadValidationError(structured(message))
 
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
@@ -196,8 +199,8 @@ class BranchURIField(URIField):
             message = _(
                 'The bzr branch <a href="${url}">${branch}</a> is '
                 'already registered with this URL.',
-                mapping={'url': canonical_url(branch),
-                         'branch': escape(branch.displayname)})
+                mapping={'url': html_escape(canonical_url(branch)),
+                         'branch': html_escape(branch.displayname)})
             raise LaunchpadValidationError(structured(message))
 
 
@@ -478,6 +481,9 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
             readonly=True,
             value_type=Reference(Interface)),  # Really ISpecificationBranch
         as_of="beta")
+
+    def getSpecificationLinks(user):
+        """Fetch the `ISpecificationBranch`'s that the user can view."""
 
     @call_with(registrant=REQUEST_USER)
     @operation_parameters(
@@ -783,6 +789,9 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         """
 
     # subscription-related methods
+    def userCanBeSubscribed(person):
+        """Return if the `IPerson` can be subscribed to the branch."""
+
     @operation_parameters(
         person=Reference(
             title=_("The person to subscribe."),
@@ -1526,15 +1535,26 @@ class BzrIdentityMixin:
         return sorted(links)
 
 
-def user_has_special_branch_access(user):
-    """Admins and bazaar experts have special access.
+def user_has_special_branch_access(user, branch=None):
+    """Admins and vcs-import members have have special access.
 
     :param user: A 'Person' or None.
+    :param branch: A branch or None when checking collection access.
     """
     if user is None:
         return False
-    celebs = getUtility(ILaunchpadCelebrities)
-    return user.inTeam(celebs.admin)
+    roles = IPersonRoles(user)
+    if roles.in_admin:
+        return True
+    if branch is None:
+        return False
+    code_import = branch.code_import
+    if code_import is None:
+        return False
+    return (
+        roles.in_vcs_imports
+        or (IPersonRoles(branch.owner).in_vcs_imports
+            and user.inTeam(code_import.registrant)))
 
 
 def get_db_branch_info(stacked_on_url, last_revision_id, control_string,

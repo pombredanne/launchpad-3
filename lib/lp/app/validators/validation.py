@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 __metaclass__ = type
 
 __all__ = [
@@ -15,11 +13,10 @@ __all__ = [
     'validate_date_interval',
     ]
 
-from cgi import escape
 from textwrap import dedent
 
-from zope.app.form.interfaces import WidgetsError
 from zope.component import getUtility
+from zope.formlib.interfaces import WidgetsError
 
 from lp import _
 from lp.app.errors import NotFoundError
@@ -28,7 +25,10 @@ from lp.app.validators.cve import valid_cve
 from lp.app.validators.email import valid_email
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.webapp import canonical_url
-from lp.services.webapp.escaping import structured
+from lp.services.webapp.escaping import (
+    html_escape,
+    structured,
+    )
 from lp.services.webapp.interfaces import ILaunchBag
 
 
@@ -94,9 +94,9 @@ def _check_email_availability(email):
         person = email_address.person
         message = _('${email} is already registered in Launchpad and is '
                     'associated with <a href="${url}">${person}</a>.',
-                    mapping={'email': escape(email),
-                            'url': canonical_url(person),
-                            'person': escape(person.displayname)})
+                    mapping={'email': html_escape(email),
+                            'url': html_escape(canonical_url(person)),
+                            'person': html_escape(person.displayname)})
         raise LaunchpadValidationError(structured(message))
 
 
@@ -125,8 +125,8 @@ def validate_new_person_email(email):
     if owner is not None:
         message = _("The profile you're trying to create already exists: "
                     '<a href="${url}">${owner}</a>.',
-                    mapping={'url': canonical_url(owner),
-                             'owner': escape(owner.displayname)})
+                    mapping={'url': html_escape(canonical_url(owner)),
+                             'owner': html_escape(owner.displayname)})
         raise LaunchpadValidationError(structured(message))
     return True
 
@@ -141,8 +141,8 @@ def validate_date_interval(start_date, end_date, error_msg=None):
     >>> validate_date_interval(end, start)
     Traceback (most recent call last):
     ...
-    WidgetsError: LaunchpadValidationError: This event can't start after it
-    ends.
+    WidgetsError: LaunchpadValidationError: This event can&#x27;t start
+    after it ends.
     >>> validate_date_interval(end, start, error_msg="A custom error msg")
     Traceback (most recent call last):
     ...

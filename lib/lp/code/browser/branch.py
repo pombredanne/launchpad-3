@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch views."""
@@ -28,7 +28,6 @@ __all__ = [
     'TryImportAgainView',
     ]
 
-import cgi
 from datetime import (
     datetime,
     timedelta,
@@ -49,13 +48,13 @@ from lazr.restful.utils import smartquote
 from lazr.uri import URI
 import pytz
 import simplejson
-from zope.app.form.browser import TextAreaWidget
 from zope.component import (
     getUtility,
     queryAdapter,
     )
 from zope.event import notify
 from zope.formlib import form
+from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
     implements,
     Interface,
@@ -128,11 +127,14 @@ from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
+from lp.code.model.branch import Branch
+from lp.code.model.branchcollection import GenericBranchCollection
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
 from lp.services import searchbuilder
 from lp.services.config import config
+from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
 from lp.services.feeds.browser import (
     BranchFeedLink,
@@ -163,10 +165,6 @@ from lp.services.webapp.interfaces import ICanonicalUrlData
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuildSource,
     )
-
-
-def quote(text):
-    return cgi.escape(text, quote=True)
 
 
 class BranchURL:
@@ -359,7 +357,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         return Link('+linkbug', text, icon='add')
 
     def link_blueprint(self):
-        if self.context.spec_links:
+        if list(self.context.getSpecificationLinks(self.user)):
             text = 'Link to another blueprint'
         else:
             text = 'Link to a blueprint'
@@ -559,7 +557,11 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
     @cachedproperty
     def landing_candidates(self):
         """Return a decorated list of landing candidates."""
-        candidates = self.context.landing_candidates
+        candidates = list(self.context.landing_candidates)
+        branches = load_related(
+            Branch, candidates, ['source_branchID', 'prerequisite_branchID'])
+        GenericBranchCollection.preloadVisibleStackedOnBranches(
+            branches, self.user)
         return [proposal for proposal in candidates
                 if check_permission('launchpad.View', proposal)]
 
@@ -694,6 +696,10 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
             self.context.branch, IBranch['lifecycle_status'],
             header='Change status to', css_class_prefix='branchstatus')
 
+    @property
+    def spec_links(self):
+        return self.context.getSpecificationLinks(self.user)
+
 
 class BranchInProductView(BranchView):
 
@@ -709,12 +715,12 @@ class BranchNameValidationMixin:
         if owner == self.user:
             prefix = "You already have"
         else:
-            prefix = "%s already has" % cgi.escape(owner.displayname)
-        message = (
-            "%s a branch for <em>%s</em> called <em>%s</em>."
-            % (prefix, existing_branch.target.displayname,
-               existing_branch.name))
-        self.setFieldError(field_name, structured(message))
+            prefix = "%s already has" % owner.displayname
+        message = structured(
+            "%s a branch for <em>%s</em> called <em>%s</em>.",
+            prefix, existing_branch.target.displayname,
+            existing_branch.name)
+        self.setFieldError(field_name, message)
 
 
 class BranchEditFormView(LaunchpadEditFormView):
@@ -755,7 +761,7 @@ class BranchEditFormView(LaunchpadEditFormView):
                 params = BugTaskSearchParams(
                     user=self.user, linked_branches=self.context.id,
                     information_type=hidden_types)
-                if getUtility(IBugTaskSet).searchBugIds(params).count() > 0:
+                if not getUtility(IBugTaskSet).searchBugIds(params).is_empty():
                     shown_types += hidden_types
 
         # Now take the intersection of the allowed and shown types.

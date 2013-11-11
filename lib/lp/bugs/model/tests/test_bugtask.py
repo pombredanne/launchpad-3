@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -27,7 +27,6 @@ from lp.app.enums import (
     ServiceUsage,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBug,
@@ -107,7 +106,6 @@ from lp.testing import (
     TestCaseWithFactory,
     ws_object,
     )
-from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
     AppServerLayer,
@@ -505,7 +503,7 @@ class TestBugTaskBadges(TestCaseWithFactory):
             ' has_specification: False'])
 
         # a specification gets linked...
-        spec = getUtility(ISpecificationSet)._all_specifications[0]
+        spec = self.factory.makeSpecification()
         spec.linkBug(bug_two)
 
         # or a branch gets linked to the bug...
@@ -528,7 +526,7 @@ class TestBugTaskBadges(TestCaseWithFactory):
         ])
 
 
-class TestBugTaskPrivacy(TestCase):
+class TestBugTaskPrivacy(TestCaseWithFactory):
     """Verify that the bug is either private or public.
 
     XXX: rharding 2012-05-14 bug=999298: These tests are ported from doctests
@@ -553,14 +551,15 @@ class TestBugTaskPrivacy(TestCase):
         ubuntu_team = getUtility(IPersonSet).getByEmail('support@ubuntu.com')
         bug_upstream_firefox_crashes.bug.subscribe(ubuntu_team, ubuntu_team)
 
-        old_state = Snapshot(bug_upstream_firefox_crashes.bug,
-                             providing=IBug)
-        self.assertTrue(bug_upstream_firefox_crashes.bug.setPrivate(True,
-                                                                    foobar))
+        old_state = Snapshot(
+            bug_upstream_firefox_crashes.bug, providing=IBug)
+        self.assertTrue(
+            bug_upstream_firefox_crashes.bug.setPrivate(True, foobar))
 
-        bug_set_private = ObjectModifiedEvent(bug_upstream_firefox_crashes.bug,
-                                              old_state,
-                                              ["id", "title", "private"])
+        bug_set_private = ObjectModifiedEvent(
+            bug_upstream_firefox_crashes.bug, old_state,
+            ["id", "title", "private"])
+
         notify(bug_set_private)
         flush_database_updates()
 
@@ -670,6 +669,28 @@ class TestBugTaskPrivacy(TestCase):
             BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
         bug_upstream_firefox_crashes.transitionToStatus(
             BugTaskStatus.NEW, getUtility(ILaunchBag).user)
+
+    def _createBugAndSpecification(self):
+        bug = self.factory.makeBug()
+        spec = self.factory.makeSpecification(
+            information_type=InformationType.PROPRIETARY)
+        with person_logged_in(spec.product.owner):
+            spec.linkBug(bug)
+        return spec, bug     
+
+    def test_bug_specifications_is_filtered_for_anonymous(self):
+        spec, bug = self._createBugAndSpecification()
+        self.assertContentEqual([], bug.getSpecifications(None))
+
+    def test_bug_specifications_is_filtered_for_unknown_user(self):
+        spec, bug = self._createBugAndSpecification()
+        self.assertContentEqual(
+            [], bug.getSpecifications(self.factory.makePerson()))
+
+    def test_bug_specifications_for_authorised_user(self):
+        spec, bug = self._createBugAndSpecification()
+        self.assertContentEqual(
+            [spec], bug.getSpecifications(spec.product.owner))
 
 
 class TestBugTaskDelta(TestCaseWithFactory):
@@ -1370,44 +1391,6 @@ class BugTaskSetFindExpirableBugTasksTest(unittest.TestCase):
         self.assertRaises(
             AssertionError, self.bugtaskset.findExpirableBugTasks,
             0, self.user, target=[])
-
-
-class BugTaskSetTest(unittest.TestCase):
-    """Test `BugTaskSet` methods."""
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        login(ANONYMOUS)
-
-    def test_getBugTasks(self):
-        """ IBugTaskSet.getBugTasks() returns a dictionary mapping the given
-        bugs to their bugtasks. It does that in a single query, to avoid
-        hitting the DB again when getting the bugs' tasks.
-        """
-        login('no-priv@canonical.com')
-        factory = LaunchpadObjectFactory()
-        bug1 = factory.makeBug()
-        factory.makeBugTask(bug1)
-        bug2 = factory.makeBug()
-        factory.makeBugTask(bug2)
-        factory.makeBugTask(bug2)
-
-        bugs_and_tasks = getUtility(IBugTaskSet).getBugTasks(
-            [bug1.id, bug2.id])
-        # The bugtasks returned by getBugTasks() are exactly the same as the
-        # ones returned by bug.bugtasks, obviously.
-        self.failUnlessEqual(
-            set(bugs_and_tasks[bug1]).difference(bug1.bugtasks),
-            set([]))
-        self.failUnlessEqual(
-            set(bugs_and_tasks[bug2]).difference(bug2.bugtasks),
-            set([]))
-
-    def test_getBugTasks_with_empty_list(self):
-        # When given an empty list of bug IDs, getBugTasks() will return an
-        # empty dictionary.
-        bugs_and_tasks = getUtility(IBugTaskSet).getBugTasks([])
-        self.failUnlessEqual(bugs_and_tasks, {})
 
 
 class TestBugTaskStatuses(TestCase):

@@ -19,12 +19,12 @@ import mimetypes
 from lazr.restful.interface import copy_field
 from lazr.restful.utils import smartquote
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser import (
+from zope.event import notify
+from zope.formlib.form import FormFields
+from zope.formlib.widgets import (
     TextAreaWidget,
     TextWidget,
     )
-from zope.event import notify
-from zope.formlib.form import FormFields
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Bool
 from zope.schema.vocabulary import (
@@ -275,6 +275,8 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
+        if not self.context.can_have_release_files:
+            self.addError('Only public projects can have download files.')
         file_name = None
         filecontent = self.request.form.get(self.widgets['filecontent'].name)
         if filecontent:

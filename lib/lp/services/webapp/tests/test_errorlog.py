@@ -20,10 +20,11 @@ import oops_amqp
 import pytz
 import testtools
 from timeline.timeline import Timeline
-from zope.app.publication.tests.test_zopepublication import (
-    UnauthenticatedPrincipal,
+from zope.authentication.interfaces import IUnauthenticatedPrincipal
+from zope.interface import (
+    directlyProvides,
+    implements,
     )
-from zope.interface import directlyProvides
 from zope.publisher.browser import TestRequest
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
@@ -610,8 +611,15 @@ class TestSensitiveRequestVariables(testtools.TestCase):
         self.failUnless(_is_sensitive(request, 'oauth_signature'))
 
 
+class UnauthenticatedPrincipal:
+    implements(IUnauthenticatedPrincipal)
+    id = 0
+    title = ''
+    description = ''
+
+
 class TestRequestWithUnauthenticatedPrincipal(TestRequest):
-    principal = UnauthenticatedPrincipal(42)
+    principal = UnauthenticatedPrincipal()
 
 
 class TestRequestWithPrincipal(TestRequest):

@@ -49,7 +49,7 @@ class TestScanBranches(TestCaseWithFactory):
     def run_script_and_assert_success(self):
         """Run the scan_branches script and assert it ran successfully."""
         retcode, stdout, stderr = run_script(
-            'cronscripts/scan_branches.py', [],
+            'cronscripts/process-job-source.py', ['IBranchScanJobSource'],
             expect_returncode=0)
         self.assertEqual('', stdout)
         self.assertIn(

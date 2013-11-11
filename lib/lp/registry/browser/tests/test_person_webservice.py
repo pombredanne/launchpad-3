@@ -148,7 +148,9 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
             ValueError,
             self.webservice.get(
                 '/people?ws.op=getByEmail&email=foo@').jsonBody)
-        self.assertEqual("email: Invalid email 'foo@'.", e[0])
+        # XXX wgrant bug=1088358: This escaping shouldn't be here; it's
+        # not HTML.
+        self.assertEqual("email: Invalid email &#x27;foo@&#x27;.", e[0])
 
     def test_getByOpenIDIdentifier(self):
         # You can get a person by their OpenID identifier URL.

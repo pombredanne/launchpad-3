@@ -16,7 +16,6 @@ __all__ = [
     'POFileView',
     ]
 
-from cgi import escape
 import os.path
 import re
 import urllib
@@ -223,9 +222,10 @@ class POFileMetadataViewMixin:
 
         links = []
         if group_guide is not None:
-            links.append("""
-                <a class="style-guide-url" href="%s">%s instructions</a>
-                """ % (group_guide, escape(self.translation_group.title)))
+            links.append(
+                structured(
+                    '<a class="style-guide-url" href="%s">%s instructions</a>',
+                    group_guide, self.translation_group.title).escapedtext)
 
         if team_guide is not None:
             if group_guide is None:
@@ -235,9 +235,10 @@ class POFileMetadataViewMixin:
                 # Full team name may get tedious after we just named the
                 # group.  Just use the language name.
                 name = self.context.language.englishname
-            links.append("""
-                <a class="style-guide-url" href="%s"> %s guidelines</a>
-                """ % (team_guide, escape(name)))
+            links.append(
+                structured(
+                    '<a class="style-guide-url" href="%s"> %s guidelines</a>',
+                    team_guide, name).escapedtext)
 
         text = ' and '.join(links).rstrip()
 

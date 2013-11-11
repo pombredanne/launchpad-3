@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd. This software is licensed under the
+# Copyright 2012-2013 Canonical Ltd. This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test views that manage sharing."""
@@ -28,8 +28,7 @@ from lp.registry.enums import (
 from lp.registry.interfaces.accesspolicy import IAccessPolicyGrantFlatSource
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
-from lp.services.database.lpstorm import IStore
-from lp.services.features.testing import FeatureFixture
+from lp.services.database.interfaces import IStore
 from lp.services.webapp.interfaces import StormRangeFactoryError
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
@@ -161,7 +160,8 @@ class PillarSharingDetailsMixin:
             pillarperson.pillar.name, pillarperson.person.name)
         browser = self.getUserBrowser(user=self.owner, url=url)
         self.assertIn(
-            'There are no shared bugs or branches.', browser.contents)
+            'There are no shared bugs, branches, or blueprints.',
+            browser.contents)
 
     def test_init_works(self):
         # The view works with a feature flag.
@@ -269,9 +269,8 @@ class PillarSharingViewTestMixin:
         self.assertIsNotNone(cache.objects.get('branch_sharing_policies'))
         self.assertIsNotNone(cache.objects.get('bug_sharing_policies'))
         self.assertIsNotNone(cache.objects.get('sharing_permissions'))
-        # Ensure we don't set specification_sharing_policies without the
-        # feature flag enabled.
-        self.assertIsNone(cache.objects.get('specification_sharing_policies'))
+        self.assertIsNotNone(
+            cache.objects.get('specification_sharing_policies'))
         batch_size = config.launchpad.default_batch_size
         apgfs = getUtility(IAccessPolicyGrantFlatSource)
         grantees = apgfs.findGranteePermissionsByPolicy(
@@ -280,18 +279,6 @@ class PillarSharingViewTestMixin:
         grantee_data = sharing_service.jsonGranteeData(grantees)
         self.assertContentEqual(
             grantee_data, cache.objects.get('grantee_data'))
-
-    def test_view_date_model_adds_specification(self):
-        # This test can move up to the above test when not feature flagged,
-        # but for now, ensure specification_sharing_policies is added to
-        # the cache if the flag is set.
-        feature_flag = {
-           'blueprints.information_type.enabled': 'on'}
-        with FeatureFixture(feature_flag):
-            view = create_initialized_view(self.pillar, name='+sharing')
-            cache = IJSONRequestCache(view.request)
-            self.assertIsNotNone(
-                cache.objects.get('specification_sharing_policies'))
 
     def test_view_batch_data(self):
         # Test the expected batching data is in the json request cache.
@@ -320,7 +307,7 @@ class PillarSharingViewTestMixin:
         view = create_view(self.pillar, name='+sharing')
         with StormStatementRecorder() as recorder:
             view.initialize()
-        self.assertThat(recorder, HasQueryCount(LessThan(10)))
+        self.assertThat(recorder, HasQueryCount(LessThan(11)))
 
     def test_view_invisible_information_types(self):
         # Test the expected invisible information type  data is in the
@@ -333,6 +320,30 @@ class PillarSharingViewTestMixin:
         self.assertContentEqual(
             ['Private Security', 'Private'],
             cache.objects.get('invisible_information_types'))
+
+    def run_sharing_message_test(self, pillar, owner, public):
+        with person_logged_in(owner):
+            public_pillar_sharing_info = (
+                "Everyone can see %s's public information."
+                % pillar.displayname)
+            url = canonical_url(pillar, view_name='+sharing')
+        browser = setupBrowserForUser(user=owner)
+        browser.open(url)
+        if public:
+            self.assertTrue(public_pillar_sharing_info in browser.contents)
+            self.assertFalse(
+                "This project has no public information." in browser.contents)
+        else:
+            self.assertFalse(public_pillar_sharing_info in browser.contents)
+            self.assertTrue(
+                "This project has no public information." in browser.contents)
+
+    def test_who_its_shared_with__public_pillar(self):
+        # For public projects and distributions, the sharing page
+        # shows the message "Everyone can see project's public
+        # information".
+        self.run_sharing_message_test(
+            self.pillar, self.pillar.owner, public=True)
 
 
 class TestProductSharingView(PillarSharingViewTestMixin,
@@ -373,6 +384,12 @@ class TestProductSharingView(PillarSharingViewTestMixin,
             'p', {'id': 'non-commercial-project-text'})
         self.assertIsNotNone(commercial_text)
         self.assertIsNone(non_commercial_text)
+
+    def test_who_its_shared_with__proprietary_product(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            owner=owner, information_type=InformationType.PROPRIETARY)
+        self.run_sharing_message_test(product, owner, public=False)
 
 
 class TestDistributionSharingView(PillarSharingViewTestMixin,

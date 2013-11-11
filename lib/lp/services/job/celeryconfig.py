@@ -79,7 +79,7 @@ def configure(argv):
     result['BROKER_VHOST'] = config.rabbitmq.virtual_host
     result['CELERY_CREATE_MISSING_QUEUES'] = False
     result['CELERY_DEFAULT_EXCHANGE'] = 'job'
-    result['CELERY_DEFAULT_QUEUE'] = 'job'
+    result['CELERY_DEFAULT_QUEUE'] = 'launchpad_job'
     result['CELERY_IMPORTS'] = ("lp.services.job.celeryjob", )
     result['CELERY_QUEUES'] = celery_queues
     result['CELERY_RESULT_BACKEND'] = 'amqp'

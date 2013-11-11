@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for Soyuz publishing records."""
@@ -189,6 +189,14 @@ class BasePublishingRecordView(LaunchpadView):
             removal_comment = u'None provided.'
 
         return removal_comment
+
+    @property
+    def phased_update_percentage(self):
+        """Return the formatted phased update percentage, or empty."""
+        if (self.is_binary and
+            self.context.phased_update_percentage is not None):
+            return u"%d%% of users" % self.context.phased_update_percentage
+        return u""
 
 
 class SourcePublishingRecordView(BasePublishingRecordView):

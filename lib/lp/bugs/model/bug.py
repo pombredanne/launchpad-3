@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad bug-related database table classes."""
@@ -98,6 +98,11 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
 from lp.app.model.launchpad import InformationTypeMixin
 from lp.app.validators import LaunchpadValidationError
+from lp.blueprints.model.specification import Specification
+from lp.blueprints.model.specificationbug import SpecificationBug
+from lp.blueprints.model.specificationsearch import (
+    get_specification_privacy_filter,
+    )
 from lp.bugs.adapters.bug import convert_to_information_type
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
@@ -197,7 +202,7 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -226,6 +231,9 @@ from lp.services.propertycache import (
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.publisher import (
+    get_raw_form_value_from_current_request,
+    )
 
 
 def snapshot_bug_params(bug_params):
@@ -359,11 +367,10 @@ class Bug(SQLBase, InformationTypeMixin):
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
-    duplicates = SQLMultipleJoin(
-        'Bug', joinColumn='duplicateof', orderBy='id')
-    specifications = SQLRelatedJoin('Specification', joinColumn='bug',
-        otherColumn='specification', intermediateTable='SpecificationBug',
-        orderBy='-datecreated')
+    duplicates = SQLMultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
+    specifications = SQLRelatedJoin(
+        'Specification', joinColumn='bug', otherColumn='specification',
+        intermediateTable='SpecificationBug', orderBy='-datecreated')
     questions = SQLRelatedJoin('Question', joinColumn='bug',
         otherColumn='question', intermediateTable='QuestionBug',
         orderBy='-datecreated')
@@ -377,6 +384,14 @@ class Bug(SQLBase, InformationTypeMixin):
     heat = IntCol(notNull=True, default=0)
     heat_last_updated = UtcDateTimeCol(default=None)
     latest_patch_uploaded = UtcDateTimeCol(default=None)
+
+    def getSpecifications(self, user):
+        """See `IBug`."""
+        return IStore(SpecificationBug).find(
+            Specification,
+            SpecificationBug.bugID == self.id,
+            SpecificationBug.specificationID == Specification.id,
+            *get_specification_privacy_filter(user))
 
     @property
     def security_related(self):
@@ -717,7 +732,7 @@ class Bug(SQLBase, InformationTypeMixin):
         # view all bugs.
         bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(
             days_old, getUtility(ILaunchpadCelebrities).janitor, bug=self)
-        return bugtasks.count() > 0
+        return not bugtasks.is_empty()
 
     def isExpirable(self, days_old=None):
         """See `IBug`."""
@@ -742,7 +757,7 @@ class Bug(SQLBase, InformationTypeMixin):
         # view all bugs.
         bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(
             days_old, getUtility(ILaunchpadCelebrities).janitor, bug=self)
-        return bugtasks.count() > 0
+        return not bugtasks.is_empty()
 
     @cachedproperty
     def initial_message(self):
@@ -1250,8 +1265,13 @@ class Bug(SQLBase, InformationTypeMixin):
         bug_watch.destroySelf()
 
     def addAttachment(self, owner, data, comment, filename, is_patch=False,
-                      content_type=None, description=None):
+                      content_type=None, description=None, from_api=False):
         """See `IBug`."""
+        # XXX: StevenK 2013-02-06 bug=1116954: We should not need to refetch
+        # the file content from the request, since the passed in one has been
+        # wrongly encoded.
+        if from_api:
+            data = get_raw_form_value_from_current_request('data')
         if isinstance(data, str):
             filecontent = data
         else:
@@ -1398,7 +1418,6 @@ class Bug(SQLBase, InformationTypeMixin):
         Only one bugtask must meet both conditions to be return. When
         zero or many bugtasks match, None is returned.
         """
-        # XXX sinzui 2007-10-19:
         # We may want to removed the bugtask.conjoined_master check
         # below. It is used to simplify the task of converting
         # conjoined bugtasks to question--since slaves cannot be
@@ -1946,7 +1965,7 @@ class Bug(SQLBase, InformationTypeMixin):
 
             self.duplicateof = duplicate_of
         except LaunchpadValidationError as validation_error:
-            raise InvalidDuplicateValue(validation_error)
+            raise InvalidDuplicateValue(validation_error, already_escaped=True)
         if duplicate_of is not None:
             affected_bug_ids.add(duplicate_of.id)
             # Maybe confirm bug tasks, now that more people might be affected

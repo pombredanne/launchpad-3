@@ -13,20 +13,13 @@ __all__ = [
 
 
 import binascii
-from UserDict import UserDict
 
 from contrib.oauth import OAuthRequest
-from zope.annotation.interfaces import IAnnotations
-from zope.app.security.interfaces import ILoginPassword
-from zope.app.security.principalregistry import UnauthenticatedPrincipal
-from zope.authentication.interfaces import IUnauthenticatedPrincipal
-from zope.component import (
-    adapts,
-    getUtility,
-    )
+from zope.authentication.interfaces import ILoginPassword
+from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
-from zope.preference.interfaces import IPreferenceGroup
+from zope.principalregistry.principalregistry import UnauthenticatedPrincipal
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession
@@ -263,7 +256,7 @@ class LaunchpadPrincipal:
 
     def __init__(self, id, title, description, account,
                  access_level=AccessLevel.WRITE_PRIVATE, scope=None):
-        self.id = id
+        self.id = unicode(id)
         self.title = title
         self.description = description
         self.access_level = access_level
@@ -273,24 +266,6 @@ class LaunchpadPrincipal:
 
     def getLogin(self):
         return self.title
-
-
-# zope.app.apidoc expects our principals to be adaptable into IAnnotations, so
-# we use these dummy adapters here just to make that code not OOPS.
-class TemporaryPrincipalAnnotations(UserDict):
-
-    implements(IAnnotations)
-
-    adapts(ILaunchpadPrincipal, IPreferenceGroup)
-
-    def __init__(self, principal, pref_group):
-        UserDict.__init__(self)
-
-
-class TemporaryUnauthenticatedPrincipalAnnotations(
-        TemporaryPrincipalAnnotations):
-    implements(IAnnotations)
-    adapts(IUnauthenticatedPrincipal, IPreferenceGroup)
 
 
 def get_oauth_authorization(request):

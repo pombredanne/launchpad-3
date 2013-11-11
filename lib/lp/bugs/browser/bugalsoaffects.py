@@ -18,11 +18,11 @@ from lazr.enum import (
     )
 from lazr.lifecycle.event import ObjectCreatedEvent
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser import DropdownWidget
-from zope.app.form.interfaces import MissingInputError
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.formlib.interfaces import MissingInputError
+from zope.formlib.widgets import DropdownWidget
 from zope.schema import Choice
 from zope.schema.vocabulary import (
     SimpleTerm,
@@ -394,17 +394,18 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
             # Add a hidden field to fool LaunchpadFormView into thinking we
             # submitted the action it expected when in fact we're submiting
             # something else to indicate the user has confirmed.
-            confirm_button = (
+            confirm_button = structured(
                 '<input type="hidden" name="%s" value="1" />'
                 '<input style="font-size: smaller" type="submit"'
-                ' value="Add Anyway" name="ignore_missing_remote_bug" />'
-                % self.continue_action.__name__)
-            self.notifications.append(_(dedent("""
-                %s doesn't use Launchpad as its bug tracker. Without a bug
-                URL to watch, the %s status will not update automatically.
-                %s""" % (cgi.escape(target.displayname),
-                         cgi.escape(target.displayname),
-                         confirm_button))))
+                ' value="Add Anyway" name="ignore_missing_remote_bug" />',
+                self.continue_action.__name__)
+            self.notifications.append(structured(
+                dedent("""
+                    %s doesn't use Launchpad as its bug tracker. Without a bug
+                    URL to watch, the %s status will not update automatically.
+                    %s"""),
+                target.displayname, target.displayname,
+                confirm_button).escapedtext)
             return None
         # Create the task.
         return super(DistroBugTaskCreationStep, self).main_action(data)

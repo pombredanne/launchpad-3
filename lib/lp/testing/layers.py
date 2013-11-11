@@ -1,9 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# We like global!
-# pylint: disable-msg=W0603,W0702
-
 """Layers used by Launchpad tests.
 
 Layers are the mechanism used by the Zope3 test runner to efficiently
@@ -41,6 +38,7 @@ __all__ = [
     'LibrarianLayer',
     'PageTestLayer',
     'RabbitMQLayer',
+    'SwiftLayer',
     'TwistedAppServerLayer',
     'TwistedLaunchpadZopelessLayer',
     'TwistedLayer',
@@ -113,16 +111,13 @@ from lp.services.config.fixture import (
     ConfigFixture,
     ConfigUseFixture,
     )
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import session_store
 from lp.services.googlesearch.tests.googleserviceharness import (
     GoogleServiceTestSetup,
     )
 from lp.services.job.tests import celeryd
+from lp.services.librarian.model import LibraryFileAlias
 from lp.services.librarianserver.testing.server import LibrarianServerFixture
 from lp.services.mail.mailbox import (
     IMailBox,
@@ -153,6 +148,7 @@ from lp.testing import (
     reset_logging,
     )
 from lp.testing.pgsql import PgTestSetup
+from lp.testing.swift.fixture import SwiftFixture
 from lp.testing.smtpd import SMTPController
 
 
@@ -224,7 +220,7 @@ def reconnect_stores(reset=False):
     if reset:
         dbconfig.reset()
 
-    main_store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+    main_store = IStore(LibraryFileAlias)
     assert main_store is not None, 'Failed to reconnect'
 
     # Confirm that SQLOS is again talking to the database (it connects
@@ -826,6 +822,22 @@ class DatabaseLayer(BaseLayer):
     @profiled
     def _dropDb(cls):
         return cls._db_fixture.dropDb()
+
+
+class SwiftLayer(BaseLayer):
+    @classmethod
+    @profiled
+    def setUp(cls):
+        cls.swift_fixture = SwiftFixture()
+        cls.swift_fixture.setUp()
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        swift = cls.swift_fixture
+        if swift is not None:
+            cls.swift_fixture = None
+            swift.cleanUp()
 
 
 class LibrarianLayer(DatabaseLayer):
@@ -1907,7 +1919,25 @@ class CeleryJobLayer(AppServerLayer):
     @classmethod
     @profiled
     def setUp(cls):
-        cls.celeryd = celeryd('job')
+        cls.celeryd = celeryd('launchpad_job')
+        cls.celeryd.__enter__()
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        cls.celeryd.__exit__(None, None, None)
+        cls.celeryd = None
+
+
+class CeleryBzrsyncdJobLayer(AppServerLayer):
+    """Layer for tests that run jobs that read from branches via Celery."""
+
+    celeryd = None
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        cls.celeryd = celeryd('bzrsyncd_job')
         cls.celeryd.__enter__()
 
     @classmethod

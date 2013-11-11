@@ -23,7 +23,7 @@ from lazr.restful.utils import (
     safe_hasattr,
     )
 import simplejson
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.schema.interfaces import (
     ICollection,

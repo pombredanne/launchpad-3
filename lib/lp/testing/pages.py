@@ -199,8 +199,10 @@ def find_tag_by_id(content, id):
     if isinstance(content, PageElement):
         elements_with_id = content.findAll(True, {'id': id})
     else:
-        elements_with_id = [tag for tag in BeautifulSoup(
-                            content, parseOnlyThese=SoupStrainer(id=id))]
+        elements_with_id = [
+            tag for tag in BeautifulSoup(
+                content, parseOnlyThese=SoupStrainer(id=id),
+                fromEncoding='utf-8')]
     if len(elements_with_id) == 0:
         return None
     elif len(elements_with_id) == 1:
@@ -215,21 +217,6 @@ def first_tag_by_class(content, class_):
     return find_tags_by_class(content, class_, True)
 
 
-def extract_all_script_and_style_links(content):
-    """Find and return all thetags with the given name."""
-    strainer = SoupStrainer(['script', 'link'])
-    soup = BeautifulSoup(content, parseOnlyThese=strainer)
-    links = []
-    link_attr = {u'link': 'href', u'script': 'src'}
-    for script_or_style in BeautifulSoup.findAll(soup):
-        attrs = dict(script_or_style.attrs)
-        link = attrs.get(link_attr[script_or_style.name], None)
-        if link:
-            links.append(link)
-
-    return "\n".join(links)
-
-
 def find_tags_by_class(content, class_, only_first=False):
     """Find and return one or more tags matching the given class(es)"""
 
@@ -241,7 +228,8 @@ def find_tags_by_class(content, class_, only_first=False):
         classes = set(value.split())
         return match_classes.issubset(classes)
     soup = BeautifulSoup(
-        content, parseOnlyThese=SoupStrainer(attrs={'class': class_matcher}))
+        content, parseOnlyThese=SoupStrainer(attrs={'class': class_matcher}),
+        fromEncoding='utf-8')
     if only_first:
         find = BeautifulSoup.find
     else:
@@ -275,7 +263,7 @@ def find_main_content(content):
     if main_content is None:
         # Simple pages have neither of these, so as a last resort, we get
         # the page <body>.
-        main_content = BeautifulSoup(content).body
+        main_content = BeautifulSoup(content, fromEncoding='utf-8').body
     return main_content
 
 
@@ -285,14 +273,15 @@ def get_feedback_messages(content):
                        'warning message']
     soup = BeautifulSoup(
         content,
-        parseOnlyThese=SoupStrainer(['div', 'p'], {'class': message_classes}))
+        parseOnlyThese=SoupStrainer(['div', 'p'], {'class': message_classes}),
+        fromEncoding='utf-8')
     return [extract_text(tag) for tag in soup]
 
 
 def print_feedback_messages(content):
     """Print out the feedback messages."""
     for message in get_feedback_messages(content):
-        print message
+        print extract_text(message)
 
 
 def print_table(content, columns=None, skip_rows=None, sep="\t"):
@@ -344,7 +333,7 @@ def print_radio_button_field(content, name):
     (*) A checked option
     ( ) An unchecked option
     """
-    main = BeautifulSoup(content)
+    main = BeautifulSoup(content, fromEncoding='utf-8')
     for field in get_radio_button_text_for_field(main, name):
         print field
 
@@ -396,7 +385,7 @@ def extract_text(content, extract_image_text=False, skip_tags=None):
     if skip_tags is None:
         skip_tags = ['script']
     if not isinstance(content, PageElement):
-        soup = BeautifulSoup(content)
+        soup = BeautifulSoup(content, fromEncoding='utf-8')
     else:
         soup = content
 
@@ -467,7 +456,7 @@ def parse_relationship_section(content):
 
     See package-relationship-pages.txt and related.
     """
-    soup = BeautifulSoup(content)
+    soup = BeautifulSoup(content, fromEncoding='utf-8')
     section = soup.find('ul')
     whitespace_re = re.compile('\s+')
     if section is None:
@@ -804,14 +793,11 @@ def setUpGlobs(test):
     # raises ValueError exceptions in /usr/lib/python2.4/Cookie.py
     test.globs['canonical_url'] = safe_canonical_url
     test.globs['factory'] = LaunchpadObjectFactory()
-    test.globs['extract_all_script_and_style_links'] = (
-        extract_all_script_and_style_links)
     test.globs['find_tag_by_id'] = find_tag_by_id
     test.globs['first_tag_by_class'] = first_tag_by_class
     test.globs['find_tags_by_class'] = find_tags_by_class
     test.globs['find_portlet'] = find_portlet
     test.globs['find_main_content'] = find_main_content
-    test.globs['get_feedback_messages'] = get_feedback_messages
     test.globs['print_feedback_messages'] = print_feedback_messages
     test.globs['print_table'] = print_table
     test.globs['extract_link_from_tag'] = extract_link_from_tag

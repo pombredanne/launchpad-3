@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug task interfaces."""
@@ -715,10 +715,9 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
         """Check if the current user can set assignee to None."""
 
     @mutator_for(assignee)
-    @operation_parameters(
-        assignee=copy_field(assignee))
+    @operation_parameters(assignee=copy_field(assignee))
     @export_write_operation()
-    def transitionToAssignee(assignee):
+    def transitionToAssignee(assignee, validate=True):
         """Perform a workflow transition to the given assignee.
 
         When the bugtask assignee is changed from None to an IPerson
@@ -849,12 +848,6 @@ class IBugTaskSet(Interface):
         Raise a NotFoundError if there is no IBugTask
         matching the given id. Raise a zope.security.interfaces.Unauthorized
         if the user doesn't have the permission to view this bug.
-        """
-
-    def getBugTasks(bug_ids):
-        """Return the bugs with the given IDs and all of its bugtasks.
-
-        :return: A dictionary mapping the bugs to their bugtasks.
         """
 
     def getBugTaskTags(bugtasks):

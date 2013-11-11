@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the source package recipe view classes and templates."""
@@ -42,10 +42,12 @@ from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.services.database.constants import UTC_NOW
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp import canonical_url
+from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.soyuz.model.processor import ProcessorFamily
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
+    admin_logged_in,
     ANONYMOUS,
     BrowserTestCase,
     login,
@@ -55,7 +57,6 @@ from lp.testing import (
     time_counter,
     )
 from lp.testing.deprecated import LaunchpadFormHarness
-from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -102,11 +103,10 @@ class TestCaseForRecipe(BrowserTestCase):
         self.squirrel = self.factory.makeDistroSeries(
             displayname='Secret Squirrel', name='secret', version='100.04',
             distribution=self.ppa.distribution)
-        naked_squirrel = remove_security_proxy_and_shout_at_engineer(
-            self.squirrel)
+        naked_squirrel = removeSecurityProxy(self.squirrel)
         naked_squirrel.nominatedarchindep = self.squirrel.newArch(
-            'i386', ProcessorFamily.get(1), False, self.chef,
-            supports_virtualized=True)
+            'i386', getUtility(IProcessorSet).getByName('386'), False,
+            self.chef, supports_virtualized=True)
 
     def makeRecipe(self):
         """Create and return a specific recipe."""
@@ -405,7 +405,8 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Create Recipe').click()
         self.assertEqual(
             get_feedback_messages(browser.contents)[1],
-            'The bzr-builder instruction "run" is not permitted here.')
+            html_escape(
+                'The bzr-builder instruction "run" is not permitted here.'))
 
     def createRecipe(self, recipe_text, branch=None):
         if branch is None:
@@ -686,7 +687,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Create Recipe').click()
         self.assertEqual(
             get_feedback_messages(browser.contents)[1],
-            "You already have a PPA named 'foo'.")
+            html_escape("You already have a PPA named 'foo'."))
 
     def test_create_new_ppa_missing_name(self):
         # If a new PPA is being created, and the user has not specified a
@@ -872,7 +873,8 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
 
         self.assertEqual(
             get_feedback_messages(browser.contents)[1],
-            'The bzr-builder instruction "run" is not permitted here.')
+            html_escape(
+                'The bzr-builder instruction "run" is not permitted here.'))
 
     def test_edit_recipe_format_too_new(self):
         # If the recipe's format version is too new, we should notify the
@@ -1065,13 +1067,22 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 
     layer = LaunchpadFunctionalLayer
 
-    def test_index(self):
+    def makeSuccessfulBuild(self, archive=None):
+        if archive is None:
+            archive = self.ppa
         recipe = self.makeRecipe()
-        build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
-        build.status = BuildStatus.FULLYBUILT
-        build.date_started = datetime(2010, 03, 16, tzinfo=UTC)
-        build.date_finished = datetime(2010, 03, 16, tzinfo=UTC)
+        build = self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, distroseries=self.squirrel, archive=archive)
+        build.updateStatus(
+            BuildStatus.BUILDING,
+            date_started=datetime(2010, 03, 16, tzinfo=UTC))
+        build.updateStatus(
+            BuildStatus.FULLYBUILT,
+            date_finished=datetime(2010, 03, 16, tzinfo=UTC))
+        return build
+
+    def test_index(self):
+        build = self.makeSuccessfulBuild()
 
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Master Chef Recipes cake_recipe
@@ -1094,34 +1105,24 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 
             Recipe contents Edit
             # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
-            lp://dev/~chef/chocolate/cake""", self.getMainText(recipe))
+            lp://dev/~chef/chocolate/cake""", self.getMainText(build.recipe))
 
     def test_index_success_with_buildlog(self):
         # The buildlog is shown if it is there.
-        recipe = self.makeRecipe()
-        build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
-        build.status = BuildStatus.FULLYBUILT
-        build.date_started = datetime(2010, 03, 16, tzinfo=UTC)
-        build.date_finished = datetime(2010, 03, 16, tzinfo=UTC)
-        build.log = self.factory.makeLibraryFileAlias()
+        build = self.makeSuccessfulBuild()
+        build.setLog(self.factory.makeLibraryFileAlias())
 
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Latest builds
             Status .* Archive
             Successful build on 2010-03-16 buildlog \(.*\)
                 Secret Squirrel Secret PPA
-            Request build\(s\)""", self.getMainText(recipe))
+            Request build\(s\)""", self.getMainText(build.recipe))
 
     def test_index_success_with_binary_builds(self):
         # Binary builds are shown after the recipe builds if there are any.
-        recipe = self.makeRecipe()
-        build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
-        build.status = BuildStatus.FULLYBUILT
-        build.date_started = datetime(2010, 03, 16, tzinfo=UTC)
-        build.date_finished = datetime(2010, 03, 16, tzinfo=UTC)
-        build.log = self.factory.makeLibraryFileAlias()
+        build = self.makeSuccessfulBuild()
+        build.setLog(self.factory.makeLibraryFileAlias())
         package_name = self.factory.getOrMakeSourcePackageName('chocolate')
         source_package_release = self.factory.makeSourcePackageRelease(
             archive=self.ppa, sourcepackagename=package_name,
@@ -1143,17 +1144,12 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             Successful build on 2010-03-16 buildlog \(.*\)
                Secret Squirrel Secret PPA chocolate - 0\+r42 in .*
                \(estimated\) i386
-            Request build\(s\)""", self.getMainText(recipe))
+            Request build\(s\)""", self.getMainText(build.recipe))
 
     def test_index_success_with_completed_binary_build(self):
         # Binary builds show their buildlog too.
-        recipe = self.makeRecipe()
-        build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
-        build.status = BuildStatus.FULLYBUILT
-        build.date_started = datetime(2010, 03, 16, tzinfo=UTC)
-        build.date_finished = datetime(2010, 03, 16, tzinfo=UTC)
-        build.log = self.factory.makeLibraryFileAlias()
+        build = self.makeSuccessfulBuild()
+        build.setLog(self.factory.makeLibraryFileAlias())
         package_name = self.factory.getOrMakeSourcePackageName('chocolate')
         source_package_release = self.factory.makeSourcePackageRelease(
             archive=self.ppa, sourcepackagename=package_name,
@@ -1163,37 +1159,34 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             sourcepackagerelease=source_package_release, archive=self.ppa,
             distroseries=self.squirrel)
         builder = self.factory.makeBuilder()
-        binary_build = removeSecurityProxy(
-            self.factory.makeBinaryPackageBuild(
+        binary_build = self.factory.makeBinaryPackageBuild(
                 source_package_release=source_package_release,
                 distroarchseries=self.squirrel.nominatedarchindep,
-                processor=builder.processor))
+                processor=builder.processor)
         binary_build.queueBuild()
-        binary_build.status = BuildStatus.FULLYBUILT
-        binary_build.date_started = datetime(2010, 04, 16, tzinfo=UTC)
-        binary_build.date_finished = datetime(2010, 04, 16, tzinfo=UTC)
-        binary_build.log = self.factory.makeLibraryFileAlias()
+        binary_build.updateStatus(
+            BuildStatus.BUILDING,
+            date_started=datetime(2010, 04, 16, tzinfo=UTC))
+        binary_build.updateStatus(
+            BuildStatus.FULLYBUILT,
+            date_finished=datetime(2010, 04, 16, tzinfo=UTC))
+        binary_build.setLog(self.factory.makeLibraryFileAlias())
 
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Latest builds
             Status .* Archive
             Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel
               Secret PPA chocolate - 0\+r42 on 2010-04-16 buildlog \(.*\) i386
-            Request build\(s\)""", self.getMainText(recipe))
+            Request build\(s\)""", self.getMainText(build.recipe))
 
     def test_index_success_with_sprb_into_private_ppa(self):
         # The index page hides builds into archives the user can't view.
-        recipe = self.makeRecipe()
         archive = self.factory.makeArchive(private=True)
-        sprb = removeSecurityProxy(
-            self.factory.makeSourcePackageRecipeBuild(
-                recipe=recipe, distroseries=self.squirrel, archive=archive))
-        sprb.status = BuildStatus.FULLYBUILT
-        sprb.date_started = datetime(2010, 04, 16, tzinfo=UTC)
-        sprb.date_finished = datetime(2010, 04, 16, tzinfo=UTC)
-        sprb.log = self.factory.makeLibraryFileAlias()
-        self.assertIn(
-            "This recipe has not been built yet.", self.getMainText(recipe))
+        with admin_logged_in():
+            build = self.makeSuccessfulBuild(archive=archive)
+            self.assertIn(
+                "This recipe has not been built yet.",
+                self.getMainText(build.recipe))
 
     def test_index_no_builds(self):
         """A message should be shown when there are no builds."""
@@ -1205,8 +1198,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 
     def test_index_no_suitable_builders(self):
         recipe = self.makeRecipe()
-        removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
-            recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
+        self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe, distroseries=self.squirrel, archive=self.ppa)
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Latest builds
             Status .* Archive
@@ -1256,12 +1249,11 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             view.builds)
 
         def set_status(build, status):
-            naked_build = removeSecurityProxy(build)
-            naked_build.status = status
-            naked_build.date_started = naked_build.date_created
-            if status == BuildStatus.FULLYBUILT:
-                naked_build.date_finished = (
-                    naked_build.date_created + timedelta(minutes=10))
+            build.updateStatus(
+                BuildStatus.BUILDING, date_started=build.date_created)
+            build.updateStatus(
+                status,
+                date_finished=build.date_created + timedelta(minutes=10))
         set_status(build6, BuildStatus.FULLYBUILT)
         set_status(build5, BuildStatus.FAILEDTOBUILD)
         # When there are 4+ pending builds, only the most
@@ -1402,7 +1394,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         for x in xrange(5):
             build = recipe.requestBuild(
                 self.ppa, self.chef, series, PackagePublishingPocket.RELEASE)
-            removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
+            build.updateStatus(BuildStatus.FULLYBUILT)
         harness = LaunchpadFormHarness(
             recipe, SourcePackageRecipeRequestDailyBuildView)
         harness.submit('build', {})
@@ -1453,7 +1445,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             cake_recipe
             Request builds for cake_recipe
             Archive:
-            Secret PPA
+            (nothing selected)
+            Secret PPA [~chef/ppa]
             Distribution series:
             Secret Squirrel
             Hoary
@@ -1465,14 +1458,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 
     def test_request_builds_action(self):
         """Requesting a build creates pending builds."""
-        woody = self.factory.makeDistroSeries(
-            name='woody', displayname='Woody',
-            distribution=self.ppa.distribution)
-        naked_woody = remove_security_proxy_and_shout_at_engineer(woody)
-        naked_woody.nominatedarchindep = woody.newArch(
-            'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
-            supports_virtualized=True)
-
+        self._makeWoodyDistroSeries()
         recipe = self.makeRecipe()
         browser = self.getViewBrowser(recipe, '+request-builds')
         browser.getControl('Woody').click()
@@ -1485,66 +1471,65 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build_distros.sort()
         # Secret Squirrel is checked by default.
         self.assertEqual(['Secret Squirrel', 'Woody'], build_distros)
-        self.assertEqual(
-            set([2605]),
-            set(build.buildqueue_record.lastscore for build in builds))
+        build_scores = [build.buildqueue_record.lastscore for build in builds]
+        self.assertContentEqual([2605, 2605], build_scores)
 
     def test_request_builds_action_not_logged_in(self):
         """Requesting a build creates pending builds."""
-        woody = self.factory.makeDistroSeries(
-            name='woody', displayname='Woody',
-            distribution=self.ppa.distribution)
-        naked_woody = removeSecurityProxy(woody)
-        naked_woody.nominatedarchindep = woody.newArch(
-            'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
-            supports_virtualized=True)
+        self._makeWoodyDistroSeries()
         recipe = self.makeRecipe()
-
         browser = self.getViewBrowser(recipe, no_login=True)
         self.assertRaises(
             Unauthorized, browser.getLink('Request build(s)').click)
 
-    def test_request_builds_archive(self):
+    def test_request_builds_archive_no_daily_build_archive(self):
         recipe = self.factory.makeSourcePackageRecipe()
-        ppa2 = self.factory.makeArchive(
-            displayname='Secret PPA', owner=self.chef, name='ppa2')
         view = SourcePackageRecipeRequestBuildsView(recipe, None)
         self.assertIs(None, view.initial_values.get('archive'))
-        self.factory.makeSourcePackageRecipeBuild(recipe=recipe, archive=ppa2)
-        self.assertEqual(ppa2, view.initial_values.get('archive'))
 
-    def test_request_build_rejects_over_quota(self):
-        """Over-quota build requests cause validation failures."""
+    def test_request_builds_archive_daily_build_archive_unuploadable(self):
+        ppa = self.factory.makeArchive()
+        recipe = self.factory.makeSourcePackageRecipe(daily_build_archive=ppa)
+        with person_logged_in(self.chef):
+            view = SourcePackageRecipeRequestBuildsView(recipe, None)
+            self.assertIs(None, view.initial_values.get('archive'))
+
+    def test_request_builds_archive(self):
+        ppa = self.factory.makeArchive(
+            displayname='Secret PPA', owner=self.chef, name='ppa2')
+        recipe = self.factory.makeSourcePackageRecipe(daily_build_archive=ppa)
+        with person_logged_in(self.chef):
+            view = SourcePackageRecipeRequestBuildsView(recipe, None)
+            self.assertEqual(ppa, view.initial_values.get('archive'))
+
+    def _makeWoodyDistroSeries(self):
         woody = self.factory.makeDistroSeries(
             name='woody', displayname='Woody',
             distribution=self.ppa.distribution)
-        naked_woody = remove_security_proxy_and_shout_at_engineer(woody)
-        naked_woody.nominatedarchindep = woody.newArch(
-            'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
-            supports_virtualized=True)
+        removeSecurityProxy(woody).nominatedarchindep = woody.newArch(
+            'i386', getUtility(IProcessorSet).getByName('386'), False,
+            self.factory.makePerson(), supports_virtualized=True)
+        return woody
 
+    def test_request_build_rejects_over_quota(self):
+        """Over-quota build requests cause validation failures."""
+        woody = self._makeWoodyDistroSeries()
         recipe = self.makeRecipe()
         for x in range(5):
             build = recipe.requestBuild(
                 self.ppa, self.chef, woody, PackagePublishingPocket.RELEASE)
-            removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
+            build.updateStatus(BuildStatus.FULLYBUILT)
 
         browser = self.getViewBrowser(recipe, '+request-builds')
         browser.getControl('Woody').click()
         browser.getControl('Request builds').click()
-        self.assertIn("You have exceeded today's quota for ubuntu woody.",
-                extract_text(find_main_content(browser.contents)))
+        self.assertIn(
+            html_escape("You have exceeded today's quota for ubuntu woody."),
+            extract_text(find_main_content(browser.contents)))
 
     def test_request_builds_rejects_duplicate(self):
         """Over-quota build requests cause validation failures."""
-        woody = self.factory.makeDistroSeries(
-            name='woody', displayname='Woody',
-            distribution=self.ppa.distribution)
-        naked_woody = remove_security_proxy_and_shout_at_engineer(woody)
-        naked_woody.nominatedarchindep = woody.newArch(
-            'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
-            supports_virtualized=True)
-
+        woody = self._makeWoodyDistroSeries()
         recipe = self.makeRecipe()
         recipe.requestBuild(
             self.ppa, self.chef, woody, PackagePublishingPocket.RELEASE)
@@ -1644,10 +1629,10 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         """Time should be estimated until the job is completed."""
         view = self.makeBuildView()
         self.assertTrue(view.estimate)
-        view.context.buildqueue_record.job.start()
+        view.context.updateStatus(BuildStatus.BUILDING)
         clear_property_cache(view)
         self.assertTrue(view.estimate)
-        removeSecurityProxy(view.context).date_finished = datetime.now(UTC)
+        view.context.updateStatus(BuildStatus.FULLYBUILT)
         clear_property_cache(view)
         self.assertFalse(view.estimate)
 
@@ -1705,16 +1690,16 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         """Test the index page of a completed build."""
         release = self.makeBuildAndRelease()
         self.makeBinaryBuild(release, 'itanic')
-        naked_build = removeSecurityProxy(release.source_package_recipe_build)
-        naked_build.status = BuildStatus.FULLYBUILT
-        naked_build.date_finished = datetime(2009, 1, 1, tzinfo=UTC)
-        naked_build.date_started = (
-            naked_build.date_finished - timedelta(minutes=1))
-        naked_build.buildqueue_record.destroySelf()
-        naked_build.log = self.factory.makeLibraryFileAlias(
-            content='buildlog')
-        naked_build.upload_log = self.factory.makeLibraryFileAlias(
-            content='upload_log')
+        build = release.source_package_recipe_build
+        build.updateStatus(
+            BuildStatus.BUILDING,
+            date_started=datetime(2009, 1, 1, tzinfo=UTC))
+        build.updateStatus(
+            BuildStatus.FULLYBUILT,
+            date_finished=build.date_started + timedelta(minutes=1))
+        build.buildqueue_record.destroySelf()
+        build.setLog(self.factory.makeLibraryFileAlias(content='buildlog'))
+        build.storeUploadLog('upload_log')
         main_text = self.getMainText(
             release.source_package_recipe_build, '+index')
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
@@ -1749,7 +1734,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         distroarchseries = self.factory.makeDistroArchSeries(
             architecturetag=architecturetag,
             distroseries=release.upload_distroseries,
-            processorfamily=self.factory.makeProcessorFamily())
+            processor=self.factory.makeProcessor())
         return self.factory.makeBinaryPackageBuild(
             source_package_release=release, distroarchseries=distroarchseries)
 
@@ -1773,10 +1758,12 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         build.buildqueue_record.builder = self.factory.makeBuilder()
         main_text = self.getMainText(build, '+index')
         self.assertNotIn('Logs have no tails!', main_text)
-        removeSecurityProxy(build).status = BuildStatus.BUILDING
+        with admin_logged_in():
+            build.updateStatus(BuildStatus.BUILDING)
         main_text = self.getMainText(build, '+index')
         self.assertIn('Logs have no tails!', main_text)
-        removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
+        with admin_logged_in():
+            build.updateStatus(BuildStatus.FULLYBUILT)
         self.assertIn('Logs have no tails!', main_text)
 
     def getMainText(self, build, view_name=None):
@@ -1787,8 +1774,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
     def test_buildlog(self):
         """A link to the build log is shown if available."""
         build = self.makeBuild()
-        removeSecurityProxy(build).log = (
-            self.factory.makeLibraryFileAlias())
+        build.setLog(self.factory.makeLibraryFileAlias())
         build_log_url = build.log_url
         browser = self.getViewBrowser(build)
         link = browser.getLink('buildlog')
@@ -1797,8 +1783,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
     def test_uploadlog(self):
         """A link to the upload log is shown if available."""
         build = self.makeBuild()
-        removeSecurityProxy(build).upload_log = (
-            self.factory.makeLibraryFileAlias())
+        build.storeUploadLog('uploaded')
         upload_log_url = build.upload_log_url
         browser = self.getViewBrowser(build)
         link = browser.getLink('uploadlog')

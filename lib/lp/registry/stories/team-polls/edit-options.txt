@@ -25,7 +25,7 @@ either:
     ...     auth='Basic jeff.waugh@ubuntulinux.com:test')
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+poll/never-closes4/'
     ...              '+option/20')
-    >>> print "\n".join(get_feedback_messages(browser.contents))
+    >>> print_feedback_messages(browser.contents)
     You can&#8217;t edit any options because the poll is already open.
 
 Since Jeff is an administrator of ubuntu-team and we have a poll that hasn't

@@ -130,7 +130,7 @@ class TestSuggestionWidget(TestCaseWithFactory):
              onClick="this.form['field.test_field.test_field'].focus()" ...
              value="other" />&nbsp;<label ...>Other:</label>
              <input type="text" value="" ...
-             onKeyPress="selectWidget('field.test_field.1', event);"
+             onKeyPress="selectWidget(&#x27;field.test_field.1&#x27;, event);"
              .../>...""")
 
         # XXX wallyworld 2011-04-18 bug=764170: We cannot pass an unencoded

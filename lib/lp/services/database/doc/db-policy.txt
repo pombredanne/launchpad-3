@@ -12,7 +12,7 @@ If know your code needs to change data, or must have the latest posible
 information, you retrieve objects from the master databases that stores
 the data for your database class.
 
-    >>> from lp.services.database.lpstorm import IMasterStore
+    >>> from lp.services.database.interfaces import IMasterStore
     >>> from lp.registry.model.person import Person
     >>> import transaction
 
@@ -31,7 +31,7 @@ of the master, the better the overall performance of Launchpad will be.
 We can distribute this load over many slave databases but are limited to
 a single master.
 
-    >>> from lp.services.database.lpstorm import ISlaveStore
+    >>> from lp.services.database.interfaces import ISlaveStore
     >>> ro_janitor = ISlaveStore(Person).find(
     ...     Person, Person.name == 'janitor').one()
     >>> ro_janitor is writable_janitor
@@ -50,7 +50,7 @@ updatable to or have to be absolutely up to date. In this case, we
 retrieve objects from the default store. What object being returned
 depends on the currently installed database policy.
 
-    >>> from lp.services.database.lpstorm import IStore
+    >>> from lp.services.database.interfaces import IStore
     >>> default_janitor = IStore(Person).find(
     ...     Person, Person.name == 'janitor').one()
     >>> default_janitor is writable_janitor
@@ -120,6 +120,6 @@ unsure if the object is writable or not, you can easily cast it
 to a writable copy. This is a noop if the object is already writable
 so is good defensive programming.
 
-    >>> from lp.services.database.lpstorm import IMasterObject
+    >>> from lp.services.database.interfaces import IMasterObject
     >>> IMasterObject(ro_janitor) is writable_janitor
     True

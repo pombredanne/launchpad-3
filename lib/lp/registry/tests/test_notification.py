@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from lp.registry.mail.notification import send_direct_contact_email
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
-from lp.services.messages.interfaces.message import  (
+from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
     QuotaReachedError,
     )

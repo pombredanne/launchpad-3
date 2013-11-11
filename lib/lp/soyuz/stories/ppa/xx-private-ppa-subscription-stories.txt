@@ -78,8 +78,7 @@ Create a helper function to print subscriptions:
     Name                Expires     Comment
     Joe Smith                       Joe is my friend    Edit/Cancel
 
-    >>> for msg in get_feedback_messages(cprov_browser.contents):
-    ...     print msg
+    >>> print_feedback_messages(cprov_browser.contents)
     You have granted access for Joe Smith to install software from
     PPA named p3a for Celso Providelo. Joe Smith will be notified of the
     access via email.
@@ -112,8 +111,7 @@ new subscriber.
     Launchpad Developers    2200-08-01    Launchpad developer access.
     ...
 
-    >>> for msg in get_feedback_messages(cprov_browser.contents):
-    ...     print msg
+    >>> print_feedback_messages(cprov_browser.contents)
     You have granted access for Launchpad Developers to install software
     from PPA named p3a for Celso Providelo. Members of Launchpad Developers
     will be notified of the access via email.
@@ -153,8 +151,7 @@ about the update.
     Joe Smith                             Joe is my friend    ...
     Launchpad Developers    2200-08-01    a different description
     ...
-    >>> for msg in get_feedback_messages(cprov_browser.contents):
-    ...     print msg
+    >>> print_feedback_messages(cprov_browser.contents)
     The access for Launchpad Developers has been updated.
 
 === Scenario 2: Canceling a subscription ===
@@ -183,9 +180,8 @@ cancellation is displayed.
     Name                    Expires       Comment
     Joe Smith                             Joe is my friend    Edit/Cancel
 
-    >>> for msg in get_feedback_messages(cprov_browser.contents):
-    ...     print msg
-    You have revoked Launchpad Developers's access to PPA
+    >>> print_feedback_messages(cprov_browser.contents)
+    You have revoked Launchpad Developers&#x27;s access to PPA
     named p3a for Celso Providelo.
 
 
@@ -260,11 +256,11 @@ When Joe clicks on the 'Generate new personal subscription' link then
 the page is redisplayed with new sources.list entries and a notification.
 
     >>> joe_browser.getControl(name='regenerate_btn').click()
-    >>> for msg in get_feedback_messages(joe_browser.contents):
-    ...     print msg
+    >>> print_feedback_messages(joe_browser.contents)
     Launchpad has generated the new password you requested for your
     access to the archive PPA named p3a for Celso Providelo. Please
-    follow the instructions below to update your custom "sources.list".
+    follow the instructions below to update your custom
+    &quot;sources.list&quot;.
 
 
 === Scenario 3: A user activates a team subscription ===

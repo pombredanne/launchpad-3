@@ -4,7 +4,7 @@ Private XML-RPC Authentication Server
 The AuthServer interface is available on the authserver attribute
 of our private XMLRPC instance.
 
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.xmlrpc.interfaces import IPrivateApplication
     >>> from lp.services.authserver.interfaces import (
     ...     IAuthServerApplication,

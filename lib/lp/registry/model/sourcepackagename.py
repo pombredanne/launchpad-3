@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 __metaclass__ = type
 __all__ = [
     'SourcePackageName',
@@ -131,16 +129,13 @@ def getSourcePackageDescriptions(
     cur.execute("""SELECT DISTINCT BinaryPackageName.name,
                           SourcePackageName.name
                      FROM BinaryPackageRelease, SourcePackageName,
-                          BinaryPackageBuild, SourcePackageRelease,
-                          BinaryPackageName
+                          BinaryPackageBuild, BinaryPackageName
                     WHERE
                        BinaryPackageName.id =
                            BinaryPackageRelease.binarypackagename AND
                        BinaryPackageRelease.build = BinaryPackageBuild.id AND
-                       SourcePackageRelease.sourcepackagename =
+                       BinaryPackageBuild.source_package_name =
                            SourcePackageName.id AND
-                       BinaryPackageBuild.source_package_release =
-                           SourcePackageRelease.id AND
                        %s
                    ORDER BY BinaryPackageName.name,
                             SourcePackageName.name"""

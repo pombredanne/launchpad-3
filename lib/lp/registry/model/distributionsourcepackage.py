@@ -55,7 +55,7 @@ from lp.registry.model.sourcepackage import (
     SourcePackageQuestionTargetMixin,
     )
 from lp.services.database.decoratedresultset import DecoratedResultSet
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import (
@@ -211,10 +211,8 @@ class DistributionSourcePackage(BugTargetBase,
     def delete(self):
         """See `DistributionSourcePackage`."""
         dsp_in_db = self._self_in_database
-        no_spph = self.publishing_history.count() == 0
-        if dsp_in_db is not None and no_spph:
-            store = IStore(dsp_in_db)
-            store.remove(dsp_in_db)
+        if dsp_in_db is not None and self.publishing_history.is_empty():
+            IStore(dsp_in_db).remove(dsp_in_db)
             return True
         return False
 
@@ -266,7 +264,7 @@ class DistributionSourcePackage(BugTargetBase,
             orderBy='-datecreated',
             prejoinClauseTables=['SourcePackageRelease'],
             clauseTables=['DistroSeries', 'SourcePackageRelease'])
-        if spph.count() == 0:
+        if spph.is_empty():
             return None
         return DistributionSourcePackageRelease(
             distribution=self.distribution,
@@ -279,16 +277,6 @@ class DistributionSourcePackage(BugTargetBase,
         releases = self.distribution.getCurrentSourceReleases(
             [self.sourcepackagename])
         return releases.get(self)
-
-    def bugtasks(self, quantity=None):
-        """See `IDistributionSourcePackage`."""
-        return BugTask.select("""
-            distribution=%s AND
-            sourcepackagename=%s
-            """ % sqlvalues(self.distribution.id,
-                            self.sourcepackagename.id),
-            orderBy='-datecreated',
-            limit=quantity)
 
     def get_distroseries_packages(self, active_only=True):
         """See `IDistributionSourcePackage`."""
@@ -335,7 +323,8 @@ class DistributionSourcePackage(BugTargetBase,
                 PackagePublishingStatus.PUBLISHED),
             (SourcePackagePublishingHistory.sourcepackagerelease ==
                 SourcePackageRelease.id),
-            SourcePackageRelease.sourcepackagename == self.sourcepackagename,
+            (SourcePackagePublishingHistory.sourcepackagename ==
+                self.sourcepackagename),
             # Ensure that the package was not copied.
             SourcePackageRelease.upload_archive == Archive.id,
             # Next, the joins for the ordering by soyuz karma of the
@@ -361,9 +350,8 @@ class DistributionSourcePackage(BugTargetBase,
     def binary_names(self):
         """See `IDistributionSourcePackage`."""
         names = []
-        history = self.publishing_history
-        if history.count() > 0:
-            binaries = history[0].getBuiltBinaries()
+        if not self.publishing_history.is_empty():
+            binaries = self.publishing_history[0].getBuiltBinaries()
             names = [binary.binary_package_name for binary in binaries]
         return names
 
@@ -376,7 +364,7 @@ class DistributionSourcePackage(BugTargetBase,
             DistroSeries.distribution == self.distribution)
         result = store.find(Packaging, condition)
         result.order_by("debversion_sort_key(version) DESC")
-        if result.count() == 0:
+        if result.is_empty():
             return None
         else:
             return result[0].productseries.product

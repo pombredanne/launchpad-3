@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for implementing distribution items."""
@@ -18,7 +18,6 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     And,
     Desc,
@@ -69,15 +68,11 @@ from lp.app.validators.name import (
     valid_name,
     )
 from lp.archivepublisher.debversion import Version
-from lp.blueprints.enums import (
-    SpecificationDefinitionStatus,
-    SpecificationFilter,
-    SpecificationImplementationStatus,
-    )
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
     )
+from lp.blueprints.model.specificationsearch import search_specifications
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
@@ -145,11 +140,15 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     quote,
     SQLBase,
     sqlvalues,
+    )
+from lp.services.database.stormexpr import (
+    fti_search,
+    rank_by_fti,
     )
 from lp.services.helpers import shortlist
 from lp.services.propertycache import (
@@ -177,10 +176,7 @@ from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease,
     )
-from lp.soyuz.model.distroarchseries import (
-    DistroArchSeries,
-    DistroArchSeriesSet,
-    )
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     get_current_source_releases,
@@ -252,6 +248,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     active = True
     package_derivatives_email = StringCol(notNull=False, default=None)
     redirect_release_uploads = BoolCol(notNull=True, default=False)
+    development_series_alias = StringCol(notNull=False, default=None)
 
     def __repr__(self):
         displayname = self.displayname.encode('ASCII', 'backslashreplace')
@@ -827,15 +824,25 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return getUtility(
             IArchiveSet).getByDistroAndName(self, name)
 
-    def getSeries(self, name_or_version):
+    def resolveSeriesAlias(self, name):
+        """See `IDistribution`."""
+        if self.development_series_alias == name:
+            currentseries = self.currentseries
+            if currentseries is not None:
+                return currentseries
+        raise NoSuchDistroSeries(name)
+
+    def getSeries(self, name_or_version, follow_aliases=False):
         """See `IDistribution`."""
         distroseries = Store.of(self).find(DistroSeries,
                Or(DistroSeries.name == name_or_version,
                DistroSeries.version == name_or_version),
             DistroSeries.distribution == self).one()
-        if not distroseries:
-            raise NoSuchDistroSeries(name_or_version)
-        return distroseries
+        if distroseries:
+            return distroseries
+        if follow_aliases:
+            return self.resolveSeriesAlias(name_or_version)
+        raise NoSuchDistroSeries(name_or_version)
 
     def getDevelopmentSeries(self):
         """See `IDistribution`."""
@@ -872,7 +879,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             {self: source_package_names})
 
     def specifications(self, user, sort=None, quantity=None, filter=None,
-                       prejoin_people=True):
+                       need_people=True, need_branches=True,
+                       need_workitems=False):
         """See `IHasSpecifications`.
 
         In the case of distributions, there are two kinds of filtering,
@@ -882,86 +890,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
           - informationalness: we will show ANY if nothing is said
 
         """
-
-        # Make a new list of the filter, so that we do not mutate what we
-        # were passed as a filter
-        if not filter:
-            # it could be None or it could be []
-            filter = [SpecificationFilter.INCOMPLETE]
-
-        # now look at the filter and fill in the unsaid bits
-
-        # defaults for completeness: if nothing is said about completeness
-        # then we want to show INCOMPLETE
-        completeness = False
-        for option in [
-            SpecificationFilter.COMPLETE,
-            SpecificationFilter.INCOMPLETE]:
-            if option in filter:
-                completeness = True
-        if completeness is False:
-            filter.append(SpecificationFilter.INCOMPLETE)
-
-        # defaults for acceptance: in this case we have nothing to do
-        # because specs are not accepted/declined against a distro
-
-        # defaults for informationalness: we don't have to do anything
-        # because the default if nothing is said is ANY
-
-        order = self._specification_sort(sort)
-
-        # figure out what set of specifications we are interested in. for
-        # distributions, we need to be able to filter on the basis of:
-        #
-        #  - completeness. by default, only incomplete specs shown
-        #  - informational.
-        #
-        base = 'Specification.distribution = %s' % self.id
-        query = base
-        # look for informational specs
-        if SpecificationFilter.INFORMATIONAL in filter:
-            query += (' AND Specification.implementation_status = %s ' %
-                quote(SpecificationImplementationStatus.INFORMATIONAL))
-
-        # filter based on completion. see the implementation of
-        # Specification.is_complete() for more details
-        completeness = Specification.completeness_clause
-
-        if SpecificationFilter.COMPLETE in filter:
-            query += ' AND ( %s ) ' % completeness
-        elif SpecificationFilter.INCOMPLETE in filter:
-            query += ' AND NOT ( %s ) ' % completeness
-
-        # Filter for validity. If we want valid specs only then we should
-        # exclude all OBSOLETE or SUPERSEDED specs
-        if SpecificationFilter.VALID in filter:
-            query += (' AND Specification.definition_status NOT IN '
-                '( %s, %s ) ' % sqlvalues(
-                    SpecificationDefinitionStatus.OBSOLETE,
-                    SpecificationDefinitionStatus.SUPERSEDED))
-
-        # ALL is the trump card
-        if SpecificationFilter.ALL in filter:
-            query = base
-
-        # Filter for specification text
-        for constraint in filter:
-            if isinstance(constraint, basestring):
-                # a string in the filter is a text search filter
-                query += ' AND Specification.fti @@ ftq(%s) ' % quote(
-                    constraint)
-
-        if prejoin_people:
-            results = self._preload_specifications_people([Specification],
-                                                          query)
-        else:
-            results = Store.of(self).find(
-                Specification,
-                SQL(query))
-        results.order_by(order)
-        if quantity is not None:
-            results = results[:quantity]
-        return results
+        base_clauses = [Specification.distributionID == self.id]
+        return search_specifications(
+            self, base_clauses, user, sort, quantity, filter,
+            need_people=need_people, need_branches=need_branches,
+            need_workitems=need_workitems)
 
     def getSpecification(self, name):
         """See `ISpecificationTarget`."""
@@ -1035,7 +968,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             search_text=search_text, owner=owner, sort=sort,
             distribution=self).getResults()
 
-    def getDistroSeriesAndPocket(self, distroseries_name):
+    def getDistroSeriesAndPocket(self, distroseries_name,
+                                 follow_aliases=False):
         """See `IDistribution`."""
         # Get the list of suffixes.
         suffixes = [suffix for suffix, ignored in suffixpocket.items()]
@@ -1044,13 +978,18 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         for suffix in suffixes:
             if distroseries_name.endswith(suffix):
+                left_size = len(distroseries_name) - len(suffix)
+                left = distroseries_name[:left_size]
                 try:
-                    left_size = len(distroseries_name) - len(suffix)
-                    return (self[distroseries_name[:left_size]],
-                            suffixpocket[suffix])
+                    return self[left], suffixpocket[suffix]
                 except KeyError:
+                    if follow_aliases:
+                        try:
+                            resolved = self.resolveSeriesAlias(left)
+                            return resolved, suffixpocket[suffix]
+                        except NoSuchDistroSeries:
+                            pass
                     # Swallow KeyError to continue round the loop.
-                    pass
 
         raise NotFoundError(distroseries_name)
 
@@ -1068,15 +1007,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # now).
         # The "binary_only" option is not yet supported for
         # IDistribution.
-
-        # Find out the distroarchseries in question.
-        arch_ids = DistroArchSeriesSet().getIdsForArchitectures(
-            self.architectures, arch_tag)
-
-        # Use the facility provided by IBinaryPackageBuildSet to
-        # retrieve the records.
-        return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
-            self, arch_ids, build_state, name, pocket)
+        return getUtility(IBinaryPackageBuildSet).getBuildsForDistro(
+            self, build_state, name, pocket, arch_tag)
 
     def searchSourcePackageCaches(
         self, text, has_packaging=None, publishing_distroseries=None):
@@ -1108,12 +1040,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             DistributionSourcePackageCache.archiveID.is_in(
                 self.all_distro_archive_ids),
             Or(
-                SQL("DistributionSourcePackageCache.fti @@ ftq(?)",
-                    params=(text,)),
+                fti_search(DistributionSourcePackageCache, text),
                 DistributionSourcePackageCache.name.contains_string(
-                    text.lower()),
-                ),
-            ]
+                    text.lower()))]
 
         if has_packaging is not None:
             packaging_query = Exists(Select(
@@ -1319,13 +1248,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             """ % sqlvalues(active_publishing_status))
 
         if text:
-            orderBy.insert(
-                0, SQLConstant(
-                    'rank(Archive.fti, ftq(%s)) DESC' % quote(text)))
-
-            clauses.append("""
-                Archive.fti @@ ftq(%s)
-            """ % sqlvalues(text))
+            orderBy.insert(0, rank_by_fti(Archive, text))
+            clauses.append(fti_search(Archive, text))
 
         if user is not None:
             if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
@@ -1342,9 +1266,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             clauses.append(
                 "Archive.private = FALSE AND Archive.enabled = TRUE")
 
-        query = ' AND '.join(clauses)
         return Archive.select(
-            query, orderBy=orderBy, clauseTables=clauseTables)
+            And(*clauses), orderBy=orderBy, clauseTables=clauseTables)
 
     def getPendingAcceptancePPAs(self):
         """See `IDistribution`."""
@@ -1366,7 +1289,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         Archive.purpose = %s AND
         Archive.distribution = %s AND
         SourcePackagePublishingHistory.archive = archive.id AND
-        SourcePackagePublishingHistory.scheduleddeletiondate is null AND
+        SourcePackagePublishingHistory.scheduleddeletiondate IS NULL AND
+        SourcePackagePublishingHistory.dateremoved IS NULL AND
         SourcePackagePublishingHistory.status IN (%s, %s)
          """ % sqlvalues(ArchivePurpose.PPA, self,
                          PackagePublishingStatus.PENDING,
@@ -1380,7 +1304,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         Archive.purpose = %s AND
         Archive.distribution = %s AND
         BinaryPackagePublishingHistory.archive = archive.id AND
-        BinaryPackagePublishingHistory.scheduleddeletiondate is null AND
+        BinaryPackagePublishingHistory.scheduleddeletiondate IS NULL AND
+        BinaryPackagePublishingHistory.dateremoved IS NULL AND
         BinaryPackagePublishingHistory.status IN (%s, %s)
         """ % sqlvalues(ArchivePurpose.PPA, self,
                         PackagePublishingStatus.PENDING,

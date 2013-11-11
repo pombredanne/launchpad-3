@@ -13,7 +13,7 @@ __all__ = [
 from difflib import unified_diff
 import logging
 
-from zope.app.form.browser import TextAreaWidget
+from zope.formlib.widgets import TextAreaWidget
 from zope.interface import Interface
 from zope.schema import Text
 

@@ -14,7 +14,7 @@ import unittest
 from openid.association import Association
 from openid.store import nonce
 
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 from lp.services.openid.model.baseopenidstore import BaseStormOpenIDStore
 
 

@@ -25,10 +25,6 @@ Bug watches are accessed via a utility that provides IBugWatchSet.
     Traceback (most recent call last):
     ...
     NotFoundError: 98765
-    >>> getUtility(IBugWatchSet)[98765]
-    Traceback (most recent call last):
-    ...
-    NotFoundError: 98765
     >>> bugwatch = getUtility(IBugWatchSet).get(2)
     >>> bugwatch.remotebug
     u'2000'

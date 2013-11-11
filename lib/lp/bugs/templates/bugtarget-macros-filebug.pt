@@ -33,7 +33,7 @@
       <div
         tal:condition="view/widget_errors/packagename|nothing"
         class="message"
-        tal:content="view/widget_errors/packagename"
+        tal:content="structure view/widget_errors/packagename"
       >An error on package name.</div>
     </td>
   </tr>

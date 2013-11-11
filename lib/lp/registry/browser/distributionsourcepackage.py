@@ -21,7 +21,6 @@ import itertools
 import operator
 
 from lazr.delegates import delegates
-from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.utils import smartquote
 from zope.component import (
     adapter,
@@ -123,18 +122,18 @@ class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
 
     def overview(self):
         text = 'Overview'
-        summary = 'General information about {0}'.format(
+        summary = u'General information about {0}'.format(
             self.context.displayname)
         return Link('', text, summary)
 
     def bugs(self):
         text = 'Bugs'
-        summary = 'Bugs reported about {0}'.format(self.context.displayname)
+        summary = u'Bugs reported about {0}'.format(self.context.displayname)
         return Link('', text, summary)
 
     def branches(self):
         text = 'Code'
-        summary = 'Branches for {0}'.format(self.context.displayname)
+        summary = u'Branches for {0}'.format(self.context.displayname)
         return Link('', text, summary)
 
 
@@ -327,11 +326,6 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
         super(DistributionSourcePackageView, self).initialize()
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user)
-
-        pub = self.context.latest_overall_publication
-        if pub:
-            IJSONRequestCache(self.request).objects['archive_context_url'] = (
-                canonical_url(pub.archive, path_only_if_possible=True))
 
     @property
     def label(self):

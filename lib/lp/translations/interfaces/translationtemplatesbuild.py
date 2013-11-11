@@ -22,10 +22,6 @@ from lp.code.interfaces.branch import IBranch
 class ITranslationTemplatesBuild(IBuildFarmJob):
     """The build information for translation templates builds."""
 
-    build_farm_job = Reference(
-        title=_("The build farm job that this extends."),
-        required=True, readonly=True, schema=IBuildFarmJob)
-
     branch = Reference(
         title=_("The branch that this build operates on."),
         required=True, readonly=True, schema=IBranch)
@@ -34,7 +30,7 @@ class ITranslationTemplatesBuild(IBuildFarmJob):
 class ITranslationTemplatesBuildSource(ISpecificBuildFarmJobSource):
     """Utility for `ITranslationTemplatesBuild`."""
 
-    def create(build_farm_job, branch):
+    def create(branch):
         """Create a new `ITranslationTemplatesBuild`."""
 
     def findByBranch(branch, store=None):

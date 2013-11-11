@@ -19,7 +19,7 @@ from lp.code.interfaces.branchmergequeuecollection import (
     )
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.code.model.branchmergequeue import BranchMergeQueue
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 
 
 class GenericBranchMergeQueueCollection:

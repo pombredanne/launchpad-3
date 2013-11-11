@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 """Module docstring goes here."""
 
 __metaclass__ = type
@@ -27,7 +25,6 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
-from sqlobject.sqlbuilder import AND
 from storm.expr import (
     And,
     Desc,
@@ -71,12 +68,7 @@ from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -591,13 +583,13 @@ class DistributionMirrorSet:
         country_id = None
         if country is not None:
             country_id = country.id
-        base_query = AND(
-            DistributionMirror.q.content == mirror_type,
-            DistributionMirror.q.enabled == True,
-            DistributionMirror.q.http_base_url != None,
-            DistributionMirror.q.official_candidate == True,
-            DistributionMirror.q.status == MirrorStatus.OFFICIAL)
-        query = AND(DistributionMirror.q.countryID == country_id, base_query)
+        base_query = And(
+            DistributionMirror.content == mirror_type,
+            DistributionMirror.enabled == True,
+            DistributionMirror.http_base_url != None,
+            DistributionMirror.official_candidate == True,
+            DistributionMirror.status == MirrorStatus.OFFICIAL)
+        query = And(DistributionMirror.countryID == country_id, base_query)
         # The list of mirrors returned by this method is fed to apt through
         # launchpad.net, so we order the results randomly in a lame attempt to
         # balance the load on the mirrors.
@@ -608,9 +600,9 @@ class DistributionMirrorSet:
 
         if not mirrors and country is not None:
             continent = country.continent
-            query = AND(
+            query = And(
                 Country.q.continentID == continent.id,
-                DistributionMirror.q.countryID == Country.q.id,
+                DistributionMirror.countryID == Country.q.id,
                 base_query)
             mirrors.extend(shortlist(
                 DistributionMirror.select(query, orderBy=order_by),
@@ -658,7 +650,7 @@ class DistributionMirrorSet:
         if limit is not None:
             query += " LIMIT %d" % limit
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(MirrorDistroArchSeries)
         ids = ", ".join(str(id)
                         for (id, date_created) in store.execute(query))
         query = '1 = 2'
