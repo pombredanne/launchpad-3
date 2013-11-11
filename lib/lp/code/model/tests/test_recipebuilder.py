@@ -92,7 +92,9 @@ class TestRecipeBuilder(TestCaseWithFactory):
             recipe=recipe, requester=recipe_owner, distroseries=distroseries)
         job = spb.makeJob()
         job_id = removeSecurityProxy(job.job).id
-        BuildQueue(job_type=BuildFarmJobType.RECIPEBRANCHBUILD, job=job_id)
+        BuildQueue(
+            build_farm_job=spb.build_farm_job,
+            job_type=BuildFarmJobType.RECIPEBRANCHBUILD, job=job_id)
         job = IBuildFarmJobBehavior(job)
         return job
 
