@@ -132,33 +132,27 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
             except swiftclient.ClientException as x:
                 if x.http_status != 404:
                     raise
-                log.info(
-                    'Putting {0} into Swift ({1}, {2})'.format(
-                        lfc, container, obj_name))
-<<<<<<< TREE
-                _put(swift_connection, container, obj_name, fs_path)
-=======
-                md5_stream = HashStream(open(fs_path, 'rb'))
-                db_md5_hash = ISlaveStore(LibraryFileContent).get(
-                    LibraryFileContent, lfc).md5
-                swift_md5_hash = swift_connection.put_object(
-                    container, obj_name, md5_stream, os.path.getsize(fs_path))
-                disk_md5_hash = md5_stream.hash.hexdigest()
-                assert disk_md5_hash == db_md5_hash == swift_md5_hash, (
-                    "LibraryFileContent({0}) corrupt. "
-                    "disk md5={1}, db md5={2}, swift md5={3}".format(
-                        lfc, disk_md5_hash, db_md5_hash, swift_md5_hash))
->>>>>>> MERGE-SOURCE
-
+                log.info('Putting {0} into Swift ({1}, {2})'.format(
+                    lfc, container, obj_name))
+                _put(swift_connection, lfc, container, obj_name, fs_path)
             if remove:
                 os.unlink(fs_path)
 
 
-def _put(swift_connection, container, obj_name, fs_path):
+def _put(swift_connection, lfc_id, container, obj_name, fs_path):
     fs_size = os.path.getsize(fs_path)
     fs_file = open(fs_path, 'rb')
     if fs_size <= MAX_SWIFT_OBJECT_SIZE:
-        swift_connection.put_object(container, obj_name, fs_file, fs_size)
+        md5_stream = HashStream(fs_file)
+        db_md5_hash = ISlaveStore(LibraryFileContent).get(
+            LibraryFileContent, lfc_id).md5
+        swift_md5_hash = swift_connection.put_object(
+            container, obj_name, md5_stream, fs_size)
+        disk_md5_hash = md5_stream.hash.hexdigest()
+        assert disk_md5_hash == db_md5_hash == swift_md5_hash, (
+            "LibraryFileContent({0}) corrupt. "
+            "disk md5={1}, db md5={2}, swift md5={3}".format(
+                lfc_id, disk_md5_hash, db_md5_hash, swift_md5_hash))
     else:
         # Large file upload. Create the segments first, then the
         # manifest. This order prevents partial downloads, and lets us
