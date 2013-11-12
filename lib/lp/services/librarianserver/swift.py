@@ -10,7 +10,9 @@ __all__ = [
     ]
 
 from contextlib import contextmanager
+import hashlib
 import os.path
+import re
 import sys
 import time
 import urllib
@@ -18,10 +20,14 @@ import urllib
 from swiftclient import client as swiftclient
 
 from lp.services.config import config
+from lp.services.database.interfaces import ISlaveStore
+from lp.services.librarian.model import LibraryFileContent
 
 
 SWIFT_CONTAINER_PREFIX = 'librarian_'
 MAX_SWIFT_OBJECT_SIZE = 5 * 1024 ** 3  # 5GB Swift limit.
+
+ONE_DAY = 24 * 60 * 60
 
 
 def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
@@ -64,8 +70,17 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
 
         log.debug('Scanning {0} for matching files'.format(dirpath))
 
+        _filename_re = re.compile('^[0-9a-f]{2}$')
+
         for filename in sorted(filenames):
             fs_path = os.path.join(dirpath, filename)
+
+            # Skip any files with names that are not two hex digits.
+            # This is noise in the filesystem database.
+            if _filename_re.match(filename) is None:
+                log.debug('Skipping noise %s' % fs_path)
+                continue
+
             if fs_path < start_fs_path:
                 continue
             if fs_path > end_fs_path:
@@ -73,7 +88,7 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
 
             # Skip files which have been modified recently, as they
             # may be uploads still in progress.
-            if os.path.getmtime(fs_path) > time.time() - (60 * 60):
+            if os.path.getmtime(fs_path) > time.time() - ONE_DAY:
                 log.debug('Skipping recent upload %s' % fs_path)
                 continue
 
@@ -105,17 +120,35 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
                 swift_connection.put_container(container)
 
             try:
-                swift_connection.head_object(container, obj_name)
+                headers = swift_connection.head_object(container, obj_name)
                 log.debug(
                     "{0} already exists in Swift({1}, {2})".format(
                         lfc, container, obj_name))
+                if ('x-object-manifest' not in headers and
+                        int(headers['content-length'])
+                        != os.path.getsize(fs_path)):
+                    raise AssertionError(
+                        '{0} has incorrect size in Swift'.format(lfc))
             except swiftclient.ClientException as x:
                 if x.http_status != 404:
                     raise
                 log.info(
                     'Putting {0} into Swift ({1}, {2})'.format(
                         lfc, container, obj_name))
+<<<<<<< TREE
                 _put(swift_connection, container, obj_name, fs_path)
+=======
+                md5_stream = HashStream(open(fs_path, 'rb'))
+                db_md5_hash = ISlaveStore(LibraryFileContent).get(
+                    LibraryFileContent, lfc).md5
+                swift_md5_hash = swift_connection.put_object(
+                    container, obj_name, md5_stream, os.path.getsize(fs_path))
+                disk_md5_hash = md5_stream.hash.hexdigest()
+                assert disk_md5_hash == db_md5_hash == swift_md5_hash, (
+                    "LibraryFileContent({0}) corrupt. "
+                    "disk md5={1}, db md5={2}, swift md5={3}".format(
+                        lfc, disk_md5_hash, db_md5_hash, swift_md5_hash))
+>>>>>>> MERGE-SOURCE
 
             if remove:
                 os.unlink(fs_path)
@@ -231,6 +264,18 @@ class SwiftStream:
 
     def tell(self):
         return self._offset
+
+
+class HashStream:
+    """Read a file while calculating a checksum as we go."""
+    def __init__(self, stream, hash_factory=hashlib.md5):
+        self._stream = stream
+        self.hash = hash_factory()
+
+    def read(self, size=-1):
+        chunk = self._stream.read()
+        self.hash.update(chunk)
+        return chunk
 
 
 class ConnectionPool:
