@@ -7,6 +7,7 @@ __all__ = [
     'BuildQueue',
     'BuildQueueSet',
     'specific_job_classes',
+    'specific_build_farm_job_sources',
     ]
 
 from datetime import datetime
@@ -21,11 +22,18 @@ from sqlobject import (
     IntervalCol,
     StringCol,
     )
+from storm.store import Store
 from zope.component import getSiteManager
 from zope.interface import implements
 
-from lp.buildmaster.enums import BuildFarmJobType
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJob,
+    ISpecificBuildFarmJobSource,
+    )
 from lp.buildmaster.interfaces.buildqueue import (
     IBuildQueue,
     IBuildQueueSet,
@@ -56,6 +64,26 @@ def specific_job_classes():
         job_classes[job_enum] = job_class
 
     return job_classes
+
+
+def specific_build_farm_job_sources():
+    """Sources for specific jobs that may run on the build farm."""
+    job_sources = dict()
+    # Get all components that implement the `ISpecificBuildFarmJobSource`
+    # interface.
+    components = getSiteManager()
+    implementations = sorted(
+        components.getUtilitiesFor(ISpecificBuildFarmJobSource))
+    # The above yields a collection of 2-tuples where the first element
+    # is the name of the `BuildFarmJobType` enum and the second element
+    # is the implementing class respectively.
+    for job_enum_name, job_source in implementations:
+        if not job_enum_name:
+            continue
+        job_enum = getattr(BuildFarmJobType, job_enum_name)
+        job_sources[job_enum] = job_source
+
+    return job_sources
 
 
 class BuildQueue(SQLBase):
@@ -133,8 +161,9 @@ class BuildQueue(SQLBase):
         job = self.job
         specific_job = self.specific_job
         builder = self.builder
-        SQLBase.destroySelf(self)
+        Store.of(self).remove(self)
         specific_job.cleanUp()
+        Store.of(self).flush()
         job.destroySelf()
         if builder is not None:
             del get_property_cache(builder).currentjob
@@ -158,7 +187,7 @@ class BuildQueue(SQLBase):
         self.builder = builder
         if self.job.status != JobStatus.RUNNING:
             self.job.start()
-        self.specific_job.jobStarted()
+        self.specific_job.build.updateStatus(BuildStatus.BUILDING)
         if builder is not None:
             del get_property_cache(builder).currentjob
 
@@ -171,13 +200,13 @@ class BuildQueue(SQLBase):
         self.job.date_started = None
         self.job.date_finished = None
         self.logtail = None
-        self.specific_job.jobReset()
+        self.specific_job.build.updateStatus(BuildStatus.NEEDSBUILD)
         if builder is not None:
             del get_property_cache(builder).currentjob
 
     def cancel(self):
         """See `IBuildQueue`."""
-        self.specific_job.jobCancel()
+        self.specific_job.build.updateStatus(BuildStatus.CANCELLED)
         self.destroySelf()
 
     def getEstimatedJobStartTime(self, now=None):

@@ -6,6 +6,7 @@ __all__ = [
     'BuildFarmJob',
     'BuildFarmJobMixin',
     'BuildFarmJobOld',
+    'SpecificBuildFarmJobSourceMixin',
     ]
 
 import datetime
@@ -50,9 +51,6 @@ class BuildFarmJobOld:
 
     implements(IBuildFarmJobOld)
 
-    processor = None
-    virtualized = None
-
     @staticmethod
     def preloadBuildFarmJobs(jobs):
         """Preload the build farm jobs to which the given jobs will delegate.
@@ -82,29 +80,6 @@ class BuildFarmJobOld:
         after themselves correctly.
         """
         Store.of(self).remove(self)
-
-    @staticmethod
-    def addCandidateSelectionCriteria(processor, virtualized):
-        """See `IBuildFarmJobOld`."""
-        return ('')
-
-    @staticmethod
-    def postprocessCandidate(job, logger):
-        """See `IBuildFarmJobOld`."""
-        return True
-
-    def jobStarted(self):
-        """See `IBuildFarmJobOld`."""
-        # XXX wgrant: builder should be set here.
-        self.build.updateStatus(BuildStatus.BUILDING)
-
-    def jobReset(self):
-        """See `IBuildFarmJob`."""
-        self.build.updateStatus(BuildStatus.NEEDSBUILD)
-
-    def jobCancel(self):
-        """See `IBuildFarmJob`."""
-        self.build.updateStatus(BuildStatus.CANCELLED)
 
 
 class BuildFarmJob(Storm):
@@ -247,6 +222,19 @@ class BuildFarmJobMixin:
     def gotFailure(self):
         """See `IBuildFarmJob`."""
         self.failure_count += 1
+
+
+class SpecificBuildFarmJobSourceMixin:
+
+    @staticmethod
+    def addCandidateSelectionCriteria(processor, virtualized):
+        """See `ISpecificBuildFarmJobSource`."""
+        return ('')
+
+    @staticmethod
+    def postprocessCandidate(job, logger):
+        """See `ISpecificBuildFarmJobSource`."""
+        return True
 
 
 class BuildFarmJobSet:
