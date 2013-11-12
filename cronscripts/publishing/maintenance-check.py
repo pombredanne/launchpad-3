@@ -109,6 +109,9 @@ class QuantalUbuntuMaintenance(UbuntuMaintenance):
         ]
 
 
+OneiricUbuntuMaintenance = QuantalUbuntuMaintenance
+
+
 class TrustyUbuntuMaintenance(UbuntuMaintenance):
     """ The support timeframe for the 14.04 (trusty) LTS release.
         This changes the timeframe for desktop packages from 3y to 5y
@@ -126,8 +129,6 @@ class TrustyUbuntuMaintenance(UbuntuMaintenance):
     DISTRO_NAMES = [
         "ubuntu",
         ]
-        
-OneiricUbuntuMaintenance = QuantalUbuntuMaintenance
 
 
 # Names of the distribution releases that are not supported by this
