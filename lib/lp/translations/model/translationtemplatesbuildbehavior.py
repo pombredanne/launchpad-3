@@ -133,7 +133,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         logger.info(
             "Processing finished %s build %s (%s) from builder %s" % (
             status, self.getBuildCookie(),
-            queue_item.specific_job.branch.bzr_identity,
+            queue_item.specific_build.branch.bzr_identity,
             queue_item.builder.name))
 
         if status == 'OK':
@@ -161,7 +161,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                         logger.debug(
                             "Uploading translation templates tarball.")
                         self._uploadTarball(
-                            queue_item.specific_job.branch, tarball, logger)
+                            queue_item.specific_build.branch, tarball, logger)
                         logger.debug("Upload complete.")
                 finally:
                     self.build.updateStatus(BuildStatus.FULLYBUILT)
