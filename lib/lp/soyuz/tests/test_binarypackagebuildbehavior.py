@@ -98,8 +98,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
             in order to trick the slave into building correctly.
         :return: A list of the calls we expect to be made.
         """
-        cookie = IBuildFarmJobBehavior(
-            build.buildqueue_record.specific_job).getBuildCookie()
+        cookie = IBuildFarmJobBehavior(build).getBuildCookie()
         ds_name = build.distro_arch_series.distroseries.name
         suite = ds_name + pocketsuffix[build.pocket]
         archives = get_sources_list_for_building(
@@ -228,8 +227,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         lf = self.factory.makeLibraryFileAlias()
         transaction.commit()
         build.distro_arch_series.addOrUpdateChroot(lf)
-        candidate = build.queueBuild()
-        behavior = IBuildFarmJobBehavior(candidate.specific_job)
+        behavior = IBuildFarmJobBehavior(build)
         behavior.setBuilder(builder, None)
         e = self.assertRaises(
             AssertionError, behavior.verifyBuildRequest, BufferLogger())
@@ -249,8 +247,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         lf = self.factory.makeLibraryFileAlias()
         transaction.commit()
         build.distro_arch_series.addOrUpdateChroot(lf)
-        candidate = build.queueBuild()
-        behavior = IBuildFarmJobBehavior(candidate.specific_job)
+        behavior = IBuildFarmJobBehavior(build)
         behavior.setBuilder(builder, None)
         e = self.assertRaises(
             AssertionError, behavior.verifyBuildRequest, BufferLogger())
@@ -268,8 +265,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         lf = self.factory.makeLibraryFileAlias()
         transaction.commit()
         build.distro_arch_series.addOrUpdateChroot(lf)
-        candidate = build.queueBuild()
-        behavior = IBuildFarmJobBehavior(candidate.specific_job)
+        behavior = IBuildFarmJobBehavior(build)
         behavior.setBuilder(builder, None)
         e = self.assertRaises(
             AssertionError, behavior.verifyBuildRequest, BufferLogger())
@@ -283,8 +279,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         builder = self.factory.makeBuilder()
         build = self.factory.makeBinaryPackageBuild(
             builder=builder, archive=archive)
-        candidate = build.queueBuild()
-        behavior = IBuildFarmJobBehavior(candidate.specific_job)
+        behavior = IBuildFarmJobBehavior(build)
         behavior.setBuilder(builder, None)
         e = self.assertRaises(
             CannotBuild, behavior.verifyBuildRequest, BufferLogger())
@@ -294,8 +289,7 @@ class TestBinaryBuildPackageBehavior(TestCaseWithFactory):
         # A build cookie is made up of the job type and record id.
         # The uploadprocessor relies on this format.
         build = self.factory.makeBinaryPackageBuild()
-        candidate = build.queueBuild()
-        behavior = IBuildFarmJobBehavior(candidate.specific_job)
+        behavior = IBuildFarmJobBehavior(build)
         cookie = removeSecurityProxy(behavior).getBuildCookie()
         expected_cookie = "PACKAGEBUILD-%d" % build.id
         self.assertEqual(expected_cookie, cookie)
@@ -508,7 +502,7 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
                 'buildlog', tmp_orig_file_name)
             return d.addCallback(got_orig_log)
 
-        behavior = IBuildFarmJobBehavior(self.candidate.specific_job)
+        behavior = IBuildFarmJobBehavior(self.build)
         behavior.setBuilder(self.builder, slave)
         d = behavior.getLogFromSlave(self.build.buildqueue_record)
         return d.addCallback(got_log)

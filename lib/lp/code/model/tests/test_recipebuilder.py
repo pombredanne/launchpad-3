@@ -21,16 +21,12 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.buildmaster.enums import (
-    BuildFarmJobType,
-    BuildStatus,
-    )
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interactor import BuilderInteractor
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
-from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import (
     MockBuilder,
     OkSlave,
@@ -89,10 +85,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         spb = self.factory.makeSourcePackageRecipeBuild(
             sourcepackage=sourcepackage, archive=archive,
             recipe=recipe, requester=recipe_owner, distroseries=distroseries)
-        job = spb.makeJob()
-        job_id = removeSecurityProxy(job.job).id
-        BuildQueue(job_type=BuildFarmJobType.RECIPEBRANCHBUILD, job=job_id)
-        job = IBuildFarmJobBehavior(job)
+        job = IBuildFarmJobBehavior(spb)
         return job
 
     def test_providesInterface(self):
@@ -102,8 +95,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
 
     def test_adapts_ISourcePackageRecipeBuildJob(self):
         # IBuildFarmJobBehavior adapts a ISourcePackageRecipeBuildJob
-        job = self.factory.makeSourcePackageRecipeBuild().makeJob()
-        job = IBuildFarmJobBehavior(job)
+        build = self.factory.makeSourcePackageRecipeBuild()
+        job = IBuildFarmJobBehavior(build)
         self.assertProvides(job, IBuildFarmJobBehavior)
 
     def test_display_name(self):
@@ -145,8 +138,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         # verifyBuildRequest will raise if a bad pocket is proposed.
         build = self.factory.makeSourcePackageRecipeBuild(
             pocket=PackagePublishingPocket.SECURITY)
-        job = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
-        job = IBuildFarmJobBehavior(job.specific_job)
+        job = IBuildFarmJobBehavior(build)
         job.setBuilder(MockBuilder("bob-de-bouwer"), OkSlave())
         e = self.assertRaises(
             AssertionError, job.verifyBuildRequest, BufferLogger())
@@ -156,8 +148,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         # A build cookie is made up of the job type and record id.
         # The uploadprocessor relies on this format.
         build = self.factory.makeSourcePackageRecipeBuild()
-        job = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
-        job = IBuildFarmJobBehavior(job.specific_job)
+        job = IBuildFarmJobBehavior(build)
         cookie = removeSecurityProxy(job).getBuildCookie()
         expected_cookie = "RECIPEBRANCHBUILD-%d" % build.id
         self.assertEquals(expected_cookie, cookie)
