@@ -1384,13 +1384,13 @@ class BuildQueueMigrator(TunableLoop):
 
     def isDone(self):
         return (
-            False #not getFeatureFlag('buildmaster.buildqueuemigrator.enabled')
+            not getFeatureFlag('buildmaster.buildqueuemigrator.enabled')
             or self.findBuildQueues().is_empty())
 
     def __call__(self, chunk_size):
         bqs = list(self.findBuildQueues()[:chunk_size])
         for bq in bqs:
-            bq.build_farm_job = bq.specific_old_job.build.build_farm_job
+            bq.build_farm_job = bq.specific_build.build_farm_job
             bq.status = self.status_map[bq.job.status]
         self.start_at = bqs[-1].id + 1
         transaction.commit()
@@ -1645,6 +1645,11 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     """
     script_name = 'garbo-hourly'
     tunable_loops = [
+        RevisionCachePruner,
+        BugWatchScheduler,
+        UnusedSessionPruner,
+        DuplicateSessionPruner,
+        BugHeatUpdater,
         BuildQueueMigrator,
         ]
     experimental_tunable_loops = []
