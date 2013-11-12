@@ -69,10 +69,6 @@ class BuildFarmJobOld:
         job_ids = [job.id for job in jobs]
         return IStore(cls).find(cls, cls.job_id.is_in(job_ids))
 
-    def score(self):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
     def cleanUp(self):
         """See `IBuildFarmJob`.
 
@@ -222,6 +218,10 @@ class BuildFarmJobMixin:
     def gotFailure(self):
         """See `IBuildFarmJob`."""
         self.failure_count += 1
+
+    def calculateScore(self):
+        """See `IBuildFarmJob`."""
+        raise NotImplementedError
 
 
 class SpecificBuildFarmJobSourceMixin:

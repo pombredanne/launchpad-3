@@ -305,6 +305,9 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
         store.remove(self)
         store.remove(self.build_farm_job)
 
+    def calculateScore(self):
+        return 2505 + self.archive.relative_build_score
+
     @classmethod
     def getByID(cls, build_id):
         """See `ISourcePackageRecipeBuildSource`."""
@@ -464,6 +467,3 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOld, Storm):
         store = IMasterStore(cls)
         store.add(specific_job)
         return specific_job
-
-    def score(self):
-        return 2505 + self.build.archive.relative_build_score

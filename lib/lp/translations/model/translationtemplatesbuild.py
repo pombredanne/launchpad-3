@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE',
     'TranslationTemplatesBuild',
     ]
 
@@ -50,6 +51,9 @@ from lp.translations.interfaces.translationtemplatesbuild import (
 from lp.translations.model.translationtemplatesbuildjob import (
     TranslationTemplatesBuildJob,
     )
+
+
+HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE = 2510
 
 
 class TranslationTemplatesBuild(SpecificBuildFarmJobSourceMixin,
@@ -200,3 +204,10 @@ class TranslationTemplatesBuild(SpecificBuildFarmJobSourceMixin,
         if self.log is None:
             return None
         return self.log.http_url
+
+    def calculateScore(self):
+        """See `IBuildFarmJob`."""
+        # Hard-code score for now.  Most PPA jobs start out at 2505;
+        # TranslationTemplateBuildJobs are fast so we want them at a
+        # higher priority.
+        return HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE

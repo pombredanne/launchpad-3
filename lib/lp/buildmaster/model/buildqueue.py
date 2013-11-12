@@ -180,7 +180,7 @@ class BuildQueue(SQLBase):
             return
         # Allow the `IBuildFarmJob` instance with the data/logic specific to
         # the job at hand to calculate the score as appropriate.
-        self.lastscore = self.specific_job.score()
+        self.lastscore = self.specific_job.build.calculateScore()
 
     def markAsBuilding(self, builder):
         """See `IBuildQueue`."""

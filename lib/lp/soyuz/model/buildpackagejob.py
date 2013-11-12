@@ -19,16 +19,7 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
 from lp.services.database.bulk import load_related
 from lp.services.database.interfaces import IStore
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.buildpackagejob import (
-    COPY_ARCHIVE_SCORE_PENALTY,
-    IBuildPackageJob,
-    PRIVATE_ARCHIVE_SCORE_BONUS,
-    SCORE_BY_COMPONENT,
-    SCORE_BY_POCKET,
-    SCORE_BY_URGENCY,
-    )
-from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.model.packageset import Packageset
+from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 
 
 class BuildPackageJob(BuildFarmJobOld, Storm):
@@ -55,44 +46,6 @@ class BuildPackageJob(BuildFarmJobOld, Storm):
             BinaryPackageBuild,
             [BuildPackageJob.job_id.is_in([job.id for job in jobs]),
              BuildPackageJob.build_id == BinaryPackageBuild.id]))
-
-    def score(self):
-        """See `IBuildPackageJob`."""
-        score = 0
-
-        # Private builds get uber score.
-        if self.build.archive.private:
-            score += PRIVATE_ARCHIVE_SCORE_BONUS
-
-        if self.build.archive.is_copy:
-            score -= COPY_ARCHIVE_SCORE_PENALTY
-
-        score += self.build.archive.relative_build_score
-
-        # Language packs don't get any of the usual package-specific
-        # score bumps, as they unduly delay the building of packages in
-        # the main component otherwise.
-        if self.build.source_package_release.section.name == 'translations':
-            return score
-
-        # Calculates the urgency-related part of the score.
-        score += SCORE_BY_URGENCY[self.build.source_package_release.urgency]
-
-        # Calculates the pocket-related part of the score.
-        score += SCORE_BY_POCKET[self.build.pocket]
-
-        # Calculates the component-related part of the score.
-        score += SCORE_BY_COMPONENT.get(
-            self.build.current_component.name, 0)
-
-        # Calculates the package-set-related part of the score.
-        package_sets = getUtility(IPackagesetSet).setsIncludingSource(
-            self.build.source_package_release.name,
-            distroseries=self.build.distro_series)
-        if not self.build.archive.is_ppa and not package_sets.is_empty():
-            score += package_sets.max(Packageset.relative_build_score)
-
-        return score
 
     @classmethod
     def preloadJobsData(cls, jobs):

@@ -59,9 +59,6 @@ class IBuildFarmJobOld(Interface):
     BuildQueue have been transitioned to the new database schema.
     """
 
-    def score():
-        """Calculate a job score appropriate for the job type in question."""
-
     def getByJob(job):
         """Get the specific `IBuildFarmJob` for the given `Job`.
 
@@ -227,6 +224,9 @@ class IBuildFarmJob(Interface):
 
     def gotFailure():
         """Increment the failure_count for this job."""
+
+    def calculateScore():
+        """Calculate the build queue priority for this job."""
 
     title = exported(TextLine(title=_("Title"), required=False),
                      as_of="beta")

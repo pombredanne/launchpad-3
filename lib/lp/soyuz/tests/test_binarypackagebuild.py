@@ -9,15 +9,19 @@ from datetime import (
     )
 
 import pytz
+from simplejson import dumps
 from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.services.job.model.job import Job
 from lp.services.log.logger import DevNullLogger
 from lp.services.webapp.interaction import ANONYMOUS
@@ -31,7 +35,14 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuildSet,
     UnparsableDependencies,
     )
-from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
+from lp.soyuz.interfaces.buildpackagejob import (
+    COPY_ARCHIVE_SCORE_PENALTY,
+    IBuildPackageJob,
+    PRIVATE_ARCHIVE_SCORE_BONUS,
+    SCORE_BY_COMPONENT,
+    SCORE_BY_POCKET,
+    SCORE_BY_URGENCY,
+    )
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagebuild import (
     BinaryPackageBuild,
@@ -40,9 +51,11 @@ from lp.soyuz.model.binarypackagebuild import (
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
+    anonymous_logged_in,
     api_url,
     login,
     logout,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
@@ -541,3 +554,239 @@ class TestPostprocessCandidate(TestCaseWithFactory):
         removeSecurityProxy(archive).permit_obsolete_series_uploads = True
         BinaryPackageBuildSet.postprocessCandidate(job, DevNullLogger())
         self.assertEqual(BuildStatus.NEEDSBUILD, build.status)
+
+
+class TestCalculateScore(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeBuild(self, purpose=None, private=False, component="main",
+                  urgency="high", pocket="RELEASE", section_name=None):
+        if purpose is not None or private:
+            archive = self.factory.makeArchive(
+                purpose=purpose, private=private)
+        else:
+            archive = None
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            archive=archive, component=component, urgency=urgency,
+            section_name=section_name)
+        naked_spph = removeSecurityProxy(spph)  # needed for private archives
+        return removeSecurityProxy(
+            self.factory.makeBinaryPackageBuild(
+                source_package_release=naked_spph.sourcepackagerelease,
+                pocket=pocket))
+
+    # The defaults for pocket, component, and urgency here match those in
+    # makeBuildJob.
+    def assertCorrectScore(self, build, pocket="RELEASE", component="main",
+                           urgency="high", other_bonus=0):
+        self.assertEqual(
+            (SCORE_BY_POCKET[PackagePublishingPocket.items[pocket.upper()]] +
+             SCORE_BY_COMPONENT[component] +
+             SCORE_BY_URGENCY[SourcePackageUrgency.items[urgency.upper()]] +
+             other_bonus), build.calculateScore())
+
+    def test_score_unusual_component(self):
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            component="unusual")
+        build = self.factory.makeBinaryPackageBuild(
+            source_package_release=spph.sourcepackagerelease)
+        # For now just test that it doesn't raise an Exception
+        build.calculateScore()
+
+    def test_main_release_low_score(self):
+        # 1500 (RELEASE) + 1000 (main) + 5 (low) = 2505.
+        build = self.makeBuild(component="main", urgency="low")
+        self.assertCorrectScore(build, "RELEASE", "main", "low")
+
+    def test_copy_archive_main_release_low_score(self):
+        # 1500 (RELEASE) + 1000 (main) + 5 (low) - 2600 (copy archive) = -95.
+        # With this penalty, even language-packs and build retries will be
+        # built before copy archives.
+        build = self.makeBuild(
+            purpose="COPY", component="main", urgency="low")
+        self.assertCorrectScore(
+            build, "RELEASE", "main", "low", -COPY_ARCHIVE_SCORE_PENALTY)
+
+    def test_copy_archive_relative_score_is_applied(self):
+        # Per-archive relative build scores are applied, in this case
+        # exactly offsetting the copy-archive penalty.
+        build = self.makeBuild(
+            purpose="COPY", component="main", urgency="low")
+        removeSecurityProxy(build.archive).relative_build_score = 2600
+        self.assertCorrectScore(
+            build, "RELEASE", "main", "low",
+            -COPY_ARCHIVE_SCORE_PENALTY + 2600)
+
+    def test_archive_negative_relative_score_is_applied(self):
+        # Negative per-archive relative build scores are allowed.
+        build = self.makeBuild(component="main", urgency="low")
+        removeSecurityProxy(build.archive).relative_build_score = -100
+        self.assertCorrectScore(build, "RELEASE", "main", "low", -100)
+
+    def test_private_archive_bonus_is_applied(self):
+        # Private archives get a bonus of 10000.
+        build = self.makeBuild(private=True, component="main", urgency="high")
+        self.assertCorrectScore(
+            build, "RELEASE", "main", "high", PRIVATE_ARCHIVE_SCORE_BONUS)
+
+    def test_main_release_low_recent_score(self):
+        # 1500 (RELEASE) + 1000 (main) + 5 (low) = 2505.
+        build = self.makeBuild(component="main", urgency="low")
+        self.assertCorrectScore(build, "RELEASE", "main", "low")
+
+    def test_universe_release_high_five_minutes_score(self):
+        # 1500 (RELEASE) + 250 (universe) + 15 (high) = 1765.
+        build = self.makeBuild(component="universe", urgency="high")
+        self.assertCorrectScore(build, "RELEASE", "universe", "high")
+
+    def test_multiverse_release_medium_fifteen_minutes_score(self):
+        # 1500 (RELEASE) + 0 (multiverse) + 10 (medium) = 1510.
+        build = self.makeBuild(component="multiverse", urgency="medium")
+        self.assertCorrectScore(build, "RELEASE", "multiverse", "medium")
+
+    def test_main_release_emergency_thirty_minutes_score(self):
+        # 1500 (RELEASE) + 1000 (main) + 20 (emergency) = 2520.
+        build = self.makeBuild(component="main", urgency="emergency")
+        self.assertCorrectScore(build, "RELEASE", "main", "emergency")
+
+    def test_restricted_release_low_one_hour_score(self):
+        # 1500 (RELEASE) + 750 (restricted) + 5 (low) = 2255.
+        build = self.makeBuild(component="restricted", urgency="low")
+        self.assertCorrectScore(build, "RELEASE", "restricted", "low")
+
+    def test_backports_score(self):
+        # BACKPORTS is the lowest-priority pocket.
+        build = self.makeBuild(pocket="BACKPORTS")
+        self.assertCorrectScore(build, "BACKPORTS")
+
+    def test_release_score(self):
+        # RELEASE ranks next above BACKPORTS.
+        build = self.makeBuild(pocket="RELEASE")
+        self.assertCorrectScore(build, "RELEASE")
+
+    def test_proposed_updates_score(self):
+        # PROPOSED and UPDATES both rank next above RELEASE.  The reason why
+        # PROPOSED and UPDATES have the same priority is because sources in
+        # both pockets are submitted to the same policy and should reach
+        # their audience as soon as possible (see more information about
+        # this decision in bug #372491).
+        proposed_build = self.makeBuild(pocket="PROPOSED")
+        self.assertCorrectScore(proposed_build, "PROPOSED")
+        updates_build = self.makeBuild(pocket="UPDATES")
+        self.assertCorrectScore(updates_build, "UPDATES")
+
+    def test_security_updates_score(self):
+        # SECURITY is the top-ranked pocket.
+        build = self.makeBuild(pocket="SECURITY")
+        self.assertCorrectScore(build, "SECURITY")
+
+    def test_score_packageset(self):
+        # Package sets alter the score of official packages for their
+        # series.
+        build = self.makeBuild(
+            component="main", urgency="low", purpose=ArchivePurpose.PRIMARY)
+        packageset = self.factory.makePackageset(
+            distroseries=build.distro_series)
+        removeSecurityProxy(packageset).add(
+            [build.source_package_release.sourcepackagename])
+        removeSecurityProxy(packageset).relative_build_score = 100
+        self.assertCorrectScore(build, "RELEASE", "main", "low", 100)
+
+    def test_score_packageset_in_ppa(self):
+        # Package set score boosts don't affect PPA packages.
+        build = self.makeBuild(
+            component="main", urgency="low", purpose=ArchivePurpose.PPA)
+        packageset = self.factory.makePackageset(
+            distroseries=build.distro_series)
+        removeSecurityProxy(packageset).add(
+            [build.source_package_release.sourcepackagename])
+        removeSecurityProxy(packageset).relative_build_score = 100
+        self.assertCorrectScore(build, "RELEASE", "main", "low", 0)
+
+    def test_translations_score(self):
+        # Language packs (the translations section) don't get any
+        # package-specific score bumps. They always have the archive's
+        # base score.
+        build = self.makeBuild(section_name='translations')
+        removeSecurityProxy(build.archive).relative_build_score = 666
+        self.assertEqual(666, build.calculateScore())
+
+    def assertScoreReadableByAnyone(self, obj):
+        """An object's build score is readable by anyone."""
+        with person_logged_in(obj.owner):
+            obj_url = api_url(obj)
+        removeSecurityProxy(obj).relative_build_score = 100
+        webservice = webservice_for_person(
+            self.factory.makePerson(), permission=OAuthPermission.WRITE_PUBLIC)
+        entry = webservice.get(obj_url, api_version="devel").jsonBody()
+        self.assertEqual(100, entry["relative_build_score"])
+
+    def assertScoreNotWriteableByOwner(self, obj):
+        """Being an object's owner does not allow changing its build score.
+
+        This affects a site-wide resource, and is thus restricted to
+        launchpad-buildd-admins.
+        """
+        with person_logged_in(obj.owner):
+            obj_url = api_url(obj)
+        webservice = webservice_for_person(
+            obj.owner, permission=OAuthPermission.WRITE_PUBLIC)
+        entry = webservice.get(obj_url, api_version="devel").jsonBody()
+        response = webservice.patch(
+            entry["self_link"], "application/json",
+            dumps(dict(relative_build_score=100)))
+        self.assertEqual(401, response.status)
+        new_entry = webservice.get(obj_url, api_version="devel").jsonBody()
+        self.assertEqual(0, new_entry["relative_build_score"])
+
+    def assertScoreWriteableByTeam(self, obj, team):
+        """Members of TEAM can change an object's build score."""
+        with person_logged_in(obj.owner):
+            obj_url = api_url(obj)
+        person = self.factory.makePerson(member_of=[team])
+        webservice = webservice_for_person(
+            person, permission=OAuthPermission.WRITE_PUBLIC)
+        entry = webservice.get(obj_url, api_version="devel").jsonBody()
+        response = webservice.patch(
+            entry["self_link"], "application/json",
+            dumps(dict(relative_build_score=100)))
+        self.assertEqual(209, response.status)
+        self.assertEqual(100, response.jsonBody()["relative_build_score"])
+
+    def test_score_packageset_readable(self):
+        # A packageset's build score is readable by anyone.
+        packageset = self.factory.makePackageset()
+        self.assertScoreReadableByAnyone(packageset)
+
+    def test_score_packageset_forbids_non_buildd_admin(self):
+        # Being the owner of a packageset is not enough to allow changing
+        # its build score, since this affects a site-wide resource.
+        packageset = self.factory.makePackageset()
+        self.assertScoreNotWriteableByOwner(packageset)
+
+    def test_score_packageset_allows_buildd_admin(self):
+        # Buildd admins can change a packageset's build score.
+        packageset = self.factory.makePackageset()
+        self.assertScoreWriteableByTeam(
+            packageset, getUtility(ILaunchpadCelebrities).buildd_admin)
+
+    def test_score_archive_readable(self):
+        # An archive's build score is readable by anyone.
+        archive = self.factory.makeArchive()
+        self.assertScoreReadableByAnyone(archive)
+
+    def test_score_archive_forbids_non_buildd_admin(self):
+        # Being the owner of an archive is not enough to allow changing its
+        # build score, since this affects a site-wide resource.
+        archive = self.factory.makeArchive()
+        self.assertScoreNotWriteableByOwner(archive)
+
+    def test_score_archive_allows_buildd_and_commercial_admin(self):
+        # Buildd and commercial admins can change an archive's build score.
+        archive = self.factory.makeArchive()
+        self.assertScoreWriteableByTeam(
+            archive, getUtility(ILaunchpadCelebrities).buildd_admin)
+        with anonymous_logged_in():
+            self.assertScoreWriteableByTeam(
+                archive, getUtility(ILaunchpadCelebrities).commercial_admin)
