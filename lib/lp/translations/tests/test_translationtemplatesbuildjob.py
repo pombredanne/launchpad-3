@@ -95,11 +95,6 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
             ubuntu.currentseries.nominatedarchindep.processor,
             buildqueue.processor)
 
-    def test_score(self):
-        # For now, these jobs always score themselves at 2510.  In the
-        # future however the scoring system is to be revisited.
-        self.assertEqual(2510, self.specific_job.score())
-
     def test_cleanUp(self):
         # TranslationTemplatesBuildJob has its own customized cleanup
         # behaviour, since it's actually a BranchJob.

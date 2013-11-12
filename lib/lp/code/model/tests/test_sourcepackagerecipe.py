@@ -337,12 +337,12 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertEqual(build.archive, ppa)
         self.assertEqual(build.distroseries, distroseries)
         self.assertEqual(build.requester, ppa.owner)
+        self.assertTrue(build.virtualized)
         store = Store.of(build)
         store.flush()
         build_job = store.find(SourcePackageRecipeBuildJob,
                 SourcePackageRecipeBuildJob.build_id == build.id).one()
         self.assertProvides(build_job, ISourcePackageRecipeBuildJob)
-        self.assertTrue(build_job.virtualized)
         job = build_job.job
         self.assertProvides(job, IJob)
         self.assertEquals(job.status, JobStatus.WAITING)
