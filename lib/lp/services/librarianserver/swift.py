@@ -162,11 +162,16 @@ def _put(swift_connection, lfc_id, container, obj_name, fs_path):
             assert segment <= 9999, 'Insane number of segments'
             seg_name = '%s/%04d' % (obj_name, segment)
             seg_size = min(fs_size - fs_file.tell(), MAX_SWIFT_OBJECT_SIZE)
-            swift_connection.put_object(
-                container, seg_name, fs_file, seg_size)
+            md5_stream = HashStream(fs_file)
+            swift_md5_hash = swift_connection.put_object(
+                container, seg_name, md5_stream, seg_size)
+            segment_md5_hash = md5_stream.hash.hexdigest()
+            assert swift_md5_hash == segment_md5_hash, (
+                "LibraryFileContent({0}) segment {1} upload corrupted".format(
+                    lfc_id, segment))
             segment = segment + 1
-        manifest = '%s/%s/' % (
-            urllib.quote(container, urllib.quote(obj_name)))
+        manifest = '{0}/{1}/'.format(
+            urllib.quote(container), urllib.quote(obj_name))
         manifest_headers = {'x-object-manifest': manifest}
         swift_connection.put_object(
             container, obj_name, '', 0, headers=manifest_headers)
