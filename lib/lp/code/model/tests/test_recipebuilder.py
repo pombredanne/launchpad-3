@@ -342,7 +342,7 @@ class TestBuildNotifications(TrialTestCase):
 
     def prepareBehavior(self, fake_successful_upload=False):
         self.queue_record = self.factory.makeSourcePackageRecipeBuildJob()
-        build = self.queue_record.specific_job.build
+        build = self.queue_record.specific_build
         build.updateStatus(BuildStatus.FULLYBUILT)
         if fake_successful_upload:
             removeSecurityProxy(build).verifySuccessfulUpload = FakeMethod(

@@ -376,7 +376,7 @@ class TestSlaveScannerScan(TestCase):
         self.assertEqual(expected_builder_count, builder.failure_count)
         self.assertEqual(
             expected_job_count,
-            builder.currentjob.specific_job.build.failure_count)
+            builder.currentjob.specific_build.failure_count)
         self.assertEqual(1, manager_module.assessFailureCounts.call_count)
 
     def test_scan_first_fail(self):
@@ -495,7 +495,7 @@ class TestSlaveScannerScan(TestCase):
         transaction.commit()
         login(ANONYMOUS)
         buildqueue = builder.currentjob
-        behavior = IBuildFarmJobBehavior(buildqueue.specific_job.build)
+        behavior = IBuildFarmJobBehavior(buildqueue.specific_build)
         slave.build_id = behavior.getBuildCookie()
         self.assertBuildingJob(buildqueue, builder)
 
