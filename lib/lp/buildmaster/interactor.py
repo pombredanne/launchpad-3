@@ -242,7 +242,7 @@ class BuilderInteractor(object):
     def getBuildBehavior(queue_item, builder, slave):
         if queue_item is None:
             return None
-        behavior = IBuildFarmJobBehavior(queue_item.specific_old_job)
+        behavior = IBuildFarmJobBehavior(queue_item.specific_build)
         behavior.setBuilder(builder, slave)
         return behavior
 
@@ -413,7 +413,7 @@ class BuilderInteractor(object):
 
         new_behavior = cls.getBuildBehavior(candidate, builder, slave)
         needed_bfjb = type(removeSecurityProxy(
-            IBuildFarmJobBehavior(candidate.specific_old_job)))
+            IBuildFarmJobBehavior(candidate.specific_build)))
         if not zope_isinstance(new_behavior, needed_bfjb):
             raise AssertionError(
                 "Inappropriate IBuildFarmJobBehavior: %r is not a %r" %

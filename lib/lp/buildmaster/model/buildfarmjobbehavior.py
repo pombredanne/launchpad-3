@@ -39,14 +39,10 @@ class BuildFarmJobBehaviorBase:
     All build-farm job behaviors should inherit from this.
     """
 
-    def __init__(self, buildfarmjob):
+    def __init__(self, build):
         """Store a reference to the job_type with which we were created."""
-        self.buildfarmjob = buildfarmjob
+        self.build = build
         self._builder = None
-
-    @property
-    def build(self):
-        return self.buildfarmjob.build
 
     def setBuilder(self, builder, slave):
         """The builder should be set once and not changed."""

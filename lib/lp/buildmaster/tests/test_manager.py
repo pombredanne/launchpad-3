@@ -501,7 +501,7 @@ class TestSlaveScannerScan(TestCase):
         transaction.commit()
         login(ANONYMOUS)
         buildqueue = builder.currentjob
-        behavior = IBuildFarmJobBehavior(buildqueue.specific_old_job)
+        behavior = IBuildFarmJobBehavior(buildqueue.specific_build)
         slave.build_id = behavior.getBuildCookie()
         self.assertBuildingJob(buildqueue, builder)
 
