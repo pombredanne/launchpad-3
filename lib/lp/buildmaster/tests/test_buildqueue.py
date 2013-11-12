@@ -14,9 +14,11 @@ from lp.buildmaster.enums import (
     BuildStatus,
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
-from lp.buildmaster.model.builder import specific_job_classes
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobMixin
-from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.buildmaster.model.buildqueue import (
+    BuildQueue,
+    specific_job_classes,
+    )
 from lp.services.database.interfaces import IStore
 from lp.soyuz.enums import (
     ArchivePurpose,

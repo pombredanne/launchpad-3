@@ -128,7 +128,7 @@ def estimate_time_to_next_builder(bq, now=None):
 
     head_job_processor, head_job_virtualized = head_job_platform
 
-    now = now or datetime.datetime.now(utc)
+    now = now or datetime.now(utc)
     delay_query = """
         SELECT MIN(
             CASE WHEN

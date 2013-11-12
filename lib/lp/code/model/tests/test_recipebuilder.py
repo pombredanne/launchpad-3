@@ -9,8 +9,6 @@ import shutil
 import tempfile
 from textwrap import dedent
 
-from zope.component import getUtility
-
 from testtools import run_test_with
 from testtools.deferredruntest import (
     assert_fails_with,
@@ -20,6 +18,7 @@ from testtools.matchers import StartsWith
 import transaction
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import (
@@ -72,7 +71,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries(name="mydistro",
             distribution=distro)
         processor = getUtility(IProcessorSet).getByName('386')
-        distroseries.newArch(
+        distroseries.nominatedarchindep = distroseries.newArch(
             'i386', processor, True, self.factory.makePerson())
         sourcepackage = self.factory.makeSourcePackage(spn, distroseries)
         if recipe_registrant is None:

@@ -120,11 +120,10 @@ class PackageBuildMixin(BuildFarmJobMixin):
 
         duration_estimate = self.estimateDuration()
         job = specific_job.job
-        processor = specific_job.processor
         queue_entry = BuildQueue(
             estimated_duration=duration_estimate,
             build_farm_job=self.build_farm_job,
-            job_type=self.job_type, job=job, processor=processor,
-            virtualized=specific_job.virtualized)
+            job_type=self.job_type, job=job, processor=self.processor,
+            virtualized=self.virtualized)
         Store.of(self).add(queue_entry)
         return queue_entry

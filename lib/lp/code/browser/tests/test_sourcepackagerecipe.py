@@ -1614,6 +1614,8 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             owner=self.user, name=u'my-recipe')
         distro_series = self.factory.makeDistroSeries(
             name='squirrel', distribution=archive.distribution)
+        removeSecurityProxy(distro_series).nominatedarchindep = (
+            self.factory.makeDistroArchSeries(distroseries=distro_series))
         build = self.factory.makeSourcePackageRecipeBuild(
             requester=self.user, archive=archive, recipe=recipe,
             distroseries=distro_series)
