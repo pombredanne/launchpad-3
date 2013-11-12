@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE',
     'TranslationTemplatesBuild',
     ]
 
@@ -28,7 +29,10 @@ from lp.buildmaster.enums import (
     BuildStatus,
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
-from lp.buildmaster.model.buildfarmjob import BuildFarmJobMixin
+from lp.buildmaster.model.buildfarmjob import (
+    BuildFarmJobMixin,
+    SpecificBuildFarmJobSourceMixin,
+    )
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
 from lp.code.model.branchjob import (
@@ -49,7 +53,11 @@ from lp.translations.model.translationtemplatesbuildjob import (
     )
 
 
-class TranslationTemplatesBuild(BuildFarmJobMixin, Storm):
+HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE = 2510
+
+
+class TranslationTemplatesBuild(SpecificBuildFarmJobSourceMixin,
+                                BuildFarmJobMixin, Storm):
     """A `BuildFarmJob` extension for translation templates builds."""
 
     implements(ITranslationTemplatesBuild)
@@ -196,3 +204,10 @@ class TranslationTemplatesBuild(BuildFarmJobMixin, Storm):
         if self.log is None:
             return None
         return self.log.http_url
+
+    def calculateScore(self):
+        """See `IBuildFarmJob`."""
+        # Hard-code score for now.  Most PPA jobs start out at 2505;
+        # TranslationTemplateBuildJobs are fast so we want them at a
+        # higher priority.
+        return HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE

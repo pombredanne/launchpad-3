@@ -35,7 +35,7 @@ from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildqueue import (
     BuildQueue,
-    specific_job_classes,
+    specific_build_farm_job_sources,
     )
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.database.interfaces import (
@@ -206,9 +206,9 @@ class Builder(SQLBase):
         order_clause = " ORDER BY buildqueue.lastscore DESC, buildqueue.id"
 
         extra_queries = []
-        job_classes = specific_job_classes()
-        for job_type, job_class in job_classes.iteritems():
-            query = job_class.addCandidateSelectionCriteria(
+        job_sources = specific_build_farm_job_sources()
+        for job_type, job_source in job_sources.iteritems():
+            query = job_source.addCandidateSelectionCriteria(
                 self.processor, self.virtualized)
             if query == '':
                 # This job class does not need to refine candidate jobs
@@ -224,8 +224,8 @@ class Builder(SQLBase):
 
         for (candidate_id,) in candidate_jobs:
             candidate = getUtility(IBuildQueueSet).get(candidate_id)
-            job_class = job_classes[candidate.job_type]
-            candidate_approved = job_class.postprocessCandidate(
+            job_source = job_sources[candidate.job_type]
+            candidate_approved = job_source.postprocessCandidate(
                 candidate, logger)
             if candidate_approved:
                 return candidate
