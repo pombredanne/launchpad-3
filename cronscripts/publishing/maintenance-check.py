@@ -128,6 +128,7 @@ class TrustyUbuntuMaintenance(UbuntuMaintenance):
     # on a LTS this is significant, it defines what names get LTS support
     DISTRO_NAMES = [
         "ubuntu",
+        "kubuntu",
         ]
 
 
