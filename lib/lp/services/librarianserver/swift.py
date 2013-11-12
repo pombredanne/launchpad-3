@@ -267,7 +267,7 @@ class HashStream:
         self.hash = hash_factory()
 
     def read(self, size=-1):
-        chunk = self._stream.read()
+        chunk = self._stream.read(size)
         self.hash.update(chunk)
         return chunk
 
