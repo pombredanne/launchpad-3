@@ -560,8 +560,8 @@ class TestCalculateScore(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def makeBuildJob(self, purpose=None, private=False, component="main",
-                     urgency="high", pocket="RELEASE", section_name=None):
+    def makeBuild(self, purpose=None, private=False, component="main",
+                  urgency="high", pocket="RELEASE", section_name=None):
         if purpose is not None or private:
             archive = self.factory.makeArchive(
                 purpose=purpose, private=private)
@@ -571,99 +571,99 @@ class TestCalculateScore(TestCaseWithFactory):
             archive=archive, component=component, urgency=urgency,
             section_name=section_name)
         naked_spph = removeSecurityProxy(spph)  # needed for private archives
-        build = self.factory.makeBinaryPackageBuild(
-            source_package_release=naked_spph.sourcepackagerelease,
-            pocket=pocket)
-        return removeSecurityProxy(build).makeJob()
+        return removeSecurityProxy(
+            self.factory.makeBinaryPackageBuild(
+                source_package_release=naked_spph.sourcepackagerelease,
+                pocket=pocket))
 
     # The defaults for pocket, component, and urgency here match those in
     # makeBuildJob.
-    def assertCorrectScore(self, job, pocket="RELEASE", component="main",
+    def assertCorrectScore(self, build, pocket="RELEASE", component="main",
                            urgency="high", other_bonus=0):
         self.assertEqual(
             (SCORE_BY_POCKET[PackagePublishingPocket.items[pocket.upper()]] +
              SCORE_BY_COMPONENT[component] +
              SCORE_BY_URGENCY[SourcePackageUrgency.items[urgency.upper()]] +
-             other_bonus), job.build.calculateScore())
+             other_bonus), build.calculateScore())
 
     def test_score_unusual_component(self):
         spph = self.factory.makeSourcePackagePublishingHistory(
             component="unusual")
         build = self.factory.makeBinaryPackageBuild(
             source_package_release=spph.sourcepackagerelease)
-        build.queueBuild()
         # For now just test that it doesn't raise an Exception
         build.calculateScore()
 
     def test_main_release_low_score(self):
         # 1500 (RELEASE) + 1000 (main) + 5 (low) = 2505.
-        job = self.makeBuildJob(component="main", urgency="low")
-        self.assertCorrectScore(job, "RELEASE", "main", "low")
+        build = self.makeBuild(component="main", urgency="low")
+        self.assertCorrectScore(build, "RELEASE", "main", "low")
 
     def test_copy_archive_main_release_low_score(self):
         # 1500 (RELEASE) + 1000 (main) + 5 (low) - 2600 (copy archive) = -95.
         # With this penalty, even language-packs and build retries will be
         # built before copy archives.
-        job = self.makeBuildJob(
+        build = self.makeBuild(
             purpose="COPY", component="main", urgency="low")
         self.assertCorrectScore(
-            job, "RELEASE", "main", "low", -COPY_ARCHIVE_SCORE_PENALTY)
+            build, "RELEASE", "main", "low", -COPY_ARCHIVE_SCORE_PENALTY)
 
     def test_copy_archive_relative_score_is_applied(self):
         # Per-archive relative build scores are applied, in this case
         # exactly offsetting the copy-archive penalty.
-        job = self.makeBuildJob(
+        build = self.makeBuild(
             purpose="COPY", component="main", urgency="low")
-        removeSecurityProxy(job.build.archive).relative_build_score = 2600
+        removeSecurityProxy(build.archive).relative_build_score = 2600
         self.assertCorrectScore(
-            job, "RELEASE", "main", "low", -COPY_ARCHIVE_SCORE_PENALTY + 2600)
+            build, "RELEASE", "main", "low",
+            -COPY_ARCHIVE_SCORE_PENALTY + 2600)
 
     def test_archive_negative_relative_score_is_applied(self):
         # Negative per-archive relative build scores are allowed.
-        job = self.makeBuildJob(component="main", urgency="low")
-        removeSecurityProxy(job.build.archive).relative_build_score = -100
-        self.assertCorrectScore(job, "RELEASE", "main", "low", -100)
+        build = self.makeBuild(component="main", urgency="low")
+        removeSecurityProxy(build.archive).relative_build_score = -100
+        self.assertCorrectScore(build, "RELEASE", "main", "low", -100)
 
     def test_private_archive_bonus_is_applied(self):
         # Private archives get a bonus of 10000.
-        job = self.makeBuildJob(private=True, component="main", urgency="high")
+        build = self.makeBuild(private=True, component="main", urgency="high")
         self.assertCorrectScore(
-            job, "RELEASE", "main", "high", PRIVATE_ARCHIVE_SCORE_BONUS)
+            build, "RELEASE", "main", "high", PRIVATE_ARCHIVE_SCORE_BONUS)
 
     def test_main_release_low_recent_score(self):
         # 1500 (RELEASE) + 1000 (main) + 5 (low) = 2505.
-        job = self.makeBuildJob(component="main", urgency="low")
-        self.assertCorrectScore(job, "RELEASE", "main", "low")
+        build = self.makeBuild(component="main", urgency="low")
+        self.assertCorrectScore(build, "RELEASE", "main", "low")
 
     def test_universe_release_high_five_minutes_score(self):
         # 1500 (RELEASE) + 250 (universe) + 15 (high) = 1765.
-        job = self.makeBuildJob(component="universe", urgency="high")
-        self.assertCorrectScore(job, "RELEASE", "universe", "high")
+        build = self.makeBuild(component="universe", urgency="high")
+        self.assertCorrectScore(build, "RELEASE", "universe", "high")
 
     def test_multiverse_release_medium_fifteen_minutes_score(self):
         # 1500 (RELEASE) + 0 (multiverse) + 10 (medium) = 1510.
-        job = self.makeBuildJob(component="multiverse", urgency="medium")
-        self.assertCorrectScore(job, "RELEASE", "multiverse", "medium")
+        build = self.makeBuild(component="multiverse", urgency="medium")
+        self.assertCorrectScore(build, "RELEASE", "multiverse", "medium")
 
     def test_main_release_emergency_thirty_minutes_score(self):
         # 1500 (RELEASE) + 1000 (main) + 20 (emergency) = 2520.
-        job = self.makeBuildJob(component="main", urgency="emergency")
-        self.assertCorrectScore(job, "RELEASE", "main", "emergency")
+        build = self.makeBuild(component="main", urgency="emergency")
+        self.assertCorrectScore(build, "RELEASE", "main", "emergency")
 
     def test_restricted_release_low_one_hour_score(self):
         # 1500 (RELEASE) + 750 (restricted) + 5 (low) = 2255.
-        job = self.makeBuildJob(component="restricted", urgency="low")
-        self.assertCorrectScore(job, "RELEASE", "restricted", "low")
+        build = self.makeBuild(component="restricted", urgency="low")
+        self.assertCorrectScore(build, "RELEASE", "restricted", "low")
 
     def test_backports_score(self):
         # BACKPORTS is the lowest-priority pocket.
-        job = self.makeBuildJob(pocket="BACKPORTS")
-        self.assertCorrectScore(job, "BACKPORTS")
+        build = self.makeBuild(pocket="BACKPORTS")
+        self.assertCorrectScore(build, "BACKPORTS")
 
     def test_release_score(self):
         # RELEASE ranks next above BACKPORTS.
-        job = self.makeBuildJob(pocket="RELEASE")
-        self.assertCorrectScore(job, "RELEASE")
+        build = self.makeBuild(pocket="RELEASE")
+        self.assertCorrectScore(build, "RELEASE")
 
     def test_proposed_updates_score(self):
         # PROPOSED and UPDATES both rank next above RELEASE.  The reason why
@@ -671,46 +671,46 @@ class TestCalculateScore(TestCaseWithFactory):
         # both pockets are submitted to the same policy and should reach
         # their audience as soon as possible (see more information about
         # this decision in bug #372491).
-        proposed_job = self.makeBuildJob(pocket="PROPOSED")
-        self.assertCorrectScore(proposed_job, "PROPOSED")
-        updates_job = self.makeBuildJob(pocket="UPDATES")
-        self.assertCorrectScore(updates_job, "UPDATES")
+        proposed_build = self.makeBuild(pocket="PROPOSED")
+        self.assertCorrectScore(proposed_build, "PROPOSED")
+        updates_build = self.makeBuild(pocket="UPDATES")
+        self.assertCorrectScore(updates_build, "UPDATES")
 
     def test_security_updates_score(self):
         # SECURITY is the top-ranked pocket.
-        job = self.makeBuildJob(pocket="SECURITY")
-        self.assertCorrectScore(job, "SECURITY")
+        build = self.makeBuild(pocket="SECURITY")
+        self.assertCorrectScore(build, "SECURITY")
 
     def test_score_packageset(self):
         # Package sets alter the score of official packages for their
         # series.
-        job = self.makeBuildJob(
+        build = self.makeBuild(
             component="main", urgency="low", purpose=ArchivePurpose.PRIMARY)
         packageset = self.factory.makePackageset(
-            distroseries=job.build.distro_series)
+            distroseries=build.distro_series)
         removeSecurityProxy(packageset).add(
-            [job.build.source_package_release.sourcepackagename])
+            [build.source_package_release.sourcepackagename])
         removeSecurityProxy(packageset).relative_build_score = 100
-        self.assertCorrectScore(job, "RELEASE", "main", "low", 100)
+        self.assertCorrectScore(build, "RELEASE", "main", "low", 100)
 
     def test_score_packageset_in_ppa(self):
         # Package set score boosts don't affect PPA packages.
-        job = self.makeBuildJob(
+        build = self.makeBuild(
             component="main", urgency="low", purpose=ArchivePurpose.PPA)
         packageset = self.factory.makePackageset(
-            distroseries=job.build.distro_series)
+            distroseries=build.distro_series)
         removeSecurityProxy(packageset).add(
-            [job.build.source_package_release.sourcepackagename])
+            [build.source_package_release.sourcepackagename])
         removeSecurityProxy(packageset).relative_build_score = 100
-        self.assertCorrectScore(job, "RELEASE", "main", "low", 0)
+        self.assertCorrectScore(build, "RELEASE", "main", "low", 0)
 
     def test_translations_score(self):
         # Language packs (the translations section) don't get any
         # package-specific score bumps. They always have the archive's
         # base score.
-        job = self.makeBuildJob(section_name='translations')
-        removeSecurityProxy(job.build.archive).relative_build_score = 666
-        self.assertEqual(666, job.build.calculateScore())
+        build = self.makeBuild(section_name='translations')
+        removeSecurityProxy(build.archive).relative_build_score = 666
+        self.assertEqual(666, build.calculateScore())
 
     def assertScoreReadableByAnyone(self, obj):
         """An object's build score is readable by anyone."""
