@@ -69,7 +69,7 @@ def print_build_setup(builds):
     for queue_entry in queue_entries:
         source = None
         for attr in ('sourcepackagerelease', 'sourcepackagename'):
-            source = getattr(queue_entry.specific_job.build, attr, None)
+            source = getattr(queue_entry.specific_build, attr, None)
             if source is not None:
                 break
         print "%5s, %18s, p:%5s, v:%5s e:%s *** s:%5s" % (
@@ -93,10 +93,10 @@ class TestBuildCancellation(TestCaseWithFactory):
             job_type=BuildFarmJobType.PACKAGEBUILD,
             estimated_duration=timedelta(seconds=69), virtualized=True)
 
-    def assertCancelled(self, build, buildqueue):
+    def assertCancelled(self, build, bq):
         self.assertEqual(BuildStatus.CANCELLED, build.status)
-        self.assertIs(None, buildqueue.specific_job)
-        self.assertRaises(SQLObjectNotFound, BuildQueue.get, buildqueue.id)
+        self.assertIs(None, bq.specific_old_job)
+        self.assertRaises(SQLObjectNotFound, BuildQueue.get, bq.id)
 
     def test_binarypackagebuild_cancel(self):
         build = self.factory.makeBinaryPackageBuild()
@@ -105,15 +105,13 @@ class TestBuildCancellation(TestCaseWithFactory):
         Store.of(build).add(bq)
         bq.markAsBuilding(self.builder)
         bq.cancel()
-
-        self.assertCancelled(buildpackagejob.build, bq)
+        self.assertCancelled(build, bq)
 
     def test_recipebuild_cancel(self):
         bq = self.factory.makeSourcePackageRecipeBuildJob()
-        build = bq.specific_job.build
+        build = bq.specific_build
         bq.markAsBuilding(self.builder)
         bq.cancel()
-
         self.assertCancelled(build, bq)
 
 
@@ -184,10 +182,10 @@ class TestJobClasses(TestCaseWithFactory):
 
         # The 'specific_job' object associated with this `BuildQueue`
         # instance is of type `BuildPackageJob`.
-        self.assertTrue(bq.specific_job is not None)
+        self.assertTrue(bq.specific_old_job is not None)
         self.assertEqual(
-            BuildPackageJob, bq.specific_job.__class__,
-            "The 'specific_job' object associated with this `BuildQueue` "
+            BuildPackageJob, bq.specific_old_job.__class__,
+            "The 'specific_old_job' object associated with this `BuildQueue` "
             "instance is of type `BuildPackageJob`")
 
     def test_OtherTypeClasses(self):

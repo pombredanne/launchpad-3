@@ -30,7 +30,10 @@ from lp.buildmaster.enums import (
     BuildQueueStatus,
     )
 from lp.buildmaster.interfaces.builder import IBuilder
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJob,
+    IBuildFarmJobOld,
+    )
 from lp.services.job.interfaces.job import IJob
 from lp.soyuz.interfaces.processor import IProcessor
 
@@ -107,9 +110,13 @@ class IBuildQueue(Interface):
     def cancel():
         """Cancel this job, it will not be re-dispatched."""
 
-    specific_job = Reference(
-        IBuildFarmJob, title=_("Job"),
-        description=_("Data and operations common to all build farm jobs."))
+    specific_old_job = Reference(
+        IBuildFarmJobOld, title=_("Old build farm job"),
+        description=_("Old IBuildQueue <-> IBuildFarmJob link object."))
+
+    specific_build = Reference(
+        IBuildFarmJob, title=_("Build farm job"),
+        description=_("Concrete build farm job object."))
 
     date_started = Datetime(
         title=_('Start time'),

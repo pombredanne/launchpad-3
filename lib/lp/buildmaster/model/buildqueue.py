@@ -101,7 +101,7 @@ class BuildQueue(SQLBase):
             job_type=job_type, job=job, virtualized=virtualized,
             processor=processor, estimated_duration=estimated_duration,
             lastscore=lastscore)
-        if lastscore is None and self.specific_job is not None:
+        if lastscore is None and self.specific_build is not None:
             self.score()
 
     build_farm_job_id = Int(name='build_farm_job')
@@ -121,16 +121,26 @@ class BuildQueue(SQLBase):
     virtualized = BoolCol(dbName='virtualized')
 
     @cachedproperty
-    def specific_job(self):
+    def specific_build(self):
+        """See `IBuildQueue`."""
+        specific_source = specific_build_farm_job_sources()[self.job_type]
+        return specific_source.getByBuildFarmJob(self.build_farm_job)
+
+    def _clear_specific_build_cache(self):
+        del get_property_cache(self).specific_build
+
+    @cachedproperty
+    def specific_old_job(self):
         """See `IBuildQueue`."""
         specific_class = specific_job_classes()[self.job_type]
         return specific_class.getByJob(self.job)
 
-    def _clear_specific_job_cache(self):
-        del get_property_cache(self).specific_job
+    def _clear_specific_old_job_cache(self):
+        del get_property_cache(self).specific_old_job
 
     @staticmethod
     def preloadSpecificJobData(queues):
+        raise Exception("blargh")
         key = attrgetter('job_type')
         for job_type, grouped_queues in groupby(queues, key=key):
             specific_class = specific_job_classes()[job_type]
@@ -166,17 +176,18 @@ class BuildQueue(SQLBase):
             return self._now() - date_started
 
     def destroySelf(self):
-        """Remove this record and associated job/specific_job."""
+        """Remove this record and associated job/specific_old_job."""
         job = self.job
-        specific_job = self.specific_job
+        specific_old_job = self.specific_old_job
         builder = self.builder
         Store.of(self).remove(self)
-        specific_job.cleanUp()
+        specific_old_job.cleanUp()
         Store.of(self).flush()
         job.destroySelf()
         if builder is not None:
             del get_property_cache(builder).currentjob
-        self._clear_specific_job_cache()
+        self._clear_specific_old_job_cache()
+        self._clear_specific_build_cache()
 
     def manualScore(self, value):
         """See `IBuildQueue`."""
@@ -189,7 +200,7 @@ class BuildQueue(SQLBase):
             return
         # Allow the `IBuildFarmJob` instance with the data/logic specific to
         # the job at hand to calculate the score as appropriate.
-        self.lastscore = self.specific_job.build.calculateScore()
+        self.lastscore = self.specific_build.calculateScore()
 
     def markAsBuilding(self, builder):
         """See `IBuildQueue`."""
@@ -197,7 +208,7 @@ class BuildQueue(SQLBase):
         if self.job.status != JobStatus.RUNNING:
             self.job.start()
         self.status = BuildQueueStatus.RUNNING
-        self.specific_job.build.updateStatus(BuildStatus.BUILDING)
+        self.specific_build.updateStatus(BuildStatus.BUILDING)
         if builder is not None:
             del get_property_cache(builder).currentjob
 
@@ -211,13 +222,13 @@ class BuildQueue(SQLBase):
         self.job.date_started = None
         self.job.date_finished = None
         self.logtail = None
-        self.specific_job.build.updateStatus(BuildStatus.NEEDSBUILD)
+        self.specific_build.updateStatus(BuildStatus.NEEDSBUILD)
         if builder is not None:
             del get_property_cache(builder).currentjob
 
     def cancel(self):
         """See `IBuildQueue`."""
-        self.specific_job.build.updateStatus(BuildStatus.CANCELLED)
+        self.specific_build.updateStatus(BuildStatus.CANCELLED)
         self.destroySelf()
 
     def getEstimatedJobStartTime(self, now=None):
