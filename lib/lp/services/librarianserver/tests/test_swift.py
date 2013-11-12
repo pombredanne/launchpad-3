@@ -67,10 +67,11 @@ class TestFeedSwift(TestCase):
         lfa_id = self.librarian_client.addFile(
             name=name, size=len(content), file=StringIO(content),
             contentType=content_type)
-        if when is not None:
-            lfa = IStore(LibraryFileAlias).get(LibraryFileAlias, lfa_id)
-            path = swift.filesystem_path(lfa.content.id)
-            os.utime(path, (when, when))
+        if when is None:
+            when = 0  # Very very old
+        lfa = IStore(LibraryFileAlias).get(LibraryFileAlias, lfa_id)
+        path = swift.filesystem_path(lfa.content.id)
+        os.utime(path, (when, when))
         return lfa_id
 
     def test_copy_to_swift(self):
@@ -163,6 +164,7 @@ class TestFeedSwift(TestCase):
         self.assert_(size > 1024 * 1024)
         expected_content = ''.join(chr(i % 256) for i in range(0, size))
         lfa_id = self.add_file('hello_bigboy.xls', expected_content)
+        lfc = IStore(LibraryFileAlias).get(LibraryFileAlias, lfa_id).content
 
         # This data size is a multiple of our chunk size.
         self.assertEqual(
@@ -170,8 +172,10 @@ class TestFeedSwift(TestCase):
 
         # Data round trips when served from Swift.
         swift.to_swift(BufferLogger(), remove=True)
+        self.failIf(os.path.exists(swift.filesystem_path(lfc.id)))
         lfa = self.librarian_client.getFileByAlias(lfa_id)
         self.assertEqual(expected_content, lfa.read())
+
 
     def test_large_binary_files_from_swift_offset(self):
         # Generate large blob, but NOT a multiple of the chunk size.
@@ -180,6 +184,7 @@ class TestFeedSwift(TestCase):
         self.assert_(size > 1024 * 1024)
         expected_content = ''.join(chr(i % 256) for i in range(0, size))
         lfa_id = self.add_file('hello_bigboy.xls', expected_content)
+        lfc = IStore(LibraryFileAlias).get(LibraryFileAlias, lfa_id).content
 
         # This data size is NOT a multiple of our chunk size.
         self.assertNotEqual(
@@ -188,4 +193,5 @@ class TestFeedSwift(TestCase):
         # Data round trips when served from Swift.
         swift.to_swift(BufferLogger(), remove=True)
         lfa = self.librarian_client.getFileByAlias(lfa_id)
+        self.failIf(os.path.exists(swift.filesystem_path(lfc.id)))
         self.assertEqual(expected_content, lfa.read())
