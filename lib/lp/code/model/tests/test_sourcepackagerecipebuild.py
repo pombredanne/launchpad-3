@@ -424,6 +424,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         requester = self.factory.makePerson()
         recipe = self.factory.makeSourcePackageRecipe()
         series = self.factory.makeDistroSeries()
+        removeSecurityProxy(series).nominatedarchindep = (
+            self.factory.makeDistroArchSeries(distroseries=series))
         now = self.factory.getUniqueDate()
         build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe,
             requester=requester)
@@ -527,6 +529,8 @@ class TestAsBuildmaster(TestCaseWithFactory):
             name=u'recipe', owner=person)
         pantry = self.factory.makeArchive(name='ppa')
         secret = self.factory.makeDistroSeries(name=u'distroseries')
+        secret.nominatedarchindep = self.factory.makeDistroArchSeries(
+            distroseries=secret)
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=cake, distroseries=secret, archive=pantry)
         build.updateStatus(BuildStatus.FULLYBUILT)
@@ -557,6 +561,8 @@ class TestAsBuildmaster(TestCaseWithFactory):
             name=u'recipe', owner=person)
         pantry = self.factory.makeArchive(name='ppa')
         secret = self.factory.makeDistroSeries(name=u'distroseries')
+        secret.nominatedarchindep = self.factory.makeDistroArchSeries(
+            distroseries=secret)
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=cake, distroseries=secret, archive=pantry)
         build.updateStatus(BuildStatus.FULLYBUILT)

@@ -43,6 +43,7 @@ from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.model.buildfarmjob import (
     BuildFarmJob,
     BuildFarmJobOld,
+    SpecificBuildFarmJobSourceMixin,
     )
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import PackageBuildMixin
@@ -78,7 +79,8 @@ from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
-class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
+class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
+                               PackageBuildMixin, Storm):
 
     __storm_table__ = 'SourcePackageRecipeBuild'
 
@@ -212,6 +214,7 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
         self.archive = archive
         self.pocket = pocket
         self.status = BuildStatus.NEEDSBUILD
+        self.processor = self.distroseries.nominatedarchindep.processor
         self.virtualized = True
         if date_created is not None:
             self.date_created = date_created
@@ -301,6 +304,9 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
             release.source_package_recipe_build = None
         store.remove(self)
         store.remove(self.build_farm_job)
+
+    def calculateScore(self):
+        return 2505 + self.archive.relative_build_score
 
     @classmethod
     def getByID(cls, build_id):
@@ -431,15 +437,6 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOld, Storm):
     build = Reference(
         build_id, 'SourcePackageRecipeBuild.id')
 
-    @property
-    def processor(self):
-        return self.build.distroseries.nominatedarchindep.processor
-
-    @property
-    def virtualized(self):
-        """See `IBuildFarmJob`."""
-        return self.build.is_virtualized
-
     def __init__(self, build, job):
         self.build = build
         self.job = job
@@ -470,6 +467,3 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOld, Storm):
         store = IMasterStore(cls)
         store.add(specific_job)
         return specific_job
-
-    def score(self):
-        return 2505 + self.build.archive.relative_build_score

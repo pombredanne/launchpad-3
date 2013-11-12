@@ -14,9 +14,11 @@ from lp.buildmaster.enums import (
     BuildStatus,
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
-from lp.buildmaster.model.builder import specific_job_classes
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobMixin
-from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.buildmaster.model.buildqueue import (
+    BuildQueue,
+    specific_job_classes,
+    )
 from lp.services.database.interfaces import IStore
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -85,9 +87,9 @@ class TestBuildCancellation(TestCaseWithFactory):
         super(TestBuildCancellation, self).setUp()
         self.builder = self.factory.makeBuilder()
 
-    def _makeBuildQueue(self, job):
+    def _makeBuildQueue(self, bfj, job):
         return BuildQueue(
-            job=job, lastscore=9999,
+            build_farm_job=bfj.build_farm_job, job=job, lastscore=9999,
             job_type=BuildFarmJobType.PACKAGEBUILD,
             estimated_duration=timedelta(seconds=69), virtualized=True)
 
@@ -99,7 +101,7 @@ class TestBuildCancellation(TestCaseWithFactory):
     def test_binarypackagebuild_cancel(self):
         build = self.factory.makeBinaryPackageBuild()
         buildpackagejob = build.makeJob()
-        bq = self._makeBuildQueue(buildpackagejob.job)
+        bq = self._makeBuildQueue(build, buildpackagejob.job)
         Store.of(build).add(bq)
         bq.markAsBuilding(self.builder)
         bq.cancel()
