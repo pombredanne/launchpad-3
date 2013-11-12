@@ -382,7 +382,7 @@ class TestSlaveScannerScan(TestCase):
         self.assertEqual(expected_builder_count, builder.failure_count)
         self.assertEqual(
             expected_job_count,
-            builder.currentjob.specific_job.build.failure_count)
+            builder.currentjob.specific_build.failure_count)
         self.assertEqual(1, manager_module.assessFailureCounts.call_count)
 
     def test_scan_first_fail(self):

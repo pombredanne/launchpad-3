@@ -83,7 +83,7 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
 
         self.assertIsInstance(buildqueue, BuildQueue)
         self.assertEqual(
-            self.specific_job.build.build_farm_job, buildqueue.build_farm_job)
+            self.specific_build.build_farm_job, buildqueue.build_farm_job)
         self.assertEqual(job_id, get_job_id(buildqueue.job))
 
     def test_BuildQueue_for_arch(self):
@@ -280,4 +280,4 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
         branch = self._makeTranslationBranch(fake_pottery_compatible=True)
         specific_job = self.jobsource.create(branch, testing=True)
         naked_job = removeSecurityProxy(specific_job)
-        self.assertEquals(naked_job._constructed_build, specific_job.build)
+        self.assertEquals(naked_job._constructed_build, specific_build)

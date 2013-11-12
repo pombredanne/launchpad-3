@@ -157,7 +157,7 @@ class BuildFarmJobBehaviorBase:
         logger.info(
             'Processing finished %s build %s (%s) from builder %s'
             % (status, self.getBuildCookie(),
-               self.build.buildqueue_record.specific_job.build.title,
+               self.build.buildqueue_record.specific_build.title,
                self.build.buildqueue_record.builder.name))
         d = method(slave_status, logger, notify)
         return d
@@ -176,7 +176,7 @@ class BuildFarmJobBehaviorBase:
         # If this is a binary package build, discard it if its source is
         # no longer published.
         if build.job_type == BuildFarmJobType.PACKAGEBUILD:
-            build = build.buildqueue_record.specific_job.build
+            build = build.buildqueue_record.specific_build
             if not build.current_source_publication:
                 yield self._slave.clean()
                 build.updateStatus(BuildStatus.SUPERSEDED)
