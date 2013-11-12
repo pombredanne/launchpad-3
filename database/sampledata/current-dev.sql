@@ -3731,8 +3731,8 @@ ALTER TABLE buildpackagejob ENABLE TRIGGER ALL;
 
 ALTER TABLE buildqueue DISABLE TRIGGER ALL;
 
-INSERT INTO buildqueue (id, builder, logtail, lastscore, manual, job, job_type, estimated_duration, processor, virtualized) VALUES (1, 1, 'Dummy sampledata entry, not processing', 1, false, 1, 1, '00:00:00', 1, false);
-INSERT INTO buildqueue (id, builder, logtail, lastscore, manual, job, job_type, estimated_duration, processor, virtualized) VALUES (2, NULL, NULL, 10, false, 2, 1, '00:01:00', 1, false);
+INSERT INTO buildqueue (id, builder, logtail, lastscore, manual, job, job_type, estimated_duration, processor, virtualized, build_farm_job, status) VALUES (1, 1, 'Dummy sampledata entry, not processing', 1, false, 1, 1, '00:00:00', 1, false, 8, 1);
+INSERT INTO buildqueue (id, builder, logtail, lastscore, manual, job, job_type, estimated_duration, processor, virtualized, build_farm_job, status) VALUES (2, NULL, NULL, 10, false, 2, 1, '00:01:00', 1, false, 11, 0);
 
 
 ALTER TABLE buildqueue ENABLE TRIGGER ALL;
