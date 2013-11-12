@@ -100,7 +100,7 @@ class TestGetUploadMethodsMixin:
         super(TestGetUploadMethodsMixin, self).setUp()
         self.build = self.makeBuild()
         self.behavior = IBuildFarmJobBehavior(
-            self.build.buildqueue_record.specific_job.build)
+            self.build.buildqueue_record.specific_build)
 
     def test_getUploadDirLeafCookie_parseable(self):
         # getUploadDirLeaf should return a directory name

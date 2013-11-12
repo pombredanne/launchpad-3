@@ -54,6 +54,7 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         self.jobset = getUtility(ITranslationTemplatesBuildJobSource)
         self.branch = self.factory.makeBranch()
         self.specific_job = self.jobset.create(self.branch)
+        self.specific_build = self.specific_job.build
 
     def test_new_TranslationTemplatesBuildJob(self):
         # TranslationTemplateBuildJob implements IBuildFarmJobOld,
@@ -280,4 +281,4 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
         branch = self._makeTranslationBranch(fake_pottery_compatible=True)
         specific_job = self.jobsource.create(branch, testing=True)
         naked_job = removeSecurityProxy(specific_job)
-        self.assertEquals(naked_job._constructed_build, specific_build)
+        self.assertEquals(naked_job._constructed_build, specific_job.build)

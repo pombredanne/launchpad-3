@@ -104,7 +104,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
 
         self.assertProvides(bq, IBuildQueue)
         self.assertEqual(spb.build_farm_job, bq.build_farm_job)
-        self.assertProvides(bq.specific_job, ISourcePackageRecipeBuildJob)
+        self.assertEqual(spb, bq.specific_build)
+        self.assertProvides(bq.specific_old_job, ISourcePackageRecipeBuildJob)
         self.assertEqual(True, bq.virtualized)
 
         # The processor for SourcePackageRecipeBuilds should not be None.

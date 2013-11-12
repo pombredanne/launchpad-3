@@ -18,7 +18,10 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildQueueStatus,
+    BuildStatus,
+    )
 from lp.buildmaster.interactor import (
     BuilderInteractor,
     extract_vitals_from_db,
@@ -391,8 +394,8 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
                 self.builder.failnotes)
             self.assertIs(None, self.candidate.builder)
             self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
-            job = self.candidate.specific_job.job
-            self.assertEqual(JobStatus.WAITING, job.status)
+            self.assertEqual(BuildQueueStatus.WAITING, self.candidate.status)
+            self.assertEqual(JobStatus.WAITING, self.candidate.job.status)
 
         d = self.updateBuild(
             self.candidate, WaitingSlave('BuildStatus.BUILDERFAIL'))
@@ -451,8 +454,8 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
             self.assertIs(None, self.candidate.date_started)
             self.assertEqual(score, self.candidate.lastscore)
             self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
-            job = self.candidate.specific_job.job
-            self.assertEqual(JobStatus.WAITING, job.status)
+            self.assertEqual(BuildQueueStatus.WAITING, self.candidate.status)
+            self.assertEqual(JobStatus.WAITING, self.candidate.job.status)
 
         d = self.updateBuild(
             self.candidate, WaitingSlave('BuildStatus.GIVENBACK'))
