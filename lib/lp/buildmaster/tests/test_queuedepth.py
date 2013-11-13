@@ -503,7 +503,7 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
         job = self.factory.makeSourcePackageRecipeBuildJob(
             estimated_duration=111, sourcename=u'xxr-gftp', score=1055,
             virtualized=False)
-        self.builds.append(job.specific_job.build)
+        self.builds.append(job.specific_build)
 
         # Disable all native builders.
         for builder in self.builders[(None, False)]:
@@ -756,11 +756,11 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=False, estimated_duration=22,
             sourcename=u'xx-recipe-bash', score=1025)
-        self.builds.append(job.specific_job.build)
+        self.builds.append(job.specific_build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=False, estimated_duration=222,
             sourcename=u'xx-recipe-zsh', score=1053)
-        self.builds.append(job.specific_job.build)
+        self.builds.append(job.specific_build)
 
         # Assign the same score to the '386' vim and apg build jobs.
         _apg_build, apg_job = find_job(self, 'apg', '386')
@@ -856,7 +856,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=True, estimated_duration=332,
             sourcename=u'xxr-openssh-client', score=1050)
-        self.builds.append(job.specific_job.build)
+        self.builds.append(job.specific_build)
         # print_build_setup(self.builds)
         #   ...
         #   15,               flex, p: hppa, v: True e:0:13:00 *** s: 1039
@@ -878,7 +878,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         job = self.factory.makeSourcePackageRecipeBuildJob(
             estimated_duration=111, sourcename=u'xxr-gwibber', score=1051,
             virtualized=None)
-        self.builds.append(job.specific_job.build)
+        self.builds.append(job.specific_build)
         # print_build_setup(self.builds)
         self.assertEqual(None, job.virtualized)
         #   ...
@@ -948,33 +948,33 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=False, estimated_duration=332,
             sourcename=u'xxr-aptitude', score=1025)
-        self.builds.append(job.specific_job.build)
+        self.builds.append(job.specific_build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
             virtualized=False, estimated_duration=443,
             sourcename=u'xxr-auto-apt', score=1053)
-        self.builds.append(job.specific_job.build)
+        self.builds.append(job.specific_build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
             estimated_duration=554, sourcename=u'xxr-daptup', score=1051,
             virtualized=None)
-        self.builds.append(job.specific_job.build)
+        self.builds.append(job.specific_build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
             estimated_duration=665, sourcename=u'xxr-cron-apt', score=1043)
-        self.builds.append(job.specific_job.build)
+        self.builds.append(job.specific_build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
             estimated_duration=776, sourcename=u'xxr-apt-build', score=1043)
-        self.builds.append(job.specific_job.build)
+        self.builds.append(job.specific_build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
             estimated_duration=887, sourcename=u'xxr-debdelta', score=1044,
             virtualized=None)
-        self.builds.append(job.specific_job.build)
+        self.builds.append(job.specific_build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
             estimated_duration=998, sourcename=u'xxr-apt', score=1044,
             virtualized=None)
-        self.builds.append(job.specific_job.build)
+        self.builds.append(job.specific_build)
         job = self.factory.makeSourcePackageRecipeBuildJob(
             estimated_duration=1110, sourcename=u'xxr-cupt', score=1044,
             virtualized=None)
-        self.builds.append(job.specific_job.build)
+        self.builds.append(job.specific_build)
 
         # Assign the same score to the '386' vim and apg build jobs.
         _apg_build, apg_job = find_job(self, 'apg', '386')
