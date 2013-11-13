@@ -69,9 +69,8 @@ class TestBuildFarmJobBehaviorBase(TestCaseWithFactory):
             distroarchseries=distroarchseries, pocket=pocket, archive=archive)
 
     def test_getBuildCookie(self):
-        buildfarmjob = self.factory.makeTranslationTemplatesBuildJob()
-        build = buildfarmjob.build
-        behavior = self._makeBehavior(buildfarmjob)
+        build = self.factory.makeTranslationTemplatesBuildJob().build
+        behavior = self._makeBehavior(build)
         self.assertEqual(
             '%s-%s' % (build.job_type.name, build.id),
             behavior.getBuildCookie())
@@ -101,7 +100,7 @@ class TestGetUploadMethodsMixin:
         super(TestGetUploadMethodsMixin, self).setUp()
         self.build = self.makeBuild()
         self.behavior = IBuildFarmJobBehavior(
-            self.build.buildqueue_record.specific_job)
+            self.build.buildqueue_record.specific_build)
 
     def test_getUploadDirLeafCookie_parseable(self):
         # getUploadDirLeaf should return a directory name

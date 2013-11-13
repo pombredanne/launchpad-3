@@ -69,7 +69,7 @@ def print_build_setup(builds):
     for queue_entry in queue_entries:
         source = None
         for attr in ('sourcepackagerelease', 'sourcepackagename'):
-            source = getattr(queue_entry.specific_job.build, attr, None)
+            source = getattr(queue_entry.specific_build, attr, None)
             if source is not None:
                 break
         print "%5s, %18s, p:%5s, v:%5s e:%s *** s:%5s" % (
@@ -110,7 +110,7 @@ class TestBuildCancellation(TestCaseWithFactory):
 
     def test_recipebuild_cancel(self):
         bq = self.factory.makeSourcePackageRecipeBuildJob()
-        build = bq.specific_job.build
+        build = bq.specific_build
         bq.markAsBuilding(self.builder)
         bq.cancel()
 
