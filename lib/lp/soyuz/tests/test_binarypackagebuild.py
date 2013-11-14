@@ -35,18 +35,16 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuildSet,
     UnparsableDependencies,
     )
-from lp.soyuz.interfaces.buildpackagejob import (
-    COPY_ARCHIVE_SCORE_PENALTY,
-    IBuildPackageJob,
-    PRIVATE_ARCHIVE_SCORE_BONUS,
-    SCORE_BY_COMPONENT,
-    SCORE_BY_POCKET,
-    SCORE_BY_URGENCY,
-    )
+from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagebuild import (
     BinaryPackageBuild,
     BinaryPackageBuildSet,
+    COPY_ARCHIVE_SCORE_PENALTY,
+    PRIVATE_ARCHIVE_SCORE_BONUS,
+    SCORE_BY_COMPONENT,
+    SCORE_BY_POCKET,
+    SCORE_BY_URGENCY,
     )
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
