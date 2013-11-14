@@ -7,9 +7,7 @@
   i18n:domain="launchpad">
 <body>
 
-  <h1 metal:fill-slot="heading">
-    Delete branch
-  </h1>
+  <h1 metal:fill-slot="heading" tal:content="view/page_title"></h1>
 
   <div metal:fill-slot="main">
 
