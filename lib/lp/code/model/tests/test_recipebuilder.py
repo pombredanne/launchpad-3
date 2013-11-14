@@ -61,7 +61,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
 
     def makeJob(self, recipe_registrant=None, recipe_owner=None,
                 archive=None):
-        """Create a sample `ISourcePackageRecipeBuildJob`."""
+        """Create a sample `ISourcePackageRecipeBuild`."""
         spn = self.factory.makeSourcePackageName("apackage")
         distro = self.factory.makeDistribution(name="distro")
         distroseries = self.factory.makeDistroSeries(name="mydistro",
@@ -93,8 +93,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
         recipe_builder = RecipeBuildBehavior(None)
         self.assertProvides(recipe_builder, IBuildFarmJobBehavior)
 
-    def test_adapts_ISourcePackageRecipeBuildJob(self):
-        # IBuildFarmJobBehavior adapts a ISourcePackageRecipeBuildJob
+    def test_adapts_ISourcePackageRecipeBuild(self):
+        # IBuildFarmJobBehavior adapts a ISourcePackageRecipeBuild
         build = self.factory.makeSourcePackageRecipeBuild()
         job = IBuildFarmJobBehavior(build)
         self.assertProvides(job, IBuildFarmJobBehavior)
