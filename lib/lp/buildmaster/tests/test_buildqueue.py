@@ -88,12 +88,6 @@ class TestBuildCancellation(TestCaseWithFactory):
         super(TestBuildCancellation, self).setUp()
         self.builder = self.factory.makeBuilder()
 
-    def _makeBuildQueue(self, job):
-        return BuildQueue(
-            job=job, lastscore=9999,
-            job_type=BuildFarmJobType.PACKAGEBUILD,
-            estimated_duration=timedelta(seconds=69), virtualized=True)
-
     def assertCancelled(self, build, buildqueue):
         self.assertEqual(BuildStatus.CANCELLED, build.status)
         self.assertIs(None, buildqueue.specific_job)
