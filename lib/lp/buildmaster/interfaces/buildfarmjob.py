@@ -225,15 +225,18 @@ class IBuildFarmJob(Interface):
     def gotFailure():
         """Increment the failure_count for this job."""
 
+    def calculateScore():
+        """Calculate the build queue priority for this job."""
+
+    def estimateDuration():
+        """Estimate the build duration."""
+
     def queueBuild(suspended=False):
         """Create a BuildQueue entry for this build.
 
         :param suspended: Whether the associated `Job` instance should be
             created in a suspended state.
         """
-
-    def calculateScore():
-        """Calculate the build queue priority for this job."""
 
     title = exported(TextLine(title=_("Title"), required=False),
                      as_of="beta")

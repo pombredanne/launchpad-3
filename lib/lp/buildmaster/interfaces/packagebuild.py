@@ -69,9 +69,6 @@ class IPackageBuild(IBuildFarmJob):
             title=_("Distribution series"), required=True,
             description=_("Shortcut for its distribution series.")))
 
-    def estimateDuration():
-        """Estimate the build duration."""
-
     def verifySuccessfulUpload():
         """Verify that the upload of this build completed succesfully."""
 

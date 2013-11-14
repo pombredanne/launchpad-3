@@ -18,6 +18,7 @@ from storm.locals import (
     DateTime,
     Int,
     Reference,
+    Store,
     Storm,
     )
 from zope.component import getUtility
@@ -37,7 +38,6 @@ from lp.buildmaster.model.buildfarmjob import (
     BuildFarmJobMixin,
     SpecificBuildFarmJobSourceMixin,
     )
-from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
@@ -50,13 +50,13 @@ from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import DBEnum
-from lp.services.database.interfaces import (
-    IMasterStore,
-    IStore,
-    )
+from lp.services.database.interfaces import IStore
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuild,
     ITranslationTemplatesBuildSource,
+    )
+from lp.translations.model.translationtemplatesbuildjob import (
+    TranslationTemplatesBuildJob,
     )
 from lp.translations.pottery.detect_intltool import is_intltool_structure
 
@@ -113,11 +113,14 @@ class TranslationTemplatesBuild(SpecificBuildFarmJobSourceMixin,
         self.branch = branch
         self.status = BuildStatus.NEEDSBUILD
         self.processor = processor
+        self.virtualized = True
 
-    def queueBuild(self):
-        """See `IBuildFarmJobOld`."""
-        store = IStore(BranchJob)
+    def estimateDuration(self):
+        """See `IBuildFarmJob`."""
+        return timedelta(seconds=10)
 
+    def makeJob(self):
+        """See `IBuildFarmJob`."""
         # Pass public HTTP URL for the branch.
         metadata = {
             'branch_url': self.branch.composePublicURL(),
@@ -125,13 +128,8 @@ class TranslationTemplatesBuild(SpecificBuildFarmJobSourceMixin,
             }
         branch_job = BranchJob(
             self.branch, BranchJobType.TRANSLATION_TEMPLATES_BUILD, metadata)
-        store.add(branch_job)
-        bq = BuildQueue(
-            estimated_duration=timedelta(seconds=10),
-            job_type=BuildFarmJobType.TRANSLATIONTEMPLATESBUILD,
-            job=branch_job.job, processor=self.processor)
-        IMasterStore(BuildQueue).add(bq)
-        return bq
+        Store.of(self).add(branch_job)
+        return TranslationTemplatesBuildJob(branch_job)
 
     @classmethod
     def _getStore(cls, store=None):

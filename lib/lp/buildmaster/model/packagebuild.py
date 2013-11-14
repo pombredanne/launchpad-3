@@ -9,12 +9,10 @@ __all__ = [
 
 from cStringIO import StringIO
 
-from storm.locals import Store
 from zope.component import getUtility
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobMixin
-from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.services.helpers import filenameToContentType
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
@@ -49,10 +47,6 @@ class PackageBuildMixin(BuildFarmJobMixin):
     def is_private(self):
         """See `IBuildFarmJob`"""
         return self.archive.private
-
-    def estimateDuration(self):
-        """See `IPackageBuild`."""
-        raise NotImplementedError
 
     def updateStatus(self, status, builder=None, slave_status=None,
                      date_started=None, date_finished=None):
@@ -109,21 +103,3 @@ class PackageBuildMixin(BuildFarmJobMixin):
     def getUploader(self, changes):
         """See `IPackageBuild`."""
         raise NotImplementedError
-
-    def queueBuild(self, suspended=False):
-        """See `IPackageBuild`."""
-        specific_job = self.makeJob()
-
-        # This build queue job is to be created in a suspended state.
-        if suspended:
-            specific_job.job.suspend()
-
-        duration_estimate = self.estimateDuration()
-        job = specific_job.job
-        queue_entry = BuildQueue(
-            estimated_duration=duration_estimate,
-            job_type=self.job_type,
-            job=job, processor=self.processor,
-            virtualized=self.virtualized)
-        Store.of(self).add(queue_entry)
-        return queue_entry
