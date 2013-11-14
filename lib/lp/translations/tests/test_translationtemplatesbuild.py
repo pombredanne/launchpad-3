@@ -141,8 +141,8 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
     def test_score(self):
         # For now, these jobs always score themselves at 2510.  In the
         # future however the scoring system is to be revisited.
-        job = self.factory.makeTranslationTemplatesBuildJob()
-        self.assertEqual(2510, job.build.calculateScore())
+        build = self.factory.makeTranslationTemplatesBuild()
+        self.assertEqual(2510, build.calculateScore())
 
     def test_generatesTemplates(self):
         # A branch "generates templates" if it is a translation branch

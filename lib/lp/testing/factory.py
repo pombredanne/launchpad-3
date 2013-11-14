@@ -2881,15 +2881,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         jobset = getUtility(ITranslationTemplatesBuildSource)
         return jobset.create(branch)
 
-    def makeTranslationTemplatesBuildJob(self, branch=None):
-        """Make a new `TranslationTemplatesBuildJob`.
-
-        :param branch: The branch that the job should be for.  If none
-            is given, one will be created.
-        """
-        build = self.makeTranslationTemplatesBuild(branch=branch)
-        return build.queueBuild().specific_job
-
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
                        translation_domain=None, path=None,
