@@ -88,12 +88,6 @@ class TestBuildCancellation(TestCaseWithFactory):
         super(TestBuildCancellation, self).setUp()
         self.builder = self.factory.makeBuilder()
 
-    def _makeBuildQueue(self, job):
-        return BuildQueue(
-            job=job, lastscore=9999,
-            job_type=BuildFarmJobType.PACKAGEBUILD,
-            estimated_duration=timedelta(seconds=69), virtualized=True)
-
     def assertCancelled(self, build, buildqueue):
         self.assertEqual(BuildStatus.CANCELLED, build.status)
         self.assertIs(None, buildqueue.specific_job)
@@ -101,17 +95,15 @@ class TestBuildCancellation(TestCaseWithFactory):
 
     def test_binarypackagebuild_cancel(self):
         build = self.factory.makeBinaryPackageBuild()
-        buildpackagejob = build.makeJob()
-        bq = self._makeBuildQueue(buildpackagejob.job)
-        Store.of(build).add(bq)
+        bq = build.queueBuild()
         bq.markAsBuilding(self.builder)
         bq.cancel()
 
-        self.assertCancelled(buildpackagejob.build, bq)
+        self.assertCancelled(build, bq)
 
     def test_recipebuild_cancel(self):
-        bq = self.factory.makeSourcePackageRecipeBuild().queueBuild()
-        build = bq.specific_build
+        build = self.factory.makeSourcePackageRecipeBuild()
+        bq = build.queueBuild()
         bq.markAsBuilding(self.builder)
         bq.cancel()
 
