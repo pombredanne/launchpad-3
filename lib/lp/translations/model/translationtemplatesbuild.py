@@ -9,6 +9,8 @@ __all__ = [
     'TranslationTemplatesBuild',
     ]
 
+import logging
+
 import pytz
 from storm.locals import (
     Bool,
@@ -22,6 +24,7 @@ from zope.interface import (
     classProvides,
     implements,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import (
@@ -33,6 +36,7 @@ from lp.buildmaster.model.buildfarmjob import (
     BuildFarmJobMixin,
     SpecificBuildFarmJobSourceMixin,
     )
+from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
 from lp.code.model.branchjob import (
@@ -40,6 +44,7 @@ from lp.code.model.branchjob import (
     BranchJobType,
     )
 from lp.registry.model.product import Product
+from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import DBEnum
@@ -48,9 +53,13 @@ from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuild,
     ITranslationTemplatesBuildSource,
     )
+from lp.translations.interfaces.translationtemplatesbuildjob import (
+    ITranslationTemplatesBuildJobSource,
+    )
 from lp.translations.model.translationtemplatesbuildjob import (
     TranslationTemplatesBuildJob,
     )
+from lp.translations.pottery.detect_intltool import is_intltool_structure
 
 
 HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE = 2510
@@ -138,6 +147,42 @@ class TranslationTemplatesBuild(SpecificBuildFarmJobSourceMixin,
         return ubuntu.currentseries.nominatedarchindep.processor
 
     @classmethod
+    def _hasPotteryCompatibleSetup(cls, branch):
+        """Does `branch` look as if pottery can generate templates for it?
+
+        :param branch: A `Branch` object.
+        """
+        bzr_branch = removeSecurityProxy(branch).getBzrBranch()
+        return is_intltool_structure(bzr_branch.basis_tree())
+
+    @classmethod
+    def generatesTemplates(cls, branch):
+        """See `ITranslationTemplatesBuildJobSource`."""
+        logger = logging.getLogger('translation-templates-build')
+        if branch.private:
+            # We don't support generating template from private branches
+            # at the moment.
+            logger.debug("Branch %s is private.", branch.unique_name)
+            return False
+
+        utility = getUtility(IRosettaUploadJobSource)
+        if not utility.providesTranslationFiles(branch):
+            # Nobody asked for templates generated from this branch.
+            logger.debug(
+                    "No templates requested for branch %s.",
+                    branch.unique_name)
+            return False
+
+        if not cls._hasPotteryCompatibleSetup(branch):
+            # Nothing we could do with this branch if we wanted to.
+            logger.debug(
+                "Branch %s is not pottery-compatible.", branch.unique_name)
+            return False
+
+        # Yay!  We made it.
+        return True
+
+    @classmethod
     def create(cls, branch):
         """See `ITranslationTemplatesBuildSource`."""
         processor = cls._getBuildArch()
@@ -148,6 +193,26 @@ class TranslationTemplatesBuild(SpecificBuildFarmJobSourceMixin,
         store.add(build)
         store.flush()
         return build
+
+    @classmethod
+    def scheduleTranslationTemplatesBuild(cls, branch):
+        """See `ITranslationTemplatesBuildJobSource`."""
+        logger = logging.getLogger('translation-templates-build')
+        if not config.rosetta.generate_templates:
+            # This feature is disabled by default.
+            logging.debug("Templates generation is disabled.")
+            return
+
+        try:
+            if cls.generatesTemplates(branch):
+                # This branch is used for generating templates.
+                logger.info(
+                    "Requesting templates build for branch %s.",
+                    branch.unique_name)
+                getUtility(ITranslationTemplatesBuildJobSource).create(branch)
+        except Exception as e:
+            logger.error(e)
+            raise
 
     @classmethod
     def getByID(cls, build_id, store=None):
