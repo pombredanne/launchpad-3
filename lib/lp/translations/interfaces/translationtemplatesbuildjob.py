@@ -13,14 +13,5 @@ from zope.interface import Interface
 class ITranslationTemplatesBuildJobSource(Interface):
     """Container for `TranslationTemplatesBuildJob`s."""
 
-    def create(build):
-        """Create new `TranslationTemplatesBuildJob`.
-
-        Also creates the matching `IBuildQueue` and `IJob`.
-
-        :param build: The `TranslationTemplatesBuild` to queue.
-        :return: A new `TranslationTemplatesBuildJob`.
-        """
-
     def getByBranch(branch):
         """Find `TranslationTemplatesBuildJob` for given `Branch`."""

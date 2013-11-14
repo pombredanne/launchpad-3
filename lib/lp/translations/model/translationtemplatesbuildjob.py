@@ -6,31 +6,22 @@ __all__ = [
     'TranslationTemplatesBuildJob',
     ]
 
-from datetime import timedelta
-import logging
-
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
     )
-from zope.security.proxy import removeSecurityProxy
 
-from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
-from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.model.branchjob import (
     BranchJob,
     BranchJobDerived,
     BranchJobType,
     )
 from lp.services.database.bulk import load_related
-from lp.services.database.interfaces import (
-    IMasterStore,
-    IStore,
-    )
+from lp.services.database.interfaces import IStore
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuildSource,
     )
@@ -49,8 +40,6 @@ class TranslationTemplatesBuildJob(BuildFarmJobOld, BranchJobDerived):
 
     classProvides(ITranslationTemplatesBuildJobSource)
 
-    duration_estimate = timedelta(seconds=10)
-
     def cleanUp(self):
         """See `IBuildFarmJob`."""
         # This class is not itself database-backed.  But it delegates to
@@ -68,20 +57,6 @@ class TranslationTemplatesBuildJob(BuildFarmJobOld, BranchJobDerived):
         else:
             return getUtility(ITranslationTemplatesBuildSource).getByID(
                 int(build_id))
-
-    @classmethod
-    def create(cls, build):
-        """See `ITranslationTemplatesBuildJobSource`."""
-        logger = logging.getLogger('translation-templates-build')
-        specific_job = build.makeJob()
-        logger.debug("Made %s.", specific_job)
-        build_queue_entry = BuildQueue(
-            estimated_duration=cls.duration_estimate,
-            job_type=BuildFarmJobType.TRANSLATIONTEMPLATESBUILD,
-            job=specific_job.job, processor=build.processor)
-        IMasterStore(BuildQueue).add(build_queue_entry)
-        logger.debug("Made BuildQueue %s.", build_queue_entry.id)
-        return specific_job
 
     @classmethod
     def getByJob(cls, job):

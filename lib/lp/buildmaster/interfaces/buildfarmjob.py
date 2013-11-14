@@ -225,6 +225,13 @@ class IBuildFarmJob(Interface):
     def gotFailure():
         """Increment the failure_count for this job."""
 
+    def queueBuild(suspended=False):
+        """Create a BuildQueue entry for this build.
+
+        :param suspended: Whether the associated `Job` instance should be
+            created in a suspended state.
+        """
+
     def calculateScore():
         """Calculate the build queue priority for this job."""
 

@@ -91,13 +91,6 @@ class IPackageBuild(IBuildFarmJob):
             upload log.
         """
 
-    def queueBuild(suspended=False):
-        """Create a BuildQueue entry for this build.
-
-        :param suspended: Whether the associated `Job` instance should be
-            created in a suspended state.
-        """
-
     def getUploader(changes):
         """Return the person responsible for the upload.
 

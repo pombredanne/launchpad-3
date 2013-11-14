@@ -12,6 +12,7 @@ from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.code.model.branchjob import BranchJob
 from lp.code.model.directbranchcommit import DirectBranchCommit
@@ -119,17 +120,23 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         # restrictions.
         Store.of(build).flush()
 
-    def test_created_by_buildjobsource(self):
-        # ITranslationTemplatesBuildJobSource.create also creates a
-        # TranslationTemplatesBuild.  This utility will become obsolete
-        # later.
-        source = getUtility(ITranslationTemplatesBuildSource)
-        branch = self.factory.makeBranch()
-        source.create(branch)
+    def test_queueBuild(self):
+        build = self.factory.makeTranslationTemplatesBuild()
+        bq = build.queueBuild()
+        self.assertEqual(build, bq.specific_job.build)
+        self.assertEqual(build, bq.specific_build)
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self.assertEquals(
+            ubuntu.currentseries.nominatedarchindep.processor, bq.processor)
 
-        builds = list(source.findByBranch(branch))
-        self.assertEqual(1, len(builds))
-        self.assertIsInstance(builds[0], TranslationTemplatesBuild)
+        # A job is created with the branch URL in its metadata.
+        metadata = bq.specific_job.metadata
+        self.assertIn('branch_url', metadata)
+        url = metadata['branch_url']
+        head = 'http://'
+        self.assertEqual(head, url[:len(head)])
+        tail = build.branch.name
+        self.assertEqual(tail, url[-len(tail):])
 
     def test_score(self):
         # For now, these jobs always score themselves at 2510.  In the

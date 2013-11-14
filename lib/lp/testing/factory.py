@@ -2888,7 +2888,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             is given, one will be created.
         """
         build = self.makeTranslationTemplatesBuild(branch=branch)
-        return getUtility(ITranslationTemplatesBuildJobSource).create(build)
+        return build.queueBuild().specific_job
 
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,

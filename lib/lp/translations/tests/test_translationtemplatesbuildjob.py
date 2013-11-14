@@ -7,9 +7,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobOld
-from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchjob import IBranchJob
@@ -45,7 +43,8 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         super(TestTranslationTemplatesBuildJob, self).setUp()
         self.jobset = getUtility(ITranslationTemplatesBuildJobSource)
         self.build = self.factory.makeTranslationTemplatesBuild()
-        self.specific_job = self.jobset.create(self.build)
+        self.build.queueBuild()
+        self.specific_job = self.jobset.getByBranch(self.build.branch)
 
     def test_new_TranslationTemplatesBuildJob(self):
         # TranslationTemplateBuildJob implements IBuildFarmJobOld,
@@ -66,26 +65,6 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         specific_job_for_base_job = removeSecurityProxy(
             TranslationTemplatesBuildJob.getByJob(base_job))
         self.assertEqual(self.specific_job, specific_job_for_base_job)
-
-    def test_has_BuildQueue(self):
-        # There's also a BuildQueue item associated with the job.
-        queueset = getUtility(IBuildQueueSet)
-        job_id = get_job_id(self.specific_job.job)
-        buildqueue = queueset.get(job_id)
-
-        self.assertIsInstance(buildqueue, BuildQueue)
-        self.assertEqual(job_id, get_job_id(buildqueue.job))
-
-    def test_BuildQueue_for_arch(self):
-        # BuildQueue entry is for i386 (default Ubuntu) architecture.
-        queueset = getUtility(IBuildQueueSet)
-        job_id = get_job_id(self.specific_job.job)
-        buildqueue = queueset.get(job_id)
-
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        self.assertEquals(
-            ubuntu.currentseries.nominatedarchindep.processor,
-            buildqueue.processor)
 
     def test_cleanUp(self):
         # TranslationTemplatesBuildJob has its own customized cleanup
@@ -121,18 +100,3 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
         utility = getUtility(ITranslationTemplatesBuildJobSource)
         verifyObject(ITranslationTemplatesBuildJobSource, utility)
 
-    def test_create(self):
-        build = self.factory.makeTranslationTemplatesBuild()
-        specific_job = getUtility(ITranslationTemplatesBuildJobSource).create(
-            build)
-
-        self.assertEquals(build, specific_job.build)
-
-        # A job is created with the branch URL in its metadata.
-        metadata = specific_job.metadata
-        self.assertIn('branch_url', metadata)
-        url = metadata['branch_url']
-        head = 'http://'
-        self.assertEqual(head, url[:len(head)])
-        tail = build.branch.name
-        self.assertEqual(tail, url[-len(tail):])
