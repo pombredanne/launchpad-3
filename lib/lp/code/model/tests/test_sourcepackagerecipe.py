@@ -556,12 +556,10 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe = self.factory.makeSourcePackageRecipe(branches=branches)
         pending_build = self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe)
-        self.factory.makeSourcePackageRecipeBuildJob(
-            recipe_build=pending_build)
+        pending_build.queueBuild()
         past_build = self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe)
-        self.factory.makeSourcePackageRecipeBuildJob(
-            recipe_build=past_build)
+        past_build.queueBuild()
         removeSecurityProxy(past_build).datebuilt = datetime.now(UTC)
         with person_logged_in(recipe.owner):
             recipe.destroySelf()
