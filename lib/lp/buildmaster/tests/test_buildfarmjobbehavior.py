@@ -69,7 +69,7 @@ class TestBuildFarmJobBehaviorBase(TestCaseWithFactory):
             distroarchseries=distroarchseries, pocket=pocket, archive=archive)
 
     def test_getBuildCookie(self):
-        build = self.factory.makeTranslationTemplatesBuildJob().build
+        build = self.factory.makeTranslationTemplatesBuild()
         behavior = self._makeBehavior(build)
         self.assertEqual(
             '%s-%s' % (build.job_type.name, build.id),
