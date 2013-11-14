@@ -44,8 +44,8 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
     def setUp(self):
         super(TestTranslationTemplatesBuildJob, self).setUp()
         self.jobset = getUtility(ITranslationTemplatesBuildJobSource)
-        self.branch = self.factory.makeBranch()
-        self.specific_job = self.jobset.create(self.branch)
+        self.build = self.factory.makeTranslationTemplatesBuild()
+        self.specific_job = self.jobset.create(self.build)
 
     def test_new_TranslationTemplatesBuildJob(self):
         # TranslationTemplateBuildJob implements IBuildFarmJobOld,
@@ -54,7 +54,7 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         verifyObject(IBuildFarmJobOld, self.specific_job)
 
         # Each of these jobs knows the branch it will operate on.
-        self.assertEqual(self.branch, self.specific_job.branch)
+        self.assertEqual(self.build.branch, self.specific_job.branch)
 
     def test_has_Job(self):
         # Associated with each TranslationTemplateBuildJob is a Job.
@@ -95,7 +95,7 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
 
         job_id = job.id
         store = Store.of(job)
-        branch_name = self.branch.unique_name
+        branch_name = self.build.branch.unique_name
 
         buildqueue.destroySelf()
 
@@ -108,7 +108,8 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         self.assertIs(None, TranslationTemplatesBuildJob.getByJob(job_id))
         # Branch is still here.
         branch_set = getUtility(IBranchSet)
-        self.assertEqual(self.branch, branch_set.getByUniqueName(branch_name))
+        self.assertEqual(
+            self.build.branch, branch_set.getByUniqueName(branch_name))
 
 
 class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
@@ -121,9 +122,11 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
         verifyObject(ITranslationTemplatesBuildJobSource, utility)
 
     def test_create(self):
-        branch = self.factory.makeAnyBranch()
+        build = self.factory.makeTranslationTemplatesBuild()
         specific_job = getUtility(ITranslationTemplatesBuildJobSource).create(
-            branch)
+            build)
+
+        self.assertEquals(build, specific_job.build)
 
         # A job is created with the branch URL in its metadata.
         metadata = specific_job.metadata
@@ -131,12 +134,5 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
         url = metadata['branch_url']
         head = 'http://'
         self.assertEqual(head, url[:len(head)])
-        tail = branch.name
+        tail = build.branch.name
         self.assertEqual(tail, url[-len(tail):])
-
-    def test_create_with_build(self):
-        branch = self.factory.makeAnyBranch()
-        specific_job = getUtility(ITranslationTemplatesBuildJobSource).create(
-            branch, testing=True)
-        naked_job = removeSecurityProxy(specific_job)
-        self.assertEquals(naked_job._constructed_build, specific_job.build)

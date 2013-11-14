@@ -70,29 +70,17 @@ class TranslationTemplatesBuildJob(BuildFarmJobOld, BranchJobDerived):
                 int(build_id))
 
     @classmethod
-    def create(cls, branch, testing=False):
+    def create(cls, build):
         """See `ITranslationTemplatesBuildJobSource`."""
         logger = logging.getLogger('translation-templates-build')
-
-        build = getUtility(ITranslationTemplatesBuildSource).create(
-            branch)
-        logger.debug("Made TranslationTemplatesBuild %s.", build.id)
-
         specific_job = build.makeJob()
-        if testing:
-            removeSecurityProxy(specific_job)._constructed_build = build
         logger.debug("Made %s.", specific_job)
-
-        duration_estimate = cls.duration_estimate
-
         build_queue_entry = BuildQueue(
-            estimated_duration=duration_estimate,
+            estimated_duration=cls.duration_estimate,
             job_type=BuildFarmJobType.TRANSLATIONTEMPLATESBUILD,
             job=specific_job.job, processor=build.processor)
         IMasterStore(BuildQueue).add(build_queue_entry)
-
         logger.debug("Made BuildQueue %s.", build_queue_entry.id)
-
         return specific_job
 
     @classmethod

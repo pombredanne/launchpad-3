@@ -209,7 +209,8 @@ class TranslationTemplatesBuild(SpecificBuildFarmJobSourceMixin,
                 logger.info(
                     "Requesting templates build for branch %s.",
                     branch.unique_name)
-                getUtility(ITranslationTemplatesBuildJobSource).create(branch)
+                build = cls.create(branch)
+                getUtility(ITranslationTemplatesBuildJobSource).create(build)
         except Exception as e:
             logger.error(e)
             raise

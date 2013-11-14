@@ -333,6 +333,9 @@ from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
     )
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
+from lp.translations.interfaces.translationtemplatesbuild import (
+    ITranslationTemplatesBuildSource,
+    )
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource,
     )
@@ -2866,17 +2869,26 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         IStore(spr_build).flush()
         return spr_build
 
+    def makeTranslationTemplatesBuild(self, branch=None):
+        """Make a new `TranslationTemplatesBuild`.
+
+        :param branch: The branch that the build should be for.  If none
+            is given, one will be created.
+        """
+        if branch is None:
+            branch = self.makeBranch()
+
+        jobset = getUtility(ITranslationTemplatesBuildSource)
+        return jobset.create(branch)
+
     def makeTranslationTemplatesBuildJob(self, branch=None):
         """Make a new `TranslationTemplatesBuildJob`.
 
         :param branch: The branch that the job should be for.  If none
             is given, one will be created.
         """
-        if branch is None:
-            branch = self.makeBranch()
-
-        jobset = getUtility(ITranslationTemplatesBuildJobSource)
-        return jobset.create(branch)
+        build = self.makeTranslationTemplatesBuild(branch=branch)
+        return getUtility(ITranslationTemplatesBuildJobSource).create(build)
 
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
