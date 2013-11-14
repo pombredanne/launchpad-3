@@ -96,10 +96,7 @@ from lp.bugs.interfaces.cve import (
     ICveSet,
     )
 from lp.bugs.model.bug import FileBugData
-from lp.buildmaster.enums import (
-    BuildFarmJobType,
-    BuildStatus,
-    )
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.code.enums import (
     BranchMergeProposalStatus,
@@ -335,9 +332,6 @@ from lp.translations.interfaces.translationmessage import (
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuildSource,
-    )
-from lp.translations.interfaces.translationtemplatesbuildjob import (
-    ITranslationTemplatesBuildJobSource,
     )
 from lp.translations.interfaces.translator import ITranslatorSet
 from lp.translations.model.translationtemplateitem import (
