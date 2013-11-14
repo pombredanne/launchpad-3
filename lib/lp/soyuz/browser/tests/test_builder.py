@@ -42,7 +42,7 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
         # And create BuildFarmJobs of the various types to throw IDs off
         # even further, detecting more preloading issues.
         self.factory.makeBinaryPackageBuild().queueBuild()
-        self.factory.makeSourcePackageRecipeBuildJob()
+        self.factory.makeSourcePackageRecipeBuild().queueBuild()
         self.factory.makeTranslationTemplatesBuildJob()
 
     def test_builders_binary_package_build_query_count(self):

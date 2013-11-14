@@ -101,7 +101,6 @@ from lp.buildmaster.enums import (
     BuildStatus,
     )
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.enums import (
     BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel,
@@ -2866,24 +2865,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             removeSecurityProxy(spr_build).updateStatus(status)
         IStore(spr_build).flush()
         return spr_build
-
-    def makeSourcePackageRecipeBuildJob(
-        self, score=9876, virtualized=True, estimated_duration=64,
-        sourcename=None, recipe_build=None):
-        """Create a `SourcePackageRecipeBuildJob` and a `BuildQueue` for
-        testing."""
-        if recipe_build is None:
-            recipe_build = self.makeSourcePackageRecipeBuild(
-                sourcename=sourcename)
-        recipe_build_job = recipe_build.makeJob()
-
-        bq = BuildQueue(
-            job=recipe_build_job.job, lastscore=score,
-            job_type=BuildFarmJobType.RECIPEBRANCHBUILD,
-            estimated_duration=timedelta(seconds=estimated_duration),
-            virtualized=virtualized)
-        IStore(BuildQueue).add(bq)
-        return bq
 
     def makeTranslationTemplatesBuildJob(self, branch=None):
         """Make a new `TranslationTemplatesBuildJob`.

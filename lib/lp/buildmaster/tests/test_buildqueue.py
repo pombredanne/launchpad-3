@@ -8,6 +8,7 @@ from storm.sqlobject import SQLObjectNotFound
 from storm.store import Store
 from zope import component
 from zope.component import getGlobalSiteManager
+from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import (
     BuildFarmJobType,
@@ -109,7 +110,7 @@ class TestBuildCancellation(TestCaseWithFactory):
         self.assertCancelled(buildpackagejob.build, bq)
 
     def test_recipebuild_cancel(self):
-        bq = self.factory.makeSourcePackageRecipeBuildJob()
+        bq = self.factory.makeSourcePackageRecipeBuild().queueBuild()
         build = bq.specific_build
         bq.markAsBuilding(self.builder)
         bq.cancel()
@@ -122,14 +123,14 @@ class TestBuildQueueDuration(TestCaseWithFactory):
 
     def _makeBuildQueue(self):
         """Produce a `BuildQueue` object to test."""
-        return self.factory.makeSourcePackageRecipeBuildJob()
+        return self.factory.makeSourcePackageRecipeBuild().queueBuild()
 
     def test_current_build_duration_not_started(self):
         buildqueue = self._makeBuildQueue()
         self.assertEqual(None, buildqueue.current_build_duration)
 
     def test_current_build_duration(self):
-        buildqueue = self._makeBuildQueue()
+        buildqueue = removeSecurityProxy(self._makeBuildQueue())
         now = buildqueue._now()
         buildqueue._now = FakeMethod(result=now)
         age = timedelta(minutes=3)
@@ -272,7 +273,7 @@ class TestBuildQueueManual(TestCaseWithFactory):
 
     def _makeBuildQueue(self):
         """Produce a `BuildQueue` object to test."""
-        return self.factory.makeSourcePackageRecipeBuildJob()
+        return self.factory.makeSourcePackageRecipeBuild().queueBuild()
 
     def test_manualScore_prevents_rescoring(self):
         # Manually-set scores are fixed.

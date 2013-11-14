@@ -341,7 +341,8 @@ class TestBuildNotifications(TrialTestCase):
         self.factory = LaunchpadObjectFactory()
 
     def prepareBehavior(self, fake_successful_upload=False):
-        self.queue_record = self.factory.makeSourcePackageRecipeBuildJob()
+        self.queue_record = (
+            self.factory.makeSourcePackageRecipeBuild().queueBuild())
         build = self.queue_record.specific_build
         build.updateStatus(BuildStatus.FULLYBUILT)
         if fake_successful_upload:
