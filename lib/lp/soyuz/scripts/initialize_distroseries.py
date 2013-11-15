@@ -34,7 +34,6 @@ from lp.soyuz.interfaces.archive import (
     CannotCopy,
     IArchiveSet,
     )
-from lp.soyuz.interfaces.buildpackagejob import COPY_ARCHIVE_SCORE_PENALTY
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distributionjob import (
     IDistroSeriesDifferenceJobSource,
@@ -45,6 +44,7 @@ from lp.soyuz.interfaces.packageset import (
     NoSuchPackageSet,
     )
 from lp.soyuz.interfaces.queue import IPackageUploadSet
+from lp.soyuz.model.binarypackagebuild import COPY_ARCHIVE_SCORE_PENALTY
 from lp.soyuz.model.packageset import Packageset
 from lp.soyuz.scripts.packagecopier import do_copy
 

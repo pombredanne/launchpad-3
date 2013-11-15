@@ -35,18 +35,16 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuildSet,
     UnparsableDependencies,
     )
-from lp.soyuz.interfaces.buildpackagejob import (
-    COPY_ARCHIVE_SCORE_PENALTY,
-    IBuildPackageJob,
-    PRIVATE_ARCHIVE_SCORE_BONUS,
-    SCORE_BY_COMPONENT,
-    SCORE_BY_POCKET,
-    SCORE_BY_URGENCY,
-    )
+from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagebuild import (
     BinaryPackageBuild,
     BinaryPackageBuildSet,
+    COPY_ARCHIVE_SCORE_PENALTY,
+    PRIVATE_ARCHIVE_SCORE_BONUS,
+    SCORE_BY_COMPONENT,
+    SCORE_BY_POCKET,
+    SCORE_BY_URGENCY,
     )
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -227,15 +225,10 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         depwait_build = self._setupSimpleDepwaitContext()
         depwait_build_id = depwait_build.id
 
-        # Grab the relevant db records for later comparison.
+        # Grab the relevant DB IDs for later queries.
         store = Store.of(depwait_build)
-        build_package_job = store.find(
-            BuildPackageJob,
-            depwait_build.id == BuildPackageJob.build).one()
-        build_package_job_id = build_package_job.id
-        job_id = store.find(Job, Job.id == build_package_job.job.id).one().id
-        build_queue_id = store.find(
-            BuildQueue, BuildQueue.job == job_id).one().id
+        build_queue_id = depwait_build.buildqueue_record.id
+        job_id = removeSecurityProxy(depwait_build.buildqueue_record.job).id
 
         depwait_build.buildqueue_record.destroySelf()
 
@@ -243,7 +236,7 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         self.assertEqual(
             store.find(
                 BuildPackageJob,
-                BuildPackageJob.id == build_package_job_id).count(),
+                BuildPackageJob.build == depwait_build_id).count(),
             0)
         self.assertEqual(
             store.find(Job, Job.id == job_id).count(),

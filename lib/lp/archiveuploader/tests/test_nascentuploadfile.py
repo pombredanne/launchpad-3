@@ -293,6 +293,9 @@ class DSCFileTests(PackageUploadFileTestCase):
 
     def test_checkBuild(self):
         # checkBuild() verifies consistency with a build.
+        self.policy.distroseries.nominatedarchindep = (
+            self.factory.makeDistroArchSeries(
+                distroseries=self.policy.distroseries))
         build = self.factory.makeSourcePackageRecipeBuild(
             pocket=self.policy.pocket, distroseries=self.policy.distroseries,
             archive=self.policy.archive)
@@ -309,9 +312,11 @@ class DSCFileTests(PackageUploadFileTestCase):
     def test_checkBuild_inconsistent(self):
         # checkBuild() raises UploadError if inconsistencies between build
         # and upload file are found.
+        distroseries = self.factory.makeDistroSeries()
+        distroseries.nominatedarchindep = self.factory.makeDistroArchSeries(
+            distroseries=distroseries)
         build = self.factory.makeSourcePackageRecipeBuild(
-            pocket=self.policy.pocket,
-            distroseries=self.factory.makeDistroSeries(),
+            pocket=self.policy.pocket, distroseries=distroseries,
             archive=self.policy.archive)
         dsc = self.getBaseDsc()
         uploadfile = self.createDSCFile(

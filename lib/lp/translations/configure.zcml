@@ -654,7 +654,7 @@
 
     <adapter
         provides="lp.buildmaster.interfaces.buildfarmjobbehavior.IBuildFarmJobBehavior"
-        for="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob"
+        for="lp.translations.model.translationtemplatesbuild.TranslationTemplatesBuild"
         factory="lp.translations.model.translationtemplatesbuildbehavior.TranslationTemplatesBuildBehavior"
         />
 

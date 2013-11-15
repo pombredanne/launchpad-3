@@ -20,7 +20,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     )
 from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildJob,
+    ISourcePackageRecipeBuild,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
@@ -33,7 +33,7 @@ from lp.soyuz.adapters.archivedependencies import (
 class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
     """How to build a recipe on the build farm."""
 
-    adapts(ISourcePackageRecipeBuildJob)
+    adapts(ISourcePackageRecipeBuild)
     implements(IBuildFarmJobBehavior)
 
     # The list of build status values for which email notifications are
@@ -42,10 +42,6 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
     # in this list.
     ALLOWED_STATUS_NOTIFICATIONS = [
         'OK', 'PACKAGEFAIL', 'DEPFAIL', 'CHROOTFAIL']
-
-    @property
-    def build(self):
-        return self.buildfarmjob.build
 
     @property
     def display_name(self):

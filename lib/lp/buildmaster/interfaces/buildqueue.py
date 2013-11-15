@@ -111,6 +111,10 @@ class IBuildQueue(Interface):
         IBuildFarmJob, title=_("Job"),
         description=_("Data and operations common to all build farm jobs."))
 
+    specific_build = Reference(
+        IBuildFarmJob, title=_("Build farm job"),
+        description=_("Concrete build farm job object."))
+
     date_started = Datetime(
         title=_('Start time'),
         description=_('Time when the job started.'))
