@@ -66,9 +66,6 @@ class IBuildQueue(Interface):
         description=_(
             "The virtualization setting required by this build farm job."))
 
-    build_farm_job = Reference(
-        IBuildFarmJob, title=_("Build farm job"), readonly=True,
-        description=_("Associated generic BuildFarmJob DB object."))
     status = Choice(
         title=_("Status"), vocabulary=BuildQueueStatus, readonly=True,
         description=_("The status of this build queue item."))

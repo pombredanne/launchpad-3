@@ -103,7 +103,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         bq = spb.queueBuild(spb)
 
         self.assertProvides(bq, IBuildQueue)
-        self.assertEqual(spb.build_farm_job, bq.build_farm_job)
+        self.assertEqual(
+            spb.build_farm_job, removeSecurityProxy(bq)._build_farm_job)
         self.assertProvides(bq.specific_job, ISourcePackageRecipeBuildJob)
         self.assertEqual(True, bq.virtualized)
 
