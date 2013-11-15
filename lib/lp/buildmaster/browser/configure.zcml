@@ -12,4 +12,17 @@
         for="lp.buildmaster.interfaces.packagebuild.IPackageBuild"
         path_expression="string:+build/${build_farm_job/id}"
         attribute_to_parent="archive"/>
+
+    <browser:page
+        for="lp.buildmaster.interfaces.buildqueue.IBuildQueue"
+        name="+current"
+        class="lp.services.webapp.publisher.LaunchpadView"
+        permission="launchpad.View"
+        template="../templates/buildqueue-current.pt"/>
+    <browser:page
+        for="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"
+        name="+current"
+        class="lp.services.webapp.publisher.LaunchpadView"
+        permission="launchpad.View"
+        template="../templates/buildfarmjob-current.pt"/>
 </configure>

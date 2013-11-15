@@ -804,19 +804,6 @@
         attribute_to_parent="archive"
         />
 
-    <!-- XXX JeroenVermeulen 2010-03-13 bug=539395: This is buildmaster, not soyuz -->
-    <browser:page
-        for="lp.buildmaster.interfaces.buildqueue.IBuildQueue"
-        name="+current"
-        class="lp.services.webapp.publisher.LaunchpadView"
-        permission="launchpad.View"
-        template="../templates/buildqueue-current.pt"/>
-    <browser:page
-        for="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"
-        name="+current"
-        class="lp.services.webapp.publisher.LaunchpadView"
-        permission="launchpad.View"
-        template="../templates/buildfarmbuildjob-current.pt"/>
     <browser:pages
         for="lp.soyuz.interfaces.packagerelationship.IPackageRelationshipSet"
         permission="zope.Public">
