@@ -337,12 +337,12 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertEqual(build.archive, ppa)
         self.assertEqual(build.distroseries, distroseries)
         self.assertEqual(build.requester, ppa.owner)
+        self.assertTrue(build.virtualized)
         store = Store.of(build)
         store.flush()
         build_job = store.find(SourcePackageRecipeBuildJob,
                 SourcePackageRecipeBuildJob.build_id == build.id).one()
         self.assertProvides(build_job, ISourcePackageRecipeBuildJob)
-        self.assertTrue(build_job.virtualized)
         job = build_job.job
         self.assertProvides(job, IJob)
         self.assertEquals(job.status, JobStatus.WAITING)
@@ -556,12 +556,10 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe = self.factory.makeSourcePackageRecipe(branches=branches)
         pending_build = self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe)
-        self.factory.makeSourcePackageRecipeBuildJob(
-            recipe_build=pending_build)
+        pending_build.queueBuild()
         past_build = self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe)
-        self.factory.makeSourcePackageRecipeBuildJob(
-            recipe_build=past_build)
+        past_build.queueBuild()
         removeSecurityProxy(past_build).datebuilt = datetime.now(UTC)
         with person_logged_in(recipe.owner):
             recipe.destroySelf()

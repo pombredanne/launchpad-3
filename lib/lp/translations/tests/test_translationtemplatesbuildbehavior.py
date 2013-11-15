@@ -62,9 +62,8 @@ class MakeBehaviorMixin(object):
         Anything that might communicate with build slaves and such
         (which we can't really do here) is mocked up.
         """
-        specific_job = self.factory.makeTranslationTemplatesBuildJob(
-            branch=branch)
-        behavior = IBuildFarmJobBehavior(specific_job.build)
+        build = self.factory.makeTranslationTemplatesBuild(branch=branch)
+        behavior = IBuildFarmJobBehavior(build)
         slave = WaitingSlave(**kwargs)
         behavior.setBuilder(self.factory.makeBuilder(), slave)
         if use_fake_chroot:

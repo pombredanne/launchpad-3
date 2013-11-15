@@ -69,9 +69,6 @@ class IPackageBuild(IBuildFarmJob):
             title=_("Distribution series"), required=True,
             description=_("Shortcut for its distribution series.")))
 
-    def estimateDuration():
-        """Estimate the build duration."""
-
     def verifySuccessfulUpload():
         """Verify that the upload of this build completed succesfully."""
 
@@ -89,13 +86,6 @@ class IPackageBuild(IBuildFarmJob):
             in the notification email. If the notification is for a
             failed-to-upload error then this must be the content of the
             upload log.
-        """
-
-    def queueBuild(suspended=False):
-        """Create a BuildQueue entry for this build.
-
-        :param suspended: Whether the associated `Job` instance should be
-            created in a suspended state.
         """
 
     def getUploader(changes):

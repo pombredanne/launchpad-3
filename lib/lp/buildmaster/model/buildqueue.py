@@ -97,15 +97,15 @@ class BuildQueue(SQLBase):
     def __init__(self, build_farm_job, job, job_type=DEFAULT,
                  estimated_duration=DEFAULT, virtualized=DEFAULT,
                  processor=DEFAULT, lastscore=None):
-        super(BuildQueue, self).__init__(build_farm_job=build_farm_job,
+        super(BuildQueue, self).__init__(_build_farm_job=build_farm_job,
             job_type=job_type, job=job, virtualized=virtualized,
             processor=processor, estimated_duration=estimated_duration,
             lastscore=lastscore)
         if lastscore is None and self.specific_build is not None:
             self.score()
 
-    build_farm_job_id = Int(name='build_farm_job')
-    build_farm_job = Reference(build_farm_job_id, 'BuildFarmJob.id')
+    _build_farm_job_id = Int(name='build_farm_job')
+    _build_farm_job = Reference(_build_farm_job_id, 'BuildFarmJob.id')
     status = EnumCol(enum=BuildQueueStatus, default=BuildQueueStatus.WAITING)
 
     job = ForeignKey(dbName='job', foreignKey='Job')
@@ -124,7 +124,7 @@ class BuildQueue(SQLBase):
     def specific_build(self):
         """See `IBuildQueue`."""
         specific_source = specific_build_farm_job_sources()[self.job_type]
-        return specific_source.getByBuildFarmJob(self.build_farm_job)
+        return specific_source.getByBuildFarmJob(self._build_farm_job)
 
     def _clear_specific_build_cache(self):
         del get_property_cache(self).specific_build

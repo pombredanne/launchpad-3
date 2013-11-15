@@ -8,6 +8,7 @@ from storm.sqlobject import SQLObjectNotFound
 from storm.store import Store
 from zope import component
 from zope.component import getGlobalSiteManager
+from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import (
     BuildFarmJobType,
@@ -87,12 +88,6 @@ class TestBuildCancellation(TestCaseWithFactory):
         super(TestBuildCancellation, self).setUp()
         self.builder = self.factory.makeBuilder()
 
-    def _makeBuildQueue(self, bfj, job):
-        return BuildQueue(
-            build_farm_job=bfj.build_farm_job, job=job, lastscore=9999,
-            job_type=BuildFarmJobType.PACKAGEBUILD,
-            estimated_duration=timedelta(seconds=69), virtualized=True)
-
     def assertCancelled(self, build, bq):
         self.assertEqual(BuildStatus.CANCELLED, build.status)
         self.assertIs(None, bq.specific_old_job)
@@ -100,16 +95,14 @@ class TestBuildCancellation(TestCaseWithFactory):
 
     def test_binarypackagebuild_cancel(self):
         build = self.factory.makeBinaryPackageBuild()
-        buildpackagejob = build.makeJob()
-        bq = self._makeBuildQueue(build, buildpackagejob.job)
-        Store.of(build).add(bq)
+        bq = build.queueBuild()
         bq.markAsBuilding(self.builder)
         bq.cancel()
         self.assertCancelled(build, bq)
 
     def test_recipebuild_cancel(self):
-        bq = self.factory.makeSourcePackageRecipeBuildJob()
-        build = bq.specific_build
+        build = self.factory.makeSourcePackageRecipeBuild()
+        bq = build.queueBuild()
         bq.markAsBuilding(self.builder)
         bq.cancel()
         self.assertCancelled(build, bq)
@@ -120,14 +113,14 @@ class TestBuildQueueDuration(TestCaseWithFactory):
 
     def _makeBuildQueue(self):
         """Produce a `BuildQueue` object to test."""
-        return self.factory.makeSourcePackageRecipeBuildJob()
+        return self.factory.makeSourcePackageRecipeBuild().queueBuild()
 
     def test_current_build_duration_not_started(self):
         buildqueue = self._makeBuildQueue()
         self.assertEqual(None, buildqueue.current_build_duration)
 
     def test_current_build_duration(self):
-        buildqueue = self._makeBuildQueue()
+        buildqueue = removeSecurityProxy(self._makeBuildQueue())
         now = buildqueue._now()
         buildqueue._now = FakeMethod(result=now)
         age = timedelta(minutes=3)
@@ -270,7 +263,7 @@ class TestBuildQueueManual(TestCaseWithFactory):
 
     def _makeBuildQueue(self):
         """Produce a `BuildQueue` object to test."""
-        return self.factory.makeSourcePackageRecipeBuildJob()
+        return self.factory.makeSourcePackageRecipeBuild().queueBuild()
 
     def test_manualScore_prevents_rescoring(self):
         # Manually-set scores are fixed.
