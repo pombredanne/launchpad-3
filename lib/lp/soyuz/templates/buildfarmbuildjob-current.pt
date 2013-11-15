@@ -4,5 +4,5 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-  Building <tal:build replace="structure context/build/fmt:link" />
+  Building <tal:build replace="structure context/fmt:link" />
 </tal:root>

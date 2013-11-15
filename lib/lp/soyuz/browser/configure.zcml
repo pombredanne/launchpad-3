@@ -812,13 +812,13 @@
         permission="launchpad.View"
         template="../templates/buildqueue-current.pt"/>
     <browser:page
-        for="lp.buildmaster.interfaces.buildfarmbranchjob.IBuildFarmBranchJob"
+        for="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuild"
         name="+current"
         class="lp.services.webapp.publisher.LaunchpadView"
         permission="launchpad.View"
         template="../templates/buildfarmbranchjob-current.pt"/>
     <browser:page
-        for="lp.soyuz.interfaces.buildfarmbuildjob.IBuildFarmBuildJob"
+        for="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"
         name="+current"
         class="lp.services.webapp.publisher.LaunchpadView"
         permission="launchpad.View"
