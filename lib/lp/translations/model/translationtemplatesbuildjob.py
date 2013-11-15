@@ -13,7 +13,7 @@ from zope.interface import (
     implements,
     )
 
-from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobOld
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
 from lp.code.model.branchjob import (
     BranchJob,
@@ -35,7 +35,7 @@ class TranslationTemplatesBuildJob(BuildFarmJobOld, BranchJobDerived):
 
     Implementation-wise, this is actually a `BranchJob`.
     """
-    implements(IBuildFarmBranchJob)
+    implements(IBuildFarmJobOld)
     class_job_type = BranchJobType.TRANSLATION_TEMPLATES_BUILD
 
     classProvides(ITranslationTemplatesBuildJobSource)
@@ -49,14 +49,22 @@ class TranslationTemplatesBuildJob(BuildFarmJobOld, BranchJobDerived):
         Store.of(self.context).remove(self.context)
 
     @property
-    def build(self):
-        """Return a TranslationTemplateBuild for this build job."""
+    def build_id(self):
+        """Return the ID of the TranslationTemplatesBuild for this job."""
         build_id = self.context.metadata.get('build_id', None)
         if build_id is None:
             return None
         else:
+            return int(build_id)
+
+    @property
+    def build(self):
+        """Return a TranslationTemplateBuild for this build job."""
+        if self.build_id is None:
+            return None
+        else:
             return getUtility(ITranslationTemplatesBuildSource).getByID(
-                int(build_id))
+                self.build_id)
 
     @classmethod
     def getByJob(cls, job):
@@ -90,11 +98,15 @@ class TranslationTemplatesBuildJob(BuildFarmJobOld, BranchJobDerived):
         from lp.registry.model.product import Product
         from lp.code.model.branchcollection import GenericBranchCollection
         from lp.services.job.model.job import Job
+        from lp.translations.model.translationtemplatesbuild import (
+            TranslationTemplatesBuild,
+            )
         contexts = [job.context for job in jobs]
         load_related(Job, contexts, ['jobID'])
         branches = load_related(Branch, contexts, ['branchID'])
         GenericBranchCollection.preloadDataForBranches(branches)
         load_related(Product, branches, ['productID'])
+        load_related(TranslationTemplatesBuild, jobs, ['build_id'])
 
     @classmethod
     def getByBranch(cls, branch):
