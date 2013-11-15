@@ -77,6 +77,7 @@ class IBuildFarmJobOld(Interface):
         """Job's finished.  Delete its supporting data."""
 
     build = Attribute("Build")
+    job = Attribute("Job")
 
 
 class IBuildFarmJobDB(Interface):
