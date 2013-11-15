@@ -1,6 +1,5 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under
-# the GNU Affero General Public License version 3 (see the file
-# LICENSE).
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
 
@@ -29,7 +28,6 @@ from storm.locals import (
     )
 from storm.store import Store
 from testtools.matchers import (
-    ContainsAll,
     Equals,
     GreaterThan,
     )
@@ -43,7 +41,6 @@ from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
     )
-from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
@@ -1025,36 +1022,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         num_rows = store.execute(
             "SELECT COUNT(*) FROM BugSummaryJournal").get_one()[0]
         self.assertThat(num_rows, Equals(0))
-
-    def test_BuildQueueMigrator(self):
-        switch_dbuser('testadmin')
-        store = IMasterStore(CommercialSubscription)
-        tbj = self.factory.makeTranslationTemplatesBuildJob()
-        tbq = getUtility(IBuildQueueSet).get(removeSecurityProxy(tbj.job).id)
-        sbq = self.factory.makeSourcePackageRecipeBuild().queueBuild()
-        bbq = self.factory.makeBinaryPackageBuild().queueBuild()
-        expected = [
-            (bq.id, bq.status.value, bq.build_farm_job.id)
-            for bq in (tbq, sbq, bbq)]
-
-        def get_bq_bits():
-            return store.execute(
-                "SELECT id, status, build_farm_job FROM buildqueue").get_all()
-
-        def count_bq_empties():
-            return store.execute(
-                "SELECT COUNT(*) FROM BuildQueue "
-                "WHERE status IS NULL OR build_farm_job IS NULL").get_one()[0]
-        self.assertThat(get_bq_bits(), ContainsAll(expected))
-        store.execute(
-            "UPDATE BuildQueue SET status = NULL, build_farm_job = NULL")
-        self.assertEqual(5, count_bq_empties())
-        IMasterStore(FeatureFlag).add(FeatureFlag(
-            u'default', 0, u'buildmaster.buildqueuemigrator.enabled',
-            u'please'))
-        self.runHourly()
-        self.assertThat(get_bq_bits(), ContainsAll(expected))
-        self.assertEqual(0, count_bq_empties())
 
     def test_VoucherRedeemer(self):
         switch_dbuser('testadmin')

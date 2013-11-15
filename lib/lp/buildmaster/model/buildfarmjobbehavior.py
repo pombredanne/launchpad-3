@@ -39,14 +39,10 @@ class BuildFarmJobBehaviorBase:
     All build-farm job behaviors should inherit from this.
     """
 
-    def __init__(self, buildfarmjob):
+    def __init__(self, build):
         """Store a reference to the job_type with which we were created."""
-        self.buildfarmjob = buildfarmjob
+        self.build = build
         self._builder = None
-
-    @property
-    def build(self):
-        return self.buildfarmjob.build
 
     def setBuilder(self, builder, slave):
         """The builder should be set once and not changed."""
@@ -157,7 +153,7 @@ class BuildFarmJobBehaviorBase:
         logger.info(
             'Processing finished %s build %s (%s) from builder %s'
             % (status, self.getBuildCookie(),
-               self.build.buildqueue_record.specific_job.build.title,
+               self.build.buildqueue_record.specific_build.title,
                self.build.buildqueue_record.builder.name))
         d = method(slave_status, logger, notify)
         return d
@@ -176,7 +172,7 @@ class BuildFarmJobBehaviorBase:
         # If this is a binary package build, discard it if its source is
         # no longer published.
         if build.job_type == BuildFarmJobType.PACKAGEBUILD:
-            build = build.buildqueue_record.specific_job.build
+            build = build.buildqueue_record.specific_build
             if not build.current_source_publication:
                 yield self._slave.clean()
                 build.updateStatus(BuildStatus.SUPERSEDED)

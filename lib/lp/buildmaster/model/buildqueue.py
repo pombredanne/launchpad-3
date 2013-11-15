@@ -97,15 +97,15 @@ class BuildQueue(SQLBase):
     def __init__(self, build_farm_job, job, job_type=DEFAULT,
                  estimated_duration=DEFAULT, virtualized=DEFAULT,
                  processor=DEFAULT, lastscore=None):
-        super(BuildQueue, self).__init__(build_farm_job=build_farm_job,
+        super(BuildQueue, self).__init__(_build_farm_job=build_farm_job,
             job_type=job_type, job=job, virtualized=virtualized,
             processor=processor, estimated_duration=estimated_duration,
             lastscore=lastscore)
         if lastscore is None and self.specific_job is not None:
             self.score()
 
-    build_farm_job_id = Int(name='build_farm_job')
-    build_farm_job = Reference(build_farm_job_id, 'BuildFarmJob.id')
+    _build_farm_job_id = Int(name='build_farm_job')
+    _build_farm_job = Reference(_build_farm_job_id, 'BuildFarmJob.id')
     status = EnumCol(enum=BuildQueueStatus, default=BuildQueueStatus.WAITING)
 
     job = ForeignKey(dbName='job', foreignKey='Job')
@@ -119,6 +119,10 @@ class BuildQueue(SQLBase):
     estimated_duration = IntervalCol()
     processor = ForeignKey(dbName='processor', foreignKey='Processor')
     virtualized = BoolCol(dbName='virtualized')
+
+    @property
+    def specific_build(self):
+        return self.specific_job.build
 
     @cachedproperty
     def specific_job(self):
@@ -189,7 +193,7 @@ class BuildQueue(SQLBase):
             return
         # Allow the `IBuildFarmJob` instance with the data/logic specific to
         # the job at hand to calculate the score as appropriate.
-        self.lastscore = self.specific_job.build.calculateScore()
+        self.lastscore = self.specific_build.calculateScore()
 
     def markAsBuilding(self, builder):
         """See `IBuildQueue`."""
@@ -197,7 +201,7 @@ class BuildQueue(SQLBase):
         if self.job.status != JobStatus.RUNNING:
             self.job.start()
         self.status = BuildQueueStatus.RUNNING
-        self.specific_job.build.updateStatus(BuildStatus.BUILDING)
+        self.specific_build.updateStatus(BuildStatus.BUILDING)
         if builder is not None:
             del get_property_cache(builder).currentjob
 
@@ -211,13 +215,13 @@ class BuildQueue(SQLBase):
         self.job.date_started = None
         self.job.date_finished = None
         self.logtail = None
-        self.specific_job.build.updateStatus(BuildStatus.NEEDSBUILD)
+        self.specific_build.updateStatus(BuildStatus.NEEDSBUILD)
         if builder is not None:
             del get_property_cache(builder).currentjob
 
     def cancel(self):
         """See `IBuildQueue`."""
-        self.specific_job.build.updateStatus(BuildStatus.CANCELLED)
+        self.specific_build.updateStatus(BuildStatus.CANCELLED)
         self.destroySelf()
 
     def getEstimatedJobStartTime(self, now=None):

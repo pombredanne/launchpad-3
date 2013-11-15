@@ -1281,7 +1281,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             BuildQueue,
             Or(
                 BuildQueue.jobID.is_in(affected_jobs),
-                BuildQueue.build_farm_job_id.is_in(bfj_ids))).remove()
+                BuildQueue._build_farm_job_id.is_in(bfj_ids))).remove()
 
         # Delete Jobs.  Their BranchJobs cascade along in the database.
         store.find(Job, Job.id.is_in(affected_jobs)).remove()
