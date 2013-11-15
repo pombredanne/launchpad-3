@@ -24,7 +24,10 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.buildmaster.interfaces.buildfarmjob import ISpecificBuildFarmJobSource
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJobOld,
+    ISpecificBuildFarmJobSource,
+    )
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
@@ -34,7 +37,6 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.services.job.interfaces.job import IJob
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
-from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
@@ -104,7 +106,7 @@ class ISourcePackageRecipeBuildSource(ISpecificBuildFarmJobSource):
         """
 
 
-class ISourcePackageRecipeBuildJob(IBuildFarmBuildJob):
+class ISourcePackageRecipeBuildJob(IBuildFarmJobOld):
     """A read-only interface for recipe build jobs."""
 
     job = Reference(
