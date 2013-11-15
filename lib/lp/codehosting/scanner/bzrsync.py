@@ -35,8 +35,8 @@ from lp.code.model.revision import Revision
 from lp.codehosting.scanner import events
 from lp.services.config import config
 from lp.services.utils import iter_list_chunks
-from lp.translations.interfaces.translationtemplatesbuildjob import (
-    ITranslationTemplatesBuildJobSource,
+from lp.translations.interfaces.translationtemplatesbuild import (
+    ITranslationTemplatesBuildSource,
     )
 
 
@@ -313,7 +313,7 @@ def schedule_translation_upload(tip_changed):
 
 
 def schedule_translation_templates_build(tip_changed):
-    utility = getUtility(ITranslationTemplatesBuildJobSource)
+    utility = getUtility(ITranslationTemplatesBuildSource)
     utility.scheduleTranslationTemplatesBuild(tip_changed.db_branch)
 
 

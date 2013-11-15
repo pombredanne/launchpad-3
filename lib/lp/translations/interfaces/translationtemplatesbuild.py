@@ -35,3 +35,13 @@ class ITranslationTemplatesBuildSource(ISpecificBuildFarmJobSource):
 
     def findByBranch(branch, store=None):
         """Find `ITranslationTemplatesBuild`s for `branch`."""
+
+    def generatesTemplates(branch):
+        """Can this branch usefully generate translation templates?
+
+        If yes, then use `create` to schedule a build-farm job to
+        generate the templates based on the source code in the branch.
+        """
+
+    def scheduleTranslationTemplatesBuild(branch):
+        """Schedule a translation templates build job, if appropriate."""

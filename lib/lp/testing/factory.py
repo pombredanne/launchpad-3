@@ -96,10 +96,7 @@ from lp.bugs.interfaces.cve import (
     ICveSet,
     )
 from lp.bugs.model.bug import FileBugData
-from lp.buildmaster.enums import (
-    BuildFarmJobType,
-    BuildStatus,
-    )
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.code.enums import (
     BranchMergeProposalStatus,
@@ -333,8 +330,8 @@ from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
     )
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
-from lp.translations.interfaces.translationtemplatesbuildjob import (
-    ITranslationTemplatesBuildJobSource,
+from lp.translations.interfaces.translationtemplatesbuild import (
+    ITranslationTemplatesBuildSource,
     )
 from lp.translations.interfaces.translator import ITranslatorSet
 from lp.translations.model.translationtemplateitem import (
@@ -2866,16 +2863,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         IStore(spr_build).flush()
         return spr_build
 
-    def makeTranslationTemplatesBuildJob(self, branch=None):
-        """Make a new `TranslationTemplatesBuildJob`.
+    def makeTranslationTemplatesBuild(self, branch=None):
+        """Make a new `TranslationTemplatesBuild`.
 
-        :param branch: The branch that the job should be for.  If none
+        :param branch: The branch that the build should be for.  If none
             is given, one will be created.
         """
         if branch is None:
             branch = self.makeBranch()
 
-        jobset = getUtility(ITranslationTemplatesBuildJobSource)
+        jobset = getUtility(ITranslationTemplatesBuildSource)
         return jobset.create(branch)
 
     def makePOTemplate(self, productseries=None, distroseries=None,
