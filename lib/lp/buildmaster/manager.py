@@ -143,7 +143,7 @@ def assessFailureCounts(logger, vitals, builder, slave, interactor, retry,
     if current_job is None:
         job_failure_count = 0
     else:
-        job_failure_count = current_job.specific_job.build.failure_count
+        job_failure_count = current_job.specific_build.failure_count
 
     if builder.failure_count == job_failure_count and current_job is not None:
         # If the failure count for the builder is the same as the
@@ -186,7 +186,7 @@ def assessFailureCounts(logger, vitals, builder, slave, interactor, retry,
         # have already caused any relevant slave data to be stored
         # on the build record so don't worry about that here.
         builder.resetFailureCount()
-        build_job = current_job.specific_job.build
+        build_job = current_job.specific_build
         build_job.updateStatus(BuildStatus.FAILEDTOBUILD)
         builder.currentjob.destroySelf()
 
@@ -333,7 +333,7 @@ class SlaveScanner:
         if vitals.build_queue is None:
             self.date_cancel = None
             defer.returnValue(False)
-        build = vitals.build_queue.specific_job.build
+        build = vitals.build_queue.specific_build
         if build.status != BuildStatus.CANCELLING:
             self.date_cancel = None
             defer.returnValue(False)

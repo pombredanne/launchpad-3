@@ -125,7 +125,7 @@ to another build. The score value of the job is preserved.
     >>> print bob.currentjob
     None
 
-    >>> print job.status
+    >>> print job.status.name
     WAITING
     >>> print job.builder
     None

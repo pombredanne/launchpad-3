@@ -25,6 +25,7 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
@@ -338,7 +339,12 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
         self.assertEqual(self.gedit_build.buildqueue_record.lastscore, 2505)
         self.assertEqual(self.firefox_build.buildqueue_record.lastscore, 2505)
 
-        recipe_build_job = self.factory.makeSourcePackageRecipeBuildJob(9999)
+        das = self.factory.makeDistroArchSeries(
+            processor=getUtility(IProcessorSet).getByName('386'))
+        das.distroseries.nominatedarchindep = das
+        recipe_build_job = self.factory.makeSourcePackageRecipeBuild(
+            distroseries=das.distroseries).queueBuild()
+        recipe_build_job.manualScore(9999)
 
         self.assertEqual(recipe_build_job.lastscore, 9999)
 
@@ -365,9 +371,16 @@ class TestFindRecipeBuildCandidates(TestFindBuildCandidateBase):
         self.non_ppa = self.factory.makeArchive(
             name="primary", purpose=ArchivePurpose.PRIMARY)
 
+        das = self.factory.makeDistroArchSeries(
+            processor=getUtility(IProcessorSet).getByName('386'))
+        das.distroseries.nominatedarchindep = das
         self.clearBuildQueue()
-        self.bq1 = self.factory.makeSourcePackageRecipeBuildJob(3333)
-        self.bq2 = self.factory.makeSourcePackageRecipeBuildJob(4333)
+        self.bq1 = self.factory.makeSourcePackageRecipeBuild(
+            distroseries=das.distroseries).queueBuild()
+        self.bq1.manualScore(3333)
+        self.bq2 = self.factory.makeSourcePackageRecipeBuild(
+            distroseries=das.distroseries).queueBuild()
+        self.bq2.manualScore(4333)
 
     def test_findBuildCandidate_with_highest_score(self):
         # The recipe build with the highest score is selected first.

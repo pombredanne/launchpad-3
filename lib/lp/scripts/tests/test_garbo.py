@@ -1029,12 +1029,12 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
     def test_BuildQueueMigrator(self):
         switch_dbuser('testadmin')
         store = IMasterStore(CommercialSubscription)
-        tbj = self.factory.makeTranslationTemplatesBuildJob()
-        tbq = getUtility(IBuildQueueSet).get(removeSecurityProxy(tbj.job).id)
+        tbq = self.factory.makeTranslationTemplatesBuild().queueBuild()
         sbq = self.factory.makeSourcePackageRecipeBuild().queueBuild()
         bbq = self.factory.makeBinaryPackageBuild().queueBuild()
         expected = [
-            (bq.id, bq.status.value, bq.build_farm_job.id)
+            (bq.id, bq.status.value,
+             removeSecurityProxy(bq)._build_farm_job.id)
             for bq in (tbq, sbq, bbq)]
 
         def get_bq_bits():

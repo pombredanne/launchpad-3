@@ -5,6 +5,11 @@ __metaclass__ = type
 __all__ = [
     'BinaryPackageBuild',
     'BinaryPackageBuildSet',
+    'COPY_ARCHIVE_SCORE_PENALTY',
+    'PRIVATE_ARCHIVE_SCORE_BONUS',
+    'SCORE_BY_COMPONENT',
+    'SCORE_BY_POCKET',
+    'SCORE_BY_URGENCY',
     ]
 
 import datetime
@@ -54,6 +59,7 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.config import config
 from lp.services.database.bulk import load_related
@@ -90,13 +96,6 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuildSet,
     UnparsableDependencies,
     )
-from lp.soyuz.interfaces.buildpackagejob import (
-    COPY_ARCHIVE_SCORE_PENALTY,
-    PRIVATE_ARCHIVE_SCORE_BONUS,
-    SCORE_BY_COMPONENT,
-    SCORE_BY_POCKET,
-    SCORE_BY_URGENCY,
-    )
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.binarypackagename import BinaryPackageName
@@ -108,6 +107,42 @@ from lp.soyuz.model.queue import (
     PackageUpload,
     PackageUploadBuild,
     )
+
+
+SCORE_BY_POCKET = {
+    PackagePublishingPocket.BACKPORTS: 0,
+    PackagePublishingPocket.RELEASE: 1500,
+    PackagePublishingPocket.PROPOSED: 3000,
+    PackagePublishingPocket.UPDATES: 3000,
+    PackagePublishingPocket.SECURITY: 4500,
+}
+
+
+SCORE_BY_COMPONENT = {
+    'multiverse': 0,
+    'universe': 250,
+    'restricted': 750,
+    'main': 1000,
+    'partner': 1250,
+}
+
+
+SCORE_BY_URGENCY = {
+    SourcePackageUrgency.LOW: 5,
+    SourcePackageUrgency.MEDIUM: 10,
+    SourcePackageUrgency.HIGH: 15,
+    SourcePackageUrgency.EMERGENCY: 20,
+}
+
+
+PRIVATE_ARCHIVE_SCORE_BONUS = 10000
+
+
+# Rebuilds have usually a lower priority than other builds.
+# This will be subtracted from the final score, usually taking it
+# below 0, ensuring they are built only when nothing else is waiting
+# in the build farm.
+COPY_ARCHIVE_SCORE_PENALTY = 2600
 
 
 class BinaryPackageBuild(PackageBuildMixin, SQLBase):

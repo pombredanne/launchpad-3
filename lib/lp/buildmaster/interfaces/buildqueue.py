@@ -66,9 +66,6 @@ class IBuildQueue(Interface):
         description=_(
             "The virtualization setting required by this build farm job."))
 
-    build_farm_job = Reference(
-        IBuildFarmJob, title=_("Build farm job"), readonly=True,
-        description=_("Associated generic BuildFarmJob DB object."))
     status = Choice(
         title=_("Status"), vocabulary=BuildQueueStatus, readonly=True,
         description=_("The status of this build queue item."))
@@ -110,6 +107,10 @@ class IBuildQueue(Interface):
     specific_job = Reference(
         IBuildFarmJob, title=_("Job"),
         description=_("Data and operations common to all build farm jobs."))
+
+    specific_build = Reference(
+        IBuildFarmJob, title=_("Build farm job"),
+        description=_("Concrete build farm job object."))
 
     date_started = Datetime(
         title=_('Start time'),
