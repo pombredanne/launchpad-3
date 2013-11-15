@@ -595,8 +595,6 @@
     <class
         class="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob">
         <allow
-            interface="lp.buildmaster.interfaces.buildfarmbranchjob.IBuildFarmBranchJob"/>
-        <allow
             interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobOld"/>
     </class>
     <securedutility

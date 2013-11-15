@@ -13,7 +13,7 @@ from zope.interface import (
     implements,
     )
 
-from lp.buildmaster.interfaces.buildfarmbranchjob import IBuildFarmBranchJob
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobOld
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOld
 from lp.code.model.branchjob import (
     BranchJob,
@@ -35,7 +35,7 @@ class TranslationTemplatesBuildJob(BuildFarmJobOld, BranchJobDerived):
 
     Implementation-wise, this is actually a `BranchJob`.
     """
-    implements(IBuildFarmBranchJob)
+    implements(IBuildFarmJobOld)
     class_job_type = BranchJobType.TRANSLATION_TEMPLATES_BUILD
 
     classProvides(ITranslationTemplatesBuildJobSource)

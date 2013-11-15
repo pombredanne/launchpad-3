@@ -76,6 +76,8 @@ class IBuildFarmJobOld(Interface):
     def cleanUp():
         """Job's finished.  Delete its supporting data."""
 
+    build = Attribute("Build")
+
 
 class IBuildFarmJobDB(Interface):
     """Operations on a `BuildFarmJob` DB row.

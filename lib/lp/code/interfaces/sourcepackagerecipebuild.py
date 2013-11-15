@@ -16,10 +16,7 @@ from lazr.restful.fields import (
     CollectionField,
     Reference,
     )
-from zope.interface import (
-    Attribute,
-    Interface,
-    )
+from zope.interface import Interface
 from zope.schema import (
     Bool,
     Int,
@@ -111,8 +108,6 @@ class ISourcePackageRecipeBuildSource(ISpecificBuildFarmJobSource):
 
 class ISourcePackageRecipeBuildJob(IBuildFarmJobOld):
     """A read-only interface for recipe build jobs."""
-
-    build = Attribute("Build")
 
     job = Reference(
         IJob, title=_("Job"), required=True, readonly=True,
