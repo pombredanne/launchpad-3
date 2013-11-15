@@ -88,8 +88,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_cancel_build(self):
         """An admin can cancel a build."""
-        queue = self.factory.makeSourcePackageRecipeBuildJob()
-        build = queue.specific_job.build
+        queue = self.factory.makeSourcePackageRecipeBuild().queueBuild()
+        build = queue.specific_build
         transaction.commit()
         build_url = canonical_url(build)
         logout()
@@ -114,8 +114,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_cancel_build_not_admin(self):
         """No one but an admin can cancel a build."""
-        queue = self.factory.makeSourcePackageRecipeBuildJob()
-        build = queue.specific_job.build
+        queue = self.factory.makeSourcePackageRecipeBuild().queueBuild()
+        build = queue.specific_build
         transaction.commit()
         build_url = canonical_url(build)
         logout()
@@ -144,8 +144,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_rescore_build(self):
         """An admin can rescore a build."""
-        queue = self.factory.makeSourcePackageRecipeBuildJob()
-        build = queue.specific_job.build
+        queue = self.factory.makeSourcePackageRecipeBuild().queueBuild()
+        build = queue.specific_build
         transaction.commit()
         build_url = canonical_url(build)
         logout()
@@ -172,8 +172,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_rescore_build_invalid_score(self):
         """Build scores can only take numbers."""
-        queue = self.factory.makeSourcePackageRecipeBuildJob()
-        build = queue.specific_job.build
+        queue = self.factory.makeSourcePackageRecipeBuild().queueBuild()
+        build = queue.specific_build
         transaction.commit()
         build_url = canonical_url(build)
         logout()
@@ -195,8 +195,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_rescore_build_not_admin(self):
         """No one but admin can rescore a build."""
-        queue = self.factory.makeSourcePackageRecipeBuildJob()
-        build = queue.specific_job.build
+        queue = self.factory.makeSourcePackageRecipeBuild().queueBuild()
+        build = queue.specific_build
         transaction.commit()
         build_url = canonical_url(build)
         logout()

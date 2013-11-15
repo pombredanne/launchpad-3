@@ -236,7 +236,7 @@ class Builder(SQLBase):
         """See IBuilder."""
         self.gotFailure()
         if self.currentjob is not None:
-            build_farm_job = self.currentjob.specific_job.build
+            build_farm_job = self.currentjob.specific_build
             build_farm_job.gotFailure()
             logger.info(
                 "Builder %s failure count: %s, job '%s' failure count: %s" % (

@@ -206,6 +206,7 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
     def __init__(self, build_farm_job, distroseries, recipe, requester,
                  archive, pocket, date_created):
         """Construct a SourcePackageRecipeBuild."""
+        processor = distroseries.nominatedarchindep.processor
         super(SourcePackageRecipeBuild, self).__init__()
         self.build_farm_job = build_farm_job
         self.distroseries = distroseries
@@ -214,7 +215,7 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
         self.archive = archive
         self.pocket = pocket
         self.status = BuildStatus.NEEDSBUILD
-        self.processor = self.distroseries.nominatedarchindep.processor
+        self.processor = processor
         self.virtualized = True
         if date_created is not None:
             self.date_created = date_created
