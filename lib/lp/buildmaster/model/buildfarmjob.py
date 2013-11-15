@@ -39,6 +39,7 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJobSet,
     IBuildFarmJobSource,
     )
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.interfaces import (
     IMasterStore,
@@ -222,6 +223,29 @@ class BuildFarmJobMixin:
     def calculateScore(self):
         """See `IBuildFarmJob`."""
         raise NotImplementedError
+
+    def estimateDuration(self):
+        """See `IBuildFarmJob`."""
+        raise NotImplementedError
+
+    def queueBuild(self, suspended=False):
+        """See `IBuildFarmJob`."""
+        specific_job = self.makeJob()
+
+        # This build queue job is to be created in a suspended state.
+        if suspended:
+            specific_job.job.suspend()
+
+        duration_estimate = self.estimateDuration()
+        job = specific_job.job
+        queue_entry = BuildQueue(
+            estimated_duration=duration_estimate,
+            build_farm_job=self.build_farm_job,
+            job_type=self.job_type,
+            job=job, processor=self.processor,
+            virtualized=self.virtualized)
+        Store.of(self).add(queue_entry)
+        return queue_entry
 
 
 class SpecificBuildFarmJobSourceMixin:

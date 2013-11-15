@@ -797,7 +797,7 @@
 
     <!-- BinaryPackageBuildBehavior -->
     <adapter
-        for="lp.soyuz.interfaces.buildpackagejob.IBuildPackageJob"
+        for="lp.soyuz.interfaces.buildpackagejob.IBinaryPackageBuild"
         provides="lp.buildmaster.interfaces.buildfarmjobbehavior.IBuildFarmJobBehavior"
         factory="lp.soyuz.model.binarypackagebuildbehavior.BinaryPackageBuildBehavior"
         permission="zope.Public" />

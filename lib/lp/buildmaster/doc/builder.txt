@@ -143,32 +143,24 @@ The build for the ubuntu primary archive shows up again.
 All job types are included. If we create a recipe build job, it will
 show up in the calculated queue size.
 
-    >>> recipe_bq = factory.makeSourcePackageRecipeBuildJob()
-    >>> # XXX wgrant 20100625 bug=598397: The factory erroneously creates
-    >>> # architecture-independent jobs.
-    >>> print recipe_bq.processor
-    None
-
-    >>> from lp.soyuz.interfaces.processor import IProcessorSet
-    >>> i386_processor = getUtility(IProcessorSet).getByName('386')
-    >>> recipe_bq.processor = i386_processor
-    >>> recipe_bq.virtualized = True
+    >>> recipe_bq = factory.makeSourcePackageRecipeBuild(
+    ...     distroseries=ubuntu.currentseries).queueBuild()
     >>> transaction.commit()
-
     >>> queue_sizes = builderset.getBuildQueueSizes()
     >>> print queue_sizes['virt']['386']
-    (1L, datetime.timedelta(0, 64))
+    (1L, datetime.timedelta(0, 600))
 
 Any BuildQueues with a null `virtualized` property are considered virtual
 by default.
 
-    >>> recipe_bq = factory.makeSourcePackageRecipeBuildJob()
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> recipe_bq = removeSecurityProxy(factory.makeSourcePackageRecipeBuild(
+    ...     distroseries=ubuntu.currentseries).queueBuild())
     >>> recipe_bq.virtualized = None
-    >>> recipe_bq.processor = i386_processor
     >>> transaction.commit()
     >>> queue_sizes = builderset.getBuildQueueSizes()
 
 The virtual queue size has increased accordingly:
 
     >>> print queue_sizes['virt']['386']
-    (2L, datetime.timedelta(0, 128))
+    (2L, datetime.timedelta(0, 1200))
