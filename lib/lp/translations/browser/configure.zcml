@@ -1023,5 +1023,11 @@
         name="+index"
         facet="overview"
         template="../templates/translationtemplatesbuild-index.pt"/>
+    <browser:page
+        for="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuild"
+        name="+current"
+        class="lp.services.webapp.publisher.LaunchpadView"
+        permission="launchpad.View"
+        template="../templates/translationtemplatesbuild-current.pt"/>
 
 </configure>

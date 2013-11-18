@@ -111,7 +111,7 @@
     <tal:job-header condition="job">
       <span class="sortkey" tal:content="job/id" />
       <img src="/@@/processing" alt="[building]" />
-      <tal:specific-job replace="structure job/specific_old_job/@@+current" />
+      <tal:specific-build replace="structure job/specific_build/@@+current" />
     </tal:job-header>
 
   </metal:macro>

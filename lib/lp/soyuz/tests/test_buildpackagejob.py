@@ -15,7 +15,6 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
@@ -177,4 +176,3 @@ class TestBuildPackageJob(TestBuildJobBase):
         build, bq = find_job(self, 'gcc', '386')
         build_farm_job = bq.specific_old_job
         self.assertProvides(build_farm_job, IBuildPackageJob)
-        self.assertProvides(build_farm_job, IBuildFarmBuildJob)
