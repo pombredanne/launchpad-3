@@ -478,15 +478,13 @@ def setupCompleteBuilds(batch):
         build.id for build in builds if IBinaryPackageBuild.providedBy(build)]
     results = getUtility(IBinaryPackageBuildSet).getQueueEntriesForBuildIDs(
         build_ids)
-    for (buildqueue, _builder, build_job) in results:
-        # Get the build's id, 'buildqueue', 'sourcepackagerelease' and
-        # 'buildlog' (from the result set) respectively.
-        prefetched_data[build_job.build.id] = buildqueue
+    for (buildqueue, _builder) in results:
+        prefetched_data[buildqueue.build_farm_job_id] = buildqueue
 
     complete_builds = []
     for build in builds:
         if IBinaryPackageBuild.providedBy(build):
-            buildqueue = prefetched_data.get(build.id)
+            buildqueue = prefetched_data.get(build.build_farm_job_id)
             complete_builds.append(CompleteBuild(build, buildqueue))
         else:
             complete_builds.append(build)
