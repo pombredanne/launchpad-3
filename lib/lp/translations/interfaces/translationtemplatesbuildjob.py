@@ -4,10 +4,21 @@
 __metaclass__ = type
 
 __all__ = [
+    'ITranslationTemplatesBuildJob',
     'ITranslationTemplatesBuildJobSource',
     ]
 
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobOld
+
+
+class ITranslationTemplatesBuildJob(IBuildFarmJobOld):
+
+    branch = Attribute("Branch")
 
 
 class ITranslationTemplatesBuildJobSource(Interface):

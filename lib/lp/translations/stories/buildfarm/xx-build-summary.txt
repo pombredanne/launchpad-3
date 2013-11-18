@@ -73,7 +73,7 @@ to the branch.
     >>> user_browser.mech_browser.set_handle_equiv(False)
     >>> user_browser.open(builder_page)
     >>> print extract_text(find_build_summary(user_browser))
-    Working on TranslationTemplatesBuildJob for branch ...
+    Working on TranslationTemplatesBuild for branch ...
 
     >>> user_browser.getLink(branch_url).click()
 
