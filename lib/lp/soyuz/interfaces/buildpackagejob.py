@@ -13,12 +13,12 @@ from lazr.restful.fields import Reference
 from zope.schema import Int
 
 from lp import _
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobOld
 from lp.services.job.interfaces.job import IJob
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
-from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
 
 
-class IBuildPackageJob(IBuildFarmBuildJob):
+class IBuildPackageJob(IBuildFarmJobOld):
     """A read-only interface for build package jobs."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
