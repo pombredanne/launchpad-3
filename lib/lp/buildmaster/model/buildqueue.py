@@ -113,7 +113,7 @@ class BuildQueue(SQLBase):
     _build_farm_job_id = Int(name='build_farm_job')
     _build_farm_job = Reference(_build_farm_job_id, 'BuildFarmJob.id')
     status = EnumCol(enum=BuildQueueStatus, default=BuildQueueStatus.WAITING)
-    _date_started = DateTime(tzinfo=pytz.UTC, name='date_started')
+    date_started = DateTime(tzinfo=pytz.UTC)
 
     job = ForeignKey(dbName='job', foreignKey='Job')
     job_type = EnumCol(
@@ -172,11 +172,6 @@ class BuildQueue(SQLBase):
                 cache.specific_job = specific_jobs_dict[queue.job]
 
     @property
-    def date_started(self):
-        """See `IBuildQueue`."""
-        return self._date_started
-
-    @property
     def current_build_duration(self):
         """See `IBuildQueue`."""
         date_started = self.date_started
@@ -220,7 +215,7 @@ class BuildQueue(SQLBase):
         if self.job is not None and self.job.status != JobStatus.RUNNING:
             self.job.start()
         self.status = BuildQueueStatus.RUNNING
-        self._date_started = UTC_NOW
+        self.date_started = UTC_NOW
         self.specific_build.updateStatus(BuildStatus.BUILDING)
         if builder is not None:
             del get_property_cache(builder).currentjob
@@ -240,7 +235,7 @@ class BuildQueue(SQLBase):
         if self.job is not None and self.job.status != JobStatus.WAITING:
             self.job.queue()
         self.status = BuildQueueStatus.WAITING
-        self._date_started = None
+        self.date_started = None
         if self.job is not None:
             self.job.date_started = None
             self.job.date_finished = None
