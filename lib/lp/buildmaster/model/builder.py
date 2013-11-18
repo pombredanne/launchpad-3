@@ -27,6 +27,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp.app.errors import NotFoundError
+from lp.buildmaster.enums import BuildQueueStatus
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
@@ -46,8 +47,6 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.job.interfaces.job import JobStatus
-from lp.services.job.model.job import Job
 from lp.services.propertycache import cachedproperty
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
@@ -173,7 +172,7 @@ class Builder(SQLBase):
         def qualify_subquery(job_type, sub_query):
             """Put the sub-query into a job type context."""
             qualified_query = """
-                ((BuildQueue.job_type != %s) OR EXISTS(%%s))
+                ((BuildFarmJob.job_type != %s) OR EXISTS(%%s))
             """ % sqlvalues(job_type)
             qualified_query %= sub_query
             return qualified_query
@@ -182,10 +181,10 @@ class Builder(SQLBase):
         candidate = None
 
         general_query = """
-            SELECT buildqueue.id FROM buildqueue, job
+            SELECT buildqueue.id FROM buildqueue, buildfarmjob
             WHERE
-                buildqueue.job = job.id
-                AND job.status = %s
+                buildfarmjob.id = buildqueue.build_farm_job
+                AND buildqueue.status = %s
                 AND (
                     -- The processor values either match or the candidate
                     -- job is processor-independent.
@@ -201,7 +200,7 @@ class Builder(SQLBase):
                     (buildqueue.virtualized IS NULL AND %s = TRUE))
                 AND buildqueue.builder IS NULL
         """ % sqlvalues(
-            JobStatus.WAITING, self.processor, self.virtualized,
+            BuildQueueStatus.WAITING, self.processor, self.virtualized,
             self.virtualized)
         order_clause = " ORDER BY buildqueue.lastscore DESC, buildqueue.id"
 
@@ -296,8 +295,7 @@ class BuilderSet(object):
             Processor,
             Coalesce(BuildQueue.virtualized, True)),
             Processor.id == BuildQueue.processorID,
-            Job.id == BuildQueue.jobID,
-            Job._status == JobStatus.WAITING).group_by(
+            BuildQueue.status == BuildQueueStatus.WAITING).group_by(
                 Processor, Coalesce(BuildQueue.virtualized, True))
 
         result_dict = {'virt': {}, 'nonvirt': {}}

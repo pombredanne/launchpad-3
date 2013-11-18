@@ -1301,11 +1301,9 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             PackagePublishingStatus.DELETED,
             )
         return """
-            SELECT TRUE FROM Archive, BinaryPackageBuild, BuildPackageJob,
-                             DistroArchSeries
+            SELECT TRUE FROM Archive, BinaryPackageBuild, DistroArchSeries
             WHERE
-            BuildPackageJob.job = Job.id AND
-            BuildPackageJob.build = BinaryPackageBuild.id AND
+            BinaryPackageBuild.build_farm_job = BuildQueue.build_farm_job AND
             BinaryPackageBuild.distro_arch_series =
                 DistroArchSeries.id AND
             BinaryPackageBuild.archive = Archive.id AND
