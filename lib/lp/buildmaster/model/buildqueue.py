@@ -130,8 +130,9 @@ class BuildQueue(SQLBase):
     @cachedproperty
     def specific_build(self):
         """See `IBuildQueue`."""
-        specific_source = specific_build_farm_job_sources()[self.job_type]
-        return specific_source.getByBuildFarmJob(self._build_farm_job)
+        bfj = self._build_farm_job
+        specific_source = specific_build_farm_job_sources()[bfj.job_type]
+        return specific_source.getByBuildFarmJob(bfj)
 
     def _clear_specific_build_cache(self):
         del get_property_cache(self).specific_build
@@ -139,6 +140,8 @@ class BuildQueue(SQLBase):
     @cachedproperty
     def specific_old_job(self):
         """See `IBuildQueue`."""
+        if self.job is None:
+            return None
         specific_class = specific_job_classes()[self.job_type]
         return specific_class.getByJob(self.job)
 
@@ -171,7 +174,7 @@ class BuildQueue(SQLBase):
     @property
     def date_started(self):
         """See `IBuildQueue`."""
-        return self.job.date_started
+        return self._date_started
 
     @property
     def current_build_duration(self):
@@ -188,9 +191,11 @@ class BuildQueue(SQLBase):
         specific_old_job = self.specific_old_job
         builder = self.builder
         Store.of(self).remove(self)
-        specific_old_job.cleanUp()
+        if specific_old_job is not None:
+            specific_old_job.cleanUp()
         Store.of(self).flush()
-        job.destroySelf()
+        if job is not None:
+            job.destroySelf()
         if builder is not None:
             del get_property_cache(builder).currentjob
         self._clear_specific_old_job_cache()
@@ -212,7 +217,7 @@ class BuildQueue(SQLBase):
     def markAsBuilding(self, builder):
         """See `IBuildQueue`."""
         self.builder = builder
-        if self.job.status != JobStatus.RUNNING:
+        if self.job is not None and self.job.status != JobStatus.RUNNING:
             self.job.start()
         self.status = BuildQueueStatus.RUNNING
         self._date_started = UTC_NOW
@@ -222,21 +227,23 @@ class BuildQueue(SQLBase):
 
     def suspend(self):
         """See `IBuildQueue`."""
-        if self.job.status != JobStatus.WAITING:
+        if self.status != BuildQueueStatus.WAITING:
             raise AssertionError("Only waiting jobs can be suspended.")
-        self.job.suspend()
+        if self.job is not None:
+            self.job.suspend()
         self.status = BuildQueueStatus.SUSPENDED
 
     def reset(self):
         """See `IBuildQueue`."""
         builder = self.builder
         self.builder = None
-        if self.job.status != JobStatus.WAITING:
+        if self.job is not None and self.job.status != JobStatus.WAITING:
             self.job.queue()
         self.status = BuildQueueStatus.WAITING
         self._date_started = None
-        self.job.date_started = None
-        self.job.date_finished = None
+        if self.job is not None:
+            self.job.date_started = None
+            self.job.date_finished = None
         self.logtail = None
         self.specific_build.updateStatus(BuildStatus.NEEDSBUILD)
         if builder is not None:
