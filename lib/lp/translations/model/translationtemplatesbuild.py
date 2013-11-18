@@ -220,10 +220,7 @@ class TranslationTemplatesBuild(SpecificBuildFarmJobSourceMixin,
     def getByID(cls, build_id, store=None):
         """See `ITranslationTemplatesBuildSource`."""
         store = cls._getStore(store)
-        match = store.find(
-            TranslationTemplatesBuild,
-            TranslationTemplatesBuild.id == build_id)
-        return match.one()
+        return store.get(TranslationTemplatesBuild, build_id)
 
     @classmethod
     def getByBuildFarmJob(cls, buildfarmjob, store=None):

@@ -132,7 +132,7 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
             ubuntu.currentseries.nominatedarchindep.processor, bq.processor)
 
         # A job is created with the branch URL in its metadata.
-        metadata = bq.specific_job.metadata
+        metadata = removeSecurityProxy(bq.specific_job).metadata
         self.assertIn('branch_url', metadata)
         url = metadata['branch_url']
         head = 'http://'
