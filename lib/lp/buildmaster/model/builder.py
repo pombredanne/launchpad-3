@@ -25,6 +25,7 @@ from storm.expr import (
 import transaction
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildQueueStatus
@@ -223,7 +224,8 @@ class Builder(SQLBase):
 
         for (candidate_id,) in candidate_jobs:
             candidate = getUtility(IBuildQueueSet).get(candidate_id)
-            job_source = job_sources[candidate.job_type]
+            job_source = job_sources[
+                removeSecurityProxy(candidate)._build_farm_job.job_type]
             candidate_approved = job_source.postprocessCandidate(
                 candidate, logger)
             if candidate_approved:
