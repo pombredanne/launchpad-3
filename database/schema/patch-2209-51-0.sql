@@ -5,7 +5,8 @@ SET client_min_messages=ERROR;
 
 ALTER TABLE buildqueue
     ADD COLUMN build_farm_job integer REFERENCES buildfarmjob,
-    ADD COLUMN status integer;
+    ADD COLUMN status integer,
+    ADD COLUMN date_started timestamp without time zone;
 
 ALTER TABLE buildqueue ALTER COLUMN job DROP NOT NULL;
 ALTER TABLE buildqueue ALTER COLUMN job_type DROP NOT NULL;
