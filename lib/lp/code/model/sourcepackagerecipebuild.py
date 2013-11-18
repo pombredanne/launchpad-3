@@ -182,12 +182,8 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
     @property
     def buildqueue_record(self):
         """See `IBuildFarmJob`."""
-        store = Store.of(self)
-        results = store.find(
-            BuildQueue,
-            SourcePackageRecipeBuildJob.job == BuildQueue.jobID,
-            SourcePackageRecipeBuildJob.build == self.id)
-        return results.one()
+        return Store.of(self).find(
+            BuildQueue, _build_farm_job_id=self.build_farm_job_id).one()
 
     @property
     def source_package_release(self):

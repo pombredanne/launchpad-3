@@ -211,8 +211,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     @property
     def buildqueue_record(self):
         """See `IBuild`."""
-        store = Store.of(self)
-        return store.find(
+        return Store.of(self).find(
             BuildQueue, _build_farm_job_id=self.build_farm_job_id).one()
 
     def _getLatestPublication(self):
