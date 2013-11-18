@@ -213,6 +213,13 @@ class BuildQueue(SQLBase):
         if builder is not None:
             del get_property_cache(builder).currentjob
 
+    def suspend(self):
+        """See `IBuildQueue`."""
+        if self.job.status != JobStatus.WAITING:
+            raise AssertionError("Only waiting jobs can be suspended.")
+        self.job.suspend()
+        self.status = BuildQueueStatus.SUSPENDED
+
     def reset(self):
         """See `IBuildQueue`."""
         builder = self.builder

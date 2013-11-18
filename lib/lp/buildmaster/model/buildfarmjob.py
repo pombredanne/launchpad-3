@@ -232,10 +232,6 @@ class BuildFarmJobMixin:
         """See `IBuildFarmJob`."""
         specific_job = self.makeJob()
 
-        # This build queue job is to be created in a suspended state.
-        if suspended:
-            specific_job.job.suspend()
-
         duration_estimate = self.estimateDuration()
         job = specific_job.job
         queue_entry = BuildQueue(
@@ -244,6 +240,11 @@ class BuildFarmJobMixin:
             job_type=self.job_type,
             job=job, processor=self.processor,
             virtualized=self.virtualized)
+
+        # This build queue job is to be created in a suspended state.
+        if suspended:
+            queue_entry.suspend()
+
         Store.of(self).add(queue_entry)
         return queue_entry
 
