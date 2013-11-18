@@ -39,7 +39,7 @@ from lp.testing.layers import LaunchpadZopelessLayer
 
 def check_mintime_to_builder(test, bq, min_time):
     """Test the estimated time until a builder becomes available."""
-    time_stamp = bq.job.date_started or datetime.now(utc)
+    time_stamp = bq.date_started or datetime.now(utc)
     delay = estimate_time_to_next_builder(
         removeSecurityProxy(bq), now=time_stamp)
     test.assertTrue(

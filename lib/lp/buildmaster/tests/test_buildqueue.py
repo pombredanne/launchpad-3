@@ -5,7 +5,6 @@
 from datetime import timedelta
 
 from storm.sqlobject import SQLObjectNotFound
-from storm.store import Store
 from zope import component
 from zope.component import getGlobalSiteManager
 from zope.security.proxy import removeSecurityProxy
@@ -124,7 +123,7 @@ class TestBuildQueueDuration(TestCaseWithFactory):
         now = buildqueue._now()
         buildqueue._now = FakeMethod(result=now)
         age = timedelta(minutes=3)
-        buildqueue.job.date_started = now - age
+        buildqueue.date_started = now - age
 
         self.assertEqual(age, buildqueue.current_build_duration)
 
