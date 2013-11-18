@@ -53,6 +53,8 @@ def set_remaining_time_for_running_job(bq, remainder):
     offset = bq.estimated_duration.seconds - remainder
     removeSecurityProxy(bq.job).date_started = (
         datetime.now(utc) - timedelta(seconds=offset))
+    removeSecurityProxy(bq)._date_started = (
+        datetime.now(utc) - timedelta(seconds=offset))
 
 
 def check_delay_for_job(test, the_job, delay):

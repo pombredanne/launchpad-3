@@ -15,10 +15,10 @@ from datetime import (
 
 from pytz import utc
 
+from lp.buildmaster.enums import BuildQueueStatus
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
-from lp.services.job.interfaces.job import JobStatus
 
 
 def get_builder_data():
@@ -89,13 +89,12 @@ def get_head_job_platform(bq):
         SELECT
             processor,
             virtualized
-        FROM
-            BuildQueue, Job
+        FROM BuildQueue
         WHERE
         """
     query += get_pending_jobs_clauses(bq)
     query += """
-        ORDER BY lastscore DESC, job LIMIT 1
+        ORDER BY lastscore DESC, id LIMIT 1
         """
     result = IStore(BuildQueue).execute(query).get_one()
     return (my_platform if result is None else result)
@@ -134,11 +133,11 @@ def estimate_time_to_next_builder(bq, now=None):
             CASE WHEN
             EXTRACT(EPOCH FROM
                 (BuildQueue.estimated_duration -
-                (((%s AT TIME ZONE 'UTC') - Job.date_started))))  >= 0
+                (((%s AT TIME ZONE 'UTC') - BuildQueue.date_started))))  >= 0
             THEN
             EXTRACT(EPOCH FROM
                 (BuildQueue.estimated_duration -
-                (((%s AT TIME ZONE 'UTC') - Job.date_started))))
+                (((%s AT TIME ZONE 'UTC') - BuildQueue.date_started))))
             ELSE
             -- Assume that jobs that have overdrawn their estimated
             -- duration time budget will complete within 2 minutes.
@@ -150,16 +149,15 @@ def estimate_time_to_next_builder(bq, now=None):
             120
             END)
         FROM
-            BuildQueue, Job, Builder
+            BuildQueue, Builder
         WHERE
-            BuildQueue.job = Job.id
-            AND BuildQueue.builder = Builder.id
+            BuildQueue.builder = Builder.id
             AND Builder.manual = False
             AND Builder.builderok = True
-            AND Job.status = %s
+            AND BuildQueue.status = %s
             AND Builder.virtualized = %s
         """ % sqlvalues(
-            now, now, JobStatus.RUNNING,
+            now, now, BuildQueueStatus.RUNNING,
             normalize_virtualization(head_job_virtualized))
 
     if head_job_processor is not None:
@@ -178,14 +176,13 @@ def get_pending_jobs_clauses(bq):
     estimation."""
     virtualized = normalize_virtualization(bq.virtualized)
     clauses = """
-        BuildQueue.job = Job.id
-        AND Job.status = %s
+        BuildQueue.status = %s
         AND (
             -- The score must be either above my score or the
             -- job must be older than me in cases where the
             -- score is equal.
             BuildQueue.lastscore > %s OR
-            (BuildQueue.lastscore = %s AND Job.id < %s))
+            (BuildQueue.lastscore = %s AND BuildQueue.id < %s))
         -- The virtualized values either match or the job
         -- does not care about virtualization and the job
         -- of interest (JOI) is to be run on a virtual builder
@@ -193,7 +190,7 @@ def get_pending_jobs_clauses(bq):
         -- on native builders).
         AND COALESCE(buildqueue.virtualized, TRUE) = %s
         """ % sqlvalues(
-            JobStatus.WAITING, bq.lastscore, bq.lastscore, bq.job,
+            BuildQueueStatus.WAITING, bq.lastscore, bq.lastscore, bq,
             virtualized)
     processor_clause = """
         AND (
@@ -246,12 +243,11 @@ def estimate_job_delay(bq, builder_stats):
         SELECT
             BuildQueue.processor,
             BuildQueue.virtualized,
-            COUNT(BuildQueue.job),
+            COUNT(BuildQueue.id),
             CAST(EXTRACT(
                 EPOCH FROM
                     SUM(BuildQueue.estimated_duration)) AS INTEGER)
-        FROM
-            BuildQueue, Job
+        FROM BuildQueue
         WHERE
         """
     query += get_pending_jobs_clauses(bq)
@@ -317,7 +313,7 @@ def estimate_job_start_time(bq, now=None):
             build pool)
     """
     # This method may only be invoked for pending jobs.
-    if bq.job.status != JobStatus.WAITING:
+    if bq.status != BuildQueueStatus.WAITING:
         raise AssertionError(
             "The start time is only estimated for pending jobs.")
 
