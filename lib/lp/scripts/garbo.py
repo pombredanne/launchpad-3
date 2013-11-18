@@ -1391,6 +1391,7 @@ class BuildQueueMigrator(TunableLoop):
         bqs = list(self.findBuildQueues()[:chunk_size])
         for bq in bqs:
             bq._build_farm_job = bq.specific_job.build.build_farm_job
+            bq._date_started = bq.job.date_started
             bq.status = self.status_map[bq.job.status]
         self.start_at = bqs[-1].id + 1
         transaction.commit()
