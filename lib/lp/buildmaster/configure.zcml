@@ -40,7 +40,7 @@
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.buildmaster.interfaces.builder.IBuilderSet"
-        factory="lp.soyuz.browser.builder.BuilderSetBreadcrumb"
+        factory="lp.buildmaster.browser.builder.BuilderSetBreadcrumb"
         permission="zope.Public"/>
 
 
