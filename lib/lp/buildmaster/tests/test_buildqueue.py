@@ -81,8 +81,8 @@ class TestBuildQueueOldJobDestruction(TestCaseWithFactory):
     def test_destroy_without_job(self):
         # Newly created BuildQueues won't have an associated Job.
         build = self.factory.makeBinaryPackageBuild()
-        bq = build.queueBuild()
-        self.assertIs(None, bq.job)
+        bq = removeSecurityProxy(build.queueBuild())
+        self.assertIs(None, bq._job)
         self.assertIs(
             None, Store.of(build).find(BuildPackageJob, build=build).one())
         bq.destroySelf()
@@ -95,10 +95,10 @@ class TestBuildQueueOldJobDestruction(TestCaseWithFactory):
         bq = removeSecurityProxy(build.queueBuild())
         bfjo = removeSecurityProxy(build).makeJob()
         job = bfjo.job
-        bq.job = job
-        bq.job_type = BuildFarmJobType.PACKAGEBUILD
+        bq._job = job
+        bq._job_type = BuildFarmJobType.PACKAGEBUILD
         self.assertIsNot(None, bq.specific_old_job)
-        self.assertIsNot(None, bq.job)
+        self.assertIsNot(None, bq._job)
         bq.destroySelf()
         self.assertIs(None, Store.of(build).find(BuildQueue, id=bq.id).one())
         self.assertIs(None, Store.of(build).find(Job, id=job.id).one())
@@ -111,8 +111,8 @@ class TestBuildQueueOldJobDestruction(TestCaseWithFactory):
         # remaining BuildQueue.
         build = self.factory.makeBinaryPackageBuild()
         bq = removeSecurityProxy(build.queueBuild())
-        bq.jobID = 123456
-        bq.job_type = BuildFarmJobType.PACKAGEBUILD
+        bq._jobID = 123456
+        bq._job_type = BuildFarmJobType.PACKAGEBUILD
         bq.destroySelf()
         self.assertIs(None, Store.of(build).find(BuildQueue, id=bq.id).one())
 

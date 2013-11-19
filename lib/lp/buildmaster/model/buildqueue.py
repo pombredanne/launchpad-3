@@ -116,8 +116,8 @@ class BuildQueue(SQLBase):
     status = EnumCol(enum=BuildQueueStatus, default=BuildQueueStatus.WAITING)
     date_started = DateTime(tzinfo=pytz.UTC)
 
-    job = ForeignKey(dbName='job', foreignKey='Job')
-    job_type = EnumCol(
+    _job = ForeignKey(dbName='job', foreignKey='Job')
+    _job_type = EnumCol(
         enum=BuildFarmJobType, notNull=True,
         default=BuildFarmJobType.PACKAGEBUILD, dbName='job_type')
     builder = ForeignKey(dbName='builder', foreignKey='Builder', default=None)
@@ -141,10 +141,10 @@ class BuildQueue(SQLBase):
     @property
     def specific_old_job(self):
         """See `IBuildQueue`."""
-        if self.job is None:
+        if self._job is None:
             return None
-        specific_class = specific_job_classes()[self.job_type]
-        return specific_class.getByJob(self.job)
+        specific_class = specific_job_classes()[self._job_type]
+        return specific_class.getByJob(self._job)
 
     @staticmethod
     def preloadSpecificBuild(queues):
@@ -173,7 +173,7 @@ class BuildQueue(SQLBase):
 
     def destroySelf(self):
         """Remove this record."""
-        job = self.job
+        job = self._job
         specific_old_job = self.specific_old_job
         builder = self.builder
         Store.of(self).remove(self)
@@ -218,8 +218,6 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         if self.status != BuildQueueStatus.SUSPENDED:
             raise AssertionError("Only suspended jobs can be resumed.")
-        if self.job is not None:
-            self.job.resume()
         self.status = BuildQueueStatus.WAITING
 
     def reset(self):
