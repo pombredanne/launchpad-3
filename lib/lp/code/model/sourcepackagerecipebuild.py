@@ -430,24 +430,6 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOld, Storm):
         self.job = job
         super(SourcePackageRecipeBuildJob, self).__init__()
 
-    @staticmethod
-    def preloadBuildFarmJobs(jobs):
-        from lp.code.model.sourcepackagerecipebuild import (
-            SourcePackageRecipeBuild,
-            )
-        return list(IStore(SourcePackageRecipeBuildJob).find(
-            SourcePackageRecipeBuild,
-            [SourcePackageRecipeBuildJob.job_id.is_in([j.id for j in jobs]),
-             SourcePackageRecipeBuildJob.build_id ==
-                 SourcePackageRecipeBuild.id]))
-
-    @classmethod
-    def preloadJobsData(cls, jobs):
-        load_related(Job, jobs, ['job_id'])
-        builds = load_related(
-            SourcePackageRecipeBuild, jobs, ['build_id'])
-        SourcePackageRecipeBuild.preloadBuildsData(builds)
-
     @classmethod
     def new(cls, build, job):
         """See `ISourcePackageRecipeBuildJobSource`."""

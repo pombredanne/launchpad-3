@@ -19,7 +19,6 @@ from lp.code.model.branchjob import (
     BranchJobDerived,
     BranchJobType,
     )
-from lp.services.database.bulk import load_related
 from lp.services.database.interfaces import IStore
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuildSource,
@@ -90,23 +89,6 @@ class TranslationTemplatesBuildJob(BuildFarmJobOld, BranchJobDerived):
         branch_jobs = store.find(
             BranchJob, BranchJob.jobID.is_in(job_ids))
         return [cls(branch_job) for branch_job in branch_jobs]
-
-    @classmethod
-    def preloadJobsData(cls, jobs):
-        # Circular imports.
-        from lp.code.model.branch import Branch
-        from lp.registry.model.product import Product
-        from lp.code.model.branchcollection import GenericBranchCollection
-        from lp.services.job.model.job import Job
-        from lp.translations.model.translationtemplatesbuild import (
-            TranslationTemplatesBuild,
-            )
-        contexts = [job.context for job in jobs]
-        load_related(Job, contexts, ['jobID'])
-        branches = load_related(Branch, contexts, ['branchID'])
-        GenericBranchCollection.preloadDataForBranches(branches)
-        load_related(Product, branches, ['productID'])
-        load_related(TranslationTemplatesBuild, jobs, ['build_id'])
 
     @classmethod
     def getByBranch(cls, branch):

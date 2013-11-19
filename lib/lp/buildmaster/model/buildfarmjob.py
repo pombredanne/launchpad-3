@@ -52,13 +52,6 @@ class BuildFarmJobOld:
 
     implements(IBuildFarmJobOld)
 
-    @staticmethod
-    def preloadBuildFarmJobs(jobs):
-        """Preload the build farm jobs to which the given jobs will delegate.
-
-        """
-        pass
-
     @classmethod
     def getByJob(cls, job):
         """See `IBuildFarmJobOld`."""
