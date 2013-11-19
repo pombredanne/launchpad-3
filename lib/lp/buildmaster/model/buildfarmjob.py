@@ -135,10 +135,6 @@ class BuildFarmJobMixin:
             return None
         return self.date_finished - self.date_started
 
-    def makeJob(self):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
     @property
     def buildqueue_record(self):
         """See `IBuildFarmJob`."""
@@ -223,16 +219,11 @@ class BuildFarmJobMixin:
 
     def queueBuild(self, suspended=False):
         """See `IBuildFarmJob`."""
-        specific_job = self.makeJob()
-
         duration_estimate = self.estimateDuration()
-        job = specific_job.job
         queue_entry = BuildQueue(
             estimated_duration=duration_estimate,
             build_farm_job=self.build_farm_job,
-            job_type=self.job_type,
-            job=job, processor=self.processor,
-            virtualized=self.virtualized)
+            processor=self.processor, virtualized=self.virtualized)
 
         # This build queue job is to be created in a suspended state.
         if suspended:

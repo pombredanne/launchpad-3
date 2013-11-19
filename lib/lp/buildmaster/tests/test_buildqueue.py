@@ -89,7 +89,6 @@ class TestBuildCancellation(TestCaseWithFactory):
 
     def assertCancelled(self, build, bq):
         self.assertEqual(BuildStatus.CANCELLED, build.status)
-        self.assertIs(None, bq.specific_old_job)
         self.assertRaises(SQLObjectNotFound, BuildQueue.get, bq.id)
 
     def test_binarypackagebuild_cancel(self):
@@ -126,90 +125,6 @@ class TestBuildQueueDuration(TestCaseWithFactory):
         buildqueue.date_started = now - age
 
         self.assertEqual(age, buildqueue.current_build_duration)
-
-
-class TestJobClasses(TestCaseWithFactory):
-    """Tests covering build farm job type classes."""
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        """Set up a native x86 build for the test archive."""
-        super(TestJobClasses, self).setUp()
-
-        self.publisher = SoyuzTestPublisher()
-        self.publisher.prepareBreezyAutotest()
-
-        # First mark all builds in the sample data as already built.
-        sample_data = IStore(BinaryPackageBuild).find(BinaryPackageBuild)
-        for build in sample_data:
-            build.buildstate = BuildStatus.FULLYBUILT
-        IStore(BinaryPackageBuild).flush()
-
-        # We test builds that target a primary archive.
-        self.non_ppa = self.factory.makeArchive(
-            name="primary", purpose=ArchivePurpose.PRIMARY)
-        self.non_ppa.require_virtualized = False
-
-        self.builds = []
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.non_ppa).createMissingBuilds())
-
-    def test_BuildPackageJob(self):
-        """`BuildPackageJob` is one of the job type classes."""
-        from lp.soyuz.model.buildpackagejob import BuildPackageJob
-        _build, bq = find_job(self, 'gedit')
-
-        # This is a binary package build.
-        self.assertEqual(
-            BuildFarmJobType.PACKAGEBUILD, bq.job_type,
-            "This is a binary package build")
-
-        # The class registered for 'PACKAGEBUILD' is `BuildPackageJob`.
-        self.assertEqual(
-            BuildPackageJob,
-            specific_job_classes()[BuildFarmJobType.PACKAGEBUILD],
-            "The class registered for 'PACKAGEBUILD' is `BuildPackageJob`")
-
-        # The 'specific_job' object associated with this `BuildQueue`
-        # instance is of type `BuildPackageJob`.
-        self.assertTrue(bq.specific_old_job is not None)
-        self.assertEqual(
-            BuildPackageJob, bq.specific_old_job.__class__,
-            "The 'specific_old_job' object associated with this `BuildQueue` "
-            "instance is of type `BuildPackageJob`")
-
-    def test_OtherTypeClasses(self):
-        """Other job type classes are picked up as well."""
-
-        class FakeBranchBuild(BuildFarmJobMixin):
-            pass
-
-        _build, bq = find_job(self, 'gedit')
-        # First make sure that we don't have a job type class registered for
-        # 'BRANCHBUILD' yet.
-        self.assertTrue(
-            specific_job_classes().get(BuildFarmJobType.BRANCHBUILD) is None)
-
-        try:
-            # Pretend that our `FakeBranchBuild` class implements the
-            # `IBuildFarmJob` interface.
-            component.provideUtility(
-                FakeBranchBuild, IBuildFarmJob, 'BRANCHBUILD')
-
-            # Now we should see the `FakeBranchBuild` class "registered"
-            # in the `specific_job_classes` dictionary under the
-            # 'BRANCHBUILD' key.
-            self.assertEqual(
-                specific_job_classes()[BuildFarmJobType.BRANCHBUILD],
-                FakeBranchBuild)
-        finally:
-            # Just de-register the utility so we don't affect other
-            # tests.
-            site_manager = getGlobalSiteManager()
-            site_manager.unregisterUtility(
-                FakeBranchBuild, IBuildFarmJob, 'BRANCHBUILD')
 
 
 class TestPlatformData(TestCaseWithFactory):
