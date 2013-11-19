@@ -38,6 +38,7 @@ from storm.store import (
 from storm.zope import IResultSet
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.browser.tales import DurationFormatterAPI
 from lp.app.errors import NotFoundError
@@ -210,12 +211,8 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     @property
     def buildqueue_record(self):
         """See `IBuild`."""
-        store = Store.of(self)
-        results = store.find(
-            BuildQueue,
-            BuildPackageJob.job == BuildQueue.jobID,
-            BuildPackageJob.build == self.id)
-        return results.one()
+        return Store.of(self).find(
+            BuildQueue, _build_farm_job_id=self.build_farm_job_id).one()
 
     def _getLatestPublication(self):
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
@@ -1119,10 +1116,10 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             BuildStatus.UPLOADING]:
             order_by = [Desc(BuildQueue.lastscore), BinaryPackageBuild.id]
             order_by_table = BuildQueue
-            clauseTables.extend([BuildQueue, BuildPackageJob])
-            condition_clauses.extend([
-                BuildPackageJob.build_id == BinaryPackageBuild.id,
-                BuildPackageJob.job_id == BuildQueue.jobID])
+            clauseTables.append(BuildQueue)
+            condition_clauses.append(
+                BuildQueue._build_farm_job_id ==
+                    BinaryPackageBuild.build_farm_job_id)
         elif status == BuildStatus.SUPERSEDED or status is None:
             order_by = [Desc(BinaryPackageBuild.id)]
         else:
@@ -1270,26 +1267,24 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
 
     def getByQueueEntry(self, queue_entry):
         """See `IBinaryPackageBuildSet`."""
+        bfj_id = removeSecurityProxy(queue_entry)._build_farm_job_id
         return IStore(BinaryPackageBuild).find(
-            BinaryPackageBuild,
-            BuildPackageJob.build == BinaryPackageBuild.id,
-            BuildPackageJob.job == BuildQueue.jobID,
-            BuildQueue.job == queue_entry.job).one()
+            BinaryPackageBuild, build_farm_job_id=bfj_id).one()
 
     def getQueueEntriesForBuildIDs(self, build_ids):
         """See `IBinaryPackageBuildSet`."""
         origin = (
-            BuildPackageJob,
-            Join(BuildQueue, BuildPackageJob.job == BuildQueue.jobID),
+            BuildQueue,
             Join(
                 BinaryPackageBuild,
-                BuildPackageJob.build == BinaryPackageBuild.id),
+                BuildQueue._build_farm_job_id ==
+                    BinaryPackageBuild.build_farm_job_id),
             LeftJoin(
                 Builder,
                 BuildQueue.builderID == Builder.id),
             )
         return IStore(BinaryPackageBuild).using(*origin).find(
-            (BuildQueue, Builder, BuildPackageJob),
+            (BuildQueue, Builder),
             BinaryPackageBuild.id.is_in(build_ids))
 
     @staticmethod
@@ -1301,11 +1296,9 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             PackagePublishingStatus.DELETED,
             )
         return """
-            SELECT TRUE FROM Archive, BinaryPackageBuild, BuildPackageJob,
-                             DistroArchSeries
+            SELECT TRUE FROM Archive, BinaryPackageBuild, DistroArchSeries
             WHERE
-            BuildPackageJob.job = Job.id AND
-            BuildPackageJob.build = BinaryPackageBuild.id AND
+            BinaryPackageBuild.build_farm_job = BuildQueue.build_farm_job AND
             BinaryPackageBuild.distro_arch_series =
                 DistroArchSeries.id AND
             BinaryPackageBuild.archive = Archive.id AND

@@ -346,7 +346,10 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         job = build_job.job
         self.assertProvides(job, IJob)
         self.assertEquals(job.status, JobStatus.WAITING)
-        build_queue = store.find(BuildQueue, BuildQueue.job == job.id).one()
+        build_queue = store.find(
+            BuildQueue,
+            BuildQueue._build_farm_job_id ==
+                removeSecurityProxy(build).build_farm_job_id).one()
         self.assertProvides(build_queue, IBuildQueue)
         self.assertTrue(build_queue.virtualized)
 
