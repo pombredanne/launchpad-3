@@ -1661,7 +1661,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         self.assertEqual(
             queue_entry.getEstimatedJobStartTime() +
             queue_entry.estimated_duration, view.eta)
-        queue_entry.job.start()
+        queue_entry.markAsBuilding(None)
         clear_property_cache(view)
         self.assertEqual(
             queue_entry.date_started + queue_entry.estimated_duration,
