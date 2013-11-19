@@ -208,12 +208,6 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     source_package_name = Reference(
         source_package_name_id, 'SourcePackageName.id')
 
-    @property
-    def buildqueue_record(self):
-        """See `IBuild`."""
-        return Store.of(self).find(
-            BuildQueue, _build_farm_job_id=self.build_farm_job_id).one()
-
     def _getLatestPublication(self):
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
         store = Store.of(self)

@@ -45,7 +45,6 @@ from lp.buildmaster.model.buildfarmjob import (
     BuildFarmJobOld,
     SpecificBuildFarmJobSourceMixin,
     )
-from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import PackageBuildMixin
 from lp.code.errors import (
     BuildAlreadyPending,
@@ -178,12 +177,6 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
         if self.manifest is None:
             return None
         return str(self.manifest.getRecipe())
-
-    @property
-    def buildqueue_record(self):
-        """See `IBuildFarmJob`."""
-        return Store.of(self).find(
-            BuildQueue, _build_farm_job_id=self.build_farm_job_id).one()
 
     @property
     def source_package_release(self):
