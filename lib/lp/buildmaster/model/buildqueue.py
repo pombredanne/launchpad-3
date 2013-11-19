@@ -55,7 +55,6 @@ from lp.services.database.constants import (
     )
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.sqlbase import SQLBase
-from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -103,11 +102,10 @@ class BuildQueue(SQLBase):
     _table = "BuildQueue"
     _defaultOrder = "id"
 
-    def __init__(self, build_farm_job, job, job_type=DEFAULT,
-                 estimated_duration=DEFAULT, virtualized=DEFAULT,
-                 processor=DEFAULT, lastscore=None):
-        super(BuildQueue, self).__init__(_build_farm_job=build_farm_job,
-            job_type=job_type, job=job, virtualized=virtualized,
+    def __init__(self, build_farm_job, estimated_duration=DEFAULT,
+                 virtualized=DEFAULT, processor=DEFAULT, lastscore=None):
+        super(BuildQueue, self).__init__(
+            _build_farm_job=build_farm_job, virtualized=virtualized,
             processor=processor, estimated_duration=estimated_duration,
             lastscore=lastscore)
         if lastscore is None and self.specific_build is not None:
@@ -140,16 +138,13 @@ class BuildQueue(SQLBase):
     def _clear_specific_build_cache(self):
         del get_property_cache(self).specific_build
 
-    @cachedproperty
+    @property
     def specific_old_job(self):
         """See `IBuildQueue`."""
         if self.job is None:
             return None
         specific_class = specific_job_classes()[self.job_type]
         return specific_class.getByJob(self.job)
-
-    def _clear_specific_old_job_cache(self):
-        del get_property_cache(self).specific_old_job
 
     @staticmethod
     def preloadSpecificBuild(queues):
@@ -177,7 +172,7 @@ class BuildQueue(SQLBase):
             return self._now() - date_started
 
     def destroySelf(self):
-        """Remove this record and associated job/specific_old_job."""
+        """Remove this record."""
         job = self.job
         specific_old_job = self.specific_old_job
         builder = self.builder
@@ -189,7 +184,6 @@ class BuildQueue(SQLBase):
             job.destroySelf()
         if builder is not None:
             del get_property_cache(builder).currentjob
-        self._clear_specific_old_job_cache()
         self._clear_specific_build_cache()
 
     def manualScore(self, value):
@@ -208,8 +202,6 @@ class BuildQueue(SQLBase):
     def markAsBuilding(self, builder):
         """See `IBuildQueue`."""
         self.builder = builder
-        if self.job is not None and self.job.status != JobStatus.RUNNING:
-            self.job.start()
         self.status = BuildQueueStatus.RUNNING
         self.date_started = UTC_NOW
         self.specific_build.updateStatus(BuildStatus.BUILDING)
@@ -220,8 +212,6 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         if self.status != BuildQueueStatus.WAITING:
             raise AssertionError("Only waiting jobs can be suspended.")
-        if self.job is not None:
-            self.job.suspend()
         self.status = BuildQueueStatus.SUSPENDED
 
     def resume(self):
@@ -236,13 +226,8 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         builder = self.builder
         self.builder = None
-        if self.job is not None and self.job.status != JobStatus.WAITING:
-            self.job.queue()
         self.status = BuildQueueStatus.WAITING
         self.date_started = None
-        if self.job is not None:
-            self.job.date_started = None
-            self.job.date_finished = None
         self.logtail = None
         self.specific_build.updateStatus(BuildStatus.NEEDSBUILD)
         if builder is not None:
