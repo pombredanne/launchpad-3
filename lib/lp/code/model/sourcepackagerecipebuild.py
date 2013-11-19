@@ -279,24 +279,15 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
                     builds.append(build)
         return builds
 
-    def _unqueueBuild(self):
-        """Remove the build's queue and job."""
-        store = Store.of(self)
-        if self.buildqueue_record is not None:
-            job = self.buildqueue_record.job
-            store.remove(self.buildqueue_record)
-            store.find(
-                SourcePackageRecipeBuildJob,
-                SourcePackageRecipeBuildJob.build == self.id).remove()
-            store.remove(job)
-
     def cancelBuild(self):
         """See `ISourcePackageRecipeBuild.`"""
-        self._unqueueBuild()
         self.updateStatus(BuildStatus.SUPERSEDED)
+        if self.buildqueue_record is not None:
+            self.buildqueue_record.destroySelf()
 
     def destroySelf(self):
-        self._unqueueBuild()
+        if self.buildqueue_record is not None:
+            self.buildqueue_record.destroySelf()
         store = Store.of(self)
         releases = store.find(
             SourcePackageRelease,
