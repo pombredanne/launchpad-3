@@ -227,6 +227,14 @@ class BuildQueue(SQLBase):
         self.job.suspend()
         self.status = BuildQueueStatus.SUSPENDED
 
+    def resume(self):
+        """See `IBuildQueue`."""
+        if self.status != BuildQueueStatus.SUSPENDED:
+            raise AssertionError("Only suspended jobs can be resumed.")
+        if self.job is not None:
+            self.job.resume()
+        self.status = BuildQueueStatus.WAITING
+
     def reset(self):
         """See `IBuildQueue`."""
         builder = self.builder
