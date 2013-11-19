@@ -102,7 +102,10 @@ class IBuildQueue(Interface):
         """Set this queue item to a 'building' state."""
 
     def suspend():
-        """Suspend this job, removing it from the active queue."""
+        """Suspend this waiting job, removing it from the active queue."""
+
+    def resume():
+        """Resume this suspended job, adding it to the active queue."""
 
     def reset():
         """Reset this job, so it can be re-dispatched."""
