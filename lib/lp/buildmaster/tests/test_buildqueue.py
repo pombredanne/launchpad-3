@@ -5,26 +5,22 @@
 from datetime import timedelta
 
 from storm.sqlobject import SQLObjectNotFound
-from zope import component
-from zope.component import getGlobalSiteManager
+from storm.store import Store
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
-from lp.buildmaster.model.buildfarmjob import BuildFarmJobMixin
-from lp.buildmaster.model.buildqueue import (
-    BuildQueue,
-    specific_job_classes,
-    )
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.services.database.interfaces import IStore
+from lp.services.job.model.job import Job
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
@@ -76,6 +72,49 @@ def print_build_setup(builds):
             queue_entry.id, source.name, processor_name(queue_entry),
             queue_entry.virtualized, queue_entry.estimated_duration,
             queue_entry.lastscore)
+
+
+class TestBuildQueueOldJobDestruction(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_destroy_without_job(self):
+        # Newly created BuildQueues won't have an associated Job.
+        build = self.factory.makeBinaryPackageBuild()
+        bq = build.queueBuild()
+        self.assertIs(None, bq.job)
+        self.assertIs(
+            None, Store.of(build).find(BuildPackageJob, build=build).one())
+        bq.destroySelf()
+        self.assertIs(None, Store.of(build).find(BuildQueue, id=bq.id).one())
+
+    def test_destroy_with_job(self):
+        # Old BuildQueues will have a Job and an IBuildFarmJobOld during
+        # the migration. They're all destroyed.
+        build = self.factory.makeBinaryPackageBuild()
+        bq = removeSecurityProxy(build.queueBuild())
+        bfjo = removeSecurityProxy(build).makeJob()
+        job = bfjo.job
+        bq.job = job
+        bq.job_type = BuildFarmJobType.PACKAGEBUILD
+        self.assertIsNot(None, bq.specific_old_job)
+        self.assertIsNot(None, bq.job)
+        bq.destroySelf()
+        self.assertIs(None, Store.of(build).find(BuildQueue, id=bq.id).one())
+        self.assertIs(None, Store.of(build).find(Job, id=job.id).one())
+        self.assertIs(
+            None, Store.of(build).find(BuildPackageJob, id=bfjo.id).one())
+
+    def test_destroy_with_dangling_job(self):
+        # Old BuildQueues may even have a dangling Job FK between data
+        # cleaning and schema dropping. We ignore it and just kill the
+        # remaining BuildQueue.
+        build = self.factory.makeBinaryPackageBuild()
+        bq = removeSecurityProxy(build.queueBuild())
+        bq.jobID = 123456
+        bq.job_type = BuildFarmJobType.PACKAGEBUILD
+        bq.destroySelf()
+        self.assertIs(None, Store.of(build).find(BuildQueue, id=bq.id).one())
 
 
 class TestBuildCancellation(TestCaseWithFactory):
