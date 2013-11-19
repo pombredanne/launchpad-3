@@ -14,10 +14,8 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
-from lp.code.model.branchjob import BranchJob
 from lp.code.model.directbranchcommit import DirectBranchCommit
 from lp.codehosting.scanner import events
-from lp.services.database.interfaces import IStore
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
@@ -30,9 +28,6 @@ from lp.translations.interfaces.translationtemplatesbuild import (
     )
 from lp.translations.model.translationtemplatesbuild import (
     TranslationTemplatesBuild,
-    )
-from lp.translations.model.translationtemplatesbuildjob import (
-    TranslationTemplatesBuildJob,
     )
 
 
@@ -123,22 +118,12 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
     def test_queueBuild(self):
         build = self.factory.makeTranslationTemplatesBuild()
         bq = build.queueBuild()
-        self.assertEqual(build, bq.specific_old_job.build)
         self.assertEqual(build, bq.specific_build)
         self.assertEqual(
             build.build_farm_job, removeSecurityProxy(bq)._build_farm_job)
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.assertEquals(
             ubuntu.currentseries.nominatedarchindep.processor, bq.processor)
-
-        # A job is created with the branch URL in its metadata.
-        metadata = removeSecurityProxy(bq.specific_old_job).metadata
-        self.assertIn('branch_url', metadata)
-        url = metadata['branch_url']
-        head = 'http://'
-        self.assertEqual(head, url[:len(head)])
-        tail = build.branch.name
-        self.assertEqual(tail, url[-len(tail):])
 
     def test_score(self):
         # For now, these jobs always score themselves at 2510.  In the
@@ -195,22 +180,17 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         commit.writeFile('POTFILES.in', 'foo')
         commit.commit('message')
         notify(events.TipChanged(branch, None, False))
-        branchjobs = list(TranslationTemplatesBuildJob.iterReady())
-        self.assertEqual(1, len(branchjobs))
-        self.assertEqual(branch, branchjobs[0].branch)
+        self.assertEqual(
+            1, TranslationTemplatesBuild.findByBranch(branch).count())
 
     def test_scheduleTranslationTemplatesBuild(self):
         # If the feature is enabled, scheduleTranslationTemplatesBuild
         # will schedule a templates build whenever a change is pushed to
         # a branch that generates templates.
         branch = self._makeTranslationBranch(fake_pottery_compatible=True)
-
         self.jobsource.scheduleTranslationTemplatesBuild(branch)
-
-        store = IStore(BranchJob)
-        branchjobs = list(store.find(BranchJob, BranchJob.branch == branch))
-        self.assertEqual(1, len(branchjobs))
-        self.assertEqual(branch, branchjobs[0].branch)
+        self.assertEqual(
+            1, TranslationTemplatesBuild.findByBranch(branch).count())
 
     def test_findByBranch(self):
         source = getUtility(ITranslationTemplatesBuildSource)

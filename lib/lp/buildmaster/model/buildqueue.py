@@ -149,11 +149,10 @@ class BuildQueue(SQLBase):
     @staticmethod
     def preloadSpecificBuild(queues):
         from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+        queues = [removeSecurityProxy(bq) for bq in queues]
         load_related(BuildFarmJob, queues, ['_build_farm_job_id'])
-        bfj_to_bq = dict(
-            (removeSecurityProxy(bq)._build_farm_job, bq)
-            for bq in queues)
-        key = attrgetter('job_type')
+        bfj_to_bq = dict((bq._build_farm_job, bq) for bq in queues)
+        key = attrgetter('_build_farm_job.job_type')
         for job_type, grouped_queues in groupby(queues, key=key):
             source = getUtility(ISpecificBuildFarmJobSource, job_type.name)
             builds = source.getByBuildFarmJobs(
