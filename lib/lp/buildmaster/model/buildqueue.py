@@ -152,7 +152,7 @@ class BuildQueue(SQLBase):
         del get_property_cache(self).specific_old_job
 
     @staticmethod
-    def preloadSpecificJobData(queues):
+    def preloadSpecificBuild(queues):
         from lp.buildmaster.model.buildfarmjob import BuildFarmJob
         load_related(BuildFarmJob, queues, ['_build_farm_job_id'])
         bfj_to_bq = dict(

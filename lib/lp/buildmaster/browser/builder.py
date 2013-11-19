@@ -160,7 +160,7 @@ class BuilderSetView(LaunchpadView):
             cache = get_property_cache(builder)
             cache.currentjob = queue_builders.get(builder.id, None)
         # Prefetch the jobs' data.
-        BuildQueue.preloadSpecificJobData(queues)
+        BuildQueue.preloadSpecificBuild(queues)
 
         return builders
 
