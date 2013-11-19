@@ -208,7 +208,7 @@ all the 'private' information is exposed.
     >>> import datetime
     >>> import pytz
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(private_job.job).date_started = (
+    >>> removeSecurityProxy(private_job).date_started = (
     ...     datetime.datetime.now(pytz.UTC) - datetime.timedelta(10))
     >>> print admin_view.current_build_duration
     10 days...

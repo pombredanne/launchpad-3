@@ -323,7 +323,7 @@ class BuildView(LaunchpadView):
         """
         return (
             self.context.status == BuildStatus.NEEDSBUILD and
-            self.context.job.status == BuildQueueStatus.WAITING)
+            self.context.buildqueue_record.status == BuildQueueStatus.WAITING)
 
     @cachedproperty
     def eta(self):
@@ -481,7 +481,8 @@ def setupCompleteBuilds(batch):
     results = getUtility(IBinaryPackageBuildSet).getQueueEntriesForBuildIDs(
         build_ids)
     for (buildqueue, _builder) in results:
-        prefetched_data[buildqueue.build_farm_job_id] = buildqueue
+        prefetched_data[
+            removeSecurityProxy(buildqueue)._build_farm_job_id] = buildqueue
 
     complete_builds = []
     for build in builds:

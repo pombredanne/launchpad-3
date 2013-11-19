@@ -164,7 +164,7 @@ class BuildQueue(SQLBase):
             builds = source.getByBuildFarmJobs(
                 [bq._build_farm_job for bq in grouped_queues])
             for build in builds:
-                bq = bfj_to_bq[build.build_farm_job]
+                bq = bfj_to_bq[removeSecurityProxy(build).build_farm_job]
                 get_property_cache(bq).specific_build = build
 
     @property
