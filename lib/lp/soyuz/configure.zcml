@@ -606,8 +606,6 @@
             <allow
                 interface="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesPublic"/>
             <allow
-                interface="lp.soyuz.interfaces.buildrecords.IHasBuildRecords"/>
-            <allow
                 interface="lp.soyuz.interfaces.publishing.ICanPublishPackages"/>
             <require
                 permission="launchpad.Admin"
