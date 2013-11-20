@@ -6,6 +6,7 @@ __all__ = [
     'BuildFarmJob',
     'BuildFarmJobMixin',
     'BuildFarmJobOld',
+    'SpecificBuildFarmJobSourceMixin',
     ]
 
 import datetime
@@ -38,6 +39,7 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJobSet,
     IBuildFarmJobSource,
     )
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.interfaces import (
     IMasterStore,
@@ -49,9 +51,6 @@ class BuildFarmJobOld:
     """Some common implementation for IBuildFarmJobOld."""
 
     implements(IBuildFarmJobOld)
-
-    processor = None
-    virtualized = None
 
     @staticmethod
     def preloadBuildFarmJobs(jobs):
@@ -71,10 +70,6 @@ class BuildFarmJobOld:
         job_ids = [job.id for job in jobs]
         return IStore(cls).find(cls, cls.job_id.is_in(job_ids))
 
-    def score(self):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
     def cleanUp(self):
         """See `IBuildFarmJob`.
 
@@ -82,29 +77,6 @@ class BuildFarmJobOld:
         after themselves correctly.
         """
         Store.of(self).remove(self)
-
-    @staticmethod
-    def addCandidateSelectionCriteria(processor, virtualized):
-        """See `IBuildFarmJobOld`."""
-        return ('')
-
-    @staticmethod
-    def postprocessCandidate(job, logger):
-        """See `IBuildFarmJobOld`."""
-        return True
-
-    def jobStarted(self):
-        """See `IBuildFarmJobOld`."""
-        # XXX wgrant: builder should be set here.
-        self.build.updateStatus(BuildStatus.BUILDING)
-
-    def jobReset(self):
-        """See `IBuildFarmJob`."""
-        self.build.updateStatus(BuildStatus.NEEDSBUILD)
-
-    def jobCancel(self):
-        """See `IBuildFarmJob`."""
-        self.build.updateStatus(BuildStatus.CANCELLED)
 
 
 class BuildFarmJob(Storm):
@@ -247,6 +219,45 @@ class BuildFarmJobMixin:
     def gotFailure(self):
         """See `IBuildFarmJob`."""
         self.failure_count += 1
+
+    def calculateScore(self):
+        """See `IBuildFarmJob`."""
+        raise NotImplementedError
+
+    def estimateDuration(self):
+        """See `IBuildFarmJob`."""
+        raise NotImplementedError
+
+    def queueBuild(self, suspended=False):
+        """See `IBuildFarmJob`."""
+        specific_job = self.makeJob()
+
+        # This build queue job is to be created in a suspended state.
+        if suspended:
+            specific_job.job.suspend()
+
+        duration_estimate = self.estimateDuration()
+        job = specific_job.job
+        queue_entry = BuildQueue(
+            estimated_duration=duration_estimate,
+            job_type=self.job_type,
+            job=job, processor=self.processor,
+            virtualized=self.virtualized)
+        Store.of(self).add(queue_entry)
+        return queue_entry
+
+
+class SpecificBuildFarmJobSourceMixin:
+
+    @staticmethod
+    def addCandidateSelectionCriteria(processor, virtualized):
+        """See `ISpecificBuildFarmJobSource`."""
+        return ('')
+
+    @staticmethod
+    def postprocessCandidate(job, logger):
+        """See `ISpecificBuildFarmJobSource`."""
+        return True
 
 
 class BuildFarmJobSet:

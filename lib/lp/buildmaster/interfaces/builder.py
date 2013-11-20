@@ -161,6 +161,10 @@ class IBuilder(IHasBuildRecords, IHasOwner):
         title=_('Failure Count'), required=False, default=0,
        description=_("Number of consecutive failures for this builder.")))
 
+    version = exported(Text(
+        title=_('Version'), required=False,
+        description=_('The version of launchpad-buildd on the slave.')))
+
     def gotFailure():
         """Increment failure_count on the builder."""
 

@@ -1,8 +1,17 @@
-= Builder page =
+Builder page
+============
 
 An anonymous user visits the +builds page. He can see a summary of the
 builder state. In the sampledata, the builder 'bob' is building
 'mozilla-firefox'.
+
+    >>> from zope.component import getUtility
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
+
+    >>> login('foo.bar@canonical.com')
+    >>> bob_builder = getUtility(IBuilderSet)['bob']
+    >>> bob_builder.version = "100"
+    >>> logout()
 
     >>> anon_browser.mech_browser.set_handle_equiv(False)
     >>> anon_browser.open("http://launchpad.dev/builders")
@@ -51,13 +60,15 @@ location.
     Owner: Launchpad Buildd Admins
     Mode: This builder is in auto-mode and accepting jobs from the
     auto-build system.
+    Version: 100
 
 The builder status is now displayed as normal text and not as as a
 notification alert.
 
     >>> print_feedback_messages(anon_browser.contents)
 
-== Builder Actions ==
+Builder Actions
+---------------
 
 All builder actions require authorization, some launchpad.Edit, some
 launchpad.Admin, both are only granted to members of
@@ -144,6 +155,7 @@ automatic (AUTO) mode.
     Owner: Launchpad Buildd Admins
     Mode: This builder is in auto-mode and accepting jobs from the
     auto-build system. Switch to manual-mode
+    Version: 100
 
 He clicks on the Toggle mode button to put the builder into manual mode.
 
@@ -158,6 +170,7 @@ He can see now, in the details portlet that the builder is in manual-mode.
     ...
     Mode: This builder is in manual-mode and not accepting jobs from the
     auto-build system. Switch to auto-mode
+    ...
 
 And a relevant notification is displayed after the mode toggle.
 
@@ -184,7 +197,8 @@ notification.
     The builder &quot;Bob The Builder&quot; was updated successfully.
 
 
-== Marking a builder as inactive ==
+Marking a builder as inactive
+-----------------------------
 
 The builder administrators can hide a builder from the public list
 when they judge it convenient, for instance, when the builder present
@@ -237,7 +251,8 @@ But Celso can access the deactivated builder via its URL.
     Bob The Builder : Build Farm
 
 
-== Actions permissions ==
+Actions permissions
+-------------------
 
 Normal users, such as No Privileges Person are not shown the
 Change details link.

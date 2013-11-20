@@ -5,6 +5,11 @@ __metaclass__ = type
 __all__ = [
     'BinaryPackageBuild',
     'BinaryPackageBuildSet',
+    'COPY_ARCHIVE_SCORE_PENALTY',
+    'PRIVATE_ARCHIVE_SCORE_BONUS',
+    'SCORE_BY_COMPONENT',
+    'SCORE_BY_POCKET',
+    'SCORE_BY_URGENCY',
     ]
 
 import datetime
@@ -44,12 +49,17 @@ from lp.buildmaster.enums import (
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.model.builder import Builder
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.model.buildfarmjob import (
+    BuildFarmJob,
+    SpecificBuildFarmJobSourceMixin,
+    )
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import PackageBuildMixin
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.config import config
 from lp.services.database.bulk import load_related
@@ -75,7 +85,10 @@ from lp.services.mail.sendmail import (
     simple_sendmail,
     )
 from lp.services.webapp import canonical_url
-from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     CannotBeRescored,
@@ -84,14 +97,52 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     UnparsableDependencies,
     )
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.files import BinaryPackageFile
+from lp.soyuz.model.packageset import Packageset
 from lp.soyuz.model.queue import (
     PackageUpload,
     PackageUploadBuild,
     )
+
+
+SCORE_BY_POCKET = {
+    PackagePublishingPocket.BACKPORTS: 0,
+    PackagePublishingPocket.RELEASE: 1500,
+    PackagePublishingPocket.PROPOSED: 3000,
+    PackagePublishingPocket.UPDATES: 3000,
+    PackagePublishingPocket.SECURITY: 4500,
+}
+
+
+SCORE_BY_COMPONENT = {
+    'multiverse': 0,
+    'universe': 250,
+    'restricted': 750,
+    'main': 1000,
+    'partner': 1250,
+}
+
+
+SCORE_BY_URGENCY = {
+    SourcePackageUrgency.LOW: 5,
+    SourcePackageUrgency.MEDIUM: 10,
+    SourcePackageUrgency.HIGH: 15,
+    SourcePackageUrgency.EMERGENCY: 20,
+}
+
+
+PRIVATE_ARCHIVE_SCORE_BONUS = 10000
+
+
+# Rebuilds have usually a lower priority than other builds.
+# This will be subtracted from the final score, usually taking it
+# below 0, ensuring they are built only when nothing else is waiting
+# in the build farm.
+COPY_ARCHIVE_SCORE_PENALTY = 2600
 
 
 class BinaryPackageBuild(PackageBuildMixin, SQLBase):
@@ -301,6 +352,42 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         return DistributionSourcePackageRelease(
             distribution=self.distribution,
             sourcepackagerelease=self.source_package_release)
+
+    def calculateScore(self):
+        """See `IBuildFarmJob`."""
+        score = 0
+
+        # Private builds get uber score.
+        if self.archive.private:
+            score += PRIVATE_ARCHIVE_SCORE_BONUS
+
+        if self.archive.is_copy:
+            score -= COPY_ARCHIVE_SCORE_PENALTY
+
+        score += self.archive.relative_build_score
+
+        # Language packs don't get any of the usual package-specific
+        # score bumps, as they unduly delay the building of packages in
+        # the main component otherwise.
+        if self.source_package_release.section.name == 'translations':
+            return score
+
+        # Calculates the urgency-related part of the score.
+        score += SCORE_BY_URGENCY[self.source_package_release.urgency]
+
+        # Calculates the pocket-related part of the score.
+        score += SCORE_BY_POCKET[self.pocket]
+
+        # Calculates the component-related part of the score.
+        score += SCORE_BY_COMPONENT.get(self.current_component.name, 0)
+
+        # Calculates the package-set-related part of the score.
+        package_sets = getUtility(IPackagesetSet).setsIncludingSource(
+            self.source_package_release.name, distroseries=self.distro_series)
+        if not self.archive.is_ppa and not package_sets.is_empty():
+            score += package_sets.max(Packageset.relative_build_score)
+
+        return score
 
     def getBinaryPackageNamesForDisplay(self):
         """See `IBuildView`."""
@@ -825,7 +912,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         return changes.signer
 
 
-class BinaryPackageBuildSet:
+class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
     implements(IBinaryPackageBuildSet)
 
     def new(self, distro_arch_series, source_package_release, processor,
@@ -1204,3 +1291,75 @@ class BinaryPackageBuildSet:
         return IStore(BinaryPackageBuild).using(*origin).find(
             (BuildQueue, Builder, BuildPackageJob),
             BinaryPackageBuild.id.is_in(build_ids))
+
+    @staticmethod
+    def addCandidateSelectionCriteria(processor, virtualized):
+        """See `ISpecificBuildFarmJobSource`."""
+        private_statuses = (
+            PackagePublishingStatus.PUBLISHED,
+            PackagePublishingStatus.SUPERSEDED,
+            PackagePublishingStatus.DELETED,
+            )
+        return """
+            SELECT TRUE FROM Archive, BinaryPackageBuild, BuildPackageJob,
+                             DistroArchSeries
+            WHERE
+            BuildPackageJob.job = Job.id AND
+            BuildPackageJob.build = BinaryPackageBuild.id AND
+            BinaryPackageBuild.distro_arch_series =
+                DistroArchSeries.id AND
+            BinaryPackageBuild.archive = Archive.id AND
+            ((Archive.private IS TRUE AND
+              EXISTS (
+                  SELECT SourcePackagePublishingHistory.id
+                  FROM SourcePackagePublishingHistory
+                  WHERE
+                      SourcePackagePublishingHistory.distroseries =
+                         DistroArchSeries.distroseries AND
+                      SourcePackagePublishingHistory.sourcepackagerelease =
+                         BinaryPackageBuild.source_package_release AND
+                      SourcePackagePublishingHistory.archive = Archive.id AND
+                      SourcePackagePublishingHistory.status IN %s))
+              OR
+              archive.private IS FALSE) AND
+            BinaryPackageBuild.status = %s
+        """ % sqlvalues(private_statuses, BuildStatus.NEEDSBUILD)
+
+    @staticmethod
+    def postprocessCandidate(job, logger):
+        """See `ISpecificBuildFarmJobSource`."""
+        # Mark build records targeted to old source versions as SUPERSEDED
+        # and build records target to SECURITY pocket or against an OBSOLETE
+        # distroseries without a flag as FAILEDTOBUILD.
+        # Builds in those situation should not be built because they will
+        # be wasting build-time.  In the former case, there is already a
+        # newer source; the latter case needs an overhaul of the way
+        # security builds are handled (by copying from a PPA) to avoid
+        # creating duplicate builds.
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
+        distroseries = build.distro_arch_series.distroseries
+        if (
+            build.pocket == PackagePublishingPocket.SECURITY or
+            (distroseries.status == SeriesStatus.OBSOLETE and
+                not build.archive.permit_obsolete_series_uploads)):
+            # We never build anything in the security pocket, or for obsolete
+            # series without the flag set.
+            logger.debug(
+                "Build %s FAILEDTOBUILD, queue item %s REMOVED"
+                % (build.id, job.id))
+            build.updateStatus(BuildStatus.FAILEDTOBUILD)
+            job.destroySelf()
+            return False
+
+        publication = build.current_source_publication
+        if publication is None:
+            # The build should be superseded if it no longer has a
+            # current publishing record.
+            logger.debug(
+                "Build %s SUPERSEDED, queue item %s REMOVED"
+                % (build.id, job.id))
+            build.updateStatus(BuildStatus.SUPERSEDED)
+            job.destroySelf()
+            return False
+
+        return True

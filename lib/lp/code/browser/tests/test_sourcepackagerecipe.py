@@ -1211,7 +1211,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa,
             date_created=date_created)
-        self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
+        build.queueBuild()
         return build
 
     def test_index_pending(self):
@@ -1614,10 +1614,14 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             owner=self.user, name=u'my-recipe')
         distro_series = self.factory.makeDistroSeries(
             name='squirrel', distribution=archive.distribution)
+        removeSecurityProxy(distro_series).nominatedarchindep = (
+            self.factory.makeDistroArchSeries(
+                distroseries=distro_series,
+                processor=getUtility(IProcessorSet).getByName('386')))
         build = self.factory.makeSourcePackageRecipeBuild(
             requester=self.user, archive=archive, recipe=recipe,
             distroseries=distro_series)
-        self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
+        build.queueBuild()
         self.factory.makeBuilder()
         return build
 
@@ -1648,10 +1652,10 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         build = self.factory.makeSourcePackageRecipeBuild()
         view = SourcePackageRecipeBuildView(build, None)
         self.assertIs(None, view.eta)
-        queue_entry = self.factory.makeSourcePackageRecipeBuildJob(
-            recipe_build=build)
+        queue_entry = removeSecurityProxy(build.queueBuild())
         queue_entry._now = lambda: datetime(1970, 1, 1, 0, 0, 0, 0, UTC)
-        self.factory.makeBuilder()
+        self.factory.makeBuilder(
+            processor=queue_entry.processor, virtualized=True)
         clear_property_cache(view)
         self.assertIsNot(None, view.eta)
         self.assertEqual(
@@ -1677,7 +1681,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             created .*
             Build status
             Needs building
-            Start in .* \\(9876\\) What's this?.*
+            Start in .* \\(2505\\) What's this?.*
             Estimated finish in .*
             Build details
             Recipe:        Recipe my-recipe for Owner
