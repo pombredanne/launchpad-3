@@ -269,7 +269,7 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
         self.assertEquals(3, builds)
         builds = self.context.getBuildRecords(
             pocket=PackagePublishingPocket.RELEASE).count()
-        self.assertEquals(3, builds)
+        self.assertEquals(2, builds)
         builds = self.context.getBuildRecords(
             pocket=PackagePublishingPocket.UPDATES).count()
         self.assertEquals(0, builds)
