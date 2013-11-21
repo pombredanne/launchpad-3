@@ -2300,8 +2300,6 @@ ALTER TABLE answercontact ENABLE TRIGGER ALL;
 
 ALTER TABLE job DISABLE TRIGGER ALL;
 
-INSERT INTO job (id, requester, reason, status, progress, last_report_seen, next_report_due, attempt_count, max_retries, log, scheduled_start, lease_expires, date_created, date_started, date_finished, json_data, job_type) VALUES (1, NULL, NULL, 1, NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, '2005-06-15 09:14:12.820778', '2005-06-15 09:20:12.820778', NULL, NULL, NULL);
-INSERT INTO job (id, requester, reason, status, progress, last_report_seen, next_report_due, attempt_count, max_retries, log, scheduled_start, lease_expires, date_created, date_started, date_finished, json_data, job_type) VALUES (2, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, '2005-06-15 10:14:12.820778', NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE job ENABLE TRIGGER ALL;
