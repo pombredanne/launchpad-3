@@ -6,7 +6,6 @@ __metaclass__ = type
 __all__ = [
     'BuildQueue',
     'BuildQueueSet',
-    'specific_job_classes',
     'specific_build_farm_job_sources',
     ]
 
@@ -41,7 +40,6 @@ from lp.buildmaster.enums import (
     BuildStatus,
     )
 from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob,
     ISpecificBuildFarmJobSource,
     )
 from lp.buildmaster.interfaces.buildqueue import (
@@ -59,22 +57,6 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
-
-
-def specific_job_classes():
-    """Job classes that may run on the build farm."""
-    job_classes = dict()
-    # Get all components that implement the `IBuildFarmJob` interface.
-    components = getSiteManager()
-    implementations = sorted(components.getUtilitiesFor(IBuildFarmJob))
-    # The above yields a collection of 2-tuples where the first element
-    # is the name of the `BuildFarmJobType` enum and the second element
-    # is the implementing class respectively.
-    for job_enum_name, job_class in implementations:
-        job_enum = getattr(BuildFarmJobType, job_enum_name)
-        job_classes[job_enum] = job_class
-
-    return job_classes
 
 
 def specific_build_farm_job_sources():
