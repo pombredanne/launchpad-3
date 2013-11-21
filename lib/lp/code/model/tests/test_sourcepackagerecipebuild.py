@@ -24,7 +24,6 @@ from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
-    ISourcePackageRecipeBuildJob,
     ISourcePackageRecipeBuildSource,
     )
 from lp.code.mail.sourcepackagerecipebuild import (
@@ -91,12 +90,6 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         spb = self.makeSourcePackageRecipeBuild()
         transaction.commit()
         self.assertProvides(spb, ISourcePackageRecipeBuild)
-
-    def test_makeJob(self):
-        # A build farm job can be obtained from a SourcePackageRecipeBuild
-        spb = self.makeSourcePackageRecipeBuild()
-        job = removeSecurityProxy(spb).makeJob()
-        self.assertProvides(job, ISourcePackageRecipeBuildJob)
 
     def test_queueBuild(self):
         spb = self.makeSourcePackageRecipeBuild()

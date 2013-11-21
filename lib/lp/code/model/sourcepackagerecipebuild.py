@@ -42,7 +42,6 @@ from lp.buildmaster.enums import (
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.model.buildfarmjob import (
     BuildFarmJob,
-    BuildFarmJobOld,
     SpecificBuildFarmJobSourceMixin,
     )
 from lp.buildmaster.model.buildqueue import BuildQueue
@@ -53,8 +52,6 @@ from lp.code.errors import (
     )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
-    ISourcePackageRecipeBuildJob,
-    ISourcePackageRecipeBuildJobSource,
     ISourcePackageRecipeBuildSource,
     )
 from lp.code.mail.sourcepackagerecipebuild import (
@@ -71,7 +68,6 @@ from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )
-from lp.services.job.model.job import Job
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.soyuz.interfaces.archive import CannotUploadToArchive
 from lp.soyuz.model.archive import Archive
@@ -339,15 +335,6 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
             cls.requester_id == requester.id, cls.recipe_id == recipe.id,
             cls.date_created > old_threshold)
 
-    def makeJob(self):
-        """See `ISourcePackageRecipeBuildJob`."""
-        store = Store.of(self)
-        job = Job()
-        store.add(job)
-        specific_job = getUtility(
-            ISourcePackageRecipeBuildJobSource).new(self, job)
-        return specific_job
-
     def estimateDuration(self):
         """See `IPackageBuild`."""
         median = self.recipe.getMedianBuildDuration()
@@ -408,32 +395,3 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
     def getUploader(self, changes):
         """See `IPackageBuild`."""
         return self.requester
-
-
-class SourcePackageRecipeBuildJob(BuildFarmJobOld, Storm):
-    classProvides(ISourcePackageRecipeBuildJobSource)
-    implements(ISourcePackageRecipeBuildJob)
-
-    __storm_table__ = 'sourcepackagerecipebuildjob'
-
-    id = Int(primary=True)
-
-    job_id = Int(name='job', allow_none=False)
-    job = Reference(job_id, 'Job.id')
-
-    build_id = Int(name='sourcepackage_recipe_build', allow_none=False)
-    build = Reference(
-        build_id, 'SourcePackageRecipeBuild.id')
-
-    def __init__(self, build, job):
-        self.build = build
-        self.job = job
-        super(SourcePackageRecipeBuildJob, self).__init__()
-
-    @classmethod
-    def new(cls, build, job):
-        """See `ISourcePackageRecipeBuildJobSource`."""
-        specific_job = cls(build, job)
-        store = IMasterStore(cls)
-        store.add(specific_job)
-        return specific_job
