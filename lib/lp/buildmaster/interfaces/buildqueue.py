@@ -27,10 +27,7 @@ from zope.schema import (
 from lp import _
 from lp.buildmaster.enums import BuildQueueStatus
 from lp.buildmaster.interfaces.builder import IBuilder
-from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob,
-    IBuildFarmJobOld,
-    )
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.soyuz.interfaces.processor import IProcessor
 
 
