@@ -293,32 +293,6 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def _getBuildJobsByStatus(self, archive, status):
-        # Return the count for archive build jobs with the given status.
-        query = """
-            SELECT COUNT(Job.id)
-            FROM BinaryPackageBuild, BuildPackageJob, BuildQueue, Job
-            WHERE
-                BuildPackageJob.build = BinaryPackageBuild.id
-                AND BuildPackageJob.job = BuildQueue.job
-                AND Job.id = BuildQueue.job
-                AND BinaryPackageBuild.archive = %s
-                AND BinaryPackageBuild.status = %s
-                AND Job.status = %s;
-        """ % sqlvalues(archive, BuildStatus.NEEDSBUILD, status)
-
-        return IStore(Archive).execute(query).get_one()[0]
-
-    def assertNoBuildJobsHaveStatus(self, archive, status):
-        # Check that that the jobs attached to this archive do not have this
-        # status.
-        self.assertEqual(self._getBuildJobsByStatus(archive, status), 0)
-
-    def assertHasBuildJobsWithStatus(self, archive, status, count):
-        # Check that that there are jobs attached to this archive that have
-        # the specified status.
-        self.assertEqual(self._getBuildJobsByStatus(archive, status), count)
-
     def _getBuildQueuesByStatus(self, archive, status):
         # Return the count for archive build jobs with the given status.
         query = """
@@ -353,11 +327,9 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         build.queueBuild()
         # disable the archive, as it is currently enabled
         removeSecurityProxy(archive).disable()
-        self.assertHasBuildJobsWithStatus(archive, JobStatus.SUSPENDED, 1)
         self.assertHasBuildQueuesWithStatus(
             archive, BuildQueueStatus.SUSPENDED, 1)
         removeSecurityProxy(archive).enable()
-        self.assertNoBuildJobsHaveStatus(archive, JobStatus.SUSPENDED)
         self.assertNoBuildQueuesHaveStatus(archive, BuildQueueStatus.SUSPENDED)
         self.assertTrue(archive.enabled)
 
@@ -373,11 +345,9 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         build = self.factory.makeBinaryPackageBuild(
             archive=archive, status=BuildStatus.NEEDSBUILD)
         build.queueBuild()
-        self.assertHasBuildJobsWithStatus(archive, JobStatus.WAITING, 1)
         self.assertHasBuildQueuesWithStatus(
             archive, BuildQueueStatus.WAITING, 1)
         removeSecurityProxy(archive).disable()
-        self.assertNoBuildJobsHaveStatus(archive, JobStatus.WAITING)
         self.assertNoBuildQueuesHaveStatus(archive, BuildQueueStatus.WAITING)
         self.assertFalse(archive.enabled)
 
