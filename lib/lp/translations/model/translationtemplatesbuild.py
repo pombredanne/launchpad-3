@@ -139,7 +139,7 @@ class TranslationTemplatesBuild(SpecificBuildFarmJobSourceMixin,
 
     @classmethod
     def generatesTemplates(cls, branch):
-        """See `ITranslationTemplatesBuildJobSource`."""
+        """See `ITranslationTemplatesBuildSource`."""
         logger = logging.getLogger('translation-templates-build')
         if branch.private:
             # We don't support generating template from private branches
@@ -178,7 +178,7 @@ class TranslationTemplatesBuild(SpecificBuildFarmJobSourceMixin,
 
     @classmethod
     def scheduleTranslationTemplatesBuild(cls, branch):
-        """See `ITranslationTemplatesBuildJobSource`."""
+        """See `ITranslationTemplatesBuildSource`."""
         logger = logging.getLogger('translation-templates-build')
         if not config.rosetta.generate_templates:
             # This feature is disabled by default.
@@ -252,6 +252,6 @@ class TranslationTemplatesBuild(SpecificBuildFarmJobSourceMixin,
     def calculateScore(self):
         """See `IBuildFarmJob`."""
         # Hard-code score for now.  Most PPA jobs start out at 2505;
-        # TranslationTemplateBuildJobs are fast so we want them at a
-        # higher priority.
+        # TranslationTemplateBuild are fast so we want them at a higher
+        # priority.
         return HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE
