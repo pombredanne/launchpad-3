@@ -116,10 +116,6 @@ class BuildQueue(SQLBase):
     status = EnumCol(enum=BuildQueueStatus, default=BuildQueueStatus.WAITING)
     date_started = DateTime(tzinfo=pytz.UTC)
 
-    _job = ForeignKey(dbName='job', foreignKey='Job')
-    _job_type = EnumCol(
-        enum=BuildFarmJobType, notNull=True,
-        default=BuildFarmJobType.PACKAGEBUILD, dbName='job_type')
     builder = ForeignKey(dbName='builder', foreignKey='Builder', default=None)
     logtail = StringCol(dbName='logtail', default=None)
     lastscore = IntCol(dbName='lastscore', default=0)
@@ -137,14 +133,6 @@ class BuildQueue(SQLBase):
 
     def _clear_specific_build_cache(self):
         del get_property_cache(self).specific_build
-
-    @property
-    def specific_old_job(self):
-        """See `IBuildQueue`."""
-        if self._job is None:
-            return None
-        specific_class = specific_job_classes()[self._job_type]
-        return specific_class.getByJob(self._job)
 
     @staticmethod
     def preloadSpecificBuild(queues):
@@ -172,15 +160,9 @@ class BuildQueue(SQLBase):
 
     def destroySelf(self):
         """Remove this record."""
-        job = self._job
-        specific_old_job = self.specific_old_job
         builder = self.builder
         Store.of(self).remove(self)
-        if specific_old_job is not None:
-            specific_old_job.cleanUp()
         Store.of(self).flush()
-        if job is not None:
-            job.destroySelf()
         if builder is not None:
             del get_property_cache(builder).currentjob
         self._clear_specific_build_cache()

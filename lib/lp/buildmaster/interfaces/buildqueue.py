@@ -101,10 +101,6 @@ class IBuildQueue(Interface):
     def cancel():
         """Cancel this job, it will not be re-dispatched."""
 
-    specific_old_job = Reference(
-        IBuildFarmJobOld, title=_("Old build farm job"),
-        description=_("Old IBuildQueue <-> IBuildFarmJob link object."))
-
     specific_build = Reference(
         IBuildFarmJob, title=_("Build farm job"),
         description=_("Concrete build farm job object."))
