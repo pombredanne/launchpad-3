@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the builders webservice ."""
@@ -65,3 +65,19 @@ class TestBuilderEntry(TestCaseWithFactory):
         entry = self.webservice.get(
             api_url(builder), api_version='devel').jsonBody()
         self.assertEndsWith(entry['processor_link'], '/+processors/s1')
+
+    def test_getBuildRecords(self):
+        builder = self.factory.makeBuilder()
+        build = self.factory.makeBinaryPackageBuild(builder=builder)
+        build_title = build.title
+
+        logout()
+        results = self.webservice.named_get(
+            api_url(builder), 'getBuildRecords', pocket='Release',
+            api_version='devel').jsonBody()
+        self.assertEqual(
+            [build_title], [entry['title'] for entry in results['entries']])
+        results = self.webservice.named_get(
+            api_url(builder), 'getBuildRecords', pocket='Proposed',
+            api_version='devel').jsonBody()
+        self.assertEqual(0, len(results['entries']))

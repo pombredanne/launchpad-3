@@ -1033,7 +1033,7 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
                 clauses.append(SourcePackageName.name.is_in(name))
 
     def getBuildsForBuilder(self, builder_id, status=None, name=None,
-                            arch_tag=None, user=None):
+                            pocket=None, arch_tag=None, user=None):
         """See `IBinaryPackageBuildSet`."""
         # Circular. :(
         from lp.soyuz.model.archive import (
@@ -1046,7 +1046,7 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         origin = [Archive]
 
         self.handleOptionalParamsForBuildQueries(
-            clauses, origin, status, name, pocket=None, arch_tag=arch_tag)
+            clauses, origin, status, name, pocket, arch_tag=arch_tag)
 
         return IStore(BinaryPackageBuild).using(*origin).find(
             BinaryPackageBuild, *clauses).order_by(

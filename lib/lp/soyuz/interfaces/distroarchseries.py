@@ -40,6 +40,7 @@ from lp.app.validators.name import name_validator
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 
 
 @error_status(httplib.BAD_REQUEST)
@@ -47,7 +48,7 @@ class InvalidChrootUploaded(Exception):
     """Raised when the sha1sum of an uploaded chroot does not match."""
 
 
-class IDistroArchSeriesPublic(IHasOwner):
+class IDistroArchSeriesPublic(IHasBuildRecords, IHasOwner):
     """Public attributes for a DistroArchSeries."""
 
     id = Attribute("Identifier")
