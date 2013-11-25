@@ -24,7 +24,10 @@ from twisted.python.failure import Failure
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildQueueStatus,
+    BuildStatus,
+    )
 from lp.buildmaster.interactor import (
     BuilderInteractor,
     BuilderSlave,
@@ -56,6 +59,7 @@ from lp.buildmaster.tests.mock_slaves import (
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.config import config
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.testing import (
@@ -111,7 +115,6 @@ class TestSlaveScannerScan(TestCase):
 
     def assertBuildingJob(self, job, builder, logtail=None):
         """Assert the given job is building on the given builder."""
-        from lp.services.job.interfaces.job import JobStatus
         if logtail is None:
             logtail = 'Dummy sampledata entry, not processing'
 
@@ -119,6 +122,9 @@ class TestSlaveScannerScan(TestCase):
         self.assertEqual(job.builder, builder)
         self.assertTrue(job.date_started is not None)
         self.assertEqual(job.job.status, JobStatus.RUNNING)
+        # XXX: Only unconditional until sampledata is migrated.
+        if job.status is not None:
+            self.assertEqual(job.status, BuildQueueStatus.RUNNING)
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
         self.assertEqual(build.status, BuildStatus.BUILDING)
         self.assertEqual(job.logtail, logtail)

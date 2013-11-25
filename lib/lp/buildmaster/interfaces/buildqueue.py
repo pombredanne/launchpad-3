@@ -25,7 +25,10 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.buildmaster.enums import BuildFarmJobType
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildQueueStatus,
+    )
 from lp.buildmaster.interfaces.builder import IBuilder
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.services.job.interfaces.job import IJob
@@ -63,6 +66,10 @@ class IBuildQueue(Interface):
         description=_(
             "The virtualization setting required by this build farm job."))
 
+    status = Choice(
+        title=_("Status"), vocabulary=BuildQueueStatus, readonly=True,
+        description=_("The status of this build queue item."))
+
     job = Reference(
         IJob, title=_("Job"), required=True, readonly=True,
         description=_("Data common to all job types."))
@@ -90,6 +97,9 @@ class IBuildQueue(Interface):
 
     def markAsBuilding(builder):
         """Set this queue item to a 'building' state."""
+
+    def suspend():
+        """Suspend this job, removing it from the active queue."""
 
     def reset():
         """Reset this job, so it can be re-dispatched."""

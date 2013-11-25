@@ -22,12 +22,18 @@ from sqlobject import (
     IntervalCol,
     StringCol,
     )
+from storm.properties import (
+    DateTime,
+    Int,
+    )
+from storm.references import Reference
 from storm.store import Store
 from zope.component import getSiteManager
 from zope.interface import implements
 
 from lp.buildmaster.enums import (
     BuildFarmJobType,
+    BuildQueueStatus,
     BuildStatus,
     )
 from lp.buildmaster.interfaces.buildfarmjob import (
@@ -39,7 +45,10 @@ from lp.buildmaster.interfaces.buildqueue import (
     IBuildQueueSet,
     )
 from lp.services.database.bulk import load_related
-from lp.services.database.constants import DEFAULT
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.sqlbase import SQLBase
 from lp.services.job.interfaces.job import JobStatus
@@ -91,13 +100,20 @@ class BuildQueue(SQLBase):
     _table = "BuildQueue"
     _defaultOrder = "id"
 
-    def __init__(self, job, job_type=DEFAULT,  estimated_duration=DEFAULT,
-                 virtualized=DEFAULT, processor=DEFAULT, lastscore=None):
-        super(BuildQueue, self).__init__(job_type=job_type, job=job,
-            virtualized=virtualized, processor=processor,
-            estimated_duration=estimated_duration, lastscore=lastscore)
+    def __init__(self, build_farm_job, job, job_type=DEFAULT,
+                 estimated_duration=DEFAULT, virtualized=DEFAULT,
+                 processor=DEFAULT, lastscore=None):
+        super(BuildQueue, self).__init__(_build_farm_job=build_farm_job,
+            job_type=job_type, job=job, virtualized=virtualized,
+            processor=processor, estimated_duration=estimated_duration,
+            lastscore=lastscore)
         if lastscore is None and self.specific_job is not None:
             self.score()
+
+    _build_farm_job_id = Int(name='build_farm_job')
+    _build_farm_job = Reference(_build_farm_job_id, 'BuildFarmJob.id')
+    status = EnumCol(enum=BuildQueueStatus, default=BuildQueueStatus.WAITING)
+    _date_started = DateTime(tzinfo=pytz.UTC, name='date_started')
 
     job = ForeignKey(dbName='job', foreignKey='Job', notNull=True)
     job_type = EnumCol(
@@ -191,9 +207,18 @@ class BuildQueue(SQLBase):
         self.builder = builder
         if self.job.status != JobStatus.RUNNING:
             self.job.start()
+        self.status = BuildQueueStatus.RUNNING
+        self._date_started = UTC_NOW
         self.specific_build.updateStatus(BuildStatus.BUILDING)
         if builder is not None:
             del get_property_cache(builder).currentjob
+
+    def suspend(self):
+        """See `IBuildQueue`."""
+        if self.job.status != JobStatus.WAITING:
+            raise AssertionError("Only waiting jobs can be suspended.")
+        self.job.suspend()
+        self.status = BuildQueueStatus.SUSPENDED
 
     def reset(self):
         """See `IBuildQueue`."""
@@ -201,6 +226,8 @@ class BuildQueue(SQLBase):
         self.builder = None
         if self.job.status != JobStatus.WAITING:
             self.job.queue()
+        self.status = BuildQueueStatus.WAITING
+        self._date_started = None
         self.job.date_started = None
         self.job.date_finished = None
         self.logtail = None
