@@ -52,7 +52,10 @@ from lp.archiveuploader.utils import (
     re_isadeb,
     re_issource,
     )
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildQueueStatus,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.registry.enums import (
     INCLUSIVE_TEAM_POLICY,
@@ -1933,18 +1936,34 @@ class Archive(SQLBase):
         store = Store.of(self)
         store.execute(query)
 
+    def _setBuildQueueStatuses(self, status):
+        """Update the pending BuildQueues' statuses for this archive."""
+        Store.of(self).execute("""
+            UPDATE BuildQueue SET status = %s
+            FROM BinaryPackageBuild, BuildPackageJob
+            WHERE
+                -- insert self.id here
+                BinaryPackageBuild.archive = %s
+                AND BuildPackageJob.build = BinaryPackageBuild.id
+                AND BuildPackageJob.job = BuildQueue.job
+                -- Build is in state BuildStatus.NEEDSBUILD (0)
+                AND BinaryPackageBuild.status = %s;
+            """, params=(status.value, self.id, BuildStatus.NEEDSBUILD.value))
+
     def enable(self):
         """See `IArchive`."""
         assert self._enabled == False, "This archive is already enabled."
         assert self.is_active, "Deleted archives can't be enabled."
         self._enabled = True
         self._setBuildStatuses(JobStatus.WAITING)
+        self._setBuildQueueStatuses(BuildQueueStatus.WAITING)
 
     def disable(self):
         """See `IArchive`."""
         assert self._enabled == True, "This archive is already disabled."
         self._enabled = False
         self._setBuildStatuses(JobStatus.SUSPENDED)
+        self._setBuildQueueStatuses(BuildQueueStatus.SUSPENDED)
 
     def delete(self, deleted_by):
         """See `IArchive`."""

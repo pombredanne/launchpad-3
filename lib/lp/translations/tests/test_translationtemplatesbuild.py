@@ -125,6 +125,8 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         bq = build.queueBuild()
         self.assertEqual(build, bq.specific_job.build)
         self.assertEqual(build, bq.specific_build)
+        self.assertEqual(
+            build.build_farm_job, removeSecurityProxy(bq)._build_farm_job)
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.assertEquals(
             ubuntu.currentseries.nominatedarchindep.processor, bq.processor)

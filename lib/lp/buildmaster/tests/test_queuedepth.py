@@ -237,6 +237,7 @@ class TestBuildQueueBase(TestCaseWithFactory):
                 sourcename=sourcename)
         recipe_build_job = recipe_build.makeJob()
         bq = BuildQueue(
+            build_farm_job=recipe_build.build_farm_job,
             job=recipe_build_job.job, lastscore=score,
             job_type=BuildFarmJobType.RECIPEBRANCHBUILD,
             estimated_duration=timedelta(seconds=estimated_duration),
