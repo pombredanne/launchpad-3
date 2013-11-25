@@ -747,12 +747,6 @@ SET search_path = public, pg_catalog;
 
 
 
-
-
-
-
-
-
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -3718,19 +3712,10 @@ ALTER TABLE bugwatchactivity DISABLE TRIGGER ALL;
 ALTER TABLE bugwatchactivity ENABLE TRIGGER ALL;
 
 
-ALTER TABLE buildpackagejob DISABLE TRIGGER ALL;
-
-INSERT INTO buildpackagejob (id, job, build) VALUES (1, 1, 8);
-INSERT INTO buildpackagejob (id, job, build) VALUES (2, 2, 11);
-
-
-ALTER TABLE buildpackagejob ENABLE TRIGGER ALL;
-
-
 ALTER TABLE buildqueue DISABLE TRIGGER ALL;
 
-INSERT INTO buildqueue (id, builder, logtail, lastscore, manual, job, job_type, estimated_duration, processor, virtualized, build_farm_job, status, date_started) VALUES (1, 1, 'Dummy sampledata entry, not processing', 1, false, 1, 1, '00:00:00', 1, false, 8, 1, '2005-06-15 09:20:12.820778');
-INSERT INTO buildqueue (id, builder, logtail, lastscore, manual, job, job_type, estimated_duration, processor, virtualized, build_farm_job, status, date_started) VALUES (2, NULL, NULL, 10, false, 2, 1, '00:01:00', 1, false, 11, 0, NULL);
+INSERT INTO buildqueue (id, builder, logtail, lastscore, manual, estimated_duration, processor, virtualized, build_farm_job, status, date_started) VALUES (1, 1, 'Dummy sampledata entry, not processing', 1, false, '00:00:00', 1, false, 8, 1, '2005-06-15 09:20:12.820778');
+INSERT INTO buildqueue (id, builder, logtail, lastscore, manual, estimated_duration, processor, virtualized, build_farm_job, status, date_started) VALUES (2, NULL, NULL, 10, false, '00:01:00', 1, false, 11, 0, NULL);
 
 
 ALTER TABLE buildqueue ENABLE TRIGGER ALL;
@@ -9586,13 +9571,6 @@ INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (13, 
 
 
 ALTER TABLE sourcepackageformatselection ENABLE TRIGGER ALL;
-
-
-ALTER TABLE sourcepackagerecipebuildjob DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE sourcepackagerecipebuildjob ENABLE TRIGGER ALL;
 
 
 ALTER TABLE sourcepackagerecipedata DISABLE TRIGGER ALL;
