@@ -87,6 +87,22 @@ class TestDistroArchSeriesWebservice(TestCaseWithFactory):
         self.assertRaises(
             BadRequest, ws_das.setChroot, data='zyx', sha1sum='x')
 
+    def test_setChroot_missing_trailing_cr(self):
+        # Due to http://bugs.python.org/issue1349106 launchpadlib sends
+        # MIME with \n line endings, which is illegal. lazr.restful
+        # parses each ending as \r\n, resulting in a binary that ends
+        # with \r getting the last byte chopped off. To cope with this
+        # on the server side we try to append \r if the SHA-1 doesn't
+        # match.
+        das = self.factory.makeDistroArchSeries()
+        user = das.distroseries.distribution.main_archive.owner
+        webservice = launchpadlib_for("testing", user)
+        ws_das = ws_object(webservice, das)
+        sha1 = '95e0c0e09be59e04eb0e312e5daa11a2a830e526'
+        ws_das.setChroot(
+            data='foo\r', sha1sum='95e0c0e09be59e04eb0e312e5daa11a2a830e526')
+        self.assertEqual(sha1, das.getChroot().content.sha1)
+
     def test_setChroot_removeChroot(self):
         das = self.factory.makeDistroArchSeries()
         user = das.distroseries.distribution.main_archive.owner
