@@ -39,17 +39,8 @@ def get_builder_data():
         builder_stats[(processor, virtualized)] = count
 
     builder_stats[(None, True)] = virtualized_total
-    # Jobs with a NULL virtualized flag should be treated the same as
-    # jobs where virtualized=TRUE.
-    builder_stats[(None, None)] = virtualized_total
     builder_stats[(None, False)] = builders_in_total - virtualized_total
     return builder_stats
-
-
-def normalize_virtualization(virtualized):
-    """Jobs with NULL virtualization settings should be treated the
-       same way as virtualized jobs."""
-    return virtualized is None or virtualized
 
 
 def get_free_builders_count(processor, virtualized):
@@ -62,7 +53,7 @@ def get_free_builders_count(processor, virtualized):
             AND id NOT IN (
                 SELECT builder FROM BuildQueue WHERE builder IS NOT NULL)
             AND virtualized = %s
-        """ % sqlvalues(normalize_virtualization(virtualized))
+        """ % sqlvalues(virtualized)
     if processor is not None:
         query += """
             AND processor = %s
@@ -82,9 +73,7 @@ def get_head_job_platform(bq):
     :return: A (processor, virtualized) tuple which is the head job's
     platform or None if the JOI is the head job.
     """
-    my_platform = (
-        getattr(bq.processor, 'id', None),
-        normalize_virtualization(bq.virtualized))
+    my_platform = (getattr(bq.processor, 'id', None), bq.virtualized)
     query = """
         SELECT
             processor,
@@ -157,8 +146,7 @@ def estimate_time_to_next_builder(bq, now=None):
             AND BuildQueue.status = %s
             AND Builder.virtualized = %s
         """ % sqlvalues(
-            now, now, BuildQueueStatus.RUNNING,
-            normalize_virtualization(head_job_virtualized))
+            now, now, BuildQueueStatus.RUNNING, head_job_virtualized)
 
     if head_job_processor is not None:
         # Only look at builders with specific processor types.
@@ -174,7 +162,6 @@ def estimate_time_to_next_builder(bq, now=None):
 def get_pending_jobs_clauses(bq):
     """WHERE clauses for pending job queries, used for dipatch time
     estimation."""
-    virtualized = normalize_virtualization(bq.virtualized)
     clauses = """
         BuildQueue.status = %s
         AND (
@@ -183,15 +170,10 @@ def get_pending_jobs_clauses(bq):
             -- score is equal.
             BuildQueue.lastscore > %s OR
             (BuildQueue.lastscore = %s AND BuildQueue.id < %s))
-        -- The virtualized values either match or the job
-        -- does not care about virtualization and the job
-        -- of interest (JOI) is to be run on a virtual builder
-        -- (we want to prevent the execution of untrusted code
-        -- on native builders).
-        AND COALESCE(buildqueue.virtualized, TRUE) = %s
+        AND buildqueue.virtualized = %s
         """ % sqlvalues(
             BuildQueueStatus.WAITING, bq.lastscore, bq.lastscore, bq,
-            virtualized)
+            bq.virtualized)
     processor_clause = """
         AND (
             -- The processor values either match or the candidate
@@ -236,9 +218,7 @@ def estimate_job_delay(bq, builder_stats):
             # virtualization settings.
             return a == b
 
-    my_platform = (
-        getattr(bq.processor, 'id', None),
-        normalize_virtualization(bq.virtualized))
+    my_platform = (getattr(bq.processor, 'id', None), bq.virtualized)
     query = """
         SELECT
             BuildQueue.processor,
@@ -270,7 +250,6 @@ def estimate_job_delay(bq, builder_stats):
     #     duration by the total number of builders with the same
     #     virtualization setting because any one of them may run it.
     for processor, virtualized, job_count, delay in delays_by_platform:
-        virtualized = normalize_virtualization(virtualized)
         platform = (processor, virtualized)
         builder_count = builder_stats.get(platform, 0)
         if builder_count == 0:

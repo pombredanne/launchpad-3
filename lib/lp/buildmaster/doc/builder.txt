@@ -149,18 +149,3 @@ show up in the calculated queue size.
     >>> queue_sizes = builderset.getBuildQueueSizes()
     >>> print queue_sizes['virt']['386']
     (1L, datetime.timedelta(0, 600))
-
-Any BuildQueues with a null `virtualized` property are considered virtual
-by default.
-
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> recipe_bq = removeSecurityProxy(factory.makeSourcePackageRecipeBuild(
-    ...     distroseries=ubuntu.currentseries).queueBuild())
-    >>> recipe_bq.virtualized = None
-    >>> transaction.commit()
-    >>> queue_sizes = builderset.getBuildQueueSizes()
-
-The virtual queue size has increased accordingly:
-
-    >>> print queue_sizes['virt']['386']
-    (2L, datetime.timedelta(0, 1200))
