@@ -42,13 +42,13 @@ from lp.translations.interfaces.translations import (
 class FakeBuildQueue:
     """Pretend `BuildQueue`."""
 
-    def __init__(self, behavior, bfjo):
+    def __init__(self, behavior):
         """Pretend to be a BuildQueue item for the given build behavior.
 
         Copies its builder from the behavior object.
         """
         self.builder = behavior._builder
-        self.specific_job = bfjo
+        self.specific_build = behavior.build
         self.date_started = datetime.datetime.now(pytz.UTC)
         self.destroySelf = FakeMethod()
 
@@ -56,8 +56,7 @@ class FakeBuildQueue:
 class MakeBehaviorMixin(object):
     """Provide common test methods."""
 
-    def makeBehavior(self, branch=None, use_fake_chroot=True, want_bfjo=False,
-                     **kwargs):
+    def makeBehavior(self, branch=None, use_fake_chroot=True, **kwargs):
         """Create a TranslationTemplatesBuildBehavior.
 
         Anything that might communicate with build slaves and such
@@ -71,11 +70,7 @@ class MakeBehaviorMixin(object):
             lf = self.factory.makeLibraryFileAlias()
             self.layer.txn.commit()
             behavior._getChroot = lambda: lf
-        if want_bfjo:
-            bq = build.queueBuild()
-            return behavior, bq.specific_job
-        else:
-            return behavior
+        return behavior
 
     def makeProductSeriesWithBranchForTranslation(self):
         productseries = self.factory.makeProductSeries()
@@ -106,20 +101,19 @@ class TestTranslationTemplatesBuildBehavior(
 
     def test_dispatchBuildToSlave_no_chroot_fails(self):
         # dispatchBuildToSlave will fail if the chroot does not exist.
-        behavior, buildqueue_item = self.makeBehavior(
-            use_fake_chroot=False, want_bfjo=True)
+        behavior = self.makeBehavior(use_fake_chroot=False)
         switch_dbuser(config.builddmaster.dbuser)
         self.assertRaises(
-            CannotBuild, behavior.dispatchBuildToSlave, buildqueue_item,
+            CannotBuild, behavior.dispatchBuildToSlave, None,
             logging)
 
     def test_dispatchBuildToSlave(self):
         # dispatchBuildToSlave ultimately causes the slave's build
         # method to be invoked.  The slave receives the URL of the
         # branch it should build from.
-        behavior, buildqueue_item = self.makeBehavior(want_bfjo=True)
+        behavior = self.makeBehavior()
         switch_dbuser(config.builddmaster.dbuser)
-        d = behavior.dispatchBuildToSlave(buildqueue_item, logging)
+        d = behavior.dispatchBuildToSlave(FakeBuildQueue(behavior), logging)
 
         def got_dispatch((status, info)):
             # call_log lives on the mock WaitingSlave and tells us what
@@ -155,8 +149,8 @@ class TestTranslationTemplatesBuildBehavior(
         self.assertEqual(fake_chroot_file, chroot)
 
     def test_readTarball(self):
-        behavior, bfjo = self.makeBehavior(want_bfjo=True)
-        buildqueue = FakeBuildQueue(behavior, bfjo)
+        behavior = self.makeBehavior()
+        buildqueue = FakeBuildQueue(behavior)
         path = behavior.templates_tarball_path
         # Poke the file we're expecting into the mock slave.
         behavior._slave.valid_file_hashes.append(path)
@@ -175,10 +169,10 @@ class TestTranslationTemplatesBuildBehavior(
 
     def test_handleStatus_OK(self):
         # Hopefully, a build will succeed and produce a tarball.
-        behavior, bfjo = self.makeBehavior(
-            filemap={'translation-templates.tar.gz': 'foo'}, want_bfjo=True)
+        behavior = self.makeBehavior(
+            filemap={'translation-templates.tar.gz': 'foo'})
         behavior._uploadTarball = FakeMethod()
-        queue_item = FakeBuildQueue(behavior, bfjo)
+        queue_item = FakeBuildQueue(behavior)
         slave = behavior._slave
 
         d = behavior.dispatchBuildToSlave(queue_item, logging)
@@ -214,10 +208,9 @@ class TestTranslationTemplatesBuildBehavior(
 
     def test_handleStatus_failed(self):
         # Builds may also fail (and produce no tarball).
-        behavior, bfjo = self.makeBehavior(
-            state='BuildStatus.FAILEDTOBUILD', want_bfjo=True)
+        behavior = self.makeBehavior(state='BuildStatus.FAILEDTOBUILD')
         behavior._uploadTarball = FakeMethod()
-        queue_item = FakeBuildQueue(behavior, bfjo)
+        queue_item = FakeBuildQueue(behavior)
         slave = behavior._slave
         d = behavior.dispatchBuildToSlave(queue_item, logging)
 
@@ -248,9 +241,9 @@ class TestTranslationTemplatesBuildBehavior(
     def test_handleStatus_notarball(self):
         # Even if the build status is "OK," absence of a tarball will
         # not faze the Behavior class.
-        behavior, bfjo = self.makeBehavior(want_bfjo=True)
+        behavior = self.makeBehavior()
         behavior._uploadTarball = FakeMethod()
-        queue_item = FakeBuildQueue(behavior, bfjo)
+        queue_item = FakeBuildQueue(behavior)
         slave = behavior._slave
         d = behavior.dispatchBuildToSlave(queue_item, logging)
 
@@ -278,10 +271,9 @@ class TestTranslationTemplatesBuildBehavior(
     def test_handleStatus_uploads(self):
         productseries = self.makeProductSeriesWithBranchForTranslation()
         branch = productseries.branch
-        behavior, bfjo = self.makeBehavior(
-            branch=branch, filemap={'translation-templates.tar.gz': 'foo'},
-            want_bfjo=True)
-        queue_item = FakeBuildQueue(behavior, bfjo)
+        behavior = self.makeBehavior(
+            branch=branch, filemap={'translation-templates.tar.gz': 'foo'})
+        queue_item = FakeBuildQueue(behavior)
         slave = behavior._slave
 
         d = behavior.dispatchBuildToSlave(queue_item, logging)

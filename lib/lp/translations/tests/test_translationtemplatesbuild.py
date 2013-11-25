@@ -123,7 +123,7 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
     def test_queueBuild(self):
         build = self.factory.makeTranslationTemplatesBuild()
         bq = build.queueBuild()
-        self.assertEqual(build, bq.specific_job.build)
+        self.assertEqual(build, bq.specific_old_job.build)
         self.assertEqual(build, bq.specific_build)
         self.assertEqual(
             build.build_farm_job, removeSecurityProxy(bq)._build_farm_job)
@@ -132,7 +132,7 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
             ubuntu.currentseries.nominatedarchindep.processor, bq.processor)
 
         # A job is created with the branch URL in its metadata.
-        metadata = removeSecurityProxy(bq.specific_job).metadata
+        metadata = removeSecurityProxy(bq.specific_old_job).metadata
         self.assertIn('branch_url', metadata)
         url = metadata['branch_url']
         head = 'http://'

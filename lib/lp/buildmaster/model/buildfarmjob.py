@@ -149,7 +149,8 @@ class BuildFarmJobMixin:
     @property
     def buildqueue_record(self):
         """See `IBuildFarmJob`."""
-        return None
+        return Store.of(self).find(
+            BuildQueue, _build_farm_job_id=self.build_farm_job_id).one()
 
     @property
     def is_private(self):
