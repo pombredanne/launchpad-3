@@ -115,7 +115,7 @@ class BuildQueue(SQLBase):
     status = EnumCol(enum=BuildQueueStatus, default=BuildQueueStatus.WAITING)
     _date_started = DateTime(tzinfo=pytz.UTC, name='date_started')
 
-    job = ForeignKey(dbName='job', foreignKey='Job', notNull=True)
+    job = ForeignKey(dbName='job', foreignKey='Job')
     job_type = EnumCol(
         enum=BuildFarmJobType, notNull=True,
         default=BuildFarmJobType.PACKAGEBUILD, dbName='job_type')

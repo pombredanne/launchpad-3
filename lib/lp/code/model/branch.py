@@ -1268,16 +1268,20 @@ class Branch(SQLBase, BzrIdentityMixin):
             [BranchJob.jobID],
             And(BranchJob.job == Job.id, BranchJob.branch == self))
 
-        # Delete BuildQueue entries for affected Jobs.  They would pin
-        # the affected Jobs in the database otherwise.
-        store.find(BuildQueue, BuildQueue.jobID.is_in(affected_jobs)).remove()
-
         # Find BuildFarmJobs to delete.
         bfjs = store.find(
             (BuildFarmJob.id,),
             TranslationTemplatesBuild.build_farm_job_id == BuildFarmJob.id,
             TranslationTemplatesBuild.branch == self)
         bfj_ids = [bfj[0] for bfj in bfjs]
+
+        # Delete BuildQueue entries for affected Jobs.  They would pin
+        # the affected Jobs in the database otherwise.
+        store.find(
+            BuildQueue,
+            Or(
+                BuildQueue.jobID.is_in(affected_jobs),
+                BuildQueue._build_farm_job_id.is_in(bfj_ids))).remove()
 
         # Delete Jobs.  Their BranchJobs cascade along in the database.
         store.find(Job, Job.id.is_in(affected_jobs)).remove()
