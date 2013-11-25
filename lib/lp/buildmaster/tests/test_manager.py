@@ -121,10 +121,8 @@ class TestSlaveScannerScan(TestCase):
         self.assertTrue(job is not None)
         self.assertEqual(job.builder, builder)
         self.assertTrue(job.date_started is not None)
+        self.assertEqual(job.status, BuildQueueStatus.RUNNING)
         self.assertEqual(job.job.status, JobStatus.RUNNING)
-        # XXX: Only unconditional until sampledata is migrated.
-        if job.status is not None:
-            self.assertEqual(job.status, BuildQueueStatus.RUNNING)
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
         self.assertEqual(build.status, BuildStatus.BUILDING)
         self.assertEqual(job.logtail, logtail)
