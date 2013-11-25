@@ -6,7 +6,6 @@ SET client_min_messages=ERROR;
 ALTER TABLE buildqueue
     DROP COLUMN job,
     DROP COLUMN job_type,
-    ALTER COLUMN processor SET NOT NULL,
     ALTER COLUMN virtualized SET NOT NULL,
     ALTER COLUMN build_farm_job SET NOT NULL,
     ALTER COLUMN status SET NOT NULL;
