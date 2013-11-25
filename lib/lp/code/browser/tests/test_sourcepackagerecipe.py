@@ -1646,7 +1646,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         It should be None if there is no builder or queue entry.
         It should be getEstimatedJobStartTime + estimated duration for jobs
         that have not started.
-        It should be job.date_started + estimated duration for jobs that have
+        It should be bq.date_started + estimated duration for jobs that have
         started.
         """
         build = self.factory.makeSourcePackageRecipeBuild()
@@ -1661,10 +1661,10 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         self.assertEqual(
             queue_entry.getEstimatedJobStartTime() +
             queue_entry.estimated_duration, view.eta)
-        queue_entry.job.start()
+        queue_entry.markAsBuilding(None)
         clear_property_cache(view)
         self.assertEqual(
-            queue_entry.job.date_started + queue_entry.estimated_duration,
+            queue_entry.date_started + queue_entry.estimated_duration,
             view.eta)
 
     def getBuildBrowser(self, build, view_name=None):

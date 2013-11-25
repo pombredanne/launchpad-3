@@ -45,7 +45,10 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildQueueStatus,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.buildfarmjob import (
     InconsistentBuildFarmJobError,
     ISpecificBuildFarmJobSource,
@@ -54,7 +57,6 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
-from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import (
     FileNavigationMixin,
     ProxiedLibraryFileAlias,
@@ -321,7 +323,7 @@ class BuildView(LaunchpadView):
         """
         return (
             self.context.status == BuildStatus.NEEDSBUILD and
-            self.context.buildqueue_record.job.status == JobStatus.WAITING)
+            self.context.buildqueue_record.status == BuildQueueStatus.WAITING)
 
     @cachedproperty
     def eta(self):
@@ -333,10 +335,10 @@ class BuildView(LaunchpadView):
         if self.context.buildqueue_record is None:
             return None
         queue_record = self.context.buildqueue_record
-        if queue_record.job.status == JobStatus.WAITING:
+        if queue_record.status == BuildQueueStatus.WAITING:
             start_time = queue_record.getEstimatedJobStartTime()
         else:
-            start_time = queue_record.job.date_started
+            start_time = queue_record.date_started
         if start_time is None:
             return None
         duration = queue_record.estimated_duration

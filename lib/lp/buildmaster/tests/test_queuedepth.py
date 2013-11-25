@@ -39,7 +39,7 @@ from lp.testing.layers import LaunchpadZopelessLayer
 
 def check_mintime_to_builder(test, bq, min_time):
     """Test the estimated time until a builder becomes available."""
-    time_stamp = bq.job.date_started or datetime.now(utc)
+    time_stamp = bq.date_started or datetime.now(utc)
     delay = estimate_time_to_next_builder(
         removeSecurityProxy(bq), now=time_stamp)
     test.assertTrue(
@@ -51,7 +51,7 @@ def check_mintime_to_builder(test, bq, min_time):
 def set_remaining_time_for_running_job(bq, remainder):
     """Set remaining running time for job."""
     offset = bq.estimated_duration.seconds - remainder
-    removeSecurityProxy(bq.job).date_started = (
+    removeSecurityProxy(bq).date_started = (
         datetime.now(utc) - timedelta(seconds=offset))
 
 
@@ -76,7 +76,7 @@ def builders_for_job(job):
 
 
 def check_estimate(test, job, delay_in_seconds):
-    time_stamp = job.job.date_started or datetime.now(utc)
+    time_stamp = job.date_started or datetime.now(utc)
     estimate = job.getEstimatedJobStartTime(now=time_stamp)
     if delay_in_seconds is None:
         test.assertEquals(

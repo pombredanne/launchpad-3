@@ -1922,12 +1922,12 @@ class Archive(SQLBase):
 
         query = """
             UPDATE Job SET status = %s
-            FROM BinaryPackageBuild, BuildPackageJob, BuildQueue
+            FROM BinaryPackageBuild, BuildQueue
             WHERE
                 -- insert self.id here
                 BinaryPackageBuild.archive = %s
-                AND BuildPackageJob.build = BinaryPackageBuild.id
-                AND BuildPackageJob.job = BuildQueue.job
+                AND BuildQueue.build_farm_job =
+                    BinaryPackageBuild.build_farm_job
                 AND Job.id = BuildQueue.job
                 -- Build is in state BuildStatus.NEEDSBUILD (0)
                 AND BinaryPackageBuild.status = %s;
@@ -1940,12 +1940,12 @@ class Archive(SQLBase):
         """Update the pending BuildQueues' statuses for this archive."""
         Store.of(self).execute("""
             UPDATE BuildQueue SET status = %s
-            FROM BinaryPackageBuild, BuildPackageJob
+            FROM BinaryPackageBuild
             WHERE
                 -- insert self.id here
                 BinaryPackageBuild.archive = %s
-                AND BuildPackageJob.build = BinaryPackageBuild.id
-                AND BuildPackageJob.job = BuildQueue.job
+                AND BuildQueue.build_farm_job =
+                    BinaryPackageBuild.build_farm_job
                 -- Build is in state BuildStatus.NEEDSBUILD (0)
                 AND BinaryPackageBuild.status = %s;
             """, params=(status.value, self.id, BuildStatus.NEEDSBUILD.value))
