@@ -134,12 +134,12 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
                     raise
                 log.info('Putting {0} into Swift ({1}, {2})'.format(
                     lfc, container, obj_name))
-                _put(swift_connection, lfc, container, obj_name, fs_path)
+                _put(log, swift_connection, lfc, container, obj_name, fs_path)
             if remove:
                 os.unlink(fs_path)
 
 
-def _put(swift_connection, lfc_id, container, obj_name, fs_path):
+def _put(log, swift_connection, lfc_id, container, obj_name, fs_path):
     fs_size = os.path.getsize(fs_path)
     fs_file = open(fs_path, 'rb')
     if fs_size <= MAX_SWIFT_OBJECT_SIZE:
@@ -149,10 +149,16 @@ def _put(swift_connection, lfc_id, container, obj_name, fs_path):
         swift_md5_hash = swift_connection.put_object(
             container, obj_name, md5_stream, fs_size)
         disk_md5_hash = md5_stream.hash.hexdigest()
-        assert disk_md5_hash == db_md5_hash == swift_md5_hash, (
-            "LibraryFileContent({0}) corrupt. "
-            "disk md5={1}, db md5={2}, swift md5={3}".format(
-                lfc_id, disk_md5_hash, db_md5_hash, swift_md5_hash))
+        if not (disk_md5_hash == db_md5_hash == swift_md5_hash):
+            log.error(
+                "LibraryFileContent({0}) corrupt. "
+                "disk md5={1}, db md5={2}, swift md5={3}".format(
+                    lfc_id, disk_md5_hash, db_md5_hash, swift_md5_hash))
+            try:
+                swift_connection.delete_object(container, obj_name)
+            except Exception:
+                log.exception('Failed to delete corrupt file from Swift')
+            raise AssertionError('md5 mismatch')
     else:
         # Large file upload. Create the segments first, then the
         # manifest. This order prevents partial downloads, and lets us
