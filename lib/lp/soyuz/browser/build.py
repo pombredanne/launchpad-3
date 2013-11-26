@@ -54,19 +54,14 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.buildmaster.model.builder import Builder
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
-from lp.services.database.bulk import load_related
 from lp.services.librarian.browser import (
     FileNavigationMixin,
     ProxiedLibraryFileAlias,
     )
-from lp.services.propertycache import (
-    cachedproperty,
-    get_property_cache,
-    )
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
     ContextMenu,
@@ -454,21 +449,8 @@ class BuildCancelView(LaunchpadFormView):
 def setupCompleteBuilds(batch):
     """Pre-populate new object with buildqueue items."""
     builds = getSpecificJobs(batch)
-    if not builds:
-        return []
-
-    prefetched_data = dict()
-    bqs = list(getUtility(IBuildQueueSet).findByBuildFarmJobIDs(
-        [removeSecurityProxy(build).build_farm_job_id
-         for build in builds if build is not None]))
-    load_related(Builder, bqs, ['builderID'])
-    prefetched_data = dict(
-        (removeSecurityProxy(buildqueue)._build_farm_job_id, buildqueue)
-        for buildqueue in bqs)
-    for build in builds:
-        if build is not None:
-            get_property_cache(build).buildqueue_record = prefetched_data.get(
-                removeSecurityProxy(build).build_farm_job_id)
+    getUtility(IBuildQueueSet).preloadForBuildFarmJobs(
+        [build for build in builds if build is not None])
     return builds
 
 

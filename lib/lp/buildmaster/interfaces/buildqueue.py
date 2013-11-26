@@ -148,5 +148,5 @@ class IBuildQueueSet(Interface):
         builder. If not found, return None.
         """
 
-    def findByBuildFarmJobIDs(bfj_ids):
-        """Return the IBuildQueue instances for given IBuildFarmJobDB IDs."""
+    def preloadForBuildFarmJobs(builds):
+        """Preload buildqueue_record for the given IBuildFarmJobs."""

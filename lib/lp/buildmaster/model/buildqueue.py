@@ -279,7 +279,20 @@ class BuildQueueSet(object):
         """See `IBuildQueueSet`."""
         return BuildQueue.selectOneBy(builder=builder)
 
-    def findByBuildFarmJobIDs(self, bfj_ids):
+    def preloadForBuildFarmJobs(self, builds):
         """See `IBuildQueueSet`."""
-        return IStore(BuildQueue).find(
-            BuildQueue, BuildQueue._build_farm_job_id.is_in(bfj_ids))
+        from lp.buildmaster.model.builder import Builder
+        prefetched_data = dict()
+        bqs = list(IStore(BuildQueue).find(
+            BuildQueue,
+            BuildQueue._build_farm_job_id.is_in(
+                [removeSecurityProxy(b).build_farm_job_id for b in builds])))
+        load_related(Builder, bqs, ['builderID'])
+        prefetched_data = dict(
+            (removeSecurityProxy(buildqueue)._build_farm_job_id, buildqueue)
+            for buildqueue in bqs)
+        for build in builds:
+            bq = prefetched_data.get(
+                removeSecurityProxy(build).build_farm_job_id)
+            get_property_cache(build).buildqueue_record = bq
+        return bqs
