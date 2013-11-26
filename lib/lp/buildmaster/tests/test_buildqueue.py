@@ -5,7 +5,6 @@
 from datetime import timedelta
 
 from storm.sqlobject import SQLObjectNotFound
-from storm.store import Store
 from zope import component
 from zope.component import getGlobalSiteManager
 from zope.security.proxy import removeSecurityProxy
@@ -88,17 +87,16 @@ class TestBuildCancellation(TestCaseWithFactory):
         super(TestBuildCancellation, self).setUp()
         self.builder = self.factory.makeBuilder()
 
-    def assertCancelled(self, build, buildqueue):
+    def assertCancelled(self, build, bq):
         self.assertEqual(BuildStatus.CANCELLED, build.status)
-        self.assertIs(None, buildqueue.specific_job)
-        self.assertRaises(SQLObjectNotFound, BuildQueue.get, buildqueue.id)
+        self.assertIs(None, bq.specific_old_job)
+        self.assertRaises(SQLObjectNotFound, BuildQueue.get, bq.id)
 
     def test_binarypackagebuild_cancel(self):
         build = self.factory.makeBinaryPackageBuild()
         bq = build.queueBuild()
         bq.markAsBuilding(self.builder)
         bq.cancel()
-
         self.assertCancelled(build, bq)
 
     def test_recipebuild_cancel(self):
@@ -106,7 +104,6 @@ class TestBuildCancellation(TestCaseWithFactory):
         bq = build.queueBuild()
         bq.markAsBuilding(self.builder)
         bq.cancel()
-
         self.assertCancelled(build, bq)
 
 
@@ -126,7 +123,7 @@ class TestBuildQueueDuration(TestCaseWithFactory):
         now = buildqueue._now()
         buildqueue._now = FakeMethod(result=now)
         age = timedelta(minutes=3)
-        buildqueue.job.date_started = now - age
+        buildqueue.date_started = now - age
 
         self.assertEqual(age, buildqueue.current_build_duration)
 
@@ -177,10 +174,10 @@ class TestJobClasses(TestCaseWithFactory):
 
         # The 'specific_job' object associated with this `BuildQueue`
         # instance is of type `BuildPackageJob`.
-        self.assertTrue(bq.specific_job is not None)
+        self.assertTrue(bq.specific_old_job is not None)
         self.assertEqual(
-            BuildPackageJob, bq.specific_job.__class__,
-            "The 'specific_job' object associated with this `BuildQueue` "
+            BuildPackageJob, bq.specific_old_job.__class__,
+            "The 'specific_old_job' object associated with this `BuildQueue` "
             "instance is of type `BuildPackageJob`")
 
     def test_OtherTypeClasses(self):

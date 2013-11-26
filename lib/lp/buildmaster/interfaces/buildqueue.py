@@ -30,7 +30,10 @@ from lp.buildmaster.enums import (
     BuildQueueStatus,
     )
 from lp.buildmaster.interfaces.builder import IBuilder
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJob,
+    IBuildFarmJobOld,
+    )
 from lp.services.job.interfaces.job import IJob
 from lp.soyuz.interfaces.processor import IProcessor
 
@@ -99,7 +102,10 @@ class IBuildQueue(Interface):
         """Set this queue item to a 'building' state."""
 
     def suspend():
-        """Suspend this job, removing it from the active queue."""
+        """Suspend this waiting job, removing it from the active queue."""
+
+    def resume():
+        """Resume this suspended job, adding it to the active queue."""
 
     def reset():
         """Reset this job, so it can be re-dispatched."""
@@ -107,9 +113,9 @@ class IBuildQueue(Interface):
     def cancel():
         """Cancel this job, it will not be re-dispatched."""
 
-    specific_job = Reference(
-        IBuildFarmJob, title=_("Job"),
-        description=_("Data and operations common to all build farm jobs."))
+    specific_old_job = Reference(
+        IBuildFarmJobOld, title=_("Old build farm job"),
+        description=_("Old IBuildQueue <-> IBuildFarmJob link object."))
 
     specific_build = Reference(
         IBuildFarmJob, title=_("Build farm job"),
@@ -141,3 +147,6 @@ class IBuildQueueSet(Interface):
         Retrieve the only one possible entry being processed for a given
         builder. If not found, return None.
         """
+
+    def preloadForBuildFarmJobs(builds):
+        """Preload buildqueue_record for the given IBuildFarmJobs."""

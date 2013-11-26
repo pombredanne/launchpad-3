@@ -174,5 +174,5 @@ class TestBuildPackageJob(TestBuildJobBase):
     def test_providesInterfaces(self):
         # Ensure that a BuildPackageJob generates an appropriate cookie.
         build, bq = find_job(self, 'gcc', '386')
-        build_farm_job = bq.specific_job
+        build_farm_job = bq.specific_old_job
         self.assertProvides(build_farm_job, IBuildPackageJob)

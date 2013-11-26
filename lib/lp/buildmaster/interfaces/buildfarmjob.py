@@ -288,17 +288,8 @@ class ISpecificBuildFarmJobSource(Interface):
 
         Return a sub-query to narrow down the list of candidate jobs.
         The sub-query will become part of an "outer query" and is free to
-        refer to the `BuildQueue` and `Job` tables already utilized in the
-        latter.
-
-        Example (please see the `BuildPackageJob` implementation for a
-        complete example):
-
-            SELECT TRUE
-            FROM Archive, Build, BuildPackageJob, DistroArchSeries
-            WHERE
-            BuildPackageJob.job = Job.id AND
-            ..
+        refer to the `BuildQueue` and `BuildFarmJob` tables already utilized
+        in the latter.
 
         :param processor: the type of processor that the candidate jobs are
             expected to run on.

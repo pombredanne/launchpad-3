@@ -45,7 +45,6 @@ from lp.buildmaster.model.buildfarmjob import (
     BuildFarmJobOld,
     SpecificBuildFarmJobSourceMixin,
     )
-from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import PackageBuildMixin
 from lp.code.errors import (
     BuildAlreadyPending,
@@ -180,16 +179,6 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
         return str(self.manifest.getRecipe())
 
     @property
-    def buildqueue_record(self):
-        """See `IBuildFarmJob`."""
-        store = Store.of(self)
-        results = store.find(
-            BuildQueue,
-            SourcePackageRecipeBuildJob.job == BuildQueue.jobID,
-            SourcePackageRecipeBuildJob.build == self.id)
-        return results.one()
-
-    @property
     def source_package_release(self):
         """See `ISourcePackageRecipeBuild`."""
         return Store.of(self).find(
@@ -279,24 +268,15 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
                     builds.append(build)
         return builds
 
-    def _unqueueBuild(self):
-        """Remove the build's queue and job."""
-        store = Store.of(self)
-        if self.buildqueue_record is not None:
-            job = self.buildqueue_record.job
-            store.remove(self.buildqueue_record)
-            store.find(
-                SourcePackageRecipeBuildJob,
-                SourcePackageRecipeBuildJob.build == self.id).remove()
-            store.remove(job)
-
     def cancelBuild(self):
         """See `ISourcePackageRecipeBuild.`"""
-        self._unqueueBuild()
         self.updateStatus(BuildStatus.SUPERSEDED)
+        if self.buildqueue_record is not None:
+            self.buildqueue_record.destroySelf()
 
     def destroySelf(self):
-        self._unqueueBuild()
+        if self.buildqueue_record is not None:
+            self.buildqueue_record.destroySelf()
         store = Store.of(self)
         releases = store.find(
             SourcePackageRelease,
@@ -442,24 +422,6 @@ class SourcePackageRecipeBuildJob(BuildFarmJobOld, Storm):
         self.build = build
         self.job = job
         super(SourcePackageRecipeBuildJob, self).__init__()
-
-    @staticmethod
-    def preloadBuildFarmJobs(jobs):
-        from lp.code.model.sourcepackagerecipebuild import (
-            SourcePackageRecipeBuild,
-            )
-        return list(IStore(SourcePackageRecipeBuildJob).find(
-            SourcePackageRecipeBuild,
-            [SourcePackageRecipeBuildJob.job_id.is_in([j.id for j in jobs]),
-             SourcePackageRecipeBuildJob.build_id ==
-                 SourcePackageRecipeBuild.id]))
-
-    @classmethod
-    def preloadJobsData(cls, jobs):
-        load_related(Job, jobs, ['job_id'])
-        builds = load_related(
-            SourcePackageRecipeBuild, jobs, ['build_id'])
-        SourcePackageRecipeBuild.preloadBuildsData(builds)
 
     @classmethod
     def new(cls, build, job):

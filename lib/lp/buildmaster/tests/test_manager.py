@@ -121,10 +121,8 @@ class TestSlaveScannerScan(TestCase):
         self.assertTrue(job is not None)
         self.assertEqual(job.builder, builder)
         self.assertTrue(job.date_started is not None)
+        self.assertEqual(job.status, BuildQueueStatus.RUNNING)
         self.assertEqual(job.job.status, JobStatus.RUNNING)
-        # XXX: Only unconditional until sampledata is migrated.
-        if job.status is not None:
-            self.assertEqual(job.status, BuildQueueStatus.RUNNING)
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
         self.assertEqual(build.status, BuildStatus.BUILDING)
         self.assertEqual(job.logtail, logtail)
@@ -366,8 +364,8 @@ class TestSlaveScannerScan(TestCase):
         builder = getUtility(IBuilderSet)[scanner.builder_name]
 
         builder.failure_count = builder_count
-        naked_job = removeSecurityProxy(builder.currentjob.specific_job)
-        naked_job.build.failure_count = job_count
+        naked_build = removeSecurityProxy(builder.currentjob.specific_build)
+        naked_build.failure_count = job_count
         # The _scanFailed() calls abort, so make sure our existing
         # failure counts are persisted.
         transaction.commit()

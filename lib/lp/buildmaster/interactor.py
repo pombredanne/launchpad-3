@@ -21,6 +21,7 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
+from lp.buildmaster.enums import BuildQueueStatus
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
     CannotFetchFile,
@@ -31,7 +32,6 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     )
 from lp.services import encoding
 from lp.services.config import config
-from lp.services.job.interfaces.job import JobStatus
 from lp.services.twistedsupport import cancel_on_timeout
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
 from lp.services.webapp import urlappend
@@ -452,7 +452,7 @@ class BuilderInteractor(object):
         builder_status = slave_status['builder_status']
         if builder_status == 'BuilderStatus.BUILDING':
             # Build still building, collect the logtail.
-            if vitals.build_queue.job.status != JobStatus.RUNNING:
+            if vitals.build_queue.status != BuildQueueStatus.RUNNING:
                 # XXX: This check should be removed once we confirm it's
                 # not regularly hit.
                 raise AssertionError(

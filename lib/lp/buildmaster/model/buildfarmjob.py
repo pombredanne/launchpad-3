@@ -1,5 +1,6 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
-# GNU Affero General Public License version 3 (see the file LICENSE).
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under
+# the GNU Affero General Public License version 3 (see the file
+# LICENSE).
 
 __metaclass__ = type
 __all__ = [
@@ -45,19 +46,16 @@ from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 
 
 class BuildFarmJobOld:
     """Some common implementation for IBuildFarmJobOld."""
 
     implements(IBuildFarmJobOld)
-
-    @staticmethod
-    def preloadBuildFarmJobs(jobs):
-        """Preload the build farm jobs to which the given jobs will delegate.
-
-        """
-        pass
 
     @classmethod
     def getByJob(cls, job):
@@ -146,10 +144,11 @@ class BuildFarmJobMixin:
         """See `IBuildFarmJobOld`."""
         raise NotImplementedError
 
-    @property
+    @cachedproperty
     def buildqueue_record(self):
         """See `IBuildFarmJob`."""
-        return None
+        return Store.of(self).find(
+            BuildQueue, _build_farm_job_id=self.build_farm_job_id).one()
 
     @property
     def is_private(self):
@@ -246,6 +245,7 @@ class BuildFarmJobMixin:
             queue_entry.suspend()
 
         Store.of(self).add(queue_entry)
+        del get_property_cache(self).buildqueue_record
         return queue_entry
 
 

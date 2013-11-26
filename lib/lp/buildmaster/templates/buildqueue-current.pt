@@ -6,7 +6,7 @@
 
   <p>Started
     <span
-      tal:attributes="title context/job/date_started/fmt:datetime"
+      tal:attributes="title context/date_started/fmt:datetime"
       tal:content="context/current_build_duration/fmt:exactduration" />
     ago.
   </p>

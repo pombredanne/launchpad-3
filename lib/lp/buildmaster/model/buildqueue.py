@@ -28,8 +28,12 @@ from storm.properties import (
     )
 from storm.references import Reference
 from storm.store import Store
-from zope.component import getSiteManager
+from zope.component import (
+    getSiteManager,
+    getUtility,
+    )
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import (
     BuildFarmJobType,
@@ -50,9 +54,9 @@ from lp.services.database.constants import (
     UTC_NOW,
     )
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import SQLBase
 from lp.services.job.interfaces.job import JobStatus
-from lp.services.job.model.job import Job
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -107,15 +111,15 @@ class BuildQueue(SQLBase):
             job_type=job_type, job=job, virtualized=virtualized,
             processor=processor, estimated_duration=estimated_duration,
             lastscore=lastscore)
-        if lastscore is None and self.specific_job is not None:
+        if lastscore is None and self.specific_build is not None:
             self.score()
 
     _build_farm_job_id = Int(name='build_farm_job')
     _build_farm_job = Reference(_build_farm_job_id, 'BuildFarmJob.id')
     status = EnumCol(enum=BuildQueueStatus, default=BuildQueueStatus.WAITING)
-    _date_started = DateTime(tzinfo=pytz.UTC, name='date_started')
+    date_started = DateTime(tzinfo=pytz.UTC)
 
-    job = ForeignKey(dbName='job', foreignKey='Job', notNull=True)
+    job = ForeignKey(dbName='job', foreignKey='Job')
     job_type = EnumCol(
         enum=BuildFarmJobType, notNull=True,
         default=BuildFarmJobType.PACKAGEBUILD, dbName='job_type')
@@ -127,45 +131,42 @@ class BuildQueue(SQLBase):
     processor = ForeignKey(dbName='processor', foreignKey='Processor')
     virtualized = BoolCol(dbName='virtualized')
 
-    @property
+    @cachedproperty
     def specific_build(self):
-        return self.specific_job.build
+        """See `IBuildQueue`."""
+        bfj = self._build_farm_job
+        specific_source = specific_build_farm_job_sources()[bfj.job_type]
+        return specific_source.getByBuildFarmJob(bfj)
+
+    def _clear_specific_build_cache(self):
+        del get_property_cache(self).specific_build
 
     @cachedproperty
-    def specific_job(self):
+    def specific_old_job(self):
         """See `IBuildQueue`."""
+        if self.job is None:
+            return None
         specific_class = specific_job_classes()[self.job_type]
         return specific_class.getByJob(self.job)
 
-    def _clear_specific_job_cache(self):
-        del get_property_cache(self).specific_job
+    def _clear_specific_old_job_cache(self):
+        del get_property_cache(self).specific_old_job
 
     @staticmethod
-    def preloadSpecificJobData(queues):
+    def preloadSpecificBuild(queues):
+        from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+        load_related(BuildFarmJob, queues, ['_build_farm_job_id'])
+        bfj_to_bq = dict(
+            (removeSecurityProxy(bq)._build_farm_job, bq)
+            for bq in queues)
         key = attrgetter('job_type')
         for job_type, grouped_queues in groupby(queues, key=key):
-            specific_class = specific_job_classes()[job_type]
-            queue_subset = list(grouped_queues)
-            job_subset = load_related(Job, queue_subset, ['jobID'])
-            # We need to preload the build farm jobs early to avoid
-            # the call to _set_build_farm_job to look up BuildFarmBuildJobs
-            # one by one.
-            specific_class.preloadBuildFarmJobs(job_subset)
-            specific_jobs = list(specific_class.getByJobs(job_subset))
-            if len(specific_jobs) == 0:
-                continue
-            specific_class.preloadJobsData(specific_jobs)
-            specific_jobs_dict = dict(
-                (specific_job.job, specific_job)
-                    for specific_job in specific_jobs)
-            for queue in queue_subset:
-                cache = get_property_cache(queue)
-                cache.specific_job = specific_jobs_dict[queue.job]
-
-    @property
-    def date_started(self):
-        """See `IBuildQueue`."""
-        return self.job.date_started
+            source = getUtility(ISpecificBuildFarmJobSource, job_type.name)
+            builds = source.getByBuildFarmJobs(
+                [bq._build_farm_job for bq in grouped_queues])
+            for build in builds:
+                bq = bfj_to_bq[removeSecurityProxy(build).build_farm_job]
+                get_property_cache(bq).specific_build = build
 
     @property
     def current_build_duration(self):
@@ -177,17 +178,22 @@ class BuildQueue(SQLBase):
             return self._now() - date_started
 
     def destroySelf(self):
-        """Remove this record and associated job/specific_job."""
+        """Remove this record and associated job/specific_old_job."""
         job = self.job
-        specific_job = self.specific_job
+        specific_old_job = self.specific_old_job
         builder = self.builder
+        specific_build = self.specific_build
         Store.of(self).remove(self)
-        specific_job.cleanUp()
+        if specific_old_job is not None:
+            specific_old_job.cleanUp()
         Store.of(self).flush()
-        job.destroySelf()
+        if job is not None:
+            job.destroySelf()
         if builder is not None:
             del get_property_cache(builder).currentjob
-        self._clear_specific_job_cache()
+        del get_property_cache(specific_build).buildqueue_record
+        self._clear_specific_old_job_cache()
+        self._clear_specific_build_cache()
 
     def manualScore(self, value):
         """See `IBuildQueue`."""
@@ -205,31 +211,41 @@ class BuildQueue(SQLBase):
     def markAsBuilding(self, builder):
         """See `IBuildQueue`."""
         self.builder = builder
-        if self.job.status != JobStatus.RUNNING:
+        if self.job is not None and self.job.status != JobStatus.RUNNING:
             self.job.start()
         self.status = BuildQueueStatus.RUNNING
-        self._date_started = UTC_NOW
+        self.date_started = UTC_NOW
         self.specific_build.updateStatus(BuildStatus.BUILDING)
         if builder is not None:
             del get_property_cache(builder).currentjob
 
     def suspend(self):
         """See `IBuildQueue`."""
-        if self.job.status != JobStatus.WAITING:
+        if self.status != BuildQueueStatus.WAITING:
             raise AssertionError("Only waiting jobs can be suspended.")
-        self.job.suspend()
+        if self.job is not None:
+            self.job.suspend()
         self.status = BuildQueueStatus.SUSPENDED
+
+    def resume(self):
+        """See `IBuildQueue`."""
+        if self.status != BuildQueueStatus.SUSPENDED:
+            raise AssertionError("Only suspended jobs can be resumed.")
+        if self.job is not None:
+            self.job.resume()
+        self.status = BuildQueueStatus.WAITING
 
     def reset(self):
         """See `IBuildQueue`."""
         builder = self.builder
         self.builder = None
-        if self.job.status != JobStatus.WAITING:
+        if self.job is not None and self.job.status != JobStatus.WAITING:
             self.job.queue()
         self.status = BuildQueueStatus.WAITING
-        self._date_started = None
-        self.job.date_started = None
-        self.job.date_finished = None
+        self.date_started = None
+        if self.job is not None:
+            self.job.date_started = None
+            self.job.date_finished = None
         self.logtail = None
         self.specific_build.updateStatus(BuildStatus.NEEDSBUILD)
         if builder is not None:
@@ -262,3 +278,21 @@ class BuildQueueSet(object):
     def getByBuilder(self, builder):
         """See `IBuildQueueSet`."""
         return BuildQueue.selectOneBy(builder=builder)
+
+    def preloadForBuildFarmJobs(self, builds):
+        """See `IBuildQueueSet`."""
+        from lp.buildmaster.model.builder import Builder
+        prefetched_data = dict()
+        bqs = list(IStore(BuildQueue).find(
+            BuildQueue,
+            BuildQueue._build_farm_job_id.is_in(
+                [removeSecurityProxy(b).build_farm_job_id for b in builds])))
+        load_related(Builder, bqs, ['builderID'])
+        prefetched_data = dict(
+            (removeSecurityProxy(buildqueue)._build_farm_job_id, buildqueue)
+            for buildqueue in bqs)
+        for build in builds:
+            bq = prefetched_data.get(
+                removeSecurityProxy(build).build_farm_job_id)
+            get_property_cache(build).buildqueue_record = bq
+        return bqs

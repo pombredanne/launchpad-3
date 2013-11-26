@@ -83,7 +83,8 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.assertProvides(bq, IBuildQueue)
         self.assertEqual(
             self.build.build_farm_job, removeSecurityProxy(bq)._build_farm_job)
-        self.assertProvides(bq.specific_job, IBuildPackageJob)
+        self.assertEqual(self.build, bq.specific_build)
+        self.assertProvides(bq.specific_old_job, IBuildPackageJob)
         self.assertEqual(self.build.is_virtualized, bq.virtualized)
         self.assertIsNotNone(bq.processor)
         self.assertEqual(bq, self.build.buildqueue_record)
