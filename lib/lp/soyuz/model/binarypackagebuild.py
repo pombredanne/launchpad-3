@@ -1265,22 +1265,6 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         return IStore(BinaryPackageBuild).find(
             BinaryPackageBuild, build_farm_job_id=bfj_id).one()
 
-    def getQueueEntriesForBuildIDs(self, build_ids):
-        """See `IBinaryPackageBuildSet`."""
-        origin = (
-            BuildQueue,
-            Join(
-                BinaryPackageBuild,
-                BuildQueue._build_farm_job_id ==
-                    BinaryPackageBuild.build_farm_job_id),
-            LeftJoin(
-                Builder,
-                BuildQueue.builderID == Builder.id),
-            )
-        return IStore(BinaryPackageBuild).using(*origin).find(
-            (BuildQueue, Builder),
-            BinaryPackageBuild.id.is_in(build_ids))
-
     @staticmethod
     def addCandidateSelectionCriteria(processor, virtualized):
         """See `ISpecificBuildFarmJobSource`."""
