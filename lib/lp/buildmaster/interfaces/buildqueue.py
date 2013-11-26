@@ -147,3 +147,6 @@ class IBuildQueueSet(Interface):
         Retrieve the only one possible entry being processed for a given
         builder. If not found, return None.
         """
+
+    def findByBuildFarmJobIDs(bfj_ids):
+        """Return the IBuildQueue instances for given IBuildFarmJobDB IDs."""

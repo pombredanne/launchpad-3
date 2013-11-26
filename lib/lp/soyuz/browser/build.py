@@ -23,7 +23,6 @@ from itertools import groupby
 from operator import attrgetter
 
 from lazr.batchnavigator import ListRangeFactory
-from lazr.delegates import delegates
 from lazr.restful.utils import safe_hasattr
 from zope.component import getUtility
 from zope.interface import (
@@ -53,15 +52,21 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     InconsistentBuildFarmJobError,
     ISpecificBuildFarmJobSource,
     )
+from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.model.builder import Builder
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
     )
+from lp.services.database.bulk import load_related
 from lp.services.librarian.browser import (
     FileNavigationMixin,
     ProxiedLibraryFileAlias,
     )
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.webapp import (
     canonical_url,
     ContextMenu,
@@ -446,53 +451,25 @@ class BuildCancelView(LaunchpadFormView):
             self.request.response.addNotification("Unable to cancel build.")
 
 
-class CompleteBuild:
-    """Super object to store related IBinaryPackageBuild & IBuildQueue."""
-    delegates(IBinaryPackageBuild)
-
-    def __init__(self, build, buildqueue_record):
-        self.context = build
-        self._buildqueue_record = buildqueue_record
-
-    def buildqueue_record(self):
-        return self._buildqueue_record
-
-
 def setupCompleteBuilds(batch):
-    """Pre-populate new object with buildqueue items.
-
-    Single queries, using list() statement to force fetch
-    of the results in python domain.
-
-    Receive a sequence of builds, for instance, a batch.
-
-    Return a list of built CompleteBuild instances, or empty
-    list if no builds were contained in the received batch.
-    """
+    """Pre-populate new object with buildqueue items."""
     builds = getSpecificJobs(batch)
     if not builds:
         return []
 
-    # This pre-population of queue entries is only implemented for
-    # IBinaryPackageBuilds.
     prefetched_data = dict()
-    build_ids = [
-        build.id for build in builds if IBinaryPackageBuild.providedBy(build)]
-    results = getUtility(IBinaryPackageBuildSet).getQueueEntriesForBuildIDs(
-        build_ids)
-    for (buildqueue, _builder) in results:
-        prefetched_data[
-            removeSecurityProxy(buildqueue)._build_farm_job_id] = buildqueue
-
-    complete_builds = []
+    bqs = list(getUtility(IBuildQueueSet).findByBuildFarmJobIDs(
+        [removeSecurityProxy(build).build_farm_job_id
+         for build in builds if build is not None]))
+    load_related(Builder, bqs, ['builderID'])
+    prefetched_data = dict(
+        (removeSecurityProxy(buildqueue)._build_farm_job_id, buildqueue)
+        for buildqueue in bqs)
     for build in builds:
-        if IBinaryPackageBuild.providedBy(build):
-            buildqueue = prefetched_data.get(
+        if build is not None:
+            get_property_cache(build).buildqueue_record = prefetched_data.get(
                 removeSecurityProxy(build).build_farm_job_id)
-            complete_builds.append(CompleteBuild(build, buildqueue))
-        else:
-            complete_builds.append(build)
-    return complete_builds
+    return builds
 
 
 def getSpecificJobs(jobs):

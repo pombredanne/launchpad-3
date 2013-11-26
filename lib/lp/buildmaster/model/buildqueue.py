@@ -54,6 +54,7 @@ from lp.services.database.constants import (
     UTC_NOW,
     )
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import SQLBase
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import (
@@ -181,6 +182,7 @@ class BuildQueue(SQLBase):
         job = self.job
         specific_old_job = self.specific_old_job
         builder = self.builder
+        specific_build = self.specific_build
         Store.of(self).remove(self)
         if specific_old_job is not None:
             specific_old_job.cleanUp()
@@ -189,6 +191,7 @@ class BuildQueue(SQLBase):
             job.destroySelf()
         if builder is not None:
             del get_property_cache(builder).currentjob
+        del get_property_cache(specific_build).buildqueue_record
         self._clear_specific_old_job_cache()
         self._clear_specific_build_cache()
 
@@ -275,3 +278,8 @@ class BuildQueueSet(object):
     def getByBuilder(self, builder):
         """See `IBuildQueueSet`."""
         return BuildQueue.selectOneBy(builder=builder)
+
+    def findByBuildFarmJobIDs(self, bfj_ids):
+        """See `IBuildQueueSet`."""
+        return IStore(BuildQueue).find(
+            BuildQueue, BuildQueue._build_farm_job_id.is_in(bfj_ids))
