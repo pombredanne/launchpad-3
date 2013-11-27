@@ -208,12 +208,6 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     source_package_name = Reference(
         source_package_name_id, 'SourcePackageName.id')
 
-    @property
-    def buildqueue_record(self):
-        """See `IBuild`."""
-        return Store.of(self).find(
-            BuildQueue, _build_farm_job_id=self.build_farm_job_id).one()
-
     def _getLatestPublication(self):
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
         store = Store.of(self)
@@ -1030,7 +1024,7 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
                 clauses.append(SourcePackageName.name.is_in(name))
 
     def getBuildsForBuilder(self, builder_id, status=None, name=None,
-                            arch_tag=None, user=None):
+                            pocket=None, arch_tag=None, user=None):
         """See `IBinaryPackageBuildSet`."""
         # Circular. :(
         from lp.soyuz.model.archive import (
@@ -1043,7 +1037,7 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         origin = [Archive]
 
         self.handleOptionalParamsForBuildQueries(
-            clauses, origin, status, name, pocket=None, arch_tag=arch_tag)
+            clauses, origin, status, name, pocket, arch_tag=arch_tag)
 
         return IStore(BinaryPackageBuild).using(*origin).find(
             BinaryPackageBuild, *clauses).order_by(
@@ -1270,22 +1264,6 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         bfj_id = removeSecurityProxy(queue_entry)._build_farm_job_id
         return IStore(BinaryPackageBuild).find(
             BinaryPackageBuild, build_farm_job_id=bfj_id).one()
-
-    def getQueueEntriesForBuildIDs(self, build_ids):
-        """See `IBinaryPackageBuildSet`."""
-        origin = (
-            BuildQueue,
-            Join(
-                BinaryPackageBuild,
-                BuildQueue._build_farm_job_id ==
-                    BinaryPackageBuild.build_farm_job_id),
-            LeftJoin(
-                Builder,
-                BuildQueue.builderID == Builder.id),
-            )
-        return IStore(BinaryPackageBuild).using(*origin).find(
-            (BuildQueue, Builder),
-            BinaryPackageBuild.id.is_in(build_ids))
 
     @staticmethod
     def addCandidateSelectionCriteria(processor, virtualized):

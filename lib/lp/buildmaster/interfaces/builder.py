@@ -50,6 +50,7 @@ from lp.services.fields import (
     PersonChoice,
     Title,
     )
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.processor import IProcessor
 
 
@@ -84,7 +85,7 @@ class BuildSlaveFailure(BuildDaemonError):
     """The build slave has suffered an error and cannot be used."""
 
 
-class IBuilder(IHasOwner):
+class IBuilder(IHasBuildRecords, IHasOwner):
     """Build-slave information and state.
 
     Builder instance represents a single builder slave machine within the
