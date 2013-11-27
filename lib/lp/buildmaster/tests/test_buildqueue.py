@@ -5,26 +5,22 @@
 from datetime import timedelta
 
 from storm.sqlobject import SQLObjectNotFound
-from zope import component
-from zope.component import getGlobalSiteManager
+from storm.store import Store
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
-from lp.buildmaster.model.buildfarmjob import BuildFarmJobMixin
-from lp.buildmaster.model.buildqueue import (
-    BuildQueue,
-    specific_job_classes,
-    )
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.services.database.interfaces import IStore
+from lp.services.job.model.job import Job
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
@@ -78,6 +74,49 @@ def print_build_setup(builds):
             queue_entry.lastscore)
 
 
+class TestBuildQueueOldJobDestruction(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_destroy_without_job(self):
+        # Newly created BuildQueues won't have an associated Job.
+        build = self.factory.makeBinaryPackageBuild()
+        bq = removeSecurityProxy(build.queueBuild())
+        self.assertIs(None, bq._job)
+        self.assertIs(
+            None, Store.of(build).find(BuildPackageJob, build=build).one())
+        bq.destroySelf()
+        self.assertIs(None, Store.of(build).find(BuildQueue, id=bq.id).one())
+
+    def test_destroy_with_job(self):
+        # Old BuildQueues will have a Job and an IBuildFarmJobOld during
+        # the migration. They're all destroyed.
+        build = self.factory.makeBinaryPackageBuild()
+        bq = removeSecurityProxy(build.queueBuild())
+        bfjo = removeSecurityProxy(build).makeJob()
+        job = bfjo.job
+        bq._job = job
+        bq._job_type = BuildFarmJobType.PACKAGEBUILD
+        self.assertIsNot(None, bq.specific_old_job)
+        self.assertIsNot(None, bq._job)
+        bq.destroySelf()
+        self.assertIs(None, Store.of(build).find(BuildQueue, id=bq.id).one())
+        self.assertIs(None, Store.of(build).find(Job, id=job.id).one())
+        self.assertIs(
+            None, Store.of(build).find(BuildPackageJob, id=bfjo.id).one())
+
+    def test_destroy_with_dangling_job(self):
+        # Old BuildQueues may even have a dangling Job FK between data
+        # cleaning and schema dropping. We ignore it and just kill the
+        # remaining BuildQueue.
+        build = self.factory.makeBinaryPackageBuild()
+        bq = removeSecurityProxy(build.queueBuild())
+        bq._jobID = 123456
+        bq._job_type = BuildFarmJobType.PACKAGEBUILD
+        bq.destroySelf()
+        self.assertIs(None, Store.of(build).find(BuildQueue, id=bq.id).one())
+
+
 class TestBuildCancellation(TestCaseWithFactory):
     """Test cases for cancelling builds."""
 
@@ -89,7 +128,6 @@ class TestBuildCancellation(TestCaseWithFactory):
 
     def assertCancelled(self, build, bq):
         self.assertEqual(BuildStatus.CANCELLED, build.status)
-        self.assertIs(None, bq.specific_old_job)
         self.assertRaises(SQLObjectNotFound, BuildQueue.get, bq.id)
 
     def test_binarypackagebuild_cancel(self):
@@ -126,90 +164,6 @@ class TestBuildQueueDuration(TestCaseWithFactory):
         buildqueue.date_started = now - age
 
         self.assertEqual(age, buildqueue.current_build_duration)
-
-
-class TestJobClasses(TestCaseWithFactory):
-    """Tests covering build farm job type classes."""
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        """Set up a native x86 build for the test archive."""
-        super(TestJobClasses, self).setUp()
-
-        self.publisher = SoyuzTestPublisher()
-        self.publisher.prepareBreezyAutotest()
-
-        # First mark all builds in the sample data as already built.
-        sample_data = IStore(BinaryPackageBuild).find(BinaryPackageBuild)
-        for build in sample_data:
-            build.buildstate = BuildStatus.FULLYBUILT
-        IStore(BinaryPackageBuild).flush()
-
-        # We test builds that target a primary archive.
-        self.non_ppa = self.factory.makeArchive(
-            name="primary", purpose=ArchivePurpose.PRIMARY)
-        self.non_ppa.require_virtualized = False
-
-        self.builds = []
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.non_ppa).createMissingBuilds())
-
-    def test_BuildPackageJob(self):
-        """`BuildPackageJob` is one of the job type classes."""
-        from lp.soyuz.model.buildpackagejob import BuildPackageJob
-        _build, bq = find_job(self, 'gedit')
-
-        # This is a binary package build.
-        self.assertEqual(
-            BuildFarmJobType.PACKAGEBUILD, bq.job_type,
-            "This is a binary package build")
-
-        # The class registered for 'PACKAGEBUILD' is `BuildPackageJob`.
-        self.assertEqual(
-            BuildPackageJob,
-            specific_job_classes()[BuildFarmJobType.PACKAGEBUILD],
-            "The class registered for 'PACKAGEBUILD' is `BuildPackageJob`")
-
-        # The 'specific_job' object associated with this `BuildQueue`
-        # instance is of type `BuildPackageJob`.
-        self.assertTrue(bq.specific_old_job is not None)
-        self.assertEqual(
-            BuildPackageJob, bq.specific_old_job.__class__,
-            "The 'specific_old_job' object associated with this `BuildQueue` "
-            "instance is of type `BuildPackageJob`")
-
-    def test_OtherTypeClasses(self):
-        """Other job type classes are picked up as well."""
-
-        class FakeBranchBuild(BuildFarmJobMixin):
-            pass
-
-        _build, bq = find_job(self, 'gedit')
-        # First make sure that we don't have a job type class registered for
-        # 'BRANCHBUILD' yet.
-        self.assertTrue(
-            specific_job_classes().get(BuildFarmJobType.BRANCHBUILD) is None)
-
-        try:
-            # Pretend that our `FakeBranchBuild` class implements the
-            # `IBuildFarmJob` interface.
-            component.provideUtility(
-                FakeBranchBuild, IBuildFarmJob, 'BRANCHBUILD')
-
-            # Now we should see the `FakeBranchBuild` class "registered"
-            # in the `specific_job_classes` dictionary under the
-            # 'BRANCHBUILD' key.
-            self.assertEqual(
-                specific_job_classes()[BuildFarmJobType.BRANCHBUILD],
-                FakeBranchBuild)
-        finally:
-            # Just de-register the utility so we don't affect other
-            # tests.
-            site_manager = getGlobalSiteManager()
-            site_manager.unregisterUtility(
-                FakeBranchBuild, IBuildFarmJob, 'BRANCHBUILD')
 
 
 class TestPlatformData(TestCaseWithFactory):

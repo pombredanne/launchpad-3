@@ -56,7 +56,6 @@ from lp.services.database.constants import (
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import SQLBase
-from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -104,11 +103,10 @@ class BuildQueue(SQLBase):
     _table = "BuildQueue"
     _defaultOrder = "id"
 
-    def __init__(self, build_farm_job, job, job_type=DEFAULT,
-                 estimated_duration=DEFAULT, virtualized=DEFAULT,
-                 processor=DEFAULT, lastscore=None):
-        super(BuildQueue, self).__init__(_build_farm_job=build_farm_job,
-            job_type=job_type, job=job, virtualized=virtualized,
+    def __init__(self, build_farm_job, estimated_duration=DEFAULT,
+                 virtualized=DEFAULT, processor=DEFAULT, lastscore=None):
+        super(BuildQueue, self).__init__(
+            _build_farm_job=build_farm_job, virtualized=virtualized,
             processor=processor, estimated_duration=estimated_duration,
             lastscore=lastscore)
         if lastscore is None and self.specific_build is not None:
@@ -119,8 +117,8 @@ class BuildQueue(SQLBase):
     status = EnumCol(enum=BuildQueueStatus, default=BuildQueueStatus.WAITING)
     date_started = DateTime(tzinfo=pytz.UTC)
 
-    job = ForeignKey(dbName='job', foreignKey='Job')
-    job_type = EnumCol(
+    _job = ForeignKey(dbName='job', foreignKey='Job')
+    _job_type = EnumCol(
         enum=BuildFarmJobType, notNull=True,
         default=BuildFarmJobType.PACKAGEBUILD, dbName='job_type')
     builder = ForeignKey(dbName='builder', foreignKey='Builder', default=None)
@@ -141,25 +139,21 @@ class BuildQueue(SQLBase):
     def _clear_specific_build_cache(self):
         del get_property_cache(self).specific_build
 
-    @cachedproperty
+    @property
     def specific_old_job(self):
         """See `IBuildQueue`."""
-        if self.job is None:
+        if self._job is None:
             return None
-        specific_class = specific_job_classes()[self.job_type]
-        return specific_class.getByJob(self.job)
-
-    def _clear_specific_old_job_cache(self):
-        del get_property_cache(self).specific_old_job
+        specific_class = specific_job_classes()[self._job_type]
+        return specific_class.getByJob(self._job)
 
     @staticmethod
     def preloadSpecificBuild(queues):
         from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+        queues = [removeSecurityProxy(bq) for bq in queues]
         load_related(BuildFarmJob, queues, ['_build_farm_job_id'])
-        bfj_to_bq = dict(
-            (removeSecurityProxy(bq)._build_farm_job, bq)
-            for bq in queues)
-        key = attrgetter('job_type')
+        bfj_to_bq = dict((bq._build_farm_job, bq) for bq in queues)
+        key = attrgetter('_build_farm_job.job_type')
         for job_type, grouped_queues in groupby(queues, key=key):
             source = getUtility(ISpecificBuildFarmJobSource, job_type.name)
             builds = source.getByBuildFarmJobs(
@@ -178,8 +172,8 @@ class BuildQueue(SQLBase):
             return self._now() - date_started
 
     def destroySelf(self):
-        """Remove this record and associated job/specific_old_job."""
-        job = self.job
+        """Remove this record."""
+        job = self._job
         specific_old_job = self.specific_old_job
         builder = self.builder
         specific_build = self.specific_build
@@ -192,7 +186,6 @@ class BuildQueue(SQLBase):
         if builder is not None:
             del get_property_cache(builder).currentjob
         del get_property_cache(specific_build).buildqueue_record
-        self._clear_specific_old_job_cache()
         self._clear_specific_build_cache()
 
     def manualScore(self, value):
@@ -211,8 +204,6 @@ class BuildQueue(SQLBase):
     def markAsBuilding(self, builder):
         """See `IBuildQueue`."""
         self.builder = builder
-        if self.job is not None and self.job.status != JobStatus.RUNNING:
-            self.job.start()
         self.status = BuildQueueStatus.RUNNING
         self.date_started = UTC_NOW
         self.specific_build.updateStatus(BuildStatus.BUILDING)
@@ -223,29 +214,20 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         if self.status != BuildQueueStatus.WAITING:
             raise AssertionError("Only waiting jobs can be suspended.")
-        if self.job is not None:
-            self.job.suspend()
         self.status = BuildQueueStatus.SUSPENDED
 
     def resume(self):
         """See `IBuildQueue`."""
         if self.status != BuildQueueStatus.SUSPENDED:
             raise AssertionError("Only suspended jobs can be resumed.")
-        if self.job is not None:
-            self.job.resume()
         self.status = BuildQueueStatus.WAITING
 
     def reset(self):
         """See `IBuildQueue`."""
         builder = self.builder
         self.builder = None
-        if self.job is not None and self.job.status != JobStatus.WAITING:
-            self.job.queue()
         self.status = BuildQueueStatus.WAITING
         self.date_started = None
-        if self.job is not None:
-            self.job.date_started = None
-            self.job.date_finished = None
         self.logtail = None
         self.specific_build.updateStatus(BuildStatus.NEEDSBUILD)
         if builder is not None:

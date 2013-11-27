@@ -11,10 +11,7 @@ from pytz import utc
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.buildmaster.enums import (
-    BuildFarmJobType,
-    BuildStatus,
-    )
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.queuedepth import (
@@ -235,11 +232,8 @@ class TestBuildQueueBase(TestCaseWithFactory):
         if recipe_build is None:
             recipe_build = self.factory.makeSourcePackageRecipeBuild(
                 sourcename=sourcename)
-        recipe_build_job = recipe_build.makeJob()
         bq = BuildQueue(
-            build_farm_job=recipe_build.build_farm_job,
-            job=recipe_build_job.job, lastscore=score,
-            job_type=BuildFarmJobType.RECIPEBRANCHBUILD,
+            build_farm_job=recipe_build.build_farm_job, lastscore=score,
             estimated_duration=timedelta(seconds=estimated_duration),
             virtualized=virtualized)
         IStore(BuildQueue).add(bq)

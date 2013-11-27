@@ -59,7 +59,6 @@ from lp.buildmaster.tests.mock_slaves import (
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.config import config
-from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.testing import (
@@ -122,7 +121,6 @@ class TestSlaveScannerScan(TestCase):
         self.assertEqual(job.builder, builder)
         self.assertTrue(job.date_started is not None)
         self.assertEqual(job.status, BuildQueueStatus.RUNNING)
-        self.assertEqual(job.job.status, JobStatus.RUNNING)
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
         self.assertEqual(build.status, BuildStatus.BUILDING)
         self.assertEqual(job.logtail, logtail)

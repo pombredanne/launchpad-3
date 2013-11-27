@@ -7,11 +7,11 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobOld
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchjob import IBranchJob
-from lp.services.database.interfaces import IStore
 from lp.services.job.model.job import Job
 from lp.testing import (
     TestCaseWithFactory,
@@ -43,7 +43,10 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         super(TestTranslationTemplatesBuildJob, self).setUp()
         self.jobset = getUtility(ITranslationTemplatesBuildJobSource)
         self.build = self.factory.makeTranslationTemplatesBuild()
-        self.build.queueBuild()
+        self.buildqueue = removeSecurityProxy(self.build.queueBuild())
+        bfjo = removeSecurityProxy(self.build).makeJob()
+        self.buildqueue._job = bfjo.job
+        self.buildqueue._job_type = BuildFarmJobType.TRANSLATIONTEMPLATESBUILD
         self.specific_job = self.jobset.getByBranch(self.build.branch)
 
     def test_new_TranslationTemplatesBuildJob(self):
@@ -70,17 +73,16 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         # TranslationTemplatesBuildJob has its own customized cleanup
         # behaviour, since it's actually a BranchJob.
         job = removeSecurityProxy(self.specific_job.job)
-        buildqueue = IStore(BuildQueue).find(BuildQueue, job=job).one()
 
         job_id = job.id
         store = Store.of(job)
         branch_name = self.build.branch.unique_name
 
-        buildqueue.destroySelf()
+        self.buildqueue.destroySelf()
 
         # BuildQueue is gone.
         self.assertIs(
-            None, store.find(BuildQueue, BuildQueue.job == job_id).one())
+            None, store.find(BuildQueue, id=self.buildqueue.id).one())
         # Job is gone.
         self.assertIs(None, store.find(Job, Job.id == job_id).one())
         # TranslationTemplatesBuildJob is gone.
@@ -99,4 +101,3 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
     def test_baseline(self):
         utility = getUtility(ITranslationTemplatesBuildJobSource)
         verifyObject(ITranslationTemplatesBuildJobSource, utility)
-

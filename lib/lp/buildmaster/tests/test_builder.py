@@ -18,7 +18,6 @@ from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import make_publisher
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import flush_database_updates
-from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -136,7 +135,6 @@ class TestFindBuildCandidateGeneralCases(TestFindBuildCandidateBase):
             archive=archive).createMissingBuilds()
         candidate = removeSecurityProxy(
             self.frog_builder).acquireBuildCandidate()
-        self.assertEqual(JobStatus.RUNNING, candidate.job.status)
         self.assertEqual(BuildQueueStatus.RUNNING, candidate.status)
 
 

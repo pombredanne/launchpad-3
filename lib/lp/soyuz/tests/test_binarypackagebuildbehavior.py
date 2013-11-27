@@ -47,7 +47,6 @@ from lp.registry.interfaces.pocket import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
-from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.archivedependencies import (
@@ -395,7 +394,6 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
             self.assertIs(None, self.candidate.builder)
             self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
             self.assertEqual(BuildQueueStatus.WAITING, self.candidate.status)
-            self.assertEqual(JobStatus.WAITING, self.candidate.job.status)
 
         d = self.updateBuild(
             self.candidate, WaitingSlave('BuildStatus.BUILDERFAIL'))
@@ -455,7 +453,6 @@ class TestBinaryBuildPackageBehaviorBuildCollection(TestCaseWithFactory):
             self.assertEqual(score, self.candidate.lastscore)
             self.assertEqual(BuildStatus.NEEDSBUILD, self.build.status)
             self.assertEqual(BuildQueueStatus.WAITING, self.candidate.status)
-            self.assertEqual(JobStatus.WAITING, self.candidate.job.status)
 
         d = self.updateBuild(
             self.candidate, WaitingSlave('BuildStatus.GIVENBACK'))
