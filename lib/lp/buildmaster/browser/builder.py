@@ -255,10 +255,11 @@ class BuilderCategory:
 
         for processor, builders in grouped_builders.iteritems():
             virt_str = 'virt' if self.virtualized else 'nonvirt'
+            processor_name = processor.name if processor else None
             queue_size, duration = build_queue_sizes[virt_str].get(
-                processor.name, (0, None))
+                processor_name, (0, None))
             builder_group = BuilderGroup(
-                processor.name, queue_size, duration,
+                processor_name, queue_size, duration,
                 sorted(builders, key=operator.attrgetter('title')))
             self._builder_groups.append(builder_group)
 
