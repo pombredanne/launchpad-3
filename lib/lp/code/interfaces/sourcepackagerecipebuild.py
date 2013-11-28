@@ -7,8 +7,6 @@ __metaclass__ = type
 __all__ = [
     'ISourcePackageRecipeBuild',
     'ISourcePackageRecipeBuildSource',
-    'ISourcePackageRecipeBuildJob',
-    'ISourcePackageRecipeBuildJobSource',
     ]
 
 from lazr.restful.declarations import export_as_webservice_entry
@@ -16,7 +14,6 @@ from lazr.restful.fields import (
     CollectionField,
     Reference,
     )
-from zope.interface import Interface
 from zope.schema import (
     Bool,
     Int,
@@ -25,7 +22,6 @@ from zope.schema import (
 
 from lp import _
 from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJobOld,
     ISpecificBuildFarmJobSource,
     )
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
@@ -35,7 +31,6 @@ from lp.code.interfaces.sourcepackagerecipe import (
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
-from lp.services.job.interfaces.job import IJob
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
@@ -103,24 +98,4 @@ class ISourcePackageRecipeBuildSource(ISpecificBuildFarmJobSource):
         """Create and return builds for stale ISourcePackageRecipes.
 
         :param logger: An optional logger to write debug info to.
-        """
-
-
-class ISourcePackageRecipeBuildJob(IBuildFarmJobOld):
-    """A read-only interface for recipe build jobs."""
-
-    job = Reference(
-        IJob, title=_("Job"), required=True, readonly=True,
-        description=_("Data common to all job types."))
-
-
-class ISourcePackageRecipeBuildJobSource(Interface):
-    """A utility of this interface used to create _things_."""
-
-    def new(build, job):
-        """Create a new `ISourcePackageRecipeBuildJob`.
-
-        :param build: An `ISourcePackageRecipeBuild`.
-        :param job: An `IJob`.
-        :return: `ISourcePackageRecipeBuildJob`.
         """

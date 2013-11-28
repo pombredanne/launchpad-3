@@ -1345,22 +1345,6 @@ class TestBranchDeletion(TestCaseWithFactory):
         # Need to commit the transaction to fire off the constraint checks.
         transaction.commit()
 
-    def test_related_TranslationTemplatesBuildJob_cleaned_out(self):
-        # A TranslationTemplatesBuildJob is a type of BranchJob that
-        # comes with a BuildQueue entry referring to the same Job.
-        # Deleting the branch cleans up the BuildQueue before it can
-        # remove the Job and BranchJob.
-        build = self.factory.makeTranslationTemplatesBuild()
-        build.queueBuild()
-        build.branch.destroySelf(break_references=True)
-
-    def test_related_TranslationTemplatesBuild_cleaned_out(self):
-        # A TranslationTemplatesBuild for the branch is deleted even if
-        # the corresponding BranchJob doesn't reference the branch. This
-        # is critical as TTBs will soon not have BranchJobs.
-        build = self.factory.makeTranslationTemplatesBuild()
-        build.branch.destroySelf(break_references=True)
-
     def test_linked_translations_branch_cleared(self):
         # The translations_branch of a series that is linked to the branch
         # should be cleared.
@@ -1368,7 +1352,15 @@ class TestBranchDeletion(TestCaseWithFactory):
         dev_focus.translations_branch = self.branch
         self.branch.destroySelf(break_references=True)
 
-    def test_unrelated_TranslationTemplatesBuildJob_intact(self):
+    def test_related_TranslationTemplatesBuild_cleaned_out(self):
+        # A TranslationTemplatesBuild may come with a BuildQueue entry.
+        # Deleting the branch cleans up the BuildQueue before it can
+        # remove the TTB.
+        build = self.factory.makeTranslationTemplatesBuild()
+        build.queueBuild()
+        build.branch.destroySelf(break_references=True)
+
+    def test_unrelated_TranslationTemplatesBuild_intact(self):
         # No innocent BuildQueue entries are harmed in deleting a
         # branch.
         build = self.factory.makeTranslationTemplatesBuild()

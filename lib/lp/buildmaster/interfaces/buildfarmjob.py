@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'IBuildFarmJob',
-    'IBuildFarmJobOld',
     'IBuildFarmJobSet',
     'IBuildFarmJobSource',
     'InconsistentBuildFarmJobError',
@@ -44,40 +43,6 @@ class InconsistentBuildFarmJobError(Exception):
     is yet implemented. Or when adapting the BuildFarmJob to a specific
     type of build job (such as a BinaryPackageBuild) fails.
     """
-
-
-class IBuildFarmJobOld(Interface):
-    """Defines the previous non-database BuildFarmJob interface.
-
-    This interface is still used by the temporary build queue related
-    classes (TranslationTemplatesBuildJob, SourcePackageRecipeBuildJob
-    and BuildPackageJob).
-
-    XXX 2010-04-28 michael.nelson bug=567922
-    This class can be removed (merging all the attributes directly into
-    IBuildFarmJob) once all the corresponding *Build classes and the
-    BuildQueue have been transitioned to the new database schema.
-    """
-
-    def getByJob(job):
-        """Get the specific `IBuildFarmJob` for the given `Job`.
-
-        Invoked on the specific `IBuildFarmJob`-implementing class that
-        has an entry associated with `job`.
-        """
-
-    def getByJobs(jobs):
-        """Get the specific `IBuildFarmJob`s for the given `Job`s.
-
-        Invoked on the specific `IBuildFarmJob`-implementing class that
-        has entries associated with `job`s.
-        """
-
-    def cleanUp():
-        """Job's finished.  Delete its supporting data."""
-
-    build = Attribute("Build")
-    job = Attribute("Job")
 
 
 class IBuildFarmJobDB(Interface):
