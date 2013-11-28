@@ -326,19 +326,19 @@ class BuilderSetAddView(LaunchpadFormView):
     label = "Register a new build machine"
 
     field_names = [
-        'name', 'title', 'processor', 'url', 'active', 'virtualized',
+        'name', 'title', 'processors', 'url', 'active', 'virtualized',
         'vm_host', 'owner'
         ]
-
     custom_widget('owner', HiddenUserWidget)
     custom_widget('url', TextWidget, displayWidth=30)
     custom_widget('vm_host', TextWidget, displayWidth=30)
+    custom_widget('processors', LabeledMultiCheckBoxWidget)
 
     @action(_('Register builder'), name='register')
     def register_action(self, action, data):
         """Register a new builder."""
         builder = getUtility(IBuilderSet).new(
-            processors=[data.get('processor')],
+            processors=data.get('processors'),
             url=data.get('url'),
             name=data.get('name'),
             title=data.get('title'),
