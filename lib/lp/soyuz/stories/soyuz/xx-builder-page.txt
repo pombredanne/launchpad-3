@@ -55,7 +55,7 @@ location.
     >>> print extract_text(
     ...     find_portlet(anon_browser.contents, 'Builder information'))
     Builder information
-    Architecture: Intel 386
+    Architectures: Intel 386
     Location: http://localhost:8221/
     Owner: Launchpad Buildd Admins
     Mode: This builder is in auto-mode and accepting jobs from the
@@ -153,7 +153,7 @@ automatic (AUTO) mode.
     ...     cprov_browser.contents, "Builder information")
     >>> print str(extract_text(details_portlet))
     Builder information
-    Architecture: AMD 64bit
+    Architectures: AMD 64bit and HPPA Processor
     Location: http://localhost:8221/
     Owner: Launchpad Buildd Admins
     Mode: This builder is in auto-mode and accepting jobs from the

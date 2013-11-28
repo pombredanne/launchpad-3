@@ -41,6 +41,7 @@ from lp.buildmaster.interfaces.builder import (
     )
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.services.database.interfaces import IStore
+from lp.services.helpers import english_list
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -267,6 +268,10 @@ class BuilderView(LaunchpadView):
 
     Implements useful actions for the page template.
     """
+
+    @property
+    def processors_text(self):
+        return english_list(p.title for p in self.context.processors)
 
     @property
     def current_build_duration(self):
