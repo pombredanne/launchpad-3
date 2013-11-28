@@ -22,6 +22,9 @@ from storm.expr import (
     Count,
     Sum,
     )
+from storm.properties import Int
+from storm.references import Reference
+from storm.store import Store
 import transaction
 from zope.component import getUtility
 from zope.interface import implements
@@ -48,7 +51,11 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.propertycache import cachedproperty
+from lp.services.database.stormbase import StormBase
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
@@ -67,8 +74,6 @@ class Builder(SQLBase):
 
     _defaultOrder = ['id']
 
-    processor = ForeignKey(dbName='processor', foreignKey='Processor',
-                           notNull=True)
     url = StringCol(dbName='url', notNull=True)
     name = StringCol(dbName='name', notNull=True)
     title = StringCol(dbName='title', notNull=True)
@@ -115,6 +120,47 @@ class Builder(SQLBase):
     def resetFailureCount(self):
         """See `IBuilder`."""
         self.failure_count = 0
+
+    @cachedproperty
+    def _processors_cache(self):
+        """See `IBuilder`."""
+        # This _cache method is a quick hack to get a settable
+        # cachedproperty, mostly for the webservice's benefit.
+        return list(Store.of(self).find(
+            Processor,
+            BuilderProcessor.processor_id == Processor.id,
+            BuilderProcessor.builder == self).order_by(Processor.id))
+
+    def _processors(self):
+        return self._processors_cache
+
+    def _set_processors(self, processors):
+        existing = set(self.processors)
+        wanted = set(processors)
+        # Enable the wanted but missing.
+        for processor in (wanted - existing):
+            bp = BuilderProcessor()
+            bp.builder = self
+            bp.processor = processor
+            Store.of(self).add(bp)
+        # Disable the unwanted but present.
+        Store.of(self).find(
+            BuilderProcessor,
+            BuilderProcessor.builder == self,
+            BuilderProcessor.processor_id.is_in(
+                processor.id for processor in existing - wanted)).remove()
+        del get_property_cache(self)._processors_cache
+
+    processors = property(_processors, _set_processors)
+
+    @property
+    def processor(self):
+        """See `IBuilder`."""
+        return self.processors[0]
+
+    @processor.setter
+    def processor(self, processor):
+        self.processors = [processor]
 
     @cachedproperty
     def currentjob(self):
@@ -249,6 +295,16 @@ class Builder(SQLBase):
                     self.name, self.failure_count))
 
 
+class BuilderProcessor(StormBase):
+    __storm_table__ = 'BuilderProcessor'
+    __storm_primary__ = ('builder_id', 'processor_id')
+
+    builder_id = Int(name='builder', allow_none=False)
+    builder = Reference(builder_id, Builder.id)
+    processor_id = Int(name='processor', allow_none=False)
+    processor = Reference(processor_id, Processor.id)
+
+
 class BuilderSet(object):
     """See IBuilderSet"""
     implements(IBuilderSet)
@@ -287,7 +343,7 @@ class BuilderSet(object):
     def getBuilders(self):
         """See IBuilderSet."""
         return Builder.selectBy(
-            active=True, orderBy=['virtualized', 'processor', 'name'])
+            active=True, orderBy=['virtualized', 'name'])
 
     def getBuildQueueSizes(self):
         """See `IBuilderSet`."""
@@ -313,5 +369,9 @@ class BuilderSet(object):
 
     def getBuildersForQueue(self, processor, virtualized):
         """See `IBuilderSet`."""
-        return Builder.selectBy(_builderok=True, processor=processor,
-                                virtualized=virtualized)
+        return IStore(Builder).find(
+            Builder,
+            Builder._builderok == True,
+            Builder.virtualized == virtualized,
+            BuilderProcessor.builder_id == Builder.id,
+            BuilderProcessor.processor == processor)

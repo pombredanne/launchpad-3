@@ -25,7 +25,10 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.processor import IProcessorSet
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    admin_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -62,6 +65,23 @@ class TestBuilder(TestCaseWithFactory):
         self.assertEqual(0, builder.failure_count)
         builder.handleFailure(BufferLogger())
         self.assertEqual(1, builder.failure_count)
+
+    def test_set_processors(self):
+        builder = self.factory.makeBuilder()
+        proc1 = self.factory.makeProcessor()
+        proc2 = self.factory.makeProcessor()
+        with admin_logged_in():
+            builder.processors = [proc1, proc2]
+        self.assertEqual(proc1, builder.processor)
+        self.assertEqual([proc1, proc2], builder.processors)
+
+    def test_set_processor(self):
+        builder = self.factory.makeBuilder()
+        proc = self.factory.makeProcessor()
+        with admin_logged_in():
+            builder.processor = proc
+        self.assertEqual(proc, builder.processor)
+        self.assertEqual([proc], builder.processors)
 
 
 class TestFindBuildCandidateBase(TestCaseWithFactory):
