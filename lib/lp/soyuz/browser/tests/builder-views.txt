@@ -67,7 +67,7 @@ by mark. we nee to log in as mark or any other member of admin team
     ...     print field_name
     name
     title
-    processor
+    processors
     url
     manual
     owner
