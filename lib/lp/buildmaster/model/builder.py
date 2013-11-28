@@ -235,20 +235,14 @@ class Builder(SQLBase):
                 AND (
                     -- The processor values either match or the candidate
                     -- job is processor-independent.
-                    buildqueue.processor = %s OR
+                    buildqueue.processor IN (
+                        SELECT processor FROM BuilderProcessor
+                        WHERE builder = %s) OR
                     buildqueue.processor IS NULL)
-                AND (
-                    -- The virtualized values either match or the candidate
-                    -- job does not care about virtualization and the idle
-                    -- builder *is* virtualized (the latter is a security
-                    -- precaution preventing the execution of untrusted code
-                    -- on native builders).
-                    buildqueue.virtualized = %s OR
-                    (buildqueue.virtualized IS NULL AND %s = TRUE))
+                AND buildqueue.virtualized = %s
                 AND buildqueue.builder IS NULL
         """ % sqlvalues(
-            BuildQueueStatus.WAITING, self.processor, self.virtualized,
-            self.virtualized)
+            BuildQueueStatus.WAITING, self.processor, self.virtualized)
         order_clause = " ORDER BY buildqueue.lastscore DESC, buildqueue.id"
 
         extra_queries = []
