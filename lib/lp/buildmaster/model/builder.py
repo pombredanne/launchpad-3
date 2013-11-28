@@ -245,7 +245,7 @@ class Builder(SQLBase):
                 AND buildqueue.virtualized = %s
                 AND buildqueue.builder IS NULL
         """ % sqlvalues(
-            BuildQueueStatus.WAITING, self.processor, self.virtualized)
+            BuildQueueStatus.WAITING, self, self.virtualized)
         order_clause = " ORDER BY buildqueue.lastscore DESC, buildqueue.id"
 
         extra_queries = []
