@@ -128,3 +128,6 @@ class IBuildQueueSet(Interface):
         Retrieve the only one possible entry being processed for a given
         builder. If not found, return None.
         """
+
+    def preloadForBuildFarmJobs(builds):
+        """Preload buildqueue_record for the given IBuildFarmJobs."""

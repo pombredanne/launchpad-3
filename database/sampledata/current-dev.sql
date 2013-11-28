@@ -3712,6 +3712,15 @@ ALTER TABLE bugwatchactivity DISABLE TRIGGER ALL;
 ALTER TABLE bugwatchactivity ENABLE TRIGGER ALL;
 
 
+ALTER TABLE builderprocessor DISABLE TRIGGER ALL;
+
+INSERT INTO builderprocessor (builder, processor) VALUES (1, 1);
+INSERT INTO builderprocessor (builder, processor) VALUES (2, 1);
+
+
+ALTER TABLE builderprocessor ENABLE TRIGGER ALL;
+
+
 ALTER TABLE buildqueue DISABLE TRIGGER ALL;
 
 INSERT INTO buildqueue (id, builder, logtail, lastscore, manual, estimated_duration, processor, virtualized, build_farm_job, status, date_started) VALUES (1, 1, 'Dummy sampledata entry, not processing', 1, false, '00:00:00', 1, false, 8, 1, '2005-06-15 09:20:12.820778');

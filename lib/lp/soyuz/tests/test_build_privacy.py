@@ -35,7 +35,7 @@ class TestBuildPrivacy(TestCaseWithFactory):
             publisher.prepareBreezyAutotest()
             distroseries.nominatedarchindep = das
             publisher.addFakeChroots(distroseries=distroseries)
-            self.factory.makeBuilder(processor=processor)
+            self.factory.makeBuilder(processors=[processor])
         self.public_archive = self.factory.makeArchive()
         self.private_archive = self.factory.makeArchive(private=True)
         # Create one public and one private build.

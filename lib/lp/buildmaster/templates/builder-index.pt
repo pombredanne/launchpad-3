@@ -23,8 +23,8 @@
       <p>
          <tal:title content="context/title">Bob the builder</tal:title>
          builds
-         <tal:arch content="context/processor/title">Intel 386</tal:arch>
-         binaries and is owned by
+         <tal:arch content="view/processors_text">Intel 386 and
+         AMD 64bit</tal:arch> binaries and is owned by
          <a tal:replace="structure context/owner/fmt:link">OWNER</a>.
        </p>
     </div>
@@ -38,9 +38,10 @@
         <div class="portlet">
           <h2>Builder information</h2>
           <dl>
-            <dt>Architecture:</dt>
+            <dt>Architectures:</dt>
             <dd>
-              <span tal:replace="context/processor/title">Intel 386</span>
+              <span tal:replace="view/processors_text">Intel 386 and AMD
+              64bit</span>
               <tal:virtual condition="context/virtualized">(virtual)
               </tal:virtual>
             </dd>

@@ -52,6 +52,7 @@ from lp.services.database.constants import (
     UTC_NOW,
     )
 from lp.services.database.enumcol import EnumCol
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import SQLBase
 from lp.services.propertycache import (
     cachedproperty,
@@ -143,10 +144,12 @@ class BuildQueue(SQLBase):
     def destroySelf(self):
         """Remove this record."""
         builder = self.builder
+        specific_build = self.specific_build
         Store.of(self).remove(self)
         Store.of(self).flush()
         if builder is not None:
             del get_property_cache(builder).currentjob
+        del get_property_cache(specific_build).buildqueue_record
         self._clear_specific_build_cache()
 
     def manualScore(self, value):
@@ -221,3 +224,21 @@ class BuildQueueSet(object):
     def getByBuilder(self, builder):
         """See `IBuildQueueSet`."""
         return BuildQueue.selectOneBy(builder=builder)
+
+    def preloadForBuildFarmJobs(self, builds):
+        """See `IBuildQueueSet`."""
+        from lp.buildmaster.model.builder import Builder
+        prefetched_data = dict()
+        bqs = list(IStore(BuildQueue).find(
+            BuildQueue,
+            BuildQueue._build_farm_job_id.is_in(
+                [removeSecurityProxy(b).build_farm_job_id for b in builds])))
+        load_related(Builder, bqs, ['builderID'])
+        prefetched_data = dict(
+            (removeSecurityProxy(buildqueue)._build_farm_job_id, buildqueue)
+            for buildqueue in bqs)
+        for build in builds:
+            bq = prefetched_data.get(
+                removeSecurityProxy(build).build_farm_job_id)
+            get_property_cache(build).buildqueue_record = bq
+        return bqs

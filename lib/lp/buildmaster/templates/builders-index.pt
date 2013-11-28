@@ -70,9 +70,10 @@
                  </td>
                  <td style="width: 9em;">
                    <span class="sortkey"
-                         tal:content="builder/processor/name" />
-                   <tal:processor replace="builder/processor/name"
-                     >386</tal:processor>
+                         tal:content="builder/processor/name|nothing" />
+                   <tal:repeat repeat="processor builder/processors">
+                   <tal:processor replace="processor/name">386</tal:processor>
+                   </tal:repeat>
                  </td>
                  <td tal:define="job builder/currentjob">
                    <metal:status-summary

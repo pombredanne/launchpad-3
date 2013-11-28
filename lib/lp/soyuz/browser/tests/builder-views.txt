@@ -67,7 +67,7 @@ by mark. we nee to log in as mark or any other member of admin team
     ...     print field_name
     name
     title
-    processor
+    processors
     url
     manual
     owner
@@ -259,17 +259,17 @@ architectures.
     >>> hppa = Processor.selectOneBy(name='hppa')
 
     >>> ignored = factory.makeBuilder(
-    ...     name='hamburger', processor=i386, virtualized=True)
+    ...     name='hamburger', processors=[i386], virtualized=True)
     >>> ignored = factory.makeBuilder(
-    ...     name='cheese', processor=hppa, virtualized=True)
+    ...     name='cheese', processors=[hppa], virtualized=True)
     >>> ignored = factory.makeBuilder(
-    ...     name='bacon', processor=amd64, virtualized=True)
+    ...     name='bacon', processors=[amd64], virtualized=True)
     >>> ignored = factory.makeBuilder(
-    ...     name='egg', processor=i386, virtualized=False)
+    ...     name='egg', processors=[i386], virtualized=False)
     >>> ignored = factory.makeBuilder(
-    ...     name='ham', processor=hppa, virtualized=False, manual=True)
+    ...     name='ham', processors=[hppa], virtualized=False, manual=True)
     >>> ignored = factory.makeBuilder(
-    ...     name='prosciuto', processor=amd64, virtualized=False)
+    ...     name='prosciuto', processors=[amd64], virtualized=False)
 
 Newly created builders will be in manual mode because we don't want
 them going straight into the build farm until tested.

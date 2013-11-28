@@ -1917,25 +1917,6 @@ class Archive(SQLBase):
             BinaryPackageReleaseDownloadCount, archive=self,
             binary_package_release=bpr, day=day, country=country).one()
 
-    def _setBuildStatuses(self, status):
-        """Update the pending Build Jobs' status for this archive."""
-
-        query = """
-            UPDATE Job SET status = %s
-            FROM BinaryPackageBuild, BuildQueue
-            WHERE
-                -- insert self.id here
-                BinaryPackageBuild.archive = %s
-                AND BuildQueue.build_farm_job =
-                    BinaryPackageBuild.build_farm_job
-                AND Job.id = BuildQueue.job
-                -- Build is in state BuildStatus.NEEDSBUILD (0)
-                AND BinaryPackageBuild.status = %s;
-        """ % sqlvalues(status, self, BuildStatus.NEEDSBUILD)
-
-        store = Store.of(self)
-        store.execute(query)
-
     def _setBuildQueueStatuses(self, status):
         """Update the pending BuildQueues' statuses for this archive."""
         Store.of(self).execute("""
@@ -1955,14 +1936,12 @@ class Archive(SQLBase):
         assert self._enabled == False, "This archive is already enabled."
         assert self.is_active, "Deleted archives can't be enabled."
         self._enabled = True
-        self._setBuildStatuses(JobStatus.WAITING)
         self._setBuildQueueStatuses(BuildQueueStatus.WAITING)
 
     def disable(self):
         """See `IArchive`."""
         assert self._enabled == True, "This archive is already disabled."
         self._enabled = False
-        self._setBuildStatuses(JobStatus.SUSPENDED)
         self._setBuildQueueStatuses(BuildQueueStatus.SUSPENDED)
 
     def delete(self, deleted_by):

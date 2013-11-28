@@ -33,6 +33,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.widgets.owner import HiddenUserWidget
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
@@ -40,6 +41,7 @@ from lp.buildmaster.interfaces.builder import (
     )
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.services.database.interfaces import IStore
+from lp.services.helpers import english_list
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -253,10 +255,11 @@ class BuilderCategory:
 
         for processor, builders in grouped_builders.iteritems():
             virt_str = 'virt' if self.virtualized else 'nonvirt'
+            processor_name = processor.name if processor else None
             queue_size, duration = build_queue_sizes[virt_str].get(
-                processor.name, (0, None))
+                processor_name, (0, None))
             builder_group = BuilderGroup(
-                processor.name, queue_size, duration,
+                processor_name, queue_size, duration,
                 sorted(builders, key=operator.attrgetter('title')))
             self._builder_groups.append(builder_group)
 
@@ -266,6 +269,10 @@ class BuilderView(LaunchpadView):
 
     Implements useful actions for the page template.
     """
+
+    @property
+    def processors_text(self):
+        return english_list(p.title for p in self.context.processors)
 
     @property
     def current_build_duration(self):
@@ -320,19 +327,19 @@ class BuilderSetAddView(LaunchpadFormView):
     label = "Register a new build machine"
 
     field_names = [
-        'name', 'title', 'processor', 'url', 'active', 'virtualized',
+        'name', 'title', 'processors', 'url', 'active', 'virtualized',
         'vm_host', 'owner'
         ]
-
     custom_widget('owner', HiddenUserWidget)
     custom_widget('url', TextWidget, displayWidth=30)
     custom_widget('vm_host', TextWidget, displayWidth=30)
+    custom_widget('processors', LabeledMultiCheckBoxWidget)
 
     @action(_('Register builder'), name='register')
     def register_action(self, action, data):
         """Register a new builder."""
         builder = getUtility(IBuilderSet).new(
-            processor=data.get('processor'),
+            processors=data.get('processors'),
             url=data.get('url'),
             name=data.get('name'),
             title=data.get('title'),
@@ -361,9 +368,10 @@ class BuilderEditView(LaunchpadEditFormView):
     schema = IBuilder
 
     field_names = [
-        'name', 'title', 'processor', 'url', 'manual', 'owner',
+        'name', 'title', 'processors', 'url', 'manual', 'owner',
         'virtualized', 'builderok', 'failnotes', 'vm_host', 'active',
         ]
+    custom_widget('processors', LabeledMultiCheckBoxWidget)
 
     @action(_('Change'), name='update')
     def change_details(self, action, data):
