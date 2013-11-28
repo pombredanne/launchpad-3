@@ -25,7 +25,10 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.processor import IProcessorSet
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    admin_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -63,6 +66,23 @@ class TestBuilder(TestCaseWithFactory):
         builder.handleFailure(BufferLogger())
         self.assertEqual(1, builder.failure_count)
 
+    def test_set_processors(self):
+        builder = self.factory.makeBuilder()
+        proc1 = self.factory.makeProcessor()
+        proc2 = self.factory.makeProcessor()
+        with admin_logged_in():
+            builder.processors = [proc1, proc2]
+        self.assertEqual(proc1, builder.processor)
+        self.assertEqual([proc1, proc2], builder.processors)
+
+    def test_set_processor(self):
+        builder = self.factory.makeBuilder()
+        proc = self.factory.makeProcessor()
+        with admin_logged_in():
+            builder.processor = proc
+        self.assertEqual(proc, builder.processor)
+        self.assertEqual([proc], builder.processors)
+
 
 class TestFindBuildCandidateBase(TestCaseWithFactory):
     """Setup the test publisher and some builders."""
@@ -97,6 +117,32 @@ class TestFindBuildCandidateBase(TestCaseWithFactory):
 
 class TestFindBuildCandidateGeneralCases(TestFindBuildCandidateBase):
     # Test usage of findBuildCandidate not specific to any archive type.
+
+    def test_findBuildCandidate_matches_processor(self):
+        # Builder._findBuildCandidate returns the highest scored build
+        # for any of the builder's architectures.
+        bq1 = self.factory.makeBinaryPackageBuild().queueBuild()
+        bq2 = self.factory.makeBinaryPackageBuild().queueBuild()
+
+        # With no job for the builder's processor, no job is returned.
+        proc = self.factory.makeProcessor()
+        builder = removeSecurityProxy(
+            self.factory.makeBuilder(processors=[proc], virtualized=True))
+        self.assertIs(None, builder._findBuildCandidate())
+
+        # Once bq1's processor is added to the mix, it's the best
+        # candidate.
+        builder.processors = [proc, bq1.processor]
+        self.assertEqual(bq1, builder._findBuildCandidate())
+
+        # bq2's score doesn't matter, as its processor isn't suitable
+        # for our builder.
+        bq2.manualScore(3000)
+        self.assertEqual(bq1, builder._findBuildCandidate())
+
+        # But once we add bq2's processor, its higher score makes it win.
+        builder.processors = [bq1.processor, bq2.processor]
+        self.assertEqual(bq2, builder._findBuildCandidate())
 
     def test_findBuildCandidate_supersedes_builds(self):
         # IBuilder._findBuildCandidate identifies if there are builds

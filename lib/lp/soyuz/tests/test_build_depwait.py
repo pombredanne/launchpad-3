@@ -44,7 +44,8 @@ class TestBuildDepWait(TestCaseWithFactory):
             self.publisher.prepareBreezyAutotest()
             self.distroseries.nominatedarchindep = self.das
             self.publisher.addFakeChroots(distroseries=self.distroseries)
-            self.builder = self.factory.makeBuilder(processor=self.processor)
+            self.builder = self.factory.makeBuilder(
+                processors=[self.processor])
 
     def test_update_dependancies(self):
         # Calling .updateDependencies() on a build will remove those which

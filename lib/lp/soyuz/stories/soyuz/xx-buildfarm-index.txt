@@ -138,12 +138,14 @@ location.
     ...     'URL').value = 'http://tubaina.buildd'
 
 Additionaly, the administrator can select the processor corresponding
-to the builder or simply proceed with the default (i386).
+to the builder.
 
-    >>> admin_browser.getControl(name='field.processor').displayOptions
-    ['Intel 386', 'AMD 64bit', 'HPPA Processor']
-    >>> admin_browser.getControl(name='field.processor').displayValue
-    ['Intel 386']
+    >>> admin_browser.getControl(name='field.processors').options
+    ['386', 'amd64', 'hppa']
+    >>> admin_browser.getControl(name='field.processors').value
+    []
+    >>> admin_browser.getControl(name='field.processors').value = [
+    ...     'amd64', 'hppa']
 
 By default, builders are created as 'Publicly Visible', although the
 administrator can change this value during creation time.
@@ -172,3 +174,5 @@ just-created builder page.
     >>> admin_browser.getControl("Register builder").click()
     >>> print backslashreplace(admin_browser.title)
     Tubaina : Build Farm
+    >>> 'AMD 64bit and HPPA Processor' in admin_browser.contents
+    True

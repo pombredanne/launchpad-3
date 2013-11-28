@@ -99,9 +99,9 @@ class TestDistributionHasBuildRecords(TestCaseWithFactory):
             self.distroseries.nominatedarchindep = self.das_one
             self.publisher.addFakeChroots(distroseries=self.distroseries)
             self.builder_one = self.factory.makeBuilder(
-                processor=self.processor_one)
+                processors=[self.processor_one])
             self.builder_two = self.factory.makeBuilder(
-                processor=self.processor_two)
+                processors=[self.processor_two])
         self.builds = []
         self.createBuilds()
 
@@ -315,7 +315,7 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
             publisher.prepareBreezyAutotest()
             publisher.addFakeChroots(distroseries=distroseries)
             distroseries.nominatedarchindep = das
-            self.factory.makeBuilder(processor=processor)
+            self.factory.makeBuilder(processors=[processor])
         spph = self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=spn, distroseries=distroseries)
         spph.createMissingBuilds()
