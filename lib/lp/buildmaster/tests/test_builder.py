@@ -127,7 +127,7 @@ class TestFindBuildCandidateGeneralCases(TestFindBuildCandidateBase):
         # With no job for the builder's processor, no job is returned.
         proc = self.factory.makeProcessor()
         builder = removeSecurityProxy(
-            self.factory.makeBuilder(processor=proc, virtualized=True))
+            self.factory.makeBuilder(processors=[proc], virtualized=True))
         self.assertIs(None, builder._findBuildCandidate())
 
         # Once bq1's processor is added to the mix, it's the best
