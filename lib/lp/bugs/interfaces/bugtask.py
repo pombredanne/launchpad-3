@@ -496,7 +496,8 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
     date_closed = exported(
         Datetime(title=_("Date Closed"),
                  description=_("The date on which this task was marked "
-                               "either Won't Fix, Invalid or Fix Released."),
+                               "Fix Released, Invalid, Won't Fix, Expired or "
+                               "Opinion."),
                  readonly=True,
                  required=False))
     date_left_new = exported(
