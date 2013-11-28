@@ -338,7 +338,7 @@ class BuilderSetAddView(LaunchpadFormView):
     def register_action(self, action, data):
         """Register a new builder."""
         builder = getUtility(IBuilderSet).new(
-            processor=data.get('processor'),
+            processors=[data.get('processor')],
             url=data.get('url'),
             name=data.get('name'),
             title=data.get('title'),

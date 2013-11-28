@@ -235,7 +235,7 @@ class IBuilderSet(Interface):
     def getByName(name):
         """Retrieve a builder by name"""
 
-    def new(processor, url, name, title, owner, active=True,
+    def new(processors, url, name, title, owner, active=True,
             virtualized=False, vm_host=None):
         """Create a new Builder entry.
 

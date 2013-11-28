@@ -32,13 +32,13 @@ class TestBuildersCollection(TestCaseWithFactory):
         g1 = self.factory.makeProcessor('g1')
         quantum = self.factory.makeProcessor('quantum')
         self.factory.makeBuilder(
-            processor=quantum, name='quantum_builder1')
+            processors=[quantum], name='quantum_builder1')
         self.factory.makeBuilder(
-            processor=quantum, name='quantum_builder2')
+            processors=[quantum], name='quantum_builder2')
         self.factory.makeBuilder(
-            processor=quantum, name='quantum_builder3', virtualized=False)
+            processors=[quantum], name='quantum_builder3', virtualized=False)
         self.factory.makeBuilder(
-            processor=g1, name='g1_builder', virtualized=False)
+            processors=[g1], name='g1_builder', virtualized=False)
 
         logout()
         results = self.webservice.named_get(
@@ -59,7 +59,7 @@ class TestBuilderEntry(TestCaseWithFactory):
 
     def test_exports_processor(self):
         processor = self.factory.makeProcessor('s1')
-        builder = self.factory.makeBuilder(processor=processor)
+        builder = self.factory.makeBuilder(processors=[processor])
 
         logout()
         entry = self.webservice.get(

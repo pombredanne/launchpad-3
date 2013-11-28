@@ -144,32 +144,32 @@ class TestBuildQueueBase(TestCaseWithFactory):
         # Next make seven 'hppa' builders.
         self.hppa_proc = getUtility(IProcessorSet).getByName('hppa')
         self.h1 = self.factory.makeBuilder(
-            name='hppa-v-1', processor=self.hppa_proc)
+            name='hppa-v-1', processors=[self.hppa_proc])
         self.h2 = self.factory.makeBuilder(
-            name='hppa-v-2', processor=self.hppa_proc)
+            name='hppa-v-2', processors=[self.hppa_proc])
         self.h3 = self.factory.makeBuilder(
-            name='hppa-v-3', processor=self.hppa_proc)
+            name='hppa-v-3', processors=[self.hppa_proc])
         self.h4 = self.factory.makeBuilder(
-            name='hppa-v-4', processor=self.hppa_proc)
+            name='hppa-v-4', processors=[self.hppa_proc])
         self.h5 = self.factory.makeBuilder(
-            name='hppa-n-5', processor=self.hppa_proc, virtualized=False)
+            name='hppa-n-5', processors=[self.hppa_proc], virtualized=False)
         self.h6 = self.factory.makeBuilder(
-            name='hppa-n-6', processor=self.hppa_proc, virtualized=False)
+            name='hppa-n-6', processors=[self.hppa_proc], virtualized=False)
         self.h7 = self.factory.makeBuilder(
-            name='hppa-n-7', processor=self.hppa_proc, virtualized=False)
+            name='hppa-n-7', processors=[self.hppa_proc], virtualized=False)
 
         # Finally make five 'amd64' builders.
         self.amd_proc = getUtility(IProcessorSet).getByName('amd64')
         self.a1 = self.factory.makeBuilder(
-            name='amd64-v-1', processor=self.amd_proc)
+            name='amd64-v-1', processors=[self.amd_proc])
         self.a2 = self.factory.makeBuilder(
-            name='amd64-v-2', processor=self.amd_proc)
+            name='amd64-v-2', processors=[self.amd_proc])
         self.a3 = self.factory.makeBuilder(
-            name='amd64-v-3', processor=self.amd_proc)
+            name='amd64-v-3', processors=[self.amd_proc])
         self.a4 = self.factory.makeBuilder(
-            name='amd64-n-4', processor=self.amd_proc, virtualized=False)
+            name='amd64-n-4', processors=[self.amd_proc], virtualized=False)
         self.a5 = self.factory.makeBuilder(
-            name='amd64-n-5', processor=self.amd_proc, virtualized=False)
+            name='amd64-n-5', processors=[self.amd_proc], virtualized=False)
 
         self.builders = dict()
         self.x86_proc = getUtility(IProcessorSet).getByName('386')

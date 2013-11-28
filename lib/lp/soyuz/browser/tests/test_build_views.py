@@ -435,7 +435,8 @@ class TestBuildViews(TestCaseWithFactory):
         # when there's no start time.
         build = self.factory.makeBinaryPackageBuild()
         build.queueBuild()
-        self.factory.makeBuilder(processor=build.processor, virtualized=True)
+        self.factory.makeBuilder(
+            processors=[build.processor], virtualized=True)
         self.assertIsNot(None, create_initialized_view(build, '+index').eta)
         with admin_logged_in():
             build.archive.disable()
