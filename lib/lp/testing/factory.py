@@ -2741,7 +2741,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         permission_set.newQueueAdmin(archive, person, 'main')
         return person
 
-    def makeBuilder(self, processor=None, url=None, name=None, title=None,
+    def makeBuilder(self, processors=None, url=None, name=None, title=None,
                     owner=None, active=True, virtualized=True, vm_host=None,
                     manual=False):
         """Make a new builder for i386 virtualized builds by default.
@@ -2750,8 +2750,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         we currently have a build slave setup for 'bob' only in the
         test environment.
         """
-        if processor is None:
-            processor = getUtility(IProcessorSet).getByName('386')
+        if processors is None:
+            processors = [getUtility(IProcessorSet).getByName('386')]
         if url is None:
             url = 'http://%s:8221/' % self.getUniqueString()
         if name is None:
@@ -2762,7 +2762,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
 
         return getUtility(IBuilderSet).new(
-            processor, url, name, title, owner, active, virtualized, vm_host,
+            processors, url, name, title, owner, active, virtualized, vm_host,
             manual=manual)
 
     def makeRecipeText(self, *branches):

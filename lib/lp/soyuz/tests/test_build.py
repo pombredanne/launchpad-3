@@ -52,7 +52,8 @@ class TestBuild(TestCaseWithFactory):
             self.publisher.prepareBreezyAutotest()
             self.distroseries.nominatedarchindep = self.das
             self.publisher.addFakeChroots(distroseries=self.distroseries)
-            self.builder = self.factory.makeBuilder(processor=self.processor)
+            self.builder = self.factory.makeBuilder(
+                processors=[self.processor])
         self.now = datetime.now(pytz.UTC)
 
     def test_title(self):

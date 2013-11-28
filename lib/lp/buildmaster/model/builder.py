@@ -325,10 +325,10 @@ class BuilderSet(object):
     def __getitem__(self, name):
         return self.getByName(name)
 
-    def new(self, processor, url, name, title, owner, active=True,
+    def new(self, processors, url, name, title, owner, active=True,
             virtualized=False, vm_host=None, manual=True):
         """See IBuilderSet."""
-        return Builder(processor=processor, url=url, name=name, title=title,
+        return Builder(processors=processors, url=url, name=name, title=title,
                        owner=owner, active=active, virtualized=virtualized,
                        vm_host=vm_host, _builderok=True, manual=manual)
 
