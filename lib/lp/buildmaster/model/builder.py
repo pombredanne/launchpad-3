@@ -159,7 +159,10 @@ class Builder(SQLBase):
     @property
     def processor(self):
         """See `IBuilder`."""
-        return self.processors[0]
+        try:
+            return self.processors[0]
+        except IndexError:
+            return None
 
     @processor.setter
     def processor(self, processor):
