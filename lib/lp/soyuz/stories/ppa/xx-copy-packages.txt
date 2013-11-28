@@ -876,9 +876,9 @@ conflicts and cannot be allowed.
     >>> run_copy_jobs()
     DEBUG Packages copied to PPA for James Blackwell Sandbox:
     DEBUG pmount 0.1-1 in warty
-    INFO ... raised CannotCopy: pmount 0.1-1 in grumpy
-    (same version already building in the destination archive for Warty)
     INFO ... raised CannotCopy: pmount 0.1-1 in hoary
+    (same version already building in the destination archive for Warty)
+    INFO ... raised CannotCopy: pmount 0.1-1 in grumpy
     (same version already building in the destination archive for Warty)
 
 Due to the copy error, nothing was copied to the destination PPA, not

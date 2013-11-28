@@ -71,7 +71,6 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.job.model.job import Job
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.librarian.model import (
     LibraryFileAlias,
@@ -101,7 +100,6 @@ from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.files import BinaryPackageFile
 from lp.soyuz.model.packageset import Packageset
 from lp.soyuz.model.queue import (
@@ -508,15 +506,6 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
 
         # Otherwise we can cancel it here.
         self.buildqueue_record.cancel()
-
-    def makeJob(self):
-        """See `IBuildFarmJob`."""
-        store = Store.of(self)
-        job = Job()
-        store.add(job)
-        specific_job = BuildPackageJob(build=self, job=job)
-        store.add(specific_job)
-        return specific_job
 
     def _parseDependencyToken(self, token):
         """Parse the given token.

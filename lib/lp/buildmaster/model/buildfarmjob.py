@@ -6,7 +6,6 @@ __metaclass__ = type
 __all__ = [
     'BuildFarmJob',
     'BuildFarmJobMixin',
-    'BuildFarmJobOld',
     'SpecificBuildFarmJobSourceMixin',
     ]
 
@@ -36,7 +35,6 @@ from lp.buildmaster.enums import (
     )
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob,
-    IBuildFarmJobOld,
     IBuildFarmJobSet,
     IBuildFarmJobSource,
     )
@@ -50,31 +48,6 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
-
-
-class BuildFarmJobOld:
-    """Some common implementation for IBuildFarmJobOld."""
-
-    implements(IBuildFarmJobOld)
-
-    @classmethod
-    def getByJob(cls, job):
-        """See `IBuildFarmJobOld`."""
-        return IStore(cls).find(cls, cls.job == job).one()
-
-    @classmethod
-    def getByJobs(cls, jobs):
-        """See `IBuildFarmJobOld`."""
-        job_ids = [job.id for job in jobs]
-        return IStore(cls).find(cls, cls.job_id.is_in(job_ids))
-
-    def cleanUp(self):
-        """See `IBuildFarmJob`.
-
-        Classes that derive from BuildFarmJobOld need to clean up
-        after themselves correctly.
-        """
-        Store.of(self).remove(self)
 
 
 class BuildFarmJob(Storm):

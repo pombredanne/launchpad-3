@@ -1,7 +1,7 @@
 # Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""An `IBuildFarmJobBehavior` for `TranslationTemplatesBuildJob`.
+"""An `IBuildFarmJobBehavior` for `TranslationTemplatesBuild`.
 
 Dispatches translation template build jobs to build-farm slaves.
 """

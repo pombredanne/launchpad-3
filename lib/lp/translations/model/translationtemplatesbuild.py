@@ -18,7 +18,6 @@ from storm.locals import (
     DateTime,
     Int,
     Reference,
-    Store,
     Storm,
     )
 from zope.component import getUtility
@@ -41,10 +40,6 @@ from lp.buildmaster.model.buildfarmjob import (
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
-from lp.code.model.branchjob import (
-    BranchJob,
-    BranchJobType,
-    )
 from lp.registry.model.product import Product
 from lp.services.config import config
 from lp.services.database.bulk import load_related
@@ -54,9 +49,6 @@ from lp.services.database.interfaces import IStore
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuild,
     ITranslationTemplatesBuildSource,
-    )
-from lp.translations.model.translationtemplatesbuildjob import (
-    TranslationTemplatesBuildJob,
     )
 from lp.translations.pottery.detect_intltool import is_intltool_structure
 
@@ -119,18 +111,6 @@ class TranslationTemplatesBuild(SpecificBuildFarmJobSourceMixin,
         """See `IBuildFarmJob`."""
         return timedelta(seconds=10)
 
-    def makeJob(self):
-        """See `IBuildFarmJob`."""
-        # Pass public HTTP URL for the branch.
-        metadata = {
-            'branch_url': self.branch.composePublicURL(),
-            'build_id': self.id,
-            }
-        branch_job = BranchJob(
-            self.branch, BranchJobType.TRANSLATION_TEMPLATES_BUILD, metadata)
-        Store.of(self).add(branch_job)
-        return TranslationTemplatesBuildJob(branch_job)
-
     @classmethod
     def _getStore(cls, store=None):
         """Return `store` if given, or the default."""
@@ -159,7 +139,7 @@ class TranslationTemplatesBuild(SpecificBuildFarmJobSourceMixin,
 
     @classmethod
     def generatesTemplates(cls, branch):
-        """See `ITranslationTemplatesBuildJobSource`."""
+        """See `ITranslationTemplatesBuildSource`."""
         logger = logging.getLogger('translation-templates-build')
         if branch.private:
             # We don't support generating template from private branches
@@ -198,7 +178,7 @@ class TranslationTemplatesBuild(SpecificBuildFarmJobSourceMixin,
 
     @classmethod
     def scheduleTranslationTemplatesBuild(cls, branch):
-        """See `ITranslationTemplatesBuildJobSource`."""
+        """See `ITranslationTemplatesBuildSource`."""
         logger = logging.getLogger('translation-templates-build')
         if not config.rosetta.generate_templates:
             # This feature is disabled by default.
@@ -272,6 +252,6 @@ class TranslationTemplatesBuild(SpecificBuildFarmJobSourceMixin,
     def calculateScore(self):
         """See `IBuildFarmJob`."""
         # Hard-code score for now.  Most PPA jobs start out at 2505;
-        # TranslationTemplateBuildJobs are fast so we want them at a
-        # higher priority.
+        # TranslationTemplateBuild are fast so we want them at a higher
+        # priority.
         return HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE
