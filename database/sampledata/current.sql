@@ -3654,6 +3654,15 @@ ALTER TABLE bugwatchactivity DISABLE TRIGGER ALL;
 ALTER TABLE bugwatchactivity ENABLE TRIGGER ALL;
 
 
+ALTER TABLE builderprocessor DISABLE TRIGGER ALL;
+
+INSERT INTO builderprocessor (builder, processor) VALUES (1, 1);
+INSERT INTO builderprocessor (builder, processor) VALUES (2, 1);
+
+
+ALTER TABLE builderprocessor ENABLE TRIGGER ALL;
+
+
 ALTER TABLE buildpackagejob DISABLE TRIGGER ALL;
 
 INSERT INTO buildpackagejob (id, job, build) VALUES (1, 1, 8);
