@@ -5,6 +5,7 @@ __metaclass__ = type
 
 __all__ = [
     'Builder',
+    'BuilderProcessor',
     'BuilderSet',
     ]
 
@@ -43,6 +44,8 @@ from lp.buildmaster.model.buildqueue import (
     specific_build_farm_job_sources,
     )
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.bulk import load
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.interfaces import (
     ISlaveStore,
     IStore,
@@ -334,10 +337,27 @@ class BuilderSet(object):
         """See IBuilderSet."""
         return Builder.select().count()
 
+    def _preloadProcessors(self, rows):
+        # Grab (Builder.id, Processor.id) pairs and stuff them into the
+        # Builders' processor caches.
+        store = IStore(Builder)
+        pairs = store.find(
+            (BuilderProcessor.builder_id, BuilderProcessor.processor_id),
+            BuilderProcessor.builder_id.is_in([b.id for b in rows])).order_by(
+                BuilderProcessor.builder_id, BuilderProcessor.processor_id)
+        load(Processor, [pid for bid, pid in pairs])
+        for row in rows:
+            get_property_cache(row)._processors_cache = []
+        for bid, pid in pairs:
+            cache = get_property_cache(store.get(Builder, bid))
+            cache._processors_cache.append(store.get(Processor, pid))
+
     def getBuilders(self):
         """See IBuilderSet."""
-        return Builder.selectBy(
-            active=True, orderBy=['virtualized', 'name'])
+        rs = IStore(Builder).find(
+            Builder, Builder.active == True).order_by(
+                Builder.virtualized, Builder.name)
+        return DecoratedResultSet(rs, pre_iter_hook=self._preloadProcessors)
 
     def getBuildQueueSizes(self):
         """See `IBuilderSet`."""
