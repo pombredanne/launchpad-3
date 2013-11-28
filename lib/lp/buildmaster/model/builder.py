@@ -5,6 +5,7 @@ __metaclass__ = type
 
 __all__ = [
     'Builder',
+    'BuilderProcessor',
     'BuilderSet',
     ]
 
@@ -22,6 +23,9 @@ from storm.expr import (
     Count,
     Sum,
     )
+from storm.properties import Int
+from storm.references import Reference
+from storm.store import Store
 import transaction
 from zope.component import getUtility
 from zope.interface import implements
@@ -40,6 +44,8 @@ from lp.buildmaster.model.buildqueue import (
     specific_build_farm_job_sources,
     )
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.bulk import load
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.interfaces import (
     ISlaveStore,
     IStore,
@@ -48,7 +54,11 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.propertycache import cachedproperty
+from lp.services.database.stormbase import StormBase
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 # XXX Michael Nelson 2010-01-13 bug=491330
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
@@ -67,8 +77,6 @@ class Builder(SQLBase):
 
     _defaultOrder = ['id']
 
-    processor = ForeignKey(dbName='processor', foreignKey='Processor',
-                           notNull=True)
     url = StringCol(dbName='url', notNull=True)
     name = StringCol(dbName='name', notNull=True)
     title = StringCol(dbName='title', notNull=True)
@@ -115,6 +123,50 @@ class Builder(SQLBase):
     def resetFailureCount(self):
         """See `IBuilder`."""
         self.failure_count = 0
+
+    @cachedproperty
+    def _processors_cache(self):
+        """See `IBuilder`."""
+        # This _cache method is a quick hack to get a settable
+        # cachedproperty, mostly for the webservice's benefit.
+        return list(Store.of(self).find(
+            Processor,
+            BuilderProcessor.processor_id == Processor.id,
+            BuilderProcessor.builder == self).order_by(Processor.id))
+
+    def _processors(self):
+        return self._processors_cache
+
+    def _set_processors(self, processors):
+        existing = set(self.processors)
+        wanted = set(processors)
+        # Enable the wanted but missing.
+        for processor in (wanted - existing):
+            bp = BuilderProcessor()
+            bp.builder = self
+            bp.processor = processor
+            Store.of(self).add(bp)
+        # Disable the unwanted but present.
+        Store.of(self).find(
+            BuilderProcessor,
+            BuilderProcessor.builder == self,
+            BuilderProcessor.processor_id.is_in(
+                processor.id for processor in existing - wanted)).remove()
+        del get_property_cache(self)._processors_cache
+
+    processors = property(_processors, _set_processors)
+
+    @property
+    def processor(self):
+        """See `IBuilder`."""
+        try:
+            return self.processors[0]
+        except IndexError:
+            return None
+
+    @processor.setter
+    def processor(self, processor):
+        self.processors = [processor]
 
     @cachedproperty
     def currentjob(self):
@@ -189,20 +241,14 @@ class Builder(SQLBase):
                 AND (
                     -- The processor values either match or the candidate
                     -- job is processor-independent.
-                    buildqueue.processor = %s OR
+                    buildqueue.processor IN (
+                        SELECT processor FROM BuilderProcessor
+                        WHERE builder = %s) OR
                     buildqueue.processor IS NULL)
-                AND (
-                    -- The virtualized values either match or the candidate
-                    -- job does not care about virtualization and the idle
-                    -- builder *is* virtualized (the latter is a security
-                    -- precaution preventing the execution of untrusted code
-                    -- on native builders).
-                    buildqueue.virtualized = %s OR
-                    (buildqueue.virtualized IS NULL AND %s = TRUE))
+                AND buildqueue.virtualized = %s
                 AND buildqueue.builder IS NULL
         """ % sqlvalues(
-            BuildQueueStatus.WAITING, self.processor, self.virtualized,
-            self.virtualized)
+            BuildQueueStatus.WAITING, self, self.virtualized)
         order_clause = " ORDER BY buildqueue.lastscore DESC, buildqueue.id"
 
         extra_queries = []
@@ -249,6 +295,16 @@ class Builder(SQLBase):
                     self.name, self.failure_count))
 
 
+class BuilderProcessor(StormBase):
+    __storm_table__ = 'BuilderProcessor'
+    __storm_primary__ = ('builder_id', 'processor_id')
+
+    builder_id = Int(name='builder', allow_none=False)
+    builder = Reference(builder_id, Builder.id)
+    processor_id = Int(name='processor', allow_none=False)
+    processor = Reference(processor_id, Processor.id)
+
+
 class BuilderSet(object):
     """See IBuilderSet"""
     implements(IBuilderSet)
@@ -284,10 +340,27 @@ class BuilderSet(object):
         """See IBuilderSet."""
         return Builder.select().count()
 
+    def _preloadProcessors(self, rows):
+        # Grab (Builder.id, Processor.id) pairs and stuff them into the
+        # Builders' processor caches.
+        store = IStore(Builder)
+        pairs = store.find(
+            (BuilderProcessor.builder_id, BuilderProcessor.processor_id),
+            BuilderProcessor.builder_id.is_in([b.id for b in rows])).order_by(
+                BuilderProcessor.builder_id, BuilderProcessor.processor_id)
+        load(Processor, [pid for bid, pid in pairs])
+        for row in rows:
+            get_property_cache(row)._processors_cache = []
+        for bid, pid in pairs:
+            cache = get_property_cache(store.get(Builder, bid))
+            cache._processors_cache.append(store.get(Processor, pid))
+
     def getBuilders(self):
         """See IBuilderSet."""
-        return Builder.selectBy(
-            active=True, orderBy=['virtualized', 'processor', 'name'])
+        rs = IStore(Builder).find(
+            Builder, Builder.active == True).order_by(
+                Builder.virtualized, Builder.name)
+        return DecoratedResultSet(rs, pre_iter_hook=self._preloadProcessors)
 
     def getBuildQueueSizes(self):
         """See `IBuilderSet`."""
@@ -313,5 +386,9 @@ class BuilderSet(object):
 
     def getBuildersForQueue(self, processor, virtualized):
         """See `IBuilderSet`."""
-        return Builder.selectBy(_builderok=True, processor=processor,
-                                virtualized=virtualized)
+        return IStore(Builder).find(
+            Builder,
+            Builder._builderok == True,
+            Builder.virtualized == virtualized,
+            BuilderProcessor.builder_id == Builder.id,
+            BuilderProcessor.processor == processor)

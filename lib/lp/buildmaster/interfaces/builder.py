@@ -38,6 +38,7 @@ from zope.interface import (
 from zope.schema import (
     Bool,
     Int,
+    List,
     Text,
     TextLine,
     )
@@ -104,8 +105,19 @@ class IBuilder(IHasBuildRecords, IHasOwner):
     processor = exported(ReferenceChoice(
         title=_('Processor'), required=True, vocabulary='Processor',
         schema=IProcessor,
-        description=_('Build Slave Processor, used to identify '
-                      'which jobs can be built by this device.')),
+        description=_(
+            'DEPRECATED: Processor identifying jobs which can be built by '
+            'this device. Use `processors` instead to handle multiple '
+            'supported architectures.')),
+        as_of='devel')
+
+    processors = exported(
+        List(
+            title=_("Processors"),
+            description=_(
+                "Processors identifying jobs which can be built by this "
+                "device."),
+            value_type=Reference(schema=IProcessor)),
         as_of='devel')
 
     owner = exported(PersonChoice(

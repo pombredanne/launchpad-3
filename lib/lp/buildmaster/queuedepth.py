@@ -14,8 +14,13 @@ from datetime import (
     )
 
 from pytz import utc
+from storm.expr import Count
 
 from lp.buildmaster.enums import BuildQueueStatus
+from lp.buildmaster.model.builder import (
+    Builder,
+    BuilderProcessor,
+    )
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
@@ -23,23 +28,24 @@ from lp.services.database.sqlbase import sqlvalues
 
 def get_builder_data():
     """How many working builders are there, how are they configured?"""
-    builder_data = """
-        SELECT processor, virtualized, COUNT(id) FROM builder
-        WHERE builderok = TRUE AND manual = FALSE
-        GROUP BY processor, virtualized;
-    """
-    results = IStore(BuildQueue).execute(builder_data).get_all()
-    builders_in_total = virtualized_total = 0
+    # XXX: This is broken with multi-Processor buildds, as it only
+    # considers competition from the same processor.
+    per_arch_totals = list(IStore(Builder).find(
+        (BuilderProcessor.processor_id, Builder.virtualized,
+         Count(Builder.id)),
+        BuilderProcessor.builder_id == Builder.id,
+        Builder._builderok == True, Builder.manual == False).group_by(
+            BuilderProcessor.processor_id, Builder.virtualized))
+    per_virt_totals = list(IStore(Builder).find(
+        (Builder.virtualized, Count(Builder.id)),
+        Builder._builderok == True, Builder.manual == False).group_by(
+            Builder.virtualized))
 
     builder_stats = defaultdict(int)
-    for processor, virtualized, count in results:
-        builders_in_total += count
-        if virtualized:
-            virtualized_total += count
+    for virtualized, count in per_virt_totals:
+        builder_stats[(None, virtualized)] = count
+    for processor, virtualized, count in per_arch_totals:
         builder_stats[(processor, virtualized)] = count
-
-    builder_stats[(None, True)] = virtualized_total
-    builder_stats[(None, False)] = builders_in_total - virtualized_total
     return builder_stats
 
 
@@ -56,7 +62,8 @@ def get_free_builders_count(processor, virtualized):
         """ % sqlvalues(virtualized)
     if processor is not None:
         query += """
-            AND processor = %s
+            AND id IN (
+                SELECT builder FROM BuilderProcessor WHERE processor = %s)
         """ % sqlvalues(processor)
     result_set = IStore(BuildQueue).execute(query)
     free_builders = result_set.get_one()[0]
@@ -151,7 +158,8 @@ def estimate_time_to_next_builder(bq, now=None):
     if head_job_processor is not None:
         # Only look at builders with specific processor types.
         delay_query += """
-            AND Builder.processor = %s
+            AND Builder.id IN (
+                SELECT builder FROM BuilderProcessor WHERE processor = %s)
             """ % sqlvalues(head_job_processor)
 
     result_set = IStore(BuildQueue).execute(delay_query)
@@ -203,6 +211,8 @@ def estimate_job_delay(bq, builder_stats):
     :return: An integer value holding the sum of delays (in seconds)
         caused by the jobs that are ahead of and competing with the JOI.
     """
+    # XXX: This is broken with multi-Processor buildds, as it only
+    # considers competition from the same processor.
     def jobs_compete_for_builders(a, b):
         """True if the two jobs compete for builders."""
         a_processor, a_virtualized = a
@@ -295,6 +305,9 @@ def estimate_job_start_time(bq, now=None):
     if bq.status != BuildQueueStatus.WAITING:
         raise AssertionError(
             "The start time is only estimated for pending jobs.")
+
+    # XXX: This is broken with multi-Processor buildds, as it only
+    # considers competition from the same processor.
 
     builder_stats = get_builder_data()
     platform = (getattr(bq.processor, 'id', None), bq.virtualized)
