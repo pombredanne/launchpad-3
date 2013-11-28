@@ -27,10 +27,7 @@ from zope.schema import (
 from lp import _
 from lp.buildmaster.enums import BuildQueueStatus
 from lp.buildmaster.interfaces.builder import IBuilder
-from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob,
-    IBuildFarmJobOld,
-    )
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.soyuz.interfaces.processor import IProcessor
 
 
@@ -100,10 +97,6 @@ class IBuildQueue(Interface):
 
     def cancel():
         """Cancel this job, it will not be re-dispatched."""
-
-    specific_old_job = Reference(
-        IBuildFarmJobOld, title=_("Old build farm job"),
-        description=_("Old IBuildQueue <-> IBuildFarmJob link object."))
 
     specific_build = Reference(
         IBuildFarmJob, title=_("Build farm job"),
