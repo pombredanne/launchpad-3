@@ -10,7 +10,6 @@ from datetime import (
 
 import pytz
 from simplejson import dumps
-from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -18,11 +17,9 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
-from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
-from lp.services.job.model.job import Job
 from lp.services.log.logger import DevNullLogger
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import OAuthPermission
@@ -35,10 +32,8 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     IBinaryPackageBuildSet,
     UnparsableDependencies,
     )
-from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagebuild import (
-    BinaryPackageBuild,
     BinaryPackageBuildSet,
     COPY_ARCHIVE_SCORE_PENALTY,
     PRIVATE_ARCHIVE_SCORE_BONUS,
@@ -46,7 +41,6 @@ from lp.soyuz.model.binarypackagebuild import (
     SCORE_BY_POCKET,
     SCORE_BY_URGENCY,
     )
-from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     anonymous_logged_in,
@@ -84,7 +78,6 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.assertEqual(
             self.build.build_farm_job, removeSecurityProxy(bq)._build_farm_job)
         self.assertEqual(self.build, bq.specific_build)
-        self.assertProvides(bq.specific_old_job, IBuildPackageJob)
         self.assertEqual(self.build.is_virtualized, bq.virtualized)
         self.assertIsNotNone(bq.processor)
         self.assertEqual(bq, self.build.buildqueue_record)
@@ -216,42 +209,6 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
             BuildStatus.MANUALDEPWAIT,
             slave_status={'dependencies': u'dep-bin'})
         return depwait_build
-
-    def testBuildqueueRemoval(self):
-        """Test removing buildqueue items.
-
-        Removing a Buildqueue row should also remove its associated
-        BuildPackageJob and Job rows.
-        """
-        # Create a build in depwait.
-        depwait_build = self._setupSimpleDepwaitContext()
-        depwait_build_id = depwait_build.id
-
-        # Grab the relevant DB IDs for later queries.
-        store = Store.of(depwait_build)
-        build_queue_id = depwait_build.buildqueue_record.id
-        job_id = removeSecurityProxy(depwait_build.buildqueue_record.job).id
-
-        depwait_build.buildqueue_record.destroySelf()
-
-        # Test that the records above no longer exist in the db.
-        self.assertEqual(
-            store.find(
-                BuildPackageJob,
-                BuildPackageJob.build == depwait_build_id).count(),
-            0)
-        self.assertEqual(
-            store.find(Job, Job.id == job_id).count(),
-            0)
-        self.assertEqual(
-            store.find(BuildQueue, BuildQueue.id == build_queue_id).count(),
-            0)
-        # But the build itself still exists.
-        self.assertEqual(
-            store.find(
-                BinaryPackageBuild,
-                BinaryPackageBuild.id == depwait_build_id).count(),
-            1)
 
     def testUpdateDependenciesWorks(self):
         # Calling `IBinaryPackageBuild.updateDependencies` makes the build

@@ -25,16 +25,12 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.buildmaster.enums import (
-    BuildFarmJobType,
-    BuildQueueStatus,
-    )
+from lp.buildmaster.enums import BuildQueueStatus
 from lp.buildmaster.interfaces.builder import IBuilder
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob,
     IBuildFarmJobOld,
     )
-from lp.services.job.interfaces.job import IJob
 from lp.soyuz.interfaces.processor import IProcessor
 
 
@@ -72,14 +68,6 @@ class IBuildQueue(Interface):
     status = Choice(
         title=_("Status"), vocabulary=BuildQueueStatus, readonly=True,
         description=_("The status of this build queue item."))
-
-    job = Reference(
-        IJob, title=_("Job"), required=True, readonly=True,
-        description=_("Data common to all job types."))
-
-    job_type = Choice(
-        title=_('Job type'), required=True, vocabulary=BuildFarmJobType,
-        description=_("The type of this job."))
 
     estimated_duration = Timedelta(
         title=_("Estimated Job Duration"), required=True,

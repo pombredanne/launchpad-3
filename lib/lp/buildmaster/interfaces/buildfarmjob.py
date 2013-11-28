@@ -203,15 +203,6 @@ class IBuildFarmJob(Interface):
         default=0,
         description=_("Number of consecutive failures for this job."))
 
-    def makeJob():
-        """Create the specific job relating this with an lp.services.job.
-
-        XXX 2010-04-26 michael.nelson bug=567922
-        Once all *Build classes are using BuildFarmJob we can lose the
-        'specific_job' attributes and simply have a reference to the
-        services job directly on the BuildFarmJob.
-        """
-
     def setLog(log):
         """Set the `LibraryFileAlias` that contains the job log."""
 
