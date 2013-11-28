@@ -1655,7 +1655,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         queue_entry = removeSecurityProxy(build.queueBuild())
         queue_entry._now = lambda: datetime(1970, 1, 1, 0, 0, 0, 0, UTC)
         self.factory.makeBuilder(
-            processor=queue_entry.processor, virtualized=True)
+            processors=[queue_entry.processor], virtualized=True)
         clear_property_cache(view)
         self.assertIsNot(None, view.eta)
         self.assertEqual(
