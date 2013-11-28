@@ -118,6 +118,32 @@ class TestFindBuildCandidateBase(TestCaseWithFactory):
 class TestFindBuildCandidateGeneralCases(TestFindBuildCandidateBase):
     # Test usage of findBuildCandidate not specific to any archive type.
 
+    def test_findBuildCandidate_matches_processor(self):
+        # Builder._findBuildCandidate returns the highest scored build
+        # for any of the builder's architectures.
+        bq1 = self.factory.makeBinaryPackageBuild().queueBuild()
+        bq2 = self.factory.makeBinaryPackageBuild().queueBuild()
+
+        # With no job for the builder's processor, no job is returned.
+        proc = self.factory.makeProcessor()
+        builder = removeSecurityProxy(
+            self.factory.makeBuilder(processor=proc, virtualized=True))
+        self.assertIs(None, builder._findBuildCandidate())
+
+        # Once bq1's processor is added to the mix, it's the best
+        # candidate.
+        builder.processors = [proc, bq1.processor]
+        self.assertEqual(bq1, builder._findBuildCandidate())
+
+        # bq2's score doesn't matter, as its processor isn't suitable
+        # for our builder.
+        bq2.manualScore(3000)
+        self.assertEqual(bq1, builder._findBuildCandidate())
+
+        # But once we add bq2's processor, its higher score makes it win.
+        builder.processors = [bq1.processor, bq2.processor]
+        self.assertEqual(bq2, builder._findBuildCandidate())
+
     def test_findBuildCandidate_supersedes_builds(self):
         # IBuilder._findBuildCandidate identifies if there are builds
         # for superseded source package releases in the queue and marks
