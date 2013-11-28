@@ -3,6 +3,8 @@
 
 SET client_min_messages=ERROR;
 
+ALTER TABLE builder ALTER COLUMN processor DROP NOT NULL;
+
 CREATE TABLE builderprocessor (
     builder integer NOT NULL REFERENCES builder,
     processor integer NOT NULL REFERENCES processor,
