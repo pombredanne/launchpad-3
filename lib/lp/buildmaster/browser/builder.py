@@ -33,6 +33,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.widgets.owner import HiddenUserWidget
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
@@ -361,9 +362,10 @@ class BuilderEditView(LaunchpadEditFormView):
     schema = IBuilder
 
     field_names = [
-        'name', 'title', 'processor', 'url', 'manual', 'owner',
+        'name', 'title', 'processors', 'url', 'manual', 'owner',
         'virtualized', 'builderok', 'failnotes', 'vm_host', 'active',
         ]
+    custom_widget('processors', LabeledMultiCheckBoxWidget)
 
     @action(_('Change'), name='update')
     def change_details(self, action, data):

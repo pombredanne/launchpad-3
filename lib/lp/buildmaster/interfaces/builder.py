@@ -117,7 +117,8 @@ class IBuilder(IHasBuildRecords, IHasOwner):
             description=_(
                 "Processors identifying jobs which can be built by this "
                 "device."),
-            value_type=Reference(schema=IProcessor)),
+            value_type=ReferenceChoice(
+                vocabulary='Processor', schema=IProcessor)),
         as_of='devel')
 
     owner = exported(PersonChoice(
