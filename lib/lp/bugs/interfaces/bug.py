@@ -706,7 +706,8 @@ class IBugEdit(Interface):
         :is_patch: A boolean.
         """
 
-    def addCommentNotification(message, recipients=None, activity=None):
+    def addCommentNotification(message, recipients=None, activity=None,
+                               level=BugNotificationLevel.COMMENTS):
         """Add a bug comment notification.
 
         If a BugActivity instance is provided as an `activity`, it is linked

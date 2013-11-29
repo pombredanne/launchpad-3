@@ -1141,11 +1141,11 @@ class Bug(SQLBase, InformationTypeMixin):
         if getattr(cache, '_notification_recipients_for_comments', False):
             del cache._notification_recipients_for_comments
 
-    def addCommentNotification(self, message, recipients=None, activity=None):
+    def addCommentNotification(self, message, recipients=None, activity=None,
+                               level=BugNotificationLevel.COMMENTS):
         """See `IBug`."""
         if recipients is None:
-            recipients = self.getBugNotificationRecipients(
-                level=BugNotificationLevel.COMMENTS)
+            recipients = self.getBugNotificationRecipients(level=level)
         getUtility(IBugNotificationSet).addNotification(
              bug=self, is_comment=True, message=message, recipients=recipients,
              activity=activity)
