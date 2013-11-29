@@ -1177,7 +1177,7 @@ class Bug(SQLBase, InformationTypeMixin):
                 owner=change.person, datecreated=when)
             if recipients is None:
                 recipients = self.getBugNotificationRecipients(
-                    level=BugNotificationLevel.METADATA)
+                    level=change.change_level)
             getUtility(IBugNotificationSet).addNotification(
                 bug=self, is_comment=False, message=message,
                 recipients=recipients, activity=activity,

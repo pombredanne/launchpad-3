@@ -794,6 +794,7 @@ class TestBugChanges(TestCaseWithFactory):
         # BugNotification.
         target = self.factory.makeProduct()
         added_task = self.bug.addTask(self.user, target)
+        self.bug.clearBugNotificationRecipientsCache()
         notify(ObjectCreatedEvent(added_task, user=self.user))
 
         task_added_activity = {
@@ -810,6 +811,8 @@ class TestBugChanges(TestCaseWithFactory):
                 '       Status: %s' % (
                     target.bugtargetname, added_task.importance.title,
                     added_task.status.title)),
+            'recipients': self.bug.getBugNotificationRecipients(
+                level=BugNotificationLevel.LIFECYCLE),
             }
 
         self.assertRecordedChange(
@@ -840,6 +843,8 @@ class TestBugChanges(TestCaseWithFactory):
                     target.bugtargetname, added_task.importance.title,
                     added_task.assignee.displayname, added_task.assignee.name,
                     added_task.status.title)),
+            'recipients': self.bug.getBugNotificationRecipients(
+                level=BugNotificationLevel.LIFECYCLE),
             }
 
         self.assertRecordedChange(
@@ -871,6 +876,8 @@ class TestBugChanges(TestCaseWithFactory):
                 '       Status: %s' % (
                     target.bugtargetname, bug_watch.url,
                     added_task.importance.title, added_task.status.title)),
+            'recipients': self.bug.getBugNotificationRecipients(
+                level=BugNotificationLevel.LIFECYCLE),
             }
 
         self.assertRecordedChange(
@@ -949,6 +956,8 @@ class TestBugChanges(TestCaseWithFactory):
             self.bug_task, providing=providedBy(self.bug_task))
 
         new_target = self.factory.makeProduct(owner=self.user)
+        target_lifecycle_subscriber = self.newSubscriber(
+            new_target, "target-lifecycle", BugNotificationLevel.LIFECYCLE)
         self.bug_task.transitionToTarget(new_target, self.user)
         notify(ObjectModifiedEvent(
             self.bug_task, bug_task_before_modification,
@@ -967,11 +976,14 @@ class TestBugChanges(TestCaseWithFactory):
                 self.bug_task.bugtargetname),
             'person': self.user,
             'recipients': [
-                self.user, self.product_metadata_subscriber],
+                self.user, self.product_metadata_subscriber,
+                self.product_lifecycle_subscriber,
+                target_lifecycle_subscriber],
             }
 
-        # The person who was subscribed to meta data changes for the old
-        # product was notified.
+        # Anyone subscribed to metadata or lifecycle changes for the old
+        # product was notified, as moving the task is in effect closing
+        # it for the old target.
         self.assertRecordedChange(
             expected_activity=expected_activity,
             expected_notification=expected_notification)
@@ -982,7 +994,7 @@ class TestBugChanges(TestCaseWithFactory):
         target = self.factory.makeDistributionSourcePackage()
         metadata_subscriber = self.newSubscriber(
             target, "dsp-metadata", BugNotificationLevel.METADATA)
-        self.newSubscriber(
+        lifecycle_subscriber = self.newSubscriber(
             target, "dsp-lifecycle", BugNotificationLevel.LIFECYCLE)
         new_target = self.factory.makeDistributionSourcePackage(
             distribution=target.distribution)
@@ -1008,7 +1020,8 @@ class TestBugChanges(TestCaseWithFactory):
             'newvalue': source_package_bug_task.bugtargetname,
             }
 
-        expected_recipients = [self.user, metadata_subscriber]
+        expected_recipients = [
+            self.user, metadata_subscriber, lifecycle_subscriber]
         expected_recipients.extend(
             bug_task.pillar.owner
             for bug_task in source_package_bug.bugtasks
@@ -1297,6 +1310,8 @@ class TestBugChanges(TestCaseWithFactory):
             'person': self.user,
             'text': (
                 "** No longer affects: %s" % target.bugtargetname),
+            'recipients': self.bug.getBugNotificationRecipients(
+                level=BugNotificationLevel.LIFECYCLE),
             }
 
         self.assertRecordedChange(
@@ -1368,6 +1383,8 @@ class TestBugChanges(TestCaseWithFactory):
                 '   Importance: Undecided\n'
                 '       Status: New' % (
                     series.bugtargetname)),
+            'recipients': self.bug.getBugNotificationRecipients(
+                level=BugNotificationLevel.LIFECYCLE),
             }
 
         self.assertRecordedChange(
