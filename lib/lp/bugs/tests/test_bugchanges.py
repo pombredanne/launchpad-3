@@ -1664,7 +1664,7 @@ class TestBugChanges(TestCaseWithFactory):
 
     def test_create_bug(self):
         # When a bug is created, activity is recorded and a comment
-        # notification is sent.
+        # notification is sent at the lifecycle level.
         new_bug = self.factory.makeBug(
             target=self.product, owner=self.user, comment="ENOTOWEL")
 
@@ -1679,7 +1679,7 @@ class TestBugChanges(TestCaseWithFactory):
             'text': u"ENOTOWEL",
             'is_comment': True,
             'recipients': new_bug.getBugNotificationRecipients(
-                level=BugNotificationLevel.COMMENTS),
+                level=BugNotificationLevel.LIFECYCLE),
             }
 
         self.assertRecordedChange(
