@@ -1728,7 +1728,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             with person_logged_in(owner):
                 task = bug.addTask(owner, series)
                 task.transitionToStatus(status, owner)
-        bug.clearBugNotificationRecipientsCache()
+        removeSecurityProxy(bug).clearBugNotificationRecipientsCache()
         return bug
 
     def makeBugTask(self, bug=None, target=None, owner=None, publish=True):
@@ -1802,7 +1802,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
         task = removeSecurityProxy(bug).addTask(
             owner, removeSecurityProxy(target))
-        bug.clearBugNotificationRecipientsCache()
+        removeSecurityProxy(bug).clearBugNotificationRecipientsCache()
         return task
 
     def makeBugNomination(self, bug=None, target=None):
