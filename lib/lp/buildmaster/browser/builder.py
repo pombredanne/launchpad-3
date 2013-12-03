@@ -165,7 +165,7 @@ class BuilderSetView(LaunchpadView):
         BuildQueue.preloadSpecificBuild(queues)
         return list(sorted(
             builders, key=lambda b: (
-                b.virtualized, (p.id for p in b.processors), b.name)))
+                b.virtualized, tuple(p.id for p in b.processors), b.name)))
 
     @property
     def number_of_registered_builders(self):
