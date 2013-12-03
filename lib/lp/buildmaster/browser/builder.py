@@ -163,8 +163,9 @@ class BuilderSetView(LaunchpadView):
             cache.currentjob = queue_builders.get(builder.id, None)
         # Prefetch the jobs' data.
         BuildQueue.preloadSpecificBuild(queues)
-
-        return builders
+        return list(sorted(
+            builders, key=lambda b: (
+                b.virtualized, (p.id for p in b.processors), b.name)))
 
     @property
     def number_of_registered_builders(self):
@@ -189,7 +190,7 @@ class BuilderSetView(LaunchpadView):
         return builderset.getBuildQueueSizes()
 
     @property
-    def ppa_builders(self):
+    def virt_builders(self):
         """Return a BuilderCategory object for PPA builders."""
         builder_category = BuilderCategory(
             'PPA build status', virtualized=True)
@@ -197,7 +198,7 @@ class BuilderSetView(LaunchpadView):
         return builder_category
 
     @property
-    def other_builders(self):
+    def nonvirt_builders(self):
         """Return a BuilderCategory object for PPA builders."""
         builder_category = BuilderCategory(
             'Official distributions build status', virtualized=False)
@@ -248,10 +249,11 @@ class BuilderCategory:
 
         grouped_builders = {}
         for builder in builders:
-            if builder.processor in grouped_builders:
-                grouped_builders[builder.processor].append(builder)
-            else:
-                grouped_builders[builder.processor] = [builder]
+            for processor in builder.processors:
+                if processor in grouped_builders:
+                    grouped_builders[processor].append(builder)
+                else:
+                    grouped_builders[processor] = [builder]
 
         for processor, builders in grouped_builders.iteritems():
             virt_str = 'virt' if self.virtualized else 'nonvirt'
@@ -272,7 +274,7 @@ class BuilderView(LaunchpadView):
 
     @property
     def processors_text(self):
-        return english_list(p.title for p in self.context.processors)
+        return english_list(p.name for p in self.context.processors)
 
     @property
     def current_build_duration(self):
