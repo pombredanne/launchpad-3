@@ -174,5 +174,5 @@ just-created builder page.
     >>> admin_browser.getControl("Register builder").click()
     >>> print backslashreplace(admin_browser.title)
     Tubaina : Build Farm
-    >>> 'AMD 64bit and HPPA Processor' in admin_browser.contents
+    >>> 'amd64 and hppa' in admin_browser.contents
     True

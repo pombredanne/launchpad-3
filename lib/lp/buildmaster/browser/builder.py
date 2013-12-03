@@ -273,7 +273,7 @@ class BuilderView(LaunchpadView):
 
     @property
     def processors_text(self):
-        return english_list(p.title for p in self.context.processors)
+        return english_list(p.name for p in self.context.processors)
 
     @property
     def current_build_duration(self):
