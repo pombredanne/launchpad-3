@@ -384,3 +384,16 @@ Now the pending build is included in the right category and group.
     386    2  2  0:01:00
     amd64  1  0  None
     hppa   1  0  None
+
+The queue summary lists all processors built by any builder.
+
+    >>> login('foo.bar@canonical.com')
+    >>> frog.processors = [i386, hppa]
+    >>> login(ANONYMOUS)
+    >>> builderset_view = getMultiAdapter(
+    ...     (builderset, empty_request), name="+index")
+    >>> builder_category = builderset_view.virt_builders
+    >>> print_category(builder_category)
+    386    2  2  0:01:00
+    amd64  1  0  None
+    hppa   2  0  None

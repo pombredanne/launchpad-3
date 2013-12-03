@@ -249,10 +249,11 @@ class BuilderCategory:
 
         grouped_builders = {}
         for builder in builders:
-            if builder.processor in grouped_builders:
-                grouped_builders[builder.processor].append(builder)
-            else:
-                grouped_builders[builder.processor] = [builder]
+            for processor in builder.processors:
+                if processor in grouped_builders:
+                    grouped_builders[processor].append(builder)
+                else:
+                    grouped_builders[processor] = [builder]
 
         for processor, builders in grouped_builders.iteritems():
             virt_str = 'virt' if self.virtualized else 'nonvirt'
