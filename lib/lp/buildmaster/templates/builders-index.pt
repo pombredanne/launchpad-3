@@ -69,8 +69,10 @@
                       tal:content="builder/name">Bob</a>
                  </td>
                  <td style="width: 9em;">
-                   <span class="sortkey"
-                         tal:content="builder/processor/name|nothing" />
+                   <span class="sortkey">
+                     <tal:processor repeat="processor builder/processors"
+                       content="processor/name">386</tal:processor>
+                   </span>
                    <tal:repeat repeat="processor builder/processors">
                    <tal:processor replace="processor/name">386</tal:processor>
                    </tal:repeat>

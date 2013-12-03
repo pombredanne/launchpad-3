@@ -163,8 +163,9 @@ class BuilderSetView(LaunchpadView):
             cache.currentjob = queue_builders.get(builder.id, None)
         # Prefetch the jobs' data.
         BuildQueue.preloadSpecificBuild(queues)
-
-        return builders
+        return list(sorted(
+            builders, key=lambda b: (
+                b.virtualized, (p.name for p in b.processors), b.name)))
 
     @property
     def number_of_registered_builders(self):
