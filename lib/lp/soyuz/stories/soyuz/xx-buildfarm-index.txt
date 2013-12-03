@@ -18,15 +18,15 @@ containing the build queue status summary for each build domain.
     1 available build machine, 1 disabled and 1 building of a total of
     2 registered.
     Builders
-    Name  Processor  Status
-    bob   386        Building i386 build of mozilla-firefox 0.9 ...
-    frog  386        Disabled
+    Name  Architectures   Status
+    bob   386            Building i386 build of mozilla-firefox 0.9 ...
+    frog  386            Disabled
     Official distributions build status
-    Processor  Builders  Queue
-    386        1         1 job (1 minute)
+    Architecture  Builders  Queue
+    386           1         1 job (1 minute)
     PPA build status
-    Processor  Builders  Queue
-    386        0         empty
+    Architecture  Builders  Queue
+    386           0         empty
 
 When building, the 'Status' column contains a link to the
 corresponding 'Build' page.
@@ -44,14 +44,14 @@ supported processor on each separated build domain, 'official'
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'official-queue-status'))
     Official distributions build status
-    Processor  Builders  Queue
-    386        1         1 job (1 minute)
+    Architecture  Builders  Queue
+    386           1         1 job (1 minute)
 
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'ppa-queue-status',))
     PPA build status
-    Processor  Builders  Queue
-    386        0         empty
+    Architecture  Builders  Queue
+    386           0         empty
 
 When there are pending builds in the PPA domain, they are listed in
 the corresponding portlet with their estimated duration as well.
@@ -77,8 +77,8 @@ the corresponding portlet with their estimated duration as well.
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'ppa-queue-status'))
     PPA build status
-    Processor  Builders  Queue
-    386        0         1 job (1 minute)
+    Architecture  Builders  Queue
+    386           0         1 job (1 minute)
 
 If the archive for the build does not require virtual builders, then
 the pending job will appear in the 'official' queue. Since the build
@@ -93,14 +93,14 @@ record already exists, we must manually set it to non-virtualized too.
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'ppa-queue-status'))
     PPA build status
-    Processor  Builders  Queue
-    386        0         empty
+    Architecture  Builders  Queue
+    386           0         empty
 
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'official-queue-status'))
     Official distributions build status
-    Processor  Builders  Queue
-    386        1         2 jobs (2 minutes)
+    Architecture  Builders  Queue
+    386           1         2 jobs (2 minutes)
 
 From this page, users with the appropriate permission can register new
 builders.

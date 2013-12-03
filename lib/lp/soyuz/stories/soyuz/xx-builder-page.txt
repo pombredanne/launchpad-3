@@ -153,7 +153,7 @@ automatic (AUTO) mode.
     ...     cprov_browser.contents, "Builder information")
     >>> print str(extract_text(details_portlet))
     Builder information
-    Architectures: amd64 and hppa
+    Architectures: amd64 hppa
     Location: http://localhost:8221/
     Owner: Launchpad Buildd Admins
     Mode: This builder is in auto-mode and accepting jobs from the
@@ -233,14 +233,14 @@ Farm list. Celso cannot see the link to it.
     0 available build machines, 1 disabled and 0 building of a total
     of 1 registered.
     Builders
-    Name  Processor Status
-    frog  386       Disabled
+    Name  Architectures Status
+    frog  386           Disabled
     Updated on ...
     Official distributions build status
-    Processor Builders Queue
+    Architecture Builders Queue
     PPA build status
-    Processor Builders Queue
-    386       0        empty
+    Architecture Builders Queue
+    386          0        empty
 
     >>> cprov_browser.getLink('bob').click()
     Traceback (most recent call last):
