@@ -289,7 +289,7 @@ contains the following attributes:
  * groups: a property that return all `BuilderGroup` instanced
    available in this category ordered by processor name.
 
-    >>> builder_category = builderset_view.other_builders
+    >>> builder_category = builderset_view.nonvirt_builders
 
     >>> print builder_category
     <...BuilderCategory ...>
@@ -348,7 +348,7 @@ Each `BuilderGroup` contains the following attributes:
 The 'PPA' builder category is also available in BuilderSetView as a
 `BuilderCategory`.
 
-    >>> builder_category = builderset_view.ppa_builders
+    >>> builder_category = builderset_view.virt_builders
 
     >>> print builder_category.title
     PPA build status
@@ -379,7 +379,7 @@ Now the pending build is included in the right category and group.
 
     >>> builderset_view = getMultiAdapter(
     ...     (builderset, empty_request), name="+index")
-    >>> builder_category = builderset_view.ppa_builders
+    >>> builder_category = builderset_view.virt_builders
     >>> print_category(builder_category)
     386    2  2  0:01:00
     amd64  1  0  None

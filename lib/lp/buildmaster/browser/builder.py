@@ -190,7 +190,7 @@ class BuilderSetView(LaunchpadView):
         return builderset.getBuildQueueSizes()
 
     @property
-    def ppa_builders(self):
+    def virt_builders(self):
         """Return a BuilderCategory object for PPA builders."""
         builder_category = BuilderCategory(
             'PPA build status', virtualized=True)
@@ -198,7 +198,7 @@ class BuilderSetView(LaunchpadView):
         return builder_category
 
     @property
-    def other_builders(self):
+    def nonvirt_builders(self):
         """Return a BuilderCategory object for PPA builders."""
         builder_category = BuilderCategory(
             'Official distributions build status', virtualized=False)

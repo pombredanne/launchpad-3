@@ -93,7 +93,7 @@
 
        <div class="yui-u">
          <div id="official-queue-status" class="portlet">
-           <div tal:define="category view/other_builders">
+           <div tal:define="category view/nonvirt_builders">
              <div metal:use-macro="template/macros/builder-category" />
            </div>
          </div><!-- portlet -->
@@ -101,7 +101,7 @@
 
        <div class="yui-u">
          <div id="ppa-queue-status" class="portlet">
-           <div tal:define="category view/ppa_builders">
+           <div tal:define="category view/virt_builders">
              <div metal:use-macro="template/macros/builder-category" />
            </div>
          </div><!-- portlet -->
