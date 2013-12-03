@@ -20,8 +20,8 @@ builder state. In the sampledata, the builder 'bob' is building
     >>> print extract_text(find_main_content(anon_browser.contents))
     Bob The Builder
     ...
-    Bob The Builder builds Intel 386 binaries and is owned by
-    Launchpad Buildd Admins.
+    Bob The Builder builds 386 binaries and is owned by Launchpad Buildd
+    Admins.
     ...
 
     >>> print extract_text(find_portlet(
@@ -55,7 +55,7 @@ location.
     >>> print extract_text(
     ...     find_portlet(anon_browser.contents, 'Builder information'))
     Builder information
-    Architectures: Intel 386
+    Architectures: 386
     Location: http://localhost:8221/
     Owner: Launchpad Buildd Admins
     Mode: This builder is in auto-mode and accepting jobs from the
@@ -153,7 +153,7 @@ automatic (AUTO) mode.
     ...     cprov_browser.contents, "Builder information")
     >>> print str(extract_text(details_portlet))
     Builder information
-    Architectures: AMD 64bit and HPPA Processor
+    Architectures: amd64 hppa
     Location: http://localhost:8221/
     Owner: Launchpad Buildd Admins
     Mode: This builder is in auto-mode and accepting jobs from the
@@ -233,14 +233,14 @@ Farm list. Celso cannot see the link to it.
     0 available build machines, 1 disabled and 0 building of a total
     of 1 registered.
     Builders
-    Name  Processor Status
-    frog  386       Disabled
+    Name  Architectures Status
+    frog  386           Disabled
     Updated on ...
     Official distributions build status
-    Processor Builders Queue
+    Architecture Builders Queue
     PPA build status
-    Processor Builders Queue
-    386       0        empty
+    Architecture Builders Queue
+    386          0        empty
 
     >>> cprov_browser.getLink('bob').click()
     Traceback (most recent call last):
