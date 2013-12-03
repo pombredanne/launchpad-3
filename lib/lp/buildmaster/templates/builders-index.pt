@@ -49,7 +49,7 @@
                <tr>
                  <th></th>
                  <th>Name</th>
-		 <th>Processor</th>
+		 <th>Architectures</th>
                  <th>Status</th>
                </tr>
              </thead>
@@ -129,7 +129,7 @@
    <table class="summary">
      <thead>
        <tr>
-         <th>Processor</th>
+         <th>Architecture</th>
          <th>Builders</th>
          <th>Queue</th>
        </tr>
