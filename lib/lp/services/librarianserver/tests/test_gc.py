@@ -90,10 +90,12 @@ class TestLibrarianGarbageCollectionBase:
                 if not os.path.exists(os.path.dirname(path)):
                     os.makedirs(os.path.dirname(path))
                 content_text = '{0} content'.format(content.id)
-                content_md5 = hashlib.md5(content_text).hexdigest()
                 open(path, 'w').write(content_text)
                 os.utime(path, (0, 0))  # Ancient past, never considered new.
-                content.md5 = content_md5  # Only using md5 checks.
+                content.md5 = hashlib.md5(content_text).hexdigest()
+                content.sha1 = hashlib.sha1(content_text).hexdigest()
+                content.sha256 = hashlib.sha256(content_text).hexdigest()
+                content.filesize = len(content_text)
         transaction.commit()
 
         self.con = connect(
