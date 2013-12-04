@@ -178,7 +178,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         build = self.factory.makeBinaryPackageBuild(archive=ppa)
         bq = build.queueBuild()
-        build.updateStatus(BuildStatus.BUILDING)
+        bq.markAsBuilding(self.factory.makeBuilder())
         build.cancel()
         self.assertEqual(BuildStatus.CANCELLING, build.status)
         self.assertEqual(bq, build.buildqueue_record)

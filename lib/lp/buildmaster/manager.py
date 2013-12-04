@@ -360,7 +360,7 @@ class SlaveScanner:
                 "Build '%s' on %s failed to cancel" %
                 (build.title, vitals.name))
             self.date_cancel = None
-            vitals.build_queue.cancel()
+            vitals.build_queue.markAsCancelled()
             transaction.commit()
             value = yield interactor.resetOrFail(
                 vitals, slave, self.builder_factory[vitals.name], self.logger,

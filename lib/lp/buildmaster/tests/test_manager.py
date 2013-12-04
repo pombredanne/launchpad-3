@@ -584,7 +584,7 @@ class TestPrefetchedBuilderFactory(TestCaseWithFactory):
 
         # If we cancel the BuildQueue to unassign it, the factory
         # doesn't notice immediately.
-        bq.cancel()
+        bq.markAsCancelled()
         vitals = assertQuerylessVitals(self.assertNotEqual)
         self.assertIsNot(None, vitals.build_queue)
 
