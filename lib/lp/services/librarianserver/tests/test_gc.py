@@ -8,6 +8,7 @@ __metaclass__ = type
 import calendar
 from cStringIO import StringIO
 from datetime import datetime, timedelta
+import hashlib
 import os
 import shutil
 from subprocess import (
@@ -28,6 +29,7 @@ from lp.services.database.sqlbase import (
     cursor,
     ISOLATION_LEVEL_AUTOCOMMIT,
     )
+from lp.services.database.interfaces import IMasterStore
 from lp.services.librarian.client import LibrarianClient
 from lp.services.librarian.model import (
     LibraryFileAlias,
@@ -81,17 +83,18 @@ class TestLibrarianGarbageCollectionBase:
         # Make sure that every file the database knows about exists on disk.
         # We manually remove them for tests that need to cope with missing
         # library items.
-        self.ztm.begin()
-        cur = cursor()
-        cur.execute("SELECT id FROM LibraryFileContent")
-        for content_id in (row[0] for row in cur.fetchall()):
-            path = librariangc.get_file_path(content_id)
+        store = IMasterStore(LibraryFileContent)
+        for content in store.find(LibraryFileContent):
+            path = librariangc.get_file_path(content.id)
             if not os.path.exists(path):
                 if not os.path.exists(os.path.dirname(path)):
                     os.makedirs(os.path.dirname(path))
-                open(path, 'w').write('whatever')
-                os.utime(path, (0,0))  # Ancient past, so never considered new.
-        self.ztm.abort()
+                content_text = '{0} content'.format(content.id)
+                content_md5 = hashlib.md5(content_text).hexdigest()
+                open(path, 'w').write(content_text)
+                os.utime(path, (0, 0))  # Ancient past, never considered new.
+                content.md5 = content_md5  # Only using md5 checks.
+        transaction.commit()
 
         self.con = connect(
             user=config.librarian_gc.dbuser,
