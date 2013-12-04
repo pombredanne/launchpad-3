@@ -199,6 +199,22 @@ class BuildQueue(SQLBase):
 
     def cancel(self):
         """See `IBuildQueue`."""
+        if self.status == BuildQueueStatus.WAITING:
+            # If the job's not yet on a slave then we can just
+            # short-circuit to completed cancellation.
+            self.markAsCancelled()
+        elif self.status == BuildQueueStatus.RUNNING:
+            # Otherwise set the statuses to CANCELLING so buildd-manager
+            # can kill the slave, grab the log, and call
+            # markAsCancelled() when it's done.
+            self.status = BuildQueueStatus.CANCELLING
+            self.specific_build.updateStatus(BuildStatus.CANCELLING)
+        else:
+            raise AssertionError(
+                "Tried to cancel %r from %s" % (self, self.status.name))
+
+    def markAsCancelled(self):
+        """See `IBuildQueue`."""
         self.specific_build.updateStatus(BuildStatus.CANCELLED)
         self.destroySelf()
 
