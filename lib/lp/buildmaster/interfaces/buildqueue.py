@@ -98,6 +98,13 @@ class IBuildQueue(Interface):
     def cancel():
         """Cancel this job, it will not be re-dispatched."""
 
+    def markAsCancelled():
+        """Mark this job's cancellation as completed.
+
+        Only buildd-manager and cancel() should call this directly.
+        Everyone else wants to use cancel().
+        """
+
     specific_build = Reference(
         IBuildFarmJob, title=_("Build farm job"),
         description=_("Concrete build farm job object."))

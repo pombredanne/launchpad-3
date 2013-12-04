@@ -314,7 +314,7 @@ class BuildFarmJobBehaviorBase:
         """
         if self.build.status == BuildStatus.CANCELLING:
             yield self.storeLogFromSlave()
-            self.build.buildqueue_record.cancel()
+            self.build.buildqueue_record.markAsCancelled()
         else:
             self._builder.handleFailure(logger)
             self.build.buildqueue_record.reset()

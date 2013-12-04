@@ -54,6 +54,7 @@ from lp.services.database.constants import (
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import SQLBase
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -198,6 +199,23 @@ class BuildQueue(SQLBase):
             del get_property_cache(builder).currentjob
 
     def cancel(self):
+        """See `IBuildQueue`."""
+        if self.status == BuildQueueStatus.WAITING:
+            # If the job's not yet on a slave then we can just
+            # short-circuit to completed cancellation.
+            self.markAsCancelled()
+        elif self.status == BuildQueueStatus.RUNNING:
+            # Otherwise set the statuses to CANCELLING so buildd-manager
+            # can kill the slave, grab the log, and call
+            # markAsCancelled() when it's done.
+            if getFeatureFlag('buildmaster.buildqueue_cancelling'):
+                self.status = BuildQueueStatus.CANCELLING
+            self.specific_build.updateStatus(BuildStatus.CANCELLING)
+        else:
+            raise AssertionError(
+                "Tried to cancel %r from %s" % (self, self.status.name))
+
+    def markAsCancelled(self):
         """See `IBuildQueue`."""
         self.specific_build.updateStatus(BuildStatus.CANCELLED)
         self.destroySelf()

@@ -294,8 +294,7 @@ class TestBuildViews(TestCaseWithFactory):
     def test_cancelling_building_build(self):
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         pending_build = self.factory.makeBinaryPackageBuild(archive=ppa)
-        pending_build.queueBuild()
-        pending_build.updateStatus(BuildStatus.BUILDING)
+        pending_build.queueBuild().markAsBuilding(self.factory.makeBuilder())
         with person_logged_in(ppa.owner):
             view = create_initialized_view(
                 pending_build, name="+cancel", form={
