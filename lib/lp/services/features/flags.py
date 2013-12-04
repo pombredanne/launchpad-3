@@ -209,6 +209,18 @@ flag_info = sorted([
      '',
      '',
      ''),
+    ('twisted.flags.refresh',
+     'float',
+     'Number of seconds between feature flag refreshes.',
+     '30',
+     '',
+     ''),
+    ('librarian.swift.enabled',
+     'boolean',
+     'If true, attempt to serve files from Swift.',
+     'disabled',
+     '',
+     ''),
     ])
 
 # The set of all flag names that are documented.

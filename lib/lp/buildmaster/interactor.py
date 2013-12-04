@@ -452,11 +452,6 @@ class BuilderInteractor(object):
         builder_status = slave_status['builder_status']
         if builder_status == 'BuilderStatus.BUILDING':
             # Build still building, collect the logtail.
-            if vitals.build_queue.status != BuildQueueStatus.RUNNING:
-                # XXX: This check should be removed once we confirm it's
-                # not regularly hit.
-                raise AssertionError(
-                    "Job not running when assigned and slave building.")
             vitals.build_queue.logtail = encoding.guess(
                 str(slave_status.get('logtail')))
             transaction.commit()

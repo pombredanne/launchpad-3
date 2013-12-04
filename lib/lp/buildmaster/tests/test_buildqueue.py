@@ -7,9 +7,13 @@ from datetime import timedelta
 from storm.sqlobject import SQLObjectNotFound
 from zope.security.proxy import removeSecurityProxy
 
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildQueueStatus,
+    BuildStatus,
+    )
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.services.database.interfaces import IStore
+from lp.services.features.testing import FeatureFixture
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -77,6 +81,56 @@ class TestBuildCancellation(TestCaseWithFactory):
         super(TestBuildCancellation, self).setUp()
         self.builder = self.factory.makeBuilder()
 
+    def test_buildqueue_cancel_waiting(self):
+        # Cancelling a WAITING BuildQueue immediately destroys it and
+        # sets the build to CANCELLED.
+        build = self.factory.makeBinaryPackageBuild()
+        bq = build.queueBuild()
+        self.assertEqual(bq, build.buildqueue_record)
+        self.assertEqual(BuildQueueStatus.WAITING, bq.status)
+        self.assertEqual(BuildStatus.NEEDSBUILD, build.status)
+        bq.cancel()
+        self.assertIs(None, build.buildqueue_record)
+        self.assertEqual(BuildStatus.CANCELLED, build.status)
+
+    def test_buildqueue_cancel_running(self):
+        # Cancelling a RUNNING BuildQueue leaves it around but sets the
+        # status to CANCELLING. SlaveScanner will destroy it and set the
+        # build status to CANCELLED when the slave cancellation has
+        # completed.
+        build = self.factory.makeBinaryPackageBuild()
+        bq = build.queueBuild()
+        bq.markAsBuilding(self.factory.makeBuilder())
+        self.assertEqual(bq, build.buildqueue_record)
+        self.assertEqual(BuildQueueStatus.RUNNING, bq.status)
+        self.assertEqual(BuildStatus.BUILDING, build.status)
+        with FeatureFixture({'buildmaster.buildqueue_cancelling': 'on'}):
+            bq.cancel()
+        self.assertEqual(bq, build.buildqueue_record)
+        self.assertEqual(BuildQueueStatus.CANCELLING, bq.status)
+        self.assertEqual(BuildStatus.CANCELLING, build.status)
+        bq.markAsCancelled()
+        self.assertIs(None, build.buildqueue_record)
+        self.assertEqual(BuildStatus.CANCELLED, build.status)
+
+    def test_buildqueue_cancel_running_without_flag(self):
+        # BuildQueue.cancel() doesn't set BuildQueueStatus.CANCELLING
+        # until the feature flag is set, so we can deploy all the code
+        # at once.
+        build = self.factory.makeBinaryPackageBuild()
+        bq = build.queueBuild()
+        bq.markAsBuilding(self.factory.makeBuilder())
+        self.assertEqual(bq, build.buildqueue_record)
+        self.assertEqual(BuildQueueStatus.RUNNING, bq.status)
+        self.assertEqual(BuildStatus.BUILDING, build.status)
+        bq.cancel()
+        self.assertEqual(bq, build.buildqueue_record)
+        self.assertEqual(BuildQueueStatus.RUNNING, bq.status)
+        self.assertEqual(BuildStatus.CANCELLING, build.status)
+        bq.markAsCancelled()
+        self.assertIs(None, build.buildqueue_record)
+        self.assertEqual(BuildStatus.CANCELLED, build.status)
+
     def assertCancelled(self, build, bq):
         self.assertEqual(BuildStatus.CANCELLED, build.status)
         self.assertRaises(SQLObjectNotFound, BuildQueue.get, bq.id)
@@ -86,6 +140,8 @@ class TestBuildCancellation(TestCaseWithFactory):
         bq = build.queueBuild()
         bq.markAsBuilding(self.builder)
         bq.cancel()
+        self.assertEqual(BuildStatus.CANCELLING, build.status)
+        bq.markAsCancelled()
         self.assertCancelled(build, bq)
 
     def test_recipebuild_cancel(self):
@@ -93,6 +149,8 @@ class TestBuildCancellation(TestCaseWithFactory):
         bq = build.queueBuild()
         bq.markAsBuilding(self.builder)
         bq.cancel()
+        self.assertEqual(BuildStatus.CANCELLING, build.status)
+        bq.markAsCancelled()
         self.assertCancelled(build, bq)
 
 

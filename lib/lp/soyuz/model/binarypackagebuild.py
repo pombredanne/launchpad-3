@@ -497,14 +497,9 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         """See `IBinaryPackageBuild`."""
         if not self.can_be_cancelled:
             return
-
-        # If the build is currently building we need to tell the
-        # buildd-manager to terminate it.
-        if self.status == BuildStatus.BUILDING:
-            self.updateStatus(BuildStatus.CANCELLING)
-            return
-
-        # Otherwise we can cancel it here.
+        # BuildQueue.cancel() will decide whether to go straight to
+        # CANCELLED, or go through CANCELLING to let buildd-manager
+        # clean up the slave.
         self.buildqueue_record.cancel()
 
     def _parseDependencyToken(self, token):

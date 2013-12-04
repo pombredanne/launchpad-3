@@ -60,6 +60,7 @@ setup(
         'Markdown',
         'mechanize',
         'meliae',
+        'mock',
         'oauth',
         'oops',
         'oops_amqp',

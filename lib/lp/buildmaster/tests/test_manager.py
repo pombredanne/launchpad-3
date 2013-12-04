@@ -584,7 +584,7 @@ class TestPrefetchedBuilderFactory(TestCaseWithFactory):
 
         # If we cancel the BuildQueue to unassign it, the factory
         # doesn't notice immediately.
-        bq.cancel()
+        bq.markAsCancelled()
         vitals = assertQuerylessVitals(self.assertNotEqual)
         self.assertIsNot(None, vitals.build_queue)
 
@@ -830,6 +830,31 @@ class TestCancellationChecking(TestCaseWithFactory):
         self.assertNotIn("resume", slave.call_log)
         self.assertFalse(result)
         self.assertEqual(BuildStatus.CANCELLING, build.status)
+
+        clock.advance(SlaveScanner.CANCEL_TIMEOUT)
+        result = yield scanner.checkCancellation(
+            self.vitals, slave, self.interactor)
+        self.assertEqual(1, slave.call_log.count("resume"))
+        self.assertTrue(result)
+        self.assertEqual(BuildStatus.CANCELLED, build.status)
+
+    @defer.inlineCallbacks
+    def test_cancelling_buildqueue_is_cancelled(self):
+        # If a BuildQueue is CANCELLING and the cancel timeout expires,
+        # make sure True is returned and the slave was resumed.
+        slave = OkSlave()
+        self.builder.vm_host = "fake_vm_host"
+        buildqueue = self.builder.currentjob
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
+        removeSecurityProxy(buildqueue).status = BuildQueueStatus.CANCELLING
+        clock = task.Clock()
+        scanner = self._getScanner(clock=clock)
+
+        result = yield scanner.checkCancellation(
+            self.vitals, slave, self.interactor)
+        self.assertNotIn("resume", slave.call_log)
+        self.assertFalse(result)
+        self.assertEqual(BuildStatus.BUILDING, build.status)
 
         clock.advance(SlaveScanner.CANCEL_TIMEOUT)
         result = yield scanner.checkCancellation(
