@@ -54,6 +54,7 @@ from lp.services.database.constants import (
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import SQLBase
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -207,7 +208,8 @@ class BuildQueue(SQLBase):
             # Otherwise set the statuses to CANCELLING so buildd-manager
             # can kill the slave, grab the log, and call
             # markAsCancelled() when it's done.
-            self.status = BuildQueueStatus.CANCELLING
+            if getFeatureFlag('buildmaster.buildqueue_cancelling'):
+                self.status = BuildQueueStatus.CANCELLING
             self.specific_build.updateStatus(BuildStatus.CANCELLING)
         else:
             raise AssertionError(
