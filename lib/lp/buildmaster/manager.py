@@ -25,7 +25,10 @@ from twisted.internet.task import LoopingCall
 from twisted.python import log
 from zope.component import getUtility
 
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildQueueStatus,
+    BuildStatus,
+    )
 from lp.buildmaster.interactor import (
     BuilderInteractor,
     extract_vitals_from_db,
@@ -334,7 +337,8 @@ class SlaveScanner:
             self.date_cancel = None
             defer.returnValue(False)
         build = vitals.build_queue.specific_build
-        if build.status != BuildStatus.CANCELLING:
+        if (vitals.build_queue.status != BuildQueueStatus.CANCELLING
+                and build.status != BuildStatus.CANCELLING):
             self.date_cancel = None
             defer.returnValue(False)
 
