@@ -96,12 +96,8 @@ from lp.bugs.interfaces.cve import (
     ICveSet,
     )
 from lp.bugs.model.bug import FileBugData
-from lp.buildmaster.enums import (
-    BuildFarmJobType,
-    BuildStatus,
-    )
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.enums import (
     BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel,
@@ -334,8 +330,8 @@ from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
     )
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
-from lp.translations.interfaces.translationtemplatesbuildjob import (
-    ITranslationTemplatesBuildJobSource,
+from lp.translations.interfaces.translationtemplatesbuild import (
+    ITranslationTemplatesBuildSource,
     )
 from lp.translations.interfaces.translator import ITranslatorSet
 from lp.translations.model.translationtemplateitem import (
@@ -1732,7 +1728,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             with person_logged_in(owner):
                 task = bug.addTask(owner, series)
                 task.transitionToStatus(status, owner)
-
+        removeSecurityProxy(bug).clearBugNotificationRecipientsCache()
         return bug
 
     def makeBugTask(self, bug=None, target=None, owner=None, publish=True):
@@ -1804,8 +1800,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         if owner is None:
             owner = self.makePerson()
-        return removeSecurityProxy(bug).addTask(
+        task = removeSecurityProxy(bug).addTask(
             owner, removeSecurityProxy(target))
+        removeSecurityProxy(bug).clearBugNotificationRecipientsCache()
+        return task
 
     def makeBugNomination(self, bug=None, target=None):
         """Create and return a BugNomination.
@@ -2745,7 +2743,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         permission_set.newQueueAdmin(archive, person, 'main')
         return person
 
-    def makeBuilder(self, processor=None, url=None, name=None, title=None,
+    def makeBuilder(self, processors=None, url=None, name=None, title=None,
                     owner=None, active=True, virtualized=True, vm_host=None,
                     manual=False):
         """Make a new builder for i386 virtualized builds by default.
@@ -2754,8 +2752,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         we currently have a build slave setup for 'bob' only in the
         test environment.
         """
-        if processor is None:
-            processor = getUtility(IProcessorSet).getByName('386')
+        if processors is None:
+            processors = [getUtility(IProcessorSet).getByName('386')]
         if url is None:
             url = 'http://%s:8221/' % self.getUniqueString()
         if name is None:
@@ -2766,7 +2764,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
 
         return getUtility(IBuilderSet).new(
-            processor, url, name, title, owner, active, virtualized, vm_host,
+            processors, url, name, title, owner, active, virtualized, vm_host,
             manual=manual)
 
     def makeRecipeText(self, *branches):
@@ -2867,34 +2865,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         IStore(spr_build).flush()
         return spr_build
 
-    def makeSourcePackageRecipeBuildJob(
-        self, score=9876, virtualized=True, estimated_duration=64,
-        sourcename=None, recipe_build=None):
-        """Create a `SourcePackageRecipeBuildJob` and a `BuildQueue` for
-        testing."""
-        if recipe_build is None:
-            recipe_build = self.makeSourcePackageRecipeBuild(
-                sourcename=sourcename)
-        recipe_build_job = recipe_build.makeJob()
+    def makeTranslationTemplatesBuild(self, branch=None):
+        """Make a new `TranslationTemplatesBuild`.
 
-        bq = BuildQueue(
-            job=recipe_build_job.job, lastscore=score,
-            job_type=BuildFarmJobType.RECIPEBRANCHBUILD,
-            estimated_duration=timedelta(seconds=estimated_duration),
-            virtualized=virtualized)
-        IStore(BuildQueue).add(bq)
-        return bq
-
-    def makeTranslationTemplatesBuildJob(self, branch=None):
-        """Make a new `TranslationTemplatesBuildJob`.
-
-        :param branch: The branch that the job should be for.  If none
+        :param branch: The branch that the build should be for.  If none
             is given, one will be created.
         """
         if branch is None:
             branch = self.makeBranch()
 
-        jobset = getUtility(ITranslationTemplatesBuildJobSource)
+        jobset = getUtility(ITranslationTemplatesBuildSource)
         return jobset.create(branch)
 
     def makePOTemplate(self, productseries=None, distroseries=None,

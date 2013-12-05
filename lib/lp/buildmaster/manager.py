@@ -25,7 +25,10 @@ from twisted.internet.task import LoopingCall
 from twisted.python import log
 from zope.component import getUtility
 
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildQueueStatus,
+    BuildStatus,
+    )
 from lp.buildmaster.interactor import (
     BuilderInteractor,
     extract_vitals_from_db,
@@ -143,7 +146,7 @@ def assessFailureCounts(logger, vitals, builder, slave, interactor, retry,
     if current_job is None:
         job_failure_count = 0
     else:
-        job_failure_count = current_job.specific_job.build.failure_count
+        job_failure_count = current_job.specific_build.failure_count
 
     if builder.failure_count == job_failure_count and current_job is not None:
         # If the failure count for the builder is the same as the
@@ -186,7 +189,7 @@ def assessFailureCounts(logger, vitals, builder, slave, interactor, retry,
         # have already caused any relevant slave data to be stored
         # on the build record so don't worry about that here.
         builder.resetFailureCount()
-        build_job = current_job.specific_job.build
+        build_job = current_job.specific_build
         build_job.updateStatus(BuildStatus.FAILEDTOBUILD)
         builder.currentjob.destroySelf()
 
@@ -333,14 +336,16 @@ class SlaveScanner:
         if vitals.build_queue is None:
             self.date_cancel = None
             defer.returnValue(False)
-        build = vitals.build_queue.specific_job.build
-        if build.status != BuildStatus.CANCELLING:
+        if vitals.build_queue.status != BuildQueueStatus.CANCELLING:
             self.date_cancel = None
             defer.returnValue(False)
 
         try:
             if self.date_cancel is None:
-                self.logger.info("Cancelling build '%s'" % build.title)
+                self.logger.info(
+                    "Cancelling BuildQueue %d (%s) on %s",
+                    vitals.build_queue.id, self.getExpectedCookie(vitals),
+                    vitals.name)
                 yield slave.abort()
                 self.date_cancel = self._clock.seconds() + self.CANCEL_TIMEOUT
                 defer.returnValue(False)
@@ -350,17 +355,23 @@ class SlaveScanner:
                 # the cancel request.  This timeout is in case it doesn't.
                 if self._clock.seconds() < self.date_cancel:
                     self.logger.info(
-                        "Waiting for build '%s' to cancel" % build.title)
+                        "Waiting for BuildQueue %d (%s) on %s to cancel",
+                        vitals.build_queue.id, self.getExpectedCookie(vitals),
+                        vitals.name)
                     defer.returnValue(False)
                 else:
                     raise BuildSlaveFailure(
-                        "Build '%s' cancellation timed out" % build.title)
+                        "Timeout waiting for BuildQueue %d (%s) on %s to "
+                        "cancel" % (
+                        vitals.build_queue.id, self.getExpectedCookie(vitals),
+                        vitals.name))
         except Exception as e:
             self.logger.info(
-                "Build '%s' on %s failed to cancel" %
-                (build.title, vitals.name))
+                "Failure while cancelling BuildQueue %d (%s) on %s",
+                vitals.build_queue.id, self.getExpectedCookie(vitals),
+                vitals.name)
             self.date_cancel = None
-            vitals.build_queue.cancel()
+            vitals.build_queue.markAsCancelled()
             transaction.commit()
             value = yield interactor.resetOrFail(
                 vitals, slave, self.builder_factory[vitals.name], self.logger,
@@ -528,6 +539,7 @@ class BuilddManager(service.Service):
         """
         level = logging.INFO
         logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
+        logger.propagate = False
 
         # Redirect the output to the twisted log module.
         channel = logging.StreamHandler(log.StdioOnnaStick())

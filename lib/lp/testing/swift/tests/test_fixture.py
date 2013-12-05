@@ -7,7 +7,9 @@ __metaclass__ = type
 __all__ = []
 
 import httplib
+import os
 
+from s4 import hollow
 from swiftclient import client as swiftclient
 
 from lp.testing import TestCase
@@ -73,3 +75,12 @@ class TestSwiftFixture(TestCase):
         client = self.swift_fixture.connect()
         headers, body = client.get_object("size", str(size))
         self.assertEquals(body, "0" * size)
+
+    def test_env(self):
+        self.assertEqual(hollow.DEFAULT_USERNAME, os.environ['OS_USERNAME'])
+        self.assertEqual(hollow.DEFAULT_PASSWORD, os.environ['OS_PASSWORD'])
+        self.assertEqual(
+            'http://localhost:{0}/keystone/v2.0/'.format(
+                self.swift_fixture.daemon_port), os.environ['OS_AUTH_URL'])
+        self.assertEqual(
+            hollow.DEFAULT_TENANT_NAME, os.environ['OS_TENANT_NAME'])

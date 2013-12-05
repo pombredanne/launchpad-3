@@ -642,11 +642,10 @@ class SourcePackage(BugTargetBase, HasCodeImportsMixin,
             BuildStatus.UPLOADING,
             ]:
             orderBy = ["-BuildQueue.lastscore"]
-            clauseTables.append('BuildPackageJob')
-            condition_clauses.append(
-                'BuildPackageJob.build = BinaryPackageBuild.id')
             clauseTables.append('BuildQueue')
-            condition_clauses.append('BuildQueue.job = BuildPackageJob.job')
+            condition_clauses.append(
+                'BuildQueue.build_farm_job = '
+                'BinaryPackageBuild.build_farm_job')
         elif build_state == BuildStatus.SUPERSEDED or build_state is None:
             orderBy = [Desc("BinaryPackageBuild.date_created")]
         else:

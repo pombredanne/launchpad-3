@@ -21,6 +21,7 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
+from lp.buildmaster.enums import BuildQueueStatus
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
     CannotFetchFile,
@@ -31,7 +32,6 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     )
 from lp.services import encoding
 from lp.services.config import config
-from lp.services.job.interfaces.job import JobStatus
 from lp.services.twistedsupport import cancel_on_timeout
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
 from lp.services.webapp import urlappend
@@ -242,7 +242,7 @@ class BuilderInteractor(object):
     def getBuildBehavior(queue_item, builder, slave):
         if queue_item is None:
             return None
-        behavior = IBuildFarmJobBehavior(queue_item.specific_job)
+        behavior = IBuildFarmJobBehavior(queue_item.specific_build)
         behavior.setBuilder(builder, slave)
         return behavior
 
@@ -413,7 +413,7 @@ class BuilderInteractor(object):
 
         new_behavior = cls.getBuildBehavior(candidate, builder, slave)
         needed_bfjb = type(removeSecurityProxy(
-            IBuildFarmJobBehavior(candidate.specific_job)))
+            IBuildFarmJobBehavior(candidate.specific_build)))
         if not zope_isinstance(new_behavior, needed_bfjb):
             raise AssertionError(
                 "Inappropriate IBuildFarmJobBehavior: %r is not a %r" %
@@ -452,11 +452,6 @@ class BuilderInteractor(object):
         builder_status = slave_status['builder_status']
         if builder_status == 'BuilderStatus.BUILDING':
             # Build still building, collect the logtail.
-            if vitals.build_queue.job.status != JobStatus.RUNNING:
-                # XXX: This check should be removed once we confirm it's
-                # not regularly hit.
-                raise AssertionError(
-                    "Job not running when assigned and slave building.")
             vitals.build_queue.logtail = encoding.guess(
                 str(slave_status.get('logtail')))
             transaction.commit()

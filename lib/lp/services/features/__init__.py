@@ -159,7 +159,7 @@ set a flag for the duration of a test::
     from lp.services.features.testing import FeatureFixture
 
     def setUp(self):
-        self.useFixture(FeatureFixture({'myflag', 'on'}))
+        self.useFixture(FeatureFixture({'myflag': 'on'}))
 
 
 You can also use the fixture as a context manager::

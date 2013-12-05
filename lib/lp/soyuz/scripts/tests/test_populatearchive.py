@@ -12,11 +12,13 @@ import time
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildQueueStatus,
+    BuildStatus,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.config import config
-from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.packagelocation import PackageLocationError
 from lp.soyuz.enums import (
@@ -565,7 +567,7 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
             """True if the given build is not (pending and suspended)."""
             return not (
                 build.status == BuildStatus.NEEDSBUILD and
-                build.buildqueue_record.job.status == JobStatus.SUSPENDED)
+                build.buildqueue_record.status == BuildQueueStatus.SUSPENDED)
         hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
 
         # Verify that we have the right source packages in the sample data.

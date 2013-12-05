@@ -12,7 +12,7 @@ import socket
 import tempfile
 import time
 
-from fixtures import FunctionFixture
+from fixtures import EnvironmentVariableFixture, FunctionFixture
 from s4 import hollow
 from swiftclient import client as swiftclient
 import testtools.content
@@ -48,13 +48,21 @@ class SwiftFixture(TacTestFixture):
             os.path.join(config.root, 'bin', 'py'),
             os.path.join(config.root, 'bin', 'twistd'))
 
-    def cleanUp(self):
-        if self.logfile is not None and os.path.exists(self.logfile):
-            self.addDetail(
-                'log-file', testtools.content.content_from_stream(
-                    open(self.logfile, 'r'), testtools.content_type.UTF8_TEXT))
-            os.unlink(self.logfile)
-        super(SwiftFixture, self).cleanUp()
+        logfile = self.logfile
+        self.addCleanup(lambda: os.path.exists(logfile) and os.unlink(logfile))
+
+        testtools.content.attach_file(
+            self, logfile, 'swift-log', testtools.content_type.UTF8_TEXT)
+
+        self.useFixture(EnvironmentVariableFixture(
+            'OS_AUTH_URL',
+            'http://localhost:{0}/keystone/v2.0/'.format(self.daemon_port)))
+        self.useFixture(EnvironmentVariableFixture(
+            'OS_USERNAME', hollow.DEFAULT_USERNAME))
+        self.useFixture(EnvironmentVariableFixture(
+            'OS_PASSWORD', hollow.DEFAULT_PASSWORD))
+        self.useFixture(EnvironmentVariableFixture(
+            'OS_TENANT_NAME', hollow.DEFAULT_TENANT_NAME))
 
     def setUpRoot(self):
         # Create a root directory.
@@ -69,15 +77,14 @@ class SwiftFixture(TacTestFixture):
         os.environ['HOLLOW_ROOT'] = self.root
         os.environ['HOLLOW_PORT'] = str(self.daemon_port)
 
-    def connect(
-        self, tenant_name=hollow.DEFAULT_TENANT_NAME,
-        username=hollow.DEFAULT_USERNAME, password=hollow.DEFAULT_PASSWORD):
+    def connect(self):
         """Return a valid connection to our mock Swift"""
-        port = self.daemon_port
         client = swiftclient.Connection(
-            authurl="http://localhost:%d/keystone/v2.0/" % port,
-            auth_version="2.0", tenant_name=tenant_name,
-            user=username, key=password,
+            authurl=os.environ.get('OS_AUTH_URL', None),
+            auth_version="2.0",
+            tenant_name=os.environ.get('OS_TENANT_NAME', None),
+            user=os.environ.get('OS_USERNAME', None),
+            key=os.environ.get('OS_PASSWORD', None),
             retries=0, insecure=True)
         return client
 
@@ -85,6 +92,6 @@ class SwiftFixture(TacTestFixture):
         self.setUp()
 
     def shutdown(self):
-        self.cleanUp()
+        self.killTac()
         while self._hasDaemonStarted():
             time.sleep(0.1)

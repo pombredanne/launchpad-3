@@ -2618,14 +2618,15 @@ class TestTransitionToTarget(TestCaseWithFactory):
         # transitionToTarget() is called.
         new_product = self.factory.makeProduct()
         task = self.factory.makeBugTask()
-        # The factory caused COMMENT notifications which filled the bug cache.
+        # Fill the COMMENTS level recipients cache.
+        task.bug.getBugNotificationRecipients()
         cache = get_property_cache(task.bug)
         self.assertIsNotNone(
-            getattr(cache, '_notification_recipients_for_comments', None))
+            getattr(cache, '_notification_recipients_for_lifecycle', None))
         with person_logged_in(task.owner):
             task.transitionToTarget(new_product, task.owner)
         self.assertIsNone(
-            getattr(cache, '_notification_recipients_for_comments', None))
+            getattr(cache, '_notification_recipients_for_lifecycle', None))
 
     def test_accesspolicyartifacts_updated(self):
         # transitionToTarget updates the AccessPolicyArtifacts related
@@ -2677,14 +2678,15 @@ class TransitionToMilestoneTestCase(TestCaseWithFactory):
         task = self.factory.makeBugTask()
         product = task.target
         milestone = self.factory.makeMilestone(product=product)
-        # The factory caused COMMENT notifications which filled the bug cache.
+        # Fill the COMMENTS level recipients cache.
+        task.bug.getBugNotificationRecipients()
         cache = get_property_cache(task.bug)
         self.assertIsNotNone(
-            getattr(cache, '_notification_recipients_for_comments', None))
+            getattr(cache, '_notification_recipients_for_lifecycle', None))
         with person_logged_in(task.target.owner):
             task.transitionToMilestone(milestone, task.target.owner)
         self.assertIsNone(
-            getattr(cache, '_notification_recipients_for_comments', None))
+            getattr(cache, '_notification_recipients_for_lifecycle', None))
 
 
 class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):

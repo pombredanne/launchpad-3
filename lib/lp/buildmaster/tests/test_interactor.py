@@ -319,7 +319,7 @@ class TestBuilderInteractorDB(TestCaseWithFactory):
     def _setupBuilder(self):
         processor = self.factory.makeProcessor(name="i386")
         builder = self.factory.makeBuilder(
-            processor=processor, virtualized=True, vm_host="bladh")
+            processors=[processor], virtualized=True, vm_host="bladh")
         self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(OkSlave()))
         distroseries = self.factory.makeDistroSeries()
         das = self.factory.makeDistroArchSeries(

@@ -67,7 +67,7 @@ by mark. we nee to log in as mark or any other member of admin team
     ...     print field_name
     name
     title
-    processor
+    processors
     url
     manual
     owner
@@ -208,7 +208,7 @@ all the 'private' information is exposed.
     >>> import datetime
     >>> import pytz
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(private_job.job).date_started = (
+    >>> removeSecurityProxy(private_job).date_started = (
     ...     datetime.datetime.now(pytz.UTC) - datetime.timedelta(10))
     >>> print admin_view.current_build_duration
     10 days...
@@ -259,17 +259,17 @@ architectures.
     >>> hppa = Processor.selectOneBy(name='hppa')
 
     >>> ignored = factory.makeBuilder(
-    ...     name='hamburger', processor=i386, virtualized=True)
+    ...     name='hamburger', processors=[i386], virtualized=True)
     >>> ignored = factory.makeBuilder(
-    ...     name='cheese', processor=hppa, virtualized=True)
+    ...     name='cheese', processors=[hppa], virtualized=True)
     >>> ignored = factory.makeBuilder(
-    ...     name='bacon', processor=amd64, virtualized=True)
+    ...     name='bacon', processors=[amd64], virtualized=True)
     >>> ignored = factory.makeBuilder(
-    ...     name='egg', processor=i386, virtualized=False)
+    ...     name='egg', processors=[i386], virtualized=False)
     >>> ignored = factory.makeBuilder(
-    ...     name='ham', processor=hppa, virtualized=False, manual=True)
+    ...     name='ham', processors=[hppa], virtualized=False, manual=True)
     >>> ignored = factory.makeBuilder(
-    ...     name='prosciuto', processor=amd64, virtualized=False)
+    ...     name='prosciuto', processors=[amd64], virtualized=False)
 
 Newly created builders will be in manual mode because we don't want
 them going straight into the build farm until tested.
@@ -289,7 +289,7 @@ contains the following attributes:
  * groups: a property that return all `BuilderGroup` instanced
    available in this category ordered by processor name.
 
-    >>> builder_category = builderset_view.other_builders
+    >>> builder_category = builderset_view.nonvirt_builders
 
     >>> print builder_category
     <...BuilderCategory ...>
@@ -348,7 +348,7 @@ Each `BuilderGroup` contains the following attributes:
 The 'PPA' builder category is also available in BuilderSetView as a
 `BuilderCategory`.
 
-    >>> builder_category = builderset_view.ppa_builders
+    >>> builder_category = builderset_view.virt_builders
 
     >>> print builder_category.title
     PPA build status
@@ -379,8 +379,21 @@ Now the pending build is included in the right category and group.
 
     >>> builderset_view = getMultiAdapter(
     ...     (builderset, empty_request), name="+index")
-    >>> builder_category = builderset_view.ppa_builders
+    >>> builder_category = builderset_view.virt_builders
     >>> print_category(builder_category)
     386    2  2  0:01:00
     amd64  1  0  None
     hppa   1  0  None
+
+The queue summary lists all processors built by any builder.
+
+    >>> login('foo.bar@canonical.com')
+    >>> frog.processors = [i386, hppa]
+    >>> login(ANONYMOUS)
+    >>> builderset_view = getMultiAdapter(
+    ...     (builderset, empty_request), name="+index")
+    >>> builder_category = builderset_view.virt_builders
+    >>> print_category(builder_category)
+    386    2  2  0:01:00
+    amd64  1  0  None
+    hppa   2  0  None
