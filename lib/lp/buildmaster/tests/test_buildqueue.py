@@ -104,28 +104,9 @@ class TestBuildCancellation(TestCaseWithFactory):
         self.assertEqual(bq, build.buildqueue_record)
         self.assertEqual(BuildQueueStatus.RUNNING, bq.status)
         self.assertEqual(BuildStatus.BUILDING, build.status)
-        with FeatureFixture({'buildmaster.buildqueue_cancelling': 'on'}):
-            bq.cancel()
-        self.assertEqual(bq, build.buildqueue_record)
-        self.assertEqual(BuildQueueStatus.CANCELLING, bq.status)
-        self.assertEqual(BuildStatus.CANCELLING, build.status)
-        bq.markAsCancelled()
-        self.assertIs(None, build.buildqueue_record)
-        self.assertEqual(BuildStatus.CANCELLED, build.status)
-
-    def test_buildqueue_cancel_running_without_flag(self):
-        # BuildQueue.cancel() doesn't set BuildQueueStatus.CANCELLING
-        # until the feature flag is set, so we can deploy all the code
-        # at once.
-        build = self.factory.makeBinaryPackageBuild()
-        bq = build.queueBuild()
-        bq.markAsBuilding(self.factory.makeBuilder())
-        self.assertEqual(bq, build.buildqueue_record)
-        self.assertEqual(BuildQueueStatus.RUNNING, bq.status)
-        self.assertEqual(BuildStatus.BUILDING, build.status)
         bq.cancel()
         self.assertEqual(bq, build.buildqueue_record)
-        self.assertEqual(BuildQueueStatus.RUNNING, bq.status)
+        self.assertEqual(BuildQueueStatus.CANCELLING, bq.status)
         self.assertEqual(BuildStatus.CANCELLING, build.status)
         bq.markAsCancelled()
         self.assertIs(None, build.buildqueue_record)
