@@ -624,6 +624,7 @@ class FakeBuildQueue:
     def __init__(self):
         self.id = 1
         self.reset = FakeMethod()
+        self.status = BuildQueueStatus.RUNNING
 
 
 class MockBuilderFactory:
@@ -672,8 +673,6 @@ class TestSlaveScannerWithoutDB(TestCase):
             interactor_factory=FakeMethod(interactor),
             slave_factory=FakeMethod(slave),
             behavior_factory=FakeMethod(TrivialBehavior()))
-        # XXX: checkCancellation needs more than a FakeBuildQueue.
-        scanner.checkCancellation = FakeMethod(defer.succeed(False))
 
         yield scanner.scan()
         self.assertEqual(['status_dict'], slave.call_log)
@@ -696,8 +695,6 @@ class TestSlaveScannerWithoutDB(TestCase):
             interactor_factory=FakeMethod(interactor),
             slave_factory=FakeMethod(slave),
             behavior_factory=FakeMethod(TrivialBehavior()))
-        # XXX: checkCancellation needs more than a FakeBuildQueue.
-        scanner.checkCancellation = FakeMethod(defer.succeed(False))
 
         # A single scan will call status_dict(), notice that the slave is
         # lost, abort() the slave, then reset() the job without calling
