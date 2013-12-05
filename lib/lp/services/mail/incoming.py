@@ -141,15 +141,12 @@ def _verifyDkimOrigin(signed_message):
         dkim_checker = dkim.DKIM(signed_message.parsed_string, logger=dkim_log)
         dkim_result = dkim_checker.verify()
     except dkim.DKIMException as e:
-        log.warning('DKIM error: %r' % (e,))
-    except dns.resolver.NXDOMAIN as e:
-        # This can easily happen just through bad input data, ie claiming to
+        log.info('DKIM error: %r' % (e,))
+    except dns.exception.DNSException as e:
+        # This can easily happen just through bad input data, eg. claiming to
         # be signed by a domain with no visible key of that name.  It's not an
         # operational error.
         log.info('DNS exception: %r' % (e,))
-    except dns.exception.DNSException as e:
-        # many of them have lame messages, thus %r
-        log.warning('DNS exception: %r' % (e,))
     except Exception as e:
         # DKIM leaks some errors when it gets bad input, as in bug 881237.  We
         # don't generally want them to cause the mail to be dropped entirely
