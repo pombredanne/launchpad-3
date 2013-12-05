@@ -539,6 +539,7 @@ class BuilddManager(service.Service):
         """
         level = logging.INFO
         logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
+        logger.propagate = False
 
         # Redirect the output to the twisted log module.
         channel = logging.StreamHandler(log.StdioOnnaStick())
