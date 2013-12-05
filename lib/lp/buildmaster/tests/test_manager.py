@@ -503,7 +503,7 @@ class TestSlaveScannerScan(TestCase):
 
         # Now set the build to CANCELLING.
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
-        build.updateStatus(BuildStatus.CANCELLING)
+        build.cancel()
 
         # Run 'scan' and check its results.
         switch_dbuser(config.builddmaster.dbuser)
@@ -815,13 +815,13 @@ class TestCancellationChecking(TestCaseWithFactory):
 
     @defer.inlineCallbacks
     def test_cancelling_build_is_cancelled(self):
-        # If a build is CANCELLING and the cancel timeout expires, make sure
-        # True is returned and the slave was resumed.
+        # If a BuildQueue is CANCELLING and the cancel timeout expires,
+        # make sure True is returned and the slave was resumed.
         slave = OkSlave()
         self.builder.vm_host = "fake_vm_host"
         buildqueue = self.builder.currentjob
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
-        build.updateStatus(BuildStatus.CANCELLING)
+        build.cancel()
         clock = task.Clock()
         scanner = self._getScanner(clock=clock)
 
@@ -839,31 +839,6 @@ class TestCancellationChecking(TestCaseWithFactory):
         self.assertEqual(BuildStatus.CANCELLED, build.status)
 
     @defer.inlineCallbacks
-    def test_cancelling_buildqueue_is_cancelled(self):
-        # If a BuildQueue is CANCELLING and the cancel timeout expires,
-        # make sure True is returned and the slave was resumed.
-        slave = OkSlave()
-        self.builder.vm_host = "fake_vm_host"
-        buildqueue = self.builder.currentjob
-        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
-        removeSecurityProxy(buildqueue).status = BuildQueueStatus.CANCELLING
-        clock = task.Clock()
-        scanner = self._getScanner(clock=clock)
-
-        result = yield scanner.checkCancellation(
-            self.vitals, slave, self.interactor)
-        self.assertNotIn("resume", slave.call_log)
-        self.assertFalse(result)
-        self.assertEqual(BuildStatus.BUILDING, build.status)
-
-        clock.advance(SlaveScanner.CANCEL_TIMEOUT)
-        result = yield scanner.checkCancellation(
-            self.vitals, slave, self.interactor)
-        self.assertEqual(1, slave.call_log.count("resume"))
-        self.assertTrue(result)
-        self.assertEqual(BuildStatus.CANCELLED, build.status)
-
-    @defer.inlineCallbacks
     def test_lost_build_is_cancelled(self):
         # If the builder reports a fault while attempting to abort it, then
         # immediately resume the slave as if the cancel timeout had expired.
@@ -871,7 +846,7 @@ class TestCancellationChecking(TestCaseWithFactory):
         self.builder.vm_host = "fake_vm_host"
         buildqueue = self.builder.currentjob
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(buildqueue)
-        build.updateStatus(BuildStatus.CANCELLING)
+        build.cancel()
         result = yield self._getScanner().checkCancellation(
             self.vitals, slave, self.interactor)
         self.assertEqual(1, slave.call_log.count("resume"))
