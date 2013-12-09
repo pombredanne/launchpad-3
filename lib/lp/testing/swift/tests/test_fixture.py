@@ -7,11 +7,11 @@ __metaclass__ = type
 __all__ = []
 
 import httplib
-import os
 
 from s4 import hollow
 from swiftclient import client as swiftclient
 
+from lp.services.config import config
 from lp.testing import TestCase
 from lp.testing.layers import BaseLayer
 from lp.testing.swift.fixture import SwiftFixture
@@ -77,10 +77,13 @@ class TestSwiftFixture(TestCase):
         self.assertEquals(body, "0" * size)
 
     def test_env(self):
-        self.assertEqual(hollow.DEFAULT_USERNAME, os.environ['OS_USERNAME'])
-        self.assertEqual(hollow.DEFAULT_PASSWORD, os.environ['OS_PASSWORD'])
+        self.assertEqual(
+            hollow.DEFAULT_USERNAME, config.librarian_server.os_username)
+        self.assertEqual(
+            hollow.DEFAULT_PASSWORD, config.librarian_server.os_password)
         self.assertEqual(
             'http://localhost:{0}/keystone/v2.0/'.format(
-                self.swift_fixture.daemon_port), os.environ['OS_AUTH_URL'])
+                self.swift_fixture.daemon_port),
+            config.librarian_server.os_auth_url)
         self.assertEqual(
-            hollow.DEFAULT_TENANT_NAME, os.environ['OS_TENANT_NAME'])
+            hollow.DEFAULT_TENANT_NAME, config.librarian_server.os_tenant)
