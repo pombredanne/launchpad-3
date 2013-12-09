@@ -313,10 +313,10 @@ class ConnectionPool:
 
     def _new_connection(self):
         return swiftclient.Connection(
-            authurl=os.environ.get('OS_AUTH_URL', None),
-            user=os.environ.get('OS_USERNAME', None),
-            key=os.environ.get('OS_PASSWORD', None),
-            tenant_name=os.environ.get('OS_TENANT_NAME', None),
+            authurl=config.librarian_server.os_auth_url,
+            user=config.librarian_server.os_username,
+            key=config.librarian_server.os_password,
+            tenant_name=config.librarian_server.os_tenant,
             auth_version='2.0',
             )
 
