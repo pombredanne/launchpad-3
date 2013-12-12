@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code to build recipes on the buildfarm."""
@@ -20,7 +20,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     )
 from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildJob,
+    ISourcePackageRecipeBuild,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
@@ -33,7 +33,7 @@ from lp.soyuz.adapters.archivedependencies import (
 class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
     """How to build a recipe on the build farm."""
 
-    adapts(ISourcePackageRecipeBuildJob)
+    adapts(ISourcePackageRecipeBuild)
     implements(IBuildFarmJobBehavior)
 
     # The list of build status values for which email notifications are
@@ -42,12 +42,6 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
     # in this list.
     ALLOWED_STATUS_NOTIFICATIONS = [
         'OK', 'PACKAGEFAIL', 'DEPFAIL', 'CHROOTFAIL']
-
-    status = None
-
-    @property
-    def build(self):
-        return self.buildfarmjob.build
 
     @property
     def display_name(self):
@@ -137,19 +131,19 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
                               distroarchseries.displayname)
         logger.info(
             "Sending chroot file for recipe build to %s" % self._builder.name)
-        d = self._interactor.slave.cacheFile(logger, chroot)
+        d = self._slave.cacheFile(logger, chroot)
 
         def got_cache_file(ignored):
             # Generate a string which can be used to cross-check when
             # obtaining results so we know we are referring to the right
             # database object in subsequent runs.
             buildid = "%s-%s" % (self.build.id, build_queue_id)
-            cookie = self.buildfarmjob.generateSlaveBuildCookie()
+            cookie = self.getBuildCookie()
             chroot_sha1 = chroot.content.sha1
             logger.info(
                 "Initiating build %s on %s" % (buildid, self._builder.url))
 
-            return self._interactor.slave.build(
+            return self._slave.build(
                 cookie, "sourcepackagerecipe", chroot_sha1, {}, args)
 
         def log_build_result((status, info)):
@@ -191,20 +185,3 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
                 "to the series status of %s." %
                     (build.title, build.id, build.pocket.name,
                      build.distroseries.name))
-
-    def updateSlaveStatus(self, raw_slave_status, status):
-        """Parse the recipe build specific status info into the status dict.
-
-        This includes:
-        * filemap => dictionary or None
-        * dependencies => string or None
-        """
-        build_status_with_files = (
-            'BuildStatus.OK',
-            'BuildStatus.PACKAGEFAIL',
-            'BuildStatus.DEPFAIL',
-            )
-        if (status['builder_status'] == 'BuilderStatus.WAITING' and
-            status['build_status'] in build_status_with_files):
-            status['filemap'] = raw_slave_status[3]
-            status['dependencies'] = raw_slave_status[4]

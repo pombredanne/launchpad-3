@@ -34,6 +34,7 @@ from lp.services.librarianserver import (
 from lp.services.librarianserver.libraryprotocol import FileUploadFactory
 from lp.services.scripts import execute_zcml_for_scripts
 from lp.services.twistedsupport.loggingsupport import set_up_oops_reporting
+from lp.services.twistedsupport.features import setup_feature_controller
 
 # Connect to database
 dbconfig.override(
@@ -64,6 +65,7 @@ librarianService = service.IServiceCollection(application)
 
 # Service that announces when the daemon is ready
 readyservice.ReadyService().setServiceParent(librarianService)
+
 
 def setUpListener(uploadPort, webPort, restricted):
     """Set up a librarian listener on the given ports.
@@ -106,6 +108,10 @@ options = ServerOptions()
 options.parseOptions()
 logfile = options.get("logfile")
 set_up_oops_reporting('librarian', 'librarian', logfile)
+
+# Allow use of feature flags.
+setup_feature_controller('librarian')
+
 
 # Setup a signal handler to dump the process' memory upon 'kill -44'.
 def sigdumpmem_handler(signum, frame):

@@ -1,10 +1,15 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
     'BinaryPackageBuild',
     'BinaryPackageBuildSet',
+    'COPY_ARCHIVE_SCORE_PENALTY',
+    'PRIVATE_ARCHIVE_SCORE_BONUS',
+    'SCORE_BY_COMPONENT',
+    'SCORE_BY_POCKET',
+    'SCORE_BY_URGENCY',
     ]
 
 import datetime
@@ -33,6 +38,7 @@ from storm.store import (
 from storm.zope import IResultSet
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.browser.tales import DurationFormatterAPI
 from lp.app.errors import NotFoundError
@@ -44,12 +50,17 @@ from lp.buildmaster.enums import (
     )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.model.builder import Builder
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.buildmaster.model.buildfarmjob import (
+    BuildFarmJob,
+    SpecificBuildFarmJobSourceMixin,
+    )
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import PackageBuildMixin
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.config import config
 from lp.services.database.bulk import load_related
@@ -60,7 +71,6 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.job.model.job import Job
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.librarian.model import (
     LibraryFileAlias,
@@ -75,7 +85,10 @@ from lp.services.mail.sendmail import (
     simple_sendmail,
     )
 from lp.services.webapp import canonical_url
-from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     CannotBeRescored,
@@ -84,14 +97,51 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     UnparsableDependencies,
     )
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.files import BinaryPackageFile
+from lp.soyuz.model.packageset import Packageset
 from lp.soyuz.model.queue import (
     PackageUpload,
     PackageUploadBuild,
     )
+
+
+SCORE_BY_POCKET = {
+    PackagePublishingPocket.BACKPORTS: 0,
+    PackagePublishingPocket.RELEASE: 1500,
+    PackagePublishingPocket.PROPOSED: 3000,
+    PackagePublishingPocket.UPDATES: 3000,
+    PackagePublishingPocket.SECURITY: 4500,
+}
+
+
+SCORE_BY_COMPONENT = {
+    'multiverse': 0,
+    'universe': 250,
+    'restricted': 750,
+    'main': 1000,
+    'partner': 1250,
+}
+
+
+SCORE_BY_URGENCY = {
+    SourcePackageUrgency.LOW: 5,
+    SourcePackageUrgency.MEDIUM: 10,
+    SourcePackageUrgency.HIGH: 15,
+    SourcePackageUrgency.EMERGENCY: 20,
+}
+
+
+PRIVATE_ARCHIVE_SCORE_BONUS = 10000
+
+
+# Rebuilds have usually a lower priority than other builds.
+# This will be subtracted from the final score, usually taking it
+# below 0, ensuring they are built only when nothing else is waiting
+# in the build farm.
+COPY_ARCHIVE_SCORE_PENALTY = 2600
 
 
 class BinaryPackageBuild(PackageBuildMixin, SQLBase):
@@ -99,8 +149,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     _table = 'BinaryPackageBuild'
     _defaultOrder = 'id'
 
-    build_farm_job_type = BuildFarmJobType.PACKAGEBUILD
-    job_type = build_farm_job_type
+    job_type = BuildFarmJobType.PACKAGEBUILD
 
     build_farm_job_id = Int(name='build_farm_job')
     build_farm_job = Reference(build_farm_job_id, BuildFarmJob.id)
@@ -156,16 +205,6 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     source_package_name_id = Int(name='source_package_name', allow_none=False)
     source_package_name = Reference(
         source_package_name_id, 'SourcePackageName.id')
-
-    @property
-    def buildqueue_record(self):
-        """See `IBuild`."""
-        store = Store.of(self)
-        results = store.find(
-            BuildQueue,
-            BuildPackageJob.job == BuildQueue.jobID,
-            BuildPackageJob.build == self.id)
-        return results.one()
 
     def _getLatestPublication(self):
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
@@ -303,6 +342,42 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
             distribution=self.distribution,
             sourcepackagerelease=self.source_package_release)
 
+    def calculateScore(self):
+        """See `IBuildFarmJob`."""
+        score = 0
+
+        # Private builds get uber score.
+        if self.archive.private:
+            score += PRIVATE_ARCHIVE_SCORE_BONUS
+
+        if self.archive.is_copy:
+            score -= COPY_ARCHIVE_SCORE_PENALTY
+
+        score += self.archive.relative_build_score
+
+        # Language packs don't get any of the usual package-specific
+        # score bumps, as they unduly delay the building of packages in
+        # the main component otherwise.
+        if self.source_package_release.section.name == 'translations':
+            return score
+
+        # Calculates the urgency-related part of the score.
+        score += SCORE_BY_URGENCY[self.source_package_release.urgency]
+
+        # Calculates the pocket-related part of the score.
+        score += SCORE_BY_POCKET[self.pocket]
+
+        # Calculates the component-related part of the score.
+        score += SCORE_BY_COMPONENT.get(self.current_component.name, 0)
+
+        # Calculates the package-set-related part of the score.
+        package_sets = getUtility(IPackagesetSet).setsIncludingSource(
+            self.source_package_release.name, distroseries=self.distro_series)
+        if not self.archive.is_ppa and not package_sets.is_empty():
+            score += package_sets.max(Packageset.relative_build_score)
+
+        return score
+
     def getBinaryPackageNamesForDisplay(self):
         """See `IBuildView`."""
         store = Store.of(self)
@@ -382,8 +457,6 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         """See `IBuild`."""
         if not self.buildqueue_record:
             return False
-        if self.buildqueue_record.virtualized is False:
-            return False
 
         cancellable_statuses = [
             BuildStatus.BUILDING,
@@ -424,24 +497,10 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         """See `IBinaryPackageBuild`."""
         if not self.can_be_cancelled:
             return
-
-        # If the build is currently building we need to tell the
-        # buildd-manager to terminate it.
-        if self.status == BuildStatus.BUILDING:
-            self.updateStatus(BuildStatus.CANCELLING)
-            return
-
-        # Otherwise we can cancel it here.
+        # BuildQueue.cancel() will decide whether to go straight to
+        # CANCELLED, or go through CANCELLING to let buildd-manager
+        # clean up the slave.
         self.buildqueue_record.cancel()
-
-    def makeJob(self):
-        """See `IBuildFarmJob`."""
-        store = Store.of(self)
-        job = Job()
-        store.add(job)
-        specific_job = BuildPackageJob(build=self, job=job)
-        store.add(specific_job)
-        return specific_job
 
     def _parseDependencyToken(self, token):
         """Parse the given token.
@@ -828,7 +887,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         return changes.signer
 
 
-class BinaryPackageBuildSet:
+class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
     implements(IBinaryPackageBuildSet)
 
     def new(self, distro_arch_series, source_package_release, processor,
@@ -837,8 +896,8 @@ class BinaryPackageBuildSet:
         """See `IBinaryPackageBuildSet`."""
         # Create the BuildFarmJob for the new BinaryPackageBuild.
         build_farm_job = getUtility(IBuildFarmJobSource).new(
-            BinaryPackageBuild.build_farm_job_type, status, date_created,
-            builder, archive)
+            BinaryPackageBuild.job_type, status, date_created, builder,
+            archive)
         binary_package_build = BinaryPackageBuild(
             build_farm_job=build_farm_job,
             distro_arch_series=distro_arch_series,
@@ -949,7 +1008,7 @@ class BinaryPackageBuildSet:
                 clauses.append(SourcePackageName.name.is_in(name))
 
     def getBuildsForBuilder(self, builder_id, status=None, name=None,
-                            arch_tag=None, user=None):
+                            pocket=None, arch_tag=None, user=None):
         """See `IBinaryPackageBuildSet`."""
         # Circular. :(
         from lp.soyuz.model.archive import (
@@ -962,7 +1021,7 @@ class BinaryPackageBuildSet:
         origin = [Archive]
 
         self.handleOptionalParamsForBuildQueries(
-            clauses, origin, status, name, pocket=None, arch_tag=arch_tag)
+            clauses, origin, status, name, pocket, arch_tag=arch_tag)
 
         return IStore(BinaryPackageBuild).using(*origin).find(
             BinaryPackageBuild, *clauses).order_by(
@@ -1035,10 +1094,10 @@ class BinaryPackageBuildSet:
             BuildStatus.UPLOADING]:
             order_by = [Desc(BuildQueue.lastscore), BinaryPackageBuild.id]
             order_by_table = BuildQueue
-            clauseTables.extend([BuildQueue, BuildPackageJob])
-            condition_clauses.extend([
-                BuildPackageJob.build_id == BinaryPackageBuild.id,
-                BuildPackageJob.job_id == BuildQueue.jobID])
+            clauseTables.append(BuildQueue)
+            condition_clauses.append(
+                BuildQueue._build_farm_job_id ==
+                    BinaryPackageBuild.build_farm_job_id)
         elif status == BuildStatus.SUPERSEDED or status is None:
             order_by = [Desc(BinaryPackageBuild.id)]
         else:
@@ -1186,24 +1245,76 @@ class BinaryPackageBuildSet:
 
     def getByQueueEntry(self, queue_entry):
         """See `IBinaryPackageBuildSet`."""
+        bfj_id = removeSecurityProxy(queue_entry)._build_farm_job_id
         return IStore(BinaryPackageBuild).find(
-            BinaryPackageBuild,
-            BuildPackageJob.build == BinaryPackageBuild.id,
-            BuildPackageJob.job == BuildQueue.jobID,
-            BuildQueue.job == queue_entry.job).one()
+            BinaryPackageBuild, build_farm_job_id=bfj_id).one()
 
-    def getQueueEntriesForBuildIDs(self, build_ids):
-        """See `IBinaryPackageBuildSet`."""
-        origin = (
-            BuildPackageJob,
-            Join(BuildQueue, BuildPackageJob.job == BuildQueue.jobID),
-            Join(
-                BinaryPackageBuild,
-                BuildPackageJob.build == BinaryPackageBuild.id),
-            LeftJoin(
-                Builder,
-                BuildQueue.builderID == Builder.id),
+    @staticmethod
+    def addCandidateSelectionCriteria(processor, virtualized):
+        """See `ISpecificBuildFarmJobSource`."""
+        private_statuses = (
+            PackagePublishingStatus.PUBLISHED,
+            PackagePublishingStatus.SUPERSEDED,
+            PackagePublishingStatus.DELETED,
             )
-        return IStore(BinaryPackageBuild).using(*origin).find(
-            (BuildQueue, Builder, BuildPackageJob),
-            BinaryPackageBuild.id.is_in(build_ids))
+        return """
+            SELECT TRUE FROM Archive, BinaryPackageBuild, DistroArchSeries
+            WHERE
+            BinaryPackageBuild.build_farm_job = BuildQueue.build_farm_job AND
+            BinaryPackageBuild.distro_arch_series =
+                DistroArchSeries.id AND
+            BinaryPackageBuild.archive = Archive.id AND
+            ((Archive.private IS TRUE AND
+              EXISTS (
+                  SELECT SourcePackagePublishingHistory.id
+                  FROM SourcePackagePublishingHistory
+                  WHERE
+                      SourcePackagePublishingHistory.distroseries =
+                         DistroArchSeries.distroseries AND
+                      SourcePackagePublishingHistory.sourcepackagerelease =
+                         BinaryPackageBuild.source_package_release AND
+                      SourcePackagePublishingHistory.archive = Archive.id AND
+                      SourcePackagePublishingHistory.status IN %s))
+              OR
+              archive.private IS FALSE) AND
+            BinaryPackageBuild.status = %s
+        """ % sqlvalues(private_statuses, BuildStatus.NEEDSBUILD)
+
+    @staticmethod
+    def postprocessCandidate(job, logger):
+        """See `ISpecificBuildFarmJobSource`."""
+        # Mark build records targeted to old source versions as SUPERSEDED
+        # and build records target to SECURITY pocket or against an OBSOLETE
+        # distroseries without a flag as FAILEDTOBUILD.
+        # Builds in those situation should not be built because they will
+        # be wasting build-time.  In the former case, there is already a
+        # newer source; the latter case needs an overhaul of the way
+        # security builds are handled (by copying from a PPA) to avoid
+        # creating duplicate builds.
+        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
+        distroseries = build.distro_arch_series.distroseries
+        if (
+            build.pocket == PackagePublishingPocket.SECURITY or
+            (distroseries.status == SeriesStatus.OBSOLETE and
+                not build.archive.permit_obsolete_series_uploads)):
+            # We never build anything in the security pocket, or for obsolete
+            # series without the flag set.
+            logger.debug(
+                "Build %s FAILEDTOBUILD, queue item %s REMOVED"
+                % (build.id, job.id))
+            build.updateStatus(BuildStatus.FAILEDTOBUILD)
+            job.destroySelf()
+            return False
+
+        publication = build.current_source_publication
+        if publication is None:
+            # The build should be superseded if it no longer has a
+            # current publishing record.
+            logger.debug(
+                "Build %s SUPERSEDED, queue item %s REMOVED"
+                % (build.id, job.id))
+            build.updateStatus(BuildStatus.SUPERSEDED)
+            job.destroySelf()
+            return False
+
+        return True

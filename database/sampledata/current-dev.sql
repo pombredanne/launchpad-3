@@ -747,15 +747,6 @@ SET search_path = public, pg_catalog;
 
 
 
-
-
-
-
-
-
-
-
-
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -1713,28 +1704,26 @@ INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, owner
 ALTER TABLE bugtracker ENABLE TRIGGER ALL;
 
 
-ALTER TABLE processorfamily DISABLE TRIGGER ALL;
+ALTER TABLE processor DISABLE TRIGGER ALL;
 
-INSERT INTO processorfamily (id, name, title, description, restricted) VALUES (1, 'x86', 'Intel 386 compatible chips', 'Bring back the 8086!', false);
-INSERT INTO processorfamily (id, name, title, description, restricted) VALUES (2, 'powerpc', 'PowerPC compatible systems, G3 G4 etc', 'An architecture conceived by Motorola and developed further in cooperation with IBM. Was used very successfully by Apple for their PowerMac range, until 2007.', false);
-INSERT INTO processorfamily (id, name, title, description, restricted) VALUES (3, 'amd64', 'AMD64 and Intel EM64T and compatible systems', 'A 64-bit extension to the venerable x86 architecture, pioneered by AMD and later adopted by Intel as well.', false);
-INSERT INTO processorfamily (id, name, title, description, restricted) VALUES (4, 'hppa', 'PA-RISC Processors', 'The HP PA-RISC and compatible processors', false);
-INSERT INTO processorfamily (id, name, title, description, restricted) VALUES (5, 'arm', 'ARM Processors', 'The ARM and compatible processors', true);
+INSERT INTO processor (id, name, title, description, restricted) VALUES (1, '386', 'Intel 386', 'Intel 386 and its many derivatives and clones, the basic 32-bit chip in the x86 family', false);
+INSERT INTO processor (id, name, title, description, restricted) VALUES (2, 'amd64', 'AMD 64bit', 'AMD 64bit', false);
+INSERT INTO processor (id, name, title, description, restricted) VALUES (3, 'hppa', 'HPPA Processor', 'HPPA Processor', false);
 
 
-ALTER TABLE processorfamily ENABLE TRIGGER ALL;
+ALTER TABLE processor ENABLE TRIGGER ALL;
 
 
 ALTER TABLE distroarchseries DISABLE TRIGGER ALL;
 
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled) VALUES (1, 1, 1, 'i386', 1, true, 5, '2006-10-16 18:31:43.454475', true, true);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled) VALUES (6, 3, 1, 'i386', 1, true, 1, '2006-10-16 18:31:43.456532', true, true);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled) VALUES (7, 6, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457028', true, true);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled) VALUES (8, 10, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457484', true, true);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled) VALUES (9, 13, 1, 'i386', 1, true, 0, '2006-10-16 18:31:43.457938', true, true);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled) VALUES (10, 13, 3, 'amd64', 1, true, 0, '2006-10-16 18:31:43.458434', true, true);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled) VALUES (11, 3, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.458892', false, true);
-INSERT INTO distroarchseries (id, distroseries, processorfamily, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled) VALUES (12, 1, 4, 'hppa', 1, false, 0, '2006-10-16 18:31:43.459349', false, true);
+INSERT INTO distroarchseries (id, distroseries, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (1, 1, 'i386', 1, true, 5, '2006-10-16 18:31:43.454475', true, true, 1);
+INSERT INTO distroarchseries (id, distroseries, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (6, 3, 'i386', 1, true, 1, '2006-10-16 18:31:43.456532', true, true, 1);
+INSERT INTO distroarchseries (id, distroseries, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (7, 6, 'i386', 1, true, 0, '2006-10-16 18:31:43.457028', true, true, 1);
+INSERT INTO distroarchseries (id, distroseries, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (8, 10, 'i386', 1, true, 0, '2006-10-16 18:31:43.457484', true, true, 1);
+INSERT INTO distroarchseries (id, distroseries, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (9, 13, 'i386', 1, true, 0, '2006-10-16 18:31:43.457938', true, true, 1);
+INSERT INTO distroarchseries (id, distroseries, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (10, 13, 'amd64', 1, true, 0, '2006-10-16 18:31:43.458434', true, true, 2);
+INSERT INTO distroarchseries (id, distroseries, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (11, 3, 'hppa', 1, false, 0, '2006-10-16 18:31:43.458892', false, true, 3);
+INSERT INTO distroarchseries (id, distroseries, architecturetag, owner, official, package_count, date_created, supports_virtualized, enabled, processor) VALUES (12, 1, 'hppa', 1, false, 0, '2006-10-16 18:31:43.459349', false, true, 3);
 
 
 ALTER TABLE distroarchseries ENABLE TRIGGER ALL;
@@ -2305,8 +2294,6 @@ ALTER TABLE answercontact ENABLE TRIGGER ALL;
 
 ALTER TABLE job DISABLE TRIGGER ALL;
 
-INSERT INTO job (id, requester, reason, status, progress, last_report_seen, next_report_due, attempt_count, max_retries, log, scheduled_start, lease_expires, date_created, date_started, date_finished) VALUES (1, NULL, NULL, 1, NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, '2005-06-15 09:14:12.820778', '2005-06-15 09:20:12.820778', NULL);
-INSERT INTO job (id, requester, reason, status, progress, last_report_seen, next_report_due, attempt_count, max_retries, log, scheduled_start, lease_expires, date_created, date_started, date_finished) VALUES (2, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, '2005-06-15 10:14:12.820778', NULL, NULL);
 
 
 ALTER TABLE job ENABLE TRIGGER ALL;
@@ -2440,20 +2427,10 @@ ALTER TABLE archivesubscriber DISABLE TRIGGER ALL;
 ALTER TABLE archivesubscriber ENABLE TRIGGER ALL;
 
 
-ALTER TABLE processor DISABLE TRIGGER ALL;
-
-INSERT INTO processor (id, family, name, title, description) VALUES (1, 1, '386', 'Intel 386', 'Intel 386 and its many derivatives and clones, the basic 32-bit chip in the x86 family');
-INSERT INTO processor (id, family, name, title, description) VALUES (2, 3, 'amd64', 'AMD 64bit', 'AMD 64bit');
-INSERT INTO processor (id, family, name, title, description) VALUES (3, 4, 'hppa', 'HPPA Processor', 'HPPA Processor');
-
-
-ALTER TABLE processor ENABLE TRIGGER ALL;
-
-
 ALTER TABLE builder DISABLE TRIGGER ALL;
 
-INSERT INTO builder (id, processor, name, title, owner, speedindex, builderok, failnotes, virtualized, url, manual, date_created, vm_host, active, failure_count) VALUES (1, 1, 'bob', 'Bob The Builder', 61, NULL, true, NULL, false, 'http://localhost:8221/', false, '2006-10-16 18:31:43.226724', NULL, true, 0);
-INSERT INTO builder (id, processor, name, title, owner, speedindex, builderok, failnotes, virtualized, url, manual, date_created, vm_host, active, failure_count) VALUES (2, 1, 'frog', 'The frog builder', 61, NULL, false, NULL, true, 'http://localhost:9221/', false, '2006-10-31 18:31:43.226724', 'localhost-host.ppa', true, 0);
+INSERT INTO builder (id, processor, name, title, owner, speedindex, builderok, failnotes, virtualized, url, manual, date_created, vm_host, active, failure_count, version) VALUES (1, 1, 'bob', 'Bob The Builder', 61, NULL, true, NULL, false, 'http://localhost:8221/', false, '2006-10-16 18:31:43.226724', NULL, true, 0, NULL);
+INSERT INTO builder (id, processor, name, title, owner, speedindex, builderok, failnotes, virtualized, url, manual, date_created, vm_host, active, failure_count, version) VALUES (2, 1, 'frog', 'The frog builder', 61, NULL, false, NULL, true, 'http://localhost:9221/', false, '2006-10-31 18:31:43.226724', 'localhost-host.ppa', true, 0, NULL);
 
 
 ALTER TABLE builder ENABLE TRIGGER ALL;
@@ -3735,19 +3712,19 @@ ALTER TABLE bugwatchactivity DISABLE TRIGGER ALL;
 ALTER TABLE bugwatchactivity ENABLE TRIGGER ALL;
 
 
-ALTER TABLE buildpackagejob DISABLE TRIGGER ALL;
+ALTER TABLE builderprocessor DISABLE TRIGGER ALL;
 
-INSERT INTO buildpackagejob (id, job, build) VALUES (1, 1, 8);
-INSERT INTO buildpackagejob (id, job, build) VALUES (2, 2, 11);
+INSERT INTO builderprocessor (builder, processor) VALUES (1, 1);
+INSERT INTO builderprocessor (builder, processor) VALUES (2, 1);
 
 
-ALTER TABLE buildpackagejob ENABLE TRIGGER ALL;
+ALTER TABLE builderprocessor ENABLE TRIGGER ALL;
 
 
 ALTER TABLE buildqueue DISABLE TRIGGER ALL;
 
-INSERT INTO buildqueue (id, builder, logtail, lastscore, manual, job, job_type, estimated_duration, processor, virtualized) VALUES (1, 1, 'Dummy sampledata entry, not processing', 1, false, 1, 1, '00:00:00', 1, false);
-INSERT INTO buildqueue (id, builder, logtail, lastscore, manual, job, job_type, estimated_duration, processor, virtualized) VALUES (2, NULL, NULL, 10, false, 2, 1, '00:01:00', 1, false);
+INSERT INTO buildqueue (id, builder, logtail, lastscore, manual, estimated_duration, processor, virtualized, build_farm_job, status, date_started) VALUES (1, 1, 'Dummy sampledata entry, not processing', 1, false, '00:00:00', 1, false, 8, 1, '2005-06-15 09:20:12.820778');
+INSERT INTO buildqueue (id, builder, logtail, lastscore, manual, estimated_duration, processor, virtualized, build_farm_job, status, date_started) VALUES (2, NULL, NULL, 10, false, '00:01:00', 1, false, 11, 0, NULL);
 
 
 ALTER TABLE buildqueue ENABLE TRIGGER ALL;
@@ -9603,13 +9580,6 @@ INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (13, 
 
 
 ALTER TABLE sourcepackageformatselection ENABLE TRIGGER ALL;
-
-
-ALTER TABLE sourcepackagerecipebuildjob DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE sourcepackagerecipebuildjob ENABLE TRIGGER ALL;
 
 
 ALTER TABLE sourcepackagerecipedata DISABLE TRIGGER ALL;

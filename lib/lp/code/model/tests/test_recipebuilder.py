@@ -18,21 +18,15 @@ from testtools.matchers import StartsWith
 import transaction
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.buildmaster.enums import (
-    BuildFarmJobType,
-    BuildStatus,
-    )
+from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interactor import BuilderInteractor
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
-from lp.buildmaster.model.builder import (
-    BuilderInteractor,
-    BuilderSlave,
-    )
-from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import (
     MockBuilder,
     OkSlave,
@@ -50,7 +44,7 @@ from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
-from lp.soyuz.model.processor import ProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     person_logged_in,
@@ -67,14 +61,14 @@ class TestRecipeBuilder(TestCaseWithFactory):
 
     def makeJob(self, recipe_registrant=None, recipe_owner=None,
                 archive=None):
-        """Create a sample `ISourcePackageRecipeBuildJob`."""
+        """Create a sample `ISourcePackageRecipeBuild`."""
         spn = self.factory.makeSourcePackageName("apackage")
         distro = self.factory.makeDistribution(name="distro")
         distroseries = self.factory.makeDistroSeries(name="mydistro",
             distribution=distro)
-        processorfamily = ProcessorFamilySet().getByProcessorName('386')
-        distroseries.newArch(
-            'i386', processorfamily, True, self.factory.makePerson())
+        processor = getUtility(IProcessorSet).getByName('386')
+        distroseries.nominatedarchindep = distroseries.newArch(
+            'i386', processor, True, self.factory.makePerson())
         sourcepackage = self.factory.makeSourcePackage(spn, distroseries)
         if recipe_registrant is None:
             recipe_registrant = self.factory.makePerson(
@@ -91,10 +85,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         spb = self.factory.makeSourcePackageRecipeBuild(
             sourcepackage=sourcepackage, archive=archive,
             recipe=recipe, requester=recipe_owner, distroseries=distroseries)
-        job = spb.makeJob()
-        job_id = removeSecurityProxy(job.job).id
-        BuildQueue(job_type=BuildFarmJobType.RECIPEBRANCHBUILD, job=job_id)
-        job = IBuildFarmJobBehavior(job)
+        job = IBuildFarmJobBehavior(spb)
         return job
 
     def test_providesInterface(self):
@@ -102,10 +93,10 @@ class TestRecipeBuilder(TestCaseWithFactory):
         recipe_builder = RecipeBuildBehavior(None)
         self.assertProvides(recipe_builder, IBuildFarmJobBehavior)
 
-    def test_adapts_ISourcePackageRecipeBuildJob(self):
-        # IBuildFarmJobBehavior adapts a ISourcePackageRecipeBuildJob
-        job = self.factory.makeSourcePackageRecipeBuild().makeJob()
-        job = IBuildFarmJobBehavior(job)
+    def test_adapts_ISourcePackageRecipeBuild(self):
+        # IBuildFarmJobBehavior adapts a ISourcePackageRecipeBuild
+        build = self.factory.makeSourcePackageRecipeBuild()
+        job = IBuildFarmJobBehavior(build)
         self.assertProvides(job, IBuildFarmJobBehavior)
 
     def test_display_name(self):
@@ -127,7 +118,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         # valid builder set.
         job = self.makeJob()
         builder = MockBuilder("bob-de-bouwer")
-        job.setBuilderInteractor(BuilderInteractor(builder, OkSlave()))
+        job.setBuilder(builder, OkSlave())
         logger = BufferLogger()
         job.verifyBuildRequest(logger)
         self.assertEquals("", logger.getLogBuffer())
@@ -137,7 +128,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job = self.makeJob()
         builder = MockBuilder('non-virtual builder')
         builder.virtualized = False
-        job.setBuilderInteractor(BuilderInteractor(builder, OkSlave()))
+        job.setBuilder(builder, OkSlave())
         logger = BufferLogger()
         e = self.assertRaises(AssertionError, job.verifyBuildRequest, logger)
         self.assertEqual(
@@ -147,10 +138,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
         # verifyBuildRequest will raise if a bad pocket is proposed.
         build = self.factory.makeSourcePackageRecipeBuild(
             pocket=PackagePublishingPocket.SECURITY)
-        job = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
-        job = IBuildFarmJobBehavior(job.specific_job)
-        job.setBuilderInteractor(
-            BuilderInteractor(MockBuilder("bob-de-bouwer"), OkSlave()))
+        job = IBuildFarmJobBehavior(build)
+        job.setBuilder(MockBuilder("bob-de-bouwer"), OkSlave())
         e = self.assertRaises(
             AssertionError, job.verifyBuildRequest, BufferLogger())
         self.assertIn('invalid pocket due to the series status of', str(e))
@@ -159,8 +148,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         # A build cookie is made up of the job type and record id.
         # The uploadprocessor relies on this format.
         build = self.factory.makeSourcePackageRecipeBuild()
-        job = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
-        job = IBuildFarmJobBehavior(job.specific_job)
+        job = IBuildFarmJobBehavior(build)
         cookie = removeSecurityProxy(job).getBuildCookie()
         expected_cookie = "RECIPEBRANCHBUILD-%d" % build.id
         self.assertEquals(expected_cookie, cookie)
@@ -306,9 +294,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
         test_publisher.addFakeChroots(job.build.distroseries)
         slave = OkSlave()
         builder = MockBuilder("bob-de-bouwer")
-        processorfamily = ProcessorFamilySet().getByProcessorName('386')
-        builder.processor = processorfamily.processors[0]
-        job.setBuilderInteractor(BuilderInteractor(builder, slave))
+        builder.processor = getUtility(IProcessorSet).getByName('386')
+        job.setBuilder(builder, slave)
         logger = BufferLogger()
         d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
 
@@ -322,8 +309,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
             self.assertEquals(["ensurepresent", "build"],
                               [call[0] for call in slave.call_log])
             build_args = slave.call_log[1][1:]
-            self.assertEquals(
-                build_args[0], job.buildfarmjob.generateSlaveBuildCookie())
+            self.assertEquals(build_args[0], job.getBuildCookie())
             self.assertEquals(build_args[1], "sourcepackagerecipe")
             self.assertEquals(build_args[3], [])
             distroarchseries = job.build.distroseries.architectures[0]
@@ -338,9 +324,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job = self.makeJob()
         #test_publisher = SoyuzTestPublisher()
         builder = MockBuilder("bob-de-bouwer")
-        processorfamily = ProcessorFamilySet().getByProcessorName('386')
-        builder.processor = processorfamily.processors[0]
-        job.setBuilderInteractor(BuilderInteractor(builder, OkSlave()))
+        builder.processor = getUtility(IProcessorSet).getByName('386')
+        job.setBuilder(builder, OkSlave())
         logger = BufferLogger()
         d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
         return assert_fails_with(d, CannotBuild)
@@ -356,8 +341,9 @@ class TestBuildNotifications(TrialTestCase):
         self.factory = LaunchpadObjectFactory()
 
     def prepareBehavior(self, fake_successful_upload=False):
-        queue_record = self.factory.makeSourcePackageRecipeBuildJob()
-        build = queue_record.specific_job.build
+        self.queue_record = (
+            self.factory.makeSourcePackageRecipeBuild().queueBuild())
+        build = self.queue_record.specific_build
         build.updateStatus(BuildStatus.FULLYBUILT)
         if fake_successful_upload:
             removeSecurityProxy(build).verifySuccessfulUpload = FakeMethod(
@@ -372,13 +358,13 @@ class TestBuildNotifications(TrialTestCase):
             """ % self.upload_root
             config.push('tmp_builddmaster_root', tmp_builddmaster_root)
             self.addCleanup(config.pop, 'tmp_builddmaster_root')
-        queue_record.builder = self.factory.makeBuilder()
+        self.queue_record.builder = self.factory.makeBuilder()
         slave = WaitingSlave('BuildStatus.OK')
-        self.patch(BuilderSlave, 'makeBuilderSlave', FakeMethod(slave))
-        return removeSecurityProxy(queue_record.builder.current_build_behavior)
+        return BuilderInteractor.getBuildBehavior(
+            self.queue_record, self.queue_record.builder, slave)
 
     def assertDeferredNotifyCount(self, status, behavior, expected_count):
-        d = behavior.handleStatus(status, None, {'filemap': {}})
+        d = behavior.handleStatus(self.queue_record, status, {'filemap': {}})
 
         def cb(result):
             self.assertEqual(expected_count, len(pop_notifications()))

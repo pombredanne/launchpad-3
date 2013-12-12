@@ -106,7 +106,6 @@ from lp.testing import (
     TestCaseWithFactory,
     ws_object,
     )
-from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
     AppServerLayer,
@@ -1394,44 +1393,6 @@ class BugTaskSetFindExpirableBugTasksTest(unittest.TestCase):
             0, self.user, target=[])
 
 
-class BugTaskSetTest(unittest.TestCase):
-    """Test `BugTaskSet` methods."""
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        login(ANONYMOUS)
-
-    def test_getBugTasks(self):
-        """ IBugTaskSet.getBugTasks() returns a dictionary mapping the given
-        bugs to their bugtasks. It does that in a single query, to avoid
-        hitting the DB again when getting the bugs' tasks.
-        """
-        login('no-priv@canonical.com')
-        factory = LaunchpadObjectFactory()
-        bug1 = factory.makeBug()
-        factory.makeBugTask(bug1)
-        bug2 = factory.makeBug()
-        factory.makeBugTask(bug2)
-        factory.makeBugTask(bug2)
-
-        bugs_and_tasks = getUtility(IBugTaskSet).getBugTasks(
-            [bug1.id, bug2.id])
-        # The bugtasks returned by getBugTasks() are exactly the same as the
-        # ones returned by bug.bugtasks, obviously.
-        self.failUnlessEqual(
-            set(bugs_and_tasks[bug1]).difference(bug1.bugtasks),
-            set([]))
-        self.failUnlessEqual(
-            set(bugs_and_tasks[bug2]).difference(bug2.bugtasks),
-            set([]))
-
-    def test_getBugTasks_with_empty_list(self):
-        # When given an empty list of bug IDs, getBugTasks() will return an
-        # empty dictionary.
-        bugs_and_tasks = getUtility(IBugTaskSet).getBugTasks([])
-        self.failUnlessEqual(bugs_and_tasks, {})
-
-
 class TestBugTaskStatuses(TestCase):
 
     def test_open_and_resolved_statuses(self):
@@ -2657,14 +2618,15 @@ class TestTransitionToTarget(TestCaseWithFactory):
         # transitionToTarget() is called.
         new_product = self.factory.makeProduct()
         task = self.factory.makeBugTask()
-        # The factory caused COMMENT notifications which filled the bug cache.
+        # Fill the COMMENTS level recipients cache.
+        task.bug.getBugNotificationRecipients()
         cache = get_property_cache(task.bug)
         self.assertIsNotNone(
-            getattr(cache, '_notification_recipients_for_comments', None))
+            getattr(cache, '_notification_recipients_for_lifecycle', None))
         with person_logged_in(task.owner):
             task.transitionToTarget(new_product, task.owner)
         self.assertIsNone(
-            getattr(cache, '_notification_recipients_for_comments', None))
+            getattr(cache, '_notification_recipients_for_lifecycle', None))
 
     def test_accesspolicyartifacts_updated(self):
         # transitionToTarget updates the AccessPolicyArtifacts related
@@ -2716,14 +2678,15 @@ class TransitionToMilestoneTestCase(TestCaseWithFactory):
         task = self.factory.makeBugTask()
         product = task.target
         milestone = self.factory.makeMilestone(product=product)
-        # The factory caused COMMENT notifications which filled the bug cache.
+        # Fill the COMMENTS level recipients cache.
+        task.bug.getBugNotificationRecipients()
         cache = get_property_cache(task.bug)
         self.assertIsNotNone(
-            getattr(cache, '_notification_recipients_for_comments', None))
+            getattr(cache, '_notification_recipients_for_lifecycle', None))
         with person_logged_in(task.target.owner):
             task.transitionToMilestone(milestone, task.target.owner)
         self.assertIsNone(
-            getattr(cache, '_notification_recipients_for_comments', None))
+            getattr(cache, '_notification_recipients_for_lifecycle', None))
 
 
 class TestTransitionsRemovesSubscribersJob(TestCaseWithFactory):

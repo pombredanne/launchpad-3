@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the builders webservice ."""
@@ -29,16 +29,16 @@ class TestBuildersCollection(TestCaseWithFactory):
             ['nonvirt', 'virt'], sorted(results.jsonBody().keys()))
 
     def test_getBuildersForQueue(self):
-        g1 = self.factory.makeProcessorFamily('g1').processors[0]
-        quantum = self.factory.makeProcessorFamily('quantum').processors[0]
+        g1 = self.factory.makeProcessor('g1')
+        quantum = self.factory.makeProcessor('quantum')
         self.factory.makeBuilder(
-            processor=quantum, name='quantum_builder1')
+            processors=[quantum], name='quantum_builder1')
         self.factory.makeBuilder(
-            processor=quantum, name='quantum_builder2')
+            processors=[quantum], name='quantum_builder2')
         self.factory.makeBuilder(
-            processor=quantum, name='quantum_builder3', virtualized=False)
+            processors=[quantum], name='quantum_builder3', virtualized=False)
         self.factory.makeBuilder(
-            processor=g1, name='g1_builder', virtualized=False)
+            processors=[g1], name='g1_builder', virtualized=False)
 
         logout()
         results = self.webservice.named_get(
@@ -58,11 +58,26 @@ class TestBuilderEntry(TestCaseWithFactory):
         self.webservice = LaunchpadWebServiceCaller()
 
     def test_exports_processor(self):
-        processor_family = self.factory.makeProcessorFamily('s1')
-        builder = self.factory.makeBuilder(
-            processor=processor_family.processors[0])
+        processor = self.factory.makeProcessor('s1')
+        builder = self.factory.makeBuilder(processors=[processor])
 
         logout()
         entry = self.webservice.get(
             api_url(builder), api_version='devel').jsonBody()
         self.assertEndsWith(entry['processor_link'], '/+processors/s1')
+
+    def test_getBuildRecords(self):
+        builder = self.factory.makeBuilder()
+        build = self.factory.makeBinaryPackageBuild(builder=builder)
+        build_title = build.title
+
+        logout()
+        results = self.webservice.named_get(
+            api_url(builder), 'getBuildRecords', pocket='Release',
+            api_version='devel').jsonBody()
+        self.assertEqual(
+            [build_title], [entry['title'] for entry in results['entries']])
+        results = self.webservice.named_get(
+            api_url(builder), 'getBuildRecords', pocket='Proposed',
+            api_version='devel').jsonBody()
+        self.assertEqual(0, len(results['entries']))

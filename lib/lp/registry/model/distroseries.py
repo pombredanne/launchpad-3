@@ -55,6 +55,7 @@ from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
+from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import (
     DerivationError,
     IDistroSeries,
@@ -348,24 +349,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getDistroArchSeriesByProcessor(self, processor):
         """See `IDistroSeries`."""
-        # XXX: JRV 2010-01-14: This should ideally use storm to find the
-        # distroarchseries rather than iterating over all of them, but
-        # I couldn't figure out how to do that - and a trivial for loop
-        # isn't expensive given there's generally less than a dozen
-        # architectures.
-        for architecture in self.architectures:
-            if architecture.processorfamily == processor.family:
-                return architecture
-        return None
+        return Store.of(self).find(
+            DistroArchSeries,
+            DistroArchSeries.distroseriesID == self.id,
+            DistroArchSeries.processor_id == processor.id).one()
 
     @property
     def enabled_architectures(self):
-        store = Store.of(self)
-        results = store.find(
+        return Store.of(self).find(
             DistroArchSeries,
             DistroArchSeries.distroseries == self,
-            DistroArchSeries.enabled == True)
-        return results.order_by(DistroArchSeries.architecturetag)
+            DistroArchSeries.enabled == True).order_by(
+                DistroArchSeries.architecturetag)
 
     @property
     def buildable_architectures(self):
@@ -1108,14 +1103,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # results will only see DSBPs
         return DecoratedResultSet(package_caches, result_to_dsbp)
 
-    def newArch(self, architecturetag, processorfamily, official, owner,
+    def newArch(self, architecturetag, processor, official, owner,
                 supports_virtualized=False, enabled=True):
         """See `IDistroSeries`."""
-        distroarchseries = DistroArchSeries(
-            architecturetag=architecturetag, processorfamily=processorfamily,
+        return DistroArchSeries(
+            architecturetag=architecturetag, processor=processor,
             official=official, distroseries=self, owner=owner,
             supports_virtualized=supports_virtualized, enabled=enabled)
-        return distroarchseries
 
     def newMilestone(self, name, dateexpected=None, summary=None,
                      code_name=None, tags=None):
@@ -1490,9 +1484,17 @@ class DistroSeriesSet:
             DistroSeries.hide_all_translations == False,
             DistroSeries.id == POTemplate.distroseriesID).config(distinct=True)
 
-    def queryByName(self, distribution, name):
+    def queryByName(self, distribution, name, follow_aliases=False):
         """See `IDistroSeriesSet`."""
-        return DistroSeries.selectOneBy(distribution=distribution, name=name)
+        series = DistroSeries.selectOneBy(distribution=distribution, name=name)
+        if series is not None:
+            return series
+        if follow_aliases:
+            try:
+                return distribution.resolveSeriesAlias(name)
+            except NoSuchDistroSeries:
+                pass
+        return None
 
     def queryByVersion(self, distribution, version):
         """See `IDistroSeriesSet`."""

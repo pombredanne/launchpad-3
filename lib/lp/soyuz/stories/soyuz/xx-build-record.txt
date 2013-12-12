@@ -81,7 +81,7 @@ that a dispatch time estimation will not be available for the build in
 question.
 
     >>> login('foo.bar@canonical.com')
-    >>> build.buildqueue_record.job.suspend()
+    >>> build.buildqueue_record.suspend()
     >>> logout()
     >>> anon_browser.open(build_url)
     >>> print extract_text(find_main_content(anon_browser.contents))
@@ -101,7 +101,7 @@ question.
 Re-enable the build in order to avoid subsequent test breakage.
 
     >>> login('foo.bar@canonical.com')
-    >>> build.buildqueue_record.job.resume()
+    >>> build.buildqueue_record.resume()
     >>> logout()
     >>> anon_browser.open(build_url)
 
@@ -137,13 +137,13 @@ Adminstrators can rescore pending builds in a separate form.
 Once submitted they are redirected to the build index page where the
 new 'score' value is presented.
 
-    >>> for text in get_feedback_messages(admin_browser.contents):
-    ...     print text
+    >>> print_feedback_messages(admin_browser.contents)
     Build rescored to 0.
 
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))
     Build status
     Needs building
+    Cancel build
     Start in ...
     Build score:0 Rescore build (What's this?)
 
@@ -287,13 +287,13 @@ retrying the build is not a possibility anymore.
 
     >>> admin_browser.getLink("Retry this build").click()
     >>> admin_browser.getControl("Retry Build").click()
-    >>> for text in get_feedback_messages(admin_browser.contents):
-    ...     print text
+    >>> print_feedback_messages(admin_browser.contents)
     Build retried
 
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))
     Build status
     Needs building
+    Cancel build
     Start in ...
     Build score:... Rescore build (What's this?)
 

@@ -31,11 +31,10 @@ class TestBuildDepWait(TestCaseWithFactory):
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         # Create everything we need to create builds, such as a
         # DistroArchSeries and a builder.
-        self.pf = self.factory.makeProcessorFamily()
-        pf_proc = self.pf.addProcessor(self.factory.getUniqueString(), '', '')
+        self.processor = self.factory.makeProcessor()
         self.distroseries = self.factory.makeDistroSeries()
         self.das = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries, processorfamily=self.pf,
+            distroseries=self.distroseries, processor=self.processor,
             supports_virtualized=True)
         self.archive = self.factory.makeArchive(
             distribution=self.distroseries.distribution,
@@ -45,7 +44,8 @@ class TestBuildDepWait(TestCaseWithFactory):
             self.publisher.prepareBreezyAutotest()
             self.distroseries.nominatedarchindep = self.das
             self.publisher.addFakeChroots(distroseries=self.distroseries)
-            self.builder = self.factory.makeBuilder(processor=pf_proc)
+            self.builder = self.factory.makeBuilder(
+                processors=[self.processor])
 
     def test_update_dependancies(self):
         # Calling .updateDependencies() on a build will remove those which

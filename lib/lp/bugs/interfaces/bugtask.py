@@ -496,7 +496,8 @@ class IBugTask(IHasDateCreated, IHasBug, IBugTaskDelete):
     date_closed = exported(
         Datetime(title=_("Date Closed"),
                  description=_("The date on which this task was marked "
-                               "either Won't Fix, Invalid or Fix Released."),
+                               "Fix Released, Invalid, Won't Fix, Expired or "
+                               "Opinion."),
                  readonly=True,
                  required=False))
     date_left_new = exported(
@@ -848,12 +849,6 @@ class IBugTaskSet(Interface):
         Raise a NotFoundError if there is no IBugTask
         matching the given id. Raise a zope.security.interfaces.Unauthorized
         if the user doesn't have the permission to view this bug.
-        """
-
-    def getBugTasks(bug_ids):
-        """Return the bugs with the given IDs and all of its bugtasks.
-
-        :return: A dictionary mapping the bugs to their bugtasks.
         """
 
     def getBugTaskTags(bugtasks):

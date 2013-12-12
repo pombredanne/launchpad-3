@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test process-accepted.py"""
@@ -169,7 +169,7 @@ class TestProcessAccepted(TestCaseWithFactory):
         script.main()
         self.assertThat(len(uploads), LessThan(synch.commit_count))
 
-    def test_non_dry_run_commits_work(self):
+    def test_commits_work(self):
         upload = self.factory.makeSourcePackageUpload(
             distroseries=self.factory.makeDistroSeries(
                 distribution=self.distro))
@@ -178,15 +178,6 @@ class TestProcessAccepted(TestCaseWithFactory):
         self.layer.txn.abort()
         self.assertEqual(
             upload, IStore(PackageUpload).get(PackageUpload, upload_id))
-
-    def test_dry_run_aborts_work(self):
-        upload = self.factory.makeSourcePackageUpload(
-            distroseries=self.factory.makeDistroSeries(
-                distribution=self.distro))
-        upload_id = upload.id
-        self.getScript(['--dry-run']).main()
-        self.assertEqual(
-            None, IStore(PackageUpload).get(PackageUpload, upload_id))
 
     def test_validateArguments_requires_distro_by_default(self):
         self.assertRaises(

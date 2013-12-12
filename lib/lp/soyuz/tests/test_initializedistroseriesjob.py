@@ -20,7 +20,10 @@ from lp.soyuz.interfaces.distributionjob import (
     InitializationPending,
     )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import (
+    IProcessorSet,
+    ProcessorNotFound,
+    )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -229,11 +232,10 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
 
 
 def create_child(factory):
-    pf = factory.makeProcessorFamily()
-    pf.addProcessor('x86', '', '')
+    processor = factory.makeProcessor()
     parent = factory.makeDistroSeries()
     parent_das = factory.makeDistroArchSeries(
-        distroseries=parent, processorfamily=pf)
+        distroseries=parent, processor=processor)
     lf = factory.makeLibraryFileAlias()
     # Since the LFA needs to be in the librarian, commit.
     transaction.commit()
@@ -272,11 +274,13 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
     def job_source(self):
         return getUtility(IInitializeDistroSeriesJobSource)
 
-    def setupDas(self, parent, proc, arch_tag):
-        pf = getUtility(IProcessorFamilySet).getByName(proc)
+    def setupDas(self, parent, processor_name, arch_tag):
+        try:
+            processor = getUtility(IProcessorSet).getByName(processor_name)
+        except ProcessorNotFound:
+            processor = self.factory.makeProcessor(name=processor_name)
         parent_das = self.factory.makeDistroArchSeries(
-            distroseries=parent, processorfamily=pf,
-            architecturetag=arch_tag)
+            distroseries=parent, processor=processor, architecturetag=arch_tag)
         lf = self.factory.makeLibraryFileAlias()
         transaction.commit()
         parent_das.addOrUpdateChroot(lf)

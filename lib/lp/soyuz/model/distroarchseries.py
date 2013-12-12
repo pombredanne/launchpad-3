@@ -8,6 +8,7 @@ __all__ = [
     ]
 
 from cStringIO import StringIO
+import hashlib
 
 from sqlobject import (
     BoolCol,
@@ -18,8 +19,10 @@ from sqlobject import (
     StringCol,
     )
 from storm.locals import (
+    Int,
     Join,
     Or,
+    Reference,
     )
 from storm.store import EmptyResultSet
 from zope.component import getUtility
@@ -66,8 +69,8 @@ class DistroArchSeries(SQLBase):
 
     distroseries = ForeignKey(dbName='distroseries',
         foreignKey='DistroSeries', notNull=True)
-    processorfamily = ForeignKey(dbName='processorfamily',
-        foreignKey='ProcessorFamily', notNull=True)
+    processor_id = Int(name='processor', allow_none=False)
+    processor = Reference(processor_id, Processor.id)
     architecturetag = StringCol(notNull=True)
     official = BoolCol(notNull=True)
     owner = ForeignKey(
@@ -86,27 +89,10 @@ class DistroArchSeries(SQLBase):
         return self.getBinaryPackage(name)
 
     @property
-    def default_processor(self):
-        """See `IDistroArchSeries`."""
-        # XXX cprov 2005-08-31:
-        # This could possibly be better designed; let's think about it in
-        # the future. Pick the first processor we found for this
-        # distroarchseries.processorfamily. The data model should
-        # change to have a default processor for a processorfamily
-        return self.processors[0]
-
-    @property
-    def processors(self):
-        """See `IDistroArchSeries`."""
-        return Processor.selectBy(family=self.processorfamily, orderBy='id')
-
-    @property
     def title(self):
         """See `IDistroArchSeries`."""
         return '%s for %s (%s)' % (
-            self.distroseries.title, self.architecturetag,
-            self.processorfamily.name
-            )
+            self.distroseries.title, self.architecturetag, self.processor.name)
 
     @property
     def displayname(self):
@@ -182,6 +168,20 @@ class DistroArchSeries(SQLBase):
             filecontent = data
         else:
             filecontent = data.read()
+
+        # Due to http://bugs.python.org/issue1349106 launchpadlib sends
+        # MIME with \n line endings, which is illegal. lazr.restful
+        # parses each ending as \r\n, resulting in a binary that ends
+        # with \r getting the last byte chopped off. To cope with this
+        # on the server side we try to append \r if the SHA-1 doesn't
+        # match.
+        content_sha1sum = hashlib.sha1(filecontent).hexdigest()
+        if content_sha1sum != sha1sum:
+            filecontent += '\r'
+            content_sha1sum = hashlib.sha1(filecontent).hexdigest()
+        if content_sha1sum != sha1sum:
+            raise InvalidChrootUploaded("Chroot upload checksums do not match")
+
         filename = 'chroot-%s-%s-%s.tar.bz2' % (
             self.distroseries.distribution.name, self.distroseries.name,
             self.architecturetag)
@@ -368,12 +368,11 @@ class PocketChroot(SQLBase):
     implements(IPocketChroot)
     _table = "PocketChroot"
 
-    distroarchseries = ForeignKey(dbName='distroarchseries',
-                                   foreignKey='DistroArchSeries',
-                                   notNull=True)
+    distroarchseries = ForeignKey(
+        dbName='distroarchseries', foreignKey='DistroArchSeries', notNull=True)
 
-    pocket = EnumCol(schema=PackagePublishingPocket,
-                     default=PackagePublishingPocket.RELEASE,
-                     notNull=True)
+    pocket = EnumCol(
+        schema=PackagePublishingPocket,
+        default=PackagePublishingPocket.RELEASE, notNull=True)
 
     chroot = ForeignKey(dbName='chroot', foreignKey='LibraryFileAlias')

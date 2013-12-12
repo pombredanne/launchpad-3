@@ -31,6 +31,7 @@ from email.utils import (
     formatdate,
     make_msgid,
     )
+import hashlib
 from itertools import count
 from operator import (
     isMappingType,
@@ -95,12 +96,8 @@ from lp.bugs.interfaces.cve import (
     ICveSet,
     )
 from lp.bugs.model.bug import FileBugData
-from lp.buildmaster.enums import (
-    BuildFarmJobType,
-    BuildStatus,
-    )
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.enums import (
     BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel,
@@ -242,6 +239,10 @@ from lp.services.identity.interfaces.emailaddress import (
     )
 from lp.services.identity.model.account import Account
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.messages.model.message import (
     Message,
@@ -284,7 +285,7 @@ from lp.soyuz.interfaces.component import (
     )
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.publishing import IPublishingSet
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.interfaces.section import ISectionSet
@@ -297,7 +298,6 @@ from lp.soyuz.model.files import (
     SourcePackageReleaseFile,
     )
 from lp.soyuz.model.packagediff import PackageDiff
-from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
@@ -330,8 +330,8 @@ from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
     )
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
-from lp.translations.interfaces.translationtemplatesbuildjob import (
-    ITranslationTemplatesBuildJobSource,
+from lp.translations.interfaces.translationtemplatesbuild import (
+    ITranslationTemplatesBuildSource,
     )
 from lp.translations.interfaces.translator import ITranslatorSet
 from lp.translations.model.translationtemplateitem import (
@@ -883,51 +883,24 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                       productseries=productseries, distroseries=distroseries,
                       name=name, active=active, dateexpected=dateexpected))
 
-    def makeProcessor(self, family=None, name=None, title=None,
-                      description=None):
+    def makeProcessor(self, name=None, title=None, description=None,
+                      restricted=False):
         """Create a new processor.
 
-        :param family: Family of the processor
         :param name: Name of the processor
         :param title: Optional title
         :param description: Optional description
+        :param restricted: If the processor is restricted.
         :return: A `IProcessor`
         """
         if name is None:
             name = self.getUniqueString()
-        if family is None:
-            family = self.makeProcessorFamily()
         if title is None:
             title = "The %s processor" % name
         if description is None:
-            description = "The %s and processor and compatible processors"
-        return family.addProcessor(name, title, description)
-
-    def makeProcessorFamily(self, name=None, title=None, description=None,
-                            restricted=False):
-        """Create a new processor family.
-
-        A default processor for the family will be created with the
-        same name as the family.
-
-        :param name: Name of the family (e.g. x86)
-        :param title: Optional title of the family
-        :param description: Optional extended description
-        :param restricted: Whether the processor family is restricted
-        :return: A `IProcessorFamily`
-        """
-        if name is None:
-            name = self.getUniqueString()
-        if description is None:
-            description = "Description of the %s processor family" % name
-        if title is None:
-            title = "%s and compatible processors." % name
-        family = getUtility(IProcessorFamilySet).new(
-            name, title, description, restricted=restricted)
-        # Make sure there's at least one processor in the family, so that
-        # other things can have a default processor.
-        self.makeProcessor(name=name, family=family)
-        return family
+            description = "The %s processor and compatible processors" % name
+        return getUtility(IProcessorSet).new(
+            name, title, description, restricted)
 
     def makeProductRelease(self, milestone=None, product=None,
                            productseries=None):
@@ -1755,7 +1728,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             with person_logged_in(owner):
                 task = bug.addTask(owner, series)
                 task.transitionToStatus(status, owner)
-
+        removeSecurityProxy(bug).clearBugNotificationRecipientsCache()
         return bug
 
     def makeBugTask(self, bug=None, target=None, owner=None, publish=True):
@@ -1827,8 +1800,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         if owner is None:
             owner = self.makePerson()
-        return removeSecurityProxy(bug).addTask(
+        task = removeSecurityProxy(bug).addTask(
             owner, removeSecurityProxy(target))
+        removeSecurityProxy(bug).clearBugNotificationRecipientsCache()
+        return task
 
     def makeBugNomination(self, bug=None, target=None):
         """Create and return a BugNomination.
@@ -2440,17 +2415,28 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeLibraryFileAlias(self, filename=None, content=None,
                              content_type='text/plain', restricted=False,
-                             expires=None):
+                             expires=None, db_only=False):
         """Make a library file, and return the alias."""
         if filename is None:
             filename = self.getUniqueString('filename')
         if content is None:
             content = self.getUniqueString()
-        library_file_alias_set = getUtility(ILibraryFileAliasSet)
-        library_file_alias = library_file_alias_set.create(
-            filename, len(content), StringIO(content), content_type,
-            expires=expires, restricted=restricted)
-        return library_file_alias
+
+        if db_only:
+            # Often we don't actually care if the file exists on disk.
+            # This lets us run tests without a librarian server.
+            lfc = LibraryFileContent(
+                filesize=len(content),
+                sha256=hashlib.sha256(content).hexdigest(),
+                sha1=hashlib.sha1(content).hexdigest(),
+                md5=hashlib.md5(content).hexdigest())
+            lfa = LibraryFileAlias(
+                content=lfc, filename=filename, mimetype=content_type)
+        else:
+            lfa = getUtility(ILibraryFileAliasSet).create(
+                filename, len(content), StringIO(content), content_type,
+                expires=expires, restricted=restricted)
+        return lfa
 
     def makeDistribution(self, name=None, displayname=None, owner=None,
                          registrant=None, members=None, title=None,
@@ -2635,24 +2621,24 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             component)
 
     def makeDistroArchSeries(self, distroseries=None,
-                             architecturetag=None, processorfamily=None,
+                             architecturetag=None, processor=None,
                              official=True, owner=None,
                              supports_virtualized=False, enabled=True):
         """Create a new distroarchseries"""
 
         if distroseries is None:
             distroseries = self.makeDistroSeries()
-        if processorfamily is None:
-            processorfamily = self.makeProcessorFamily()
+        if processor is None:
+            processor = self.makeProcessor()
         if owner is None:
             owner = self.makePerson()
-        # XXX: architecturetag & processorfamily are tightly coupled. It's
+        # XXX: architecturetag & processor are tightly coupled. It's
         # wrong to just make a fresh architecture tag without also making a
-        # processor family to go with it (ideally with processors!)
+        # processor to go with it.
         if architecturetag is None:
             architecturetag = self.getUniqueString('arch')
         return distroseries.newArch(
-            architecturetag, processorfamily, official, owner,
+            architecturetag, processor, official, owner,
             supports_virtualized, enabled)
 
     def makeComponent(self, name=None):
@@ -2757,7 +2743,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         permission_set.newQueueAdmin(archive, person, 'main')
         return person
 
-    def makeBuilder(self, processor=None, url=None, name=None, title=None,
+    def makeBuilder(self, processors=None, url=None, name=None, title=None,
                     owner=None, active=True, virtualized=True, vm_host=None,
                     manual=False):
         """Make a new builder for i386 virtualized builds by default.
@@ -2766,9 +2752,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         we currently have a build slave setup for 'bob' only in the
         test environment.
         """
-        if processor is None:
-            processor_fam = ProcessorFamilySet().getByName('x86')
-            processor = processor_fam.processors[0]
+        if processors is None:
+            processors = [getUtility(IProcessorSet).getByName('386')]
         if url is None:
             url = 'http://%s:8221/' % self.getUniqueString()
         if name is None:
@@ -2779,7 +2764,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
 
         return getUtility(IBuilderSet).new(
-            processor, url, name, title, owner, active, virtualized, vm_host,
+            processors, url, name, title, owner, active, virtualized, vm_host,
             manual=manual)
 
     def makeRecipeText(self, *branches):
@@ -2880,34 +2865,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         IStore(spr_build).flush()
         return spr_build
 
-    def makeSourcePackageRecipeBuildJob(
-        self, score=9876, virtualized=True, estimated_duration=64,
-        sourcename=None, recipe_build=None):
-        """Create a `SourcePackageRecipeBuildJob` and a `BuildQueue` for
-        testing."""
-        if recipe_build is None:
-            recipe_build = self.makeSourcePackageRecipeBuild(
-                sourcename=sourcename)
-        recipe_build_job = recipe_build.makeJob()
+    def makeTranslationTemplatesBuild(self, branch=None):
+        """Make a new `TranslationTemplatesBuild`.
 
-        bq = BuildQueue(
-            job=recipe_build_job.job, lastscore=score,
-            job_type=BuildFarmJobType.RECIPEBRANCHBUILD,
-            estimated_duration=timedelta(seconds=estimated_duration),
-            virtualized=virtualized)
-        IStore(BuildQueue).add(bq)
-        return bq
-
-    def makeTranslationTemplatesBuildJob(self, branch=None):
-        """Make a new `TranslationTemplatesBuildJob`.
-
-        :param branch: The branch that the job should be for.  If none
+        :param branch: The branch that the build should be for.  If none
             is given, one will be created.
         """
         if branch is None:
             branch = self.makeBranch()
 
-        jobset = getUtility(ITranslationTemplatesBuildJobSource)
+        jobset = getUtility(ITranslationTemplatesBuildSource)
         return jobset.create(branch)
 
     def makePOTemplate(self, productseries=None, distroseries=None,
@@ -3453,7 +3420,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeCopyJobPackageUpload(self, distroseries=None,
                                  sourcepackagename=None, source_archive=None,
-                                 target_pocket=None):
+                                 target_pocket=None, requester=None,
+                                 include_binaries=False):
         """Make a `PackageUpload` with a `PackageCopyJob` attached."""
         if distroseries is None:
             distroseries = self.makeDistroSeries()
@@ -3466,7 +3434,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             source_archive=spph.archive,
             target_pocket=target_pocket,
             target_archive=distroseries.main_archive,
-            target_distroseries=distroseries)
+            target_distroseries=distroseries, requester=requester,
+            include_binaries=include_binaries)
         job.addSourceOverride(SourceOverride(
             spr.sourcepackagename, spr.component, spr.section))
         try:
@@ -3609,8 +3578,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             else:
                 distroseries = self.makeDistroSeries()
             distroarchseries = self.makeDistroArchSeries(
-                distroseries=distroseries,
-                processorfamily=processor.family)
+                distroseries=distroseries, processor=processor)
         if archive is None:
             if source_package_release is None:
                 archive = distroarchseries.main_archive
@@ -3659,6 +3627,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                            date_uploaded=UTC_NOW,
                                            scheduleddeletiondate=None,
                                            ancestor=None,
+                                           creator=None,
+                                           spr_creator=None,
                                            **kwargs):
         """Make a `SourcePackagePublishingHistory`.
 
@@ -3679,6 +3649,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param scheduleddeletiondate: The date where the publication
             is scheduled to be removed.
         :param ancestor: The publication ancestor parameter.
+        :param creator: The publication creator.
         :param **kwargs: All other parameters are passed through to the
             makeSourcePackageRelease call if needed.
         """
@@ -3708,14 +3679,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if sourcepackagerelease is None:
             sourcepackagerelease = self.makeSourcePackageRelease(
                 archive=archive, distroseries=distroseries,
-                date_uploaded=date_uploaded, **kwargs)
+                date_uploaded=date_uploaded, creator=spr_creator, **kwargs)
 
         admins = getUtility(ILaunchpadCelebrities).admin
         with person_logged_in(admins.teamowner):
             spph = getUtility(IPublishingSet).newSourcePublication(
                 archive, sourcepackagerelease, distroseries,
                 sourcepackagerelease.component, sourcepackagerelease.section,
-                pocket, ancestor)
+                pocket, ancestor=ancestor, creator=creator)
 
         naked_spph = removeSecurityProxy(spph)
         naked_spph.status = status
@@ -4231,7 +4202,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makePlainPackageCopyJob(
         self, package_name=None, package_version=None, source_archive=None,
         target_archive=None, target_distroseries=None, target_pocket=None,
-        requester=None):
+        requester=None, include_binaries=False):
         """Create a new `PlainPackageCopyJob`."""
         if package_name is None and package_version is None:
             package_name = self.makeSourcePackageName().name
@@ -4249,7 +4220,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(IPlainPackageCopyJobSource).create(
             package_name, source_archive, target_archive,
             target_distroseries, target_pocket,
-            package_version=package_version, requester=requester)
+            package_version=package_version, requester=requester,
+            include_binaries=include_binaries)
 
     def makeAccessPolicy(self, pillar=None,
                          type=InformationType.PROPRIETARY,

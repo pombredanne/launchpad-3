@@ -39,8 +39,7 @@ There's a link to the +deactivate-account page in a person's +edit page.
     >>> browser.getControl('Deactivate My Account').click()
     >>> browser.url
     'http://launchpad.dev'
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
+    >>> print_feedback_messages(browser.contents)
     Your account has been deactivated.
 
     >>> from zope.component import getUtility

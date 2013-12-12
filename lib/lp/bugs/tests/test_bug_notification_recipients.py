@@ -31,10 +31,14 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def getFreshRecipients(self, bug):
+        bug.clearBugNotificationRecipientsCache()
+        return bug.getBugNotificationRecipients()
+
     def test_public_bug(self):
         bug = self.factory.makeBug()
         self.assertContentEqual(
-            [bug.owner], bug.getBugNotificationRecipients())
+            [bug.owner], self.getFreshRecipients(bug))
 
     def test_public_bug_with_subscriber(self):
         bug = self.factory.makeBug()
@@ -42,7 +46,7 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
         with person_logged_in(bug.owner):
             bug.subscribe(subscriber, bug.owner)
         self.assertContentEqual(
-            [bug.owner, subscriber], bug.getBugNotificationRecipients())
+            [bug.owner, subscriber], self.getFreshRecipients(bug))
 
     def test_public_bug_with_structural_subscriber(self):
         subscriber = self.factory.makePerson()
@@ -51,7 +55,7 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
             product.addBugSubscription(subscriber, subscriber)
         bug = self.factory.makeBug(target=product)
         self.assertContentEqual(
-            [bug.owner, subscriber], bug.getBugNotificationRecipients())
+            [bug.owner, subscriber], self.getFreshRecipients(bug))
 
     def test_public_bug_assignee(self):
         assignee = self.factory.makePerson()
@@ -59,7 +63,7 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
         with person_logged_in(bug.owner):
             bug.default_bugtask.transitionToAssignee(assignee)
         self.assertContentEqual(
-            [bug.owner, assignee], bug.getBugNotificationRecipients())
+            [bug.owner, assignee], self.getFreshRecipients(bug))
 
     def test_public_bug_with_duplicate_subscriber(self):
         subscriber = self.factory.makePerson()
@@ -70,7 +74,7 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
             dupe.markAsDuplicate(bug)
         self.assertContentEqual(
             [bug.owner, dupe.owner, subscriber],
-            bug.getBugNotificationRecipients())
+            self.getFreshRecipients(bug))
 
     def test_private_bug(self):
         # Only the owner is notified about a private bug.
@@ -79,7 +83,7 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
             owner=owner, information_type=InformationType.USERDATA)
         with person_logged_in(owner):
             self.assertContentEqual(
-                [owner], bug.getBugNotificationRecipients())
+                [owner], self.getFreshRecipients(bug))
 
     def test_private_bug_with_subscriber(self):
         # Subscribing a user to a bug grants access, so they will be notified.
@@ -90,7 +94,7 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
         with person_logged_in(owner):
             bug.subscribe(subscriber, owner)
             self.assertContentEqual(
-                [owner, subscriber], bug.getBugNotificationRecipients())
+                [owner, subscriber], self.getFreshRecipients(bug))
 
     def test_private_bug_with_subscriber_without_access(self):
         # A subscriber without access to a private bug isn't notified.
@@ -104,7 +108,7 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
             getUtility(IAccessArtifactGrantSource).revokeByArtifact(
                 [artifact], [subscriber])
             self.assertContentEqual(
-                [owner], bug.getBugNotificationRecipients())
+                [owner], self.getFreshRecipients(bug))
 
     def test_private_bug_with_structural_subscriber(self):
         # A structural subscriber without access does not get notified about
@@ -119,7 +123,7 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
             information_type=InformationType.USERDATA)
         with person_logged_in(owner):
             self.assertContentEqual(
-                [owner], bug.getBugNotificationRecipients())
+                [owner], self.getFreshRecipients(bug))
 
     def test_private_bug_with_structural_subscriber_with_access(self):
         # When a structural subscriber has access to a private bug, they are
@@ -137,7 +141,7 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
             information_type=InformationType.USERDATA)
         with person_logged_in(owner):
             self.assertContentEqual(
-                [owner, subscriber], bug.getBugNotificationRecipients())
+                [owner, subscriber], self.getFreshRecipients(bug))
 
     def test_private_bug_assignee(self):
         # Assigning a user to a private bug does not give them visibility.
@@ -148,7 +152,7 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
         with person_logged_in(owner):
             bug.default_bugtask.transitionToAssignee(assignee)
             self.assertContentEqual(
-                [owner], bug.getBugNotificationRecipients())
+                [owner], self.getFreshRecipients(bug))
 
     def test_private_bug_assignee_with_access(self):
         # An assignee with access will get notified.
@@ -162,7 +166,7 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
         with person_logged_in(owner):
             bug.default_bugtask.transitionToAssignee(assignee)
             self.assertContentEqual(
-                [owner, assignee], bug.getBugNotificationRecipients())
+                [owner, assignee], self.getFreshRecipients(bug))
 
     def test_private_bug_with_duplicate_subscriber(self):
         # A subscriber to a duplicate of a private bug will not be notified.
@@ -175,7 +179,7 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
             dupe.subscribe(subscriber, owner)
             dupe.markAsDuplicate(bug)
             self.assertContentEqual(
-                [owner], bug.getBugNotificationRecipients())
+                [owner], self.getFreshRecipients(bug))
 
     def test_private_bug_with_duplicate_subscriber_with_access(self):
         # A subscriber to a duplicate of a private bug will be notified, if
@@ -192,7 +196,7 @@ class TestBugNotificationRecipients(TestCaseWithFactory):
             dupe.subscribe(subscriber, owner)
             dupe.markAsDuplicate(bug)
             self.assertContentEqual(
-                [owner, subscriber], bug.getBugNotificationRecipients())
+                [owner, subscriber], self.getFreshRecipients(bug))
 
     def test_cache_by_bug_notification_level(self):
         # The BugNotificationRecipients set is cached by notification level

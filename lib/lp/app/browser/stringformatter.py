@@ -820,10 +820,14 @@ class FormattersAPI:
         may be a concern but is noted here for posterity anyway.
         """
         text = self._stringtoformat
-
+        seen_addresses = []
         matches = re.finditer(re_email_address, text)
         for match in matches:
             address = match.group()
+            # Since we globally replace the e-mail in the text, if we have seen
+            # the address before, skip it.
+            if address in seen_addresses:
+                continue
             person = None
             # First try to find the person required in the preloaded person
             # data dictionary.
@@ -837,9 +841,9 @@ class FormattersAPI:
             if person is not None and not person.hide_email_addresses:
                 # Circular dependancies now. Should be resolved by moving the
                 # object image display api.
-                from lp.app.browser.tales import (
-                    ObjectImageDisplayAPI)
+                from lp.app.browser.tales import ObjectImageDisplayAPI
                 css_sprite = ObjectImageDisplayAPI(person).sprite_css()
+                seen_addresses.append(address)
                 text = text.replace(
                     address, '<a href="%s" class="%s">%s</a>' % (
                         canonical_url(person), css_sprite, address))

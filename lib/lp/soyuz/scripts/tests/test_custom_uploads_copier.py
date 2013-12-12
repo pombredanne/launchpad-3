@@ -200,7 +200,7 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
         matching_upload = package_upload.addCustom(
             library_file, PackageUploadCustomFormat.DEBIAN_INSTALLER)
         nonmatching_upload = package_upload.addCustom(
-            library_file, PackageUploadCustomFormat.ROSETTA_TRANSLATIONS)
+            library_file, PackageUploadCustomFormat.STATIC_TRANSLATIONS)
         copier = CustomUploadsCopier(FakeDistroSeries())
         candidates = copier.getCandidateUploads(source_series)
         self.assertContentEqual([matching_upload], candidates)

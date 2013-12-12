@@ -46,7 +46,7 @@ from lp.services.database.interfaces import (
 from lp.services.scripts.base import LaunchpadScript
 from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -146,9 +146,9 @@ def add_architecture(distroseries, architecture_name):
     # Avoid circular import.
     from lp.soyuz.model.distroarchseries import DistroArchSeries
 
-    family = getUtility(IProcessorFamilySet).getByName(architecture_name)
+    processor = getUtility(IProcessorSet).getByName(architecture_name)
     archseries = DistroArchSeries(
-        distroseries=distroseries, processorfamily=family,
+        distroseries=distroseries, processor=processor,
         owner=distroseries.owner, official=True,
         architecturetag=architecture_name)
     IMasterStore(DistroArchSeries).add(archseries)
@@ -216,18 +216,22 @@ def create_sample_series(original_series, log):
         and so on.
     """
     series_descriptions = [
-        ('Dapper Drake', SeriesStatus.SUPPORTED, '6.06'),
+        ('Dapper Drake', SeriesStatus.OBSOLETE, '6.06'),
         ('Edgy Eft', SeriesStatus.OBSOLETE, '6.10'),
         ('Feisty Fawn', SeriesStatus.OBSOLETE, '7.04'),
         ('Gutsy Gibbon', SeriesStatus.OBSOLETE, '7.10'),
         ('Hardy Heron', SeriesStatus.SUPPORTED, '8.04'),
         ('Intrepid Ibex', SeriesStatus.OBSOLETE, '8.10'),
         ('Jaunty Jackalope', SeriesStatus.OBSOLETE, '9.04'),
-        ('Karmic Koala', SeriesStatus.SUPPORTED, '9.10'),
+        ('Karmic Koala', SeriesStatus.OBSOLETE, '9.10'),
         ('Lucid Lynx', SeriesStatus.SUPPORTED, '10.04'),
-        ('Maverick Meerkat', SeriesStatus.CURRENT, '10.10'),
-        ('Natty Narwhal', SeriesStatus.DEVELOPMENT, '11.04'),
-        ('Onerous Ocelot', SeriesStatus.FUTURE, '11.10'),
+        ('Maverick Meerkat', SeriesStatus.OBSOLETE, '10.10'),
+        ('Natty Narwhal', SeriesStatus.OBSOLETE, '11.04'),
+        ('Oneiric Ocelot', SeriesStatus.SUPPORTED, '11.10'),
+        ('Precise Pangolin', SeriesStatus.SUPPORTED, '12.04'),
+        ('Quantal Quetzal', SeriesStatus.SUPPORTED, '12.10'),
+        ('Raring Ringtail', SeriesStatus.CURRENT, '13.04'),
+        ('Saucy Salamander', SeriesStatus.DEVELOPMENT, '13.10'),
         ]
 
     parent = original_series

@@ -40,6 +40,7 @@ from lp.app.validators.name import name_validator
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 
 
 @error_status(httplib.BAD_REQUEST)
@@ -47,7 +48,7 @@ class InvalidChrootUploaded(Exception):
     """Raised when the sha1sum of an uploaded chroot does not match."""
 
 
-class IDistroArchSeriesPublic(IHasOwner):
+class IDistroArchSeriesPublic(IHasBuildRecords, IHasOwner):
     """Public attributes for a DistroArchSeries."""
 
     id = Attribute("Identifier")
@@ -56,9 +57,8 @@ class IDistroArchSeriesPublic(IHasOwner):
             IDistroSeries,
             title=_("The context distroseries"),
             required=False, readonly=False))
-    processorfamily = Choice(
-        title=_("Processor Family"),
-        required=True, vocabulary='ProcessorFamily')
+    processor = Choice(
+        title=_("Processor"), required=True, vocabulary='Processor')
     architecturetag = exported(
         TextLine(
             title=_("Architecture Tag"),
@@ -127,12 +127,6 @@ class IDistroArchSeriesPublic(IHasOwner):
                 'True if this distroarchseries is the NominatedArchIndep '
                 'one.')),
         exported_as="is_nominated_arch_indep")
-    default_processor = Attribute(
-        "Return the DistroArchSeries default processor, by picking the "
-        "first processor inside its processorfamily.")
-    processors = Attribute(
-        "The group of Processors for this DistroArchSeries.processorfamily."
-        )
     main_archive = exported(
         Reference(
             Interface,  # Really IArchive, circular import fixed below.

@@ -88,7 +88,7 @@ The user is automatically redirected to the page he came from.
 
     >>> print browser.url
     http://translations.launchpad.dev/evolution/trunk/
-    >>> print "\n".join(get_feedback_messages(browser.contents))
+    >>> print_feedback_messages(browser.contents)
     The settings have been updated.
 
 If he looks at the synchonization settings page again, he sees that

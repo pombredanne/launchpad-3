@@ -10,7 +10,6 @@ __all__ = [
     'FilteredDistroArchSeriesVocabulary',
     'PackageReleaseVocabulary',
     'PPAVocabulary',
-    'ProcessorFamilyVocabulary',
     'ProcessorVocabulary',
     ]
 
@@ -36,10 +35,7 @@ from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
-from lp.soyuz.model.processor import (
-    Processor,
-    ProcessorFamily,
-    )
+from lp.soyuz.model.processor import Processor
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
@@ -158,10 +154,4 @@ class ProcessorVocabulary(NamedSQLObjectVocabulary):
 
     displayname = 'Select a processor'
     _table = Processor
-    _orderBy = 'name'
-
-
-class ProcessorFamilyVocabulary(NamedSQLObjectVocabulary):
-    displayname = 'Select a processor family'
-    _table = ProcessorFamily
     _orderBy = 'name'

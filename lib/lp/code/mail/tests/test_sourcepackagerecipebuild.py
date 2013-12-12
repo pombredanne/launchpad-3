@@ -60,6 +60,8 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
         pantry_owner = self.factory.makePerson(name='archiveowner')
         pantry = self.factory.makeArchive(name='ppa', owner=pantry_owner)
         secret = self.factory.makeDistroSeries(name=u'distroseries')
+        removeSecurityProxy(secret).nominatedarchindep = (
+            self.factory.makeDistroArchSeries(distroseries=secret))
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=cake, distroseries=secret, archive=pantry,
             status=BuildStatus.FULLYBUILT, duration=timedelta(minutes=5))
@@ -95,6 +97,8 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
         pantry_owner = self.factory.makePerson(name='archiveowner')
         pantry = self.factory.makeArchive(name='ppa', owner=pantry_owner)
         secret = self.factory.makeDistroSeries(name=u'distroseries')
+        removeSecurityProxy(secret).nominatedarchindep = (
+            self.factory.makeDistroArchSeries(distroseries=secret))
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=cake, distroseries=secret, archive=pantry,
             status=BuildStatus.SUPERSEDED)

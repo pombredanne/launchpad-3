@@ -357,7 +357,7 @@ class TestDistroTemplateEquivalenceClasses(TestCaseWithFactory,
         subset = getUtility(IPOTemplateSet).getSharingSubset(
             distribution=self.ubuntu)
         classes = subset.groupEquivalentPOTemplates(
-            name_pattern='krungthepmahanakorn.*-etc')
+            name_pattern=u'krungthepmahanakorn.*-etc')
 
         expected = {
             (unique_name, self.package.name): [bangkok_template],

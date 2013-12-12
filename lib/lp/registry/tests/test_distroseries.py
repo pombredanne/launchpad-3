@@ -34,7 +34,6 @@ from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease,
     )
 from lp.soyuz.interfaces.publishing import active_publishing_status
-from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     ANONYMOUS,
@@ -206,24 +205,23 @@ class TestDistroSeries(TestCaseWithFactory):
         self.assertEqual(suite, distroseries.getSuite(pocket))
 
     def test_getDistroArchSeriesByProcessor(self):
-        # A IDistroArchSeries can be retrieved by processor
+        # A IDistroArchSeries can be retrieved by processor.
         distroseries = self.factory.makeDistroSeries()
-        processorfamily = ProcessorFamilySet().getByName('x86')
+        processor = self.factory.makeProcessor()
         distroarchseries = self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag='i386',
-            processorfamily=processorfamily)
-        self.assertEquals(distroarchseries,
-            distroseries.getDistroArchSeriesByProcessor(
-                processorfamily.processors[0]))
+            processor=processor)
+        self.assertEquals(
+            distroarchseries,
+            distroseries.getDistroArchSeriesByProcessor(processor))
 
     def test_getDistroArchSeriesByProcessor_none(self):
         # getDistroArchSeriesByProcessor returns None when no distroarchseries
         # is found
         distroseries = self.factory.makeDistroSeries()
-        processorfamily = ProcessorFamilySet().getByName('x86')
-        self.assertIs(None,
-            distroseries.getDistroArchSeriesByProcessor(
-                processorfamily.processors[0]))
+        processor = self.factory.makeProcessor()
+        self.assertIs(
+            None, distroseries.getDistroArchSeriesByProcessor(processor))
 
     def test_getDerivedSeries(self):
         dsp = self.factory.makeDistroSeriesParent()
@@ -344,6 +342,18 @@ class TestDistroSeries(TestCaseWithFactory):
             for spec in distroseries.api_valid_specifications:
                 spec.workitems_text
         self.assertThat(recorder, HasQueryCount(Equals(4)))
+
+    def test_valid_specifications_preloading_excludes_deleted_workitems(self):
+        distroseries = self.factory.makeDistroSeries()
+        spec = self.factory.makeSpecification(
+            distribution=distroseries.distribution, goal=distroseries)
+        self.factory.makeSpecificationWorkItem(
+            specification=spec, deleted=True)
+        self.factory.makeSpecificationWorkItem(specification=spec)
+        workitems = [
+            s.workitems_text
+            for s in distroseries.api_valid_specifications]
+        self.assertContentEqual([spec.workitems_text], workitems)
 
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):

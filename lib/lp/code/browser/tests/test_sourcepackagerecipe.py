@@ -45,7 +45,7 @@ from lp.services.webapp import canonical_url
 from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.soyuz.model.processor import ProcessorFamily
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
@@ -105,8 +105,8 @@ class TestCaseForRecipe(BrowserTestCase):
             distribution=self.ppa.distribution)
         naked_squirrel = removeSecurityProxy(self.squirrel)
         naked_squirrel.nominatedarchindep = self.squirrel.newArch(
-            'i386', ProcessorFamily.get(1), False, self.chef,
-            supports_virtualized=True)
+            'i386', getUtility(IProcessorSet).getByName('386'), False,
+            self.chef, supports_virtualized=True)
 
     def makeRecipe(self):
         """Create and return a specific recipe."""
@@ -1211,7 +1211,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa,
             date_created=date_created)
-        self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
+        build.queueBuild()
         return build
 
     def test_index_pending(self):
@@ -1507,8 +1507,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             name='woody', displayname='Woody',
             distribution=self.ppa.distribution)
         removeSecurityProxy(woody).nominatedarchindep = woody.newArch(
-            'i386', ProcessorFamily.get(1), False, self.factory.makePerson(),
-            supports_virtualized=True)
+            'i386', getUtility(IProcessorSet).getByName('386'), False,
+            self.factory.makePerson(), supports_virtualized=True)
         return woody
 
     def test_request_build_rejects_over_quota(self):
@@ -1614,10 +1614,14 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             owner=self.user, name=u'my-recipe')
         distro_series = self.factory.makeDistroSeries(
             name='squirrel', distribution=archive.distribution)
+        removeSecurityProxy(distro_series).nominatedarchindep = (
+            self.factory.makeDistroArchSeries(
+                distroseries=distro_series,
+                processor=getUtility(IProcessorSet).getByName('386')))
         build = self.factory.makeSourcePackageRecipeBuild(
             requester=self.user, archive=archive, recipe=recipe,
             distroseries=distro_series)
-        self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
+        build.queueBuild()
         self.factory.makeBuilder()
         return build
 
@@ -1642,25 +1646,25 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         It should be None if there is no builder or queue entry.
         It should be getEstimatedJobStartTime + estimated duration for jobs
         that have not started.
-        It should be job.date_started + estimated duration for jobs that have
+        It should be bq.date_started + estimated duration for jobs that have
         started.
         """
         build = self.factory.makeSourcePackageRecipeBuild()
         view = SourcePackageRecipeBuildView(build, None)
         self.assertIs(None, view.eta)
-        queue_entry = self.factory.makeSourcePackageRecipeBuildJob(
-            recipe_build=build)
+        queue_entry = removeSecurityProxy(build.queueBuild())
         queue_entry._now = lambda: datetime(1970, 1, 1, 0, 0, 0, 0, UTC)
-        self.factory.makeBuilder()
+        self.factory.makeBuilder(
+            processors=[queue_entry.processor], virtualized=True)
         clear_property_cache(view)
         self.assertIsNot(None, view.eta)
         self.assertEqual(
             queue_entry.getEstimatedJobStartTime() +
             queue_entry.estimated_duration, view.eta)
-        queue_entry.job.start()
+        queue_entry.markAsBuilding(None)
         clear_property_cache(view)
         self.assertEqual(
-            queue_entry.job.date_started + queue_entry.estimated_duration,
+            queue_entry.date_started + queue_entry.estimated_duration,
             view.eta)
 
     def getBuildBrowser(self, build, view_name=None):
@@ -1677,7 +1681,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
             created .*
             Build status
             Needs building
-            Start in .* \\(9876\\) What's this?.*
+            Start in .* \\(2505\\) What's this?.*
             Estimated finish in .*
             Build details
             Recipe:        Recipe my-recipe for Owner
@@ -1734,7 +1738,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         distroarchseries = self.factory.makeDistroArchSeries(
             architecturetag=architecturetag,
             distroseries=release.upload_distroseries,
-            processorfamily=self.factory.makeProcessorFamily())
+            processor=self.factory.makeProcessor())
         return self.factory.makeBinaryPackageBuild(
             source_package_release=release, distroarchseries=distroarchseries)
 

@@ -23,7 +23,7 @@
       <p>
          <tal:title content="context/title">Bob the builder</tal:title>
          builds
-         <tal:arch content="context/processor/title">Intel 386</tal:arch>
+         <tal:arch content="view/processors_text">386 and amd64</tal:arch>
          binaries and is owned by
          <a tal:replace="structure context/owner/fmt:link">OWNER</a>.
        </p>
@@ -38,9 +38,10 @@
         <div class="portlet">
           <h2>Builder information</h2>
           <dl>
-            <dt>Architecture:</dt>
+            <dt>Architectures:</dt>
             <dd>
-              <span tal:replace="context/processor/title">Intel 386</span>
+              <tal:processors repeat="processor context/processors"
+                  content="processor/name">386 amd64</tal:processors>
               <tal:virtual condition="context/virtualized">(virtual)
               </tal:virtual>
             </dd>
@@ -70,6 +71,10 @@
                   Switch to x-mode</button>
               </form>
             </dd>
+            <tal:version tal:condition="context/version">
+              <dt>Version:</dt>
+              <dd tal:content="context/version" />
+            </tal:version>
           </dl>
         </div><!-- portlet -->
       </div><!-- yui-u -->
@@ -107,7 +112,7 @@
     <tal:job-header condition="job">
       <span class="sortkey" tal:content="job/id" />
       <img src="/@@/processing" alt="[building]" />
-      <tal:specific-job replace="structure job/specific_job/@@+current" />
+      <tal:specific-build replace="structure job/specific_build/@@+current" />
     </tal:job-header>
 
   </metal:macro>

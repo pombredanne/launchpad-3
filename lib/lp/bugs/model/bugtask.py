@@ -46,7 +46,6 @@ from storm.expr import (
     Cast,
     Count,
     Exists,
-    Join,
     LeftJoin,
     Not,
     Or,
@@ -519,10 +518,7 @@ class BugTask(SQLBase):
     @property
     def related_tasks(self):
         """See `IBugTask`."""
-        other_tasks = [
-            task for task in self.bug.bugtasks if task != self]
-
-        return other_tasks
+        return [task for task in self.bug.bugtasks if task != self]
 
     @property
     def pillar(self):
@@ -844,15 +840,18 @@ class BugTask(SQLBase):
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
         new_status = normalize_bugtask_status(new_status)
-        if (self.status == BugTaskStatus.FIXRELEASED and
-           (user.id == self.bug.ownerID or user.inTeam(self.bug.owner))):
+        if self.userHasBugSupervisorPrivileges(user):
+            # Bug supervisor can always set any status.
             return True
-        elif self.userHasBugSupervisorPrivileges(user):
-            return True
-        else:
-            return (self.status not in (
-                        BugTaskStatus.WONTFIX, BugTaskStatus.FIXRELEASED)
-                    and new_status not in BUG_SUPERVISOR_BUGTASK_STATUSES)
+        elif (self.status == BugTaskStatus.FIXRELEASED and
+              user.id != self.bug.ownerID and not user.inTeam(self.bug.owner)):
+            # The bug reporter can reopen a Fix Released bug.
+            return False
+        elif self.status == BugTaskStatus.WONTFIX:
+            # Only bug supervisors can switch away from WONTFIX.
+            return False
+        # Non-supervisors can transition to non-supervisor statuses.
+        return new_status not in BUG_SUPERVISOR_BUGTASK_STATUSES
 
     def transitionToStatus(self, new_status, user, when=None):
         """See `IBugTask`."""
@@ -878,11 +877,13 @@ class BugTask(SQLBase):
             else:
                 new_status = BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE
 
-        if self._status == new_status:
+        self._setStatusDateProperties(self.status, new_status, when=when)
+        
+    def _setStatusDateProperties(self, old_status, new_status, when=None):
+        if old_status == new_status:
             # No change in the status, so nothing to do.
             return
 
-        old_status = self.status
         self._status = new_status
 
         if new_status == BugTaskStatus.UNKNOWN:
@@ -897,7 +898,6 @@ class BugTask(SQLBase):
             self.date_triaged = None
             self.date_fix_committed = None
             self.date_fix_released = None
-
             return
 
         if when is None:
@@ -1354,20 +1354,6 @@ class BugTaskSet:
                                 str(task_id))
         return bugtask
 
-    def getBugTasks(self, bug_ids):
-        """See `IBugTaskSet`."""
-        from lp.bugs.model.bug import Bug
-        store = IStore(Bug)
-        origin = [BugTask, Join(Bug, BugTask.bug == Bug.id)]
-        columns = (Bug, BugTask)
-        result = store.using(*origin).find(columns, Bug.id.is_in(bug_ids))
-        bugs_and_tasks = {}
-        for bug, task in result:
-            if bug not in bugs_and_tasks:
-                bugs_and_tasks[bug] = []
-            bugs_and_tasks[bug].append(task)
-        return bugs_and_tasks
-
     def getBugTaskTags(self, bugtasks):
         """See `IBugTaskSet`"""
         # Import locally to avoid circular imports.
@@ -1616,6 +1602,10 @@ class BugTaskSet:
             bugtask.updateTargetNameCache()
             if bugtask.conjoined_slave:
                 bugtask._syncFromConjoinedSlave()
+            else:
+                # Set date_* properties, if we're not conjoined.
+                bugtask._setStatusDateProperties(
+                    BugTaskStatus.NEW, status, when=bugtask.datecreated)
         removeSecurityProxy(bug)._reconcileAccess()
         return tasks
 

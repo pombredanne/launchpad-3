@@ -590,14 +590,14 @@ class IArchiveView(IHasBuildRecords):
             "context build.\n"
             "NOTE: This is for migration of OEM PPAs only!")))
 
-    enabled_restricted_families = exported(
+    enabled_restricted_processors = exported(
         CollectionField(
-            title=_("Enabled restricted families"),
+            title=_("Enabled restricted processors"),
             description=_(
-                "The restricted architecture families on which the archive "
+                "The restricted architectures on which the archive "
                 "can build."),
             value_type=Reference(schema=Interface),
-            # Really IProcessorFamily.
+            # Really IProcessor.
             readonly=True),
         as_of='devel')
 
@@ -1377,6 +1377,12 @@ class IArchiveView(IHasBuildRecords):
         immediately if the copy passes basic security checks and the copy
         will happen sometime later with full checking.
 
+        If the source or target distribution has a development series alias,
+        then it may be used as the source or target distroseries name
+        respectively; but note that this will always be resolved to the true
+        development series of that distribution, which may not match the
+        alias in the respective published archives.
+
         :param source_name: a string name of the package to copy.
         :param version: the version of the package to copy.
         :param from_archive: the source archive from which to copy.
@@ -1456,6 +1462,12 @@ class IArchiveView(IHasBuildRecords):
         Partial changes of the destination archive can happen because each
         source is copied in its own transaction.
 
+        If the source or target distribution has a development series alias,
+        then it may be used as the source or target distroseries name
+        respectively; but note that this will always be resolved to the true
+        development series of that distribution, which may not match the
+        alias in the respective published archives.
+
         :param source_names: a list of string names of packages to copy.
         :param from_archive: the source archive from which to copy.
         :param to_pocket: the target pocket (as a string).
@@ -1522,6 +1534,12 @@ class IArchiveAppend(Interface):
         copies cannot be performed, the whole operation will fail. There
         will be no partial changes of the destination archive.
 
+        If the source or target distribution has a development series alias,
+        then it may be used as the source or target distroseries name
+        respectively; but note that this will always be resolved to the true
+        development series of that distribution, which may not match the
+        alias in the respective published archives.
+
         :param source_names: a list of string names of packages to copy.
         :param from_archive: the source archive from which to copy.
         :param to_pocket: the target pocket (as a string).
@@ -1563,6 +1581,12 @@ class IArchiveAppend(Interface):
 
         Copy a specific version of a named source to the destination
         archive if necessary.
+
+        If the source distribution has a development series alias, then it
+        may be used as the source distroseries name; but note that this will
+        always be resolved to the true development series of that
+        distribution, which may not match the alias in the published source
+        archive.
 
         :param source_name: a string name of the package to copy.
         :param version: the version of the package to copy.
@@ -1938,15 +1962,15 @@ class IArchiveAdmin(Interface):
     """Archive interface for operations restricted by commercial."""
 
     @operation_parameters(
-        family=Reference(schema=Interface, required=True),
-        # Really IProcessorFamily.
+        processor=Reference(schema=Interface, required=True),
+        # Really IProcessor.
     )
     @export_write_operation()
     @operation_for_version('devel')
-    def enableRestrictedFamily(family):
-        """Add the processor family to the set of enabled restricted families.
+    def enableRestrictedProcessor(processor):
+        """Add the processor to the set of enabled restricted processors.
 
-        :param family: is an `IProcessorFamily` object.
+        :param processor: is an `IProcessor` object.
         """
 
 

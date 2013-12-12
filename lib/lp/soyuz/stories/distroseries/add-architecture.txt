@@ -16,11 +16,11 @@ There is a cancel link.
     <Link text='Cancel' url='http://launchpad.dev/ubuntu/hoary'>
 
 To register a new architecture one has to specify the architecture tag, the
-processor family and whether or not that architecture is officially supported
+processor and whether or not that architecture is officially supported
 and/or has PPA support.
 
     >>> admin_browser.getControl('Architecture Tag').value = 'ia64'
-    >>> admin_browser.getControl('Processor Family').value = ['amd64']
+    >>> admin_browser.getControl('Processor:').value = ['amd64']
     >>> admin_browser.getControl('Official Support').selected = True
     >>> admin_browser.getControl('PPA support available').selected = True
     >>> admin_browser.getControl('Continue').click()
@@ -33,7 +33,7 @@ Architecture tag is restricted to the usual Launchpad name format.
     >>> admin_browser.getLink('Add architecture').click()
     >>> admin_browser.getControl('Architecture Tag').value = 'foo bar'
     >>> admin_browser.getControl('Continue').click()
-    >>> print "\n".join(get_feedback_messages(admin_browser.contents))
+    >>> print_feedback_messages(admin_browser.contents)
     There is 1 error.
     Invalid name 'foo bar'. ...
 

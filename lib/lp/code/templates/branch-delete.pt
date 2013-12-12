@@ -7,10 +7,6 @@
   i18n:domain="launchpad">
 <body>
 
-  <h1 metal:fill-slot="heading">
-    Delete branch
-  </h1>
-
   <div metal:fill-slot="main">
 
   <tal:has-stacked-branches condition="view/stacked_branches_count">

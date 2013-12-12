@@ -24,7 +24,6 @@ from lp.soyuz.interfaces.buildrecords import (
     IHasBuildRecords,
     IncompatibleArguments,
     )
-from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.tests.test_binarypackagebuild import BaseTestCaseWithThreeBuilds
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -80,19 +79,15 @@ class TestDistributionHasBuildRecords(TestCaseWithFactory):
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         # Create the machinery we need to create builds, such as
         # DistroArchSeries and builders.
-        self.pf_one = self.factory.makeProcessorFamily()
-        pf_proc_1 = self.pf_one.addProcessor(
-            self.factory.getUniqueString(), '', '')
-        self.pf_two = self.factory.makeProcessorFamily()
-        pf_proc_2 = self.pf_two.addProcessor(
-            self.factory.getUniqueString(), '', '')
+        self.processor_one = self.factory.makeProcessor()
+        self.processor_two = self.factory.makeProcessor()
         self.distroseries = self.factory.makeDistroSeries()
         self.distribution = self.distroseries.distribution
         self.das_one = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries, processorfamily=self.pf_one,
+            distroseries=self.distroseries, processor=self.processor_one,
             supports_virtualized=True)
         self.das_two = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries, processorfamily=self.pf_two,
+            distroseries=self.distroseries, processor=self.processor_two,
             supports_virtualized=True)
         self.archive = self.factory.makeArchive(
             distribution=self.distroseries.distribution,
@@ -103,8 +98,10 @@ class TestDistributionHasBuildRecords(TestCaseWithFactory):
             self.publisher.prepareBreezyAutotest()
             self.distroseries.nominatedarchindep = self.das_one
             self.publisher.addFakeChroots(distroseries=self.distroseries)
-            self.builder_one = self.factory.makeBuilder(processor=pf_proc_1)
-            self.builder_two = self.factory.makeBuilder(processor=pf_proc_2)
+            self.builder_one = self.factory.makeBuilder(
+                processors=[self.processor_one])
+            self.builder_two = self.factory.makeBuilder(
+                processors=[self.processor_two])
         self.builds = []
         self.createBuilds()
 
@@ -202,12 +199,7 @@ class TestBuilderHasBuildRecords(TestHasBuildRecordsInterface):
         super(TestBuilderHasBuildRecords, self).setUp()
 
         # Create a 386 builder
-        owner = self.factory.makePerson()
-        processor_family = ProcessorFamilySet().getByProcessorName('386')
-        processor = processor_family.processors[0]
-        self.context = self.factory.makeBuilder(
-            processor, 'http://example.com', 'Newbob', 'New Bob the Builder',
-            owner=owner)
+        self.context = self.factory.makeBuilder()
 
         # Ensure that our builds were all built by the test builder.
         for build in self.builds:
@@ -277,7 +269,7 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
         self.assertEquals(3, builds)
         builds = self.context.getBuildRecords(
             pocket=PackagePublishingPocket.RELEASE).count()
-        self.assertEquals(3, builds)
+        self.assertEquals(2, builds)
         builds = self.context.getBuildRecords(
             pocket=PackagePublishingPocket.UPDATES).count()
         self.assertEquals(0, builds)
@@ -313,18 +305,17 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
         # Set up a distroseries and related bits, so we can create builds.
         source_name = self.factory.getUniqueString()
         spn = self.factory.makeSourcePackageName(name=source_name)
-        pf = self.factory.makeProcessorFamily()
-        pf_proc = pf.addProcessor(self.factory.getUniqueString(), '', '')
+        processor = self.factory.makeProcessor()
         distroseries = self.factory.makeDistroSeries()
         das = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, processorfamily=pf,
+            distroseries=distroseries, processor=processor,
             supports_virtualized=True)
         with person_logged_in(admin):
             publisher = SoyuzTestPublisher()
             publisher.prepareBreezyAutotest()
             publisher.addFakeChroots(distroseries=distroseries)
             distroseries.nominatedarchindep = das
-            self.factory.makeBuilder(processor=pf_proc)
+            self.factory.makeBuilder(processors=[processor])
         spph = self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=spn, distroseries=distroseries)
         spph.createMissingBuilds()

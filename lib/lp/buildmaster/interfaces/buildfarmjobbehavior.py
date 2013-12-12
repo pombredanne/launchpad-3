@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface for build farm job behaviors."""
@@ -6,24 +6,16 @@
 __metaclass__ = type
 
 __all__ = [
-    'BuildBehaviorMismatch',
     'IBuildFarmJobBehavior',
     ]
 
 from zope.interface import Interface
 
 
-class BuildBehaviorMismatch(Exception):
-    """
-    A general exception that can be raised when the builder's current behavior
-    does not match the expected behavior.
-    """
-
-
 class IBuildFarmJobBehavior(Interface):
 
-    def setBuilderInteractor(interactor):
-        """Sets the associated `BuilderInteractor` for this instance."""
+    def setBuilder(builder, slave):
+        """Sets the associated builder and slave for this instance."""
 
     def logStartBuild(logger):
         """Log the start of a specific build queue item.
@@ -46,31 +38,13 @@ class IBuildFarmJobBehavior(Interface):
         :param logger: A logger to be used to log diagnostic information.
         """
 
-    def updateSlaveStatus(raw_slave_status, status):
-        """Update the slave status dict with custom values for this behavior.
+    def getBuildCookie():
+        """Return a string which uniquely identifies the job."""
 
-        :param raw_slave_status: The value returned by the build slave's
-           status() method.
-        :param status: A dict of the processed slave status values provided
-           by all types: builder_status, build_id, and optionally build_status
-           or logtail. This should have any behaviour-specific values
-           added to it.
-        """
+    def handleStatus(bq, status, status_dict):
+        """Update the build from a WAITING slave result.
 
-    def verifySlaveBuildCookie(slave_build_cookie):
-        """Verify that a slave's build cookie shows no signs of corruption.
-
-        :param slave_build_cookie: The slave's build cookie, as specified in
-           `dispatchBuildToSlave`.
-        :raises CorruptBuildCookie: if the build cookie isn't what it's
-            supposed to be.
-        """
-
-    def updateBuild(queueItem):
-        """Verify the current build job status.
-
-        Perform the required actions for each state.
-
-        :param queueItem: The `BuildQueue` for the build.
-        :return: A Deferred that fires when the update is done.
+        :param bq: The `BuildQueue` currently being processed.
+        :param status: The tail of the BuildStatus (eg. OK or PACKAGEFAIL).
+        :param status_dict: Slave status dict from `BuilderSlave.status_dict`.
         """

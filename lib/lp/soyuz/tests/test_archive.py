@@ -24,7 +24,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildQueueStatus,
+    BuildStatus,
+    )
 from lp.registry.enums import (
     PersonVisibility,
     TeamMembershipPolicy,
@@ -72,7 +75,7 @@ from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.model.archive import (
     Archive,
     validate_ppa,
@@ -290,31 +293,30 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def _getBuildJobsByStatus(self, archive, status):
+    def _getBuildQueuesByStatus(self, archive, status):
         # Return the count for archive build jobs with the given status.
         query = """
-            SELECT COUNT(Job.id)
-            FROM BinaryPackageBuild, BuildPackageJob, BuildQueue, Job
+            SELECT COUNT(BuildQueue.id)
+            FROM BinaryPackageBuild, BuildQueue
             WHERE
-                BuildPackageJob.build = BinaryPackageBuild.id
-                AND BuildPackageJob.job = BuildQueue.job
-                AND Job.id = BuildQueue.job
+                BinaryPackageBuild.build_farm_job =
+                    BuildQueue.build_farm_job
                 AND BinaryPackageBuild.archive = %s
                 AND BinaryPackageBuild.status = %s
-                AND Job.status = %s;
+                AND BuildQueue.status = %s;
         """ % sqlvalues(archive, BuildStatus.NEEDSBUILD, status)
 
         return IStore(Archive).execute(query).get_one()[0]
 
-    def assertNoBuildJobsHaveStatus(self, archive, status):
+    def assertNoBuildQueuesHaveStatus(self, archive, status):
         # Check that that the jobs attached to this archive do not have this
         # status.
-        self.assertEqual(self._getBuildJobsByStatus(archive, status), 0)
+        self.assertEqual(self._getBuildQueuesByStatus(archive, status), 0)
 
-    def assertHasBuildJobsWithStatus(self, archive, status, count):
+    def assertHasBuildQueuesWithStatus(self, archive, status, count):
         # Check that that there are jobs attached to this archive that have
         # the specified status.
-        self.assertEqual(self._getBuildJobsByStatus(archive, status), count)
+        self.assertEqual(self._getBuildQueuesByStatus(archive, status), count)
 
     def test_enableArchive(self):
         # Enabling an archive should set all the Archive's suspended builds to
@@ -325,9 +327,10 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         build.queueBuild()
         # disable the archive, as it is currently enabled
         removeSecurityProxy(archive).disable()
-        self.assertHasBuildJobsWithStatus(archive, JobStatus.SUSPENDED, 1)
+        self.assertHasBuildQueuesWithStatus(
+            archive, BuildQueueStatus.SUSPENDED, 1)
         removeSecurityProxy(archive).enable()
-        self.assertNoBuildJobsHaveStatus(archive, JobStatus.SUSPENDED)
+        self.assertNoBuildQueuesHaveStatus(archive, BuildQueueStatus.SUSPENDED)
         self.assertTrue(archive.enabled)
 
     def test_enableArchiveAlreadyEnabled(self):
@@ -342,9 +345,10 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         build = self.factory.makeBinaryPackageBuild(
             archive=archive, status=BuildStatus.NEEDSBUILD)
         build.queueBuild()
-        self.assertHasBuildJobsWithStatus(archive, JobStatus.WAITING, 1)
+        self.assertHasBuildQueuesWithStatus(
+            archive, BuildQueueStatus.WAITING, 1)
         removeSecurityProxy(archive).disable()
-        self.assertNoBuildJobsHaveStatus(archive, JobStatus.WAITING)
+        self.assertNoBuildQueuesHaveStatus(archive, BuildQueueStatus.WAITING)
         self.assertFalse(archive.enabled)
 
     def test_disableArchiveAlreadyDisabled(self):
@@ -994,7 +998,7 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
 
 
 class TestEnabledRestrictedBuilds(TestCaseWithFactory):
-    """Ensure that restricted architecture family builds can be allowed and
+    """Ensure that restricted architectures builds can be allowed and
     disallowed correctly."""
 
     layer = LaunchpadZopelessLayer
@@ -1006,46 +1010,47 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
         self.publisher.prepareBreezyAutotest()
         self.archive = self.factory.makeArchive()
         self.archive_arch_set = getUtility(IArchiveArchSet)
-        self.arm = getUtility(IProcessorFamilySet).getByName('arm')
+        self.arm = self.factory.makeProcessor(name='arm', restricted=True)
 
     def test_default(self):
         """By default, ARM builds are not allowed as ARM is restricted."""
         self.assertEqual(0,
             self.archive_arch_set.getByArchive(
                 self.archive, self.arm).count())
-        self.assertContentEqual([], self.archive.enabled_restricted_families)
+        self.assertContentEqual([], self.archive.enabled_restricted_processors)
 
     def test_get_uses_archivearch(self):
         """Adding an entry to ArchiveArch for ARM and an archive will
-        enable enabled_restricted_families for arm for that archive."""
-        self.assertContentEqual([], self.archive.enabled_restricted_families)
+        enable enabled_restricted_processors for arm for that archive."""
+        self.assertContentEqual([], self.archive.enabled_restricted_processors)
         self.archive_arch_set.new(self.archive, self.arm)
-        self.assertEqual([self.arm],
-                list(self.archive.enabled_restricted_families))
+        self.assertEqual(
+            [self.arm], list(self.archive.enabled_restricted_processors))
 
     def test_get_returns_restricted_only(self):
         """Adding an entry to ArchiveArch for something that is not
-        restricted does not make it show up in enabled_restricted_families.
+        restricted does not make it show up in enabled_restricted_processors.
         """
-        self.assertContentEqual([], self.archive.enabled_restricted_families)
-        self.archive_arch_set.new(self.archive,
-            getUtility(IProcessorFamilySet).getByName('amd64'))
-        self.assertContentEqual([], self.archive.enabled_restricted_families)
+        self.assertContentEqual([], self.archive.enabled_restricted_processors)
+        self.archive_arch_set.new(
+            self.archive, getUtility(IProcessorSet).getByName('amd64'))
+        self.assertContentEqual([], self.archive.enabled_restricted_processors)
 
     def test_set(self):
         """The property remembers its value correctly and sets ArchiveArch."""
-        self.archive.enabled_restricted_families = [self.arm]
-        allowed_restricted_families = self.archive_arch_set.getByArchive(
+        self.archive.enabled_restricted_processors = [self.arm]
+        allowed_restricted_processors = self.archive_arch_set.getByArchive(
             self.archive, self.arm)
-        self.assertEqual(1, allowed_restricted_families.count())
+        self.assertEqual(1, allowed_restricted_processors.count())
         self.assertEqual(
-            self.arm, allowed_restricted_families[0].processorfamily)
-        self.assertEqual([self.arm], self.archive.enabled_restricted_families)
-        self.archive.enabled_restricted_families = []
-        self.assertEqual(0,
-            self.archive_arch_set.getByArchive(
-                self.archive, self.arm).count())
-        self.assertContentEqual([], self.archive.enabled_restricted_families)
+            self.arm, allowed_restricted_processors[0].processor)
+        self.assertEqual(
+            [self.arm], self.archive.enabled_restricted_processors)
+        self.archive.enabled_restricted_processors = []
+        self.assertEqual(
+            0,
+            self.archive_arch_set.getByArchive(self.archive, self.arm).count())
+        self.assertContentEqual([], self.archive.enabled_restricted_processors)
 
 
 class TestBuilddSecret(TestCaseWithFactory):

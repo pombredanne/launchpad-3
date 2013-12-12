@@ -726,7 +726,7 @@ class TestBugTasksTableView(TestCaseWithFactory):
             distroseries=distribution.currentseries, version='2.0',
             component=component, sourcepackagename=spn,
             date_uploaded=datetime(2008, 7, 18, 10, 20, 30, tzinfo=UTC),
-            maintainer=maintainer, creator=creator)
+            maintainer=maintainer, spr_creator=creator)
         target = distribution.getSourcePackage('badger')
         bug_task = self.factory.makeBugTask(
             bug=self.bug, target=target, publish=False)
@@ -750,7 +750,7 @@ class TestBugTasksTableView(TestCaseWithFactory):
             distroseries=distroseries, version='2.0',
             component=component, sourcepackagename=spn,
             date_uploaded=datetime(2008, 7, 18, 10, 20, 30, tzinfo=UTC),
-            maintainer=maintainer, creator=creator)
+            maintainer=maintainer, spr_creator=creator)
         target = distribution.getSourcePackage('finch')
         bug_task = self.factory.makeBugTask(
             bug=self.bug, target=target, publish=False)
@@ -773,7 +773,7 @@ class TestBugTasksTableView(TestCaseWithFactory):
             distroseries=distroseries, version='2.0',
             component=component, sourcepackagename=spn,
             date_uploaded=datetime(2008, 7, 18, 10, 20, 30, tzinfo=UTC),
-            maintainer=maintainer, creator=creator)
+            maintainer=maintainer, spr_creator=creator)
         target = distroseries.getSourcePackage('bunny')
         bug_task = self.factory.makeBugTask(
             bug=self.bug, target=target, publish=False)

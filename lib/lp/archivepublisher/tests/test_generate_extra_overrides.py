@@ -18,6 +18,10 @@ from germinate import (
     )
 import transaction
 
+from lp.archivepublisher.publishing import (
+    get_packages_path,
+    get_sources_path,
+    )
 from lp.archivepublisher.scripts.generate_extra_overrides import (
     AtomicFile,
     GenerateExtraOverrides,
@@ -147,7 +151,7 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         for das in dases:
             build = self.factory.makeBinaryPackageBuild(
                 source_package_release=spph.sourcepackagerelease,
-                distroarchseries=das, processor=das.default_processor)
+                distroarchseries=das, processor=das.processor)
             bpr = self.factory.makeBinaryPackageRelease(
                 binarypackagename=package.name, build=build,
                 component=component, architecturespecific=True,
@@ -167,12 +171,9 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
         ensure_directory_exists(script.config.temproot)
 
         for component in distroseries.components:
-            index_root = os.path.join(
-                script.config.distsroot, distroseries.name, component.name)
-
-            source_index_root = os.path.join(index_root, "source")
             source_index = RepositoryIndexFile(
-                source_index_root, script.config.temproot, "Sources")
+                get_sources_path(script.config, distroseries.name, component),
+                script.config.temproot)
             for spp in distroseries.getSourcePackagePublishing(
                     PackagePublishingPocket.RELEASE, component,
                     distroseries.main_archive):
@@ -181,10 +182,10 @@ class TestGenerateExtraOverrides(TestCaseWithFactory):
             source_index.close()
 
             for arch in distroseries.architectures:
-                package_index_root = os.path.join(
-                    index_root, "binary-%s" % arch.architecturetag)
                 package_index = RepositoryIndexFile(
-                    package_index_root, script.config.temproot, "Packages")
+                    get_packages_path(
+                        script.config, distroseries.name, component, arch),
+                    script.config.temproot)
                 for bpp in distroseries.getBinaryPackagePublishing(
                         arch.architecturetag, PackagePublishingPocket.RELEASE,
                         component, distroseries.main_archive):

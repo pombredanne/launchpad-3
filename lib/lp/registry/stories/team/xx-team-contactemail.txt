@@ -49,8 +49,7 @@ user to go through the email address confirmation process.
     >>> browser.getControl('Change').click()
     >>> browser.title
     'Landscape Developers in Launchpad'
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
+    >>> print_feedback_messages(browser.contents)
     A confirmation message has been sent to...
 
     >>> from lp.services.mail import stub
@@ -77,8 +76,7 @@ Follow the token link, to confirm the new email address.
 
     >>> browser.title
     'Landscape Developers in Launchpad'
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
+    >>> print_feedback_messages(browser.contents)
     Email address successfully confirmed.
 
     >>> browser.getLink(url='+contactaddress').click()

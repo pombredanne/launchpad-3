@@ -39,12 +39,8 @@ attribute:
     >>> build.status.name
     'BUILDING'
 
-The static timestamps, representing when the record was initialized
-(inserted) and when the job was dispatched are provided as datetime
+The timestamp of when the job was dispatched is provided as datetime
 instances:
-
-    >>> bq.job.date_created
-    datetime.datetime(2005, 6, 15, 9, 14, 12, 820778, tzinfo=<UTC>)
 
     >>> bq.date_started
     datetime.datetime(2005, 6, 15, 9, 20, 12, 820778, tzinfo=<UTC>)
@@ -80,11 +76,6 @@ used to manually reorder jobs via the web UI:
     >>> bq.manual
     False
 
-BuildQueue provides the name for the logfile resulting from the build:
-
-    >>> bq.getLogFileName()
-    u'buildlog_ubuntu-hoary-i386.mozilla-firefox_0.9_BUILDING.txt'
-
 BuildQueue provides a method to handle "manual scoring" procedure
 properly, in order to retain the manually set score we need to
 set 'manual' attribute atomically. For this we use manualScore:
@@ -97,16 +88,6 @@ set 'manual' attribute atomically. For this we use manualScore:
 
     >>> pending_bq.manual, pending_bq.lastscore
     (True, 1000)
-
-
-The BuildQueue item is responsible for providing the required build behavior
-for the item.
-
-    >>> from zope.security.proxy import isinstance
-    >>> from lp.soyuz.model.binarypackagebuildbehavior import (
-    ...     BinaryPackageBuildBehavior)
-    >>> isinstance(bq.required_build_behavior, BinaryPackageBuildBehavior)
-    True
 
 
 == Dispatching and Reseting jobs ==
@@ -140,6 +121,8 @@ to another build. The score value of the job is preserved.
     >>> print bob.currentjob
     None
 
+    >>> print job.status.name
+    WAITING
     >>> print job.builder
     None
     >>> print job.date_started
@@ -178,33 +161,10 @@ respective interface:
     >>> verifyObject(IBuildQueueSet, bqset)
     True
 
-IBuildQueueSet utility is iterable:
-
-    >>> for bq in bqset:
-    ...     bq.id
-    1
-    2
-
-Also provides a getter:
-
-    >>> bqset[1].id
-    1
-
-a 'get' method:
+IBuildQueueSet utility provides a 'get' method:
 
     >>> bqset.get(2).id
     2
-
-and a full counter:
-
-    >>> bqset.count()
-    2
-
-IBuildQueueSet provides a method to retrieve the active job:
-
-    >>> for bq in bqset.getActiveBuildJobs():
-    ...     bq.id, bq.builder.name
-    (1, u'bob')
 
 Another method to fetch the BuildQueue being processed for a builder,
 there should be only one since the builders are sigle-task

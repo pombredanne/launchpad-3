@@ -32,6 +32,7 @@ from lp.app.errors import NotFoundError
 from lp.archivepublisher.ddtp_tarball import DdtpTarballUpload
 from lp.archivepublisher.debian_installer import DebianInstallerUpload
 from lp.archivepublisher.dist_upgrader import DistUpgraderUpload
+from lp.archivepublisher.rosetta_translations import RosettaTranslationsUpload
 from lp.archivepublisher.uefi import UefiUpload
 from lp.archiveuploader.utils import (
     determine_source_file_type,
@@ -263,6 +264,8 @@ class CustomUploadFile(NascentUploadFile):
         PackageUploadCustomFormat.DEBIAN_INSTALLER: DebianInstallerUpload,
         PackageUploadCustomFormat.DIST_UPGRADER: DistUpgraderUpload,
         PackageUploadCustomFormat.DDTP_TARBALL: DdtpTarballUpload,
+        PackageUploadCustomFormat.ROSETTA_TRANSLATIONS:
+            RosettaTranslationsUpload,
         PackageUploadCustomFormat.UEFI: UefiUpload,
         }
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Mock Build objects for tests soyuz buildd-system."""
@@ -6,11 +6,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'AbortedSlave',
     'AbortingSlave',
     'BrokenSlave',
     'BuildingSlave',
-    'CorruptBehavior',
     'DeadProxy',
     'LostBuildingBrokenSlave',
     'make_publisher',
@@ -32,12 +30,8 @@ from testtools.content_type import UTF8_TEXT
 from twisted.internet import defer
 from twisted.web import xmlrpc
 
-from lp.buildmaster.interfaces.builder import (
-    CannotFetchFile,
-    CorruptBuildCookie,
-    )
-from lp.buildmaster.model.builder import BuilderSlave
-from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
+from lp.buildmaster.interactor import BuilderSlave
+from lp.buildmaster.interfaces.builder import CannotFetchFile
 from lp.services.config import config
 from lp.testing.sampledata import I386_ARCHITECTURE_NAME
 
@@ -52,17 +46,18 @@ def make_publisher():
 class MockBuilder:
     """Emulates a IBuilder class."""
 
-    def __init__(self, name='mock-builder', behavior=None, builderok=True,
-                 manual=False, virtualized=True, vm_host=None):
-        self.current_build_behavior = behavior or IdleBuildBehavior()
+    def __init__(self, name='mock-builder', builderok=True, manual=False,
+                 virtualized=True, vm_host=None, url='http://fake:0000',
+                 version=None):
         self.currentjob = None
         self.builderok = builderok
         self.manual = manual
-        self.url = 'http://fake:0000'
+        self.url = url
         self.name = name
         self.virtualized = virtualized
         self.vm_host = vm_host
         self.failnotes = None
+        self.version = version
 
     def failBuilder(self, reason):
         self.builderok = False
@@ -76,12 +71,16 @@ class OkSlave:
 
     The architecture tag can be customised during initialization."""
 
-    def __init__(self, arch_tag=I386_ARCHITECTURE_NAME):
+    def __init__(self, arch_tag=I386_ARCHITECTURE_NAME, version=None):
         self.call_log = []
         self.arch_tag = arch_tag
+        self.version = version
 
-    def status(self):
-        return defer.succeed(('BuilderStatus.IDLE', ''))
+    def status_dict(self):
+        slave_status = {'builder_status': 'BuilderStatus.IDLE'}
+        if self.version is not None:
+            slave_status['builder_version'] = self.version
+        return defer.succeed(slave_status)
 
     def ensurepresent(self, sha1, url, user=None, password=None):
         self.call_log.append(('ensurepresent', url, user, password))
@@ -140,11 +139,14 @@ class BuildingSlave(OkSlave):
         super(BuildingSlave, self).__init__()
         self.build_id = build_id
 
-    def status(self):
-        self.call_log.append('status')
+    def status_dict(self):
+        self.call_log.append('status_dict')
         buildlog = xmlrpclib.Binary("This is a build log")
-        return defer.succeed(
-            ('BuilderStatus.BUILDING', self.build_id, buildlog))
+        return defer.succeed({
+            'builder_status': 'BuilderStatus.BUILDING',
+            'build_id': self.build_id,
+            'logtail': buildlog,
+            })
 
     def getFile(self, sum, file_to_write):
         self.call_log.append('getFile')
@@ -174,11 +176,15 @@ class WaitingSlave(OkSlave):
         # can update this list as needed.
         self.valid_file_hashes = ['buildlog']
 
-    def status(self):
-        self.call_log.append('status')
-        return defer.succeed((
-            'BuilderStatus.WAITING', self.state, self.build_id, self.filemap,
-            self.dependencies))
+    def status_dict(self):
+        self.call_log.append('status_dict')
+        return defer.succeed({
+            'builder_status': 'BuilderStatus.WAITING',
+            'build_status': self.state,
+            'build_id': self.build_id,
+            'filemap': self.filemap,
+            'dependencies': self.dependencies,
+            })
 
     def getFile(self, hash, file_to_write):
         self.call_log.append('getFile')
@@ -194,21 +200,12 @@ class WaitingSlave(OkSlave):
 class AbortingSlave(OkSlave):
     """A mock slave that looks like it's in the process of aborting."""
 
-    def status(self):
-        self.call_log.append('status')
-        return defer.succeed(('BuilderStatus.ABORTING', '1-1'))
-
-
-class AbortedSlave(OkSlave):
-    """A mock slave that looks like it's aborted."""
-
-    def clean(self):
-        self.call_log.append('clean')
-        return defer.succeed(None)
-
-    def status(self):
-        self.call_log.append('status')
-        return defer.succeed(('BuilderStatus.ABORTED', '1-1'))
+    def status_dict(self):
+        self.call_log.append('status_dict')
+        return defer.succeed({
+            'builder_status': 'BuilderStatus.ABORTING',
+            'build_id': '1-1',
+            })
 
 
 class LostBuildingBrokenSlave:
@@ -220,13 +217,20 @@ class LostBuildingBrokenSlave:
     def __init__(self):
         self.call_log = []
 
-    def status(self):
-        self.call_log.append('status')
-        return defer.succeed(('BuilderStatus.BUILDING', '1000-10000'))
+    def status_dict(self):
+        self.call_log.append('status_dict')
+        return defer.succeed({
+            'builder_status': 'BuilderStatus.BUILDING',
+            'build_id': '1000-10000',
+            })
 
     def abort(self):
         self.call_log.append('abort')
         return defer.fail(xmlrpclib.Fault(8002, "Could not abort"))
+
+    def resume(self):
+        self.call_log.append('resume')
+        return defer.succeed(("", "", 0))
 
 
 class BrokenSlave:
@@ -235,21 +239,15 @@ class BrokenSlave:
     def __init__(self):
         self.call_log = []
 
-    def status(self):
-        self.call_log.append('status')
+    def status_dict(self):
+        self.call_log.append('status_dict')
         return defer.fail(xmlrpclib.Fault(8001, "Broken slave"))
-
-
-class CorruptBehavior:
-
-    def verifySlaveBuildCookie(self, cookie):
-        raise CorruptBuildCookie("Bad value: %r" % (cookie,))
 
 
 class TrivialBehavior:
 
-    def verifySlaveBuildCookie(self, cookie):
-        pass
+    def getBuildCookie(self):
+        return 'trivial'
 
 
 class DeadProxy(xmlrpc.Proxy):

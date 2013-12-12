@@ -1,7 +1,7 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""An `IBuildFarmJobBehavior` for `TranslationTemplatesBuildJob`.
+"""An `IBuildFarmJobBehavior` for `TranslationTemplatesBuild`.
 
 Dispatches translation template build jobs to build-farm slaves.
 """
@@ -11,7 +11,9 @@ __all__ = [
     'TranslationTemplatesBuildBehavior',
     ]
 
+import logging
 import os
+import re
 import tempfile
 
 import transaction
@@ -43,6 +45,14 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
     # Filename for the tarball of templates that the slave builds.
     templates_tarball_path = 'translation-templates.tar.gz'
 
+    unsafe_chars = '[^a-zA-Z0-9_+-]'
+
+    def getLogFileName(self):
+        """See `IBuildFarmJob`."""
+        safe_name = re.sub(
+            self.unsafe_chars, '_', self.build.branch.unique_name)
+        return "translationtemplates_%s_%d.txt" % (safe_name, self.build.id)
+
     def dispatchBuildToSlave(self, build_queue_item, logger):
         """See `IBuildFarmJobBehavior`."""
         chroot = self._getChroot()
@@ -51,20 +61,19 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             raise CannotBuild("Unable to find a chroot for %s" %
                               distroarchseries.displayname)
         chroot_sha1 = chroot.content.sha1
-        d = self._interactor.slave.cacheFile(logger, chroot)
+        d = self._slave.cacheFile(logger, chroot)
 
         def got_cache_file(ignored):
-            cookie = self.buildfarmjob.generateSlaveBuildCookie()
-
             args = {
                 'arch_tag': self._getDistroArchSeries().architecturetag,
-                'branch_url': self.buildfarmjob.branch.composePublicURL(),
+                'branch_url': self.build.branch.composePublicURL(),
                 }
 
             filemap = {}
 
-            return self._interactor.slave.build(
-                cookie, self.build_type, chroot_sha1, filemap, args)
+            return self._slave.build(
+                self.getBuildCookie(), self.build_type, chroot_sha1, filemap,
+                args)
         return d.addCallback(got_cache_file)
 
     def _getChroot(self):
@@ -78,8 +87,8 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         """See `IBuildFarmJobBehavior`."""
         logger.info(
             "Starting templates build %s for %s." % (
-            self.buildfarmjob.getName(),
-            self.buildfarmjob.branch.bzr_identity))
+            self.getBuildCookie(),
+            self.build.branch.bzr_identity))
 
     def _readTarball(self, buildqueue, filemap, logger):
         """Read tarball with generated translation templates from slave."""
@@ -92,11 +101,9 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             logger.error("Did not find templates tarball in slave output.")
             return defer.succeed(None)
 
-        slave = self._interactor.slave
-
         fd, fname = tempfile.mkstemp()
         tarball_file = os.fdopen(fd, 'wb')
-        d = slave.getFile(slave_filename, tarball_file)
+        d = self._slave.getFile(slave_filename, tarball_file)
         # getFile will close the file object.
         return d.addCallback(lambda ignored: fname)
 
@@ -111,15 +118,9 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                 tarball, False, branch.owner, productseries=series,
                 approver_factory=TranslationBuildApprover)
 
-    def updateSlaveStatus(self, raw_slave_status, status):
-        """See `IBuildFarmJobBehavior`."""
-        if status['builder_status'] == 'BuilderStatus.WAITING':
-            if len(raw_slave_status) >= 4:
-                status['filemap'] = raw_slave_status[3]
-
     @defer.inlineCallbacks
-    def updateBuild_WAITING(self, queue_item, slave_status, logtail, logger):
-        """Deal with a finished ("WAITING" state, perversely) build job.
+    def handleStatus(self, queue_item, status, slave_status):
+        """Deal with a finished build job.
 
         Retrieves tarball and logs from the slave, then cleans up the
         slave so it's ready for a next job and destroys the queue item.
@@ -127,15 +128,15 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         If this fails for whatever unforeseen reason, a future run will
         retry it.
         """
-        build_status = self.extractBuildStatus(slave_status)
-
+        from lp.buildmaster.manager import BUILDD_MANAGER_LOG_NAME
+        logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
         logger.info(
-            "Templates generation job %s for %s finished with status %s." % (
-            queue_item.specific_job.getName(),
-            queue_item.specific_job.branch.bzr_identity,
-            build_status))
+            "Processing finished %s build %s (%s) from builder %s" % (
+            status, self.getBuildCookie(),
+            queue_item.specific_build.branch.bzr_identity,
+            queue_item.builder.name))
 
-        if build_status == 'OK':
+        if status == 'OK':
             self.build.updateStatus(
                 BuildStatus.UPLOADING, builder=queue_item.builder)
             transaction.commit()
@@ -160,7 +161,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                         logger.debug(
                             "Uploading translation templates tarball.")
                         self._uploadTarball(
-                            queue_item.specific_job.branch, tarball, logger)
+                            queue_item.specific_build.branch, tarball, logger)
                         logger.debug("Upload complete.")
                 finally:
                     self.build.updateStatus(BuildStatus.FULLYBUILT)
@@ -173,6 +174,6 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
         yield self.storeLogFromSlave(build_queue=queue_item)
 
-        yield self._interactor.cleanSlave()
+        yield self._slave.clean()
         queue_item.destroySelf()
         transaction.commit()
