@@ -124,7 +124,7 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
                 log.debug(
                     "{0} already exists in Swift({1}, {2})".format(
                         lfc, container, obj_name))
-                if ('x-object-manifest' not in headers and
+                if ('X-Object-Manifest' not in headers and
                         int(headers['content-length'])
                         != os.path.getsize(fs_path)):
                     raise AssertionError(
@@ -141,14 +141,14 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
 
 def _put(log, swift_connection, lfc_id, container, obj_name, fs_path):
     fs_size = os.path.getsize(fs_path)
-    fs_file = open(fs_path, 'rb')
+    fs_file = HashStream(open(fs_path, 'rb'))
+    db_md5_hash = ISlaveStore(LibraryFileContent).get(
+        LibraryFileContent, lfc_id).md5
+
     if fs_size <= MAX_SWIFT_OBJECT_SIZE:
-        md5_stream = HashStream(fs_file)
-        db_md5_hash = ISlaveStore(LibraryFileContent).get(
-            LibraryFileContent, lfc_id).md5
         swift_md5_hash = swift_connection.put_object(
-            container, obj_name, md5_stream, fs_size)
-        disk_md5_hash = md5_stream.hash.hexdigest()
+            container, obj_name, fs_file, fs_size)
+        disk_md5_hash = fs_file.hash.hexdigest()
         if not (disk_md5_hash == db_md5_hash == swift_md5_hash):
             log.error(
                 "LibraryFileContent({0}) corrupt. "
@@ -176,9 +176,20 @@ def _put(log, swift_connection, lfc_id, container, obj_name, fs_path):
                 "LibraryFileContent({0}) segment {1} upload corrupted".format(
                     lfc_id, segment))
             segment = segment + 1
+
+        disk_md5_hash = fs_file.hash.hexdigest()
+        if disk_md5_hash != db_md5_hash:
+            # We don't have to delete the uploaded segments, as Librarian
+            # Garbage Collection handles this for us.
+            log.error(
+                "Large LibraryFileContent({0}) corrupt. "
+                "disk md5={1}, db_md5={2}".format(
+                    lfc_id, disk_md5_hash, db_md5_hash))
+            raise AssertionError('md5 mismatch')
+
         manifest = '{0}/{1}/'.format(
             urllib.quote(container), urllib.quote(obj_name))
-        manifest_headers = {'x-object-manifest': manifest}
+        manifest_headers = {'X-Object-Manifest': manifest}
         swift_connection.put_object(
             container, obj_name, '', 0, headers=manifest_headers)
 
@@ -281,6 +292,9 @@ class HashStream:
         chunk = self._stream.read(size)
         self.hash.update(chunk)
         return chunk
+
+    def tell(self):
+        return self._stream.tell()
 
 
 class ConnectionPool:
