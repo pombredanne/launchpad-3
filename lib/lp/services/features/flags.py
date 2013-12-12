@@ -209,7 +209,6 @@ flag_info = sorted([
      '',
      '',
      ''),
-=======
     ('twisted.flags.refresh',
      'float',
      'Number of seconds between feature flag refreshes.',
