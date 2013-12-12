@@ -86,4 +86,4 @@ class TestSwiftFixture(TestCase):
                 self.swift_fixture.daemon_port),
             config.librarian_server.os_auth_url)
         self.assertEqual(
-            hollow.DEFAULT_TENANT_NAME, config.librarian_server.os_tenant)
+            hollow.DEFAULT_TENANT_NAME, config.librarian_server.os_tenant_name)
