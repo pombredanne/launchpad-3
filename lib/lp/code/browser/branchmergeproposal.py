@@ -623,8 +623,10 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                     self.context.source_branch.unique_name),
             })
         if getFeatureFlag("longpoll.merge_proposals.enabled"):
-            cache.objects['merge_proposal_event_key'] = (
-                subscribe(self.context).event_key)
+            cache.objects['merge_proposal_event_key'] = subscribe(
+                self.context).event_key
+        if getFeatureFlag("code.inline_diff_comments.enabled"):
+            cache.objects['inline_diff_comments'] = True
 
     @action('Claim', name='claim')
     def claim_action(self, action, data):
