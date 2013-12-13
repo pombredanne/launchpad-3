@@ -882,7 +882,7 @@ class FormattersAPI:
         max_format_lines = config.diff.max_format_lines
         header_next = False
         for row, line in enumerate(text.splitlines()[:max_format_lines]):
-            result.append('<tr>')
+            result.append('<tr id="diff-line-%s">' % (row + 1))
             result.append('<td class="line-no">%s</td>' % (row + 1))
             if line.startswith('==='):
                 css_class = 'diff-file text'
