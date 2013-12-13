@@ -21,7 +21,10 @@ from lazr.restful.declarations import (
     operation_for_version,
     operation_parameters,
     )
-from lazr.restful.fields import Reference
+from lazr.restful.fields import (
+    Reference,
+    ReferenceChoice,
+    )
 from zope.interface import (
     Attribute,
     Interface,
@@ -29,7 +32,6 @@ from zope.interface import (
 from zope.schema import (
     Bool,
     Bytes,
-    Choice,
     Int,
     Text,
     TextLine,
@@ -41,6 +43,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.interfaces.processor import IProcessor
 
 
 @error_status(httplib.BAD_REQUEST)
@@ -57,8 +60,10 @@ class IDistroArchSeriesPublic(IHasBuildRecords, IHasOwner):
             IDistroSeries,
             title=_("The context distroseries"),
             required=False, readonly=False))
-    processor = Choice(
-        title=_("Processor"), required=True, vocabulary='Processor')
+    processor = exported(
+        ReferenceChoice(
+            title=_("Processor"), required=True, readonly=True,
+            vocabulary='Processor', schema=IProcessor))
     architecturetag = exported(
         TextLine(
             title=_("Architecture Tag"),
