@@ -62,8 +62,8 @@ class IDistroArchSeriesPublic(IHasBuildRecords, IHasOwner):
             required=False, readonly=False))
     processor = exported(
         ReferenceChoice(
-            title=_("Processor"), required=True, vocabulary='Processor',
-            schema=IProcessor))
+            title=_("Processor"), required=True, readonly=True,
+            vocabulary='Processor', schema=IProcessor))
     architecturetag = exported(
         TextLine(
             title=_("Architecture Tag"),
