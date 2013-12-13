@@ -310,15 +310,16 @@ class TestDiffFormatter(TestCase):
     def test_almostEmptyString(self):
         # White space doesn't count as empty, and is formtted.
         self.assertEqual(
-            '<table class="diff"><tr><td class="line-no">1</td>'
-            '<td class="text"> </td></tr></table>',
+            '<table class="diff"><tr id="diff-line-1">'
+            '<td class="line-no">1</td><td class="text"> </td></tr></table>',
             FormattersAPI(' ').format_diff())
 
     def test_format_unicode(self):
         # Sometimes the strings contain unicode, those should work too.
         self.assertEqual(
-            u'<table class="diff"><tr><td class="line-no">1</td>'
-            u'<td class="text">Unicode \u1010</td></tr></table>',
+            u'<table class="diff"><tr id="diff-line-1">'
+            u'<td class="line-no">1</td><td class="text">'
+            u'Unicode \u1010</td></tr></table>',
             FormattersAPI(u'Unicode \u1010').format_diff())
 
     def test_cssClasses(self):
