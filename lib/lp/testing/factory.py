@@ -116,6 +116,9 @@ from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.codeimportresult import ICodeImportResultSet
+from lp.code.interfaces.codereviewinlinecomment import (
+    ICodeReviewInlineCommentSet,
+    )
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.interfaces.sourcepackagerecipe import (
@@ -4315,6 +4318,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         product = self.makeProduct(owner=person)
         product.redeemSubscriptionVoucher(
             self.getUniqueString(), person, person, months)
+
+    def makeCodeReviewInlineCommentDraft(self, previewdiff=None, person=None,
+                                         comments={'2': 'foobar'}):
+        if previewdiff is None:
+            previewdiff = self.makePreviewDiff()
+        if person is None:
+            person = self.makePerson()
+        getUtility(ICodeReviewInlineCommentSet).ensureDraft(
+            previewdiff, person, comments)
 
 
 # Some factory methods return simple Python types. We don't add
