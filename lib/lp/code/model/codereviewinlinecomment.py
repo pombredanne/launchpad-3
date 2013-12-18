@@ -26,6 +26,8 @@ from lp.code.interfaces.codereviewinlinecomment import (
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.database.bulk import load_related
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
 
@@ -41,6 +43,7 @@ class CodeReviewInlineComment(StormBase):
     person = Reference(person_id, 'Person.id')
     comment_id = Int(name='comment', primary=True)
     comment = Reference(comment_id, 'CodeReviewComment.id')
+    date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     comments = Unicode()
 
 
