@@ -11,10 +11,7 @@ __all__ = [
 
 from lazr.restful.fields import Reference
 from zope.interface import Interface
-from zope.schema import (
-    Datetime,
-    TextLine,
-    )
+from zope.schema import TextLine
 
 from lp import _
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
@@ -31,9 +28,6 @@ class ICodeReviewInlineComment(Interface):
     comment = Reference(
         title=_('The branch merge proposal comment'),
         schema=ICodeReviewComment, required=True, readonly=True)
-    date_created = Datetime(
-        title=_('The date on which the comments were published'),
-        required=True, readonly=True)
     comments = TextLine(
         title=_('Inline comments'), required=True, readonly=True)
 
