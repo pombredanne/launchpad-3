@@ -4328,6 +4328,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         getUtility(ICodeReviewInlineCommentSet).ensureDraft(
             previewdiff, person, comments)
 
+    def makeCodeReviewInlineComment(self, previewdiff=None, person=None,
+                                    comment=None, comments={'2': 'foobar'}):
+        if previewdiff is None:
+            previewdiff = self.makePreviewDiff()
+        if person is None:
+            person = self.makePerson()
+        if comment is None:
+            comment = self.makeCodeReviewComment()
+        self.makeCodeReviewInlineCommentDraft(previewdiff, person, comments)
+        return getUtility(ICodeReviewInlineCommentSet).publishDraft(
+            previewdiff, person, comment)
+
 
 # Some factory methods return simple Python types. We don't add
 # security wrappers for them, as well as for objects created by

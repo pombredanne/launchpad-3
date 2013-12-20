@@ -32,7 +32,7 @@ from lp.services.database.stormbase import StormBase
 
 class CodeReviewInlineComment(StormBase):
     __storm_table__ = 'CodeReviewInlineComment'
-    
+
     implements(ICodeReviewInlineComment)
 
     previewdiff_id = Int(name='previewdiff')
@@ -104,7 +104,20 @@ class CodeReviewInlineCommentSet:
         crics = IStore(CodeReviewInlineComment).find(
             CodeReviewInlineComment,
             CodeReviewInlineComment.previewdiff_id == previewdiff.id)
-        load_related(CodeReviewComment, crics, ['comment_id'])
         getUtility(IPersonSet).getPrecachedPersonsFromIDs(
             [cric.person_id for cric in crics])
-        return [crics, self.findDraft(previewdiff, person)]
+        load_related(CodeReviewComment, crics, ['comment_id'])
+        sorted_crics = sorted(
+            list(crics), key=lambda c: c.comment.date_created)
+        inline_comments = []
+        for cric in sorted_crics:
+            comments = simplejson.loads(cric.comments)
+            for lineno in comments:
+                inline_comments.append(
+                    [lineno, cric.person, comments[lineno],
+                        cric.comment.date_created])
+        draft_comments = self.findDraft(previewdiff, person)
+        for draft_lineno in draft_comments:
+            inline_comments.append(
+                [draft_lineno, None, draft_comments[draft_lineno], None])
+        return inline_comments

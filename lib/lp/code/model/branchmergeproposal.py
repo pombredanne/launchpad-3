@@ -45,6 +45,7 @@ from lp.code.errors import (
     BadBranchMergeProposalSearchContext,
     BadStateTransition,
     BranchMergeProposalExists,
+    DiffNotFound,
     UserNotBranchReviewer,
     WrongBranchMergeProposal,
     )
@@ -63,6 +64,9 @@ from lp.code.interfaces.branchmergeproposal import (
     )
 from lp.code.interfaces.branchrevision import IBranchRevision
 from lp.code.interfaces.branchtarget import IHasBranchTarget
+from lp.code.interfaces.codereviewinlinecomment import (
+    ICodeReviewInlineCommentSet,
+    )
 from lp.code.mail.branch import RecipientReason
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.codereviewcomment import CodeReviewComment
@@ -868,6 +872,19 @@ class BranchMergeProposal(SQLBase):
             notify(NewCodeReviewCommentEvent(
                     code_review_message, original_email))
         return code_review_message
+
+    def saveDraftInlineComment(self, diff_timestamp, person, comments):
+        """See `IBranchMergeProposal`."""
+        previewdiff = IStore(PreviewDiff).find(
+            PreviewDiff,
+            PreviewDiff.branch_merge_proposal_id == self.id,
+            PreviewDiff.date_created == diff_timestamp).one()
+        if not previewdiff:
+            raise DiffNotFound(
+                "Could not locate a preview diff with a timestamp of %s" % (
+                    diff_timestamp))
+        getUtility(ICodeReviewInlineCommentSet).ensureDraft(
+            previewdiff, person, comments)
 
     def updatePreviewDiff(self, diff_content, source_revision_id,
                           target_revision_id, prerequisite_revision_id=None,

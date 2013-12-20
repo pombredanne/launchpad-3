@@ -56,6 +56,7 @@ from zope.schema import (
     Bool,
     Choice,
     Datetime,
+    Dict,
     Int,
     Object,
     Text,
@@ -568,6 +569,20 @@ class IBranchMergeProposalAnyAllowedPerson(Interface):
         :param vote: A CodeReviewVote (or None).
         :param review_type: A string (or None).
         :param original_email: Original email message.
+        """
+
+    @export_write_operation()
+    @operation_parameters(
+        diff_timestamp=Datetime(), comments=Dict(key_type=TextLine()))
+    @call_with(person=REQUEST_USER)
+    @operation_for_version('devel')
+    def saveDraftInlineComment(diff_timestamp, person, comments):
+        """Save `ICodeReviewInlineCommentDraft`
+
+        :param diff_timestamp: The timestamp of the `PreviewDiff` the comments
+            are on.
+        :param person: The `IPerson` making the comments.
+        :param comments: The comments.
         """
 
 

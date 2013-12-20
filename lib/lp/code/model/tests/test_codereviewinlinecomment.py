@@ -5,6 +5,9 @@
 
 __metaclass__ = type
 
+from datetime import datetime
+
+from pytz import UTC
 from zope.component import getUtility
 
 from lp.code.interfaces.codereviewinlinecomment import (
@@ -69,10 +72,29 @@ class TestCodeReviewInlineComment(TestCaseWithFactory):
         self.assertIsNot(None, cric)
         self.assertEqual({}, interface.findDraft(previewdiff, person))
 
-    def test_findByPreviewDiff(self):
+    def test_findByPreviewDiff_draft(self):
         # ICodeReviewInlineCommentSet.findByPreviewDiff() will return a draft
         # so it can be rendered.
         interface = getUtility(ICodeReviewInlineCommentSet)
         previewdiff, person = self._makeCRICD()
         results = interface.findByPreviewDiff(previewdiff, person) 
-        self.assertEqual({'2': 'foobar'}, results[1])
+        self.assertEqual([[u'2', None, u'foobar', None]], results)
+
+    def test_findByPreviewDiff_sorted(self):
+        # ICodeReviewInlineCommentSet.findByPreviewDiff() will return a sorted
+        # list.
+        interface = getUtility(ICodeReviewInlineCommentSet)
+        previewdiff = self.factory.makePreviewDiff()
+        person = self.factory.makePerson()
+        comment = self.factory.makeCodeReviewComment()
+        self.factory.makeCodeReviewInlineComment(
+            previewdiff=previewdiff, person=person, comment=comment)
+        old_comment = self.factory.makeCodeReviewComment(
+            date_created=datetime(2001, 1, 1, 12, tzinfo=UTC))
+        self.factory.makeCodeReviewInlineComment(
+            previewdiff=previewdiff, person=person, comment=old_comment,
+            comments={'8': 'baz'})
+        self.assertEqual(
+            [[u'8', person, u'baz', old_comment.date_created],
+             [u'2', person, u'foobar', comment.date_created]],
+            interface.findByPreviewDiff(previewdiff, person))
