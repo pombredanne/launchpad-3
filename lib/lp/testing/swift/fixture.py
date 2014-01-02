@@ -61,13 +61,13 @@ class SwiftFixture(TacTestFixture):
                 os_auth_url: http://localhost:{0}/keystone/v2.0/
                 os_username: {1}
                 os_password: {2}
-                os_tenant: {3}
+                os_tenant_name: {3}
                 """.format(
                     self.daemon_port, hollow.DEFAULT_USERNAME,
                     hollow.DEFAULT_PASSWORD, hollow.DEFAULT_TENANT_NAME))
         BaseLayer.config_fixture.add_section(service_config)
-        config.reloadConfig
-        assert config.librarian_server.os_tenant == 'test'
+        config.reloadConfig()
+        assert config.librarian_server.os_tenant_name == 'test'
 
     def setUpRoot(self):
         # Create a root directory.
@@ -87,7 +87,7 @@ class SwiftFixture(TacTestFixture):
         client = swiftclient.Connection(
             authurl=config.librarian_server.os_auth_url,
             auth_version="2.0",
-            tenant_name=config.librarian_server.os_tenant,
+            tenant_name=config.librarian_server.os_tenant_name,
             user=config.librarian_server.os_username,
             key=config.librarian_server.os_password,
             retries=0, insecure=True)

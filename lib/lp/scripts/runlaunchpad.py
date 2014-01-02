@@ -470,6 +470,14 @@ def start_librarian():
     config.generate_overrides()
     # Create the Librarian storage directory if it doesn't already exist.
     prepare_for_librarian()
+    # Turn off the http_proxy environment variable if it is set. We
+    # don't need it, but we do need to contact Keystone & Swift directly.
+    # We could use no_proxy, but this requires keeping it in sync with
+    # reality on dev, staging & production servers.
+    if 'http_proxy' in os.environ:
+        del os.environ['http_proxy']
+    if 'HTTP_PROXY' in os.environ:
+        del os.environ['HTTP_PROXY']
     pidfile = pidfile_path('librarian')
     cmd = [
         tachandler.twistd_script,

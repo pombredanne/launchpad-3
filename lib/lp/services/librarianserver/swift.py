@@ -330,7 +330,7 @@ class ConnectionPool:
             authurl=config.librarian_server.os_auth_url,
             user=config.librarian_server.os_username,
             key=config.librarian_server.os_password,
-            tenant_name=config.librarian_server.os_tenant,
+            tenant_name=config.librarian_server.os_tenant_name,
             auth_version='2.0',
             )
 
