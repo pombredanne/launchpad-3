@@ -13,7 +13,10 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
-from lp.registry.vocabularies import MilestoneVocabulary
+from lp.registry.vocabularies import (
+    MilestoneVocabulary,
+    MilestoneWithDateExpectedVocabulary,
+    )
 from lp.testing import (
     login,
     logout,
@@ -116,3 +119,31 @@ class TestMilestoneVocabulary(TestCaseWithFactory):
         self.assertEqual(
             [term.title for term in vocabulary],
             [u'Debian 3.1', u'Debian 3.1-rc1', u'Mozilla Firefox 1.0'])
+
+
+class TestMilestoneWithDateExpectedVocabulary(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestMilestoneWithDateExpectedVocabulary, self).setUp()
+        login('test@canonical.com')
+
+    def tearDown(self):
+        super(TestMilestoneWithDateExpectedVocabulary, self).tearDown()
+        logout()
+
+    def test_milestone_with_date_expected(self):
+        firefox = getUtility(IProductSet).getByName('firefox')
+        vocabulary = MilestoneWithDateExpectedVocabulary(firefox)
+        self.assertEqual(
+            [term.title for term in vocabulary],
+            [u'Mozilla Firefox 1.0 (2056-10-16)'])
+
+    def test_milestone_without_date_expected(self):
+        evolution = getUtility(IProductSet).getByName('evolution')
+        series = evolution.getSeries('trunk')
+        series.newMilestone(name='3.0', dateexpected=None)
+        vocabulary = MilestoneWithDateExpectedVocabulary(evolution)
+        self.assertEqual(
+            [term.title for term in vocabulary], ['Evolution 3.0'])
