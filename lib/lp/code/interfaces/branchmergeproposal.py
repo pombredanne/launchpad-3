@@ -82,7 +82,6 @@ from lp.services.job.interfaces.job import (
     IJob,
     IJobSource,
     IRunnableJob,
-    ITwistedJobSource,
     )
 from lp.services.webapp.interfaces import ITableBatchNavigator
 
@@ -597,10 +596,6 @@ class IBranchMergeProposalJob(Interface):
 
     def destroySelf():
         """Destroy this object."""
-
-
-class IBranchMergeProposalJobSource(ITwistedJobSource):
-    """A job source that will get all supported merge proposal jobs."""
 
 
 class IBranchMergeProposalJobSource(IJobSource):

@@ -12,10 +12,8 @@ Create a builder working on a TranslationTemplatesBuild for a branch.
     >>> from testtools.monkey import patch
     >>> from zope.component import getUtility
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-    >>> from lp.buildmaster.model.buildqueue import BuildQueue
     >>> from lp.app.enums import ServiceUsage
     >>> from lp.buildmaster.interactor import BuilderSlave
-    >>> from lp.services.database.interfaces import IStore
     >>> from lp.services.librarian.interfaces import (
     ...     ILibraryFileAliasSet)
     >>> from lp.testing.factory import (
@@ -45,9 +43,8 @@ Create a builder working on a TranslationTemplatesBuild for a branch.
     >>> naked_productseries.branch = factory.makeBranch()
     >>> naked_productseries.translations_autoimport_mode = (
     ...     TranslationsBranchImportMode.IMPORT_TEMPLATES)
-    >>> specific_job = factory.makeTranslationTemplatesBuildJob(branch=branch)
-    >>> buildqueue = IStore(BuildQueue).find(
-    ...     BuildQueue, job=specific_job.job).one()
+    >>> build = factory.makeTranslationTemplatesBuild(branch=branch)
+    >>> buildqueue = build.queueBuild()
 
     >>> fake_chroot = getUtility(ILibraryFileAliasSet)[1]
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -76,7 +73,7 @@ to the branch.
     >>> user_browser.mech_browser.set_handle_equiv(False)
     >>> user_browser.open(builder_page)
     >>> print extract_text(find_build_summary(user_browser))
-    Working on TranslationTemplatesBuildJob for branch ...
+    Working on TranslationTemplatesBuild for branch ...
 
     >>> user_browser.getLink(branch_url).click()
 

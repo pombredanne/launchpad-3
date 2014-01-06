@@ -10,9 +10,10 @@ import os.path
 import shutil
 import socket
 import tempfile
+from textwrap import dedent
 import time
 
-from fixtures import EnvironmentVariableFixture, FunctionFixture
+from fixtures import FunctionFixture
 from s4 import hollow
 from swiftclient import client as swiftclient
 import testtools.content
@@ -20,6 +21,7 @@ import testtools.content_type
 from txfixtures.tachandler import TacTestFixture
 
 from lp.services.config import config
+from lp.testing.layers import BaseLayer
 
 
 class SwiftFixture(TacTestFixture):
@@ -54,15 +56,18 @@ class SwiftFixture(TacTestFixture):
         testtools.content.attach_file(
             self, logfile, 'swift-log', testtools.content_type.UTF8_TEXT)
 
-        self.useFixture(EnvironmentVariableFixture(
-            'OS_AUTH_URL',
-            'http://localhost:{0}/keystone/v2.0/'.format(self.daemon_port)))
-        self.useFixture(EnvironmentVariableFixture(
-            'OS_USERNAME', hollow.DEFAULT_USERNAME))
-        self.useFixture(EnvironmentVariableFixture(
-            'OS_PASSWORD', hollow.DEFAULT_PASSWORD))
-        self.useFixture(EnvironmentVariableFixture(
-            'OS_TENANT_NAME', hollow.DEFAULT_TENANT_NAME))
+        service_config = dedent("""\
+                [librarian_server]
+                os_auth_url: http://localhost:{0}/keystone/v2.0/
+                os_username: {1}
+                os_password: {2}
+                os_tenant_name: {3}
+                """.format(
+                    self.daemon_port, hollow.DEFAULT_USERNAME,
+                    hollow.DEFAULT_PASSWORD, hollow.DEFAULT_TENANT_NAME))
+        BaseLayer.config_fixture.add_section(service_config)
+        config.reloadConfig()
+        assert config.librarian_server.os_tenant_name == 'test'
 
     def setUpRoot(self):
         # Create a root directory.
@@ -80,11 +85,11 @@ class SwiftFixture(TacTestFixture):
     def connect(self):
         """Return a valid connection to our mock Swift"""
         client = swiftclient.Connection(
-            authurl=os.environ.get('OS_AUTH_URL', None),
+            authurl=config.librarian_server.os_auth_url,
             auth_version="2.0",
-            tenant_name=os.environ.get('OS_TENANT_NAME', None),
-            user=os.environ.get('OS_USERNAME', None),
-            key=os.environ.get('OS_PASSWORD', None),
+            tenant_name=config.librarian_server.os_tenant_name,
+            user=config.librarian_server.os_username,
+            key=config.librarian_server.os_password,
             retries=0, insecure=True)
         return client
 

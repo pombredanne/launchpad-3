@@ -24,7 +24,6 @@ from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
-    ISourcePackageRecipeBuildJob,
     ISourcePackageRecipeBuildSource,
     )
 from lp.code.mail.sourcepackagerecipebuild import (
@@ -92,18 +91,14 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         transaction.commit()
         self.assertProvides(spb, ISourcePackageRecipeBuild)
 
-    def test_makeJob(self):
-        # A build farm job can be obtained from a SourcePackageRecipeBuild
-        spb = self.makeSourcePackageRecipeBuild()
-        job = spb.makeJob()
-        self.assertProvides(job, ISourcePackageRecipeBuildJob)
-
     def test_queueBuild(self):
         spb = self.makeSourcePackageRecipeBuild()
         bq = spb.queueBuild(spb)
 
         self.assertProvides(bq, IBuildQueue)
-        self.assertProvides(bq.specific_job, ISourcePackageRecipeBuildJob)
+        self.assertEqual(
+            spb.build_farm_job, removeSecurityProxy(bq)._build_farm_job)
+        self.assertEqual(spb, bq.specific_build)
         self.assertEqual(True, bq.virtualized)
 
         # The processor for SourcePackageRecipeBuilds should not be None.
@@ -148,17 +143,13 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         with person_logged_in(owner):
             recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
             build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
-            job = build.makeJob()
             self.assertTrue(check_permission('launchpad.View', build))
-            self.assertTrue(check_permission('launchpad.View', job))
         removeSecurityProxy(branch).information_type = (
             InformationType.USERDATA)
         with person_logged_in(self.factory.makePerson()):
             self.assertFalse(check_permission('launchpad.View', build))
-            self.assertFalse(check_permission('launchpad.View', job))
         login(ANONYMOUS)
         self.assertFalse(check_permission('launchpad.View', build))
-        self.assertFalse(check_permission('launchpad.View', job))
 
     def test_view_private_archive(self):
         """Recipebuilds with private branches are restricted."""
@@ -166,15 +157,11 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         archive = self.factory.makeArchive(owner=owner, private=True)
         with person_logged_in(owner):
             build = self.factory.makeSourcePackageRecipeBuild(archive=archive)
-            job = build.makeJob()
             self.assertTrue(check_permission('launchpad.View', build))
-            self.assertTrue(check_permission('launchpad.View', job))
         with person_logged_in(self.factory.makePerson()):
             self.assertFalse(check_permission('launchpad.View', build))
-            self.assertFalse(check_permission('launchpad.View', job))
         login(ANONYMOUS)
         self.assertFalse(check_permission('launchpad.View', build))
-        self.assertFalse(check_permission('launchpad.View', job))
 
     def test_estimateDuration(self):
         # If there are no successful builds, estimate 10 minutes.
@@ -423,6 +410,8 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         requester = self.factory.makePerson()
         recipe = self.factory.makeSourcePackageRecipe()
         series = self.factory.makeDistroSeries()
+        removeSecurityProxy(series).nominatedarchindep = (
+            self.factory.makeDistroArchSeries(distroseries=series))
         now = self.factory.getUniqueDate()
         build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe,
             requester=requester)
@@ -526,6 +515,8 @@ class TestAsBuildmaster(TestCaseWithFactory):
             name=u'recipe', owner=person)
         pantry = self.factory.makeArchive(name='ppa')
         secret = self.factory.makeDistroSeries(name=u'distroseries')
+        secret.nominatedarchindep = self.factory.makeDistroArchSeries(
+            distroseries=secret)
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=cake, distroseries=secret, archive=pantry)
         build.updateStatus(BuildStatus.FULLYBUILT)
@@ -556,6 +547,8 @@ class TestAsBuildmaster(TestCaseWithFactory):
             name=u'recipe', owner=person)
         pantry = self.factory.makeArchive(name='ppa')
         secret = self.factory.makeDistroSeries(name=u'distroseries')
+        secret.nominatedarchindep = self.factory.makeDistroArchSeries(
+            distroseries=secret)
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=cake, distroseries=secret, archive=pantry)
         build.updateStatus(BuildStatus.FULLYBUILT)

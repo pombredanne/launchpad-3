@@ -1012,11 +1012,15 @@ class TestDistroSeriesLocalDiffPerformance(TestCaseWithFactory,
     def test_queries_single_parent(self):
         dsp = self.factory.makeDistroSeriesParent()
         derived_series = dsp.derived_series
+        derived_series.nominatedarchindep = self.factory.makeDistroArchSeries(
+            distroseries=derived_series)
         self._assertQueryCount(derived_series)
 
     def test_queries_multiple_parents(self):
         dsp = self.factory.makeDistroSeriesParent()
         derived_series = dsp.derived_series
+        derived_series.nominatedarchindep = self.factory.makeDistroArchSeries(
+            distroseries=derived_series)
         self.factory.makeDistroSeriesParent(
             derived_series=derived_series)
         self._assertQueryCount(derived_series)
