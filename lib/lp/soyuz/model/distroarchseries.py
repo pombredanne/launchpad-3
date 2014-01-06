@@ -8,6 +8,7 @@ __all__ = [
     ]
 
 from cStringIO import StringIO
+import hashlib
 
 from sqlobject import (
     BoolCol,
@@ -167,6 +168,20 @@ class DistroArchSeries(SQLBase):
             filecontent = data
         else:
             filecontent = data.read()
+
+        # Due to http://bugs.python.org/issue1349106 launchpadlib sends
+        # MIME with \n line endings, which is illegal. lazr.restful
+        # parses each ending as \r\n, resulting in a binary that ends
+        # with \r getting the last byte chopped off. To cope with this
+        # on the server side we try to append \r if the SHA-1 doesn't
+        # match.
+        content_sha1sum = hashlib.sha1(filecontent).hexdigest()
+        if content_sha1sum != sha1sum:
+            filecontent += '\r'
+            content_sha1sum = hashlib.sha1(filecontent).hexdigest()
+        if content_sha1sum != sha1sum:
+            raise InvalidChrootUploaded("Chroot upload checksums do not match")
+
         filename = 'chroot-%s-%s-%s.tar.bz2' % (
             self.distroseries.distribution.name, self.distroseries.name,
             self.architecturetag)

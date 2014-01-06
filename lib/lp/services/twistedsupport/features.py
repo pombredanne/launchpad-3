@@ -14,6 +14,7 @@ from twisted.internet import (
     reactor,
     )
 from twisted.internet.threads import deferToThread
+from twisted.python import log
 
 from lp.services.database import read_transaction
 from lp.services.features import (
@@ -46,7 +47,23 @@ def _new_controller(script_name):
     return controller
 
 
+_last_refresh = None
+
+
 def _install_and_reschedule(controller, script_name):
     install_feature_controller(controller)
-    reactor.callLater(
-        getFeatureFlag('twisted.flags.refresh') or 30, update, script_name)
+    refresh = getFeatureFlag('twisted.flags.refresh') or 60.0
+    try:
+        refresh = float(refresh)
+    except ValueError:
+        log.msg("Invalid value {0!r} for twisted.flags.refresh".format(
+            refresh))
+        refresh = 60.0
+
+    global _last_refresh
+    if refresh != _last_refresh:
+        if _last_refresh is not None:
+            log.msg("twisted.flags.refresh changed to {0}".format(refresh))
+        _last_refresh = refresh
+
+    reactor.callLater(refresh, update, script_name)

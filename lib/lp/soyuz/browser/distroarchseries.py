@@ -13,6 +13,7 @@ __all__ = [
     'DistroArchSeriesView',
     ]
 
+from lazr.restful.interface import copy_field
 from lazr.restful.utils import smartquote
 from zope.interface import (
     implements,
@@ -90,9 +91,13 @@ class DistroArchSeriesView(DistroArchSeriesPackageSearchView):
         return self.context.title
 
 
+class DistroArchSeriesAddSchema(IDistroArchSeries):
+    processor = copy_field(IDistroArchSeries['processor'], readonly=False)
+
+
 class DistroArchSeriesAddView(LaunchpadFormView):
 
-    schema = IDistroArchSeries
+    schema = DistroArchSeriesAddSchema
     field_names = [
         'architecturetag', 'processor', 'official', 'supports_virtualized']
 

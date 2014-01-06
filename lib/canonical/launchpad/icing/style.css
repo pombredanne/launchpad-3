@@ -628,6 +628,9 @@ dl.reviews dd {
   margin: 0 0 0 0;
 }
 
+tr.ict-header {
+    background-color: #EEEEEE;
+}
 
 /* === Bugs === */
 

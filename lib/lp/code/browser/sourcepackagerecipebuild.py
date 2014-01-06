@@ -20,11 +20,13 @@ from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildQueueStatus,
+    BuildStatus,
+    )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
     )
-from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import FileNavigationMixin
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
@@ -107,12 +109,12 @@ class SourcePackageRecipeBuildView(LaunchpadView):
         if self.context.buildqueue_record is None:
             return None
         queue_record = self.context.buildqueue_record
-        if queue_record.job.status == JobStatus.WAITING:
+        if queue_record.status == BuildQueueStatus.WAITING:
             start_time = queue_record.getEstimatedJobStartTime()
             if start_time is None:
                 return None
         else:
-            start_time = queue_record.job.date_started
+            start_time = queue_record.date_started
         duration = queue_record.estimated_duration
         return start_time + duration
 

@@ -9,8 +9,6 @@ from testtools.matchers import Equals
 from zope.component import getUtility
 
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.model.buildqueue import BuildQueue
-from lp.services.database.interfaces import IStore
 from lp.services.job.model.job import Job
 from lp.soyuz.browser.tests.test_builder_views import BuildCreationMixin
 from lp.testing import (
@@ -20,9 +18,6 @@ from lp.testing import (
 from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 from lp.testing.views import create_initialized_view
-from lp.translations.interfaces.translationtemplatesbuildjob import (
-    ITranslationTemplatesBuildJobSource,
-    )
 
 
 def builders_homepage_render():
@@ -42,8 +37,8 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
         # And create BuildFarmJobs of the various types to throw IDs off
         # even further, detecting more preloading issues.
         self.factory.makeBinaryPackageBuild().queueBuild()
-        self.factory.makeSourcePackageRecipeBuildJob()
-        self.factory.makeTranslationTemplatesBuildJob()
+        self.factory.makeSourcePackageRecipeBuild().queueBuild()
+        self.factory.makeTranslationTemplatesBuild().queueBuild()
 
     def test_builders_binary_package_build_query_count(self):
         def create_build():
@@ -69,11 +64,7 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
 
     def test_builders_translation_template_build_query_count(self):
         def create_build():
-            jobset = getUtility(ITranslationTemplatesBuildJobSource)
-            branch = self.factory.makeBranch()
-            specific_job = jobset.create(branch)
-            queue = IStore(BuildQueue).find(
-                BuildQueue, job=specific_job.job).one()
+            queue = self.factory.makeTranslationTemplatesBuild().queueBuild()
             queue.markAsBuilding(self.factory.makeBuilder())
 
         nb_objects = 2

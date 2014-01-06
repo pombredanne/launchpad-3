@@ -18,6 +18,7 @@ from lp.bugs.adapters.bugchange import (
     CveLinkedToBug,
     CveUnlinkedFromBug,
     )
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.registry.enums import PersonVisibility
@@ -100,7 +101,9 @@ def record_bug_added(bug, object_created_event):
         person=IPerson(object_created_event.user),
         whatchanged="bug",
         message="added bug")
-    bug.addCommentNotification(bug.initial_message, activity=activity)
+    bug.addCommentNotification(
+        bug.initial_message, activity=activity,
+        level=BugNotificationLevel.LIFECYCLE)
 
 
 @block_implicit_flushes

@@ -458,6 +458,7 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
         for sequence, item in to_insert:
             self.newWorkItem(item['title'], sequence, item['status'],
                              item['assignee'], item['milestone'])
+        Store.of(self).flush()
         del get_property_cache(self).work_items
 
     def setTarget(self, target):
