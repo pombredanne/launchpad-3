@@ -10,7 +10,6 @@ __all__ = [
     ]
 
 import itertools
-from operator import itemgetter
 
 from sqlobject import (
     BoolCol,
@@ -23,6 +22,7 @@ from storm.expr import (
     Desc,
     Exists,
     Join,
+    LeftJoin,
     Max,
     Not,
     Or,
@@ -636,37 +636,56 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             Branch, get_branch_privacy_filter)
         from lp.code.model.seriessourcepackagebranch import (
             SeriesSourcePackageBranch)
-        from storm.expr import LeftJoin
 
         clauses = [
             DistroSeries.distribution == self.id,
             get_branch_privacy_filter(user),
         ]
+
         if since is not None:
             # If "since" was provided, take into account.
             clauses.append(Branch.last_scanned > since)
 
+        OfficialSeries = ClassAlias(DistroSeries)
         branches = IStore(self).using(
             Branch,
-            Join(SeriesSourcePackageBranch,
-                 SeriesSourcePackageBranch.branchID == Branch.id),
             Join(DistroSeries,
-                 DistroSeries.id == SeriesSourcePackageBranch.distroseriesID),
+                 DistroSeries.id == Branch.distroseriesID),
+            LeftJoin(
+                SeriesSourcePackageBranch,
+                SeriesSourcePackageBranch.branchID == Branch.id),
+            LeftJoin(
+                OfficialSeries,
+                OfficialSeries.id == SeriesSourcePackageBranch.distroseriesID),
         ).find(
-            (Branch.unique_name, Branch.last_scanned_id, DistroSeries.name),
+            # XXX cprov 20140106: Storm query specs with LeftJoin does not
+            # allow loading only specific fields ('Branch.unique_name',
+            # 'Branch.last_scanned_id', 'OfficialSeries.name') which could
+            # the load on DB.
+            (Branch, OfficialSeries),
             And(*clauses)
         ).order_by(
             Branch.unique_name,
             Branch.last_scanned_id
         )
 
+        # Group/filter helpers.
+        def get_branch_key(item):
+            (branch, series) = item
+            return (branch.unique_name, branch.last_scanned_id)
+
+        def get_series_name(item):
+            (branch, series) = item
+            if series:
+                return series.name
+
         # Group on location (unique_name) and revision (last_scanned_id).
         result = []
-        for key, group in itertools.groupby(branches, itemgetter(0, 1)):
+        for key, group in itertools.groupby(branches, get_branch_key):
             result.append(list(key))
             # Pull out all the official series names and append them as a list
             # to the end of the current record.
-            result[-1].append(map(itemgetter(2), group))
+            result[-1].append(filter(None, map(get_series_name, group)))
 
         return result
 
