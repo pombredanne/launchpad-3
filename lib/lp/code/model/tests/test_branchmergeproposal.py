@@ -47,6 +47,9 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalGetter,
     notify_modified,
     )
+from lp.code.interfaces.codereviewinlinecomment import (
+    ICodeReviewInlineCommentSet,
+    )
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposalGetter,
     is_valid_transition,
@@ -2087,3 +2090,22 @@ class TestWebservice(WebServiceTestCase):
         user = previewdiff.branch_merge_proposal.target_branch.owner
         ws_previewdiff = self.wsObject(previewdiff, user=user)
         self.assertIsNone(ws_previewdiff.diffstat)
+
+    def test_saveDraftInlineComment_with_no_previewdiff(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        ws_bmp = self.wsObject(bmp, user=bmp.target_branch.owner)
+        self.assertRaises(
+            BadRequest, ws_bmp.saveDraftInlineComment,
+            diff_timestamp=datetime(2001, 1, 1, 12, tzinfo=UTC), comments={})
+
+    def test_saveDraftInlineComment(self):
+        previewdiff = self.factory.makePreviewDiff()
+        user = previewdiff.branch_merge_proposal.target_branch.owner
+        ws_bmp = self.wsObject(previewdiff.branch_merge_proposal, user=user)
+        comments = {u'2': u'foo'}
+        ws_bmp.saveDraftInlineComment(
+            diff_timestamp=previewdiff.date_created, comments=comments)
+        transaction.commit()
+        draft_comments = getUtility(ICodeReviewInlineCommentSet).findDraft(
+            previewdiff, user)
+        self.assertEqual(comments, draft_comments)
