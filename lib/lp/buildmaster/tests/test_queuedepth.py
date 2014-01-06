@@ -13,12 +13,12 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.queuedepth import (
     estimate_job_delay,
     estimate_time_to_next_builder,
     get_builder_data,
     get_free_builders_count,
-    get_head_job_platform,
     )
 from lp.buildmaster.tests.test_buildqueue import find_job
 from lp.services.database.interfaces import IStore
@@ -35,7 +35,7 @@ from lp.testing.layers import LaunchpadZopelessLayer
 
 def check_mintime_to_builder(test, bq, min_time):
     """Test the estimated time until a builder becomes available."""
-    time_stamp = bq.job.date_started or datetime.now(utc)
+    time_stamp = bq.date_started or datetime.now(utc)
     delay = estimate_time_to_next_builder(
         removeSecurityProxy(bq), now=time_stamp)
     test.assertTrue(
@@ -47,7 +47,7 @@ def check_mintime_to_builder(test, bq, min_time):
 def set_remaining_time_for_running_job(bq, remainder):
     """Set remaining running time for job."""
     offset = bq.estimated_duration.seconds - remainder
-    removeSecurityProxy(bq.job).date_started = (
+    removeSecurityProxy(bq).date_started = (
         datetime.now(utc) - timedelta(seconds=offset))
 
 
@@ -72,7 +72,7 @@ def builders_for_job(job):
 
 
 def check_estimate(test, job, delay_in_seconds):
-    time_stamp = job.job.date_started or datetime.now(utc)
+    time_stamp = job.date_started or datetime.now(utc)
     estimate = job.getEstimatedJobStartTime(now=time_stamp)
     if delay_in_seconds is None:
         test.assertEquals(
@@ -144,32 +144,32 @@ class TestBuildQueueBase(TestCaseWithFactory):
         # Next make seven 'hppa' builders.
         self.hppa_proc = getUtility(IProcessorSet).getByName('hppa')
         self.h1 = self.factory.makeBuilder(
-            name='hppa-v-1', processor=self.hppa_proc)
+            name='hppa-v-1', processors=[self.hppa_proc])
         self.h2 = self.factory.makeBuilder(
-            name='hppa-v-2', processor=self.hppa_proc)
+            name='hppa-v-2', processors=[self.hppa_proc])
         self.h3 = self.factory.makeBuilder(
-            name='hppa-v-3', processor=self.hppa_proc)
+            name='hppa-v-3', processors=[self.hppa_proc])
         self.h4 = self.factory.makeBuilder(
-            name='hppa-v-4', processor=self.hppa_proc)
+            name='hppa-v-4', processors=[self.hppa_proc])
         self.h5 = self.factory.makeBuilder(
-            name='hppa-n-5', processor=self.hppa_proc, virtualized=False)
+            name='hppa-n-5', processors=[self.hppa_proc], virtualized=False)
         self.h6 = self.factory.makeBuilder(
-            name='hppa-n-6', processor=self.hppa_proc, virtualized=False)
+            name='hppa-n-6', processors=[self.hppa_proc], virtualized=False)
         self.h7 = self.factory.makeBuilder(
-            name='hppa-n-7', processor=self.hppa_proc, virtualized=False)
+            name='hppa-n-7', processors=[self.hppa_proc], virtualized=False)
 
         # Finally make five 'amd64' builders.
         self.amd_proc = getUtility(IProcessorSet).getByName('amd64')
         self.a1 = self.factory.makeBuilder(
-            name='amd64-v-1', processor=self.amd_proc)
+            name='amd64-v-1', processors=[self.amd_proc])
         self.a2 = self.factory.makeBuilder(
-            name='amd64-v-2', processor=self.amd_proc)
+            name='amd64-v-2', processors=[self.amd_proc])
         self.a3 = self.factory.makeBuilder(
-            name='amd64-v-3', processor=self.amd_proc)
+            name='amd64-v-3', processors=[self.amd_proc])
         self.a4 = self.factory.makeBuilder(
-            name='amd64-n-4', processor=self.amd_proc, virtualized=False)
+            name='amd64-n-4', processors=[self.amd_proc], virtualized=False)
         self.a5 = self.factory.makeBuilder(
-            name='amd64-n-5', processor=self.amd_proc, virtualized=False)
+            name='amd64-n-5', processors=[self.amd_proc], virtualized=False)
 
         self.builders = dict()
         self.x86_proc = getUtility(IProcessorSet).getByName('386')
@@ -222,6 +222,21 @@ class TestBuildQueueBase(TestCaseWithFactory):
         # Disable the sample data builders.
         getUtility(IBuilderSet)['bob'].builderok = False
         getUtility(IBuilderSet)['frog'].builderok = False
+
+    def makeCustomBuildQueue(self, score=9876, virtualized=True,
+                             estimated_duration=64, sourcename=None,
+                             recipe_build=None):
+        """Create a `SourcePackageRecipeBuild` and a `BuildQueue` for
+        testing."""
+        if recipe_build is None:
+            recipe_build = self.factory.makeSourcePackageRecipeBuild(
+                sourcename=sourcename)
+        bq = BuildQueue(
+            build_farm_job=recipe_build.build_farm_job, lastscore=score,
+            estimated_duration=timedelta(seconds=estimated_duration),
+            virtualized=virtualized)
+        IStore(BuildQueue).add(bq)
+        return bq
 
 
 class SingleArchBuildsBase(TestBuildQueueBase):
@@ -500,10 +515,10 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
         check_mintime_to_builder(self, apg_job, 0)
 
         # The following job can only run on a native builder.
-        job = self.factory.makeSourcePackageRecipeBuildJob(
+        job = self.makeCustomBuildQueue(
             estimated_duration=111, sourcename=u'xxr-gftp', score=1055,
             virtualized=False)
-        self.builds.append(job.specific_job.build)
+        self.builds.append(job.specific_build)
 
         # Disable all native builders.
         for builder in self.builders[(None, False)]:
@@ -667,7 +682,7 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
         check_mintime_to_builder(self, apg_job, 0)
 
         # Let's add a processor-independent job to the mix.
-        job = self.factory.makeSourcePackageRecipeBuildJob(
+        job = self.makeCustomBuildQueue(
             virtualized=False, estimated_duration=22,
             sourcename='my-recipe-digikam', score=9999)
         # There are still builders available for the processor-independent
@@ -753,14 +768,14 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         """
         super(TestMultiArchJobDelayEstimation, self).setUp()
 
-        job = self.factory.makeSourcePackageRecipeBuildJob(
+        job = self.makeCustomBuildQueue(
             virtualized=False, estimated_duration=22,
             sourcename=u'xx-recipe-bash', score=1025)
-        self.builds.append(job.specific_job.build)
-        job = self.factory.makeSourcePackageRecipeBuildJob(
+        self.builds.append(job.specific_build)
+        job = self.makeCustomBuildQueue(
             virtualized=False, estimated_duration=222,
             sourcename=u'xx-recipe-zsh', score=1053)
-        self.builds.append(job.specific_job.build)
+        self.builds.append(job.specific_build)
 
         # Assign the same score to the '386' vim and apg build jobs.
         _apg_build, apg_job = find_job(self, 'apg', '386')
@@ -845,68 +860,6 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         pg_platform = (postgres_job.processor.id, postgres_job.virtualized)
         self.assertEquals(pg_platform, postgres_job._getHeadJobPlatform())
 
-    def test_job_delay_for_unspecified_virtualization(self):
-        # Make sure that jobs with a NULL 'virtualized' flag get the same
-        # treatment as the ones with virtualized=TRUE.
-        # First toggle the 'virtualized' flag for all hppa jobs.
-        for build in self.builds:
-            bq = build.buildqueue_record
-            if bq.processor == self.hppa_proc:
-                removeSecurityProxy(bq).virtualized = True
-        job = self.factory.makeSourcePackageRecipeBuildJob(
-            virtualized=True, estimated_duration=332,
-            sourcename=u'xxr-openssh-client', score=1050)
-        self.builds.append(job.specific_job.build)
-        # print_build_setup(self.builds)
-        #   ...
-        #   15,               flex, p: hppa, v: True e:0:13:00 *** s: 1039
-        #   16,               flex, p:  386, v:False e:0:14:00 *** s: 1042
-        #   17,           postgres, p: hppa, v: True e:0:15:00 *** s: 1045
-        #   18,           postgres, p:  386, v:False e:0:16:00 *** s: 1048
-        #   21, xxr-openssh-client, p: None, v: True e:0:05:32 *** s: 1050
-        #   20,      xx-recipe-zsh, p: None, v:False e:0:03:42 *** s: 1053
-
-        flex_build, flex_job = find_job(self, 'flex', 'hppa')
-        # The head job platform is the one of job #21 (xxr-openssh-client).
-        self.assertEquals(
-            (None, True), get_head_job_platform(removeSecurityProxy(flex_job)))
-        # The delay will be 900 (= 15*60) + 332 seconds
-        check_delay_for_job(self, flex_job, 1232)
-
-        # Now add a job with a NULL 'virtualized' flag. It should be treated
-        # like jobs with virtualized=TRUE.
-        job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=111, sourcename=u'xxr-gwibber', score=1051,
-            virtualized=None)
-        self.builds.append(job.specific_job.build)
-        # print_build_setup(self.builds)
-        self.assertEqual(None, job.virtualized)
-        #   ...
-        #   15,               flex, p: hppa, v: True e:0:13:00 *** s: 1039
-        #   16,               flex, p:  386, v:False e:0:14:00 *** s: 1042
-        #   17,           postgres, p: hppa, v: True e:0:15:00 *** s: 1045
-        #   18,           postgres, p:  386, v:False e:0:16:00 *** s: 1048
-        #   21, xxr-openssh-client, p: None, v: True e:0:05:32 *** s: 1050
-        #   22,        xxr-gwibber, p: None, v: None e:0:01:51 *** s: 1051
-        #   20,      xx-recipe-zsh, p: None, v:False e:0:03:42 *** s: 1053
-
-        # The newly added 'xxr-gwibber' job is the new head job now.
-        self.assertEquals(
-            (None, None), get_head_job_platform(removeSecurityProxy(flex_job)))
-        # The newly added 'xxr-gwibber' job now weighs in as well and the
-        # delay is 900 (= 15*60) + (332+111)/2 seconds
-        check_delay_for_job(self, flex_job, 1121)
-
-        # The '386' flex job does not care about the 'xxr-gwibber' and
-        # 'xxr-openssh-client' jobs since the 'virtualized' values do not
-        # match.
-        flex_build, flex_job = find_job(self, 'flex', '386')
-        self.assertEquals(
-            (None, False),
-            get_head_job_platform(removeSecurityProxy(flex_job)))
-        # delay is 960 (= 16*60) + 222 seconds
-        check_delay_for_job(self, flex_job, 1182)
-
 
 class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
     """Test estimated job delays with various processors."""
@@ -933,48 +886,44 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
            16,               flex, p:  386, v: True e:0:14:00 *** s: 1042
            23,      xxr-apt-build, p: None, v: True e:0:12:56 *** s: 1043
            22,       xxr-cron-apt, p: None, v: True e:0:11:05 *** s: 1043
-           26,           xxr-cupt, p: None, v: None e:0:18:30 *** s: 1044
-           25,            xxr-apt, p: None, v: None e:0:16:38 *** s: 1044
-           24,       xxr-debdelta, p: None, v: None e:0:14:47 *** s: 1044
+           26,           xxr-cupt, p: None, v: True e:0:18:30 *** s: 1044
+           25,            xxr-apt, p: None, v: True e:0:16:38 *** s: 1044
+           24,       xxr-debdelta, p: None, v: True e:0:14:47 *** s: 1044
            17,           postgres, p: hppa, v:False e:0:15:00 *** s: 1045
            18,           postgres, p:  386, v: True e:0:16:00 *** s: 1048
-           21,         xxr-daptup, p: None, v: None e:0:09:14 *** s: 1051
+           21,         xxr-daptup, p: None, v: True e:0:09:14 *** s: 1051
            20,       xxr-auto-apt, p: None, v:False e:0:07:23 *** s: 1053
 
          p=processor, v=virtualized, e=estimated_duration, s=score
         """
         super(TestJobDispatchTimeEstimation, self).setUp()
 
-        job = self.factory.makeSourcePackageRecipeBuildJob(
+        job = self.makeCustomBuildQueue(
             virtualized=False, estimated_duration=332,
             sourcename=u'xxr-aptitude', score=1025)
-        self.builds.append(job.specific_job.build)
-        job = self.factory.makeSourcePackageRecipeBuildJob(
+        self.builds.append(job.specific_build)
+        job = self.makeCustomBuildQueue(
             virtualized=False, estimated_duration=443,
             sourcename=u'xxr-auto-apt', score=1053)
-        self.builds.append(job.specific_job.build)
-        job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=554, sourcename=u'xxr-daptup', score=1051,
-            virtualized=None)
-        self.builds.append(job.specific_job.build)
-        job = self.factory.makeSourcePackageRecipeBuildJob(
+        self.builds.append(job.specific_build)
+        job = self.makeCustomBuildQueue(
+            estimated_duration=554, sourcename=u'xxr-daptup', score=1051)
+        self.builds.append(job.specific_build)
+        job = self.makeCustomBuildQueue(
             estimated_duration=665, sourcename=u'xxr-cron-apt', score=1043)
-        self.builds.append(job.specific_job.build)
-        job = self.factory.makeSourcePackageRecipeBuildJob(
+        self.builds.append(job.specific_build)
+        job = self.makeCustomBuildQueue(
             estimated_duration=776, sourcename=u'xxr-apt-build', score=1043)
-        self.builds.append(job.specific_job.build)
-        job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=887, sourcename=u'xxr-debdelta', score=1044,
-            virtualized=None)
-        self.builds.append(job.specific_job.build)
-        job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=998, sourcename=u'xxr-apt', score=1044,
-            virtualized=None)
-        self.builds.append(job.specific_job.build)
-        job = self.factory.makeSourcePackageRecipeBuildJob(
-            estimated_duration=1110, sourcename=u'xxr-cupt', score=1044,
-            virtualized=None)
-        self.builds.append(job.specific_job.build)
+        self.builds.append(job.specific_build)
+        job = self.makeCustomBuildQueue(
+            estimated_duration=887, sourcename=u'xxr-debdelta', score=1044)
+        self.builds.append(job.specific_build)
+        job = self.makeCustomBuildQueue(
+            estimated_duration=998, sourcename=u'xxr-apt', score=1044)
+        self.builds.append(job.specific_build)
+        job = self.makeCustomBuildQueue(
+            estimated_duration=1110, sourcename=u'xxr-cupt', score=1044)
+        self.builds.append(job.specific_build)
 
         # Assign the same score to the '386' vim and apg build jobs.
         _apg_build, apg_job = find_job(self, 'apg', '386')
@@ -1093,6 +1042,6 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         # Assign a job to it.
         assign_to_builder(self, 'gedit', 1, '386')
         # Dispatch the head job, making postgres/386 the new head job.
-        assign_to_builder(self, 'xxr-daptup', 1, None)
+        assign_to_builder(self, 'xxr-daptup', 2, None)
         postgres_build, postgres_job = find_job(self, 'postgres', '386')
         check_estimate(self, postgres_job, 120)

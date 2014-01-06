@@ -32,7 +32,8 @@ setup(
         'BeautifulSoup',
         'bzr',
         'cssutils',
-        # Required for pydkim
+        'dkimpy',
+        # Required for dkimpy
         'dnspython',
         'fixtures',
         'FeedParser',
@@ -59,6 +60,7 @@ setup(
         'Markdown',
         'mechanize',
         'meliae',
+        'mock',
         'oauth',
         'oops',
         'oops_amqp',
@@ -71,7 +73,6 @@ setup(
         'psycopg2',
         'python-memcached',
         'pyasn1',
-        'pydkim',
         'pystache',
         'python-openid',
         'pytz',

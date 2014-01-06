@@ -1,11 +1,12 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
-# GNU Affero General Public License version 3 (see the file LICENSE).
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under
+# the GNU Affero General Public License version 3 (see the file
+# LICENSE).
 
 __metaclass__ = type
 __all__ = [
     'BuildFarmJob',
     'BuildFarmJobMixin',
-    'BuildFarmJobOld',
+    'SpecificBuildFarmJobSourceMixin',
     ]
 
 import datetime
@@ -34,77 +35,19 @@ from lp.buildmaster.enums import (
     )
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob,
-    IBuildFarmJobOld,
     IBuildFarmJobSet,
     IBuildFarmJobSource,
     )
+from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )
-
-
-class BuildFarmJobOld:
-    """Some common implementation for IBuildFarmJobOld."""
-
-    implements(IBuildFarmJobOld)
-
-    processor = None
-    virtualized = None
-
-    @staticmethod
-    def preloadBuildFarmJobs(jobs):
-        """Preload the build farm jobs to which the given jobs will delegate.
-
-        """
-        pass
-
-    @classmethod
-    def getByJob(cls, job):
-        """See `IBuildFarmJobOld`."""
-        return IStore(cls).find(cls, cls.job == job).one()
-
-    @classmethod
-    def getByJobs(cls, jobs):
-        """See `IBuildFarmJobOld`."""
-        job_ids = [job.id for job in jobs]
-        return IStore(cls).find(cls, cls.job_id.is_in(job_ids))
-
-    def score(self):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-    def cleanUp(self):
-        """See `IBuildFarmJob`.
-
-        Classes that derive from BuildFarmJobOld need to clean up
-        after themselves correctly.
-        """
-        Store.of(self).remove(self)
-
-    @staticmethod
-    def addCandidateSelectionCriteria(processor, virtualized):
-        """See `IBuildFarmJobOld`."""
-        return ('')
-
-    @staticmethod
-    def postprocessCandidate(job, logger):
-        """See `IBuildFarmJobOld`."""
-        return True
-
-    def jobStarted(self):
-        """See `IBuildFarmJobOld`."""
-        # XXX wgrant: builder should be set here.
-        self.build.updateStatus(BuildStatus.BUILDING)
-
-    def jobReset(self):
-        """See `IBuildFarmJob`."""
-        self.build.updateStatus(BuildStatus.NEEDSBUILD)
-
-    def jobCancel(self):
-        """See `IBuildFarmJob`."""
-        self.build.updateStatus(BuildStatus.CANCELLED)
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 
 
 class BuildFarmJob(Storm):
@@ -170,14 +113,11 @@ class BuildFarmJobMixin:
             return None
         return self.date_finished - self.date_started
 
-    def makeJob(self):
-        """See `IBuildFarmJobOld`."""
-        raise NotImplementedError
-
-    @property
+    @cachedproperty
     def buildqueue_record(self):
         """See `IBuildFarmJob`."""
-        return None
+        return Store.of(self).find(
+            BuildQueue, _build_farm_job_id=self.build_farm_job_id).one()
 
     @property
     def is_private(self):
@@ -247,6 +187,43 @@ class BuildFarmJobMixin:
     def gotFailure(self):
         """See `IBuildFarmJob`."""
         self.failure_count += 1
+
+    def calculateScore(self):
+        """See `IBuildFarmJob`."""
+        raise NotImplementedError
+
+    def estimateDuration(self):
+        """See `IBuildFarmJob`."""
+        raise NotImplementedError
+
+    def queueBuild(self, suspended=False):
+        """See `IBuildFarmJob`."""
+        duration_estimate = self.estimateDuration()
+        queue_entry = BuildQueue(
+            estimated_duration=duration_estimate,
+            build_farm_job=self.build_farm_job,
+            processor=self.processor, virtualized=self.virtualized)
+
+        # This build queue job is to be created in a suspended state.
+        if suspended:
+            queue_entry.suspend()
+
+        Store.of(self).add(queue_entry)
+        del get_property_cache(self).buildqueue_record
+        return queue_entry
+
+
+class SpecificBuildFarmJobSourceMixin:
+
+    @staticmethod
+    def addCandidateSelectionCriteria(processor, virtualized):
+        """See `ISpecificBuildFarmJobSource`."""
+        return ('')
+
+    @staticmethod
+    def postprocessCandidate(job, logger):
+        """See `ISpecificBuildFarmJobSource`."""
+        return True
 
 
 class BuildFarmJobSet:

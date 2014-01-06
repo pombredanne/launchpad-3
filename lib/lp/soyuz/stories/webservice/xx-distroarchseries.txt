@@ -1,4 +1,5 @@
-= Distribution Arch Series =
+Distribution Arch Series
+========================
 
 We can get a distroarchseries object via a distroseries object custom
 operation:
@@ -42,6 +43,7 @@ For a distroarchseries we publish a subset of its attributes.
     official: True
     owner_link: u'http://.../~mark'
     package_count: 1
+    processor_link: u'http://.../+processors/386'
     resource_type_link: u'http://.../#distro_arch_series'
     self_link: u'http://.../ubuntu/hoary/i386'
     supports_virtualized: True
@@ -64,6 +66,7 @@ DistroArchSeries.enabled is published in the API devel version.
     official: True
     owner_link: u'http://.../~mark'
     package_count: 1
+    processor_link: u'http://.../+processors/386'
     resource_type_link: u'http://.../#distro_arch_series'
     self_link: u'http://.../ubuntu/hoary/i386'
     supports_virtualized: True

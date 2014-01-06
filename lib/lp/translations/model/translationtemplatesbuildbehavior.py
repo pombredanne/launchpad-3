@@ -1,7 +1,7 @@
 # Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""An `IBuildFarmJobBehavior` for `TranslationTemplatesBuildJob`.
+"""An `IBuildFarmJobBehavior` for `TranslationTemplatesBuild`.
 
 Dispatches translation template build jobs to build-farm slaves.
 """
@@ -50,7 +50,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
     def getLogFileName(self):
         """See `IBuildFarmJob`."""
         safe_name = re.sub(
-            self.unsafe_chars, '_', self.buildfarmjob.branch.unique_name)
+            self.unsafe_chars, '_', self.build.branch.unique_name)
         return "translationtemplates_%s_%d.txt" % (safe_name, self.build.id)
 
     def dispatchBuildToSlave(self, build_queue_item, logger):
@@ -66,7 +66,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         def got_cache_file(ignored):
             args = {
                 'arch_tag': self._getDistroArchSeries().architecturetag,
-                'branch_url': self.buildfarmjob.branch.composePublicURL(),
+                'branch_url': self.build.branch.composePublicURL(),
                 }
 
             filemap = {}
@@ -88,7 +88,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         logger.info(
             "Starting templates build %s for %s." % (
             self.getBuildCookie(),
-            self.buildfarmjob.branch.bzr_identity))
+            self.build.branch.bzr_identity))
 
     def _readTarball(self, buildqueue, filemap, logger):
         """Read tarball with generated translation templates from slave."""
@@ -133,7 +133,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         logger.info(
             "Processing finished %s build %s (%s) from builder %s" % (
             status, self.getBuildCookie(),
-            queue_item.specific_job.branch.bzr_identity,
+            queue_item.specific_build.branch.bzr_identity,
             queue_item.builder.name))
 
         if status == 'OK':
@@ -161,7 +161,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
                         logger.debug(
                             "Uploading translation templates tarball.")
                         self._uploadTarball(
-                            queue_item.specific_job.branch, tarball, logger)
+                            queue_item.specific_build.branch, tarball, logger)
                         logger.debug("Upload complete.")
                 finally:
                     self.build.updateStatus(BuildStatus.FULLYBUILT)

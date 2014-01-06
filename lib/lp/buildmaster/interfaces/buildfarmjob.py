@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'IBuildFarmJob',
-    'IBuildFarmJobOld',
     'IBuildFarmJobSet',
     'IBuildFarmJobSource',
     'InconsistentBuildFarmJobError',
@@ -44,98 +43,6 @@ class InconsistentBuildFarmJobError(Exception):
     is yet implemented. Or when adapting the BuildFarmJob to a specific
     type of build job (such as a BinaryPackageBuild) fails.
     """
-
-
-class IBuildFarmJobOld(Interface):
-    """Defines the previous non-database BuildFarmJob interface.
-
-    This interface is still used by the temporary build queue related
-    classes (TranslationTemplatesBuildJob, SourcePackageRecipeBuildJob
-    and BuildPackageJob).
-
-    XXX 2010-04-28 michael.nelson bug=567922
-    This class can be removed (merging all the attributes directly into
-    IBuildFarmJob) once all the corresponding *Build classes and the
-    BuildQueue have been transitioned to the new database schema.
-    """
-
-    processor = Reference(
-        IProcessor, title=_("Processor"), required=False, readonly=True,
-        description=_(
-            "The Processor required by this build farm job. "
-            "This should be None for processor-independent job types."))
-
-    virtualized = Bool(
-        title=_('Virtualized'), required=False, readonly=True,
-        description=_(
-            "The virtualization setting required by this build farm job. "
-            "This should be None for job types that do not care whether "
-            "they run virtualized."))
-
-    def score():
-        """Calculate a job score appropriate for the job type in question."""
-
-    def jobStarted():
-        """'Job started' life cycle event, handle as appropriate."""
-
-    def jobReset():
-        """'Job reset' life cycle event, handle as appropriate."""
-
-    def jobCancel():
-        """'Job cancel' life cycle event."""
-
-    def addCandidateSelectionCriteria(processor, virtualized):
-        """Provide a sub-query to refine the candidate job selection.
-
-        Return a sub-query to narrow down the list of candidate jobs.
-        The sub-query will become part of an "outer query" and is free to
-        refer to the `BuildQueue` and `Job` tables already utilized in the
-        latter.
-
-        Example (please see the `BuildPackageJob` implementation for a
-        complete example):
-
-            SELECT TRUE
-            FROM Archive, Build, BuildPackageJob, DistroArchSeries
-            WHERE
-            BuildPackageJob.job = Job.id AND
-            ..
-
-        :param processor: the type of processor that the candidate jobs are
-            expected to run on.
-        :param virtualized: whether the candidate jobs are expected to run on
-            the `processor` natively or inside a virtual machine.
-        :return: a string containing a sub-query that narrows down the list of
-            candidate jobs.
-        """
-
-    def postprocessCandidate(job, logger):
-        """True if the candidate job is fine and should be dispatched
-        to a builder, False otherwise.
-
-        :param job: The `BuildQueue` instance to be scrutinized.
-        :param logger: The logger to use.
-
-        :return: True if the candidate job should be dispatched
-            to a builder, False otherwise.
-        """
-
-    def getByJob(job):
-        """Get the specific `IBuildFarmJob` for the given `Job`.
-
-        Invoked on the specific `IBuildFarmJob`-implementing class that
-        has an entry associated with `job`.
-        """
-
-    def getByJobs(jobs):
-        """Get the specific `IBuildFarmJob`s for the given `Job`s.
-
-        Invoked on the specific `IBuildFarmJob`-implementing class that
-        has entries associated with `job`s.
-        """
-
-    def cleanUp():
-        """Job's finished.  Delete its supporting data."""
 
 
 class IBuildFarmJobDB(Interface):
@@ -261,15 +168,6 @@ class IBuildFarmJob(Interface):
         default=0,
         description=_("Number of consecutive failures for this job."))
 
-    def makeJob():
-        """Create the specific job relating this with an lp.services.job.
-
-        XXX 2010-04-26 michael.nelson bug=567922
-        Once all *Build classes are using BuildFarmJob we can lose the
-        'specific_job' attributes and simply have a reference to the
-        services job directly on the BuildFarmJob.
-        """
-
     def setLog(log):
         """Set the `LibraryFileAlias` that contains the job log."""
 
@@ -285,6 +183,19 @@ class IBuildFarmJob(Interface):
 
     def gotFailure():
         """Increment the failure_count for this job."""
+
+    def calculateScore():
+        """Calculate the build queue priority for this job."""
+
+    def estimateDuration():
+        """Estimate the build duration."""
+
+    def queueBuild(suspended=False):
+        """Create a BuildQueue entry for this build.
+
+        :param suspended: Whether the associated `Job` instance should be
+            created in a suspended state.
+        """
 
     title = exported(TextLine(title=_("Title"), required=False),
                      as_of="beta")
@@ -326,6 +237,33 @@ class ISpecificBuildFarmJobSource(Interface):
 
         :param build_farm_job: A BuildFarmJob for which to get the concrete
             job.
+        """
+
+    def addCandidateSelectionCriteria(processor, virtualized):
+        """Provide a sub-query to refine the candidate job selection.
+
+        Return a sub-query to narrow down the list of candidate jobs.
+        The sub-query will become part of an "outer query" and is free to
+        refer to the `BuildQueue` and `BuildFarmJob` tables already utilized
+        in the latter.
+
+        :param processor: the type of processor that the candidate jobs are
+            expected to run on.
+        :param virtualized: whether the candidate jobs are expected to run on
+            the `processor` natively or inside a virtual machine.
+        :return: a string containing a sub-query that narrows down the list of
+            candidate jobs.
+        """
+
+    def postprocessCandidate(job, logger):
+        """True if the candidate job is fine and should be dispatched
+        to a builder, False otherwise.
+
+        :param job: The `BuildQueue` instance to be scrutinized.
+        :param logger: The logger to use.
+
+        :return: True if the candidate job should be dispatched
+            to a builder, False otherwise.
         """
 
 

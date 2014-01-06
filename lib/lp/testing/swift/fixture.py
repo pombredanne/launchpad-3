@@ -10,6 +10,7 @@ import os.path
 import shutil
 import socket
 import tempfile
+from textwrap import dedent
 import time
 
 from fixtures import FunctionFixture
@@ -20,6 +21,7 @@ import testtools.content_type
 from txfixtures.tachandler import TacTestFixture
 
 from lp.services.config import config
+from lp.testing.layers import BaseLayer
 
 
 class SwiftFixture(TacTestFixture):
@@ -48,13 +50,24 @@ class SwiftFixture(TacTestFixture):
             os.path.join(config.root, 'bin', 'py'),
             os.path.join(config.root, 'bin', 'twistd'))
 
-    def cleanUp(self):
-        if self.logfile is not None and os.path.exists(self.logfile):
-            self.addDetail(
-                'log-file', testtools.content.content_from_stream(
-                    open(self.logfile, 'r'), testtools.content_type.UTF8_TEXT))
-            os.unlink(self.logfile)
-        super(SwiftFixture, self).cleanUp()
+        logfile = self.logfile
+        self.addCleanup(lambda: os.path.exists(logfile) and os.unlink(logfile))
+
+        testtools.content.attach_file(
+            self, logfile, 'swift-log', testtools.content_type.UTF8_TEXT)
+
+        service_config = dedent("""\
+                [librarian_server]
+                os_auth_url: http://localhost:{0}/keystone/v2.0/
+                os_username: {1}
+                os_password: {2}
+                os_tenant_name: {3}
+                """.format(
+                    self.daemon_port, hollow.DEFAULT_USERNAME,
+                    hollow.DEFAULT_PASSWORD, hollow.DEFAULT_TENANT_NAME))
+        BaseLayer.config_fixture.add_section(service_config)
+        config.reloadConfig()
+        assert config.librarian_server.os_tenant_name == 'test'
 
     def setUpRoot(self):
         # Create a root directory.
@@ -69,15 +82,14 @@ class SwiftFixture(TacTestFixture):
         os.environ['HOLLOW_ROOT'] = self.root
         os.environ['HOLLOW_PORT'] = str(self.daemon_port)
 
-    def connect(
-        self, tenant_name=hollow.DEFAULT_TENANT_NAME,
-        username=hollow.DEFAULT_USERNAME, password=hollow.DEFAULT_PASSWORD):
+    def connect(self):
         """Return a valid connection to our mock Swift"""
-        port = self.daemon_port
         client = swiftclient.Connection(
-            authurl="http://localhost:%d/keystone/v2.0/" % port,
-            auth_version="2.0", tenant_name=tenant_name,
-            user=username, key=password,
+            authurl=config.librarian_server.os_auth_url,
+            auth_version="2.0",
+            tenant_name=config.librarian_server.os_tenant_name,
+            user=config.librarian_server.os_username,
+            key=config.librarian_server.os_password,
             retries=0, insecure=True)
         return client
 
@@ -85,6 +97,6 @@ class SwiftFixture(TacTestFixture):
         self.setUp()
 
     def shutdown(self):
-        self.cleanUp()
+        self.killTac()
         while self._hasDaemonStarted():
             time.sleep(0.1)

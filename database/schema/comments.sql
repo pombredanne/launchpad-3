@@ -1511,11 +1511,6 @@ COMMENT ON COLUMN SourcePackageRecipeBuild.requester IS 'Who requested the build
 COMMENT ON COLUMN SourcePackageRecipeBuild.recipe IS 'The recipe being processed.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.manifest IS 'The evaluated recipe that was built.';
 
--- SourcePackageRecipeBuildJob
-
-COMMENT ON TABLE SourcePackageRecipeBuildJob IS 'The link between a SourcePackageRecipeBuild row and a Job row to schedule a build of a source package recipe.';
-COMMENT ON COLUMN SourcePackageRecipeBuildJob.sourcepackage_recipe_build IS 'The build record describing the package being built.';
-
 -- Specification
 
 COMMENT ON TABLE Specification IS 'A feature specification. At the moment we do not store the actual specification, we store a URL for the spec, which is managed in a wiki somewhere else. We store the overall state of the spec, as well as queueing information about who needs to review the spec, and why.';
@@ -1747,8 +1742,6 @@ COMMENT ON COLUMN BuildQueue.builder IS 'The builder assigned to this build. Som
 COMMENT ON COLUMN BuildQueue.logtail IS 'The tail end of the log of the current build. This is updated regularly as the buildd master polls the buildd slaves. Once the build is complete; the full log will be lodged with the librarian and linked into the build table.';
 COMMENT ON COLUMN BuildQueue.lastscore IS 'The last score ascribed to this build record. This can be used in the UI among other places.';
 COMMENT ON COLUMN BuildQueue.manual IS 'Indicates if the current record was or not rescored manually, if so it get skipped from the auto-score procedure.';
-COMMENT ON COLUMN BuildQueue.job IS 'Foreign key to the `Job` table row with the generic job data.';
-COMMENT ON COLUMN BuildQueue.job_type IS 'Type of job (enumeration value), enables us to find/query the correct table with the data specific to this type of job.';
 COMMENT ON COLUMN BuildQueue.estimated_duration IS 'Estimated job duration, based on previous running times of comparable jobs.';
 COMMENT ON COLUMN BuildQueue.processor IS 'The processor required by the associated build farm job.';
 COMMENT ON COLUMN BuildQueue.virtualized IS 'The virtualization setting required by the associated build farm job.';

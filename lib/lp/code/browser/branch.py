@@ -1009,6 +1009,8 @@ class BranchDeletionView(LaunchpadFormView):
     def page_title(self):
         return smartquote('Delete branch "%s"' % self.context.displayname)
 
+    label = page_title
+
     @cachedproperty
     def display_deletion_requirements(self):
         """Normal deletion requirements, indication of permissions.

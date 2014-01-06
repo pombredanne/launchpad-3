@@ -11,7 +11,6 @@ import pytz
 from testtools.deferredruntest import AsynchronousDeferredRunTest
 from twisted.internet import defer
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
@@ -20,13 +19,11 @@ from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior,
     )
-from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import (
     SlaveTestHelpers,
     WaitingSlave,
     )
 from lp.services.config import config
-from lp.services.database.interfaces import IStore
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.utils import copy_and_close
 from lp.testing import TestCaseWithFactory
@@ -51,7 +48,7 @@ class FakeBuildQueue:
         Copies its builder from the behavior object.
         """
         self.builder = behavior._builder
-        self.specific_job = behavior.buildfarmjob
+        self.specific_build = behavior.build
         self.date_started = datetime.datetime.now(pytz.UTC)
         self.destroySelf = FakeMethod()
 
@@ -65,9 +62,8 @@ class MakeBehaviorMixin(object):
         Anything that might communicate with build slaves and such
         (which we can't really do here) is mocked up.
         """
-        specific_job = self.factory.makeTranslationTemplatesBuildJob(
-            branch=branch)
-        behavior = IBuildFarmJobBehavior(specific_job)
+        build = self.factory.makeTranslationTemplatesBuild(branch=branch)
+        behavior = IBuildFarmJobBehavior(build)
         slave = WaitingSlave(**kwargs)
         behavior.setBuilder(self.factory.makeBuilder(), slave)
         if use_fake_chroot:
@@ -97,11 +93,6 @@ class TestTranslationTemplatesBuildBehavior(
         super(TestTranslationTemplatesBuildBehavior, self).setUp()
         self.slave_helper = self.useFixture(SlaveTestHelpers())
 
-    def _getBuildQueueItem(self, behavior):
-        """Get `BuildQueue` for an `IBuildFarmJobBehavior`."""
-        job = removeSecurityProxy(behavior.buildfarmjob.job)
-        return IStore(BuildQueue).find(BuildQueue, job=job).one()
-
     def test_getLogFileName(self):
         # Each job has a unique log file name.
         b1 = self.makeBehavior()
@@ -111,11 +102,9 @@ class TestTranslationTemplatesBuildBehavior(
     def test_dispatchBuildToSlave_no_chroot_fails(self):
         # dispatchBuildToSlave will fail if the chroot does not exist.
         behavior = self.makeBehavior(use_fake_chroot=False)
-        buildqueue_item = self._getBuildQueueItem(behavior)
-
         switch_dbuser(config.builddmaster.dbuser)
         self.assertRaises(
-            CannotBuild, behavior.dispatchBuildToSlave, buildqueue_item,
+            CannotBuild, behavior.dispatchBuildToSlave, None,
             logging)
 
     def test_dispatchBuildToSlave(self):
@@ -123,10 +112,8 @@ class TestTranslationTemplatesBuildBehavior(
         # method to be invoked.  The slave receives the URL of the
         # branch it should build from.
         behavior = self.makeBehavior()
-        buildqueue_item = self._getBuildQueueItem(behavior)
-
         switch_dbuser(config.builddmaster.dbuser)
-        d = behavior.dispatchBuildToSlave(buildqueue_item, logging)
+        d = behavior.dispatchBuildToSlave(FakeBuildQueue(behavior), logging)
 
         def got_dispatch((status, info)):
             # call_log lives on the mock WaitingSlave and tells us what
@@ -140,7 +127,7 @@ class TestTranslationTemplatesBuildBehavior(
             # The slave receives the public http URL for the branch.
             self.assertEqual(
                 branch_url,
-                behavior.buildfarmjob.branch.composePublicURL())
+                behavior.build.branch.composePublicURL())
         return d.addCallback(got_dispatch)
 
     def test_getChroot(self):

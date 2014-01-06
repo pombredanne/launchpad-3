@@ -39,12 +39,8 @@ attribute:
     >>> build.status.name
     'BUILDING'
 
-The static timestamps, representing when the record was initialized
-(inserted) and when the job was dispatched are provided as datetime
+The timestamp of when the job was dispatched is provided as datetime
 instances:
-
-    >>> bq.job.date_created
-    datetime.datetime(2005, 6, 15, 9, 14, 12, 820778, tzinfo=<UTC>)
 
     >>> bq.date_started
     datetime.datetime(2005, 6, 15, 9, 20, 12, 820778, tzinfo=<UTC>)
@@ -125,6 +121,8 @@ to another build. The score value of the job is preserved.
     >>> print bob.currentjob
     None
 
+    >>> print job.status.name
+    WAITING
     >>> print job.builder
     None
     >>> print job.date_started

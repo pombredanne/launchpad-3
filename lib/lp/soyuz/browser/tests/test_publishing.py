@@ -57,7 +57,8 @@ class TestSourcePublicationListingExtra(BrowserTestCase):
             self.publisher.prepareBreezyAutotest()
             self.distroseries.nominatedarchindep = self.das
             self.publisher.addFakeChroots(distroseries=self.distroseries)
-            self.builder = self.factory.makeBuilder(processor=self.processor)
+            self.builder = self.factory.makeBuilder(
+                processors=[self.processor])
 
     def test_view_with_source_package_recipe(self):
         # When a SourcePackageRelease is linked to a

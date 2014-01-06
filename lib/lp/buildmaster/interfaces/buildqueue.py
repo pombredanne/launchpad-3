@@ -25,10 +25,9 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.buildmaster.enums import BuildFarmJobType
+from lp.buildmaster.enums import BuildQueueStatus
 from lp.buildmaster.interfaces.builder import IBuilder
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
-from lp.services.job.interfaces.job import IJob
 from lp.soyuz.interfaces.processor import IProcessor
 
 
@@ -63,13 +62,9 @@ class IBuildQueue(Interface):
         description=_(
             "The virtualization setting required by this build farm job."))
 
-    job = Reference(
-        IJob, title=_("Job"), required=True, readonly=True,
-        description=_("Data common to all job types."))
-
-    job_type = Choice(
-        title=_('Job type'), required=True, vocabulary=BuildFarmJobType,
-        description=_("The type of this job."))
+    status = Choice(
+        title=_("Status"), vocabulary=BuildQueueStatus, readonly=True,
+        description=_("The status of this build queue item."))
 
     estimated_duration = Timedelta(
         title=_("Estimated Job Duration"), required=True,
@@ -91,15 +86,28 @@ class IBuildQueue(Interface):
     def markAsBuilding(builder):
         """Set this queue item to a 'building' state."""
 
+    def suspend():
+        """Suspend this waiting job, removing it from the active queue."""
+
+    def resume():
+        """Resume this suspended job, adding it to the active queue."""
+
     def reset():
         """Reset this job, so it can be re-dispatched."""
 
     def cancel():
         """Cancel this job, it will not be re-dispatched."""
 
-    specific_job = Reference(
-        IBuildFarmJob, title=_("Job"),
-        description=_("Data and operations common to all build farm jobs."))
+    def markAsCancelled():
+        """Mark this job's cancellation as completed.
+
+        Only buildd-manager and cancel() should call this directly.
+        Everyone else wants to use cancel().
+        """
+
+    specific_build = Reference(
+        IBuildFarmJob, title=_("Build farm job"),
+        description=_("Concrete build farm job object."))
 
     date_started = Datetime(
         title=_('Start time'),
@@ -127,3 +135,6 @@ class IBuildQueueSet(Interface):
         Retrieve the only one possible entry being processed for a given
         builder. If not found, return None.
         """
+
+    def preloadForBuildFarmJobs(builds):
+        """Preload buildqueue_record for the given IBuildFarmJobs."""

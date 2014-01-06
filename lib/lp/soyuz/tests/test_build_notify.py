@@ -54,7 +54,8 @@ class TestBuildNotify(TestCaseWithFactory):
             self.publisher.prepareBreezyAutotest()
             self.distroseries.nominatedarchindep = self.das
             self.publisher.addFakeChroots(distroseries=self.distroseries)
-            self.builder = self.factory.makeBuilder(processor=self.processor)
+            self.builder = self.factory.makeBuilder(
+                processors=[self.processor])
             for member in buildd_admins.activemembers:
                 self.buildd_admins_email.append(member.preferredemail.email)
         self.builds = []

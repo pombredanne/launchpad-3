@@ -38,7 +38,6 @@ __all__ = [
     'LibrarianLayer',
     'PageTestLayer',
     'RabbitMQLayer',
-    'SwiftLayer',
     'TwistedAppServerLayer',
     'TwistedLaunchpadZopelessLayer',
     'TwistedLayer',
@@ -148,7 +147,6 @@ from lp.testing import (
     reset_logging,
     )
 from lp.testing.pgsql import PgTestSetup
-from lp.testing.swift.fixture import SwiftFixture
 from lp.testing.smtpd import SMTPController
 
 
@@ -822,22 +820,6 @@ class DatabaseLayer(BaseLayer):
     @profiled
     def _dropDb(cls):
         return cls._db_fixture.dropDb()
-
-
-class SwiftLayer(BaseLayer):
-    @classmethod
-    @profiled
-    def setUp(cls):
-        cls.swift_fixture = SwiftFixture()
-        cls.swift_fixture.setUp()
-
-    @classmethod
-    @profiled
-    def tearDown(cls):
-        swift = cls.swift_fixture
-        if swift is not None:
-            cls.swift_fixture = None
-            swift.cleanUp()
 
 
 class LibrarianLayer(DatabaseLayer):
