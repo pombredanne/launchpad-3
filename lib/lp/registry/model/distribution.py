@@ -10,6 +10,7 @@ __all__ = [
     ]
 
 import itertools
+from operator import itemgetter
 
 from sqlobject import (
     BoolCol,
@@ -658,34 +659,20 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 OfficialSeries,
                 OfficialSeries.id == SeriesSourcePackageBranch.distroseriesID),
         ).find(
-            # XXX cprov 20140106: Storm query specs with LeftJoin does not
-            # allow loading only specific fields ('Branch.unique_name',
-            # 'Branch.last_scanned_id', 'OfficialSeries.name') which could
-            # the load on DB.
-            (Branch, OfficialSeries),
+            (Branch.unique_name, Branch.last_scanned_id, OfficialSeries.name),
             And(*clauses)
         ).order_by(
             Branch.unique_name,
             Branch.last_scanned_id
         )
 
-        # Group/filter helpers.
-        def get_branch_key(item):
-            (branch, series) = item
-            return (branch.unique_name, branch.last_scanned_id)
-
-        def get_series_name(item):
-            (branch, series) = item
-            if series:
-                return series.name
-
         # Group on location (unique_name) and revision (last_scanned_id).
         result = []
-        for key, group in itertools.groupby(branches, get_branch_key):
+        for key, group in itertools.groupby(branches, itemgetter(0, 1)):
             result.append(list(key))
             # Pull out all the official series names and append them as a list
             # to the end of the current record.
-            result[-1].append(filter(None, map(get_series_name, group)))
+            result[-1].append(filter(None, map(itemgetter(2), group)))
 
         return result
 

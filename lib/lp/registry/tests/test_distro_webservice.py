@@ -208,13 +208,3 @@ class TestGetBranchTipsSecurity(TestCaseWithFactory):
             CodeReviewNotificationLevel.NOEMAIL,
             team)
         self.assertVisible(distro, branch, person)
-
-    def test_admin_visible(self):
-        # All private branches are visible to members of the Launchpad
-        # admin team.
-        person = self.factory.makePerson()
-        admin_team = removeSecurityProxy(
-            getUtility(ILaunchpadCelebrities).admin)
-        admin_team.addMember(person, admin_team.teamowner)
-        branch, distro = self.makeBranch()
-        self.assertVisible(distro, branch, person)
