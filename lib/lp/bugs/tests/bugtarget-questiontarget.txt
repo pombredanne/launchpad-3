@@ -120,6 +120,7 @@ Once converted to a question, the bugtask status is Invalid.
 Subscribers to the bug are notified that the bug was made into a
 question and that the bugtasks are Invalid.
 
+    >>> bug.clearBugNotificationRecipientsCache()
     >>> recipients = bug.getBugNotificationRecipients()
     >>> 'no-priv@canonical.com' in recipients.getEmails()
     True

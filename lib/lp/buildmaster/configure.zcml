@@ -1,4 +1,4 @@
-<!-- Copyright 2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -17,8 +17,6 @@
         class="lp.buildmaster.model.builder.Builder">
         <allow
             interface="lp.buildmaster.interfaces.builder.IBuilder"/>
-        <allow
-            interface="lp.soyuz.interfaces.buildrecords.IHasBuildRecords"/>
         <require
             permission="launchpad.Edit"
             set_schema="lp.buildmaster.interfaces.builder.IBuilder"/>
@@ -40,7 +38,7 @@
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.buildmaster.interfaces.builder.IBuilderSet"
-        factory="lp.soyuz.browser.builder.BuilderSetBreadcrumb"
+        factory="lp.buildmaster.browser.builder.BuilderSetBreadcrumb"
         permission="zope.Public"/>
 
 

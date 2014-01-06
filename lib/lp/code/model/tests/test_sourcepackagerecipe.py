@@ -23,7 +23,10 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildQueueStatus,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.errors import (
@@ -40,26 +43,18 @@ from lp.code.interfaces.sourcepackagerecipe import (
     )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
-    ISourcePackageRecipeBuildJob,
     )
 from lp.code.model.sourcepackagerecipe import (
     NonPPABuildRequest,
     SourcePackageRecipe,
     )
-from lp.code.model.sourcepackagerecipebuild import (
-    SourcePackageRecipeBuild,
-    SourcePackageRecipeBuildJob,
-    )
+from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.code.tests.helpers import recipe_parser_newest_version
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.bulk import load_referencing
 from lp.services.database.constants import UTC_NOW
-from lp.services.job.interfaces.job import (
-    IJob,
-    JobStatus,
-    )
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.publisher import canonical_url
@@ -337,18 +332,16 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertEqual(build.archive, ppa)
         self.assertEqual(build.distroseries, distroseries)
         self.assertEqual(build.requester, ppa.owner)
+        self.assertTrue(build.virtualized)
         store = Store.of(build)
         store.flush()
-        build_job = store.find(SourcePackageRecipeBuildJob,
-                SourcePackageRecipeBuildJob.build_id == build.id).one()
-        self.assertProvides(build_job, ISourcePackageRecipeBuildJob)
-        self.assertTrue(build_job.virtualized)
-        job = build_job.job
-        self.assertProvides(job, IJob)
-        self.assertEquals(job.status, JobStatus.WAITING)
-        build_queue = store.find(BuildQueue, BuildQueue.job == job.id).one()
+        build_queue = store.find(
+            BuildQueue,
+            BuildQueue._build_farm_job_id ==
+                removeSecurityProxy(build).build_farm_job_id).one()
         self.assertProvides(build_queue, IBuildQueue)
         self.assertTrue(build_queue.virtualized)
+        self.assertEquals(build_queue.status, BuildQueueStatus.WAITING)
 
     def test_requestBuildRejectsNotPPA(self):
         recipe = self.factory.makeSourcePackageRecipe()
@@ -556,12 +549,10 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe = self.factory.makeSourcePackageRecipe(branches=branches)
         pending_build = self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe)
-        self.factory.makeSourcePackageRecipeBuildJob(
-            recipe_build=pending_build)
+        pending_build.queueBuild()
         past_build = self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe)
-        self.factory.makeSourcePackageRecipeBuildJob(
-            recipe_build=past_build)
+        past_build.queueBuild()
         removeSecurityProxy(past_build).datebuilt = datetime.now(UTC)
         with person_logged_in(recipe.owner):
             recipe.destroySelf()

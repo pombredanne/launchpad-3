@@ -418,7 +418,7 @@ class PackageUpload(SQLBase):
         # Do any of the files to be uploaded already exist in the destination
         # archive?
         if len(known_filenames) > 0:
-            filename_list = "\n\t%s".join(
+            filename_list = "\n\t".join(
                 [filename for filename in known_filenames])
             raise QueueInconsistentStateError(
                 'The following files are already published in %s:\n%s' % (

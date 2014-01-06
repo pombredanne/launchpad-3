@@ -235,7 +235,6 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
         spec.updateWorkItems([new_work_item])
         # For API requests, lazr.restful does the notify() call, for this test
         # we need to call ourselves.
-        transaction.commit()
         notify(ObjectModifiedEvent(
             spec, old_spec, edited_fields=['workitems_text']))
         transaction.commit()

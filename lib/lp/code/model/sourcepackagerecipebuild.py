@@ -42,9 +42,8 @@ from lp.buildmaster.enums import (
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.model.buildfarmjob import (
     BuildFarmJob,
-    BuildFarmJobOld,
+    SpecificBuildFarmJobSourceMixin,
     )
-from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.packagebuild import PackageBuildMixin
 from lp.code.errors import (
     BuildAlreadyPending,
@@ -52,8 +51,6 @@ from lp.code.errors import (
     )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
-    ISourcePackageRecipeBuildJob,
-    ISourcePackageRecipeBuildJobSource,
     ISourcePackageRecipeBuildSource,
     )
 from lp.code.mail.sourcepackagerecipebuild import (
@@ -70,7 +67,6 @@ from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )
-from lp.services.job.model.job import Job
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.soyuz.interfaces.archive import CannotUploadToArchive
 from lp.soyuz.model.archive import Archive
@@ -78,7 +74,8 @@ from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
-class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
+class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
+                               PackageBuildMixin, Storm):
 
     __storm_table__ = 'SourcePackageRecipeBuild'
 
@@ -178,16 +175,6 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
         return str(self.manifest.getRecipe())
 
     @property
-    def buildqueue_record(self):
-        """See `IBuildFarmJob`."""
-        store = Store.of(self)
-        results = store.find(
-            BuildQueue,
-            SourcePackageRecipeBuildJob.job == BuildQueue.jobID,
-            SourcePackageRecipeBuildJob.build == self.id)
-        return results.one()
-
-    @property
     def source_package_release(self):
         """See `ISourcePackageRecipeBuild`."""
         return Store.of(self).find(
@@ -204,6 +191,7 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
     def __init__(self, build_farm_job, distroseries, recipe, requester,
                  archive, pocket, date_created):
         """Construct a SourcePackageRecipeBuild."""
+        processor = distroseries.nominatedarchindep.processor
         super(SourcePackageRecipeBuild, self).__init__()
         self.build_farm_job = build_farm_job
         self.distroseries = distroseries
@@ -212,6 +200,7 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
         self.archive = archive
         self.pocket = pocket
         self.status = BuildStatus.NEEDSBUILD
+        self.processor = processor
         self.virtualized = True
         if date_created is not None:
             self.date_created = date_created
@@ -275,24 +264,15 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
                     builds.append(build)
         return builds
 
-    def _unqueueBuild(self):
-        """Remove the build's queue and job."""
-        store = Store.of(self)
-        if self.buildqueue_record is not None:
-            job = self.buildqueue_record.job
-            store.remove(self.buildqueue_record)
-            store.find(
-                SourcePackageRecipeBuildJob,
-                SourcePackageRecipeBuildJob.build == self.id).remove()
-            store.remove(job)
-
     def cancelBuild(self):
         """See `ISourcePackageRecipeBuild.`"""
-        self._unqueueBuild()
         self.updateStatus(BuildStatus.SUPERSEDED)
+        if self.buildqueue_record is not None:
+            self.buildqueue_record.destroySelf()
 
     def destroySelf(self):
-        self._unqueueBuild()
+        if self.buildqueue_record is not None:
+            self.buildqueue_record.destroySelf()
         store = Store.of(self)
         releases = store.find(
             SourcePackageRelease,
@@ -301,6 +281,9 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
             release.source_package_recipe_build = None
         store.remove(self)
         store.remove(self.build_farm_job)
+
+    def calculateScore(self):
+        return 2505 + self.archive.relative_build_score
 
     @classmethod
     def getByID(cls, build_id):
@@ -344,15 +327,6 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
         return store.find(cls, cls.distroseries_id == distroseries.id,
             cls.requester_id == requester.id, cls.recipe_id == recipe.id,
             cls.date_created > old_threshold)
-
-    def makeJob(self):
-        """See `ISourcePackageRecipeBuildJob`."""
-        store = Store.of(self)
-        job = Job()
-        store.add(job)
-        specific_job = getUtility(
-            ISourcePackageRecipeBuildJobSource).new(self, job)
-        return specific_job
 
     def estimateDuration(self):
         """See `IPackageBuild`."""
@@ -414,62 +388,3 @@ class SourcePackageRecipeBuild(PackageBuildMixin, Storm):
     def getUploader(self, changes):
         """See `IPackageBuild`."""
         return self.requester
-
-
-class SourcePackageRecipeBuildJob(BuildFarmJobOld, Storm):
-    classProvides(ISourcePackageRecipeBuildJobSource)
-    implements(ISourcePackageRecipeBuildJob)
-
-    __storm_table__ = 'sourcepackagerecipebuildjob'
-
-    id = Int(primary=True)
-
-    job_id = Int(name='job', allow_none=False)
-    job = Reference(job_id, 'Job.id')
-
-    build_id = Int(name='sourcepackage_recipe_build', allow_none=False)
-    build = Reference(
-        build_id, 'SourcePackageRecipeBuild.id')
-
-    @property
-    def processor(self):
-        return self.build.distroseries.nominatedarchindep.processor
-
-    @property
-    def virtualized(self):
-        """See `IBuildFarmJob`."""
-        return self.build.is_virtualized
-
-    def __init__(self, build, job):
-        self.build = build
-        self.job = job
-        super(SourcePackageRecipeBuildJob, self).__init__()
-
-    @staticmethod
-    def preloadBuildFarmJobs(jobs):
-        from lp.code.model.sourcepackagerecipebuild import (
-            SourcePackageRecipeBuild,
-            )
-        return list(IStore(SourcePackageRecipeBuildJob).find(
-            SourcePackageRecipeBuild,
-            [SourcePackageRecipeBuildJob.job_id.is_in([j.id for j in jobs]),
-             SourcePackageRecipeBuildJob.build_id ==
-                 SourcePackageRecipeBuild.id]))
-
-    @classmethod
-    def preloadJobsData(cls, jobs):
-        load_related(Job, jobs, ['job_id'])
-        builds = load_related(
-            SourcePackageRecipeBuild, jobs, ['build_id'])
-        SourcePackageRecipeBuild.preloadBuildsData(builds)
-
-    @classmethod
-    def new(cls, build, job):
-        """See `ISourcePackageRecipeBuildJobSource`."""
-        specific_job = cls(build, job)
-        store = IMasterStore(cls)
-        store.add(specific_job)
-        return specific_job
-
-    def score(self):
-        return 2505 + self.build.archive.relative_build_score
