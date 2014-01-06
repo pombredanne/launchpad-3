@@ -6,6 +6,8 @@
 __metaclass__ = type
 
 from cStringIO import StringIO
+import hashlib
+import json
 import os.path
 import time
 
@@ -229,11 +231,10 @@ class TestFeedSwift(TestCase):
         # instead we examine it directly in Swift as best we can.
         swift_client = self.swift_fixture.connect()
 
-        # The manifest exists. Unfortunately, we can't test that the
-        # magic manifest header is set correctly.
+        # The JSON manifest exists.
         container, name = swift.swift_location(lfc.id)
         headers, obj = swift_client.get_object(container, name)
-        self.assertEqual(obj, '')
+        manifest = json.loads(obj)
 
         # The segments we expect are all in their expected locations.
         _, obj1 = swift_client.get_object(container, '{0}/0000'.format(name))
@@ -245,3 +246,18 @@ class TestFeedSwift(TestCase):
 
         # Our object round tripped
         self.assertEqual(obj1 + obj2 + obj3, expected_content)
+
+        # And the checksums, sizes and paths in the manifest are
+        # correct.
+        self.assertEqual(hashlib.md5(obj1).hexdigest(), manifest[0]['etag'])
+        self.assertEqual(hashlib.md5(obj2).hexdigest(), manifest[1]['etag'])
+        self.assertEqual(hashlib.md5(obj3).hexdigest(), manifest[2]['etag'])
+        self.assertEqual(len(obj1), manifest[0]['size_bytes'])
+        self.assertEqual(len(obj2), manifest[1]['size_bytes'])
+        self.assertEqual(len(obj3), manifest[2]['size_bytes'])
+        self.assertEqual(
+            manifest[0]['path'], '{0}/{1}/0000'.format(container, name))
+        self.assertEqual(
+            manifest[1]['path'], '{0}/{1}/0001'.format(container, name))
+        self.assertEqual(
+            manifest[2]['path'], '{0}/{1}/0002'.format(container, name))

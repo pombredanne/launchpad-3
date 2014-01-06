@@ -11,11 +11,11 @@ __all__ = [
 
 from contextlib import contextmanager
 import hashlib
+import json
 import os.path
 import re
 import sys
 import time
-import urllib
 
 from swiftclient import client as swiftclient
 
@@ -124,8 +124,7 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
                 log.debug(
                     "{0} already exists in Swift({1}, {2})".format(
                         lfc, container, obj_name))
-                if ('X-Object-Manifest' not in headers and
-                        int(headers['content-length'])
+                if (int(headers['content-length'])
                         != os.path.getsize(fs_path)):
                     raise AssertionError(
                         '{0} has incorrect size in Swift'.format(lfc))
@@ -164,6 +163,7 @@ def _put(log, swift_connection, lfc_id, container, obj_name, fs_path):
         # manifest. This order prevents partial downloads, and lets us
         # detect interrupted uploads and clean up.
         segment = 0
+        manifest = []  # Manifest structure for the Static Large Object.
         while fs_file.tell() < fs_size:
             assert segment <= 9999, 'Insane number of segments'
             seg_name = '%s/%04d' % (obj_name, segment)
@@ -171,10 +171,14 @@ def _put(log, swift_connection, lfc_id, container, obj_name, fs_path):
             md5_stream = HashStream(fs_file)
             swift_md5_hash = swift_connection.put_object(
                 container, seg_name, md5_stream, seg_size)
-            segment_md5_hash = md5_stream.hash.hexdigest()
-            assert swift_md5_hash == segment_md5_hash, (
+            seg_md5_hash = md5_stream.hash.hexdigest()
+            seg_size = md5_stream.size  # The actual size uploaded.
+            assert swift_md5_hash == seg_md5_hash, (
                 "LibraryFileContent({0}) segment {1} upload corrupted".format(
                     lfc_id, segment))
+            manifest.append(dict(
+                path='{0}/{1}'.format(container, seg_name),
+                etag=seg_md5_hash, size_bytes=seg_size))
             segment = segment + 1
 
         disk_md5_hash = fs_file.hash.hexdigest()
@@ -187,11 +191,14 @@ def _put(log, swift_connection, lfc_id, container, obj_name, fs_path):
                     lfc_id, disk_md5_hash, db_md5_hash))
             raise AssertionError('md5 mismatch')
 
-        manifest = '{0}/{1}/'.format(
-            urllib.quote(container), urllib.quote(obj_name))
-        manifest_headers = {'X-Object-Manifest': manifest}
+        # Create the manifest for the Static Large Object.
+        # This will fail if any of the sizes or md5 checksums mismatch,
+        # although this should be impossible since we have already
+        # checked the returned md5 checksums.
+        manifest = json.dumps(manifest)
         swift_connection.put_object(
-            container, obj_name, '', 0, headers=manifest_headers)
+            container, obj_name, manifest,
+            len(manifest), query_string='multipart-manifest=put')
 
 
 def swift_location(lfc_id):
@@ -283,14 +290,16 @@ class SwiftStream:
 
 
 class HashStream:
-    """Read a file while calculating a checksum as we go."""
+    """Read a file while calculating a checksum and size as we go."""
     def __init__(self, stream, hash_factory=hashlib.md5):
         self._stream = stream
         self.hash = hash_factory()
+        self.size = 0
 
     def read(self, size=-1):
         chunk = self._stream.read(size)
         self.hash.update(chunk)
+        self.size += len(chunk)
         return chunk
 
     def tell(self):
