@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # Twisted Application Configuration file.
@@ -6,6 +6,15 @@
 
 import os
 import signal
+
+# Turn off the http_proxy environment variable if it is set. We
+# don't need it, but we do need to contact Keystone & Swift directly.
+# We could use no_proxy, but this requires keeping it in sync with
+# reality on dev, staging & production servers.
+if 'http_proxy' in os.environ:
+    del os.environ['http_proxy']
+if 'HTTP_PROXY' in os.environ:
+    del os.environ['HTTP_PROXY']
 
 from meliae import scanner
 from twisted.application import (
