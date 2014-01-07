@@ -7,12 +7,10 @@ from datetime import datetime
 
 from launchpadlib.errors import Unauthorized
 import pytz
-from zope.component import getUtility
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,

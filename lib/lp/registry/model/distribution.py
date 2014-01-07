@@ -51,8 +51,6 @@ from lp.answers.model.question import (
 from lp.app.enums import (
     FREE_INFORMATION_TYPES,
     InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.app.errors import NotFoundError
@@ -143,7 +141,6 @@ from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
-    quote,
     SQLBase,
     sqlvalues,
     )
