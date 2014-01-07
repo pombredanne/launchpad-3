@@ -94,9 +94,9 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
+from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.code.interfaces.branch import IBranch
-from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
     PersonVisibility,

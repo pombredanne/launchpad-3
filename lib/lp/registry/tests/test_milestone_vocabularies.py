@@ -18,8 +18,7 @@ from lp.registry.vocabularies import (
     MilestoneWithDateExpectedVocabulary,
     )
 from lp.testing import (
-    login,
-    logout,
+    admin_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -30,14 +29,6 @@ class TestMilestoneVocabulary(TestCaseWithFactory):
     """Test that the MilestoneVocabulary behaves as expected."""
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestMilestoneVocabulary, self).setUp()
-        login('test@canonical.com')
-
-    def tearDown(self):
-        super(TestMilestoneVocabulary, self).tearDown()
-        logout()
 
     def test_project_group_does_not_show_nonpublic_products(self):
         # Milestones for a projectgroup should not include those on an
@@ -125,14 +116,6 @@ class TestMilestoneWithDateExpectedVocabulary(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestMilestoneWithDateExpectedVocabulary, self).setUp()
-        login('test@canonical.com')
-
-    def tearDown(self):
-        super(TestMilestoneWithDateExpectedVocabulary, self).tearDown()
-        logout()
-
     def test_milestone_with_date_expected(self):
         firefox = getUtility(IProductSet).getByName('firefox')
         vocabulary = MilestoneWithDateExpectedVocabulary(firefox)
@@ -143,7 +126,8 @@ class TestMilestoneWithDateExpectedVocabulary(TestCaseWithFactory):
     def test_milestone_without_date_expected(self):
         evolution = getUtility(IProductSet).getByName('evolution')
         series = evolution.getSeries('trunk')
-        series.newMilestone(name='3.0', dateexpected=None)
+        with admin_logged_in():
+            series.newMilestone(name='3.0', dateexpected=None)
         vocabulary = MilestoneWithDateExpectedVocabulary(evolution)
         self.assertEqual(
             [term.title for term in vocabulary], ['Evolution 3.0'])
