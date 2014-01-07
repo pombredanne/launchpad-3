@@ -9,6 +9,8 @@ __metaclass__ = type
 
 import _pythonpath
 
+import os
+
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.librarianserver import swift
 
@@ -44,6 +46,12 @@ class LibrarianFeedSwift(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
+    # Ensure that our connections to Swift are direct, and not going via
+    # a web proxy that would likely block us in any case.
+    if 'http_proxy' in os.environ:
+        del os.environ['http_proxy']
+    if 'HTTP_PROXY' in os.environ:
+        del os.environ['HTTP_PROXY']
     script = LibrarianFeedSwift(
         'librarian-feed-swift', dbuser='librarianfeedswift')
     script.lock_and_run(isolation='autocommit')
