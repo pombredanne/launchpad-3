@@ -23,6 +23,7 @@ from storm.expr import (
     Desc,
     Exists,
     Join,
+    LeftJoin,
     Max,
     Not,
     Or,
@@ -50,8 +51,6 @@ from lp.answers.model.question import (
 from lp.app.enums import (
     FREE_INFORMATION_TYPES,
     InformationType,
-    PRIVATE_INFORMATION_TYPES,
-    PUBLIC_INFORMATION_TYPES,
     ServiceUsage,
     )
 from lp.app.errors import NotFoundError
@@ -142,7 +141,6 @@ from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
-    quote,
     SQLBase,
     sqlvalues,
     )
@@ -632,101 +630,47 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getBranchTips(self, user=None, since=None):
         """See `IDistribution`."""
-        # This, ignoring privacy issues, is what we want.
-        base_query = """
-        SELECT Branch.unique_name,
-               Branch.last_scanned_id,
-               SPBDS.name AS distro_series_name,
-               Branch.id,
-               Branch.information_type,
-               Branch.owner
-        FROM Branch
-        JOIN DistroSeries
-            ON Branch.distroseries = DistroSeries.id
-        LEFT OUTER JOIN SeriesSourcePackageBranch
-            ON Branch.id = SeriesSourcePackageBranch.branch
-        LEFT OUTER JOIN DistroSeries SPBDS
-            -- (SPDBS stands for Source Package Branch Distro Series)
-            ON SeriesSourcePackageBranch.distroseries = SPBDS.id
-        WHERE DistroSeries.distribution = %s
-        """ % sqlvalues(self.id)
+        from lp.code.model.branch import (
+            Branch, get_branch_privacy_filter)
+        from lp.code.model.seriessourcepackagebranch import (
+            SeriesSourcePackageBranch)
+
+        clauses = [
+            DistroSeries.distribution == self.id,
+            get_branch_privacy_filter(user),
+        ]
+
         if since is not None:
             # If "since" was provided, take into account.
-            base_query += (
-                '      AND branch.last_scanned > %s\n' % sqlvalues(since))
-        if user is None:
-            # Now we see just a touch of privacy concerns.
-            # If the current user is anonymous, they cannot see any private
-            # branches.
-            base_query += (
-                '      AND Branch.information_type in %s\n'
-                % sqlvalues(PUBLIC_INFORMATION_TYPES))
-        # We want to order the results, in part for easier grouping at the
-        # end.
-        base_query += 'ORDER BY unique_name, last_scanned_id'
-        if (user is None or
-            user.inTeam(getUtility(ILaunchpadCelebrities).admin)):
-            # Anonymous is already handled above; admins can see everything.
-            # In both cases, we can just use the query as it already stands.
-            query = base_query
-        else:
-            # Otherwise (an authenticated, non-admin user), we need to do some
-            # more sophisticated privacy dances.  Note that the one thing we
-            # are ignoring here is stacking.  See the discussion in comment 1
-            # of https://bugs.launchpad.net/launchpad/+bug/812335 . Often, we
-            # use unions for this kind of work.  The WITH statement can give
-            # us a similar approach with more flexibility. In both cases,
-            # we're essentially declaring that we have a better idea of a good
-            # high-level query plan than Postgres will.
-            query = """
-            WITH principals AS (
-                    SELECT team AS id
-                        FROM TeamParticipation
-                        WHERE TeamParticipation.person = %(user)s
-                    UNION
-                    SELECT %(user)s
-                ), all_branches AS (
-            %(base_query)s
-                ), private_branches AS (
-                    SELECT unique_name,
-                           last_scanned_id,
-                           distro_series_name,
-                           id,
-                           owner
-                    FROM all_branches
-                    WHERE information_type in %(private_branches)s
-                ), owned_branch_ids AS (
-                    SELECT private_branches.id
-                    FROM private_branches
-                    JOIN principals ON private_branches.owner = principals.id
-                ), subscribed_branch_ids AS (
-                    SELECT private_branches.id
-                    FROM private_branches
-                    JOIN BranchSubscription
-                        ON BranchSubscription.branch = private_branches.id
-                    JOIN principals
-                        ON BranchSubscription.person = principals.id
-                )
-            SELECT unique_name, last_scanned_id, distro_series_name
-            FROM all_branches
-            WHERE information_type in %(public_branches)s OR
-                  id IN (SELECT id FROM owned_branch_ids) OR
-                  id IN (SELECT id FROM subscribed_branch_ids)
-            """ % dict(
-                base_query=base_query,
-                user=quote(user.id),
-                private_branches=quote(PRIVATE_INFORMATION_TYPES),
-                public_branches=quote(PUBLIC_INFORMATION_TYPES))
+            clauses.append(Branch.last_scanned > since)
 
-        data = Store.of(self).execute(query + ';')
+        OfficialSeries = ClassAlias(DistroSeries)
+        branches = IStore(self).using(
+            Branch,
+            Join(DistroSeries,
+                 DistroSeries.id == Branch.distroseriesID),
+            LeftJoin(
+                SeriesSourcePackageBranch,
+                SeriesSourcePackageBranch.branchID == Branch.id),
+            LeftJoin(
+                OfficialSeries,
+                OfficialSeries.id == SeriesSourcePackageBranch.distroseriesID),
+        ).find(
+            (Branch.unique_name, Branch.last_scanned_id, OfficialSeries.name),
+            And(*clauses)
+        ).order_by(
+            Branch.unique_name,
+            Branch.last_scanned_id
+        )
 
-        result = []
         # Group on location (unique_name) and revision (last_scanned_id).
-        for key, group in itertools.groupby(data, itemgetter(0, 1)):
+        result = []
+        for key, group in itertools.groupby(branches, itemgetter(0, 1)):
             result.append(list(key))
             # Pull out all the official series names and append them as a list
-            # to the end of the current record, removing Nones from the list.
+            # to the end of the current record.
             result[-1].append(filter(None, map(itemgetter(2), group)))
+
         return result
 
     def getMirrorByName(self, name):
