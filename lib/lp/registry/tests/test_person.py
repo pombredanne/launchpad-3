@@ -900,6 +900,7 @@ class TestPersonStates(TestCaseWithFactory):
         # needlessly run.
         fake_warning = 'Warning!  Warning!'
         naked_team = removeSecurityProxy(self.otherteam)
+        naked_team._visibility_warning_cache_key = PersonVisibility.PRIVATE
         naked_team._visibility_warning_cache = fake_warning
         warning = self.otherteam.visibilityConsistencyWarning(
             PersonVisibility.PRIVATE)
@@ -913,18 +914,33 @@ class TestPersonStates(TestCaseWithFactory):
         self.otherteam.visibility = PersonVisibility.PRIVATE
 
     def test_visibility_validator_team_private_to_public(self):
-        # A PRIVATE team cannot convert to PUBLIC.
+        # A PRIVATE team can transition to PUBLIC.
         self.otherteam.visibility = PersonVisibility.PRIVATE
+        self.otherteam.visibility = PersonVisibility.PUBLIC
+
+    def test_visibility_validator_team_private_to_public_with_forbidden(self):
+        # A PRIVATE team that owns a distribution can't become PUBLIC.
+        # XXX wgrant 2014-01-08: This probably isn't a sane constraint,
+        # but it'll do to test the forbidden case until we decide to
+        # relax it.
+        self.otherteam.visibility = PersonVisibility.PRIVATE
+        self.factory.makeDistribution(bug_supervisor=self.otherteam)
+        Store.of(self.otherteam).flush()
         try:
             self.otherteam.visibility = PersonVisibility.PUBLIC
         except ImmutableVisibilityError as exc:
             self.assertEqual(
                 str(exc),
-                'A private team cannot change visibility.')
+                'This team cannot be converted to Public since it is '
+                'referenced by a distribution.')
+        else:
+            raise AssertionError("Expected exception.")
 
     def test_visibility_validator_team_private_to_public_view(self):
         # A PRIVATE team cannot convert to PUBLIC.
         self.otherteam.visibility = PersonVisibility.PRIVATE
+        self.factory.makeDistribution(bug_supervisor=self.otherteam)
+        Store.of(self.otherteam).flush()
         view = create_initialized_view(self.otherteam, '+edit', {
             'field.name': 'otherteam',
             'field.displayname': 'Other Team',
@@ -935,8 +951,10 @@ class TestPersonStates(TestCaseWithFactory):
             })
         self.assertEqual(len(view.errors), 0)
         self.assertEqual(len(view.request.notifications), 1)
-        self.assertEqual(view.request.notifications[0].message,
-                         'A private team cannot change visibility.')
+        self.assertEqual(
+            view.request.notifications[0].message,
+            'This team cannot be converted to Public since it is '
+            'referenced by a distribution.')
 
     def test_person_snapshot(self):
         omitted = (
