@@ -633,9 +633,13 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             cache.objects['inline_diff_comments'] = True
             cache.objects['preview_diff_timestamps'] = [
                 pd.date_created for pd in self.context.preview_diffs]
-            cache.objects['published_inline_comments'] = (
-                getUtility(ICodeReviewInlineCommentSet).findByPreviewDiff(
-                    removeSecurityProxy(self.context.preview_diff), self.user))
+            if self.context.preview_diff:
+                cache.objects['published_inline_comments'] = (
+                    getUtility(ICodeReviewInlineCommentSet).findByPreviewDiff(
+                        removeSecurityProxy(self.context.preview_diff),
+                        self.user))
+            else:
+                cache.objects['published_inline_comments'] = []
 
     @action('Claim', name='claim')
     def claim_action(self, action, data):

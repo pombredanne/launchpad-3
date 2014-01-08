@@ -77,7 +77,7 @@ class TestCodeReviewInlineComment(TestCaseWithFactory):
         # so it can be rendered.
         interface = getUtility(ICodeReviewInlineCommentSet)
         previewdiff, person = self._makeCRICD()
-        results = interface.findByPreviewDiff(previewdiff, person) 
+        results = interface.findByPreviewDiff(previewdiff, person)
         self.assertEqual([[u'2', None, u'foobar', None]], results)
 
     def test_findByPreviewDiff_sorted(self):
