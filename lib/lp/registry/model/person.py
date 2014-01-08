@@ -2317,6 +2317,11 @@ class Person(
         # which will be checked further down to provide a clearer warning.
         # Note all of the table names and columns must be all lowercase.
         skip = set([
+            ('accessartifactgrant', 'grantee'),
+            ('accessartifactgrant', 'grantor'),
+            ('accesspolicy', 'person'),
+            ('accesspolicygrant', 'grantee'),
+            ('accesspolicygrant', 'grantor'),
             ('emailaddress', 'person'),
             ('gpgkey', 'owner'),
             ('ircid', 'person'),
@@ -2330,6 +2335,12 @@ class Person(
             ('personsettings', 'person'),
             ('persontransferjob', 'minor_person'),
             ('persontransferjob', 'major_person'),
+            ('product', 'bug_supervisor'),
+            ('product', 'driver'),
+            ('product', 'owner'),
+            ('productseries', 'driver'),
+            ('productseries', 'owner'),
+            ('sharingjob', 'grantee'),
             ('signedcodeofconduct', 'owner'),
             ('sshkey', 'person'),
             ('structuralsubscription', 'subscriber'),
