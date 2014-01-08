@@ -197,7 +197,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution', notNull=True)
-    name = StringCol(notNull=True)
+    name = StringCol()
     displayname = StringCol(notNull=True)
     title = StringCol(notNull=True)
     description = StringCol(notNull=True)

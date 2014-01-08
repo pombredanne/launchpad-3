@@ -7,12 +7,10 @@ from datetime import datetime
 
 from launchpadlib.errors import Unauthorized
 import pytz
-from zope.component import getUtility
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
@@ -207,14 +205,4 @@ class TestGetBranchTipsSecurity(TestCaseWithFactory):
             BranchSubscriptionDiffSize.NODIFF,
             CodeReviewNotificationLevel.NOEMAIL,
             team)
-        self.assertVisible(distro, branch, person)
-
-    def test_admin_visible(self):
-        # All private branches are visible to members of the Launchpad
-        # admin team.
-        person = self.factory.makePerson()
-        admin_team = removeSecurityProxy(
-            getUtility(ILaunchpadCelebrities).admin)
-        admin_team.addMember(person, admin_team.teamowner)
-        branch, distro = self.makeBranch()
         self.assertVisible(distro, branch, person)
