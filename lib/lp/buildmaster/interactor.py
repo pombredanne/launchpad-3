@@ -21,7 +21,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from lp.buildmaster.enums import BuildQueueStatus
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
     CannotFetchFile,
@@ -90,8 +89,8 @@ class BuilderSlave(object):
             server_proxy = proxy
         return cls(server_proxy, builder_url, vm_host, timeout, reactor)
 
-    def _with_timeout(self, d):
-        return cancel_on_timeout(d, self.timeout, self.reactor)
+    def _with_timeout(self, d, timeout=None):
+        return cancel_on_timeout(d, timeout or self.timeout, self.reactor)
 
     def abort(self):
         """Abort the current build."""
@@ -114,10 +113,14 @@ class BuilderSlave(object):
         return self._with_timeout(self._server.callRemote('status_dict'))
 
     def ensurepresent(self, sha1sum, url, username, password):
-        # XXX: Nothing external calls this. Make it private.
         """Attempt to ensure the given file is present."""
-        return self._with_timeout(self._server.callRemote(
-            'ensurepresent', sha1sum, url, username, password))
+        # XXX: Nothing external calls this. Make it private.
+        # Use a larger timeout than other calls, as this synchronously
+        # downloads large files.
+        return self._with_timeout(
+            self._server.callRemote(
+                'ensurepresent', sha1sum, url, username, password),
+            self.timeout * 5)
 
     def getFile(self, sha_sum, file_to_write):
         """Fetch a file from the builder.
