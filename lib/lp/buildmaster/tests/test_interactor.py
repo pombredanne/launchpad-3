@@ -604,8 +604,8 @@ class TestSlaveTimeouts(TestCase):
         self.slave = self.slave_helper.getClientSlave(
             reactor=self.clock, proxy=self.proxy)
 
-    def assertCancelled(self, d):
-        self.clock.advance(config.builddmaster.socket_timeout + 1)
+    def assertCancelled(self, d, timeout=None):
+        self.clock.advance((timeout or config.builddmaster.socket_timeout) + 1)
         return assert_fails_with(d, defer.CancelledError)
 
     def test_timeout_abort(self):
@@ -625,7 +625,8 @@ class TestSlaveTimeouts(TestCase):
 
     def test_timeout_ensurepresent(self):
         return self.assertCancelled(
-            self.slave.ensurepresent(None, None, None, None))
+            self.slave.ensurepresent(None, None, None, None),
+            config.builddmaster.socket_timeout * 5)
 
     def test_timeout_build(self):
         return self.assertCancelled(
