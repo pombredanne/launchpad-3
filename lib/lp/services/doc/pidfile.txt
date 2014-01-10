@@ -87,7 +87,7 @@ we'll need them again later.
     >>> def start_process():
     ...     real_pid = subprocess.Popen(
     ...         [sys.executable, '-c', subprocess_code]).pid
-    ...     for i in range(10):
+    ...     for i in range(50):
     ...         if os.path.exists(pidfile_path('nuts')):
     ...             if real_pid == int(open(pidfile_path('nuts')).read()):
     ...                 return real_pid
