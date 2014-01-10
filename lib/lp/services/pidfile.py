@@ -41,13 +41,14 @@ def make_pidfile(service_name):
             "PID file %s already exists. Already running?" % pidfile)
 
     atexit.register(remove_pidfile, service_name)
+
     def remove_pidfile_handler(*ignored):
         sys.exit(-1 * SIGTERM)
     signal(SIGTERM, remove_pidfile_handler)
 
     fd, tempname = tempfile.mkstemp(dir=os.path.dirname(pidfile))
     outf = os.fdopen(fd, 'w')
-    outf.write(str(os.getpid())+'\n')
+    outf.write(str(os.getpid()) + '\n')
     outf.flush()
     outf.close()
     os.rename(tempname, pidfile)
