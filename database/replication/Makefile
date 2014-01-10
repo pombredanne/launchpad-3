@@ -70,8 +70,10 @@ stagingsetup:
 	# production to users not maintained by security.py.
 	pg_restore --list ${STAGING_DUMP} | grep -v 'TRIGGER public _sl_' \
 	    > ${DUMPLIST}
-	pg_restore --dbname=lpmain_staging --no-owner ${EXIT_ON_ERROR} \
-	    --use-list=${DUMPLIST} ${MULTIPROC} ${STAGING_DUMP}
+	cat ${STAGING_DUMP} \
+	    | ./walblock.py -d /var/lib/postgresql/9.1/staging/pg_xlog \
+	    | pg_restore --dbname=lpmain_staging --no-owner ${EXIT_ON_ERROR} \
+		--use-list=${DUMPLIST} ${MULTIPROC}
 	rm ${DUMPLIST}
 	# Apply database patches.
 	@echo Running upgrade.py `date`.
