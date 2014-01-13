@@ -99,8 +99,6 @@ class DecoratedResultSet(object):
         if result is None:
             decorated = None
         else:
-            if self.result_decorator is None:
-                decorated = result
             if self.result_decorator is not None:
                 if self.slice_info:
                     decorated = self.result_decorator(result, row_index)
@@ -112,6 +110,8 @@ class DecoratedResultSet(object):
                         [result], slice(row_index, row_index + 1))
                 else:
                     [decorated] = self.bulk_decorator([result])
+            else:
+                decorated = None
         if self.return_both:
             return (plain, decorated)
         else:
