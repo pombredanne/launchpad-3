@@ -11,7 +11,10 @@ __all__ = [
     ]
 
 import itertools
-import operator
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 from threading import local
 
 from bzrlib.lru_cache import LRUCache
@@ -34,7 +37,6 @@ from zope.interface import implements
 
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.model.bugtarget import BugTargetBase
-from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
@@ -397,35 +399,42 @@ class DistributionSourcePackage(BugTargetBase,
         res.order_by(
             Desc(SourcePackagePublishingHistory.datecreated),
             Desc(SourcePackagePublishingHistory.id))
-        return DecoratedResultSet(res, operator.itemgetter(0))
+        return DecoratedResultSet(res, itemgetter(0))
 
     def getReleasesAndPublishingHistory(self):
         """See `IDistributionSourcePackage`."""
-        store = Store.of(self.distribution)
-        result = store.find(
-            (SourcePackageRelease, SourcePackagePublishingHistory),
-            SourcePackagePublishingHistory.distroseries == DistroSeries.id,
+        pub_constraints = (
             DistroSeries.distribution == self.distribution,
+            SourcePackagePublishingHistory.distroseries == DistroSeries.id,
             SourcePackagePublishingHistory.archiveID.is_in(
                self.distribution.all_distro_archive_ids),
             SourcePackagePublishingHistory.sourcepackagename ==
                 self.sourcepackagename,
-            SourcePackageRelease.id ==
-                SourcePackagePublishingHistory.sourcepackagereleaseID)
-        result.order_by(
-            Desc(SourcePackageRelease.id),
-            Desc(SourcePackagePublishingHistory.datecreated),
-            Desc(SourcePackagePublishingHistory.id))
+            )
 
-        # Collate the publishing history by SourcePackageRelease.
-        dspr_pubs = []
-        for spr, pubs in itertools.groupby(result, operator.itemgetter(0)):
-            dspr_pubs.append(
+        # Find distinct SPRs for our SPN in our archives.
+        sprs = Store.of(self.distribution).find(
+            SourcePackageRelease,
+            SourcePackageRelease.id ==
+                SourcePackagePublishingHistory.sourcepackagereleaseID,
+            *pub_constraints
+            ).order_by(Desc(SourcePackageRelease.id)).config(distinct=True)
+
+        def decorate(sprs):
+            # Find the SPPHs for each SPR in our result.
+            pubs = DistributionSourcePackageRelease.getPublishingHistories(
+                self.distribution, sprs)
+            sprs_by_id = dict(
+                (spr, list(pubs)) for (spr, pubs) in
+                itertools.groupby(pubs, attrgetter('sourcepackagereleaseID')))
+            return [
                 (DistributionSourcePackageRelease(
-                        distribution=self.distribution,
-                        sourcepackagerelease=spr),
-                 [spph for (spr, spph) in pubs]))
-        return dspr_pubs
+                    distribution=self.distribution,
+                    sourcepackagerelease=spr),
+                 sprs_by_id[spr.id])
+                for spr in sprs]
+
+        return DecoratedResultSet(sprs, bulk_decorator=decorate)
 
     # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property

@@ -283,10 +283,6 @@ class DistributionSourcePackageBaseView(LaunchpadView):
 
         dspr_pubs = self.context.getReleasesAndPublishingHistory()
 
-        # Return as early as possible to avoid unnecessary processing.
-        if len(dspr_pubs) == 0:
-            return []
-
         sprs = [dspr.sourcepackagerelease for (dspr, spphs) in dspr_pubs]
         # Preload email/person data only if user is logged on. In the opposite
         # case the emails in the changelog will be obfuscated anyway and thus
