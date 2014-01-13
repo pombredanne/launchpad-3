@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Feed stdin to stout, blocking if there are too many unshipped WAL files"""
@@ -8,18 +8,11 @@
 __metaclass__ = type
 __all__ = []
 
-#import _pythonpath
-
 from glob import glob
 from optparse import OptionParser
 import os.path
 import sys
 import time
-
-#from lp.services.scripts import (
-#    db_options,
-#    logger_options,
-#    )
 
 
 def main():
