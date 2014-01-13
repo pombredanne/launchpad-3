@@ -56,6 +56,7 @@ from lp.registry.model.sourcepackage import (
     SourcePackage,
     SourcePackageQuestionTargetMixin,
     )
+from lp.services.database.bulk import load
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
@@ -413,15 +414,17 @@ class DistributionSourcePackage(BugTargetBase,
             )
 
         # Find distinct SPRs for our SPN in our archives.
-        sprs = Store.of(self.distribution).find(
-            SourcePackageRelease,
-            SourcePackageRelease.id ==
-                SourcePackagePublishingHistory.sourcepackagereleaseID,
+        spr_ids = Store.of(self.distribution).find(
+            SourcePackagePublishingHistory.sourcepackagereleaseID,
             *pub_constraints
-            ).order_by(Desc(SourcePackageRelease.id)).config(distinct=True)
+            ).order_by(
+                Desc(SourcePackagePublishingHistory.sourcepackagereleaseID)
+            ).config(distinct=True)
 
-        def decorate(sprs):
+        def decorate(spr_ids):
             # Find the SPPHs for each SPR in our result.
+            load(SourcePackageRelease, spr_ids)
+            sprs = [SourcePackageRelease.get(spr_id) for spr_id in spr_ids]
             pubs = DistributionSourcePackageRelease.getPublishingHistories(
                 self.distribution, sprs)
             sprs_by_id = dict(
@@ -434,7 +437,7 @@ class DistributionSourcePackage(BugTargetBase,
                  sprs_by_id[spr.id])
                 for spr in sprs]
 
-        return DecoratedResultSet(sprs, bulk_decorator=decorate)
+        return DecoratedResultSet(spr_ids, bulk_decorator=decorate)
 
     # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
