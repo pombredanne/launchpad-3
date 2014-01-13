@@ -577,6 +577,10 @@ class DistributionSourcePackageChangelogView(
     def label(self):
         return 'Change log for %s' % self.context.title
 
+    @property
+    def batchnav(self):
+        return BatchNavigator(self.releases(), self.request)
+
 
 class PublishingHistoryViewMixin:
     """Mixin for presenting batches of `SourcePackagePublishingHistory`s."""
