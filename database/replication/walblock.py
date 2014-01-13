@@ -26,13 +26,11 @@ def main():
         default="/var/lib/postgresql/9.1/main/pg_xlog")
     parser.add_option(
         "-v", "--verbose", action="store_true", default=False, help="Verbose")
-    #logger_options(parser)
-    #db_options(parser)
     options, args = parser.parse_args()
     if args:
         parser.error('Too many arguments')
 
-    chunk_size = 1024*1024
+    chunk_size = 1024 * 1024
 
     ready_wal_glob = os.path.join(options.wal_dir, 'archive_status', '*.ready')
 
