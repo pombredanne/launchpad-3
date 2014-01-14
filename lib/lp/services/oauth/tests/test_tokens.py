@@ -31,11 +31,11 @@ from lp.services.webapp.interfaces import (
     AccessLevel,
     OAuthPermission,
     )
-from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     login_person,
     oauth_access_token_for,
     TestCaseWithFactory,
+    verifyObject,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 

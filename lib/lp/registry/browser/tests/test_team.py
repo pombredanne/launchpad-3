@@ -467,29 +467,6 @@ class TestTeamEditView(TestTeamPersonRenameFormMixin, TestCaseWithFactory):
             TeamMembershipRenewalPolicy.ONDEMAND, team.renewal_policy)
 
 
-class TeamAdminisiterViewTestCase(TestTeamPersonRenameFormMixin,
-                                  TestCaseWithFactory):
-
-    layer = LaunchpadFunctionalLayer
-    view_name = '+review'
-
-    def test_init_admin(self):
-        # An admin sees all the fields.
-        team = self.factory.makeTeam()
-        login_celebrity('admin')
-        view = create_initialized_view(team, name=self.view_name)
-        self.assertEqual('Review team', view.label)
-        self.assertEqual(
-            ['name', 'displayname'], view.field_names)
-
-    def test_init_registry_expert(self):
-        # Registry experts do not see the displayname field.
-        team = self.factory.makeTeam()
-        login_celebrity('registry_experts')
-        view = create_initialized_view(team, name=self.view_name)
-        self.assertEqual(['name'], view.field_names)
-
-
 class TestTeamAddView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer

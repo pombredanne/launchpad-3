@@ -157,12 +157,7 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database import bulk
 from lp.services.database.decoratedresultset import DecoratedResultSet
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     quote,
     quote_like,
@@ -289,7 +284,6 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         if query is None or an empty string.
         """
         if query:
-            store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
             query = ensure_unicode(query)
             like_query = query.lower()
             like_query = "'%%%%' || %s || '%%%%'" % quote_like(like_query)
@@ -306,10 +300,8 @@ class ProductVocabulary(SQLObjectVocabularyBase):
                 '(CASE name WHEN %s THEN 1 '
                 ' ELSE rank(fti, ftq(%s)) END) DESC, displayname, name'
                 % (fti_query, fti_query))
-            result = store.find(self._table, where_clause)
-            result.order_by(order_by)
-            result.config(limit=100)
-            return result
+            return IStore(Product).find(self._table, where_clause).order_by(
+                order_by).config(limit=100)
 
         return self.emptySelectResults()
 
@@ -550,7 +542,7 @@ class ValidPersonOrTeamVocabulary(
     @cachedproperty
     def store(self):
         """The storm store."""
-        return getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return IStore(Product)
 
     @cachedproperty
     def _karma_context_constraint(self):

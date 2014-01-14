@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from lp.registry.model.person import Person
 from lp.services.config import config
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 # or TestCaseWithFactory
 from lp.testing import TestCase
 from lp.testing.dbuser import (

@@ -25,7 +25,7 @@ which is registered as a utility.
     >>> from lp.code.interfaces.codeimport import ICodeImport, ICodeImportSet
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> code_import_set = getUtility(ICodeImportSet)
     >>> verifyObject(ICodeImportSet, removeSecurityProxy(code_import_set))
     True

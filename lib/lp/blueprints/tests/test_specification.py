@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for Specification."""
@@ -9,6 +9,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+
 import pytz
 from storm.store import Store
 from zope.component import (
@@ -40,19 +41,21 @@ from lp.blueprints.enums import (
     )
 from lp.blueprints.errors import TargetAlreadyHasSpecification
 from lp.blueprints.interfaces.specification import ISpecificationSet
-from lp.blueprints.model.specification import (
-    Specification,
-    visible_specification_query,
+from lp.blueprints.model.specification import Specification
+from lp.blueprints.model.specificationsearch import (
+    get_specification_privacy_filter,
     )
 from lp.registry.enums import (
     SharingPermission,
     SpecificationSharingPolicy,
     )
-from lp.registry.interfaces.accesspolicy import IAccessPolicySource
+from lp.registry.interfaces.accesspolicy import (
+    IAccessArtifactGrantSource,
+    IAccessPolicySource,
+    )
 from lp.security import (
     AdminSpecification,
     EditSpecificationByRelatedPeople,
-    EditWhiteboardSpecification,
     ViewSpecification,
     )
 from lp.services.propertycache import get_property_cache
@@ -86,7 +89,10 @@ class SpecificationTests(TestCaseWithFactory):
         productseries = self.factory.makeProductSeries(product=product)
         removeSecurityProxy(productseries).driver = proposer
         specification = self.factory.makeSpecification(product=product)
-        specification.proposeGoal(productseries, proposer)
+        with person_logged_in(specification.owner):
+            specification.assignee = proposer
+        with person_logged_in(proposer):
+            specification.proposeGoal(productseries, proposer)
         self.assertEqual(
             SpecificationGoalStatus.ACCEPTED, specification.goalstatus)
 
@@ -96,7 +102,10 @@ class SpecificationTests(TestCaseWithFactory):
         proposer = self.factory.makePerson()
         productseries = self.factory.makeProductSeries(product=product)
         specification = self.factory.makeSpecification(product=product)
-        specification.proposeGoal(productseries, proposer)
+        with person_logged_in(specification.owner):
+            specification.assignee = proposer
+        with person_logged_in(proposer):
+            specification.proposeGoal(productseries, proposer)
         self.assertEqual(
             SpecificationGoalStatus.PROPOSED, specification.goalstatus)
 
@@ -153,33 +162,33 @@ class SpecificationTests(TestCaseWithFactory):
             CheckerPublic: set((
                 'id', 'information_type', 'private', 'userCanView')),
             'launchpad.LimitedView': set((
-                'acceptBy', 'all_blocked', 'all_deps', 'approver',
-                'approverID', 'assignee', 'assigneeID', 'blocked_specs',
-                'bug_links', 'bugs', 'completer', 'createDependency',
-                'date_completed', 'date_goal_decided', 'date_goal_proposed',
-                'date_started', 'datecreated', 'declineBy',
+                'all_blocked', 'all_deps', 'approver', 'approverID',
+                'assignee', 'assigneeID', 'bug_links', 'bugs', 'completer',
+                'createDependency', 'date_completed', 'date_goal_decided',
+                'date_goal_proposed', 'date_started', 'datecreated',
                 'definition_status', 'dependencies', 'direction_approved',
                 'distribution', 'distroseries', 'drafter', 'drafterID',
                 'getBranchLink', 'getDelta', 'getAllowedInformationTypes',
-                'getLinkedBugTasks', 'getSprintSpecification',
-                'getSubscriptionByName', 'goal', 'goal_decider',
-                'goal_proposer', 'goalstatus', 'has_accepted_goal',
-                'implementation_status', 'informational', 'isSubscribed',
-                'is_blocked', 'is_complete', 'is_incomplete', 'is_started',
-                'lifecycle_status', 'linkBranch', 'linkSprint',
+                'getDependencies', 'getBlockedSpecs', 'getLinkedBugTasks',
+                'getSprintSpecification', 'getSubscriptionByName', 'goal',
+                'goal_decider', 'goal_proposer', 'goalstatus',
+                'has_accepted_goal', 'implementation_status', 'informational',
+                'isSubscribed', 'is_blocked', 'is_complete', 'is_incomplete',
+                'is_started', 'lifecycle_status', 'linkBranch', 'linkSprint',
                 'linked_branches', 'man_days', 'milestone', 'name',
                 'notificationRecipientAddresses', 'owner', 'priority',
-                'product', 'productseries', 'proposeGoal', 'removeDependency',
-                'specurl', 'sprint_links', 'sprints', 'starter', 'subscribe',
+                'product', 'productseries', 'removeDependency', 'specurl',
+                'sprint_links', 'sprints', 'starter', 'subscribe',
                 'subscribers', 'subscription', 'subscriptions', 'summary',
                 'superseded_by', 'target', 'title', 'unlinkBranch',
                 'unlinkSprint', 'unsubscribe', 'updateLifecycleStatus',
                 'validateMove', 'whiteboard', 'work_items',
                 'workitems_text')),
             'launchpad.Edit': set((
-                'newWorkItem', 'retarget', 'setDefinitionStatus',
-                'setImplementationStatus', 'setTarget',
+                'newWorkItem', 'proposeGoal', 'retarget',
+                'setDefinitionStatus', 'setImplementationStatus', 'setTarget',
                 'transitionToInformationType', 'updateWorkItems')),
+            'launchpad.Driver': set(('acceptBy', 'declineBy')),
             'launchpad.AnyAllowedPerson': set((
                 'unlinkBug', 'linkBug', 'setWorkItems')),
             }
@@ -207,7 +216,6 @@ class SpecificationTests(TestCaseWithFactory):
         expected_adapters = {
             CheckerPublic: None,
             'launchpad.Admin': AdminSpecification,
-            'launchpad.AnyAllowedPerson': EditWhiteboardSpecification,
             'launchpad.Edit': EditSpecificationByRelatedPeople,
             'launchpad.LimitedView': ViewSpecification,
             }
@@ -298,8 +306,8 @@ class SpecificationTests(TestCaseWithFactory):
                 user, specification, error_expected)
 
     def test_ordinary_user_write_access(self):
-        # Oridnary users can change the whiteborad of public specifications.
-        # They cannot change other attributes of public speicifcaitons and
+        # Ordinary users can change the whiteborad of public specifications.
+        # They cannot change other attributes of public specifications and
         # no attributes of private specifications.
         specification = self.factory.makeSpecification()
         removeSecurityProxy(specification.target)._ensurePolicies(
@@ -406,48 +414,44 @@ class SpecificationTests(TestCaseWithFactory):
                 specification.target.owner, specification,
                 error_expected=False, attribute='name', value='foo')
 
-    def test_visible_specification_query(self):
-        # visible_specification_query returns a Storm expression
-        # that can be used to filter specifications by their visibility-
+    def _fetch_specs_visible_for_user(self, user):
+        return Store.of(self.product).find(
+            Specification,
+            Specification.productID == self.product.id,
+            *get_specification_privacy_filter(user))
+
+    def test_get_specification_privacy_filter(self):
+        # get_specification_privacy_filter returns a Storm expression
+        # that can be used to filter specifications by their visibility.
         owner = self.factory.makePerson()
-        product = self.factory.makeProduct(
+        self.product = self.factory.makeProduct(
             owner=owner,
             specification_sharing_policy=(
                 SpecificationSharingPolicy.PUBLIC_OR_PROPRIETARY))
-        public_spec = self.factory.makeSpecification(product=product)
+        public_spec = self.factory.makeSpecification(product=self.product)
         proprietary_spec_1 = self.factory.makeSpecification(
-            product=product, information_type=InformationType.PROPRIETARY)
+            product=self.product, information_type=InformationType.PROPRIETARY)
         proprietary_spec_2 = self.factory.makeSpecification(
-            product=product, information_type=InformationType.PROPRIETARY)
+            product=self.product, information_type=InformationType.PROPRIETARY)
         all_specs = [
             public_spec, proprietary_spec_1, proprietary_spec_2]
-        store = Store.of(product)
-        tables, query = visible_specification_query(None)
-        specs_for_anon = store.using(*tables).find(
-            Specification,
-            Specification.productID == product.id, *query)
-        self.assertContentEqual([public_spec],
-                                specs_for_anon.config(distinct=True))
+        specs_for_anon = self._fetch_specs_visible_for_user(None)
+        self.assertContentEqual(
+            [public_spec], specs_for_anon.config(distinct=True))
         # Product owners havae grants on the product, the privacy
         # filter returns thus all specifications for them.
-        tables, query = visible_specification_query(owner.id)
-        specs_for_owner = store.using(*tables).find(
-            Specification, Specification.productID == product.id, *query)
+        specs_for_owner = self._fetch_specs_visible_for_user(owner)
         self.assertContentEqual(all_specs, specs_for_owner)
         # The filter returns only public specs for ordinary users.
         user = self.factory.makePerson()
-        tables, query = visible_specification_query(user.id)
-        specs_for_other_user = store.using(*tables).find(
-            Specification, Specification.productID == product.id, *query)
+        specs_for_other_user = self._fetch_specs_visible_for_user(user)
         self.assertContentEqual([public_spec], specs_for_other_user)
         # If the user has a grant for a specification, the filter returns
         # this specification too.
         with person_logged_in(owner):
             getUtility(IService, 'sharing').ensureAccessGrants(
                 [user], owner, specifications=[proprietary_spec_1])
-        tables, query = visible_specification_query(user.id)
-        specs_for_other_user = store.using(*tables).find(
-            Specification, Specification.productID == product.id, *query)
+        specs_for_other_user = self._fetch_specs_visible_for_user(user)
         self.assertContentEqual(
             [public_spec, proprietary_spec_1], specs_for_other_user)
 
@@ -461,8 +465,7 @@ class SpecificationTests(TestCaseWithFactory):
         with person_logged_in(owner):
             user = self.factory.makePerson()
             spec = self.factory.makeSpecification(
-                product=product,
-                information_type=InformationType.PROPRIETARY)
+                product=product, information_type=InformationType.PROPRIETARY)
             spec.subscribe(user, subscribed_by=owner)
             service = getUtility(IService, 'sharing')
             ignored, ignored, shared_specs = service.getVisibleArtifacts(
@@ -498,14 +501,34 @@ class SpecificationTests(TestCaseWithFactory):
         with person_logged_in(owner):
             user = self.factory.makePerson()
             spec = self.factory.makeSpecification(
-                product=product,
-                information_type=InformationType.PROPRIETARY)
+                product=product, information_type=InformationType.PROPRIETARY)
             spec.subscribe(user, subscribed_by=owner)
             spec.unsubscribe(user, unsubscribed_by=owner)
             service = getUtility(IService, 'sharing')
             ignored, ignored, shared_specs = service.getVisibleArtifacts(
                 user, specifications=[spec])
             self.assertEqual([], shared_specs)
+
+    def test_notificationRecipientAddresses_filters_based_on_sharing(self):
+        # notificationRecipientAddresses() won't return people who do not have
+        # access to the specification.
+        owner = self.factory.makePerson()
+        drafter = self.factory.makePerson()
+        spec = self.factory.makeSpecification(
+            owner=owner, information_type=InformationType.PROPRIETARY)
+        getUtility(IService, 'sharing').ensureAccessGrants(
+            [owner], owner, specifications=[spec], ignore_permissions=True)
+        with person_logged_in(owner):
+            spec.drafter = drafter
+            address = owner.preferredemail.email
+            drafter_address = drafter.preferredemail.email
+        self.assertContentEqual(
+            [address, drafter_address], spec.notificationRecipientAddresses())
+        # Remove the drafters access to the spec.
+        artifact = self.factory.makeAccessArtifact(concrete=spec)
+        getUtility(IAccessArtifactGrantSource).revokeByArtifact(
+            [artifact], [drafter])
+        self.assertEqual([address], spec.notificationRecipientAddresses())
 
 
 class TestSpecificationSet(TestCaseWithFactory):
@@ -707,9 +730,9 @@ class TestSpecifications(TestCaseWithFactory):
         blueprint1 = self.makeSpec(title='abc')
         product = blueprint1.product
         blueprint2 = self.makeSpec(product, title='def')
-        result = list_result(context, ['abc'])
+        result = list_result(context, [u'abc'])
         self.assertEqual([blueprint1], result)
-        result = list_result(product, ['def'])
+        result = list_result(product, [u'def'])
         self.assertEqual([blueprint2], result)
 
     def test_proprietary_not_listed(self):
@@ -719,36 +742,33 @@ class TestSpecifications(TestCaseWithFactory):
             information_type=InformationType.PROPRIETARY)
         self.assertNotIn(private_spec, list(context.specifications(None)))
 
+    def _assertInSpecifications(self, spec, grant):
+        self.assertIn(
+            spec,
+            list(getUtility(ISpecificationSet).specifications(grant.grantee)))
+        self.assertIn(
+            grant.grantee.id, removeSecurityProxy(spec)._known_viewers)
+
     def test_proprietary_listed_for_artifact_grant(self):
         # Proprietary blueprints are listed for users with an artifact grant.
-        context = getUtility(ISpecificationSet)
-        blueprint1 = self.makeSpec(
-            information_type=InformationType.PROPRIETARY)
-        grant = self.factory.makeAccessArtifactGrant(
-            concrete_artifact=blueprint1)
-        self.assertIn(
-            blueprint1,
-            list(context.specifications(grant.grantee)))
+        spec = self.makeSpec(information_type=InformationType.PROPRIETARY)
+        grant = self.factory.makeAccessArtifactGrant(concrete_artifact=spec)
+        self._assertInSpecifications(spec, grant)
 
     def test_proprietary_listed_for_policy_grant(self):
         # Proprietary blueprints are listed for users with a policy grant.
-        context = getUtility(ISpecificationSet)
-        blueprint1 = self.makeSpec(
-            information_type=InformationType.PROPRIETARY)
-        policy_source = getUtility(IAccessPolicySource)
-        (policy,) = policy_source.find(
-            [(blueprint1.product, InformationType.PROPRIETARY)])
+        spec = self.makeSpec(information_type=InformationType.PROPRIETARY)
+        (policy,) = getUtility(IAccessPolicySource).find(
+            [(spec.product, InformationType.PROPRIETARY)])
         grant = self.factory.makeAccessPolicyGrant(policy)
-        self.assertIn(
-            blueprint1,
-            list(context.specifications(user=grant.grantee)))
+        self._assertInSpecifications(spec, grant)
 
     def run_test_setting_special_role_subscribes(self, role_name):
         # If a user becomes the assignee, drafter or approver of a
         # proprietary specification, they are automatically subscribed,
         # if they do not have yet been granted access to the specification.
         specification_sharing_policy = (
-                SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC)
+            SpecificationSharingPolicy.PROPRIETARY_OR_PUBLIC)
         product = self.factory.makeProduct(
             specification_sharing_policy=specification_sharing_policy)
         blueprint = self.makeSpec(

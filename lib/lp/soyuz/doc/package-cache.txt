@@ -290,7 +290,7 @@ We will use Celso's PPA.
 With empty cache contents in Archive table we can't even find a PPA by
 owner name.
 
-    >>> print ubuntu.searchPPAs(text='cprov').count()
+    >>> print ubuntu.searchPPAs(text=u'cprov').count()
     0
 
 Sampledata contains stub counters.
@@ -309,7 +309,7 @@ We have to issue 'updateArchiveCache' to include the owner 'name' and
 Now Celso's PPA can be found via searches and the package counters got
 reset, reflecting that nothing is cached in the database yet.
 
-    >>> print ubuntu.searchPPAs(text='cprov')[0].displayname
+    >>> print ubuntu.searchPPAs(text=u'cprov')[0].displayname
     PPA for Celso Providelo
 
     >>> print cprov.archive.sources_cached
@@ -322,16 +322,16 @@ The sampledata contains no package caches, so attempts to find 'pmount'
 (a source), 'firefox' (a binary name term) or 'shortdesc' (a term used
 in the pmount binary summary) fail.
 
-    >>> ubuntu.searchPPAs(text='pmount').count()
+    >>> ubuntu.searchPPAs(text=u'pmount').count()
     0
 
-    >>> ubuntu.searchPPAs(text='firefox').count()
+    >>> ubuntu.searchPPAs(text=u'firefox').count()
     0
 
-    >>> ubuntu.searchPPAs(text='warty').count()
+    >>> ubuntu.searchPPAs(text=u'warty').count()
     0
 
-    >>> ubuntu.searchPPAs(text='shortdesc').count()
+    >>> ubuntu.searchPPAs(text=u'shortdesc').count()
     0
 
 If we populate the package caches and update the archive caches, the
@@ -363,19 +363,19 @@ same queries work, pointing to Celso's PPA.
     >>> print cprov.archive.binaries_cached
     2
 
-    >>> print ubuntu.searchPPAs(text='cprov')[0].displayname
+    >>> print ubuntu.searchPPAs(text=u'cprov')[0].displayname
     PPA for Celso Providelo
 
-    >>> print ubuntu.searchPPAs(text='pmount')[0].displayname
+    >>> print ubuntu.searchPPAs(text=u'pmount')[0].displayname
     PPA for Celso Providelo
 
-    >>> print ubuntu.searchPPAs(text='firefox')[0].displayname
+    >>> print ubuntu.searchPPAs(text=u'firefox')[0].displayname
     PPA for Celso Providelo
 
-    >>> print ubuntu.searchPPAs(text='warty')[0].displayname
+    >>> print ubuntu.searchPPAs(text=u'warty')[0].displayname
     PPA for Celso Providelo
 
-    >>> print ubuntu.searchPPAs(text='shortdesc')[0].displayname
+    >>> print ubuntu.searchPPAs(text=u'shortdesc')[0].displayname
     PPA for Celso Providelo
 
 The method which populates the archive caches also cleans the texts up
@@ -711,7 +711,7 @@ First, we rebuild and examinate the caches for Celso's PPA.
     3 sources cached [3]
     2 binaries cached [2]
 
-    >>> print_search_results('pmount')
+    >>> print_search_results(u'pmount')
     PPA for Celso Providelo
 
 When Celso's PPA gets disabled, the indexes remain in the DB.
@@ -726,15 +726,15 @@ When Celso's PPA gets disabled, the indexes remain in the DB.
 However the disabled PPA is not included in search results for anonymous
 requests or requests from users with no view permission to Celso's PPA.
 
-    >>> print_search_results('pmount')
+    >>> print_search_results(u'pmount')
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> print_search_results('pmount', user=no_priv)
+    >>> print_search_results(u'pmount', user=no_priv)
 
 Only the owner of the PPA can still find it until the changes are
 removed.
 
-    >>> print_search_results('pmount', user=cprov)
+    >>> print_search_results(u'pmount', user=cprov)
     PPA for Celso Providelo
 
 When indexes rebuilt the cache records are removed and not even the
@@ -746,7 +746,7 @@ owner is able to find the disabled PPA.
     0 sources cached [0]
     0 binaries cached [0]
 
-    >>> print_search_results('pmount', user=cprov)
+    >>> print_search_results(u'pmount', user=cprov)
 
 If by any chance, the disabled PPA gets re-enabled, the cache records
 will be re-created when the indexes are rebuilt and the ppa becomes
@@ -761,7 +761,7 @@ publicly searchable again.
     3 sources cached [3]
     2 binaries cached [2]
 
-    >>> print_search_results('cprov')
+    >>> print_search_results(u'cprov')
     PPA for Celso Providelo
 
 

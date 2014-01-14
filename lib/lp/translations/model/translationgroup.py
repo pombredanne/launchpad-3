@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 __metaclass__ = type
 __all__ = [
     'TranslationGroup',
@@ -32,7 +30,7 @@ from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.constants import DEFAULT
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
-from lp.services.database.lpstorm import (
+from lp.services.database.interfaces import (
     ISlaveStore,
     IStore,
     )

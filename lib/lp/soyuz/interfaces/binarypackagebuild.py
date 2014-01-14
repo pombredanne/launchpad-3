@@ -1,7 +1,5 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 """BinaryPackageBuild interfaces."""
 
@@ -65,10 +63,6 @@ class IBinaryPackageBuildView(IPackageBuild):
     """A Build interface for items requiring launchpad.View."""
     id = Int(title=_('ID'), required=True, readonly=True)
 
-    package_build = Reference(
-        title=_('Package build'), schema=IPackageBuild, required=True,
-        readonly=True, description=_('The base package build'))
-
     # Overridden from IBuildFarmJob to ensure required is True.
     processor = Reference(
         title=_("Processor"), schema=IProcessor,
@@ -80,12 +74,16 @@ class IBinaryPackageBuildView(IPackageBuild):
         required=True, readonly=True,
         description=_("The SourcePackageRelease requested to build."))
 
+    source_package_release_id = Int()
+
     distro_arch_series = Reference(
         title=_("Architecture"),
         # Really IDistroArchSeries
         schema=Interface,
         required=True, readonly=True,
         description=_("The DistroArchSeries context for this build."))
+
+    distro_arch_series_id = Int()
 
     # Properties
     current_source_publication = exported(
@@ -299,7 +297,7 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
 
     def new(distro_arch_series, source_package_release, processor,
             archive, pocket, status=BuildStatus.NEEDSBUILD,
-            date_created=None):
+            date_created=None, builder=None):
         """Create a new `IBinaryPackageBuild`.
 
         :param distro_arch_series: An `IDistroArchSeries`.
@@ -310,12 +308,10 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
         :param status: A `BuildStatus` item indicating the builds status.
         :param date_created: An optional datetime to ensure multiple builds
             in the same transaction don't all get the same UTC_NOW.
+        :param builder: An optional `IBuilder`.
         """
 
-    def getBuildBySRAndArchtag(sourcepackagereleaseID, archtag):
-        """Return a build for a SourcePackageRelease and an ArchTag"""
-
-    def getBuildsForBuilder(builder_id, status=None, name=None,
+    def getBuildsForBuilder(builder_id, status=None, name=None, pocket=None,
                             arch_tag=None):
         """Return build records touched by a builder.
 
@@ -324,6 +320,8 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
             will be returned.
         :param name: If name is provided, only builds which correspond to a
             matching sourcepackagename will be returned (SQL LIKE).
+        :param pocket: If pocket is provided, only builds for that pocket
+            will be returned.
         :param arch_tag: If arch_tag is provided, only builds for that
             architecture will be returned.
         :return: a `ResultSet` representing the requested builds.
@@ -345,9 +343,9 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
         :return: a `ResultSet` representing the requested builds.
         """
 
-    def getBuildsByArchIds(distribution, arch_ids, status=None, name=None,
-                           pocket=None):
-        """Retrieve Build Records for a given arch_ids list.
+    def getBuildsForDistro(context, status=None, name=None, pocket=None,
+                           arch_tag=None):
+        """Retrieve `IBinaryPackageBuild`s for a given Distribution/DS/DAS.
 
         Optionally, for a given status and/or pocket, if ommited return all
         records. If name is passed return only the builds which the
@@ -393,13 +391,6 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
 
         Retrieve the only one possible build record associated with the given
         build queue entry. If not found, return None.
-        """
-
-    def getQueueEntriesForBuildIDs(build_ids):
-        """Return the IBuildQueue instances for the IBuild IDs at hand.
-
-        Retrieve the build queue and related builder rows associated with the
-        builds in question where they exist.
         """
 
     def preloadBuildsData(builds):

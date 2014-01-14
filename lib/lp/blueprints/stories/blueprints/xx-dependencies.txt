@@ -97,7 +97,7 @@ We'll POST the form selecting "extension-manager-upgrades" for removal. We
 expect to be redirected to the blueprint page.
 
   >>> owner_browser.getControl(
-  ...     'Dependency').value = ['extension-manager-upgrades']
+  ...     'Dependency').value = ['1']
   >>> owner_browser.getControl('Continue').click()
   >>> owner_browser.url
   'http://blueprints.launchpad.dev/firefox/+spec/canvas'

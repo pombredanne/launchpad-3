@@ -3,8 +3,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=C0103,W0403
-
 from datetime import (
     datetime,
     timedelta,
@@ -23,7 +21,7 @@ from lp.archivepublisher.htaccess import (
     )
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.mail.helpers import get_email_template
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.sendmail import (

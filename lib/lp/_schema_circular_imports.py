@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Update the interface schema values due to circular imports.
@@ -200,7 +200,7 @@ from lp.soyuz.interfaces.packageset import (
     IPackageset,
     IPackagesetSet,
     )
-from lp.soyuz.interfaces.processor import IProcessorFamily
+from lp.soyuz.interfaces.processor import IProcessor
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
     IBinaryPackagePublishingHistoryEdit,
@@ -392,7 +392,7 @@ patch_entry_return_type(
 patch_reference_property(IArchive, 'distribution', IDistribution)
 patch_collection_property(IArchive, 'dependencies', IArchiveDependency)
 patch_collection_property(
-    IArchive, 'enabled_restricted_families', IProcessorFamily)
+    IArchive, 'enabled_restricted_processors', IProcessor)
 patch_collection_return_type(IArchive, 'getAllPermissions', IArchivePermission)
 patch_collection_return_type(
     IArchive, 'getPermissionsForPerson', IArchivePermission)
@@ -491,8 +491,7 @@ patch_choice_parameter_type(
 patch_entry_return_type(
     IArchive, '_addArchiveDependency', IArchiveDependency)
 patch_plain_parameter_type(
-    IArchive, 'enableRestrictedFamily', 'family', IProcessorFamily)
-
+    IArchive, 'enableRestrictedProcessor', 'processor', IProcessor)
 
 # IBuildFarmJob
 IBuildFarmJob['status'].vocabulary = BuildStatus
@@ -531,7 +530,7 @@ patch_entry_return_type(
 patch_reference_property(
     IDistroSeries, 'main_archive', IArchive)
 patch_collection_property(
-    IDistroSeries, 'architectures', IDistroArchSeries)
+    IDistroSeries, 'enabled_architectures', IDistroArchSeries)
 patch_reference_property(
     IDistroSeries, 'distribution', IDistribution)
 patch_choice_parameter_type(
@@ -591,6 +590,7 @@ patch_collection_return_type(
 IPackageUpload['pocket'].vocabulary = PackagePublishingPocket
 patch_reference_property(IPackageUpload, 'distroseries', IDistroSeries)
 patch_reference_property(IPackageUpload, 'archive', IArchive)
+patch_reference_property(IPackageUpload, 'copy_source_archive', IArchive)
 
 # IStructuralSubscription
 patch_collection_property(
@@ -734,9 +734,9 @@ patch_entry_return_type(
 
 # IHasSpecifications
 patch_collection_property(
-    IHasSpecifications, '_all_specifications', ISpecification)
+    IHasSpecifications, 'visible_specifications', ISpecification)
 patch_collection_property(
-    IHasSpecifications, '_valid_specifications', ISpecification)
+    IHasSpecifications, 'api_valid_specifications', ISpecification)
 
 
 ###
@@ -795,7 +795,7 @@ patch_entry_explicit_version(IBranch, 'beta')
 patch_entry_explicit_version(IBranchMergeProposal, 'beta')
 patch_operations_explicit_version(
     IBranchMergeProposal, 'beta', "createComment", "getComment",
-    "nominateReviewer", "setStatus", "updatePreviewDiff")
+    "nominateReviewer", "setStatus")
 
 # IBranchMergeQueue
 patch_entry_explicit_version(IBranchMergeQueue, 'beta')
@@ -917,8 +917,6 @@ patch_operations_explicit_version(
 
 # IDistributionSourcePackage
 patch_entry_explicit_version(IDistributionSourcePackage, 'beta')
-patch_operations_explicit_version(
-    IDistributionSourcePackage, 'beta', "bugtasks")
 
 # IDistroArchSeries
 patch_entry_explicit_version(IDistroArchSeries, 'beta')

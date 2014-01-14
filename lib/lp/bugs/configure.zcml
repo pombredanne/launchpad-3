@@ -315,8 +315,6 @@
             class="lp.bugs.model.bugtask.BugTaskSet">
             <allow
                 interface="lp.bugs.interfaces.bugtask.IBugTaskSet"/>
-            <allow
-                interface="zope.app.form.browser.interfaces.IAddFormCustomization"/>
         </class>
         <securedutility
             provides="lp.bugs.interfaces.bugtask.IBugTaskSet"
@@ -385,13 +383,13 @@
                     name
                     owner
                     products
-                    projects
                     summary
                     title
                     watches
                     watches_needing_update
                     watches_ready_to_check
                     watches_with_unpushed_comments
+                    getRelatedPillars
                     "/>
             <require
                 permission="launchpad.Edit"
@@ -776,7 +774,7 @@
         <allow
             interface="lp.bugs.interfaces.bugmessage.IBugMessage"/>
         <require
-            permission="launchpad.Admin"
+            permission="launchpad.InternalScriptsOnly"
             set_attributes="remote_comment_id bugwatch index"/>
     </class>
 
@@ -890,11 +888,13 @@
                 set_attributes="bugtracker remotebug"/>
             <require
                 permission="launchpad.Admin"
+                attributes="reset" />
+            <require
+                permission="launchpad.InternalScriptsOnly"
                 attributes="
                     addComment
                     updateImportance
                     updateStatus
-                    reset
                     "
                 set_attributes="
                     last_error_type
@@ -916,8 +916,6 @@
             class="lp.bugs.model.bugwatch.BugWatchSet">
             <allow
                 interface="lp.bugs.interfaces.bugwatch.IBugWatchSet"/>
-            <allow
-                interface="zope.app.form.browser.interfaces.IAddFormCustomization"/>
         </class>
         <securedutility
             class="lp.bugs.model.bugwatch.BugWatchSet"

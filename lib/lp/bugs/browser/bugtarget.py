@@ -34,10 +34,10 @@ from pytz import timezone
 from simplejson import dumps
 from sqlobject import SQLObjectNotFound
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser import TextWidget
-from zope.app.form.interfaces import InputErrors
 from zope.component import getUtility
 from zope.formlib.form import Fields
+from zope.formlib.interfaces import InputErrors
+from zope.formlib.widgets import TextWidget
 from zope.interface import (
     alsoProvides,
     implements,

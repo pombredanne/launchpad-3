@@ -57,6 +57,12 @@ stagingsetup:
 	${STAGING_PGBOUNCER} -c 'kill launchpad_staging'
 	${STAGING_PGBOUNCER} -c 'kill launchpad_staging_slave'
 	-${PGMASSACRE} lpmain_staging
+
+	# Quickly clear out the session DB.
+	${STAGING_PGBOUNCER} -c 'kill session_staging'
+	psql -d session_staging -c 'TRUNCATE sessiondata CASCADE;'
+	${STAGING_PGBOUNCER} -c 'resume session_staging'
+
 	# Create the DB with the desired default tablespace.
 	${CREATEDB} --tablespace ${STAGING_TABLESPACE} lpmain_staging
 	# Restore the database. We need to restore permissions, despite
@@ -64,8 +70,10 @@ stagingsetup:
 	# production to users not maintained by security.py.
 	pg_restore --list ${STAGING_DUMP} | grep -v 'TRIGGER public _sl_' \
 	    > ${DUMPLIST}
-	pg_restore --dbname=lpmain_staging --no-owner ${EXIT_ON_ERROR} \
-	    --use-list=${DUMPLIST} ${MULTIPROC} ${STAGING_DUMP}
+	cat ${STAGING_DUMP} \
+	    | ./walblock.py -d /var/lib/postgresql/9.1/staging/pg_xlog \
+	    | pg_restore --dbname=lpmain_staging --no-owner ${EXIT_ON_ERROR} \
+		--use-list=${DUMPLIST} ${MULTIPROC}
 	rm ${DUMPLIST}
 	# Apply database patches.
 	@echo Running upgrade.py `date`.
@@ -88,7 +96,7 @@ dogfood:
 	pg_restore --list ${DOGFOOD_DUMP} | grep -v 'TRIGGER public _sl_' \
 	    > ${DUMPLIST}
 	pg_restore --dbname=${DOGFOOD_DBNAME} --no-acl --no-owner \
-	    --use-list=${DUMPLIST} ${EXIT_ON_ERROR} ${DOGFOOD_DUMP}
+	    --use-list=${DUMPLIST} ${EXIT_ON_ERROR} ${MULTIPROC} ${DOGFOOD_DUMP}
 	rm ${DUMPLIST}
 	../schema/upgrade.py -d ${DOGFOOD_DBNAME}
 	../schema/security.py -d ${DOGFOOD_DBNAME}

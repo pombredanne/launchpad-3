@@ -5,7 +5,7 @@ The TranslationImportQueueEntry is an entry of the queue that will be imported
 into Rosetta.
 
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from lp.services.database.lpstorm import IStore
+    >>> from lp.services.database.interfaces import IStore
     >>> from lp.registry.interfaces.distroseries import IDistroSeries
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue)

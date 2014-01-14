@@ -1,7 +1,5 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213,F0401,W0611
 
 """Branch interfaces."""
 
@@ -91,9 +89,11 @@ from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.role import (
+    IHasOwner,
+    IPersonRoles,
+    )
 from lp.services.config import config
 from lp.services.fields import (
     PersonChoice,
@@ -482,6 +482,9 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
             value_type=Reference(Interface)),  # Really ISpecificationBranch
         as_of="beta")
 
+    def getSpecificationLinks(user):
+        """Fetch the `ISpecificationBranch`'s that the user can view."""
+
     @call_with(registrant=REQUEST_USER)
     @operation_parameters(
         spec=Reference(schema=Interface))  # Really ISpecification
@@ -786,6 +789,9 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         """
 
     # subscription-related methods
+    def userCanBeSubscribed(person):
+        """Return if the `IPerson` can be subscribed to the branch."""
+
     @operation_parameters(
         person=Reference(
             title=_("The person to subscribe."),

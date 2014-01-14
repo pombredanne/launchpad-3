@@ -16,13 +16,15 @@ import math
 
 from lazr.restful.interface import copy_field
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser.boolwidgets import CheckBoxWidget
-from zope.app.form.browser.textwidgets import TextWidget
-from zope.app.form.browser.widget import renderElement
-from zope.app.form.interfaces import IInputWidget
-from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
+from zope.formlib.boolwidgets import CheckBoxWidget
+from zope.formlib.interfaces import IInputWidget
+from zope.formlib.textwidgets import TextWidget
+from zope.formlib.utility import setUpWidget
+from zope.formlib.widget import (
+    CustomWidgetFactory,
+    renderElement,
+    )
 from zope.schema import (
     Choice,
     Text,
@@ -60,7 +62,6 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
     template = ViewPageTemplateFile('templates/product-bug-tracker.pt')
 
     def __init__(self, field, vocabulary, request):
-        # pylint: disable-msg=W0233
         LaunchpadRadioWidget.__init__(self, field, vocabulary, request)
 
         # Bug tracker widget.
@@ -145,7 +146,6 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
 
     def error(self):
         """Concatenate errors from this widget and sub-widgets."""
-        # pylint: disable-msg=E1002
         errors = [super(ProductBugTrackerWidget, self).error(),
                   self.upstream_email_address_widget.error()]
         return '; '.join(err for err in errors if len(err) > 0)
@@ -289,7 +289,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
         'COMMON_PUBLIC': 'more',
         'ECLIPSE': 'more',
         'EDUCATIONAL_COMMUNITY': 'more',
-        'GNU_GFDL_NO_OPTIONS': 'more',
+        'GNU_FDL_NO_OPTIONS': 'more',
         'MPL': 'more',
         'OFL': 'more',
         'OPEN_SOFTWARE': 'more',
@@ -308,7 +308,6 @@ class LicenseWidget(CheckBoxMatrixWidget):
     items_by_category = None
 
     def __init__(self, field, vocabulary, request):
-        # pylint: disable-msg=E1002
         super(LicenseWidget, self).__init__(field, vocabulary, request)
         # We want to put the license_info widget inside the licences widget's
         # HTML, for better alignment and JavaScript dynamism.  This is
@@ -344,7 +343,6 @@ class LicenseWidget(CheckBoxMatrixWidget):
         # This will return just the DBItem's text.  We want to wrap that text
         # in the URL to the licence, which is stored in the DBItem's
         # description.
-        # pylint: disable-msg=E1002
         value = super(LicenseWidget, self).textForValue(term)
         if term.value.url is None:
             return value
@@ -356,7 +354,6 @@ class LicenseWidget(CheckBoxMatrixWidget):
 
     def renderItem(self, index, text, value, name, cssClass):
         """See `ItemsEditWidgetBase`."""
-        # pylint: disable-msg=E1002
         rendered = super(LicenseWidget, self).renderItem(
             index, text, value, name, cssClass)
         self._categorize(value, rendered)
@@ -364,7 +361,6 @@ class LicenseWidget(CheckBoxMatrixWidget):
 
     def renderSelectedItem(self, index, text, value, name, cssClass):
         """See `ItemsEditWidgetBase`."""
-        # pylint: disable-msg=E1002
         rendered = super(LicenseWidget, self).renderSelectedItem(
             index, text, value, name, cssClass)
         category = self._categorize(value, rendered)
@@ -393,7 +389,6 @@ class LicenseWidget(CheckBoxMatrixWidget):
         # individual checkbox items.  We don't actually care about the return
         # value though since we'll be building up our checkbox tables
         # manually.
-        # pylint: disable-msg=E1002
         super(LicenseWidget, self).__call__()
         self.recommended = self._renderTable('recommended', 3)
         self.more = self._renderTable('more', 3)

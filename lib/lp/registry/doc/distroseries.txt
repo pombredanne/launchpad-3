@@ -21,7 +21,7 @@ The IDistroSeriesSet utility is accessed in the usual fashion:
 
     >>> from zope.component import getUtility
     >>> from lp.services.database.sqlbase import flush_database_updates
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.distroseries import (
     ...     IDistroSeries,
@@ -55,6 +55,17 @@ Or IDistroSeriesSet.queryByVersion:
     hoary
     >>> print distroseriesset.queryByVersion(ubuntu, "5.05")
     None
+
+queryByName works on series aliases too if follow_aliases is True.
+
+    >>> ignored = login_person(ubuntu.owner.activemembers[0])
+    >>> ubuntu.development_series_alias = "devel"
+    >>> login(ANONYMOUS)
+    >>> print distroseriesset.queryByName(ubuntu, "devel")
+    None
+    >>> print distroseriesset.queryByName(
+    ...     ubuntu, "devel", follow_aliases=True).name
+    hoary
 
 We verify that a distroseries does in fact fully provide IDistroSeries:
 
@@ -374,9 +385,9 @@ Check the content IDRSPR binaries & builds attributes:
 
     >>> for bin in bumpy_firefox_sp.currentrelease.binaries:
     ...     print bin.id, bin.title, bin.build.distro_arch_series.title
-    27 mozilla-firefox-data-0.9 The Warty Warthog Release for i386 (x86)
+    27 mozilla-firefox-data-0.9 The Warty Warthog Release for i386 (386)
     26 mozilla-firefox-0.9 The Warty Warthog Release for hppa (hppa)
-    12 mozilla-firefox-0.9 The Warty Warthog Release for i386 (x86)
+    12 mozilla-firefox-0.9 The Warty Warthog Release for i386 (386)
 
 
 'builds' should be empty since it was built in parent (warty), not in this
@@ -458,7 +469,8 @@ total_bugs, and total_messages (translatable messages).
 
     >>> for summary in hoary.getPrioritizedUnlinkedSourcePackages():
     ...     print  summary['package'].name
-    ...     print '%(bug_count)s %(total_messages)s' % summary
+    ...     naked_summary = removeSecurityProxy(summary)
+    ...     print '%(bug_count)s %(total_messages)s' % naked_summary
     pmount  0  64
     alsa-utils  0  0
     cnews  0  0
@@ -630,7 +642,7 @@ the future.
     ...     PackagePublishingPocket.RELEASE, component_main,
     ...     warty.main_archive)
     >>> spphs.count()
-    5 
+    5
     >>> for name in sorted(set(
     ...         pkgpub.sourcepackagerelease.sourcepackagename.name
     ...         for pkgpub in spphs)):
@@ -909,7 +921,7 @@ ones that have been accepted.
 
 We can filter for specifications that contain specific text:
 
-    >>> for spec in krunch.specifications(None, filter=['usb']):
+    >>> for spec in krunch.specifications(None, filter=[u'usb']):
     ...     print spec.name
     thinclient-local-devices
 

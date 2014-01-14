@@ -23,7 +23,10 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildQueueStatus,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.errors import (
@@ -40,30 +43,21 @@ from lp.code.interfaces.sourcepackagerecipe import (
     )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
-    ISourcePackageRecipeBuildJob,
     )
 from lp.code.model.sourcepackagerecipe import (
     NonPPABuildRequest,
     SourcePackageRecipe,
     )
-from lp.code.model.sourcepackagerecipebuild import (
-    SourcePackageRecipeBuild,
-    SourcePackageRecipeBuildJob,
-    )
+from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.code.tests.helpers import recipe_parser_newest_version
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.bulk import load_referencing
 from lp.services.database.constants import UTC_NOW
-from lp.services.job.interfaces.job import (
-    IJob,
-    JobStatus,
-    )
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.publisher import canonical_url
-from lp.services.webapp.testing import verifyObject
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
     ArchiveDisabled,
@@ -78,6 +72,7 @@ from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
+    verifyObject,
     ws_object,
     )
 from lp.testing.layers import (
@@ -337,18 +332,16 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertEqual(build.archive, ppa)
         self.assertEqual(build.distroseries, distroseries)
         self.assertEqual(build.requester, ppa.owner)
+        self.assertTrue(build.virtualized)
         store = Store.of(build)
         store.flush()
-        build_job = store.find(SourcePackageRecipeBuildJob,
-                SourcePackageRecipeBuildJob.build_id == build.id).one()
-        self.assertProvides(build_job, ISourcePackageRecipeBuildJob)
-        self.assertTrue(build_job.virtualized)
-        job = build_job.job
-        self.assertProvides(job, IJob)
-        self.assertEquals(job.status, JobStatus.WAITING)
-        build_queue = store.find(BuildQueue, BuildQueue.job == job.id).one()
+        build_queue = store.find(
+            BuildQueue,
+            BuildQueue._build_farm_job_id ==
+                removeSecurityProxy(build).build_farm_job_id).one()
         self.assertProvides(build_queue, IBuildQueue)
         self.assertTrue(build_queue.virtualized)
+        self.assertEquals(build_queue.status, BuildQueueStatus.WAITING)
 
     def test_requestBuildRejectsNotPPA(self):
         recipe = self.factory.makeSourcePackageRecipe()
@@ -424,7 +417,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         def request_build():
             build = recipe.requestBuild(archive, requester, series,
                     PackagePublishingPocket.RELEASE)
-            removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
+            build.updateStatus(BuildStatus.FULLYBUILT)
         [request_build() for num in range(5)]
         e = self.assertRaises(TooManyBuilds, request_build)
         self.assertIn(
@@ -451,7 +444,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe.requestBuild(archive, recipe.owner,
             new_distroseries, PackagePublishingPocket.RELEASE)
         # Changing status of old build allows new build.
-        removeSecurityProxy(old_build).status = BuildStatus.FULLYBUILT
+        old_build.updateStatus(BuildStatus.FULLYBUILT)
         recipe.requestBuild(archive, recipe.owner, series,
                 PackagePublishingPocket.RELEASE)
 
@@ -556,12 +549,10 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe = self.factory.makeSourcePackageRecipe(branches=branches)
         pending_build = self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe)
-        self.factory.makeSourcePackageRecipeBuildJob(
-            recipe_build=pending_build)
+        pending_build.queueBuild()
         past_build = self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe)
-        self.factory.makeSourcePackageRecipeBuildJob(
-            recipe_build=past_build)
+        past_build.queueBuild()
         removeSecurityProxy(past_build).datebuilt = datetime.now(UTC)
         with person_logged_in(recipe.owner):
             recipe.destroySelf()
@@ -622,11 +613,12 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         hoary = self.factory.makeSourcePackageRecipeDistroseries("hoary")
         recipe.distroseries.add(hoary)
         for series in recipe.distroseries:
-            build = recipe.requestBuild(
-                recipe.daily_build_archive, recipe.owner,
-                series, PackagePublishingPocket.RELEASE)
-            removeSecurityProxy(build).date_created = (
-                datetime.now(UTC) - timedelta(hours=24, seconds=1))
+            self.factory.makeSourcePackageRecipeBuild(
+                recipe=recipe, archive=recipe.daily_build_archive,
+                requester=recipe.owner,
+                distroseries=series, pocket=PackagePublishingPocket.RELEASE,
+                date_created=(
+                    datetime.now(UTC) - timedelta(hours=24, seconds=1)))
         stale_recipes = SourcePackageRecipe.findStaleDailyBuilds()
         self.assertEqual([recipe], list(stale_recipes))
 
@@ -634,9 +626,10 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
 
         def set_duration(build, minutes):
             duration = timedelta(minutes=minutes)
-            build = removeSecurityProxy(build)
-            build.date_started = self.factory.getUniqueDate()
-            build.date_finished = build.date_started + duration
+            build.updateStatus(BuildStatus.BUILDING)
+            build.updateStatus(
+                BuildStatus.FULLYBUILT,
+                date_finished=build.date_started + duration)
         recipe = removeSecurityProxy(self.factory.makeSourcePackageRecipe())
         self.assertIs(None, recipe.getMedianBuildDuration())
         build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
@@ -668,7 +661,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertEqual(builds, list(recipe.builds))
 
         # Change the status of one of the builds and retest.
-        removeSecurityProxy(builds[0]).status = BuildStatus.FULLYBUILT
+        builds[0].updateStatus(BuildStatus.FULLYBUILT)
         self.assertEqual([builds[0]], list(recipe.completed_builds))
         self.assertEqual(builds[1:], list(recipe.pending_builds))
         self.assertEqual(builds, list(recipe.builds))

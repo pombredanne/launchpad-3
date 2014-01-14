@@ -11,10 +11,12 @@
   <div metal:fill-slot="main">
 
     <div class="top-portlet">
+      <tal:navigation content="structure view/batchnav/@@+navigation-links-upper" />
       <tal:block
-        repeat="dspr view/releases"
+        repeat="dspr view/batchnav/currentBatch"
         replace="structure dspr/@@+changes">
       </tal:block>
+      <tal:navigation content="structure view/batchnav/@@+navigation-links-lower" />
     </div>
 
   </div>

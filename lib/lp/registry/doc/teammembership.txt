@@ -193,7 +193,7 @@ returns a tuple with False and the current status of the membership.
 
 As expected, the membership object implements ITeamMembership.
 
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.registry.interfaces.teammembership import ITeamMembership
     >>> verifyObject(ITeamMembership, membership)
     True
@@ -811,10 +811,11 @@ teams for which the person/team has admin rights.
 
 If a team is merged it will not show up in the set of administered teams.
 
+    >>> from lp.registry.personmerge import merge_people
     >>> login('foo.bar@canonical.com')
     >>> membershipset.deactivateActiveMemberships(
     ...     cprov_team, "Merging", foobar)
-    >>> personset.merge(cprov_team, guadamen_team, cprov_team.teamowner)
+    >>> merge_people(cprov_team, guadamen_team, cprov_team.teamowner)
     >>> [team.name for team in cprov.getAdministratedTeams()]
     [u'canonical-partner-dev', u'guadamen', u'launchpad-buildd-admins']
 

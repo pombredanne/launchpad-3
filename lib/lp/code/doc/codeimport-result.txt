@@ -7,7 +7,7 @@ interface.
     >>> from lp.code.interfaces.codeimportresult import (
     ...     ICodeImportResult, ICodeImportResultSet)
     >>> result_set = getUtility(ICodeImportResultSet)
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> verifyObject(ICodeImportResultSet, result_set)
     True
 

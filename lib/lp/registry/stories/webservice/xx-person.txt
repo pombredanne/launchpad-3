@@ -423,29 +423,6 @@ All participants (direct or indirect members):
     http://.../~name12
     http://.../~salgado
 
-A person/team is also linked to all teams in which they participate.
-
-    # XXX: salgado, 2008-08-01: Commented because method has been Unexported;
-    # it should be re-enabled after the operation is exported again.
-    # >>> salgado['participations_collection_link']
-    # u'http://.../~salgado/participations'
-    # >>> print_self_link_of_entries(webservice.get(
-    # ...     salgado['participations_collection_link']).jsonBody())
-    # http://.../~admins
-    # http://.../~landscape-developers
-    # http://.../~mailing-list-experts
-
-And to the teams in which they're indirect members.
-
-    # XXX: salgado, 2008-08-01: Commented because method has been Unexported;
-    # it should be re-enabled after the operation is exported again.
-    # >>> link = salgado['indirect_participations_collection_link']
-    # >>> link
-    # u'http://.../~salgado/indirect_participations'
-
-    # >>> print_self_link_of_entries(webservice.get(link).jsonBody())
-    # http://.../~mailing-list-experts
-
 There are also links to proposed, invited, deactivated and expired
 members.
 
@@ -811,35 +788,6 @@ another team.
     >>> webservice.get("/~ubuntu-team/+member/landscape-developers"
     ...     ).jsonBody()['status']
     u'Deactivated'
-
-To check whether or not a given person is a participant in a team, use the
-'inTeam' custom operation.
-
-    # XXX: salgado, 2008-08-01: Commented because method has been Unexported;
-    # it should be re-enabled after the operation is exported again.
-    # >>> print webservice.named_get(
-    # ...     '/~salgado', 'inTeam', team=ubuntu_team['self_link']
-    # ...     ).jsonBody()
-    # False
-
-    # >>> print webservice.named_get(
-    # ...     '/~cprov', 'inTeam', team=ubuntu_team['self_link']
-    # ...     ).jsonBody()
-    # True
-
-To find the path from a given person to a team that person is a
-participant, use the 'findPathToTeam' custom operation.
-
-    # XXX: salgado, 2008-08-01: Commented because method has been Unexported;
-    # it should be re-enabled after the operation is exported again.
-    # >>> ml_experts = webservice.get("/~mailing-list-experts").jsonBody()
-    # >>> json = webservice.named_get(
-    # ...     '/~salgado', 'findPathToTeam', team=ml_experts['self_link']
-    # ...     ).jsonBody()
-    # >>> for entry in json['entries']:
-    # ...     print entry['self_link']
-    # http://.../~admins
-    # http://.../~mailing-list-experts
 
 
 Restrictions

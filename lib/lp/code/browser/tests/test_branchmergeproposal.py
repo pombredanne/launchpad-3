@@ -1,7 +1,5 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=F0401
 
 
 """Unit tests for BranchMergeProposals."""
@@ -65,7 +63,6 @@ from lp.services.webapp.interfaces import (
     IPrimaryContext,
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     BrowserTestCase,
     feature_flags,
@@ -75,6 +72,7 @@ from lp.testing import (
     set_feature_flag,
     TestCaseWithFactory,
     time_counter,
+    verifyObject,
     )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
@@ -225,19 +223,6 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         self._nominateReviewer(private_team1, owner)
 
         return private_team1, public_person1
-
-    def testPrivateVotesNotVisibleIfBranchNotVisible(self):
-        # User can't see votes for private teams if they can't see the branch.
-        private_team1, public_person1 = self._createPrivateVotes(False)
-        login_person(self.factory.makePerson())
-        view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
-
-        # Check the requested reviews.
-        requested_reviews = view.requested_reviews
-        self.assertEqual(1, len(requested_reviews))
-        self.assertContentEqual(
-            [public_person1],
-            [review.reviewer for review in requested_reviews])
 
     def testPrivateVotesVisibleIfBranchVisible(self):
         # User can see votes for private teams if they can see the branch.
@@ -807,7 +792,8 @@ class TestResubmitBrowser(BrowserTestCase):
         browser = self.getViewBrowser(bmp, '+resubmit')
         browser.getControl('Description').value = 'flibble'
         browser.getControl('Resubmit').click()
-        self.assertEqual('flibble', bmp.superseded_by.description)
+        with person_logged_in(self.user):
+            self.assertEqual('flibble', bmp.superseded_by.description)
 
 
 class TestBranchMergeProposalView(TestCaseWithFactory):
@@ -885,25 +871,23 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         # librarian content.
         text = ''.join(chr(x) for x in range(255))
         diff_bytes = ''.join(unified_diff('', text))
-        self.setPreviewDiff(diff_bytes)
+        preview_diff = self.setPreviewDiff(diff_bytes)
         transaction.commit()
 
         def fake_open(*args):
             raise LibrarianServerError
 
-        lfa = removeSecurityProxy(self.bmp.preview_diff).diff.diff_text
+        lfa = preview_diff.diff.diff_text
         with monkey_patch(lfa, open=fake_open):
-            view = create_initialized_view(self.bmp.preview_diff, '+diff')
+            view = create_initialized_view(preview_diff, '+diff')
             self.assertEqual('', view.preview_diff_text)
             self.assertFalse(view.diff_available)
             markup = view()
             self.assertIn('The diff is not available at this time.', markup)
 
     def setPreviewDiff(self, preview_diff_bytes):
-        preview_diff = PreviewDiff.create(
-            preview_diff_bytes, u'a', u'b', None, u'')
-        removeSecurityProxy(self.bmp).preview_diff = preview_diff
-        return preview_diff
+        return PreviewDiff.create(
+            self.bmp, preview_diff_bytes, u'a', u'b', None, u'')
 
     def test_linked_bugs_excludes_mutual_bugs(self):
         """List bugs that are linked to the source only."""

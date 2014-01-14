@@ -36,7 +36,7 @@ from lp.services.database import (
     read_transaction,
     write_transaction,
     )
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.librarian.model import LibraryFileAlias
 
 

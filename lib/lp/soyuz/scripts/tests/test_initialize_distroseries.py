@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the initialize_distroseries script machinery."""
@@ -15,8 +15,7 @@ from lp.registry.interfaces.distroseriesdifference import (
     )
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.database.lpstorm import IStore
-from lp.services.features.testing import FeatureFixture
+from lp.services.database.interfaces import IStore
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadStatus,
@@ -28,17 +27,17 @@ from lp.soyuz.interfaces.packageset import (
     IPackagesetSet,
     NoSuchPackageSet,
     )
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import (
+    IProcessorSet,
+    ProcessorNotFound,
+    )
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
 from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.model.distroarchseries import DistroArchSeries
-from lp.soyuz.model.distroseriesdifferencejob import (
-    FEATURE_FLAG_ENABLE_MODULE,
-    find_waiting_jobs,
-    )
+from lp.soyuz.model.distroseriesdifferencejob import find_waiting_jobs
 from lp.soyuz.model.section import SectionSelection
 from lp.soyuz.scripts.initialize_distroseries import (
     InitializationError,
@@ -53,11 +52,13 @@ class InitializationHelperTestCase(TestCaseWithFactory):
     # - setup/populate parents with packages;
     # - initialize a child from parents.
 
-    def setupDas(self, parent, proc, arch_tag):
-        pf = getUtility(IProcessorFamilySet).getByName(proc)
+    def setupDas(self, parent, processor_name, arch_tag):
+        try:
+            processor = getUtility(IProcessorSet).getByName(processor_name)
+        except ProcessorNotFound:
+            processor = self.factory.makeProcessor(name=processor_name)
         parent_das = self.factory.makeDistroArchSeries(
-            distroseries=parent, processorfamily=pf,
-            architecturetag=arch_tag)
+            distroseries=parent, processor=processor, architecturetag=arch_tag)
         lf = self.factory.makeLibraryFileAlias()
         transaction.commit()
         parent_das.addOrUpdateChroot(lf)
@@ -65,10 +66,8 @@ class InitializationHelperTestCase(TestCaseWithFactory):
         return parent_das
 
     def setupParent(self, parent=None, packages=None, format_selection=None,
-                    distribution=None,
-                    pocket=PackagePublishingPocket.RELEASE,
-                    proc='x86', arch_tag='i386'
-                    ):
+                    distribution=None, pocket=PackagePublishingPocket.RELEASE,
+                    proc='386', arch_tag='i386'):
         if parent is None:
             parent = self.factory.makeDistroSeries(distribution)
         parent_das = self.setupDas(parent, proc, arch_tag)
@@ -1201,16 +1200,16 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             ids.check)
 
     def createDistroSeriesWithPublication(self, distribution=None):
-        # Create a distroseries with a publication in the DEBUG archive.
+        # Create a distroseries with a publication in the PARTNER archive.
         distroseries = self.factory.makeDistroSeries(
             distribution=distribution)
         # Publish a package in another archive in distroseries' distribution.
-        debug_archive = self.factory.makeArchive(
+        partner_archive = self.factory.makeArchive(
             distribution=distroseries.distribution,
-            purpose=ArchivePurpose.DEBUG)
+            purpose=ArchivePurpose.PARTNER)
 
         self.factory.makeSourcePackagePublishingHistory(
-            distroseries=distroseries, archive=debug_archive)
+            distroseries=distroseries, archive=partner_archive)
         return distroseries
 
     def test_copy_method_diff_archive_empty_target(self):
@@ -1388,7 +1387,6 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         # of the DSDJs with all the parents.
         parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
         parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
-        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: 'on'}))
         child = self._fullInitialize([parent1, parent2])
 
         self.assertNotEqual([], self.getWaitingJobs(child, 'p1', parent1))
@@ -1404,7 +1402,6 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             previous_parents=[prev_parent1, prev_parent2])
         parent3, unused = self.setupParent(
             packages={u'p2': u'2.5', u'p3': u'1.1'})
-        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: 'on'}))
         self._fullInitialize(
             [prev_parent1, prev_parent2, parent3], child=child)
 
@@ -1430,7 +1427,6 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         test1.addSources('p1')
         parent3, unused = self.setupParent(
             packages={u'p1': u'2.5', u'p3': u'4.4'})
-        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: 'on'}))
         self._fullInitialize(
             [prev_parent1, prev_parent2, parent3], child=child,
             packagesets=(str(test1.id),))

@@ -19,6 +19,7 @@ Each record exposes a number of properties.
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(uploads['entries'][0])
     archive_link: u'http://.../ubuntu/+archive/primary'
+    copy_source_archive_link: None
     custom_file_urls: []
     date_created: ...
     display_arches: u'source'

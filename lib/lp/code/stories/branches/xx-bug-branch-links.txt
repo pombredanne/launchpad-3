@@ -65,8 +65,7 @@ Attempting to link to the same bug again gives no error.
     >>> browser.getLink('Link a bug report').click()
     >>> browser.getControl('Bug #').value = "4"
     >>> browser.getControl('Continue').click()
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print message
+    >>> print_feedback_messages(browser.contents)
 
 The bug-branch link is also shown on the bug page.
 

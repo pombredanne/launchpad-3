@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -40,7 +40,7 @@
                 permission="launchpad.Edit"
                 interface="lp.soyuz.interfaces.publishing.IBinaryPackagePublishingHistoryEdit"/>
             <require
-                permission="launchpad.Admin"
+                permission="launchpad.InternalScriptsOnly"
                 set_schema="lp.soyuz.interfaces.publishing.IBinaryPackagePublishingHistory"/>
         </class>
 
@@ -110,7 +110,7 @@
                 permission="launchpad.Edit"
                 interface="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistoryEdit"/>
             <require
-                permission="launchpad.Admin"
+                permission="launchpad.InternalScriptsOnly"
                 set_schema="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistory"/>
         </class>
 
@@ -168,6 +168,7 @@
                 custom_file_urls
                 customFileUrls
                 getBinaryProperties
+                copy_source_archive
                 getFileByName
                 date_created
                 sourcepackagerelease
@@ -192,7 +193,9 @@
                 section_name
                 components
                 searchable_names
-                searchable_versions"/>
+                searchable_versions
+                changes_file_id
+                findPersonToNotify"/>
         <require
             permission="launchpad.Edit"
             attributes="
@@ -229,7 +232,7 @@
         <allow
             interface="lp.soyuz.interfaces.queue.IPackageUploadCustom"/>
         <require
-            permission="launchpad.Admin" set_attributes="libraryfilealias"/>
+            permission="launchpad.InternalScriptsOnly" set_attributes="libraryfilealias"/>
     </class>
 
     <!-- PackageUploadSet -->
@@ -366,20 +369,6 @@
             permission="zope.Public"
             set_schema="lp.soyuz.interfaces.processor.IProcessor"/>
     </class>
-    <class
-        class="lp.soyuz.model.processor.ProcessorFamily">
-        <allow
-            interface="lp.soyuz.interfaces.processor.IProcessorFamily"/>
-        <require
-            permission="zope.Public"
-            set_schema="lp.soyuz.interfaces.processor.IProcessorFamily"/>
-    </class>
-    <securedutility
-        class="lp.soyuz.model.processor.ProcessorFamilySet"
-        provides="lp.soyuz.interfaces.processor.IProcessorFamilySet">
-        <allow
-            interface="lp.soyuz.interfaces.processor.IProcessorFamilySet"/>
-    </securedutility>
     <securedutility
         class="lp.soyuz.model.processor.ProcessorSet"
         provides="lp.soyuz.interfaces.processor.IProcessorSet">
@@ -402,6 +391,9 @@
         <allow
             interface="lp.soyuz.interfaces.archive.IArchiveRestricted"/>
         <require
+            permission="launchpad.SubscriberView"
+            interface="lp.soyuz.interfaces.archive.IArchiveSubscriberView"/>
+        <require
             permission="launchpad.View"
             interface="lp.soyuz.interfaces.archive.IArchiveView"/>
         <require
@@ -414,23 +406,25 @@
                             suppress_subscription_notifications"/>
         <!--
            NOTE: The 'private' permission controls who can turn a public
-           archive into a private one, and vice versa. The logic that says this
-           requires launchpad.Commercial permissions is duplicated in
-           validate_ppa.
+           archive into a private one, and vice versa. The logic that
+           says this requires launchpad.Admin permissions is duplicated
+           in validate_ppa.
           -->
         <require
-            permission="launchpad.Commercial"
-            interface="lp.soyuz.interfaces.archive.IArchiveCommercial"
-            set_attributes="authorized_size build_debug_symbols buildd_secret
-                            enabled_restricted_families
-                            external_dependencies private
+            permission="launchpad.Admin"
+            interface="lp.soyuz.interfaces.archive.IArchiveAdmin"
+            set_attributes="authorized_size build_debug_symbols
+                            buildd_secret enabled_restricted_processors
+                            external_dependencies name
+                            permit_obsolete_series_uploads
+                            private publish_debug_symbols
                             require_virtualized"/>
         <require
             permission="launchpad.Moderate"
             set_schema="lp.soyuz.interfaces.archive.IArchiveRestricted"/>
         <require
-            permission="launchpad.Admin"
-            set_attributes="distribution name signing_key"/>
+            permission="launchpad.InternalScriptsOnly"
+            set_attributes="distribution signing_key"/>
     </class>
     <adapter
         for="lp.soyuz.interfaces.archive.IArchive"
@@ -496,27 +490,6 @@
         <require
             permission="launchpad.Admin"
             interface="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuildAdmin"/>
-
-        <!-- XXX cprov 2005-10-27
-
-    bug=3580: We need a autobuild celebrity. -->
-
-        <require
-            permission="launchpad.Edit"
-            set_attributes="log date_finished date_started builder
-                            status dependencies upload_log"/>
-
-        <!-- XXX bigjools 2010-07-27 bug=570939
-             Work around the fact that not all BuildFarmJobs are concrete
-             objects.
-
-             This should not be required once the old BuildFarmJob stuff is
-             removed when the Translation Template jobs and Recipe jobs
-             use the new infrastructure -->
-        <require
-            permission="launchpad.Admin"
-            set_attributes="failure_count"/>
-
     </class>
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"
@@ -631,34 +604,21 @@
         <class
             class="lp.soyuz.model.distroarchseries.DistroArchSeries">
             <allow
-                interface="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"/>
-            <allow
-                interface="lp.soyuz.interfaces.buildrecords.IHasBuildRecords"/>
+                interface="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesPublic"/>
             <allow
                 interface="lp.soyuz.interfaces.publishing.ICanPublishPackages"/>
             <require
                 permission="launchpad.Admin"
-                set_schema="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"/>
+                set_schema="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesPublic"/>
+            <require
+                permission="launchpad.Moderate"
+                interface="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesModerate"/>
         </class>
         <adapter
             for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
             provides="lp.services.webapp.interfaces.IBreadcrumb"
             factory="lp.soyuz.browser.distroarchseries.DistroArchSeriesBreadcrumb"
             permission="zope.Public" />
-
-    <!-- DistroArchSeriesSet -->
-
-    <class
-        class="lp.soyuz.model.distroarchseries.DistroArchSeriesSet">
-        <allow
-            interface="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesSet"/>
-    </class>
-    <securedutility
-        class="lp.soyuz.model.distroarchseries.DistroArchSeriesSet"
-        provides="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesSet">
-        <allow
-            interface="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesSet"/>
-    </securedutility>
 
     <!-- PocketChroot -->
 
@@ -671,7 +631,7 @@
         <allow
             interface="lp.soyuz.interfaces.distroarchseries.IPocketChroot"/>
         <require
-            permission="launchpad.Admin"
+            permission="launchpad.InternalScriptsOnly"
             set_schema="lp.soyuz.interfaces.distroarchseries.IPocketChroot"/>
     </class>
 
@@ -778,18 +738,6 @@
             permission="launchpad.Edit"
             set_schema="lp.soyuz.interfaces.files.IBinaryPackageFile"/>
     </class>
-    <securedutility
-        class="lp.soyuz.model.files.BinaryPackageFileSet"
-        provides="lp.soyuz.interfaces.files.IBinaryPackageFileSet">
-        <allow
-            interface="lp.soyuz.interfaces.files.IBinaryPackageFileSet"/>
-    </securedutility>
-    <securedutility
-        class="lp.soyuz.model.files.SourcePackageReleaseFileSet"
-        provides="lp.soyuz.interfaces.files.ISourcePackageReleaseFileSet">
-        <allow
-            interface="lp.soyuz.interfaces.files.ISourcePackageReleaseFileSet"/>
-    </securedutility>
 
     <!-- Packageset -->
 
@@ -828,26 +776,9 @@
             interface="lp.soyuz.interfaces.packagesetgroup.IPackagesetGroup"/>
     </class>
 
-    <!-- BuildPackageJob -->
-    <class
-        class="lp.soyuz.model.buildpackagejob.BuildPackageJob">
-        <allow
-            interface="lp.soyuz.interfaces.buildpackagejob.IBuildPackageJob"/>
-    </class>
-    <!--
-        The registration below is used to discover all build farm job classes
-        that implement the `IBuildFarmJob` interface. Please see bug #503839
-        for more detail.
-        The 'name' attribute needs to be set to the appropriate
-        `BuildFarmJobType` enumeration value.
-    -->
-    <utility component="lp.soyuz.model.buildpackagejob.BuildPackageJob"
-        name="PACKAGEBUILD"
-        provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"/>
-
     <!-- BinaryPackageBuildBehavior -->
     <adapter
-        for="lp.soyuz.interfaces.buildpackagejob.IBuildPackageJob"
+        for="lp.soyuz.interfaces.binarypackagebuild.IBinaryPackageBuild"
         provides="lp.buildmaster.interfaces.buildfarmjobbehavior.IBuildFarmJobBehavior"
         factory="lp.soyuz.model.binarypackagebuildbehavior.BinaryPackageBuildBehavior"
         permission="zope.Public" />
@@ -1020,6 +951,30 @@
       <allow interface=".interfaces.processacceptedbugsjob.IProcessAcceptedBugsJob" />
     </class>
 
+    <!-- PackageDiffJobSource -->
+    <securedutility
+      component=".model.packagediffjob.PackageDiffJob"
+      provides=".interfaces.packagediffjob.IPackageDiffJobSource">
+      <allow interface=".interfaces.packagediffjob.IPackageDiffJobSource" />
+    </securedutility>
+
+    <!-- PackageDiffJob -->
+    <class class=".model.packagediffjob.PackageDiffJob">
+      <allow interface=".interfaces.packagediffjob.IPackageDiffJob" />
+    </class>
+
+    <!-- PackageTranslationsUploadJobSource -->
+    <securedutility
+      component=".model.packagetranslationsuploadjob.PackageTranslationsUploadJob"
+      provides=".interfaces.packagetranslationsuploadjob.IPackageTranslationsUploadJobSource">
+      <allow interface=".interfaces.packagetranslationsuploadjob.IPackageTranslationsUploadJobSource" />
+    </securedutility>
+
+    <!-- PackageTranslationsUploadJob -->
+    <class class=".model.packagetranslationsuploadjob.PackageTranslationsUploadJob">
+      <allow
+      interface=".interfaces.packagetranslationsuploadjob.IPackageTranslationsUploadJob" />
+    </class>
     <webservice:register module="lp.soyuz.interfaces.webservice" />
 
 </configure>

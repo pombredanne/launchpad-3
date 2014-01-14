@@ -150,10 +150,12 @@ class FakeLibrarian(Fixture):
     def _makeLibraryFileContent(self, content):
         """Create a `LibraryFileContent`."""
         size = len(content)
-        sha1 = hashlib.sha1(content).hexdigest()
         md5 = hashlib.md5(content).hexdigest()
+        sha1 = hashlib.sha1(content).hexdigest()
+        sha256 = hashlib.sha256(content).hexdigest()
 
-        content_object = LibraryFileContent(filesize=size, sha1=sha1, md5=md5)
+        content_object = LibraryFileContent(
+            filesize=size, md5=md5, sha1=sha1, sha256=sha256)
         return content_object
 
     def create(self, name, size, file, contentType, expires=None,

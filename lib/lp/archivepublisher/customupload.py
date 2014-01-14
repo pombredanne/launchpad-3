@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Infrastructure for handling custom uploads.
@@ -120,6 +120,10 @@ class CustomUpload:
 
         :raises ValueError: If tarfile_path is incorrectly formed.
         """
+        raise NotImplementedError
+
+    def setComponents(tarfile_path):
+        """Set instance variables based on decomposing the filename."""
         raise NotImplementedError
 
     def setTargetDirectory(self, pubconf, tarfile_path, distroseries):

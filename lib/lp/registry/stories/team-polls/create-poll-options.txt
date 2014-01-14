@@ -55,7 +55,7 @@ message because the title is required.
     >>> team_admin_browser.getControl('Title').value = ''
     >>> team_admin_browser.getControl('Create').click()
 
-    >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
+    >>> print_feedback_messages(team_admin_browser.contents)
     There is 1 error.
     Required input is missing.
 
@@ -66,7 +66,7 @@ should get a nice error message
     >>> team_admin_browser.getControl('Title').value = 'Bill Again'
     >>> team_admin_browser.getControl('Create').click()
 
-    >>> print "\n".join(get_feedback_messages(team_admin_browser.contents))
+    >>> print_feedback_messages(team_admin_browser.contents)
     There is 1 error.
     ...is already in use by another option in this poll.
 
@@ -76,10 +76,10 @@ That's only possible when the poll is not yet open.
     >>> team_admin_browser.open(
     ...     'http://launchpad.dev/~ubuntu-team/+poll/director-2004/+newoption')
 
-    >>> "\n".join(get_feedback_messages(team_admin_browser.contents))
-    u'You can&#8217;t add new options because the poll is already closed.'
+    >>> print_feedback_messages(team_admin_browser.contents)
+    You can&#8217;t add new options because the poll is already closed.
 
     >>> team_admin_browser.open(
     ...     'http://launchpad.dev/~ubuntu-team/+poll/never-closes/+newoption')
-    >>> "\n".join(get_feedback_messages(team_admin_browser.contents))
-    u'You can&#8217;t add new options because the poll is already open.'
+    >>> print_feedback_messages(team_admin_browser.contents)
+    You can&#8217;t add new options because the poll is already open.

@@ -175,15 +175,10 @@ right target location, they are passed via process-upload command-line:
   NEW
 
 After successfully reprocessing binary upload the originally
-FAILEDTOUPLOAD build record is already in FULLYBUILT state and the
-previously stored upload_log is dereferenced (they are both updated
-during the upload processing time):
+FAILEDTOUPLOAD build record is already in FULLYBUILT state.
 
   >>> print failedtoupload_candidate.status.name
   FULLYBUILT
-
-  >>> print failedtoupload_candidate.upload_log
-  None
 
 And contains the associated binaries.
 

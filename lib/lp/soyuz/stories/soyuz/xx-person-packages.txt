@@ -168,14 +168,11 @@ records.
     >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.services.log.logger import FakeLogger
     >>> from lp.testing.dbuser import switch_dbuser
-    >>> from lp.services.database.interfaces import (
-    ...     IStoreSelector,
-    ...     MAIN_STORE,
-    ...     MASTER_FLAVOR,
-    ...     )
+    >>> from lp.soyuz.model.archive import Archive
+    >>> from lp.services.database.interfaces import IMasterStore
 
     >>> def update_cached_records(delete_all=False):
-    ...     store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    ...     store = IMasterStore(Archive)
     ...     if delete_all:
     ...         store.execute(
     ...             "delete from latestpersonsourcepackagereleasecache")
@@ -192,9 +189,11 @@ records.
 Create some new source packages, source1 and source2, both created by cprov
 so that they appear in his +packages page.
 
+    >>> from storm.expr import SQL
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.services.database.constants import UTC_NOW
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
     >>> from lp.soyuz.enums import PackagePublishingStatus
 
@@ -210,7 +209,8 @@ so that they appear in his +packages page.
     >>> source1 = test_publisher.getPubSource(
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     sourcename='source1',
-    ...     archive=cprov.archive)
+    ...     archive=cprov.archive,
+    ...     date_uploaded=UTC_NOW - SQL("INTERVAL '1 second'"))
     >>> source1.sourcepackagerelease.creator=cprov
     >>> source1_mark = source1.copyTo(
     ...     source1.distroseries, source1.pocket, mark.archive)
@@ -263,16 +263,16 @@ both packages:
     >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> nopriv_browser.open("http://launchpad.dev/~cprov/+related-packages")
     >>> print_ppa_rows(nopriv_browser)
-    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
-        ...ago None
     source2 PPA named p3a for No Priv... Ubuntutest Breezy-autotest 666
+        ...ago None
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-packages")
     >>> print_ppa_rows(admin_browser)
-    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
-        ...ago None
     source2 PPA named p3a for No Priv... Ubuntutest Breezy-autotest 666
+        ...ago None
+    source1 PPA for Celso Providelo - Ubuntutest Breezy-autotest 666
         ...ago None
 
 Let's move the publication of source1 from mark's public archive to his
@@ -381,9 +381,9 @@ First list the packages in the PPA.
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-packages")
     >>> print_ppa_rows(admin_browser)
-    source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
-        ...ago None
     source2 PPA named p3a for No Priv... - Ubuntutest Breezy-autotest 666
+        ...ago None
+    source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
         ...ago None
 
 Then delete the 'source2' package.
@@ -396,9 +396,7 @@ Then delete the 'source2' package.
     ...     "Deletion comment").value = "Bug 184490"
     >>> admin_browser.getControl("Request Deletion").click()
 
-    >>> messages = get_feedback_messages(admin_browser.contents)
-    >>> for msg in messages:
-    ...     print msg
+    >>> print_feedback_messages(admin_browser.contents)
     Source and binaries deleted by Foo Bar:
     source2 666 in breezy-autotest
     Deletion comment: Bug 184490
@@ -411,6 +409,8 @@ Then delete the 'source2' package.
     ...     if empty_section is not None:
     ...         print extract_text(empty_section)
     >>> print_ppa_packages(admin_browser.contents)
+    Source             Published   Status     Series   Section  Build Status
+    source2 - 666...   a moment ago Deleted   ...
     >>> update_cached_records()
 
 Now re-list the PPA's packages, 'source2' was deleted but still
@@ -418,9 +418,9 @@ appears.
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+related-packages")
     >>> print_ppa_rows(admin_browser)
-    source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
-        ...ago None
     source2 PPA named p3a for No Priv... - Ubuntutest Breezy-autotest 666
+        ...ago None
+    source1 PPA named p3a for Celso... - Ubuntutest Breezy-autotest 666
         ...ago None
 
 Please note also that disabled archives are not viewable by anonymous users.
@@ -444,4 +444,4 @@ Please note also that disabled archives are not viewable by anonymous users.
     >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
     Traceback (most recent call last):
     ...
-    Unauthorized: (..., 'browserDefault', 'launchpad.View')
+    Unauthorized: (..., 'browserDefault', 'launchpad.SubscriberView')

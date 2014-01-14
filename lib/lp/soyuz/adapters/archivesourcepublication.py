@@ -21,7 +21,7 @@ from zope.component import getUtility
 
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,

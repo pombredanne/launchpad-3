@@ -33,7 +33,6 @@ import site
 #   Not doing this means that some of the links in staging's MHonArc archive
 #   will point to production archives.
 
-# pylint: disable-msg=W0403
 import _pythonpath
 
 import logging
@@ -98,7 +97,6 @@ class MailingListSyncScript(LaunchpadScript):
         :param source_url: the base url of the source
         """
         # This can't be done at module global scope.
-        # pylint: disable-msg=F0401
         from Mailman import mm_cfg
         # Start by rsync'ing over the entire $vardir/lists, $vardir/archives,
         # $vardir/backups, and $vardir/mhonarc directories.  We specifically
@@ -128,7 +126,6 @@ class MailingListSyncScript(LaunchpadScript):
     def fixHostnames(self):
         """Fix up the host names in Mailman and the LP database."""
         # These can't be done at module global scope.
-        # pylint: disable-msg=F0401
         from Mailman import Utils
         from Mailman import mm_cfg
         from Mailman.MailList import MailList

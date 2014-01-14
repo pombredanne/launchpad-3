@@ -1,7 +1,5 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=C0322,F0401
 
 """Views, navigation and actions for BranchMergeProposals."""
 
@@ -42,13 +40,13 @@ from lazr.restful.interfaces import (
     IWebServiceClientRequest,
     )
 import simplejson
-from zope.app.form.browser import TextAreaWidget
 from zope.component import (
     adapts,
     getMultiAdapter,
     getUtility,
     )
 from zope.formlib import form
+from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
     implements,
     Interface,
@@ -625,8 +623,10 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                     self.context.source_branch.unique_name),
             })
         if getFeatureFlag("longpoll.merge_proposals.enabled"):
-            cache.objects['merge_proposal_event_key'] = (
-                subscribe(self.context).event_key)
+            cache.objects['merge_proposal_event_key'] = subscribe(
+                self.context).event_key
+        if getFeatureFlag("code.inline_diff_comments.enabled"):
+            cache.objects['inline_diff_comments'] = True
 
     @action('Claim', name='claim')
     def claim_action(self, action, data):
@@ -721,8 +721,12 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     def has_bug_or_spec(self):
         """Return whether or not the merge proposal has a linked bug or spec.
         """
-        branch = self.context.source_branch
-        return self.linked_bugtasks or branch.spec_links
+        return self.linked_bugtasks or self.spec_links
+
+    @property
+    def spec_links(self):
+        return list(
+            self.context.source_branch.getSpecificationLinks(self.user))
 
     @cachedproperty
     def linked_bugtasks(self):

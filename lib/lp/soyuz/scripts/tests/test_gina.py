@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from doctest import DocTestSuite
@@ -7,25 +7,38 @@ import os
 from textwrap import dedent
 from unittest import TestLoader
 
+import transaction
+
 from lp.archiveuploader.tagfiles import parse_tagfile
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import DevNullLogger
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.scripts.gina import ExecutionError
+from lp.soyuz.scripts.gina.archive import (
+    ArchiveComponentItems,
+    PackagesMap,
+    )
 from lp.soyuz.scripts.gina.dominate import dominate_imported_source_packages
 import lp.soyuz.scripts.gina.handlers
 from lp.soyuz.scripts.gina.handlers import (
     BinaryPackagePublisher,
+    ImporterHandler,
     SourcePackagePublisher,
     )
 from lp.soyuz.scripts.gina.packages import (
     BinaryPackageData,
     SourcePackageData,
     )
+from lp.soyuz.scripts.gina.runner import import_sourcepackages
 from lp.testing import TestCaseWithFactory
 from lp.testing.faketransaction import FakeTransaction
-from lp.testing.layers import ZopelessDatabaseLayer
+from lp.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 
 
 class FakePackagesMap:
@@ -36,6 +49,9 @@ class FakePackagesMap:
 class TestGina(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
+
+    def assertPublishingStates(self, spphs, states):
+        self.assertEqual(states, [pub.status for pub in spphs])
 
     def test_dominate_imported_source_packages_dominates_imports(self):
         # dominate_imported_source_packages dominates the source
@@ -79,14 +95,12 @@ class TestGina(TestCaseWithFactory):
         dominate_imported_source_packages(
             txn, logger, series.distribution.name, series.name, pocket,
             FakePackagesMap({package.name: [{'Version': '1.1.1'}]}))
-        self.assertEqual([
+        states = [
             PackagePublishingStatus.SUPERSEDED,
             PackagePublishingStatus.SUPERSEDED,
-            PackagePublishingStatus.PUBLISHED,
-            PackagePublishingStatus.DELETED,
-            PackagePublishingStatus.PENDING,
-            ],
-            [pub.status for pub in spphs])
+            PackagePublishingStatus.PUBLISHED, PackagePublishingStatus.DELETED,
+            PackagePublishingStatus.PENDING]
+        self.assertPublishingStates(spphs, states)
 
     def test_dominate_imported_source_packages_dominates_deletions(self):
         # dominate_imported_source_packages dominates the source
@@ -114,12 +128,34 @@ class TestGina(TestCaseWithFactory):
         # The older, superseded release stays superseded; but the
         # releases that dropped out of the imported Sources list without
         # known successors are marked deleted.
-        self.assertEqual([
-            PackagePublishingStatus.SUPERSEDED,
-            PackagePublishingStatus.DELETED,
-            PackagePublishingStatus.DELETED,
-            ],
-            [pub.status for pub in pubs])
+        self.assertPublishingStates(
+            pubs, [PackagePublishingStatus.SUPERSEDED,
+            PackagePublishingStatus.DELETED, PackagePublishingStatus.DELETED])
+
+    def test_dominate_imported_sources_dominates_supported_series(self):
+        series = self.factory.makeDistroSeries()
+        pocket = PackagePublishingPocket.RELEASE
+        package = self.factory.makeSourcePackageName()
+        pubs = [
+            self.factory.makeSourcePackagePublishingHistory(
+                archive=series.main_archive, distroseries=series,
+                pocket=pocket, status=PackagePublishingStatus.PUBLISHED,
+                sourcepackagerelease=self.factory.makeSourcePackageRelease(
+                    sourcepackagename=package, version=version))
+            for version in ['1.0', '1.1', '1.1a']]
+
+        # In this scenario, 1.0 is a superseded release.
+        pubs[0].supersede()
+        # Now set the series to SUPPORTED.
+        series.status = SeriesStatus.SUPPORTED
+        logger = DevNullLogger()
+        txn = FakeTransaction()
+        dominate_imported_source_packages(
+            txn, logger, series.distribution.name, series.name, pocket,
+            FakePackagesMap({}))
+        self.assertPublishingStates(
+            pubs, [PackagePublishingStatus.SUPERSEDED,
+            PackagePublishingStatus.DELETED, PackagePublishingStatus.DELETED])
 
 
 class TestSourcePackageData(TestCaseWithFactory):
@@ -229,6 +265,45 @@ class TestBinaryPackagePublisher(TestCaseWithFactory):
 
         [bpph] = series.main_archive.getAllPublishedBinaries()
         self.assertEqual(PackagePublishingStatus.PUBLISHED, bpph.status)
+
+
+class TestRunner(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_import_sourcepackages_skip(self):
+        # gina can be told to skip particular source versions by setting
+        # soyuz.gina.skip_source_versions to a space-separated list of
+        # $DISTRO/$NAME/$VERSION.
+        series = self.factory.makeDistroSeries()
+
+        archive_root = os.path.join(
+            os.path.dirname(__file__), 'gina_test_archive')
+        arch_component_items = ArchiveComponentItems(
+            archive_root, 'lenny', ['main'], [], True)
+        packages_map = PackagesMap(arch_component_items)
+        importer_handler = ImporterHandler(
+            transaction, series.distribution.name, series.name, archive_root,
+            PackagePublishingPocket.RELEASE, None)
+
+        def import_and_get_versions():
+            import_sourcepackages(
+                series.distribution.name, packages_map, archive_root,
+                importer_handler)
+            return [
+                p.source_package_version
+                for p in series.getPublishedSources('archive-copier')]
+
+        # Our test archive has archive-copier 0.1.5 and 0.3.6 With
+        # soyuz.gina.skip_source_versions set to
+        # '$distro/archive-copier/0.1.5', an import will grab only
+        # 0.3.6.
+        skiplist = '%s/archive-copier/0.1.5' % series.distribution.name
+        with FeatureFixture({'soyuz.gina.skip_source_versions': skiplist}):
+            self.assertContentEqual(['0.3.6'], import_and_get_versions())
+
+        # Importing again without the feature flag removed grabs both.
+        self.assertContentEqual(['0.1.5', '0.3.6'], import_and_get_versions())
 
 
 def test_suite():

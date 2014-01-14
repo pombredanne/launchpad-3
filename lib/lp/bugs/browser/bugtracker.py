@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug tracker views."""
@@ -24,9 +24,9 @@ __all__ = [
 from itertools import chain
 
 from lazr.restful.utils import smartquote
-from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
+from zope.formlib.widgets import TextAreaWidget
 from zope.interface import implements
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary
@@ -167,7 +167,7 @@ class BugTrackerSetView(LaunchpadView):
         # bug watch counts per tracker. However the batching makes
         # the inefficiency tolerable for now. Robert Collins 20100919.
         self._pillar_cache = self.context.getPillarsForBugtrackers(
-            list(self.context.trackers()))
+            list(self.context.getAllTrackers()), self.user)
 
     @property
     def inactive_tracker_count(self):
@@ -175,14 +175,14 @@ class BugTrackerSetView(LaunchpadView):
 
     @cachedproperty
     def active_trackers(self):
-        results = self.context.trackers(active=True)
+        results = self.context.getAllTrackers(active=True)
         navigator = ActiveBatchNavigator(results, self.request)
         navigator.setHeadings('tracker', 'trackers')
         return navigator
 
     @cachedproperty
     def inactive_trackers(self):
-        results = self.context.trackers(active=False)
+        results = self.context.getAllTrackers(active=False)
         navigator = InactiveBatchNavigator(results, self.request)
         navigator.setHeadings('tracker', 'trackers')
         return navigator
@@ -205,8 +205,7 @@ class BugTrackerSetView(LaunchpadView):
             has_more_pillars = False
         return {
             'pillars': pillars[:self.pillar_limit],
-            'has_more_pillars': has_more_pillars,
-        }
+            'has_more_pillars': has_more_pillars}
 
 
 class BugTrackerView(LaunchpadView):
@@ -228,7 +227,7 @@ class BugTrackerView(LaunchpadView):
         This property was created for the Related projects portlet in
         the bug tracker's page.
         """
-        pillars = chain(self.context.projects, self.context.products)
+        pillars = chain(*self.context.getRelatedPillars(self.user))
         return shortlist([p for p in pillars if p.active], 100)
 
     @property
@@ -360,7 +359,7 @@ class BugTrackerEditView(LaunchpadEditFormView):
 
         # Only admins and registry experts can delete bug watches en
         # masse.
-        if self.context.watches.count() > 0:
+        if not self.context.watches.is_empty():
             admin_teams = [celebrities.admin, celebrities.registry_experts]
             for team in admin_teams:
                 if self.user.inTeam(team):
@@ -372,7 +371,7 @@ class BugTrackerEditView(LaunchpadEditFormView):
                         sorted(team.title for team in admin_teams)))
 
         # Bugtrackers with imported messages cannot be deleted.
-        if self.context.imported_bug_messages.count() > 0:
+        if not self.context.imported_bug_messages.is_empty():
             reasons.append(
                 'Bug comments have been imported via this bug tracker.')
 
@@ -425,9 +424,7 @@ class BugTrackerEditView(LaunchpadEditFormView):
         """Return True if the user can see the reschedule action."""
         user_can_reset_watches = check_permission(
             "launchpad.Admin", self.context)
-        return (
-            user_can_reset_watches and
-            self.context.watches.count() > 0)
+        return user_can_reset_watches and not self.context.watches.is_empty()
 
     @action(
         'Reschedule all watches', name='reschedule',

@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes for `IProductSeries`."""
@@ -35,12 +35,12 @@ from lazr.restful.interface import (
     use_template,
     )
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser import (
+from zope.component import getUtility
+from zope.formlib import form
+from zope.formlib.widgets import (
     TextAreaWidget,
     TextWidget,
     )
-from zope.component import getUtility
-from zope.formlib import form
 from zope.interface import (
     implements,
     Interface,
@@ -696,9 +696,9 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     @cachedproperty
     def specifications(self):
         """A list of all `ISpecification`s targeted to this series."""
-        all_specifications = self._getSpecifications(self.context)
+        all_specifications = list(self.context.visible_specifications)
         for milestone in self.milestones:
-            all_specifications.extend(self._getSpecifications(milestone))
+            all_specifications.extend(milestone.getSpecifications(self.user))
         return all_specifications
 
     @cachedproperty
@@ -722,7 +722,7 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     @cachedproperty
     def has_linked_packages(self):
         """Is the series linked to source packages."""
-        return self.context.packagings.count() > 0
+        return not self.context.packagings.is_empty()
 
     @cachedproperty
     def linked_packages_message(self):

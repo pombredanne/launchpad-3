@@ -33,10 +33,12 @@ from lp.archiveuploader.nascentuploadfile import (
     DebBinaryUploadFile,
     SourceUploadFile,
     UdebBinaryUploadFile,
+    )
+from lp.archiveuploader.utils import (
+    determine_source_file_type,
     UploadError,
     UploadWarning,
     )
-from lp.archiveuploader.utils import determine_source_file_type
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
@@ -976,7 +978,7 @@ class NascentUpload:
             if ancestry is not None:
                 to_sourcepackagerelease = ancestry.sourcepackagerelease
                 diff = to_sourcepackagerelease.requestDiffTo(
-                    sourcepackagerelease.creator, sourcepackagerelease)
+                    self.queue_root.findPersonToNotify(), sourcepackagerelease)
                 self.logger.debug(
                     '%s %s requested' % (
                         diff.from_source.name, diff.title))

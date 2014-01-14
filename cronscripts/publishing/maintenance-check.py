@@ -41,7 +41,7 @@ class UbuntuMaintenance(object):
     # normal support timeframe
     # time, seeds
     SUPPORT_TIMEFRAME = [
-        ("18m", SUPPORTED_SEEDS),
+        ("9m", SUPPORTED_SEEDS),
         ]
 
     # distro names that we check the seeds for
@@ -96,6 +96,16 @@ class PreciseUbuntuMaintenance(UbuntuMaintenance):
         "ubuntu",
         "kubuntu",
         ]
+
+
+class QuantalUbuntuMaintenance(UbuntuMaintenance):
+
+    SUPPORT_TIMEFRAME = [
+        ("18m", UbuntuMaintenance.SUPPORTED_SEEDS),
+        ]
+
+
+OneiricUbuntuMaintenance = QuantalUbuntuMaintenance
 
 
 # Names of the distribution releases that are not supported by this

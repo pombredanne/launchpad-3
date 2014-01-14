@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BugWatch views."""
@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
@@ -44,6 +45,16 @@ class TestBugWatchEditView(TestCaseWithFactory):
         self.assertContentEqual([], view.errors)
         self.assertRaises(NotFoundError, getUtility(IBugWatchSet).get, bwid)
 
+    def test_can_delete_watch_with_invalid_url(self):
+        bwid = self.bug_watch.id
+        form = {
+            'field.url': 'foobarbaz',
+            'field.actions.delete': 'Delete Bug Watch'}
+        getUtility(ILaunchBag).add(self.bug_task.bug)
+        view = create_initialized_view(self.bug_watch, '+edit', form=form)
+        self.assertContentEqual([], view.errors)
+        self.assertRaises(NotFoundError, getUtility(IBugWatchSet).get, bwid)
+
     def test_can_not_delete_unlinked_watch_with_unsynched_comments(self):
         # If a bugwatch is unlinked, but has imported comments that are
         # awaiting synch, it can not be deleted.
@@ -68,7 +79,7 @@ class TestBugWatchEditView(TestCaseWithFactory):
         # We need to log in as an admin here as only admins can link a
         # watch to a comment.
         login(ADMIN_EMAIL)
-        self.bug_watch.addComment('comment-id', message)
+        removeSecurityProxy(self.bug_watch).addComment('comment-id', message)
         login_person(self.person)
         view = create_initialized_view(self.bug_watch, '+edit')
         self.assertFalse(view.bugWatchIsUnlinked(None))

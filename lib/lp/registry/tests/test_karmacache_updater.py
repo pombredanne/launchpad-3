@@ -58,7 +58,7 @@ class TestKarmaCacheUpdater(unittest.TestCase):
         # delete the cache entries for Sample Person.
         sample_person = self.personset.getByName('name12')
         cache_entries = self._getCacheEntriesByPerson(sample_person)
-        self.failUnless(cache_entries.count() > 0)
+        self.failUnless(not cache_entries.is_empty())
         for cache in cache_entries:
             self.failIf(cache.karmavalue <= 0)
 
@@ -102,4 +102,4 @@ class TestKarmaCacheUpdater(unittest.TestCase):
         self.failUnless(entries_count <= foobar_original_entries_count)
 
         # And finally, ensure that No Priv got some new KarmaCache entries.
-        self.failUnless(self._getCacheEntriesByPerson(nopriv).count() > 0)
+        self.failUnless(not self._getCacheEntriesByPerson(nopriv).is_empty())

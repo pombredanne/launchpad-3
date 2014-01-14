@@ -1,7 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 """Builder behavior for binary package builds."""
 
@@ -39,6 +37,29 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         logger.info("startBuild(%s, %s, %s, %s)", self._builder.url,
                     spr.name, spr.version, self.build.pocket.title)
 
+    def getLogFileName(self):
+        """See `IBuildPackageJob`."""
+        sourcename = self.build.source_package_release.name
+        version = self.build.source_package_release.version
+        # we rely on previous storage of current buildstate
+        # in the state handling methods.
+        state = self.build.status.name
+
+        dar = self.build.distro_arch_series
+        distroname = dar.distroseries.distribution.name
+        distroseriesname = dar.distroseries.name
+        archname = dar.architecturetag
+
+        # logfilename format:
+        # buildlog_<DISTRIBUTION>_<DISTROSeries>_<ARCHITECTURE>_\
+        # <SOURCENAME>_<SOURCEVERSION>_<BUILDSTATE>.txt
+        # as:
+        # buildlog_ubuntu_dapper_i386_foo_1.0-ubuntu0_FULLYBUILT.txt
+        # it fix request from bug # 30617
+        return ('buildlog_%s-%s-%s.%s_%s_%s.txt' % (
+            distroname, distroseriesname, archname, sourcename, version,
+            state))
+
     def _buildFilemapStructure(self, ignored, logger):
         # Build filemap structure with the files required in this build
         # and send them to the slave.
@@ -55,7 +76,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             filemap[lfa.filename] = lfa.content.sha1
             if not private:
                 dl.append(
-                    self._builder.slave.cacheFile(
+                    self._slave.cacheFile(
                         logger, source_file.libraryfile))
         d = defer.gatherResults(dl)
         return d.addCallback(lambda ignored: filemap)
@@ -66,22 +87,23 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         # Start the binary package build on the slave builder. First
         # we send the chroot.
         chroot = self.build.distro_arch_series.getChroot()
-        d = self._builder.slave.cacheFile(logger, chroot)
+        d = self._slave.cacheFile(logger, chroot)
         d.addCallback(self._buildFilemapStructure, logger)
 
         def got_filemap(filemap):
-            # Generate a string which can be used to cross-check when obtaining
-            # results so we know we are referring to the right database object in
-            # subsequent runs.
+            # Generate a string which can be used to cross-check when
+            # obtaining results so we know we are referring to the right
+            # database object in subsequent runs.
             buildid = "%s-%s" % (self.build.id, build_queue_id)
-            cookie = self.buildfarmjob.generateSlaveBuildCookie()
+            cookie = self.getBuildCookie()
             chroot_sha1 = chroot.content.sha1
             logger.debug(
                 "Initiating build %s on %s" % (buildid, self._builder.url))
 
             args = self._extraBuildArgs(self.build)
-            d = self._builder.slave.build(
+            d = self._slave.build(
                 cookie, "binarypackage", chroot_sha1, filemap, args)
+
             def got_build((status, info)):
                 message = """%s (%s):
                 ***** RESULT *****
@@ -146,23 +168,6 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
                     (build.title, build.id, build.pocket.name,
                      build.distro_series.name))
 
-    def updateSlaveStatus(self, raw_slave_status, status):
-        """Parse the binary build specific status info into the status dict.
-
-        This includes:
-        * filemap => dictionary or None
-        * dependencies => string or None
-        """
-        build_status_with_files = (
-            'BuildStatus.OK',
-            'BuildStatus.PACKAGEFAIL',
-            'BuildStatus.DEPFAIL',
-            )
-        if (status['builder_status'] == 'BuilderStatus.WAITING' and
-            status['build_status'] in build_status_with_files):
-            status['filemap'] = raw_slave_status[3]
-            status['dependencies'] = raw_slave_status[4]
-
     def _cachePrivateSourceOnSlave(self, logger):
         """Ask the slave to download source files for a private build.
 
@@ -192,7 +197,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
                          "(%s, %s)" % (
                             self._builder.url, file_name, url, sha1))
             dl.append(
-                self._builder.slave.sendFileToSlave(
+                self._slave.sendFileToSlave(
                     sha1, url, "buildd", archive.buildd_secret))
         return dl
 

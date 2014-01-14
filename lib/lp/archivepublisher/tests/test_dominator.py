@@ -999,7 +999,7 @@ class TestDominatorMethods(TestCaseWithFactory):
             distribution=das.distroseries.distribution)
         other_das = self.factory.makeDistroArchSeries(
             distroseries=other_series, architecturetag=das.architecturetag,
-            processorfamily=das.processorfamily)
+            processor=das.processor)
         self.assertContentEqual(
             [], dominator.findBinariesForDomination(
                 other_das, bpphs[0].pocket))
@@ -1244,10 +1244,11 @@ class TestArchSpecificPublicationsCache(TestCaseWithFactory):
         """Create a `BinaryPackagePublishingHistory`."""
         if spr is None:
             spr = self.makeSPR()
-        bpb = self.factory.makeBinaryPackageBuild(source_package_release=spr)
+        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
+        bpb = self.factory.makeBinaryPackageBuild(
+            source_package_release=spr, distroarchseries=das)
         bpr = self.factory.makeBinaryPackageRelease(
             build=bpb, architecturespecific=arch_specific)
-        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
         return removeSecurityProxy(
             self.factory.makeBinaryPackagePublishingHistory(
                 binarypackagerelease=bpr, archive=archive,

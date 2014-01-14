@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from lp.services.database.lpstorm import (
+from lp.services.database.interfaces import (
     IMasterStore,
     ISlaveStore,
     IStore,

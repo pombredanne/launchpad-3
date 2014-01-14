@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Common views for objects that implement `IPillar`."""
@@ -56,8 +56,8 @@ from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.model.pillar import PillarPerson
 from lp.services.config import config
-from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import (
     BatchNavigator,
     StormRangeFactory,
@@ -190,10 +190,10 @@ class PillarInvolvementView(LaunchpadView):
     def has_involvement(self):
         """This `IPillar` uses Launchpad."""
         return (self.official_malone
-            or service_uses_launchpad(self.answers_usage)
-            or service_uses_launchpad(self.blueprints_usage)
-            or service_uses_launchpad(self.translations_usage)
-            or service_uses_launchpad(self.codehosting_usage))
+                or service_uses_launchpad(self.answers_usage)
+                or service_uses_launchpad(self.blueprints_usage)
+                or service_uses_launchpad(self.translations_usage)
+                or service_uses_launchpad(self.codehosting_usage))
 
     @property
     def enabled_links(self):
@@ -293,10 +293,8 @@ class PillarSharingView(LaunchpadView):
 
     @property
     def specification_sharing_policies(self):
-        if getFeatureFlag('blueprints.information_type.enabled'):
-            return self._getSharingService().getSpecificationSharingPolicies(
-                self.context)
-        return None
+        return self._getSharingService().getSpecificationSharingPolicies(
+            self.context)
 
     @property
     def sharing_permissions(self):
@@ -354,9 +352,10 @@ class PillarSharingView(LaunchpadView):
             self.branch_sharing_policies)
         cache.objects['specification_sharing_policies'] = (
             self.specification_sharing_policies)
-
-        view_names = set(reg.name for reg
-            in iter_view_registrations(self.__class__))
+        cache.objects['has_edit_permission'] = check_permission(
+            "launchpad.Edit", self.context)
+        view_names = set(reg.name for reg in
+                         iter_view_registrations(self.__class__))
         if len(view_names) != 1:
             raise AssertionError("Ambiguous view name.")
         cache.objects['view_name'] = view_names.pop()

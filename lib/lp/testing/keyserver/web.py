@@ -112,7 +112,7 @@ class PksResource(_BaseResource):
 
 KEY_NOT_FOUND_BODY = (
     "<html><head><title>Error handling request</title></head>\n"
-    "<body><h1>Error handling request</h1>Error handling request: "
+    "<body><h1>Error handling request</h1>No results found: "
     "No keys found</body></html>")
 
 
@@ -153,9 +153,7 @@ class LookUp(Resource):
                     '<pre>\n%s\n</pre>\n</html>') % (keyid, keyid, content)
             return page
         else:
-            # No joke: our real-world keyserver returns a 500 error
-            # if it does not know about a key with the given ID.
-            request.setResponseCode(500)
+            request.setResponseCode(404)
             return KEY_NOT_FOUND_BODY
 
 

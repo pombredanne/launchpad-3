@@ -135,7 +135,6 @@ COMMENT ON COLUMN BranchMergeProposal.target_branch IS 'The branch where the use
 COMMENT ON COLUMN BranchMergeProposal.dependent_branch IS 'If the source branch was not branched off the target branch, then this is considered the dependent_branch.';
 COMMENT ON COLUMN BranchMergeProposal.date_created IS 'When the registrant created the merge proposal.';
 COMMENT ON COLUMN BranchMergeProposal.whiteboard IS 'Used to write other information about the branch, like test URLs.';
-COMMENT ON COLUMN BranchMergeProposal.merge_diff IS 'The diff showing the predicted result of a merge.';
 COMMENT ON COLUMN BranchMergeProposal.merged_revno IS 'This is the revision number of the revision on the target branch that includes the merge from the source branch.';
 COMMENT ON COLUMN BranchMergeProposal.merge_reporter IS 'This is the user that marked the proposal as merged.';
 COMMENT ON COLUMN BranchMergeProposal.date_merged IS 'This is the date that merge occurred.';
@@ -1235,23 +1234,16 @@ COMMENT ON COLUMN BinaryPackagePublishingHistory.pocket IS 'The pocket into whic
 COMMENT ON COLUMN BinaryPackagePublishingHistory.archive IS 'Target archive for this publishing record.';
 COMMENT ON COLUMN BinaryPackagePublishingHistory.removed_by IS 'Person responsible for the removal.';
 COMMENT ON COLUMN BinaryPackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
-
--- ProcessorFamily
-
-COMMENT ON TABLE ProcessorFamily IS 'An architecture, that might consist of several actual processors. Different distributions call these architectures different things, so we have an "architecturetag" in DistroArchSeries that might be different to the architecture''s name.';
-COMMENT ON COLUMN ProcessorFamily.name IS 'The name of the architecture. This is a short unix-style name such as i386 or amd64';
-COMMENT ON COLUMN ProcessorFamily.title IS 'A title for the architecture. For example "Intel i386 Compatible".';
-COMMENT ON COLUMN ProcessorFamily.description IS 'A description for this processor family. It might include any gotchas such as the fact that i386 does not necessarily mean that code would run on a 386... Ubuntu for example requires a 486.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.phased_update_percentage IS 'Percentage of users for whom this package should be recommended. NULL indicates no phasing, i.e. publish the update for everyone.';
 
 -- Processor
 
-COMMENT ON TABLE Processor IS 'A single processor for which code might be compiled. For example, i386, P2, P3, P4, Itanium1, Itanium2... each processor belongs to a ProcessorFamily, and it might be that a package is compiled several times for a given Family, with different optimisation settings for each processor.';
+COMMENT ON TABLE Processor IS 'A single processor for which code might be compiled. For example, i386, P2, P3, P4, Itanium1, Itanium2...';
 COMMENT ON COLUMN Processor.name IS 'The name of this processor, for example, i386, Pentium, P2, P3, P4, Itanium, Itanium2, K7, Athlon, Opteron... it should be short and unique.';
-COMMENT ON COLUMN Processor.family IS 'The ProcessorFamily for this Processor.';
 
 -- DistroArchSeries
 
-COMMENT ON COLUMN DistroArchSeries.processorfamily IS 'A link to the ProcessorFamily table, giving the architecture of this DistroArchSeries.';
+COMMENT ON COLUMN DistroArchSeries.processor IS 'A link to the Processor table, giving the architecture of this DistroArchSeries.';
 COMMENT ON COLUMN DistroArchSeries.architecturetag IS 'The name of this architecture in the context of this specific distro release. For example, some distributions might label amd64 as amd64, others might call is x86_64. This information is used, for example, in determining the names of the actual package files... such as the "amd64" part of "apache2_2.0.56-1_amd64.deb"';
 COMMENT ON COLUMN DistroArchSeries.official IS 'Whether or not this architecture or "port" is an official release. If it is not official then you may not be able to install it or get all the packages for it.';
 COMMENT ON COLUMN DistroArchSeries.package_count IS 'A cache of the number of binary packages published in this distro arch release. The count only includes packages published in the release pocket.';
@@ -1515,15 +1507,9 @@ COMMENT ON COLUMN SourcePackageRecipeDistroSeries.sourcepackagerecipe IS 'The pr
 
 COMMENT ON TABLE SourcePackageRecipeBuild IS 'The build record for the process of building a source package as described by a recipe.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.distroseries IS 'The distroseries the build was for.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.package_build IS 'The package_build with the base information about this build.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.requester IS 'Who requested the build.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.recipe IS 'The recipe being processed.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.manifest IS 'The evaluated recipe that was built.';
-
--- SourcePackageRecipeBuildJob
-
-COMMENT ON TABLE SourcePackageRecipeBuildJob IS 'The link between a SourcePackageRecipeBuild row and a Job row to schedule a build of a source package recipe.';
-COMMENT ON COLUMN SourcePackageRecipeBuildJob.sourcepackage_recipe_build IS 'The build record describing the package being built.';
 
 -- Specification
 
@@ -1640,6 +1626,7 @@ COMMENT ON COLUMN Distribution.homepage_content IS 'A home page for this distrib
 COMMENT ON COLUMN Distribution.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to a distribution.';
 COMMENT ON COLUMN Distribution.mugshot IS 'The library file alias of a mugshot image to display as the branding of a distribution, on its home page.';
 COMMENT ON COLUMN Distribution.logo IS 'The library file alias of a smaller version of this distributions''s mugshot.';
+COMMENT ON COLUMN Distribution.development_series_alias IS 'If set, an alias for the current development series in this distribution.';
 
 -- DistroSeries
 
@@ -1681,7 +1668,6 @@ COMMENT ON COLUMN LibraryFileAlias.content IS 'The libraryfilecontent which is t
 COMMENT ON COLUMN LibraryFileAlias.filename IS 'The name of the file. E.g. "foo_1.0-1_i386.deb"';
 COMMENT ON COLUMN LibraryFileAlias.mimetype IS 'The mime type of the file. E.g. "application/x-debian-package"';
 COMMENT ON COLUMN LibraryFileAlias.expires IS 'The expiry date of this file. If NULL, this item may be removed as soon as it is no longer referenced. If set, the item will not be removed until this date. Once the date is passed, the file may be removed from disk even if this item is still being referenced (in which case content.deleted will be true)';
-COMMENT ON COLUMN LibraryFileAlias.last_accessed IS 'Roughly when this file was last retrieved from the Librarian. Initially set to this item''s creation date.';
 COMMENT ON COLUMN LibraryFileAlias.date_created IS 'The timestamp when this alias was created.';
 COMMENT ON COLUMN LibraryFileAlias.restricted IS 'Is this file available only from the restricted librarian?';
 COMMENT ON COLUMN LibraryFileAlias.hits IS 'The number of times this file has been downloaded.';
@@ -1727,29 +1713,14 @@ COMMENT ON COLUMN Milestone.summary IS 'This can be used to summarize the change
 
 -- BuildFarmJob, and its related tables, PackageBuild, BinaryPackageBuild
 COMMENT ON TABLE BuildFarmJob IS 'BuildFarmJob: This table stores the information common to all jobs on the Launchpad build farm.';
-COMMENT ON COLUMN BuildFarmJob.processor IS 'Points to the required processor target for this job, or null.';
-COMMENT ON COLUMN BuildFarmJob.virtualized IS 'The virtualization setting required by this build farm job, or null.';
 COMMENT ON COLUMN BuildFarmJob.date_created IS 'When the build farm job record was created.';
-COMMENT ON COLUMN BuildFarmJob.date_started IS 'When the build farm job started being processed.';
 COMMENT ON COLUMN BuildFarmJob.date_finished IS 'When the build farm job finished being processed.';
-COMMENT ON COLUMN BuildFarmJob.date_first_dispatched IS 'The instant the build was dispatched the first time. This value will not get overridden if the build is retried.';
 COMMENT ON COLUMN BuildFarmJob.builder IS 'Points to the builder which processed this build farm job.';
 COMMENT ON COLUMN BuildFarmJob.status IS 'Stores the current build status.';
-COMMENT ON COLUMN BuildFarmJob.log IS 'Points to the log for this build farm job file stored in librarian.';
 COMMENT ON COLUMN BuildFarmJob.job_type IS 'The type of build farm job to which this record corresponds.';
-COMMENT ON COLUMN BuildFarmJob.failure_count IS 'The number of consecutive failures on this job.  If excessive, the job may be terminated.';
-
--- PackageBuild
-COMMENT ON TABLE PackageBuild IS 'PackageBuild: This table stores the information common to build farm jobs that build source or binary packages.';
-COMMENT ON COLUMN PackageBuild.build_farm_job IS 'Points to the build farm job with the base information.';
-COMMENT ON COLUMN PackageBuild.archive IS 'Targeted archive for this package build.';
-COMMENT ON COLUMN PackageBuild.pocket IS 'Stores the target pocket identifier for this package build.';
-COMMENT ON COLUMN PackageBuild.upload_log IS 'Reference to a LibraryFileAlias containing the upload log messages generated while processing the packages resulting from this package build.';
-COMMENT ON COLUMN PackageBuild.dependencies IS 'Contains a debian-like dependency line specifying the current missing-dependencies for this package.';
 
 -- BinaryPackageBuild
 COMMENT ON TABLE BinaryPackageBuild IS 'BinaryPackageBuild: This table links a package build with a distroarchseries and sourcepackagerelease.';
-COMMENT ON COLUMN BinaryPackageBuild.package_build IS 'Points to the related package build with the base information.';
 COMMENT ON COLUMN BinaryPackageBuild.distro_arch_series IS 'Points the target DistroArchSeries for this build.';
 COMMENT ON COLUMN BinaryPackageBuild.source_package_release IS 'SourcePackageRelease which originated this build.';
 
@@ -1763,6 +1734,7 @@ COMMENT ON COLUMN Builder.manual IS 'Whether or not builder was manual mode, i.e
 COMMENT ON COLUMN Builder.vm_host IS 'The virtual machine host associated to this builder. It should be empty for "native" builders (old fashion or architectures not yet supported by XEN).';
 COMMENT ON COLUMN Builder.active IS 'Whether to present or not the builder in the public list of builders avaialble. It is used to hide transient or defunct builders while they get fixed.';
 COMMENT ON COLUMN Builder.failure_count IS 'The number of consecutive failures on this builder.  Is reset to zero after a sucessful dispatch.';
+COMMENT ON COLUMN Builder.version IS 'The version of launchpad-buildd on the slave.';
 
 -- BuildQueue
 COMMENT ON TABLE BuildQueue IS 'BuildQueue: The queue of jobs in progress/scheduled to run on the Soyuz build farm.';
@@ -1770,8 +1742,6 @@ COMMENT ON COLUMN BuildQueue.builder IS 'The builder assigned to this build. Som
 COMMENT ON COLUMN BuildQueue.logtail IS 'The tail end of the log of the current build. This is updated regularly as the buildd master polls the buildd slaves. Once the build is complete; the full log will be lodged with the librarian and linked into the build table.';
 COMMENT ON COLUMN BuildQueue.lastscore IS 'The last score ascribed to this build record. This can be used in the UI among other places.';
 COMMENT ON COLUMN BuildQueue.manual IS 'Indicates if the current record was or not rescored manually, if so it get skipped from the auto-score procedure.';
-COMMENT ON COLUMN BuildQueue.job IS 'Foreign key to the `Job` table row with the generic job data.';
-COMMENT ON COLUMN BuildQueue.job_type IS 'Type of job (enumeration value), enables us to find/query the correct table with the data specific to this type of job.';
 COMMENT ON COLUMN BuildQueue.estimated_duration IS 'Estimated job duration, based on previous running times of comparable jobs.';
 COMMENT ON COLUMN BuildQueue.processor IS 'The processor required by the associated build farm job.';
 COMMENT ON COLUMN BuildQueue.virtualized IS 'The virtualization setting required by the associated build farm job.';
@@ -2116,7 +2086,7 @@ COMMENT ON COLUMN PackageCopyRequest.date_completed IS 'When did this archive op
 
 COMMENT ON TABLE ArchiveArch IS 'ArchiveArch: A table that allows a user to specify which architectures an archive requires or supports.';
 COMMENT ON COLUMN ArchiveArch.archive IS 'The archive for which an architecture is specified.';
-COMMENT ON COLUMN ArchiveArch.processorfamily IS 'The architecture specified for the archive on hand.';
+COMMENT ON COLUMN ArchiveArch.processor IS 'The architecture specified for the archive on hand.';
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';

@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Product series interfaces."""
 
 __metaclass__ = type
@@ -170,9 +168,7 @@ class IProductSeriesView(
     parent = Attribute('The structural parent of this series - the product')
 
     datecreated = exported(
-        Datetime(title=_('Date Registered'),
-                 required=True,
-                 readonly=True),
+        Datetime(title=_('Date Registered'), required=True, readonly=True),
         exported_as='date_created')
 
     owner = exported(
@@ -241,10 +237,8 @@ class IProductSeriesView(
 
     branch = exported(
         ReferenceChoice(
-            title=_('Branch'),
-            vocabulary='BranchRestrictedOnProduct',
-            schema=IBranch,
-            required=False,
+            title=_('Branch'), vocabulary='BranchRestrictedOnProduct',
+            schema=IBranch, required=False,
             description=_("The Bazaar branch for this series.  Leave blank "
                           "if this series is not maintained in Bazaar.")))
 
@@ -270,6 +264,9 @@ class IProductSeriesView(
         description=_(
             "A Bazaar branch to commit translation snapshots to.  "
             "Leave blank to disable."))
+
+    all_specifications = doNotSnapshot(
+        Attribute('All specifications linked to this series.'))
 
     def getCachedReleases():
         """Gets a cached copy of this series' releases.

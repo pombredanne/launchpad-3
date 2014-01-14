@@ -28,10 +28,11 @@ class TestMergeTranslations(TestCaseWithFactory):
             job.productseries, job.distroseries, job.sourcepackagename)
         transaction.commit()
         retcode, stdout, stderr = run_script(
-            'cronscripts/run_jobs.py', ['packaging_translations'],
+            'cronscripts/process-job-source.py',
+            ['ITranslationPackagingJobSource'],
             expect_returncode=0)
         matcher = MatchesRegex(dedent("""\
-            INFO    Creating lockfile: /var/lock/launchpad-jobcronscript.lock
+            INFO    Creating lockfile: /var/lock/launchpad-process-job-source-ITranslationPackagingJobSource.lock
             INFO    Running synchronously.
             INFO    Running <.*?TranslationMergeJob.*?> \(ID .*\) in status Waiting
             INFO    Merging .* and .* in Ubuntu Distroseries.*

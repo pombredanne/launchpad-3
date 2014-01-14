@@ -282,7 +282,7 @@ This is also true if we are provide authentication.
 
 But our database connections are broken.
 
-    >>> from lp.services.database.lpstorm import IStore
+    >>> from lp.services.database.interfaces import IStore
     >>> from lp.registry.model.person import Person
     >>> IStore(Person).find(Person, name='janitor')
     Traceback (most recent call last):

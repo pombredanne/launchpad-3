@@ -1,0 +1,37 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Format: 1.8
+Date: Fri, 13 Sep 2013 18:06:21 +0000
+Source: pmount
+Binary: pmount
+Architecture: source
+Version: 0.9.20-2ubuntu0.2
+Distribution: breezy-autotest
+Urgency: low
+Maintainer: Ubuntu MOTU Developers <ubuntu-motu@lists.ubuntu.com>
+Changed-By: Foo Bar (password-less) <foo.bar@canonical.com>
+Description: 
+ pmount     - mount removable devices as normal user
+Changes: 
+ pmount (0.9.20-2ubuntu0.2) breezy-autotest; urgency=low
+ .
+   * Boooo
+Checksums-Sha1: 
+ a044b61efa5b67b9f7ff0921353e3c722aa73f21 1279 pmount_0.9.20-2ubuntu0.2.dsc
+ c2d4a2195fbf2130d3e5db8fdd5377023044a7f3 11201 pmount_0.9.20-2ubuntu0.2.diff.gz
+Checksums-Sha256: 
+ b6a41fbf58ca6eaca53b6a819b61f8038c0a73135014dd2971e51c835fc4dc73 1279 pmount_0.9.20-2ubuntu0.2.dsc
+ a0721d2e1e342074e627c79863bb6bf1453177551ad120e7a40cfddb94eb0f18 11201 pmount_0.9.20-2ubuntu0.2.diff.gz
+Files: 
+ bc3bc104f9db5c8362726be66b62c5ab 1279 utils optional pmount_0.9.20-2ubuntu0.2.dsc
+ 438df200f49fa17bcea600ef8f90532c 11201 utils optional pmount_0.9.20-2ubuntu0.2.diff.gz
+Original-Maintainer: Vincent Fourmond <fourmond@debian.org>
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAlI5JCYACgkQDjSYZ10UdUdXfQCfaSPOxXFeB3kjagr/twTVKkKu
+pAgAn2S7Za7IP6Kda6TmB0NjfQyT+cIX
+=kWk0
+-----END PGP SIGNATURE-----

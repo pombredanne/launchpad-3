@@ -71,6 +71,7 @@ When the comment is synchronized, it receives a remote comment id, and
 the 'awaiting synchronization' mark goes away.
 
     >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
@@ -81,7 +82,8 @@ the 'awaiting synchronization' mark goes away.
     A reply comment.
     >>> bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
     ...     bug_15, message)
-    >>> bug_message.remote_comment_id = 'test-remote-comment-id'
+    >>> removeSecurityProxy(bug_message).remote_comment_id = (
+    ...     'test-remote-comment-id')
     >>> flush_database_updates()
     >>> logout()
 

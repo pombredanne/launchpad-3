@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Queue interfaces."""
@@ -60,7 +60,7 @@ class QueueStateWriteProtectedError(Exception):
     """This exception prevent directly set operation in queue state.
 
     The queue state machine is controlled by its specific provided methods,
-    like: setNew, setAccepted and so on.
+    like: setAccepted, setDone and so on.
     """
 
 
@@ -193,6 +193,14 @@ class IPackageUpload(Interface):
             readonly=True),
         ("devel", dict(exported=False)), exported=True)
 
+    copy_source_archive = exported(
+        Reference(
+            # Really IArchive, patched in _schema_circular_imports.py
+            schema=Interface,
+            description=_("The archive from which this package was copied, if "
+                          "any."),
+            title=_("Copy source archive"), required=False, readonly=True))
+
     displayname = exported(
         TextLine(
             title=_("Generic displayname for a queue item"), readonly=True),
@@ -319,9 +327,6 @@ class IPackageUpload(Interface):
         :return the corresponding `ILibraryFileAlias` if the file was found.
         """
 
-    def setNew():
-        """Set queue state to NEW."""
-
     def setUnapproved():
         """Set queue state to UNAPPROVED."""
 
@@ -357,9 +362,11 @@ class IPackageUpload(Interface):
         """
 
     @export_write_operation()
+    @operation_parameters(
+        comment=TextLine(title=_("Rejection comment"), required=False))
     @call_with(user=REQUEST_USER)
     @operation_for_version("devel")
-    def rejectFromQueue(logger=None, dry_run=False, user=None):
+    def rejectFromQueue(user, logger=None, dry_run=False, comment=None):
         """Call setRejected, do a syncUpdate, and send notification email."""
 
     def realiseUpload(logger=None):
@@ -774,9 +781,6 @@ class IPackageUploadSet(Interface):
 
     def getBuildByBuildIDs(build_ids):
         """Return `PackageUploadBuilds`s for the supplied build IDs."""
-
-    def getSourceBySourcePackageReleaseIDs(spr_ids):
-        """Return `PackageUploadSource`s for the sourcepackagerelease IDs."""
 
     def getByPackageCopyJobIDs(pcj_ids):
         """Return `PackageUpload`s using `PackageCopyJob`s.

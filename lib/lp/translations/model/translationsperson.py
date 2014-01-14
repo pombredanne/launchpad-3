@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -161,15 +161,9 @@ class TranslationsPerson:
                     '(SELECT * FROM translatable_distroseries)'))).config(
             distinct=True).order_by(POFile.date_changed)
 
-    def _queryTranslatableFiles(self, worked_on, no_older_than=None,
-                                languages=None):
+    def _queryTranslatableFiles(self, no_older_than=None, languages=None):
         """Get `POFile`s this person could help translate.
 
-        :param worked_on: If True, get `POFile`s that the person has
-            been working on recently (where "recently" is defined as
-            `no_older_than`).  If False, get ones that the person has
-            not been working on recently (those that the person has
-            never worked on, or last worked on before `no_older_than`).
         :param no_older_than: Oldest involvement to consider.  If the
             person last worked on a `POFile` before this date, that
             counts as not having worked on it.
@@ -179,18 +173,25 @@ class TranslationsPerson:
         if self.person.is_team:
             return []
 
-        tables = self._composePOFileReviewerJoins(
-            expect_reviewer_status=False)
+        tables = self._composePOFileReviewerJoins(expect_reviewer_status=False)
 
-        translator_join, translator_condition = (
-            self._composePOFileTranslatorJoin(worked_on, no_older_than))
+        join_condition = And(
+            POFileTranslator.personID == self.person.id,
+            POFileTranslator.pofileID == POFile.id,
+            POFile.language != getUtility(ILaunchpadCelebrities).english)
+
+        if no_older_than is not None:
+            join_condition = And(
+                join_condition,
+                POFileTranslator.date_last_touched >= no_older_than)
+
+        translator_join = Join(POFileTranslator, join_condition)
         tables.append(translator_join)
 
         translated_count = (
             POFile.currentcount + POFile.updatescount + POFile.rosettacount)
 
-        conditions = And(
-            translated_count < POTemplate.messagecount, translator_condition)
+        conditions = translated_count < POTemplate.messagecount
 
         # The person must not be a reviewer for this translation (unless
         # it's in the sense that any user gets review permissions
@@ -219,12 +220,11 @@ class TranslationsPerson:
         if languages is not None:
             conditions = And(conditions, POFile.languageID.is_in(languages))
 
-        source = Store.of(self.person).using(*tables)
-        return source.find(POFile, conditions)
+        return Store.of(self.person).using(*tables).find(POFile, conditions)
 
     def getTranslatableFiles(self, no_older_than=None, urgent_first=True):
         """See `ITranslationsPerson`."""
-        results = self._queryTranslatableFiles(True, no_older_than)
+        results = self._queryTranslatableFiles(no_older_than)
 
         translated_count = (
             POFile.currentcount + POFile.updatescount + POFile.rosettacount)
@@ -233,16 +233,6 @@ class TranslationsPerson:
             ordering = -ordering
 
         return results.order_by(ordering)
-
-    def suggestTranslatableFiles(self, no_older_than=None):
-        """See `ITranslationsPerson`."""
-        # XXX JeroenVermeulen 2009-08-28: Ideally this would also check
-        # for a free licence.  That's hard to do in SQL though.
-        languages = set([
-            language.id for language in self.translatable_languages])
-        results = self._queryTranslatableFiles(
-            False, no_older_than, languages=languages)
-        return results.order_by(['random()'])
 
     def _composePOFileReviewerCTEs(self, no_older_than):
         """Compose Storm CTEs for common `POFile` queries.
@@ -405,42 +395,3 @@ class TranslationsPerson:
             TranslatorJoin,
             TranslationTeamJoin,
             ]
-
-    def _composePOFileTranslatorJoin(self, expected_presence,
-                                     no_older_than=None):
-        """Compose join condition for `POFileTranslator`.
-
-        Checks for a `POFileTranslator` record matching a `POFile` and
-        `Person` in a join.
-
-        :param expected_presence: whether the `POFileTranslator` record
-            is to be present, or absent.  The join will enforce presence
-            through a regular inner join, or absence by an outer join
-            with a condition that the record not be present.
-        :param no_older_than: optional cutoff date.  `POFileTranslator`
-            records older than this date are not considered.
-        :return: a tuple of the join, and a condition to be checked by
-            the query.  Combine it with the query's other conditions
-            using `And`.
-        """
-        join_condition = And(
-            POFileTranslator.personID == self.person.id,
-            POFileTranslator.pofileID == POFile.id,
-            POFile.language != getUtility(ILaunchpadCelebrities).english)
-
-        if no_older_than is not None:
-            join_condition = And(
-                join_condition,
-                POFileTranslator.date_last_touched >= no_older_than)
-
-        if expected_presence:
-            # A regular inner join enforces this.  No need for an extra
-            # condition; the join does it more efficiently.
-            return Join(POFileTranslator, join_condition), True
-        else:
-            # Check for absence.  Usually the best way to check for this
-            # is an outer join plus a condition that the outer join
-            # match no record.
-            return (
-                LeftJoin(POFileTranslator, join_condition),
-                POFileTranslator.id == None)

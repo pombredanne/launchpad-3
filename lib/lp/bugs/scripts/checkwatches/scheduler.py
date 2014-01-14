@@ -12,7 +12,7 @@ import transaction
 
 from lp.bugs.interfaces.bugwatch import BUG_WATCH_ACTIVITY_SUCCESS_STATUSES
 from lp.bugs.model.bugwatch import BugWatch
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 from lp.services.database.sqlbase import sqlvalues
 from lp.services.looptuner import TunableLoop
 

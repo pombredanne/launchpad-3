@@ -243,7 +243,7 @@ search.
     >>> print extract_text(
     ...     find_main_content(anon_browser.contents), skip_tags=[])
     Pages matching "fnord" in Launchpad
-    <!-- setFocusByName('field.text'); // -->
+    &lt;!-- setFocusByName('field.text'); // --&gt;
     Your search for &ldquo;fnord&rdquo; did not return any results.
 
 
@@ -292,8 +292,7 @@ The user cannot enter more than 250 characters to in the search field.
 
     >>> too_many_characters = '12345 7890' * 25 + 'n'
     >>> search_for(too_many_characters)
-    >>> for message in get_feedback_messages(anon_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(anon_browser.contents)
     There is 1 error.
     The search text cannot exceed 250 characters.
 

@@ -1,7 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -39,10 +37,11 @@ from lp.blueprints.interfaces.sprint import (
     ISprint,
     ISprintSet,
     )
-from lp.blueprints.model.specification import (
+from lp.blueprints.model.specification import HasSpecificationsMixin
+from lp.blueprints.model.specificationsearch import (
+    get_specification_active_product_filter,
     get_specification_filters,
-    HasSpecificationsMixin,
-    visible_specification_query,
+    get_specification_privacy_filter,
     )
 from lp.blueprints.model.sprintattendance import SprintAttendance
 from lp.blueprints.model.sprintspecification import SprintSpecification
@@ -120,14 +119,16 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         specifications() method because we want to reuse this query in the
         specificationLinks() method.
         """
-        # import here to avoid circular deps
+        # Avoid circular imports.
         from lp.blueprints.model.specification import Specification
-        tables, query = visible_specification_query(user)
+        tables, query = get_specification_active_product_filter(self)
+        tables.insert(0, Specification)
+        query.append(get_specification_privacy_filter(user))
         tables.append(Join(
             SprintSpecification,
-            SprintSpecification.specification == Specification.id
-        ))
-        query.extend([SprintSpecification.sprintID == self.id])
+            SprintSpecification.specification == Specification.id))
+        query.append(SprintSpecification.sprintID == self.id)
+
         if not filter:
             # filter could be None or [] then we decide the default
             # which for a sprint is to show everything approved
@@ -155,25 +156,24 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         if len(statuses) > 0:
             query.append(Or(*statuses))
         # Filter for specification text
-        query.extend(get_specification_filters(filter))
+        query.extend(get_specification_filters(filter, goalstatus=False))
         return tables, query
 
     def all_specifications(self, user):
         return self.specifications(user, filter=[SpecificationFilter.ALL])
 
     def specifications(self, user, sort=None, quantity=None, filter=None,
-                       prejoin_people=False):
+                       need_people=False, need_branches=False,
+                       need_workitems=False):
         """See IHasSpecifications."""
-        # prejoin_people  is provided only for interface compatibility and
-        # prejoin_people=True is not implemented.
-        assert not prejoin_people
+        # need_* is provided only for interface compatibility and
+        # need_*=True is not implemented.
         if filter is None:
             filter = set([SpecificationFilter.ACCEPTED])
         tables, query = self.spec_filter_clause(user, filter)
         # import here to avoid circular deps
         from lp.blueprints.model.specification import Specification
-        store = Store.of(self)
-        results = store.using(*tables).find(Specification, *query)
+        results = Store.of(self).using(*tables).find(Specification, *query)
         if sort == SpecificationSort.DATE:
             order = (Desc(SprintSpecification.date_created), Specification.id)
             distinct = [SprintSpecification.date_created, Specification.id]

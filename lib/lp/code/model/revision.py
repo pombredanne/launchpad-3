@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 __metaclass__ = type
 __all__ = [
     'Revision',
@@ -65,7 +63,7 @@ from lp.services.database.constants import (
     UTC_NOW,
     )
 from lp.services.database.datetimecol import UtcDateTimeCol
-from lp.services.database.lpstorm import (
+from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )
@@ -385,6 +383,10 @@ class RevisionSet:
             db_id = revision_db_id[bzr_revision.revision_id]
             # Property data: revision DB id, name, value.
             for name, value in bzr_revision.properties.iteritems():
+                # pristine-tar properties can be huge, and storing them
+                # in the database provides no value. Exclude them.
+                if name.startswith('deb-pristine-delta'):
+                    continue
                 property_data.append((db_id, name, value))
             parent_ids = bzr_revision.parent_ids
             # Parent data: revision DB id, sequence, revision_id

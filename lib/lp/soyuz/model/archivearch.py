@@ -1,8 +1,11 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-__all__ = ['ArchiveArch', 'ArchiveArchSet']
+__all__ = [
+    'ArchiveArch',
+    'ArchiveArchSet'
+    ]
 
 from storm.expr import (
     And,
@@ -13,19 +16,14 @@ from storm.locals import (
     Reference,
     Storm,
     )
-from zope.component import getUtility
 from zope.interface import implements
 
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.soyuz.interfaces.archivearch import (
     IArchiveArch,
     IArchiveArchSet,
     )
-from lp.soyuz.model.processor import ProcessorFamily
+from lp.soyuz.model.processor import Processor
 
 
 class ArchiveArch(Storm):
@@ -36,50 +34,39 @@ class ArchiveArch(Storm):
 
     archive_id = Int(name='archive', allow_none=False)
     archive = Reference(archive_id, 'Archive.id')
-    processorfamily_id = Int(name='processorfamily', allow_none=True)
-    processorfamily = Reference(processorfamily_id, 'ProcessorFamily.id')
+    processor_id = Int(name='processor', allow_none=False)
+    processor = Reference(processor_id, Processor.id)
 
 
 class ArchiveArchSet:
     """See `IArchiveArchSet`."""
     implements(IArchiveArchSet)
 
-    def new(self, archive, processorfamily):
+    def new(self, archive, processor):
         """See `IArchiveArchSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         archivearch = ArchiveArch()
         archivearch.archive = archive
-        archivearch.processorfamily = processorfamily
-        store.add(archivearch)
+        archivearch.processor = processor
+        IStore(ArchiveArch).add(archivearch)
         return archivearch
 
-    def getByArchive(self, archive, processorfamily=None):
+    def getByArchive(self, archive, processor=None):
         """See `IArchiveArchSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        base_clauses = (ArchiveArch.archive == archive,)
-        if processorfamily is not None:
-            optional_clauses = (
-                ArchiveArch.processorfamily == processorfamily,)
-        else:
-            optional_clauses = ()
+        clauses = [ArchiveArch.archive == archive]
+        if processor is not None:
+            clauses.append(ArchiveArch.processor_id == processor.id)
 
-        results = store.find(
-            ArchiveArch, *(base_clauses + optional_clauses))
-        results = results.order_by(ArchiveArch.id)
+        return IStore(ArchiveArch).find(ArchiveArch, *clauses).order_by(
+            ArchiveArch.id)
 
-        return results
-
-    def getRestrictedFamilies(self, archive):
+    def getRestrictedProcessors(self, archive):
         """See `IArchiveArchSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = (
-            ProcessorFamily,
+            Processor,
             LeftJoin(
                 ArchiveArch,
                 And(ArchiveArch.archive == archive.id,
-                    ArchiveArch.processorfamily == ProcessorFamily.id)))
-        result_set = store.using(*origin).find(
-            (ProcessorFamily, ArchiveArch),
-            (ProcessorFamily.restricted == True))
-
-        return result_set.order_by(ProcessorFamily.name)
+                    ArchiveArch.processor == Processor.id)))
+        return IStore(ArchiveArch).using(*origin).find(
+            (Processor, ArchiveArch),
+            Processor.restricted == True).order_by(Processor.name)

@@ -8,8 +8,6 @@ import os
 from StringIO import StringIO
 import tempfile
 
-from zope.component import getUtility
-
 from lp.services.apachelogparser.base import (
     create_or_update_parsedlog_entry,
     get_day,
@@ -21,11 +19,7 @@ from lp.services.apachelogparser.base import (
     )
 from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
 from lp.services.config import config
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.librarianserver.apachelogparser import DBUSER
 from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase
@@ -477,12 +471,12 @@ class Test_create_or_update_parsedlog_entry(TestCase):
         # When given a first_line that doesn't exist in the ParsedApacheLog
         # table, create_or_update_parsedlog_entry() will create a new entry
         # with the given number of bytes read.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         first_line = u'First line'
         create_or_update_parsedlog_entry(
             first_line, parsed_bytes=len(first_line))
 
-        entry = store.find(ParsedApacheLog, first_line=first_line).one()
+        entry = IStore(ParsedApacheLog).find(
+            ParsedApacheLog, first_line=first_line).one()
         self.assertIsNot(None, entry)
         self.assertEqual(entry.bytes_read, len(first_line))
 
@@ -492,7 +486,7 @@ class Test_create_or_update_parsedlog_entry(TestCase):
         # with the given number of bytes read.
         first_line = u'First line'
         create_or_update_parsedlog_entry(first_line, parsed_bytes=2)
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(ParsedApacheLog)
         entry = store.find(ParsedApacheLog, first_line=first_line).one()
 
         # Here we see that the new entry was created.

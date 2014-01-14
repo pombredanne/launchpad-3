@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -8,9 +8,11 @@ import time
 from urlparse import urlparse
 
 from storm.exceptions import DisconnectionError
+from twisted.internet import defer
 from twisted.internet.threads import deferToThread
 from twisted.python import log
 from twisted.web import (
+    http,
     proxy,
     resource,
     server,
@@ -23,6 +25,7 @@ from lp.services.database import (
     read_transaction,
     write_transaction,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.librarian.client import url_path_quote
 from lp.services.librarian.utils import guess_librarian_encoding
 
@@ -115,11 +118,17 @@ class LibraryFileAliasResource(resource.Resource):
 
         token = request.args.get('token', [None])[0]
         path = request.path
-        deferred = deferToThread(
-            self._getFileAlias, self.aliasID, token, path)
-        deferred.addCallback(
-                self._cb_getFileAlias, filename, request
-                )
+        if getFeatureFlag('librarian.swift.enabled'):
+            deferred = deferToThread(
+                self._getFileAlias_swift, self.aliasID, token, path)
+            deferred.addCallback(
+                self._cb_getFileAlias_swift, filename, request)
+        else:
+            deferred = deferToThread(
+                self._getFileAlias, self.aliasID, token, path)
+            deferred.addCallback(
+                    self._cb_getFileAlias, filename, request
+                    )
         deferred.addErrback(self._eb_getFileAlias)
         return util.DeferredResource(deferred)
 
@@ -127,9 +136,18 @@ class LibraryFileAliasResource(resource.Resource):
     def _getFileAlias(self, aliasID, token, path):
         try:
             alias = self.storage.getFileAlias(aliasID, token, path)
-            alias.updateLastAccessed()
             return (alias.contentID, alias.filename,
                 alias.mimetype, alias.date_created, alias.restricted)
+        except LookupError:
+            raise NotFound
+
+    @write_transaction
+    def _getFileAlias_swift(self, aliasID, token, path):
+        try:
+            alias = self.storage.getFileAlias(aliasID, token, path)
+            return (alias.contentID, alias.filename,
+                alias.mimetype, alias.date_created, alias.content.filesize,
+                alias.restricted)
         except LookupError:
             raise NotFound
 
@@ -178,6 +196,43 @@ class LibraryFileAliasResource(resource.Resource):
             return proxy.ReverseProxyResource(self.upstreamHost,
                                               self.upstreamPort, request.path)
 
+    @defer.inlineCallbacks
+    def _cb_getFileAlias_swift(
+            self,
+            (dbcontentID, dbfilename, mimetype, date_created, size,
+                restricted),
+            filename, request
+            ):
+        # Return a 404 if the filename in the URL is incorrect. This offers
+        # a crude form of access control (stuff we care about can have
+        # unguessable names effectively using the filename as a secret).
+        if dbfilename.encode('utf-8') != filename:
+            log.msg(
+                "404: dbfilename.encode('utf-8') != filename: %r != %r"
+                % (dbfilename.encode('utf-8'), filename))
+            defer.returnValue(fourOhFour)
+
+        if not restricted:
+            # Set our caching headers. Librarian files can be cached forever.
+            request.setHeader('Cache-Control', 'max-age=31536000, public')
+        else:
+            # Restricted files require revalidation every time. For now,
+            # until the deployment details are completely reviewed, the
+            # simplest, most cautious approach is taken: no caching permited.
+            request.setHeader('Cache-Control', 'max-age=0, private')
+
+        stream = yield self.storage.open(dbcontentID)
+        if stream is not None or self.upstreamHost is None:
+            # XXX: Brad Crittenden 2007-12-05 bug=174204: When encodings are
+            # stored as part of a file's metadata this logic will be replaced.
+            encoding, mimetype = guess_librarian_encoding(filename, mimetype)
+            defer.returnValue(File_swift(
+                mimetype, encoding, date_created, stream, size))
+        else:
+            defer.returnValue(
+                proxy.ReverseProxyResource(
+                    self.upstreamHost, self.upstreamPort, request.path))
+
     def render_GET(self, request):
         return defaultResource.render(request)
 
@@ -202,6 +257,75 @@ class File(static.File):
         This is used by twisted to set the Last-Modified: header.
         """
         return self._modification_time
+
+
+class File_swift(static.File):
+    isLeaf = True
+
+    def __init__(
+        self, contentType, encoding, modification_time, stream, size):
+        # Have to convert the UTC datetime to POSIX timestamp (localtime)
+        offset = datetime.utcnow() - datetime.now()
+        local_modification_time = modification_time - offset
+        self._modification_time = time.mktime(
+            local_modification_time.timetuple())
+        static.File.__init__(self, '.')
+        self.type = contentType
+        self.encoding = encoding
+        self.stream = stream
+        self.size = size
+
+    def getModificationTime(self):
+        """Override the time on disk with the time from the database.
+
+        This is used by twisted to set the Last-Modified: header.
+        """
+        return self._modification_time
+
+    def restat(self, reraise=True):
+        return  # Noop
+
+    def getsize(self):
+        return self.size
+
+    def exists(self):
+        return self.stream is not None
+
+    def isdir(self):
+        return False
+
+    def openForReading(self):
+        return self.stream
+
+    def makeProducer(self, request, fileForReading):
+        # Unfortunately, by overriding the static.File's more
+        # complex makeProducer method we lose HTTP range support.
+        # However, this seems the only sane way of coping with the fact
+        # that sucking data in from Swift requires a Deferred and the
+        # static.*Producer implementations don't cope. This shouldn't be
+        # a problem as the Librarian sits behind Squid. If it is, I
+        # think we will need to cargo-cult three Procucer
+        # implementations in static, making the small modification to
+        # cope with self.fileObject.read maybe returning a Deferred, and
+        # the static.File.makeProducer method to return the correct
+        # producer.
+        self._setContentHeaders(request)
+        request.setResponseCode(http.OK)
+        return FileProducer(request, fileForReading)
+
+
+class FileProducer(static.NoRangeStaticProducer):
+    @defer.inlineCallbacks
+    def resumeProducing(self):
+        if not self.request:
+            return
+        data = yield self.fileObject.read(self.bufferSize)
+        if data:
+            self.request.write(data)
+        else:
+            self.request.unregisterProducer()
+            self.request.finish()
+            self.stopProducing()
 
 
 class DigestSearchResource(resource.Resource):

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Trac ExternalBugTracker implementation."""
@@ -333,7 +333,7 @@ class TracLPPlugin(Trac):
         self._server = xmlrpclib.ServerProxy(
             xmlrpc_endpoint, transport=self._xmlrpc_transport)
 
-        self._url_opener = urllib2.build_opener(
+        self.url_opener = urllib2.build_opener(
             urllib2.HTTPCookieProcessor(cookie_jar))
 
     @ensure_no_transaction
@@ -349,16 +349,6 @@ class TracLPPlugin(Trac):
             # those bugs don't exist on the remote system.
             if remote_bug['status'] != 'missing':
                 self.bugs[int(remote_bug['id'])] = remote_bug
-
-    @ensure_no_transaction
-    def urlopen(self, request, data=None):
-        """See `ExternalBugTracker`.
-
-        This method is overridden here so that it uses the _url_opener
-        attribute in order to maintain the use of Trac authentication
-        cookies across requests.
-        """
-        return self._url_opener.open(request, data)
 
     @ensure_no_transaction
     def _generateAuthenticationToken(self):

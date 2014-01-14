@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `lp.registry.browser.distroseries`."""
@@ -54,13 +54,8 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
-from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import flush_database_caches
-from lp.services.features import getFeatureFlag
 from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import get_property_cache
 from lp.services.utils import utc_now
@@ -86,7 +81,6 @@ from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
-from lp.soyuz.model import distroseriesdifferencejob
 from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model.packagecopyjob import PlainPackageCopyJob
 from lp.soyuz.scripts.initialize_distroseries import InitializationError
@@ -100,7 +94,6 @@ from lp.testing import (
     normalize_whitespace,
     person_logged_in,
     StormStatementRecorder,
-    TestCase,
     TestCaseWithFactory,
     with_celebrity_logged_in,
     )
@@ -121,18 +114,6 @@ from lp.testing.pages import (
     find_tag_by_id,
     )
 from lp.testing.views import create_initialized_view
-
-
-def set_derived_series_sync_feature_flag(test_case):
-    test_case.useFixture(FeatureFixture({
-        u'soyuz.derived_series_sync.enabled': u'on',
-        }))
-
-
-def set_derived_series_difference_jobs_feature_flag(test_case):
-    test_case.useFixture(FeatureFixture({
-        distroseriesdifferencejob.FEATURE_FLAG_ENABLE_MODULE: u'on',
-        }))
 
 
 class TestDistroSeriesView(TestCaseWithFactory):
@@ -545,9 +526,9 @@ class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
                 "member of Team Teamy Team Team may be able to help."))
 
     def load_afresh(self, thing):
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         naked_thing = removeSecurityProxy(thing)
-        naked_thing = store.get(naked_thing.__class__, naked_thing.id)
+        naked_thing = IStore(naked_thing.__class__).get(
+            naked_thing.__class__, naked_thing.id)
         return ProxyFactory(naked_thing)
 
     def fail_job_with_error(self, job, error):
@@ -1031,11 +1012,15 @@ class TestDistroSeriesLocalDiffPerformance(TestCaseWithFactory,
     def test_queries_single_parent(self):
         dsp = self.factory.makeDistroSeriesParent()
         derived_series = dsp.derived_series
+        derived_series.nominatedarchindep = self.factory.makeDistroArchSeries(
+            distroseries=derived_series)
         self._assertQueryCount(derived_series)
 
     def test_queries_multiple_parents(self):
         dsp = self.factory.makeDistroSeriesParent()
         derived_series = dsp.derived_series
+        derived_series.nominatedarchindep = self.factory.makeDistroArchSeries(
+            distroseries=derived_series)
         self.factory.makeDistroSeriesParent(
             derived_series=derived_series)
         self._assertQueryCount(derived_series)
@@ -1332,11 +1317,10 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             derived_series=derived_series)
 
         # Delete the publications.
-        with celebrity_logged_in("admin"):
-            difference.source_pub.status = (
-                PackagePublishingStatus.DELETED)
-            difference.parent_source_pub.status = (
-                PackagePublishingStatus.DELETED)
+        removeSecurityProxy(difference.source_pub).status = (
+            PackagePublishingStatus.DELETED)
+        removeSecurityProxy(difference.parent_source_pub).status = (
+            PackagePublishingStatus.DELETED)
         # Flush out the changes and invalidate caches (esp. property caches).
         flush_database_caches()
 
@@ -1414,12 +1398,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         dsd = self.makePackageUpgrade()
         view = self.makeView(dsd.derived_series)
         self.assertContentEqual([dsd], view.getUpgrades())
-
-    def enableDerivedSeriesSyncFeature(self):
-        """Enable the feature flag for derived-series sync."""
-        self.useFixture(
-            FeatureFixture(
-                {u'soyuz.derived_series_sync.enabled': u'on'}))
 
     def enableDerivedSeriesUpgradeFeature(self):
         """Enable the feature flag for derived-series upgrade."""
@@ -1783,26 +1761,11 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         # synced package.
         derived_series = self._setUpDSD()[0]
         person = self._setUpPersonWithPerm(derived_series)
-        set_derived_series_sync_feature_flag(self)
         with person_logged_in(person):
             view = create_initialized_view(
                 derived_series, '+localpackagediffs')
 
             self.assertTrue(view.canPerformSync())
-
-    def test_canPerformSync_non_anon_feature_disabled(self):
-        # Logged-in users with a permission on the destination archive
-        # are not presented with options to perform syncs when the
-        # feature flag is not enabled.
-        self.assertIs(
-            None, getFeatureFlag('soyuz.derived_series_sync.enabled'))
-        derived_series = self._setUpDSD()[0]
-        person = self._setUpPersonWithPerm(derived_series)
-        with person_logged_in(person):
-            view = create_initialized_view(
-                derived_series, '+localpackagediffs')
-
-            self.assertFalse(view.canPerformSync())
 
     def test_hasPendingDSDUpdate_returns_False_if_no_pending_update(self):
         dsd = self.factory.makeDistroSeriesDifference()
@@ -1811,7 +1774,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self.assertFalse(view.hasPendingDSDUpdate(dsd))
 
     def test_hasPendingDSDUpdate_returns_True_if_pending_update(self):
-        set_derived_series_difference_jobs_feature_flag(self)
         dsd = self.factory.makeDistroSeriesDifference()
         self.makeDSDJob(dsd)
         view = create_initialized_view(
@@ -1994,7 +1956,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         # An error is raised when a sync is requested without any selection.
         derived_series = self._setUpDSD()[0]
         person = self._setUpPersonWithPerm(derived_series)
-        set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(derived_series, person, [])
 
         self.assertEqual(1, len(view.errors))
@@ -2007,7 +1968,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             'my-src-name')
         person = self._setUpPersonWithPerm(derived_series)
         another_id = str(int(diff_id) + 1)
-        set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
             derived_series, person, [another_id])
 
@@ -2023,7 +1983,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         derived_series, unused, unused2, diff_id = self._setUpDSD(
             'my-src-name')
         person = self._setUpPersonWithPerm(derived_series)
-        set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
             derived_series, person, [diff_id])
 
@@ -2062,7 +2021,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             'my-src-name')
         person, another_component = self.makePersonWithComponentPermission(
             derived_series.main_archive)
-        set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
             derived_series, person, [diff_id])
 
@@ -2077,7 +2035,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         # metadata.
         derived_series, parent_series, sp_name, diff_id = self._setUpDSD(
             'my-src-name')
-        set_derived_series_sync_feature_flag(self)
         person, _ = self.makePersonWithComponentPermission(
             derived_series.main_archive,
             derived_series.getSourcePackage(
@@ -2130,7 +2087,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self.assertIs(None, pubs)
 
         # Now, sync the source from the parent using the form.
-        set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
             derived_series, person, [diff_id], query_string=(
                 "batch=12&start=24&my-old-man=dustman"))
@@ -2158,7 +2114,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             'my-src-name', difference_type=missing, versions=versions)
         person, another_component = self.makePersonWithComponentPermission(
             derived_series.main_archive)
-        set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
             derived_series, person, [diff_id],
             view_name='+missingpackages')
@@ -2180,7 +2135,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             derived_series.status = SeriesStatus.CURRENT
             derived_series.datereleased = UTC_NOW
 
-        set_derived_series_sync_feature_flag(self)
         person = self.factory.makePerson()
         removeSecurityProxy(derived_series.main_archive).newPackageUploader(
             person, sp_name)
@@ -2201,7 +2155,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         derived_series, parent_series, unused, diff_id = self._setUpDSD(
             'my-src-name')
         person = self.factory.makePerson()
-        set_derived_series_sync_feature_flag(self)
         with person_logged_in(person):
             view = create_initialized_view(
                 derived_series, '+localpackagediffs', method='GET',

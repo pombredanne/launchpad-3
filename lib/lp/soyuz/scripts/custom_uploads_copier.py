@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Copy latest custom uploads into a distribution release series.
@@ -17,6 +17,7 @@ from operator import attrgetter
 from lp.archivepublisher.ddtp_tarball import DdtpTarballUpload
 from lp.archivepublisher.debian_installer import DebianInstallerUpload
 from lp.archivepublisher.dist_upgrader import DistUpgraderUpload
+from lp.archivepublisher.rosetta_translations import RosettaTranslationsUpload
 from lp.archivepublisher.uefi import UefiUpload
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.bulk import load_referencing
@@ -37,6 +38,8 @@ class CustomUploadsCopier:
         PackageUploadCustomFormat.DEBIAN_INSTALLER: DebianInstallerUpload,
         PackageUploadCustomFormat.DIST_UPGRADER: DistUpgraderUpload,
         PackageUploadCustomFormat.DDTP_TARBALL: DdtpTarballUpload,
+        PackageUploadCustomFormat.ROSETTA_TRANSLATIONS:
+            RosettaTranslationsUpload,
         PackageUploadCustomFormat.UEFI: UefiUpload,
         }
 
@@ -116,6 +119,19 @@ class CustomUploadsCopier:
         existing_upload = target_uploads.get(self.getKey(upload))
         return existing_upload is not None and existing_upload.id >= upload.id
 
+    def isForValidDAS(self, upload):
+        """Is `upload` for a valid DAS for the target series?
+
+        :param upload: A `PackageUploadCustom` from the source series.
+        """
+        concrete = self.copyable_types[upload.customformat]()
+        concrete.setComponents(upload.libraryfilealias.filename)
+        if concrete.arch is None:
+            return True
+        return concrete.arch in [
+            das.architecturetag
+            for das in self.target_series.enabled_architectures]
+
     def copyUpload(self, original_upload):
         """Copy `original_upload` into `self.target_series`."""
         if self.target_archive is None:
@@ -142,5 +158,6 @@ class CustomUploadsCopier:
         source_uploads = self.getLatestUploads(
             source_series, source_pocket=source_pocket)
         for upload in source_uploads.itervalues():
-            if not self.isObsolete(upload, target_uploads):
+            if (not self.isObsolete(upload, target_uploads) and
+                self.isForValidDAS(upload)):
                 self.copyUpload(upload)

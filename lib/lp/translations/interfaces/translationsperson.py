@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -71,13 +71,4 @@ class ITranslationsPerson(Interface):
             way around.
         :return: A query result of `POFile`s ordered by number of
             untranslated messages.
-        """
-
-    def suggestTranslatableFiles(no_older_than=None):
-        """Suggest `POFile`s this person could help translate.
-
-        Similar to `getTranslatableFiles`, this method picks an
-        arbitrary series of `POFile`s that the user is not a reviewer
-        for and has not worked on recently, but which are in a language
-        the user works in.
         """

@@ -1,8 +1,6 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0231
-
 """Tests for the branch filesystem."""
 
 __metaclass__ = type
@@ -956,60 +954,43 @@ class TestBranchChangedNotification(TestCaseWithTransport):
             revid,
             self._branch_changed_log[0]['last_revision'])
 
+    def assertStackedOnIsRewritten(self, input, output):
+        db_branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=self.requester)
+        branch = self.make_branch(db_branch.unique_name)
+        del self._branch_changed_log[:]
+        branch.lock_write()
+        branch._set_config_location('stacked_on_location', input)
+        branch.unlock()
+        # Clear the branch config cache to pick up the changes we made
+        # directly to the filesystem.
+        branch._get_config_store().unload()
+        self.assertEqual(output, branch.get_stacked_on_url())
+        self.assertEqual(1, len(self._branch_changed_log))
+        self.assertEqual(output, self._branch_changed_log[0]['stacked_on_url'])
+
     def test_branch_unlock_relativizes_absolute_stacked_on_url(self):
         # When a branch that has been stacked on the absolute URL of another
         # Launchpad branch is unlocked, the branch is mutated to be stacked on
         # the path part of that URL, and this relative path is passed to
         # branchChanged().
-        db_branch = self.factory.makeAnyBranch(
-            branch_type=BranchType.HOSTED, owner=self.requester)
-        branch = self.make_branch(db_branch.unique_name)
-        del self._branch_changed_log[:]
-        branch.lock_write()
-        branch.get_config().set_user_option(
-            'stacked_on_location',
-            'http://bazaar.launchpad.dev/~user/product/branch')
-        branch.unlock()
-        self.assertEqual('/~user/product/branch', branch.get_stacked_on_url())
-        self.assertEqual(1, len(self._branch_changed_log))
-        self.assertEqual(
-            '/~user/product/branch',
-            self._branch_changed_log[0]['stacked_on_url'])
+        self.assertStackedOnIsRewritten(
+            'http://bazaar.launchpad.dev/~user/product/branch',
+            '/~user/product/branch')
 
     def test_branch_unlock_ignores_non_launchpad_stacked_url(self):
         # When a branch that has been stacked on the absolute URL of a branch
         # that is not on Launchpad, it is passed unchanged to branchChanged().
-        db_branch = self.factory.makeAnyBranch(
-            branch_type=BranchType.HOSTED, owner=self.requester)
-        branch = self.make_branch(db_branch.unique_name)
-        del self._branch_changed_log[:]
-        stacked_on_url = 'http://example.com/~user/foo'
-        branch.lock_write()
-        branch.get_config().set_user_option(
-            'stacked_on_location', stacked_on_url)
-        branch.unlock()
-        self.assertEqual(1, len(self._branch_changed_log))
-        self.assertEqual(
-            stacked_on_url, self._branch_changed_log[0]['stacked_on_url'])
-        self.assertEqual(stacked_on_url, branch.get_stacked_on_url())
+        self.assertStackedOnIsRewritten(
+            'http://example.com/~user/foo', 'http://example.com/~user/foo')
 
     def test_branch_unlock_ignores_odd_scheme_stacked_url(self):
         # When a branch that has been stacked on the absolute URL of a branch
         # on Launchpad with a scheme we don't understand, it is passed
         # unchanged to branchChanged().
-        db_branch = self.factory.makeAnyBranch(
-            branch_type=BranchType.HOSTED, owner=self.requester)
-        branch = self.make_branch(db_branch.unique_name)
-        del self._branch_changed_log[:]
-        stacked_on_url = 'gopher://bazaar.launchpad.dev/~user/foo'
-        branch.lock_write()
-        branch.get_config().set_user_option(
-            'stacked_on_location', stacked_on_url)
-        branch.unlock()
-        self.assertEqual(1, len(self._branch_changed_log))
-        self.assertEqual(
-            stacked_on_url, self._branch_changed_log[0]['stacked_on_url'])
-        self.assertEqual(stacked_on_url, branch.get_stacked_on_url())
+        self.assertStackedOnIsRewritten(
+            'gopher://bazaar.launchpad.dev/~user/foo',
+            'gopher://bazaar.launchpad.dev/~user/foo')
 
     def assertFormatStringsPassed(self, branch):
         self.assertEqual(1, len(self._branch_changed_log))

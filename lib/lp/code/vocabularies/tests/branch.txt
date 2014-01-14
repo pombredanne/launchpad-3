@@ -32,16 +32,6 @@ concerned).
     ~stevea/thunderbird/main
     ~vcs-imports/evolution/main
 
-    >>> print_vocab_branches(branch_vocabulary, 'vcs-imports')
-    ~vcs-imports/evolution/import
-    ~vcs-imports/evolution/main
-    ~vcs-imports/gnome-terminal/import
-
-    >>> print_vocab_branches(branch_vocabulary, 'evolution')
-    ~carlos/evolution/2.0
-    ~vcs-imports/evolution/import
-    ~vcs-imports/evolution/main
-
 A search with the full branch unique name should also find the branch.
 
     >>> print_vocab_branches(branch_vocabulary, '~name12/firefox/main')
@@ -106,9 +96,6 @@ then the product of the branch is used to restrict the query.
     ...     gnome_terminal, "BranchRestrictedOnProduct")
     >>> print_vocab_branches(branch_vocabulary, 'main')
     ~name12/gnome-terminal/main
-
-    >>> print_vocab_branches(branch_vocabulary, 'vcs-imports')
-    ~vcs-imports/gnome-terminal/import
 
 If a full unique name is entered that has a different product, the
 branch is not part of the vocabulary.

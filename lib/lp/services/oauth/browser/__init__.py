@@ -262,7 +262,7 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
 
             # Fionally, customize the "deny" message.
             label = (
-                "Do Not Allow &quot;%s&quot; to Access my Launchpad Account.")
+                'Do Not Allow "%s" to Access my Launchpad Account.')
             deny_action = [
                 action for action in self.actions
                 if action.name == OAuthPermission.UNAUTHORIZED.name][0]

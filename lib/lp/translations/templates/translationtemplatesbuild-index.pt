@@ -33,9 +33,13 @@
         </div>
 
       </div> <!-- yui-g  -->
-
+      <tal:comment replace="nothing">
+        XXX wgrant 2013-01-22: This should be conditional on
+        context/status/enumvalue:BUILDING once TTB.buildqueue_record
+        works.
+      </tal:comment>
       <div id="buildlog" class="portlet"
-           tal:condition="context/status/enumvalue:BUILDING">
+           tal:condition="nothing">
         <div metal:use-macro="template/macros/buildlog" />
       </div>
 

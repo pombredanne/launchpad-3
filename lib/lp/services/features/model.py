@@ -19,21 +19,9 @@ from storm.locals import (
     Storm,
     Unicode,
     )
-from zope.component import getUtility
 
 from lp.services.database.datetimecol import UtcDateTimeCol
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-
-
-def getFeatureStore():
-    """Get Storm store to access feature definitions."""
-    # TODO: This is copied so many times in Launchpad; maybe it should be more
-    # general?
-    return getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+from lp.services.database.interfaces import IStore
 
 
 class FeatureFlag(Storm):
@@ -74,3 +62,10 @@ class FeatureFlagChangelogEntry(Storm):
         self.date_changed = datetime.now(pytz.timezone('UTC'))
         self.comment = unicode(comment)
         self.person = person
+
+
+def getFeatureStore():
+    """Get Storm store to access feature definitions."""
+    # TODO: This is copied so many times in Launchpad; maybe it should be more
+    # general?
+    return IStore(FeatureFlag)

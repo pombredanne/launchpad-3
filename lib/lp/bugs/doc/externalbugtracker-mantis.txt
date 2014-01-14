@@ -13,7 +13,7 @@ export from.
     >>> from lp.bugs.externalbugtracker import Mantis
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> from lp.bugs.interfaces.externalbugtracker import IExternalBugTracker
     >>> alsa_mantis = Mantis('http://example.com/')

@@ -1,7 +1,5 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -276,7 +274,7 @@ class MessageSet:
 
     def fromEmail(self, email_message, owner=None, filealias=None,
                   parsed_message=None, create_missing_persons=False,
-                  fallback_parent=None, date_created=None):
+                  fallback_parent=None, date_created=None, restricted=False):
         """See IMessageSet.fromEmail."""
         # It does not make sense to handle Unicode strings, as email
         # messages may contain chunks encoded in differing character sets.
@@ -302,15 +300,12 @@ class MessageSet:
 
         # Over-long messages are checked for at the handle_on_message level.
 
-        # Stuff a copy of the raw email into the Librarian, if it isn't
-        # already in there.
-        file_alias_set = getUtility(ILibraryFileAliasSet)  # Reused later
-        if filealias is None:
-            # Avoid circular import.
-            from lp.services.mail.helpers import (
-                save_mail_to_librarian,
-                )
-            raw_email_message = save_mail_to_librarian(email_message)
+        # If it's a restricted mail (IE: for a private bug), or it hasn't been
+        # uploaded, do so now.
+        from lp.services.mail.helpers import save_mail_to_librarian
+        if restricted or filealias is None:
+            raw_email_message = save_mail_to_librarian(
+                email_message, restricted=restricted)
         else:
             raw_email_message = filealias
 
@@ -365,20 +360,19 @@ class MessageSet:
         else:
             parent = fallback_parent
 
-        # figure out the date of the message
+        # Figure out the date of the message.
         if date_created is not None:
             datecreated = date_created
         else:
             datecreated = utcdatetime_from_field(parsed_message['date'])
 
-        # make sure we don't create an email with a datecreated in the
-        # future. also make sure we don't create an ancient one
+        # Make sure we don't create an email with a datecreated in the
+        # distant past or future.
         now = datetime.now(pytz.timezone('UTC'))
         thedistantpast = datetime(1990, 1, 1, tzinfo=pytz.timezone('UTC'))
         if datecreated < thedistantpast or datecreated > now:
             datecreated = UTC_NOW
 
-        # DOIT
         message = Message(subject=subject, owner=owner,
             rfc822msgid=rfc822msgid, parent=parent,
             raw=raw_email_message, datecreated=datecreated)
@@ -448,8 +442,7 @@ class MessageSet:
 
                 if content.strip():
                     MessageChunk(
-                        message=message, sequence=sequence,
-                        content=content)
+                        message=message, sequence=sequence, content=content)
                     sequence += 1
             else:
                 filename = part.get_filename() or 'unnamed'
@@ -465,13 +458,11 @@ class MessageSet:
                     content_type = part['content-type']
 
                 if len(content) > 0:
-                    blob = file_alias_set.create(
-                        name=filename,
-                        size=len(content),
-                        file=cStringIO(content),
-                        contentType=content_type)
-                    MessageChunk(message=message, sequence=sequence,
-                                 blob=blob)
+                    blob = getUtility(ILibraryFileAliasSet).create(
+                        name=filename, size=len(content),
+                        file=cStringIO(content), contentType=content_type,
+                        restricted=restricted)
+                    MessageChunk(message=message, sequence=sequence, blob=blob)
                     sequence += 1
 
         # Don't store the epilogue

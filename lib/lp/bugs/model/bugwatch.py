@@ -58,14 +58,13 @@ from lp.bugs.interfaces.bugwatch import (
     UnrecognizedBugTrackerURL,
     )
 from lp.bugs.model.bugmessage import BugMessage
-from lp.bugs.model.bugset import BugSetBase
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import SQLBase
 from lp.services.database.stormbase import StormBase
 from lp.services.helpers import (
@@ -380,15 +379,12 @@ class BugWatch(SQLBase):
         self.remotestatus = None
 
 
-class BugWatchSet(BugSetBase):
+class BugWatchSet:
     """A set for BugWatch"""
 
     implements(IBugWatchSet)
-    table = BugWatch
 
     def __init__(self, bug=None):
-        BugSetBase.__init__(self, bug)
-        self.title = 'A set of bug watches'
         self.bugtracker_parse_functions = {
             BugTrackerType.BUGZILLA: self.parseBugzillaURL,
             BugTrackerType.DEBBUGS: self.parseDebbugsURL,

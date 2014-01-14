@@ -685,12 +685,13 @@ class TestBugWatchResetting(TestCaseWithFactory):
     def setUp(self):
         super(TestBugWatchResetting, self).setUp(user=ADMIN_EMAIL)
         self.bug_watch = self.factory.makeBugWatch()
-        self.bug_watch.last_error_type = BugWatchActivityStatus.BUG_NOT_FOUND
-        self.bug_watch.lastchanged = datetime.now(utc) - timedelta(days=1)
-        self.bug_watch.lastchecked = datetime.now(utc) - timedelta(days=1)
-        self.bug_watch.next_check = datetime.now(utc) + timedelta(days=7)
-        self.bug_watch.remote_importance = 'IMPORTANT'
-        self.bug_watch.remotestatus = 'FIXED'
+        naked = removeSecurityProxy(self.bug_watch)
+        naked.last_error_type = BugWatchActivityStatus.BUG_NOT_FOUND
+        naked.lastchanged = datetime.now(utc) - timedelta(days=1)
+        naked.lastchecked = datetime.now(utc) - timedelta(days=1)
+        naked.next_check = datetime.now(utc) + timedelta(days=7)
+        naked.remote_importance = 'IMPORTANT'
+        naked.remotestatus = 'FIXED'
         self.default_bug_watch_fields = [
             'last_error_type',
             'lastchanged',

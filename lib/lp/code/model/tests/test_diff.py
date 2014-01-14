@@ -33,12 +33,12 @@ from lp.services.librarian.interfaces.client import (
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
     )
 from lp.services.webapp import canonical_url
-from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     login,
     login_person,
     monkey_patch,
     TestCaseWithFactory,
+    verifyObject,
     )
 from lp.testing.layers import (
     LaunchpadFunctionalLayer,

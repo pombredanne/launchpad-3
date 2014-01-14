@@ -19,13 +19,13 @@
           tal:condition="subscription/essential"
           alt="(essential)"
           src="/@@/subscriber-essential"
-          title="Has asked to take part in all discussions of this blueprint."
+          title="Participation Essential: Has asked to take part in all discussions of this blueprint."
         />
         <img
           tal:condition="not: subscription/essential"
           alt=""
           src="/@@/subscriber-inessential"
-          title="Normal subscriber."
+          title="This person has indicated interest in the blueprint but is not required to be present at every discussion."
         />
     </a>
     <tal:no_edit condition="not: subscription/required:launchpad.Edit">

@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Policy management for the upload handler."""
@@ -145,8 +145,8 @@ class AbstractUploadPolicy:
             return
 
         self.distroseriesname = dr_name
-        (self.distroseries,
-         self.pocket) = self.distro.getDistroSeriesAndPocket(dr_name)
+        self.distroseries, self.pocket = self.distro.getDistroSeriesAndPocket(
+            dr_name, follow_aliases=True)
 
         if self.archive is None:
             self.archive = self.distroseries.main_archive

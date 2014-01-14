@@ -38,11 +38,9 @@ from lp.code.model.directbranchcommit import (
 from lp.codehosting.vfs import get_rw_server
 from lp.services.config import config
 from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    SLAVE_FLAVOR,
+    IMasterStore,
+    ISlaveStore,
     )
-from lp.services.database.lpstorm import IMasterStore
 from lp.services.helpers import shortlist
 from lp.services.mail.helpers import (
     get_contact_email_addresses,
@@ -316,7 +314,7 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
 
         self.logger.info("Exporting to translations branches.")
 
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        self.store = ISlaveStore(Product)
 
         product_join = Join(
             ProductSeries, Product, ProductSeries.product == Product.id)

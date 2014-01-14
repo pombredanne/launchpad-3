@@ -30,7 +30,7 @@ from zope.interface import classProvides
 from lp.code.interfaces.branch import IBranchCloud
 from lp.code.model.revision import RevisionCache
 from lp.registry.model.product import Product
-from lp.services.database.lpstorm import ISlaveStore
+from lp.services.database.interfaces import ISlaveStore
 
 
 class BranchCloud:

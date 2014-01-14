@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
@@ -14,7 +14,6 @@ import logging
 from StringIO import StringIO
 import time
 
-import pytz
 from pytz import UTC
 from storm.expr import (
     In,
@@ -22,7 +21,6 @@ from storm.expr import (
     Min,
     Not,
     SQL,
-    Update,
     )
 from storm.locals import (
     Int,
@@ -55,6 +53,7 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.code.model.diff import Diff
 from lp.registry.enums import (
     BranchSharingPolicy,
     BugSharingPolicy,
@@ -63,7 +62,6 @@ from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.commercialsubscription import CommercialSubscription
-from lp.registry.model.product import Product
 from lp.registry.model.teammembership import TeamMembership
 from lp.scripts.garbo import (
     AntiqueSessionPruner,
@@ -87,12 +85,7 @@ from lp.services.database.constants import (
     THIRTY_DAYS_AGO,
     UTC_NOW,
     )
-from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 from lp.services.features.model import FeatureFlag
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
@@ -174,7 +167,7 @@ class TestBulkPruner(TestCase):
     def setUp(self):
         super(TestBulkPruner, self).setUp()
 
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store = IMasterStore(CommercialSubscription)
         self.store.execute("CREATE TABLE BulkFoo (id serial PRIMARY KEY)")
 
         for i in range(10):
@@ -611,8 +604,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         pruner = OpenIDConsumerAssociationPruner
         table_name = pruner.table_name
         switch_dbuser('testadmin')
-        store_selector = getUtility(IStoreSelector)
-        store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
+        store = IMasterStore(CommercialSubscription)
         now = time.time()
         # Create some associations in the past with lifetimes
         for delta in range(0, 20):
@@ -635,7 +627,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.runFrequently()
 
         switch_dbuser('testadmin')
-        store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
+        store = IMasterStore(CommercialSubscription)
         # Confirm all the rows we know should have been expired have
         # been expired. These are the ones that would be expired using
         # the test start time as 'now'.
@@ -650,6 +642,30 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         num_unexpired = store.execute(
             "SELECT COUNT(*) FROM %s" % table_name).get_one()[0]
         self.failUnless(num_unexpired > 0)
+
+    def test_PreviewDiffPruner(self):
+        switch_dbuser('testadmin')
+        mp1 = self.factory.makeBranchMergeProposal()
+        now = datetime.now(UTC)
+        self.factory.makePreviewDiff(
+            merge_proposal=mp1, date_created=now - timedelta(hours=2))
+        self.factory.makePreviewDiff(
+            merge_proposal=mp1, date_created=now - timedelta(hours=1))
+        mp1_diff = self.factory.makePreviewDiff(merge_proposal=mp1)
+        mp2 = self.factory.makeBranchMergeProposal()
+        mp2_diff = self.factory.makePreviewDiff(merge_proposal=mp2)
+        self.runDaily()
+        mp1_diff_ids = [removeSecurityProxy(p).id for p in mp1.preview_diffs]
+        mp2_diff_ids = [removeSecurityProxy(p).id for p in mp2.preview_diffs]
+        self.assertEqual([mp1_diff.id], mp1_diff_ids)
+        self.assertEqual([mp2_diff.id], mp2_diff_ids)
+
+    def test_DiffPruner(self):
+        switch_dbuser('testadmin')
+        diff_id = removeSecurityProxy(self.factory.makeDiff()).id
+        self.runDaily()
+        store = IMasterStore(Diff)
+        self.assertContentEqual([], store.find(Diff, Diff.id == diff_id))
 
     def test_RevisionAuthorEmailLinker(self):
         switch_dbuser('testadmin')
@@ -979,8 +995,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         template = self.factory.makePOTemplate()
         self.runDaily()
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        count, = store.execute("""
+        count, = IMasterStore(CommercialSubscription).execute("""
             SELECT count(*)
             FROM SuggestivePOTemplate
             WHERE potemplate = %s
@@ -990,7 +1005,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
 
     def test_BugSummaryJournalRollup(self):
         switch_dbuser('testadmin')
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        store = IMasterStore(CommercialSubscription)
 
         # Generate a load of entries in BugSummaryJournal.
         store.execute("UPDATE BugTask SET status=42")
@@ -1010,7 +1025,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
 
     def test_VoucherRedeemer(self):
         switch_dbuser('testadmin')
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
         voucher_proxy = TestSalesforceVoucherProxy()
         self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
@@ -1027,15 +1041,14 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.runFrequently()
 
         # There should now be 0 pending vouchers in Launchpad.
-        num_rows = store.find(
+        num_rows = IMasterStore(CommercialSubscription).find(
             CommercialSubscription,
             Like(CommercialSubscription.sales_system_id, u'pending-%')
             ).count()
         self.assertThat(num_rows, Equals(0))
         # Salesforce should also now have redeemed the voucher.
         unredeemed_ids = [
-            voucher.voucher_id
-            for voucher in voucher_proxy.getUnredeemedVouchers(mark)]
+            v.voucher_id for v in voucher_proxy.getUnredeemedVouchers(mark)]
         self.assertNotIn(redeemed_id, unredeemed_ids)
 
     def test_UnusedPOTMsgSetPruner_removes_obsolete_message_sets(self):
@@ -1185,28 +1198,28 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         spr1 = self.factory.makeSourcePackageRelease(
             creator=creators[0], maintainer=maintainers[0],
             distroseries=distroseries, sourcepackagename=spn,
-            date_uploaded=datetime(2010, 12, 1, tzinfo=pytz.UTC))
+            date_uploaded=datetime(2010, 12, 1, tzinfo=UTC))
         self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED,
             sourcepackagerelease=spr1)
         spr2 = self.factory.makeSourcePackageRelease(
             creator=creators[0], maintainer=maintainers[1],
             distroseries=distroseries, sourcepackagename=spn,
-            date_uploaded=datetime(2010, 12, 2, tzinfo=pytz.UTC))
+            date_uploaded=datetime(2010, 12, 2, tzinfo=UTC))
         self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED,
             sourcepackagerelease=spr2)
         spr3 = self.factory.makeSourcePackageRelease(
             creator=creators[1], maintainer=maintainers[0],
             distroseries=distroseries, sourcepackagename=spn,
-            date_uploaded=datetime(2010, 12, 3, tzinfo=pytz.UTC))
+            date_uploaded=datetime(2010, 12, 3, tzinfo=UTC))
         self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED,
             sourcepackagerelease=spr3)
         spr4 = self.factory.makeSourcePackageRelease(
             creator=creators[1], maintainer=maintainers[1],
             distroseries=distroseries, sourcepackagename=spn,
-            date_uploaded=datetime(2010, 12, 4, tzinfo=pytz.UTC))
+            date_uploaded=datetime(2010, 12, 4, tzinfo=UTC))
         spph_1 = self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED,
             sourcepackagerelease=spr4)
@@ -1230,7 +1243,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             self.assertEqual(spr.creator, record.creator)
             self.assertIsNone(record.maintainer_id)
             self.assertEqual(
-                spr.dateuploaded, pytz.UTC.localize(record.dateuploaded))
+                spr.dateuploaded, UTC.localize(record.dateuploaded))
 
         def _assert_release_by_maintainer(maintainer, spr):
             release_records = store.find(
@@ -1241,7 +1254,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             self.assertEqual(spr.maintainer, record.maintainer)
             self.assertIsNone(record.creator_id)
             self.assertEqual(
-                spr.dateuploaded, pytz.UTC.localize(record.dateuploaded))
+                spr.dateuploaded, UTC.localize(record.dateuploaded))
 
         _assert_release_by_creator(creators[0], spr2)
         _assert_release_by_creator(creators[1], spr4)
@@ -1258,7 +1271,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         spr5 = self.factory.makeSourcePackageRelease(
             creator=creators[1], maintainer=maintainers[1],
             distroseries=distroseries, sourcepackagename=spn,
-            date_uploaded=datetime(2010, 12, 5, tzinfo=pytz.UTC))
+            date_uploaded=datetime(2010, 12, 5, tzinfo=UTC))
         spph_2 = self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED,
             sourcepackagerelease=spr5)
@@ -1274,55 +1287,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         job_data = load_garbo_job_state(
             'PopulateLatestPersonSourcePackageReleaseCache')
         self.assertEqual(spph_2.id, job_data['last_spph_id'])
-
-    def test_PopulatePackageUploadSearchables(self):
-        # PopulatePackageUploadSearchables sets searchable_names and
-        # searchable_versions for existing uploads correctly.
-        switch_dbuser('testadmin')
-        distroseries = self.factory.makeDistroSeries()
-        source = self.factory.makeSourcePackageUpload(distroseries)
-        binary = self.factory.makeBuildPackageUpload(distroseries)
-        build = self.factory.makeBinaryPackageBuild()
-        self.factory.makeBinaryPackageRelease(build=build)
-        binary.addBuild(build)
-        custom = self.factory.makeCustomPackageUpload(distroseries)
-        # They are all have searchable_{names,versions} set, so unset them.
-        for kind in (source, binary, custom):
-            removeSecurityProxy(kind).searchable_names = None
-            removeSecurityProxy(kind).searchable_versions = None
-        transaction.commit()
-        self.runHourly()
-        source_name = source.sources[0].sourcepackagerelease.name
-        binary_names = ' '.join(
-            [build.build.binarypackages[0].name for build in binary.builds] + [
-                build.build.source_package_release.name
-                    for build in binary.builds])
-        filename = custom.customfiles[0].libraryfilealias.filename
-        self.assertEqual(source.searchable_names, source_name)
-        self.assertEqual(binary.searchable_names, binary_names)
-        self.assertEqual(custom.searchable_names, filename)
-        source_version = [source.sources[0].sourcepackagerelease.version]
-        binary_versions = [
-            build.build.binarypackages[0].version for build in binary.builds]
-        self.assertContentEqual(source_version, source.searchable_versions)
-        self.assertContentEqual(binary_versions, binary.searchable_versions)
-        self.assertEqual([], custom.searchable_versions)
-
-    def test_PopulatePackageUploadSearchables_deduplication(self):
-        # When the SPN and the BPN are the same for a build, the
-        # searchable_names field is set to just one name.
-        switch_dbuser('testadmin')
-        distroseries = self.factory.makeDistroSeries()
-        spr = self.factory.makeSourcePackageRelease()
-        bpn = self.factory.makeBinaryPackageName(name=spr.name)
-        binary = self.factory.makeBuildPackageUpload(
-            distroseries=distroseries, binarypackagename=bpn,
-            source_package_release=spr)
-        removeSecurityProxy(binary).searchable_names = None
-        removeSecurityProxy(binary).searchable_versions = None
-        transaction.commit()
-        self.runHourly()
-        self.assertEqual(spr.name, binary.searchable_names)
 
 
 class TestGarboTasks(TestCaseWithFactory):

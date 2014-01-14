@@ -1,4 +1,4 @@
-Edit a bug watch
+Edi a bug watch
 ================
 
 
@@ -63,13 +63,15 @@ Next check column.
     >>> from zope.component import getUtility
     >>> from datetime import datetime
     >>> from pytz import utc
+    >>> from zope.security.proxy import removeSecurityProxy
 
     >>> from lp.testing import login, logout
     >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
 
     >>> login('foo.bar@canonical.com')
     >>> watch = getUtility(IBugWatchSet).get(2)
-    >>> watch.next_check = datetime(2010, 4, 8, 16, 07, tzinfo=utc)
+    >>> removeSecurityProxy(watch).next_check = datetime(
+    ...     2010, 4, 8, 16, 07, tzinfo=utc)
     >>> logout()
 
     >>> admin_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')
@@ -157,7 +159,7 @@ For a new watch, the "Update Now" button isn't shown.
 
     >>> login('foo.bar@canonical.com')
     >>> bug_watch = factory.makeBugWatch()
-    >>> bug_watch.next_check = None
+    >>> removeSecurityProxy(bug_watch).next_check = None
     >>> watch_url = (
     ...     'http://bugs.launchpad.dev/bugs/%s/+watch/%s' %
     ...     (bug_watch.bug.id, bug_watch.id))
@@ -228,7 +230,7 @@ shown.
 
     >>> login('foo.bar@canonical.com')
     >>> bug_watch = factory.makeBugWatch()
-    >>> bug_watch.next_check = None
+    >>> removeSecurityProxy(bug_watch).next_check = None
     >>> bug_watch.addActivity(result=BugWatchActivityStatus.BUG_NOT_FOUND)
     >>> watch_url = (
     ...     'http://bugs.launchpad.dev/bugs/%s/+watch/%s' %
@@ -252,7 +254,8 @@ watch for checking.
     >>> from datetime import timedelta
 
     >>> login('foo.bar@canonical.com')
-    >>> bug_watch.next_check = datetime.now(utc) + timedelta(days=7)
+    >>> removeSecurityProxy(bug_watch).next_check = (
+    ...     datetime.now(utc) + timedelta(days=7))
     >>> bug_watch.addActivity()
     >>> logout()
 
@@ -272,7 +275,7 @@ watch" button on the watch's page.
     >>> from lp.testing.sampledata import ADMIN_EMAIL
     >>> login(ADMIN_EMAIL)
     >>> bug_watch = factory.makeBugWatch()
-    >>> bug_watch.lastchecked = datetime.now(utc)
+    >>> removeSecurityProxy(bug_watch).lastchecked = datetime.now(utc)
     >>> watch_url = (
     ...     'http://bugs.launchpad.dev/bugs/%s/+watch/%s' %
     ...     (bug_watch.bug.id, bug_watch.id))

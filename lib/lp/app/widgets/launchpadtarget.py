@@ -4,23 +4,21 @@
 __metaclass__ = type
 
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form import (
-    CustomWidgetFactory,
-    InputWidget,
-    )
-from zope.app.form.browser.widget import (
-    BrowserWidget,
-    renderElement,
-    )
-from zope.app.form.interfaces import (
+from zope.component import getUtility
+from zope.formlib.interfaces import (
     ConversionError,
     IInputWidget,
     InputErrors,
     MissingInputError,
     WidgetInputError,
     )
-from zope.app.form.utility import setUpWidget
-from zope.component import getUtility
+from zope.formlib.utility import setUpWidget
+from zope.formlib.widget import (
+    BrowserWidget,
+    CustomWidgetFactory,
+    InputWidget,
+    renderElement,
+    )
 from zope.interface import implements
 from zope.schema import Choice
 
@@ -99,7 +97,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
         return self.name in self.request.form
 
     def hasValidInput(self):
-        """See zope.app.form.interfaces.IInputWidget."""
+        """See zope.formlib.interfaces.IInputWidget."""
         try:
             self.getInputValue()
             return True
@@ -107,7 +105,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
             return False
 
     def getInputValue(self):
-        """See zope.app.form.interfaces.IInputWidget."""
+        """See zope.formlib.interfaces.IInputWidget."""
         self.setUpSubWidgets()
         form_value = self.request.form_ng.getOne(self.name)
         if form_value == 'product':
@@ -183,7 +181,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
             raise AssertionError('Not a valid value: %r' % value)
 
     def __call__(self):
-        """See zope.app.form.interfaces.IBrowserWidget."""
+        """See zope.formlib.interfaces.IBrowserWidget."""
         self.setUpSubWidgets()
         self.setUpOptions()
         return self.template()

@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBug related view classes."""
@@ -44,12 +44,12 @@ from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IJSONRequestCache
 from simplejson import dumps
 from zope import formlib
-from zope.app.form.browser import TextWidget
 from zope.component import (
     getMultiAdapter,
     getUtility,
     )
 from zope.event import notify
+from zope.formlib.widgets import TextWidget
 from zope.interface import (
     implements,
     Interface,
@@ -155,7 +155,7 @@ class BugNavigation(Navigation):
         """Retrieve a BugWatch by name."""
         if name.isdigit():
             # in future this should look up by (bug.id, watch.seqnum)
-            return getUtility(IBugWatchSet)[name]
+            return getUtility(IBugWatchSet).get(int(name))
 
     @stepthrough('+subscription')
     def traverse_subscriptions(self, person_name):
@@ -305,14 +305,15 @@ class BugContextMenu(ContextMenu):
         if self.context.bug.isMuted(user):
             text = "Unmute bug mail"
             icon = 'unmute'
+            summary = (
+                'Unmute this bug so that you will receive emails about it.')
         else:
             text = "Mute bug mail"
             icon = 'mute'
+            summary = (
+                'Mute this bug so that you will not receive emails about it.')
 
-        return Link(
-            '+mute', text, icon=icon, summary=(
-                "Mute this bug so that you will not receive emails "
-                "about it."))
+        return Link('+mute', text, icon=icon, summary=summary)
 
     def nominate(self):
         """Return the 'Target/Nominate for series' Link."""
@@ -535,6 +536,10 @@ class BugViewMixin:
         'current' is determined by simply looking in the ILaunchBag utility.
         """
         return getUtility(ILaunchBag).bugtask
+
+    @property
+    def specifications(self):
+        return self.context.getSpecifications(self.user)
 
 
 class BugInformationTypePortletView(InformationTypePortletMixin,

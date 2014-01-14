@@ -16,6 +16,7 @@ import re
 import sys
 
 import cssutils
+from cssutils import settings
 
 
 HERE = os.path.dirname(__file__)
@@ -180,6 +181,7 @@ class CSSComboFile(ComboFile):
 
                 stylesheet = ESCAPE_STAR_PROPERTY_RE.sub(
                     r'\1_ie_star_hack:', file_content)
+                settings.set('DXImageTransform.Microsoft', True)
                 parser = cssutils.CSSParser(raiseExceptions=True)
                 css = parser.parseString(stylesheet)
                 stylesheet = UNESCAPE_STAR_PROPERTY_RE.sub(

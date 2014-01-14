@@ -10,8 +10,8 @@ __all__ = [
     ]
 
 
-from zope.app.form.browser import TextWidget
 from zope.formlib import form
+from zope.formlib.widgets import TextWidget
 from zope.interface import Interface
 from zope.schema import TextLine
 

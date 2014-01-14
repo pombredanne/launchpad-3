@@ -28,11 +28,9 @@ from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.model.distroseries import DistroSeries
 from lp.services.config import config
 from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
+    IMasterStore,
+    IStore,
     )
-from lp.services.database.lpstorm import IMasterStore
 from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
@@ -143,8 +141,7 @@ class ProcessAcceptedBugsJob(StormBase, BaseRunnableJob):
     @staticmethod
     def iterReady():
         """See `IJobSource`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find((ProcessAcceptedBugsJob),
+        return IStore(ProcessAcceptedBugsJob).find((ProcessAcceptedBugsJob),
             And(ProcessAcceptedBugsJob.job == Job.id,
                 Job.id.is_in(Job.ready_jobs)))
 

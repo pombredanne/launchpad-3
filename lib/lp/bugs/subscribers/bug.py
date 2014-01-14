@@ -166,10 +166,22 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
             bug_delta.bug.addChange(change, recipients=recipients)
         else:
             if change.change_level == BugNotificationLevel.LIFECYCLE:
-                change_recipients = bug.getBugNotificationRecipients(
-                    level=change.change_level)
-                recipients.update(change_recipients)
-            bug_delta.bug.addChange(change, recipients=recipients)
+                # XXX: The level handling here is duplicated with the
+                # start of this method and *really* needs refactoring.
+                change_recipients = BugNotificationRecipients()
+                change_recipients.update(recipients)
+                change_recipients.update(
+                    bug.getBugNotificationRecipients(
+                        level=change.change_level))
+                if old_bugtask is not None:
+                    old_bugtask_recipients = BugNotificationRecipients()
+                    get_also_notified_subscribers(
+                        old_bugtask, recipients=old_bugtask_recipients,
+                        level=change.change_level)
+                    change_recipients.update(old_bugtask_recipients)
+            else:
+                change_recipients = recipients
+            bug_delta.bug.addChange(change, recipients=change_recipients)
 
 
 def send_bug_details_to_new_bug_subscribers(

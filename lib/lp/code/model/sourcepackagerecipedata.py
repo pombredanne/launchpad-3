@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=F0401,E1002
-
 """Implementation of the recipe storage.
 
 This is purely an implementation detail of SourcePackageRecipe.recipe_data and
@@ -53,7 +51,7 @@ from lp.services.database.bulk import (
     load_related,
     )
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.propertycache import (
     cachedproperty,
     clear_property_cache,

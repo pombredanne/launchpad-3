@@ -11,7 +11,7 @@ import email
 from email.Utils import make_msgid
 from logging import getLogger
 
-from zope.app import zapi
+from zope.component import getUtility
 from zope.interface import implements
 from zope.sendmail.interfaces import IMailer
 
@@ -66,6 +66,6 @@ class MboxMailer:
             # This allows for example, the mboxMailer to be used in the test
             # suite, which requires that the testMailer eventually gets
             # called.
-            chained_mailer = zapi.getUtility(IMailer, self.mailer)
+            chained_mailer = getUtility(IMailer, self.mailer)
             chained_mailer.send(fromaddr, toaddrs, message)
         return message_id

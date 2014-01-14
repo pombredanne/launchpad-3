@@ -25,7 +25,7 @@ from storm.cache import (
     )
 from storm.exceptions import DisconnectionError
 from storm.zope.interfaces import IZStorm
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.authentication.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.interface import (
     alsoProvides,
@@ -44,14 +44,12 @@ from lp.services.database.interfaces import (
     DEFAULT_FLAVOR,
     DisallowedStore,
     IDatabasePolicy,
+    IMasterStore,
+    ISlaveStore,
     IStoreSelector,
     MAIN_STORE,
     MASTER_FLAVOR,
     SLAVE_FLAVOR,
-    )
-from lp.services.database.lpstorm import (
-    IMasterStore,
-    ISlaveStore,
     )
 from lp.services.database.sqlbase import StupidCache
 
@@ -252,8 +250,6 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
     """
 
     def __init__(self, request):
-        # The super constructor is a no-op.
-        # pylint: disable-msg=W0231
         self.request = request
         # Detect if this is a read only request or not.
         self.read_only = self.request.method in ['GET', 'HEAD']

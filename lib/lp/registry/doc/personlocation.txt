@@ -6,7 +6,7 @@ zone (which they can set) is stored together with their latitude/longitude (in
 PersonLocation). Until we move the time zone back to the Person table
 (bug=933699), we'll maintain the setLocation() API on IPerson.
 
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
 

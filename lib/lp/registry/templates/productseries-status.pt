@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  tal:define="
-    series context;
-    is_focus context/is_development_focus;
-    spec_count_status view/specification_status_counts;"
+  tal:define="spec_count_status view/specification_status_counts"
   >
   <div tal:replace="structure context/@@+detailed-display"/>
       <div>
@@ -39,6 +36,6 @@
         </tal:no-statuses>
       </div>
       <tal:summary
-        condition="series/summary"
+        condition="context/summary"
         content="structure context/summary/fmt:text-to-html" />
 </div>

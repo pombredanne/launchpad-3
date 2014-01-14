@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -80,7 +80,7 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.constants import UTC_NOW
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import quote
 from lp.services.database.stormexpr import (
     ArrayAgg,
@@ -154,11 +154,7 @@ class StructuralSubscription(Storm):
             return self.milestone
         elif self.distribution is not None:
             if self.sourcepackagename is not None:
-                # XXX intellectronica 2008-01-15:
-                #   We're importing this pseudo db object
-                #   here because importing it from the top
-                #   doesn't play well with the loading
-                #   sequence.
+                # Circular imports.
                 from lp.registry.model.distributionsourcepackage import (
                     DistributionSourcePackage)
                 return DistributionSourcePackage(
@@ -186,9 +182,9 @@ class StructuralSubscription(Storm):
         return bug_filter
 
     def delete(self):
-        store = Store.of(self)
-        self.bug_filters.remove()
-        store.remove(self)
+        BugSubscriptionFilter.deleteMultiple(
+            [bf.id for bf in self.bug_filters])
+        Store.of(self).remove(self)
 
 
 class DistroSeriesTargetHelper:
@@ -561,8 +557,8 @@ def _get_structural_subscriptions(find, targets, *conditions):
     """
     targets = set(target for bugtask, target in targets)
     target_descriptions = [
-        IStructuralSubscriptionTargetHelper(target).join
-        for target in targets]
+        IStructuralSubscriptionTargetHelper(bugtarget).join
+        for bugtarget in targets]
     return IStore(StructuralSubscription).find(
         find, Or(*target_descriptions), *conditions)
 

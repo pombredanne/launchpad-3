@@ -1,14 +1,8 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
-
-import pytz
 import soupmatchers
 from testtools.matchers import (
     MatchesException,
@@ -21,11 +15,14 @@ from zope.component import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildQueueStatus,
+    BuildStatus,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.job.interfaces.job import JobStatus
+from lp.services.database.sqlbase import flush_database_caches
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import StormRangeFactoryError
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -35,6 +32,7 @@ from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.queue import PackageUploadBuild
 from lp.testing import (
+    admin_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -296,8 +294,7 @@ class TestBuildViews(TestCaseWithFactory):
     def test_cancelling_building_build(self):
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         pending_build = self.factory.makeBinaryPackageBuild(archive=ppa)
-        pending_build.queueBuild()
-        removeSecurityProxy(pending_build).status = BuildStatus.BUILDING
+        pending_build.queueBuild().markAsBuilding(self.factory.makeBuilder())
         with person_logged_in(ppa.owner):
             view = create_initialized_view(
                 pending_build, name="+cancel", form={
@@ -309,10 +306,9 @@ class TestBuildViews(TestCaseWithFactory):
 
     def test_cancelling_uncancellable_build(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        removeSecurityProxy(archive).require_virtualized = False
         pending_build = self.factory.makeBinaryPackageBuild(archive=archive)
         pending_build.queueBuild()
-        removeSecurityProxy(pending_build).status = BuildStatus.BUILDING
+        pending_build.updateStatus(BuildStatus.FAILEDTOBUILD)
         with person_logged_in(archive.owner):
             view = create_initialized_view(
                 pending_build, name="+cancel", form={
@@ -320,7 +316,7 @@ class TestBuildViews(TestCaseWithFactory):
         notification = view.request.response.notifications[0]
         self.assertEqual(
             notification.message, "Unable to cancel build.")
-        self.assertEqual(BuildStatus.BUILDING, pending_build.status)
+        self.assertEqual(BuildStatus.FAILEDTOBUILD, pending_build.status)
 
     def test_build_records_view(self):
         # The BuildRecordsView can also be used to filter by architecture tag.
@@ -331,11 +327,9 @@ class TestBuildViews(TestCaseWithFactory):
             arch_list.append(das.architecturetag)
             build = self.factory.makeBinaryPackageBuild(
                 distroarchseries=das, archive=distroseries.main_archive,
-                status=BuildStatus.FULLYBUILT)
-            with person_logged_in(self.admin):
-                build.date_started = (
-                    datetime.now(pytz.UTC) - timedelta(hours=1))
-                build.date_finished = datetime.now(pytz.UTC)
+                status=BuildStatus.NEEDSBUILD)
+            build.updateStatus(BuildStatus.BUILDING)
+            build.updateStatus(BuildStatus.FULLYBUILT)
         view = create_initialized_view(
             distroseries, name="+builds", form={'build_state': 'all'})
         view.setupBuildList()
@@ -365,13 +359,13 @@ class TestBuildViews(TestCaseWithFactory):
         build = self.factory.makeBinaryPackageBuild()
         build.queueBuild()
         view = create_initialized_view(build, name="+index")
-        job = view.context.buildqueue_record.job
+        bq = view.context.buildqueue_record
         self.assertTrue(view.dispatch_time_estimate_available)
         self.assertEquals(view.context.status, BuildStatus.NEEDSBUILD)
-        self.assertEquals(job.status, JobStatus.WAITING)
+        self.assertEquals(bq.status, BuildQueueStatus.WAITING)
         # If we suspend the job, there is no estimate available
-        job.suspend()
-        self.assertEquals(job.status, JobStatus.SUSPENDED)
+        bq.suspend()
+        self.assertEquals(bq.status, BuildQueueStatus.SUSPENDED)
         self.assertFalse(view.dispatch_time_estimate_available)
 
     def test_old_url_redirection(self):
@@ -403,10 +397,8 @@ class TestBuildViews(TestCaseWithFactory):
             # BPBs in certain states need a bit tweaking to appear in
             # the result of getBuildRecords().
             if status == BuildStatus.FULLYBUILT:
-                with person_logged_in(self.admin):
-                    build.date_started = (
-                        datetime.now(pytz.UTC) - timedelta(hours=1))
-                    build.date_finished = datetime.now(pytz.UTC)
+                build.updateStatus(BuildStatus.BUILDING)
+                build.updateStatus(BuildStatus.FULLYBUILT)
             elif status in (BuildStatus.NEEDSBUILD, BuildStatus.BUILDING):
                 build.queueBuild()
         for status in ('built', 'failed', 'depwait', 'chrootwait',
@@ -436,3 +428,16 @@ class TestBuildViews(TestCaseWithFactory):
                 'start': 75,
                 'memo': '["2012-01-01T01:01:01", 0]'})
         view.setupBuildList()
+
+    def test_eta(self):
+        # BuildView.eta returns a non-None value when it should, or None
+        # when there's no start time.
+        build = self.factory.makeBinaryPackageBuild()
+        build.queueBuild()
+        self.factory.makeBuilder(
+            processors=[build.processor], virtualized=True)
+        self.assertIsNot(None, create_initialized_view(build, '+index').eta)
+        with admin_logged_in():
+            build.archive.disable()
+        flush_database_caches()
+        self.assertIs(None, create_initialized_view(build, '+index').eta)

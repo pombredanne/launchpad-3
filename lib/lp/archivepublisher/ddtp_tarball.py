@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The processing of translated packages descriptions (ddtp) tarballs.
@@ -55,11 +55,14 @@ class DdtpTarballUpload(CustomUpload):
             raise ValueError("%s is not NAME_COMPONENT_VERSION" % tarfile_base)
         return tuple(bits)
 
-    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
-        _, component, self.version = self.parsePath(tarfile_path)
+    def setComponents(self, tarfile_path):
+        _, self.component, self.version = self.parsePath(tarfile_path)
         self.arch = None
+
+    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
+        self.setComponents(tarfile_path)
         self.targetdir = os.path.join(
-            pubconf.archiveroot, 'dists', distroseries, component)
+            pubconf.archiveroot, 'dists', distroseries, self.component)
 
     @classmethod
     def getSeriesKey(cls, tarfile_path):

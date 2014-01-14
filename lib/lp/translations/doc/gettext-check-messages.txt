@@ -57,7 +57,7 @@ those in the original message.
 
     >>> potmsgset = factory.makePOTMsgSet(
     ...     potemplate=template, singular=u'%d n', sequence=1)
-    >>> potmsgset.flagscomment = 'c-format'
+    >>> removeSecurityProxy(potmsgset).flagscomment = 'c-format'
     >>> potmsgset.flags
     [u'c-format']
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publisher script class."""
@@ -101,11 +101,6 @@ class PublishDistro(LaunchpadCronScript):
             "--copy-archive", action="store_true", dest="copy_archive",
             default=False, help="Only run over the copy archives.")
 
-        self.parser.add_option(
-            "--primary-debug", action="store_true", default=False,
-            dest="primary_debug",
-            help="Only run over the debug-symbols for primary archive.")
-
     def isCareful(self, option):
         """Is the given "carefulness" option enabled?
 
@@ -146,7 +141,6 @@ class PublishDistro(LaunchpadCronScript):
             self.options.partner,
             self.options.ppa,
             self.options.private_ppa,
-            self.options.primary_debug,
             self.options.copy_archive,
             ]
         return len(filter(None, exclusive_options))
@@ -174,7 +168,7 @@ class PublishDistro(LaunchpadCronScript):
         if self.countExclusiveOptions() > 1:
             raise OptionValueError(
                 "Can only specify one of partner, ppa, private-ppa, "
-                "copy-archive and primary-debug.")
+                "copy-archive.")
 
         if self.options.all_derived and self.options.distribution is not None:
                 raise OptionValueError(
@@ -230,15 +224,6 @@ class PublishDistro(LaunchpadCronScript):
             self.findSuite(distribution, suite)
             for suite in self.options.suite])
 
-    def getDebugArchive(self, distribution):
-        """Find the debug archive for the selected distribution, as a list."""
-        debug_archive = getUtility(IArchiveSet).getByDistroPurpose(
-            distribution, ArchivePurpose.DEBUG)
-        if debug_archive is None:
-            raise OptionValueError(
-                "Could not find DEBUG archive for %s" % distribution.name)
-        return [debug_archive]
-
     def getCopyArchives(self, distribution):
         """Find copy archives for the selected distribution."""
         copy_archives = list(
@@ -263,8 +248,6 @@ class PublishDistro(LaunchpadCronScript):
             return filter(is_ppa_public, self.getPPAs(distribution))
         elif self.options.private_ppa:
             return filter(is_ppa_private, self.getPPAs(distribution))
-        elif self.options.primary_debug:
-            return self.getDebugArchive(distribution)
         elif self.options.copy_archive:
             return self.getCopyArchives(distribution)
         else:
@@ -300,6 +283,7 @@ class PublishDistro(LaunchpadCronScript):
 
         Commits transactions along the way.
         """
+        publisher.setupArchiveDirs()
         publisher.A_publish(self.isCareful(self.options.careful_publishing))
         self.txn.commit()
 
@@ -320,6 +304,8 @@ class PublishDistro(LaunchpadCronScript):
 
         publisher.D_writeReleaseFiles(careful_indexing)
         # The caller will commit this last step.
+
+        publisher.createSeriesAliases()
 
     def main(self):
         """See `LaunchpadScript`."""

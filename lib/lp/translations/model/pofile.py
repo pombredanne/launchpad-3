@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212,W0231
-
 """`SQLObject` implementation of `IPOFile` interface."""
 
 __metaclass__ = type
@@ -52,12 +50,9 @@ from lp.registry.interfaces.person import validate_public_person
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
+    IMasterStore,
+    IStore,
     )
-from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import (
     flush_database_updates,
     quote,
@@ -272,8 +267,7 @@ class POFileMixIn(RosettaStats):
         Orders the result by TranslationTemplateItem.sequence which must
         be among `origin_tables`.
         """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        results = store.using(origin_tables).find(
+        results = IMasterStore(POTMsgSet).using(origin_tables).find(
             POTMsgSet, SQL(query))
         return results.order_by(TranslationTemplateItem.sequence)
 
@@ -1235,13 +1229,17 @@ class POFile(SQLBase, POFileMixIn):
 
         flag_name = getUtility(ITranslationSideTraitsSet).getForTemplate(
             self.potemplate).flag_name
+        template_id = quote(self.potemplate)
         params = {
             'flag': flag_name,
             'language': quote(self.language),
+            'template': template_id,
         }
         query = main_select + """
             FROM TranslationTemplateItem
             LEFT JOIN TranslationMessage ON
+                (TranslationMessage.potemplate IS NULL
+                 OR TranslationMessage.potemplate = %(template)s) AND
                 TranslationMessage.potmsgset =
                     TranslationTemplateItem.potmsgset AND
                 TranslationMessage.%(flag)s IS TRUE AND
@@ -1254,12 +1252,7 @@ class POFile(SQLBase, POFileMixIn):
             query += "LEFT JOIN POTranslation AS %s ON %s.id = %s\n" % (
                     alias, alias, field)
 
-        template_id = quote(self.potemplate)
-        conditions = [
-            "TranslationTemplateItem.potemplate = %s" % template_id,
-            "(TranslationMessage.potemplate IS NULL OR "
-                 "TranslationMessage.potemplate = %s)" % template_id,
-            ]
+        conditions = ["TranslationTemplateItem.potemplate = %s" % template_id]
 
         if ignore_obsolete:
             conditions.append("TranslationTemplateItem.sequence <> 0")
@@ -1508,7 +1501,7 @@ class POFileSet:
                 'sourcepackagename and distroseries must be None or not'
                    ' None at the same time.')
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = IStore(POFile)
 
         conditions = [
             POFile.path == path,
@@ -1550,7 +1543,6 @@ class POFileSet:
         # Avoid circular imports.
         from lp.translations.model.potemplate import POTemplate
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         clauses = [
             TranslationTemplateItem.potemplateID == POFile.potemplateID,
             POTMsgSet.id == TranslationTemplateItem.potmsgsetID,
@@ -1574,7 +1566,7 @@ class POFileSet:
                 (TranslationMessage))
             clauses.append(POTemplate.id == POFile.potemplateID)
             clauses.append(Not(Exists(message_select)))
-        result = store.find((POFile, POTMsgSet), clauses)
+        result = IMasterStore(POFile).find((POFile, POTMsgSet), clauses)
         return result.order_by('POFile.id')
 
     def getPOFilesTouchedSince(self, date):
@@ -1584,7 +1576,7 @@ class POFileSet:
         from lp.registry.model.distroseries import DistroSeries
         from lp.registry.model.productseries import ProductSeries
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        store = IMasterStore(POTemplate)
 
         # Find a matching POTemplate and its ProductSeries
         # and DistroSeries, if they are defined.

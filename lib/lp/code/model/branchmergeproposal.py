@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for branch merge prosals."""
@@ -27,10 +27,7 @@ from storm.expr import (
     Select,
     SQL,
     )
-from storm.locals import (
-    Int,
-    Reference,
-    )
+from storm.locals import Reference
 from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
@@ -92,7 +89,7 @@ from lp.services.database.constants import (
     )
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.lpstorm import (
+from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )
@@ -104,6 +101,10 @@ from lp.services.database.sqlbase import (
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.sendmail import validate_message
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 
 
 def is_valid_transition(proposal, from_state, next_state, user=None):
@@ -120,7 +121,7 @@ def is_valid_transition(proposal, from_state, next_state, user=None):
     if from_state in FINAL_STATES and next_state not in FINAL_STATES:
         dupes = BranchMergeProposalGetter.activeProposalsForBranches(
             proposal.source_branch, proposal.target_branch)
-        if dupes.count() > 0:
+        if not dupes.is_empty():
             return False
 
     [
@@ -226,9 +227,6 @@ class BranchMergeProposal(SQLBase):
         else:
             return None
 
-    preview_diff_id = Int(name='merge_diff')
-    preview_diff = Reference(preview_diff_id, 'PreviewDiff.id')
-
     reviewed_revision_id = StringCol(default=None)
 
     commit_message = StringCol(default=None)
@@ -308,6 +306,21 @@ class BranchMergeProposal(SQLBase):
         if vote.branch_merge_proposal != self:
             raise WrongBranchMergeProposal
         return vote
+
+    @property
+    def _preview_diffs(self):
+        return Store.of(self).find(
+            PreviewDiff,
+            PreviewDiff.branch_merge_proposal_id == self.id).order_by(
+                PreviewDiff.date_created)
+
+    @cachedproperty
+    def preview_diffs(self):
+        return list(self._preview_diffs)
+
+    @cachedproperty
+    def preview_diff(self):
+        return self._preview_diffs.last()
 
     date_queued = UtcDateTimeCol(notNull=False, default=None)
 
@@ -706,11 +719,11 @@ class BranchMergeProposal(SQLBase):
             comment.destroySelf()
         # Delete all jobs referring to the BranchMergeProposal, whether
         # or not they have completed.
-        from lp.code.model.branchmergeproposaljob import (
-            BranchMergeProposalJob)
+        from lp.code.model.branchmergeproposaljob import BranchMergeProposalJob
         for job in BranchMergeProposalJob.selectBy(
             branch_merge_proposal=self.id):
             job.destroySelf()
+        self._preview_diffs.remove()
         self.destroySelf()
 
     def getUnlandedSourceBranchRevisions(self):
@@ -860,17 +873,9 @@ class BranchMergeProposal(SQLBase):
                           target_revision_id, prerequisite_revision_id=None,
                           conflicts=None):
         """See `IBranchMergeProposal`."""
-        # Create the PreviewDiff.
-        self.preview_diff = PreviewDiff.create(
-            diff_content, source_revision_id, target_revision_id,
+        return PreviewDiff.create(
+            self, diff_content, source_revision_id, target_revision_id,
             prerequisite_revision_id, conflicts)
-
-        # XXX: TimPenhey 2009-02-19 bug 324724
-        # Since the branch_merge_proposal attribute of the preview_diff
-        # is a on_remote reference, it may not be found unless we flush
-        # the storm store.
-        Store.of(self).flush()
-        return self.preview_diff
 
     def getIncrementalDiffRanges(self):
         groups = self.getRevisionsSinceReviewStart()
@@ -879,12 +884,7 @@ class BranchMergeProposal(SQLBase):
             for group in groups]
 
     def generateIncrementalDiff(self, old_revision, new_revision, diff=None):
-        """Generate an incremental diff for the merge proposal.
-
-        :param old_revision: The `Revision` to generate the diff from.
-        :param new_revision: The `Revision` to generate the diff to.
-        :param diff: If supplied, a pregenerated `Diff`.
-        """
+        """See `IBranchMergeProposal`."""
         if diff is None:
             source_branch = self.source_branch.getBzrBranch()
             ignore_branches = [self.target_branch.getBzrBranch()]
@@ -902,14 +902,7 @@ class BranchMergeProposal(SQLBase):
         return incremental_diff
 
     def getIncrementalDiffs(self, revision_list):
-        """Return a list of diffs for the specified revisions.
-
-        :param revision_list: A list of tuples of (`Revision`, `Revision`).
-            The first revision in the tuple is the old revision.  The second
-            is the new revision.
-        :return: A list of IncrementalDiffs in the same order as the supplied
-            Revisions.
-        """
+        """See `IBranchMergeProposal`."""
         diffs = Store.of(self).find(IncrementalDiff,
             IncrementalDiff.branch_merge_proposal_id == self.id)
         diff_dict = dict(
@@ -977,14 +970,14 @@ class BranchMergeProposal(SQLBase):
         from lp.registry.model.product import Product
         from lp.registry.model.distroseries import DistroSeries
 
+        ids = set()
         source_branch_ids = set()
         person_ids = set()
-        diff_ids = set()
         for mp in branch_merge_proposals:
+            ids.add(mp.id)
             source_branch_ids.add(mp.source_branchID)
             person_ids.add(mp.registrantID)
             person_ids.add(mp.merge_reporterID)
-            diff_ids.add(mp.preview_diff_id)
 
         branches = load_related(
             Branch, branch_merge_proposals, (
@@ -997,16 +990,17 @@ class BranchMergeProposal(SQLBase):
         if len(branches) == 0:
             return
 
-        store = IStore(BranchMergeProposal)
-
         # Pre-load PreviewDiffs and Diffs.
-        preview_diffs_and_diffs = list(store.find(
-            (PreviewDiff, Diff),
-            PreviewDiff.id.is_in(diff_ids),
-            Diff.id == PreviewDiff.diff_id))
-        PreviewDiff.preloadData(
-            [preview_diff_and_diff[0] for preview_diff_and_diff
-                in preview_diffs_and_diffs])
+        preview_diffs = IStore(BranchMergeProposal).find(
+            PreviewDiff,
+            PreviewDiff.branch_merge_proposal_id.is_in(ids)).order_by(
+                PreviewDiff.branch_merge_proposal_id,
+                Desc(PreviewDiff.date_created)).config(
+                    distinct=[PreviewDiff.branch_merge_proposal_id])
+        load_related(Diff, preview_diffs, ['diff_id'])
+        for previewdiff in preview_diffs:
+            cache = get_property_cache(previewdiff.branch_merge_proposal)
+            cache.preview_diff = previewdiff
 
         # Add source branch owners' to the list of pre-loaded persons.
         person_ids.update(

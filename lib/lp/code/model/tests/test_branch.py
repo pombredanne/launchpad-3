@@ -1,7 +1,5 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=F0401,E1002
 
 """Tests for Branches."""
 
@@ -44,7 +42,6 @@ from lp.bugs.interfaces.bug import (
     IBugSet,
     )
 from lp.bugs.model.bugbranch import BugBranch
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
     BranchFormat,
@@ -132,7 +129,7 @@ from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.tests import (
     block_on_job,
@@ -162,17 +159,11 @@ from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
     AppServerLayer,
     CeleryBranchWriteJobLayer,
-    CeleryJobLayer,
+    CeleryBzrsyncdJobLayer,
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     ZopelessAppServerLayer,
-    )
-from lp.translations.model.translationtemplatesbuild import (
-    TranslationTemplatesBuild,
-    )
-from lp.translations.model.translationtemplatesbuildjob import (
-    ITranslationTemplatesBuildJobSource,
     )
 
 
@@ -333,7 +324,7 @@ class TestBranchChanged(TestCaseWithFactory):
 
 class TestBranchJobViaCelery(TestCaseWithFactory):
 
-    layer = CeleryJobLayer
+    layer = CeleryBzrsyncdJobLayer
 
     def test_branchChanged_via_celery(self):
         """Running a job via Celery succeeds and emits expected output."""
@@ -1354,15 +1345,6 @@ class TestBranchDeletion(TestCaseWithFactory):
         # Need to commit the transaction to fire off the constraint checks.
         transaction.commit()
 
-    def test_related_TranslationTemplatesBuildJob_cleaned_out(self):
-        # A TranslationTemplatesBuildJob is a type of BranchJob that
-        # comes with a BuildQueue entry referring to the same Job.
-        # Deleting the branch cleans up the BuildQueue before it can
-        # remove the Job and BranchJob.
-        branch = self.factory.makeAnyBranch()
-        getUtility(ITranslationTemplatesBuildJobSource).create(branch)
-        branch.destroySelf(break_references=True)
-
     def test_linked_translations_branch_cleared(self):
         # The translations_branch of a series that is linked to the branch
         # should be cleared.
@@ -1370,34 +1352,30 @@ class TestBranchDeletion(TestCaseWithFactory):
         dev_focus.translations_branch = self.branch
         self.branch.destroySelf(break_references=True)
 
-    def test_unrelated_TranslationTemplatesBuildJob_intact(self):
+    def test_related_TranslationTemplatesBuild_cleaned_out(self):
+        # A TranslationTemplatesBuild may come with a BuildQueue entry.
+        # Deleting the branch cleans up the BuildQueue before it can
+        # remove the TTB.
+        build = self.factory.makeTranslationTemplatesBuild()
+        build.queueBuild()
+        build.branch.destroySelf(break_references=True)
+
+    def test_unrelated_TranslationTemplatesBuild_intact(self):
         # No innocent BuildQueue entries are harmed in deleting a
         # branch.
-        branch = self.factory.makeAnyBranch()
-        other_branch = self.factory.makeAnyBranch()
-        source = getUtility(ITranslationTemplatesBuildJobSource)
-        job = source.create(branch)
-        other_job = source.create(other_branch)
-        store = Store.of(branch)
-        bfj = store.find(
-            BuildFarmJob,
-            BuildFarmJob.id == TranslationTemplatesBuild.build_farm_job_id,
-            TranslationTemplatesBuild.branch == branch).one().id
+        build = self.factory.makeTranslationTemplatesBuild()
+        bq = build.queueBuild()
+        other_build = self.factory.makeTranslationTemplatesBuild()
+        other_bq = other_build.queueBuild()
 
-        branch.destroySelf(break_references=True)
+        build.branch.destroySelf(break_references=True)
 
+        store = Store.of(build)
         # The BuildQueue for the job whose branch we deleted is gone.
-        buildqueue = store.find(BuildQueue, BuildQueue.job == job.job)
-        self.assertEqual(0, buildqueue.count())
-
-        # The BuildFarmJob for the TTB is gone.
-        bfjs = store.find(BuildFarmJob, BuildFarmJob.id == bfj)
-        self.assertEqual(0, bfjs.count())
+        self.assertEqual(0, store.find(BuildQueue, id=bq.id).count())
 
         # The other job's BuildQueue entry is still there.
-        other_buildqueue = store.find(
-            BuildQueue, BuildQueue.job == other_job.job)
-        self.assertEqual(1, other_buildqueue.count())
+        self.assertEqual(1, store.find(BuildQueue, id=other_bq.id).count())
 
     def test_createsJobToReclaimSpace(self):
         # When a branch is deleted from the database, a job to remove the
@@ -1575,10 +1553,10 @@ class TestBranchDeletionConsequences(TestCase):
         spec2.linkBranch(self.branch, self.branch.owner)
         spec2_branch_id = self.branch.spec_links[1].id
         self.branch.destroySelf(break_references=True)
-        self.assertRaises(SQLObjectNotFound, SpecificationBranch.get,
-                          spec1_branch_id)
-        self.assertRaises(SQLObjectNotFound, SpecificationBranch.get,
-                          spec2_branch_id)
+        self.assertRaises(
+            SQLObjectNotFound, SpecificationBranch.get, spec1_branch_id)
+        self.assertRaises(
+            SQLObjectNotFound, SpecificationBranch.get, spec2_branch_id)
 
     def test_branchWithSeriesRequirements(self):
         """Deletion requirements for a series' branch are right."""

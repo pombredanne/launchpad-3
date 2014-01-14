@@ -58,8 +58,7 @@ portlet:
 
 A notification is also displayed.
 
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(user_browser.contents)
     Added link to bug #1: ...Firefox does not support SVG...
 
 
@@ -151,8 +150,7 @@ Only the administrator will be able to unlink the bug.
     >>> browser.open('http://launchpad.dev/firefox/+question/2')
     >>> browser.getLink('Remove bug link').click()
     >>> soup = find_main_content(browser.contents)
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print message
+    >>> print_feedback_messages(browser.contents)
     There are no links that you are allowed to remove.
 
     >>> admin_browser.getLink('Remove bug link').click()

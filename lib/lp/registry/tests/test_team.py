@@ -30,7 +30,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.persontransferjob import PersonTransferJob
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.soyuz.enums import ArchiveStatus

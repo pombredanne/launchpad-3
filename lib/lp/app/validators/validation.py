@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 __metaclass__ = type
 
 __all__ = [
@@ -17,8 +15,8 @@ __all__ = [
 
 from textwrap import dedent
 
-from zope.app.form.interfaces import WidgetsError
 from zope.component import getUtility
+from zope.formlib.interfaces import WidgetsError
 
 from lp import _
 from lp.app.errors import NotFoundError

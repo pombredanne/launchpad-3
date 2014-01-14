@@ -24,7 +24,7 @@ def subscribers_want_notification(db_branch):
         BranchSubscriptionNotificationLevel.DIFFSONLY,
         BranchSubscriptionNotificationLevel.FULL)
     subscriptions = db_branch.getSubscriptionsByLevel(diff_levels)
-    return subscriptions.count() > 0
+    return not subscriptions.is_empty()
 
 
 def send_removed_revision_emails(revisions_removed):

@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Common registry browser helpers and mixins."""
@@ -30,11 +30,11 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import (
     canonical_url,
     DataDownloadView,
@@ -171,14 +171,6 @@ class RegistryDeleteViewMixin:
         bugtasks = getUtility(IBugTaskSet).search(params)
         return list(bugtasks)
 
-    def _getSpecifications(self, target):
-        """Return the list `ISpecification`s associated to the target."""
-        if IProductSeries.providedBy(target):
-            return list(target._all_specifications)
-        else:
-            user = getUtility(ILaunchBag).user
-            return list(target.getSpecifications(user))
-
     def _getProductRelease(self, milestone):
         """The `IProductRelease` associated with the milestone."""
         return milestone.product_release
@@ -200,9 +192,11 @@ class RegistryDeleteViewMixin:
             subscription.delete()
 
     def _remove_series_bugs_and_specifications(self, series):
-        """Untarget the associated bugs and subscriptions."""
-        for spec in self._getSpecifications(series):
-            spec.proposeGoal(None, self.user)
+        """Untarget the associated bugs and specifications."""
+        for spec in series.all_specifications:
+            # The logged in user may have no permission to see the spec, so
+            # make use of removeSecurityProxy to force it.
+            removeSecurityProxy(spec).proposeGoal(None, self.user)
         for bugtask in self._getBugtasks(series):
             # Bugtasks cannot be deleted directly. In this case, the bugtask
             # is already reported on the product, so the series bugtask has
@@ -246,8 +240,10 @@ class RegistryDeleteViewMixin:
                 Store.of(bugtask).remove(nb.conjoined_master)
             else:
                 nb.milestone = None
-        for spec in self._getSpecifications(milestone):
-            spec.milestone = None
+        removeSecurityProxy(milestone.all_specifications).set(milestoneID=None)
+        Store.of(milestone).find(
+            SpecificationWorkItem, milestone_id=milestone.id).set(
+                milestone_id=None)
         self._deleteRelease(milestone.product_release)
         milestone.destroySelf()
 

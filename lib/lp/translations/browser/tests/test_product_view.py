@@ -7,7 +7,7 @@ __metaclass__ = type
 from soupmatchers import (
     HTMLContains,
     Tag,
-)
+    )
 from testtools.matchers import Not
 
 from lp.app.enums import (
@@ -28,8 +28,10 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.testing.views import create_view
-from lp.testing.views import create_initialized_view
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 from lp.translations.browser.product import ProductView
 from lp.translations.publisher import TranslationsLayer
 
