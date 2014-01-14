@@ -223,46 +223,9 @@ Visibility transitions
 ----------------------
 
 A team can only change visibility if the new state will not leak any
-data or put the team into an inconsistent state.  The rules are:
-
-Private -> Public: Fail
-Public -> Private : OK, if the team only has the permitted artifacts
-Public -> Private : Fail, if the team has a restricted artifact
-
-Private teams cannot be made public.
-
-    >>> super_secret2 = personset.getByName('super-secret2')
-    >>> form = {
-    ...     'field.name': 'super-secret-two',
-    ...     'field.displayname': 'New Display Name',
-    ...     'field.defaultmembershipperiod': '365',
-    ...     'field.defaultrenewalperiod': '',
-    ...     'field.membership_policy': 'OPEN',
-    ...     'field.renewal_policy': 'NONE',
-    ...     'field.visibility': 'PUBLIC',
-    ...     'field.actions.save': 'Save',
-    ...     }
-    >>> view = create_initialized_view(
-    ...     super_secret2, '+edit',
-    ...     form=form, principal=foo_bar)
-
-    >>> for notification in view.request.notifications:
-    ...     print notification.message
-    A private team cannot change visibility.
-
-    >>> print len(view.errors)
-    0
-
-All changes are aborted when a data validation error occurs.  The
-displayname for the team is the old value.
-
-    >>> transaction.commit()
-    >>> super_secret2 = personset.getByName('super-secret2')
-    >>> print super_secret2.name
-    super-secret2
-
-    >>> print super_secret2.displayname
-    Shhhh
+data or put the team into an inconsistent state. Public teams can become
+private and vice-versa, as long as they only participate in a set list
+of known-OK relationships.
 
 Public teams can be made private if the only artifacts they have are
 those permitted by private teams.
@@ -356,6 +319,18 @@ change to Private.
     ...     print error
     This team cannot be converted to Private since it is referenced by a
     bugtracker.
+
+All changes are aborted when a data validation error occurs.  The
+displayname for the team is the old value.
+
+    >>> transaction.commit()
+    >>> super_secret2 = personset.getByName('super-secret2')
+    >>> print super_secret2.name
+    super-secret2
+
+    >>> print super_secret2.displayname
+    Shhhh
+
 
 
 Use of 'private-' prefix
