@@ -162,6 +162,6 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
             person_name,
             self.webservice.get(
                 '/people?ws.op=getByOpenIDIdentifier&'
-                'identifier=http://openid.launchpad.dev/%%2Bid/%s'
+                'identifier=http://login1.dev/%%2Bid/%s'
                 % person_openid,
                 api_version='devel').jsonBody()['name'])
