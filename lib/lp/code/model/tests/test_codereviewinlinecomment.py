@@ -72,6 +72,16 @@ class TestCodeReviewInlineComment(TestCaseWithFactory):
         self.assertIsNot(None, cric)
         self.assertEqual({}, interface.findDraft(previewdiff, person))
 
+    def test_publishDraft_without_comments(self):
+        # ICodeReviewInlineCommentSet.publishDraft() will not choke if
+        # there are no draft comments to publish.
+        comment = self.factory.makeCodeReviewComment()
+        previewdiff = self.factory.makePreviewDiff(
+            merge_proposal=comment.branch_merge_proposal)
+        cric = getUtility(ICodeReviewInlineCommentSet).publishDraft(
+            previewdiff, comment.author, comment)
+        self.assertIs(None, cric)
+
     def test_findByPreviewDiff_draft(self):
         # ICodeReviewInlineCommentSet.findByPreviewDiff() will return a draft
         # so it can be rendered.

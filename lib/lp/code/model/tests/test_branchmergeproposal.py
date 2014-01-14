@@ -2041,6 +2041,75 @@ class TestGetUnlandedSourceBranchRevisions(TestCaseWithFactory):
         self.assertNotIn(r1, partial_revisions)
 
 
+class TestBranchMergeProposalInlineComments(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestBranchMergeProposalInlineComments, self).setUp()
+        # Create a testing IPerson, IPreviewDiff and IBranchMergeProposal
+        # for tests. Log in as the testing IPerson.
+        self.person = self.factory.makePerson()
+        self.bmp = self.factory.makeBranchMergeProposal(
+            registrant=self.person)
+        self.previewdiff = self.factory.makePreviewDiff(
+            merge_proposal=self.bmp)
+        login_person(self.person)
+
+    def test_save_draft(self):
+        # Arbitrary comments, passed as a dictionary keyed by diff line
+        # number, can be saved as draft using 'saveDraftInlineComment'.
+        comments = {'10': 'DrAfT', '15': 'CoMmEnTs'}
+        self.bmp.saveDraftInlineComment(
+            diff_timestamp=self.previewdiff.date_created,
+            person=self.person,
+            comments=comments)
+        self.assertEqual(2, len(self.bmp.getInlineComments(self.person)))
+
+    def test_publish_draft(self):
+        # Existing draft comments can be published associated with an
+        # `ICodeReviewComment` using
+        # 'ICodeReviewInlineCommentSet.publishDraft'.
+        self.factory.makeCodeReviewInlineCommentDraft(
+            previewdiff=self.previewdiff, person=self.person)
+        review_comment = self.factory.makeCodeReviewComment(
+            merge_proposal=self.bmp)
+        getUtility(ICodeReviewInlineCommentSet).publishDraft(
+            self.previewdiff, self.person, review_comment)
+        self.assertEqual(1, len(self.bmp.getInlineComments(self.person)))
+
+    def test_get_published_and_draft(self):
+        # Published and draft comments can be retrieved via
+        # 'getInlineComments'.
+        self.factory.makeCodeReviewInlineComment(
+            previewdiff=self.previewdiff, person=self.person,
+            comments={'11': 'eleven'})
+        self.factory.makeCodeReviewInlineCommentDraft(
+            previewdiff=self.previewdiff, person=self.person,
+            comments={'10': 'ten'})
+        transaction.commit()
+
+        inline_comments = self.bmp.getInlineComments(self.person)
+        self.assertEqual(2, len(inline_comments))
+        [published, draft] = inline_comments
+
+        # The 'published' inline comment is represented by a list of 4
+        # elements (line_number, author, comment, timestamp).
+        [line_number, author, content, timestamp] = published
+        self.assertEqual('11', line_number)
+        self.assertEqual(self.person.displayname, author.displayname)
+        self.assertEqual('eleven', content)
+        self.assertIsNotNone(timestamp)
+
+        # The 'draft' comment is similar but 'author' and 'timestamp' are
+        # not set.
+        [line_number, author, content, timestamp] = draft
+        self.assertEqual('10', line_number)
+        self.assertIsNone(author)
+        self.assertEqual('ten', content)
+        self.assertIsNone(timestamp)
+
+
 class TestWebservice(WebServiceTestCase):
     """Tests for the webservice."""
 
@@ -2109,3 +2178,34 @@ class TestWebservice(WebServiceTestCase):
         draft_comments = getUtility(ICodeReviewInlineCommentSet).findDraft(
             previewdiff, user)
         self.assertEqual(comments, draft_comments)
+
+    def test_getInlineComments(self):
+        # IBranchMergeProposal.getInlineComments returns all inline comments
+        # (draft or published) for the *current* diff.
+
+        # Let's create a merge proposal with one draft and one published
+        # inline comment.
+        person = self.factory.makePerson()
+        previewdiff = self.factory.makePreviewDiff()
+        cric = self.factory.makeCodeReviewInlineComment(
+            previewdiff=previewdiff, person=person,
+            comments={'1': 'published'})
+        cricd = self.factory.makeCodeReviewInlineCommentDraft(
+            previewdiff=previewdiff, person=person,
+            comments={'2': 'draft'})
+        transaction.commit()
+
+        # Fetch the 'IBranchMergeProposal' webservice object in question for
+        # calling 'getInlineComments' ('person' argument is implicitly passed
+        # as the request user).
+        ws_bmp = self.wsObject(previewdiff.branch_merge_proposal, user=person)
+        inline_comments = ws_bmp.getInlineComments()
+
+        # The result is a list with 2 elements, the inline comments. See
+        # IBranchMergeProposal.getInlineComments() for more details.
+        self.assertEqual(2, len(inline_comments))
+
+        # XXX cprov 20140114: the person reference is returned as
+        # a dictionary. is this correct ?
+        [published, draft] = inline_comments
+        self.assertEqual(person.displayname, published[1]['display_name'])

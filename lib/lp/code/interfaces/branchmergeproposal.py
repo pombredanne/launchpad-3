@@ -58,7 +58,6 @@ from zope.schema import (
     Datetime,
     Dict,
     Int,
-    List,
     Object,
     Text,
     TextLine,
