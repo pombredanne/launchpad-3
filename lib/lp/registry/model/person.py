@@ -3249,7 +3249,7 @@ class PersonSet:
             roots.extend(
                 [root.strip() for root in
                  config.launchpad.openid_alternate_provider_roots.split(',')
-                 if root.strip])
+                 if root.strip()])
         for root in roots:
             base = '%s+id/' % root
             if identifier.startswith(base):
