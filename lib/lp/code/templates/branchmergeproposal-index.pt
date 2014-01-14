@@ -206,6 +206,23 @@
         if (logged_in) {
             var comment = new Y.lp.app.comment.CodeReviewComment();
             comment.render();
+
+            comment._add_comment_success = function () {
+                var lp_client = new Y.lp.client.Launchpad();
+                var ns = Y.lp.code.branchmergeproposal.inlinecomments;
+                var config = {
+                    on: {
+                        success: function (r) {
+                            console.log(r);
+                            console.log(LP.cache.published_inline_comments);
+                            LP.cache.published_inline_comments = r;
+                            ns.populate_existing_comments();
+                        },
+                    },
+                };
+                lp_client.named_get(
+                    LP.cache.context.self_link, 'getInlineComments', config);
+            }
             Y.lp.code.branchmergeproposal.status.connect_status(conf);
         }
         Y.lp.code.branchmergeproposal.reviewcomment.connect_links();

@@ -76,6 +76,7 @@ from lp.code.model.diff import (
     IncrementalDiff,
     PreviewDiff,
     )
+from lp.services.features import getFeatureFlag
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -751,7 +752,7 @@ class BranchMergeProposal(SQLBase):
 
     def createComment(self, owner, subject, content=None, vote=None,
                       review_type=None, parent=None, _date_created=DEFAULT,
-                      _notify_listeners=True):
+                      publish_inline_comments=False, _notify_listeners=True):
         """See `IBranchMergeProposal`."""
         #:param _date_created: The date the message was created.  Provided
         #    only for testing purposes, as it can break
@@ -780,9 +781,16 @@ class BranchMergeProposal(SQLBase):
             parent=parent_message, owner=owner, rfc822msgid=msgid,
             subject=subject, datecreated=_date_created)
         MessageChunk(message=message, content=content, sequence=1)
-        return self.createCommentFromMessage(
+        comment = self.createCommentFromMessage(
             message, vote, review_type, original_email=None,
             _notify_listeners=_notify_listeners, _validate=False)
+
+        if (getFeatureFlag("code.inline_diff_comments.enabled") and
+            publish_inline_comments):
+            getUtility(ICodeReviewInlineCommentSet).publishDraft(
+                self.preview_diff, owner, comment)
+
+        return comment
 
     def getUsersVoteReference(self, user, review_type=None):
         """Get the existing vote reference for the given user."""
@@ -872,6 +880,11 @@ class BranchMergeProposal(SQLBase):
             notify(NewCodeReviewCommentEvent(
                     code_review_message, original_email))
         return code_review_message
+
+    def getInlineComments(self, person):
+        """See `IBranchMergeProposal`."""
+        return getUtility(ICodeReviewInlineCommentSet).findByPreviewDiff(
+            self.preview_diff, person)
 
     def saveDraftInlineComment(self, diff_timestamp, person, comments):
         """See `IBranchMergeProposal`."""

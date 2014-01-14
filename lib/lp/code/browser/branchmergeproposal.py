@@ -635,9 +635,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                 pd.date_created for pd in self.context.preview_diffs]
             if self.context.preview_diff:
                 cache.objects['published_inline_comments'] = (
-                    getUtility(ICodeReviewInlineCommentSet).findByPreviewDiff(
-                        removeSecurityProxy(self.context.preview_diff),
-                        self.user))
+                    self.context.getInlineComments(self.user))
             else:
                 cache.objects['published_inline_comments'] = []
 

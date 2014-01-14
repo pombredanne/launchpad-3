@@ -90,10 +90,12 @@ class CodeReviewInlineCommentSet:
 
     def publishDraft(self, previewdiff, person, comment):
         cricd = self._findDraftObject(previewdiff, person)
-        assert cricd is not None
+        if cricd is None:
+            return
         cric = CodeReviewInlineComment()
         cric.previewdiff = cricd.previewdiff
-        cric.person = cricd.person
+        # XXX cprov 20140114: why the hell cricd.person is empty here ?
+        cric.person = person
         cric.comment = comment
         cric.comments = cricd.comments
         IStore(CodeReviewInlineComment).add(cric)
