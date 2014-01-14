@@ -10,6 +10,7 @@ import os.path
 import time
 
 from mock import patch
+from swiftclient import client as swiftclient
 import transaction
 
 from lp.services.database import write_transaction
@@ -147,8 +148,11 @@ class TestFeedSwift(TestCase):
             data = self.librarian_client.getFileByAlias(lfa_id).read()
             self.assertEqual(content, data)
 
-    def test_large_binary_files_from_disk(self):
-        # Generate a large blob, including null bytes for kicks.
+    def test_largish_binary_files_from_disk(self):
+        # Generate a largish blob, including null bytes for kicks.
+        # A largish file is large enough that the HTTP upload needs
+        # to be done in multiple chunks, but small enough that it is
+        # stored in Swift as a single object.
         size = 512 * 1024  # 512KB
         expected_content = ''.join(chr(i % 256) for i in range(0, size))
         lfa_id = self.add_file('hello_bigboy.xls', expected_content)
@@ -157,9 +161,12 @@ class TestFeedSwift(TestCase):
         lfa = self.librarian_client.getFileByAlias(lfa_id)
         self.assertEqual(expected_content, lfa.read())
 
-    def test_large_binary_files_from_swift(self):
+    def test_largish_binary_files_from_swift(self):
         # Generate large blob, multiple of the chunk size.
         # Including null bytes for kicks.
+        # A largish file is large enough that the HTTP upload needs
+        # to be done in multiple chunks, but small enough that it is
+        # stored in Swift as a single object.
         size = LibrarianStorage.CHUNK_SIZE * 50
         self.assert_(size > 1024 * 1024)
         expected_content = ''.join(chr(i % 256) for i in range(0, size))
@@ -176,10 +183,12 @@ class TestFeedSwift(TestCase):
         lfa = self.librarian_client.getFileByAlias(lfa_id)
         self.assertEqual(expected_content, lfa.read())
 
-
-    def test_large_binary_files_from_swift_offset(self):
+    def test_largish_binary_files_from_swift_offset(self):
         # Generate large blob, but NOT a multiple of the chunk size.
         # Including null bytes for kicks.
+        # A largish file is large enough that the HTTP upload needs
+        # to be done in multiple chunks, but small enough that it is
+        # stored in Swift as a single object.
         size = LibrarianStorage.CHUNK_SIZE * 50 + 1
         self.assert_(size > 1024 * 1024)
         expected_content = ''.join(chr(i % 256) for i in range(0, size))
@@ -195,3 +204,44 @@ class TestFeedSwift(TestCase):
         lfa = self.librarian_client.getFileByAlias(lfa_id)
         self.failIf(os.path.exists(swift.filesystem_path(lfc.id)))
         self.assertEqual(expected_content, lfa.read())
+
+    def test_large_file_to_swift(self):
+        # Generate a blob large enough that Swift requires us to store
+        # it as multiple objects plus a manifest.
+        size = LibrarianStorage.CHUNK_SIZE * 50
+        self.assert_(size > 1024 * 1024)
+        expected_content = ''.join(chr(i % 256) for i in range(0, size))
+        lfa_id = self.add_file('hello_bigboy.xls', expected_content)
+        lfa = IStore(LibraryFileAlias).get(LibraryFileAlias, lfa_id)
+        lfc = lfa.content
+
+        # We don't really want to upload a file >5GB to our mock Swift,
+        # so change the constant instead. Set it so we need 3 segments.
+        def _reset_max(val):
+            swift.MAX_SWIFT_OBJECT_SIZE = val
+        self.addCleanup(_reset_max, swift.MAX_SWIFT_OBJECT_SIZE)
+        swift.MAX_SWIFT_OBJECT_SIZE = int(size / 2) - 1
+
+        # Shove the file requiring multiple segments into Swift.
+        swift.to_swift(BufferLogger(), remove=False)
+
+        # As our mock Swift does not support multi-segment files,
+        # instead we examine it directly in Swift as best we can.
+        swift_client = self.swift_fixture.connect()
+
+        # The manifest exists. Unfortunately, we can't test that the
+        # magic manifest header is set correctly.
+        container, name = swift.swift_location(lfc.id)
+        headers, obj = swift_client.get_object(container, name)
+        self.assertEqual(obj, '')
+
+        # The segments we expect are all in their expected locations.
+        _, obj1 = swift_client.get_object(container, '{0}/0000'.format(name))
+        _, obj2 = swift_client.get_object(container, '{0}/0001'.format(name))
+        _, obj3 = swift_client.get_object(container, '{0}/0002'.format(name))
+        self.assertRaises(
+            swiftclient.ClientException, swift_client.get_object,
+            container, '{0}/0003'.format(name))
+
+        # Our object round tripped
+        self.assertEqual(obj1 + obj2 + obj3, expected_content)
