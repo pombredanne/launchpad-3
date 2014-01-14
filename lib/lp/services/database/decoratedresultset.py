@@ -111,7 +111,7 @@ class DecoratedResultSet(object):
                 else:
                     [decorated] = self.bulk_decorator([result])
             else:
-                decorated = None
+                decorated = result
         if self.return_both:
             return (plain, decorated)
         else:
