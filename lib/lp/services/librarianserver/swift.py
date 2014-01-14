@@ -15,6 +15,7 @@ import os.path
 import re
 import sys
 import time
+import urllib
 
 from swiftclient import client as swiftclient
 
@@ -24,6 +25,7 @@ from lp.services.librarian.model import LibraryFileContent
 
 
 SWIFT_CONTAINER_PREFIX = 'librarian_'
+MAX_SWIFT_OBJECT_SIZE = 5 * 1024 ** 3  # 5GB Swift limit.
 
 ONE_DAY = 24 * 60 * 60
 
@@ -122,7 +124,7 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
                 log.debug(
                     "{0} already exists in Swift({1}, {2})".format(
                         lfc, container, obj_name))
-                if ('x-object-manifest' not in headers and
+                if ('X-Object-Manifest' not in headers and
                         int(headers['content-length'])
                         != os.path.getsize(fs_path)):
                     raise AssertionError(
@@ -130,27 +132,66 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
             except swiftclient.ClientException as x:
                 if x.http_status != 404:
                     raise
-                log.info(
-                    'Putting {0} into Swift ({1}, {2})'.format(
-                        lfc, container, obj_name))
-                md5_stream = HashStream(open(fs_path, 'rb'))
-                db_md5_hash = ISlaveStore(LibraryFileContent).get(
-                    LibraryFileContent, lfc).md5
-                swift_md5_hash = swift_connection.put_object(
-                    container, obj_name, md5_stream, os.path.getsize(fs_path))
-                disk_md5_hash = md5_stream.hash.hexdigest()
-                if not (disk_md5_hash == db_md5_hash == swift_md5_hash):
-                    log.error(
-                        "LibraryFileContent({0}) corrupt. "
-                        "disk md5={1}, db md5={2}, swift md5={3}".format(
-                            lfc, disk_md5_hash, db_md5_hash, swift_md5_hash))
-                    try:
-                        swift_connection.delete_object(container, obj_name)
-                    except Exception as x:
-                        log.error('Failed to delete corrupt file from Swift')
-                    raise AssertionError('md5 mismatch')
+                log.info('Putting {0} into Swift ({1}, {2})'.format(
+                    lfc, container, obj_name))
+                _put(log, swift_connection, lfc, container, obj_name, fs_path)
             if remove:
                 os.unlink(fs_path)
+
+
+def _put(log, swift_connection, lfc_id, container, obj_name, fs_path):
+    fs_size = os.path.getsize(fs_path)
+    fs_file = HashStream(open(fs_path, 'rb'))
+    db_md5_hash = ISlaveStore(LibraryFileContent).get(
+        LibraryFileContent, lfc_id).md5
+
+    if fs_size <= MAX_SWIFT_OBJECT_SIZE:
+        swift_md5_hash = swift_connection.put_object(
+            container, obj_name, fs_file, fs_size)
+        disk_md5_hash = fs_file.hash.hexdigest()
+        if not (disk_md5_hash == db_md5_hash == swift_md5_hash):
+            log.error(
+                "LibraryFileContent({0}) corrupt. "
+                "disk md5={1}, db md5={2}, swift md5={3}".format(
+                    lfc_id, disk_md5_hash, db_md5_hash, swift_md5_hash))
+            try:
+                swift_connection.delete_object(container, obj_name)
+            except Exception:
+                log.exception('Failed to delete corrupt file from Swift')
+            raise AssertionError('md5 mismatch')
+    else:
+        # Large file upload. Create the segments first, then the
+        # manifest. This order prevents partial downloads, and lets us
+        # detect interrupted uploads and clean up.
+        segment = 0
+        while fs_file.tell() < fs_size:
+            assert segment <= 9999, 'Insane number of segments'
+            seg_name = '%s/%04d' % (obj_name, segment)
+            seg_size = min(fs_size - fs_file.tell(), MAX_SWIFT_OBJECT_SIZE)
+            md5_stream = HashStream(fs_file)
+            swift_md5_hash = swift_connection.put_object(
+                container, seg_name, md5_stream, seg_size)
+            segment_md5_hash = md5_stream.hash.hexdigest()
+            assert swift_md5_hash == segment_md5_hash, (
+                "LibraryFileContent({0}) segment {1} upload corrupted".format(
+                    lfc_id, segment))
+            segment = segment + 1
+
+        disk_md5_hash = fs_file.hash.hexdigest()
+        if disk_md5_hash != db_md5_hash:
+            # We don't have to delete the uploaded segments, as Librarian
+            # Garbage Collection handles this for us.
+            log.error(
+                "Large LibraryFileContent({0}) corrupt. "
+                "disk md5={1}, db_md5={2}".format(
+                    lfc_id, disk_md5_hash, db_md5_hash))
+            raise AssertionError('md5 mismatch')
+
+        manifest = '{0}/{1}/'.format(
+            urllib.quote(container), urllib.quote(obj_name))
+        manifest_headers = {'X-Object-Manifest': manifest}
+        swift_connection.put_object(
+            container, obj_name, '', 0, headers=manifest_headers)
 
 
 def swift_location(lfc_id):
@@ -165,7 +206,9 @@ def swift_location(lfc_id):
     # storage, as objects will no longer be found in the expected
     # container. This value and the container prefix are deliberatly
     # hard coded to avoid cockups with values specified in config files.
-    max_objects_per_container = 1000000
+    # While the suggested number is 'under a million', the rare large files
+    # will take up multiple slots so we choose a more conservative number.
+    max_objects_per_container = 500000
 
     container_num = lfc_id // max_objects_per_container
 
@@ -249,6 +292,9 @@ class HashStream:
         chunk = self._stream.read(size)
         self.hash.update(chunk)
         return chunk
+
+    def tell(self):
+        return self._stream.tell()
 
 
 class ConnectionPool:
