@@ -528,7 +528,11 @@ Such feature is visible when anonymous user access the
     # it is pending approval.
     >>> login('foo.bar@canonical.com')
     >>> [build_hppa, build_i386] = source.getBuilds()
-    >>> build_i386.package_upload.setUnapproved()
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.soyuz.enums import PackageUploadStatus
+    >>> from lp.soyuz.model.queue import PassthroughStatusValue
+    >>> removeSecurityProxy(build_i386.package_upload).status = (
+    ...     PassthroughStatusValue(PackageUploadStatus.UNAPPROVED))
     >>> transaction.commit()
     >>> logout()
 

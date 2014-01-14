@@ -9,7 +9,7 @@ from Mailman import Errors
 from Mailman.Handlers import LPModerate
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.mailman.testing import MailmanTestCase
+from lp.services.mailman.tests import MailmanTestCase
 from lp.testing.layers import LaunchpadFunctionalLayer
 
 

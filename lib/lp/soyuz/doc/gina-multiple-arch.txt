@@ -28,7 +28,7 @@ Get the current counts of stuff in the database:
 Create a distribution series and an arch series for dapper:
 
     >>> from lp.soyuz.model.distroarchseries import DistroArchSeries
-    >>> from lp.soyuz.model.processor import ProcessorFamily
+    >>> from lp.soyuz.interfaces.processor import IProcessorSet
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> ubuntu = celebs.ubuntu
@@ -44,29 +44,21 @@ Create a distribution series and an arch series for dapper:
 Check it was properly created and create its DistroArchSeriess.
 
     >>> from lp.registry.model.distroseries import DistroSeries
-    >>> dapper = DistroSeries.selectOneBy(name="dapper",
-    ...                                    distributionID=ubuntu.id)
-    >>> pf = ProcessorFamily.selectOneBy(name="x86")
-    >>> if pf is None:
-    ...     pf = ProcessorFamily(name="x86", title="X86",
-    ...                          description="Intel X86")
-    >>> dar = DistroArchSeries(distroseries=dapper, processorfamily=pf,
-    ...                         architecturetag="i386", official=True,
-    ...                         owner=celebs.launchpad_developers)
-    >>> pf = ProcessorFamily.selectOneBy(name="amd64")
-    >>> if pf is None:
-    ...     pf = ProcessorFamily(name="amd64", title="AMD64",
-    ...                          description="AMD 64")
-    >>> dar = DistroArchSeries(distroseries=dapper, processorfamily=pf,
-    ...                         architecturetag="amd64", official=True,
-    ...                         owner=celebs.launchpad_developers)
-    >>> pf = ProcessorFamily.selectOneBy(name="powerpc")
-    >>> if pf is None:
-    ...     pf = ProcessorFamily(name="powerpc", title="PowerPC",
-    ...                          description="PowerPC")
-    >>> dar = DistroArchSeries(distroseries=dapper, processorfamily=pf,
-    ...                         architecturetag="powerpc", official=True,
-    ...                         owner=celebs.launchpad_developers)
+    >>> dapper = DistroSeries.selectOneBy(
+    ...     name="dapper", distributionID=ubuntu.id)
+    >>> processor = getUtility(IProcessorSet).getByName('386')
+    >>> dar = dapper.newArch(
+    ...     processor=processor, architecturetag="i386", official=True,
+    ...     owner=celebs.launchpad_developers)
+    >>> processor = getUtility(IProcessorSet).getByName('amd64')
+    >>> dar = dapper.newArch(
+    ...     processor=processor, architecturetag="amd64", official=True,
+    ...     owner=celebs.launchpad_developers)
+    >>> processor = getUtility(IProcessorSet).new(
+    ...     'powerpc', 'PowerPC', 'PowerPC')
+    >>> dar = dapper.newArch(
+    ...     processor=processor, architecturetag="powerpc", official=True,
+    ...     owner=celebs.launchpad_developers)
     >>> import transaction
     >>> transaction.commit()
 
@@ -84,32 +76,6 @@ Let's set up the filesystem:
     >>> relative_path = ('lib/lp/soyuz/scripts/tests/gina_test_archive')
     >>> path = os.path.join(os.getcwd(), relative_path)
     >>> os.symlink(path, '/tmp/gina_test_archive')
-
-Run gina without a powerpc processor for the powerpc family:
-
-    >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q',
-    ...              'dapper', 'dapper-updates']
-    >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
-    >>> print proc.stderr.read()
-    WARNING ...
-    ERROR   Database setup required for run on powerpc
-    Traceback (most recent call last):
-    ...
-    DataSetupError: Unable to find a processor from the processor family...
-    <BLANKLINE>
-    >>> proc.wait()
-    1
-
-Set up the processor, commit and run her again. Note that
-dapper-updates/universe doesn't include the powerpc architecture, but we
-just warn it and move right ahead.
-
-    >>> from lp.soyuz.model.processor import Processor
-    >>> p = Processor(name="powerpc", title="PowerPC", family=pf,
-    ...     description="The little processor that could")
-    >>> p == Processor.selectOneBy(familyID=pf.id)
-    True
-    >>> transaction.commit()
 
     >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q',
     ...              'dapper', 'dapper-updates']
@@ -225,9 +191,9 @@ DSC.
 
 Check that we publishing bdftopcf into the correct distroarchseries:
 
-    >>> pf = ProcessorFamily.selectOneBy(name="x86")
+    >>> processor = getUtility(IProcessorSet).getByName('386')
     >>> dar = DistroArchSeries.selectOneBy(distroseriesID=dapper.id,
-    ...          processorfamilyID=pf.id, architecturetag="i386",
+    ...          processor_id=processor.id, architecturetag="i386",
     ...          official=True, ownerID=celebs.launchpad_developers.id)
     >>> print dar.architecturetag
     i386

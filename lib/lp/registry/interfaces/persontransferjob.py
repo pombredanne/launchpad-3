@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface for the Jobs system to change memberships or merge persons."""
@@ -7,6 +7,8 @@ __metaclass__ = type
 __all__ = [
     'IMembershipNotificationJob',
     'IMembershipNotificationJobSource',
+    'IPersonDeactivateJob',
+    'IPersonDeactivateJobSource',
     'IPersonMergeJob',
     'IPersonMergeJobSource',
     'IPersonTransferJob',
@@ -130,4 +132,32 @@ class IPersonMergeJobSource(IJobSource):
         both match are returned by default. When any_person is True and
         `from_person` and `to_person` are supplied, jobs with either person
         specified are returned.
+        """
+
+
+class IPersonDeactivateJob(IPersonTransferJob):
+    """A Job that deactivates a person."""
+
+    person = PublicPersonChoice(
+        title=_('Alias for person attribute'), vocabulary='ValidPersonOrTeam',
+        required=True)
+
+    def getErrorRecipients(self):
+        """See `BaseRunnableJob`."""
+
+
+class IPersonDeactivateJobSource(IJobSource):
+    """An interface for acquiring IPersonDeactivateJobs."""
+
+    def create(person):
+        """Create a new IPersonMergeJob.
+
+        :param person: A `IPerson` to deactivate.
+        """
+
+    def find(person=None):
+        """Finds pending merge jobs.
+
+        :param person: Match jobs on `person`, or `None` to ignore.
+        :return: A `ResultSet` yielding `IPersonDeactivateJob`.
         """

@@ -21,9 +21,9 @@ use, but the bug is not yet targeted to that milestone.
     >>> milestone_control = owner_browser.getControl(
     ...     name='firefox.milestone', index=0)
     >>> milestone_control.displayValue
-    ['(no value)']
+    ['(nothing selected)']
     >>> milestone_control.displayOptions
-    ['(no value)', 'Mozilla Firefox 1.0']
+    ['(nothing selected)', 'Mozilla Firefox 1.0']
 
 Sample Person targets the bug to 1.0 for Firefox. This shows up in the
 Affects table, and in the selected value of the Milestone menu.
@@ -60,9 +60,9 @@ are listed too.
     >>> milestone_control = owner_browser.getControl(
     ...     name='firefox_1.0.milestone')
     >>> milestone_control.displayValue
-    ['(no value)']
+    ['(nothing selected)']
     >>> milestone_control.displayOptions
-    ['(no value)', 'Mozilla Firefox 1.0', 'Mozilla Firefox 1.0.1']
+    ['(nothing selected)', 'Mozilla Firefox 1.0', 'Mozilla Firefox 1.0.1']
     >>> milestone_control.displayValue = ['Mozilla Firefox 1.0.1']
     >>> owner_browser.getControl('Save Changes', index=1).click()
     >>> milestone_control = owner_browser.getControl(
@@ -92,9 +92,9 @@ He targets bug #1 to milestone 5.04-rc1 for Ubuntu.
     >>> milestone_control = admin_browser.getControl(
     ...     name='ubuntu_mozilla-firefox.milestone')
     >>> milestone_control.displayValue
-    ['(no value)']
+    ['(nothing selected)']
     >>> milestone_control.displayOptions
-    ['(no value)', 'Ubuntu 5.04.rc1']
+    ['(nothing selected)', 'Ubuntu 5.04.rc1']
     >>> milestone_control.displayValue = ['Ubuntu 5.04.rc1']
     >>> admin_browser.getControl('Save Changes', index=3).click()
     >>> table = find_tag_by_id(admin_browser.contents, 'affected-software')
@@ -124,10 +124,10 @@ removes the milestone now.
     ['Ubuntu 5.04.rc1']
 
     >>> milestone_control.displayOptions
-    ['(no value)', 'Ubuntu 5.04.rc1']
-    >>> milestone_control.displayValue = ['(no value)']
+    ['(nothing selected)', 'Ubuntu 5.04.rc1']
+    >>> milestone_control.displayValue = ['(nothing selected)']
     >>> admin_browser.getControl('Save Changes', index=3).click()
     >>> milestone_control = admin_browser.getControl(
     ...     name='ubuntu_hoary_mozilla-firefox.milestone')
     >>> milestone_control.displayValue
-    ['(no value)']
+    ['(nothing selected)']

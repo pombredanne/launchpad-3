@@ -96,7 +96,7 @@ class TestProcessUpload(unittest.TestCase):
             'INFO    Creating lockfile: '
             '/var/lock/process-upload-insecure.lock' in err.splitlines())
         self.assert_(
-            'DEBUG   Lockfile /var/lock/process-upload-insecure.lock in use'
+            'INFO    Lockfile /var/lock/process-upload-insecure.lock in use'
             in err.splitlines())
 
         # release the locally acquired lockfile

@@ -19,7 +19,7 @@ Without the patch, the regular Zope3 widgets fail with a low-level
 exception:
 
     >>> import zope.schema as schema
-    >>> from zope.app.form.browser import IntWidget, TextWidget
+    >>> from zope.formlib.widgets import IntWidget, TextWidget
     >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
     >>> Zope3WidgetsUseIBrowserFormNGMonkeyPatch.uninstall()
@@ -68,7 +68,7 @@ Widgets expecting a variable number of values continue to work
 with this monkey patch:
 
     >>> from zope.schema import Choice, List
-    >>> from zope.app.form.browser import MultiSelectWidget
+    >>> from zope.formlib.widgets import MultiSelectWidget
 
     >>> request = LaunchpadTestRequest(form={'field.list': ['1', '2']})
     >>> list_field = List(

@@ -4,8 +4,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # This modules uses relative imports.
-# pylint: disable-msg=W0403
-
 """
 Add full text indexes to the launchpad database
 """

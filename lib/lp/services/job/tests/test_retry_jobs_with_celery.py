@@ -12,7 +12,7 @@ import transaction
 from zope.interface import implements
 
 from lp.services.config import config
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import (
     IJob,

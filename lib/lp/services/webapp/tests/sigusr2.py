@@ -22,7 +22,6 @@ _counter = 1
 
 def sigusr1_handler(signum, frame):
     """Emit a message"""
-    # pylint: disable-msg=W0603
     global _counter
     logging.getLogger('').error('Message %d' % _counter)
     notify('emit_%d' % _counter)

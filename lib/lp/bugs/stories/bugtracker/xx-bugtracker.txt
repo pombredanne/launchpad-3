@@ -217,8 +217,7 @@ tracker uses.
     >>> user_browser.url
     'http://bugs.launchpad.dev/bugs/bugtrackers/testmantis/+edit'
 
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(user_browser.contents)
     There is 1 error.
     http://bugzilla.mozilla.org/ is already registered in Launchpad
     as &quot;The Mozilla.org Bug Tracker&quot; (mozilla.org).
@@ -230,8 +229,7 @@ informative error message explaining why it is invalid.
     ...     'what? my wife does this stuff')
     >>> user_browser.getControl('Change').click()
 
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(user_browser.contents)
     There is 1 error.
     &quot;what? my wife does this stuff&quot; is not a valid URI
 
@@ -239,8 +237,7 @@ informative error message explaining why it is invalid.
     ...     'http://ξνεr.been.fishing?')
     >>> user_browser.getControl('Change').click()
 
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(user_browser.contents)
     There is 1 error.
     URIs must consist of ASCII characters
 
@@ -323,8 +320,7 @@ bugtracker.
     ...     'http://bugzilla.mozilla.org/')
     >>> user_browser.getControl('Change').click()
 
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(user_browser.contents)
     There is 1 error.
     http://bugzilla.mozilla.org/ is already registered in Launchpad
     as &quot;The Mozilla.org Bug Tracker&quot; (mozilla.org).
@@ -356,8 +352,7 @@ shown informative error messages.
     ...     'ξνεr been http://fishing?')
     >>> user_browser.getControl('Change').click()
 
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(user_browser.contents)
     There is 1 error.
     URIs must consist of ASCII characters
     &quot;been&quot; is not a valid URI
@@ -389,8 +384,7 @@ deletion yet:
     >>> user_browser.url
     'http://bugs.launchpad.dev/bugs/bugtrackers'
 
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(user_browser.contents)
     Freddy&#x27;s Bugs has been deleted.
 
 Bug trackers can be deleted by anyone, subject to a few restrictions:
@@ -513,8 +507,7 @@ they'll see a notification telling them that the bug tracker has been
 disabled.
 
     >>> user_browser.open('http://launchpad.dev/bugs/15')
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(user_browser.contents)
     Bug watch updates for Debian Bug tracker are disabled.
 
 Inactive bug trackers are displayed in a separate table from the active
@@ -548,8 +541,7 @@ The user will no longer see any messages.
 The message won't appear on the bug pages either.
 
     >>> user_browser.open('http://launchpad.dev/bugs/15')
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(user_browser.contents)
 
 And the inactive bug trackers table will have disappeared since there
 are no inactive bug trackers.
@@ -580,11 +572,13 @@ Scheduling any of the watches will change their "Next check" column.
 
     >>> from datetime import datetime
     >>> from pytz import utc
+    >>> from zope.security.proxy import removeSecurityProxy
 
     >>> login('foo.bar@canonical.com')
     >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
     >>> watch_15 = debbugs.watches[0]
-    >>> watch_15.next_check = datetime(2010, 4, 9, 9, 50, 0, tzinfo=utc)
+    >>> removeSecurityProxy(watch_15).next_check = datetime(
+    ...     2010, 4, 9, 9, 50, 0, tzinfo=utc)
     >>> logout()
 
     >>> anon_browser.open(

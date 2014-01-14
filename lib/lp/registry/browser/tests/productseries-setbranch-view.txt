@@ -60,7 +60,7 @@ validation error.
     ...    series, name='+setbranch', principal=driver, form=form)
     >>> for error in view.errors:
     ...     print error
-    ('Invalid value', InvalidValue("token 'foo' not found in vocabulary"))
+    (u'Invalid value', InvalidValue("token 'foo' not found in vocabulary"))
 
 Providing a valid branch results in a successful linking.
 

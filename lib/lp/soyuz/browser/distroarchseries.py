@@ -13,6 +13,7 @@ __all__ = [
     'DistroArchSeriesView',
     ]
 
+from lazr.restful.interface import copy_field
 from lazr.restful.utils import smartquote
 from zope.interface import (
     implements,
@@ -90,11 +91,15 @@ class DistroArchSeriesView(DistroArchSeriesPackageSearchView):
         return self.context.title
 
 
+class DistroArchSeriesAddSchema(IDistroArchSeries):
+    processor = copy_field(IDistroArchSeries['processor'], readonly=False)
+
+
 class DistroArchSeriesAddView(LaunchpadFormView):
 
-    schema = IDistroArchSeries
-    field_names = ['architecturetag', 'processorfamily', 'official',
-                   'supports_virtualized']
+    schema = DistroArchSeriesAddSchema
+    field_names = [
+        'architecturetag', 'processor', 'official', 'supports_virtualized']
 
     @property
     def label(self):
@@ -115,7 +120,7 @@ class DistroArchSeriesAddView(LaunchpadFormView):
     def create_action(self, action, data):
         """Create a new Port."""
         distroarchseries = self.context.newArch(
-            data['architecturetag'], data['processorfamily'],
+            data['architecturetag'], data['processor'],
             data['official'], self.user, data['supports_virtualized'])
         self.next_url = canonical_url(distroarchseries)
 

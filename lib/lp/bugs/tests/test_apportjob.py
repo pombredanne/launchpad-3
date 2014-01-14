@@ -281,8 +281,8 @@ class ProcessApportBlobJobTestCase(TestCaseWithFactory):
         transaction.commit()
 
         retcode, stdout, stderr = run_script(
-            'cronscripts/process-apport-blobs.py', [],
-            expect_returncode=0)
+            'cronscripts/process-job-source.py',
+            ['IProcessApportBlobJobSource'], expect_returncode=0)
         self.assertEqual('', stdout)
         self.assertIn(
             'INFO    Ran 1 ProcessApportBlobJob jobs.\n', stderr)

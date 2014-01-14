@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation classes for IDiff, etc."""
@@ -48,16 +48,14 @@ from lp.code.interfaces.diff import (
     )
 from lp.codehosting.bzrutils import read_locked
 from lp.services.config import config
-from lp.services.database.bulk import load_referencing
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.sqlbase import SQLBase
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.interfaces.client import (
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
     )
-from lp.services.propertycache import (
-    cachedproperty,
-    get_property_cache,
-    )
+from lp.services.propertycache import get_property_cache
 from lp.services.webapp.adapter import get_request_remaining_seconds
 
 
@@ -362,30 +360,19 @@ class PreviewDiff(Storm):
 
     prerequisite_revision_id = Unicode(name='dependent_revision_id')
 
+    branch_merge_proposal_id = Int(
+        name='branch_merge_proposal', allow_none=False)
+    branch_merge_proposal = Reference(
+        branch_merge_proposal_id, 'BranchMergeProposal.id')
+
+    date_created = UtcDateTimeCol(
+        dbName='date_created', default=UTC_NOW, notNull=True)
+
     conflicts = Unicode()
 
     @property
     def has_conflicts(self):
         return self.conflicts is not None and self.conflicts != ''
-
-    @staticmethod
-    def preloadData(preview_diffs):
-        # Circular imports.
-        from lp.code.model.branchmergeproposal import BranchMergeProposal
-        bmps = load_referencing(
-            BranchMergeProposal, preview_diffs, ['preview_diff_id'])
-        bmps_preview = dict((bmp.preview_diff_id, bmp) for bmp in bmps)
-        for preview_diff in preview_diffs:
-            cache = get_property_cache(preview_diff)
-            cache.branch_merge_proposal = bmps_preview[preview_diff.id]
-
-    _branch_merge_proposal = Reference(
-        "PreviewDiff.id", "BranchMergeProposal.preview_diff_id",
-        on_remote=True)
-
-    @cachedproperty
-    def branch_merge_proposal(self):
-        return self._branch_merge_proposal
 
     @classmethod
     def fromBranchMergeProposal(cls, bmp):
@@ -399,25 +386,29 @@ class PreviewDiff(Storm):
         source_revision = source_branch.last_revision()
         target_branch = bmp.target_branch.getBzrBranch()
         target_revision = target_branch.last_revision()
-        preview = cls()
-        preview.source_revision_id = source_revision.decode('utf-8')
-        preview.target_revision_id = target_revision.decode('utf-8')
         if bmp.prerequisite_branch is not None:
             prerequisite_branch = bmp.prerequisite_branch.getBzrBranch()
         else:
             prerequisite_branch = None
-        preview.diff, conflicts = Diff.mergePreviewFromBranches(
-            source_branch, source_revision, target_branch,
-            prerequisite_branch)
+        diff, conflicts = Diff.mergePreviewFromBranches(
+            source_branch, source_revision, target_branch, prerequisite_branch)
+        preview = cls()
+        preview.source_revision_id = source_revision.decode('utf-8')
+        preview.target_revision_id = target_revision.decode('utf-8')
+        preview.branch_merge_proposal = bmp
+        preview.diff = diff
         preview.conflicts = u''.join(
             unicode(conflict) + '\n' for conflict in conflicts)
+        del get_property_cache(bmp).preview_diffs
+        del get_property_cache(bmp).preview_diff
         return preview
 
     @classmethod
-    def create(cls, diff_content, source_revision_id, target_revision_id,
+    def create(cls, bmp, diff_content, source_revision_id, target_revision_id,
                prerequisite_revision_id, conflicts):
         """Create a PreviewDiff with specified values.
 
+        :param bmp: The `BranchMergeProposal` this diff references.
         :param diff_content: The text of the dift, as bytes.
         :param source_revision_id: The revision_id of the source branch.
         :param target_revision_id: The revision_id of the target branch.
@@ -426,15 +417,18 @@ class PreviewDiff(Storm):
         :param conflicts: The conflicts, as text.
         :return: A `PreviewDiff` with specified values.
         """
+        filename = str(uuid1()) + '.txt'
+        size = len(diff_content)
+        diff = Diff.fromFile(StringIO(diff_content), size, filename)
+
         preview = cls()
+        preview.branch_merge_proposal = bmp
         preview.source_revision_id = source_revision_id
         preview.target_revision_id = target_revision_id
         preview.prerequisite_revision_id = prerequisite_revision_id
         preview.conflicts = conflicts
+        preview.diff = diff
 
-        filename = str(uuid1()) + '.txt'
-        size = len(diff_content)
-        preview.diff = Diff.fromFile(StringIO(diff_content), size, filename)
         return preview
 
     @property

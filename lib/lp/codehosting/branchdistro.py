@@ -42,7 +42,7 @@ from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 
 
 def switch_branches(prefix, scheme, old_db_branch, new_db_branch):

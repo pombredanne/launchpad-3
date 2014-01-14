@@ -1,7 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 """Build interfaces."""
 
@@ -21,17 +19,15 @@ from zope.schema import (
     Bool,
     Choice,
     Datetime,
-    Field,
     Int,
     Text,
     Timedelta,
     )
 
 from lp import _
-from lp.buildmaster.enums import BuildFarmJobType
+from lp.buildmaster.enums import BuildQueueStatus
 from lp.buildmaster.interfaces.builder import IBuilder
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
-from lp.services.job.interfaces.job import IJob
 from lp.soyuz.interfaces.processor import IProcessor
 
 
@@ -66,17 +62,9 @@ class IBuildQueue(Interface):
         description=_(
             "The virtualization setting required by this build farm job."))
 
-    job = Reference(
-        IJob, title=_("Job"), required=True, readonly=True,
-        description=_("Data common to all job types."))
-
-    job_type = Choice(
-        title=_('Job type'), required=True, vocabulary=BuildFarmJobType,
-        description=_("The type of this job."))
-
-    required_build_behavior = Field(
-        title=_('The builder behavior required to run this job.'),
-        required=False, readonly=True)
+    status = Choice(
+        title=_("Status"), vocabulary=BuildQueueStatus, readonly=True,
+        description=_("The status of this build queue item."))
 
     estimated_duration = Timedelta(
         title=_("Estimated Job Duration"), required=True,
@@ -95,11 +83,14 @@ class IBuildQueue(Interface):
     def destroySelf():
         """Delete this entry from the database."""
 
-    def getLogFileName():
-        """Get the preferred filename for the buildlog of this build."""
-
     def markAsBuilding(builder):
         """Set this queue item to a 'building' state."""
+
+    def suspend():
+        """Suspend this waiting job, removing it from the active queue."""
+
+    def resume():
+        """Resume this suspended job, adding it to the active queue."""
 
     def reset():
         """Reset this job, so it can be re-dispatched."""
@@ -107,12 +98,16 @@ class IBuildQueue(Interface):
     def cancel():
         """Cancel this job, it will not be re-dispatched."""
 
-    specific_job = Reference(
-        IBuildFarmJob, title=_("Job"),
-        description=_("Data and operations common to all build farm jobs."))
+    def markAsCancelled():
+        """Mark this job's cancellation as completed.
 
-    def setDateStarted(timestamp):
-        """Sets the date started property to the given value."""
+        Only buildd-manager and cancel() should call this directly.
+        Everyone else wants to use cancel().
+        """
+
+    specific_build = Reference(
+        IBuildFarmJob, title=_("Build farm job"),
+        description=_("Concrete build farm job object."))
 
     date_started = Datetime(
         title=_('Start time'),
@@ -131,26 +126,8 @@ class IBuildQueue(Interface):
 class IBuildQueueSet(Interface):
     """Launchpad Auto Build queue set handler and auxiliary methods."""
 
-    title = Attribute('Title')
-
-    def __iter__():
-        """Iterate over current build jobs."""
-
-    def __getitem__(buildqueue_id):
-        """Retrieve a build job by id."""
-
-    def count():
-        """Return the number of build jobs in the queue."""
-
     def get(buildqueue_id):
         """Return the `IBuildQueue` with the given id."""
-
-    def getByJob(job):
-        """Find the `IBuildQueue` to which `job` belongs.
-
-        :param job: A `Job`.
-        :return: The matching `IBuildQueue`, or None.
-        """
 
     def getByBuilder(builder):
         """Return an IBuildQueue instance for a builder.
@@ -159,5 +136,5 @@ class IBuildQueueSet(Interface):
         builder. If not found, return None.
         """
 
-    def getActiveBuildJobs():
-        """Return All active Build Jobs."""
+    def preloadForBuildFarmJobs(builds):
+        """Preload buildqueue_record for the given IBuildFarmJobs."""

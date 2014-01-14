@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publisher of objects as web pages.
@@ -8,13 +8,13 @@
 __metaclass__ = type
 __all__ = [
     'DataDownloadView',
+    'get_raw_form_value_from_current_request',
     'LaunchpadContainer',
     'LaunchpadView',
     'LaunchpadXMLRPCView',
     'canonical_name',
     'canonical_url',
     'canonical_url_iterator',
-    'get_current_browser_request',
     'nearest',
     'Navigation',
     'rootObject',
@@ -26,6 +26,7 @@ __all__ = [
     'UserAttributeCache',
     ]
 
+from cgi import FieldStorage
 import httplib
 import re
 
@@ -39,8 +40,6 @@ from lazr.restful.tales import WebLayerAPI
 from lazr.restful.utils import get_current_browser_request
 import simplejson
 from zope import i18n
-from zope.app import zapi
-from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
 from zope.component import (
     getUtility,
@@ -53,11 +52,13 @@ from zope.interface import (
     implements,
     )
 from zope.interface.advice import addClassAdvisor
+from zope.publisher.defaultview import getDefaultViewName
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import (
     IBrowserPublisher,
     IDefaultBrowserLayer,
     )
+from zope.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.security.checker import (
     NamesChecker,
     ProxyFactory,
@@ -800,6 +801,23 @@ def nearest(obj, *interfaces):
         return None
 
 
+def get_raw_form_value_from_current_request(field_name):
+    # XXX: StevenK 2013-02-06 bug=1116954: We should not need to refetch
+    # the file content from the request, since the passed in one has been
+    # wrongly encoded.
+    # Circular imports.
+    from lp.services.webapp.servers import WebServiceClientRequest
+    request = get_current_browser_request()
+    assert isinstance(request, WebServiceClientRequest)
+    # Zope wrongly encodes any form element that doesn't look like a file,
+    # so re-fetch the file content if it has been encoded.
+    if request and request.form.has_key(field_name) and isinstance(
+        request.form[field_name], unicode):
+        request._environ['wsgi.input'].seek(0)
+        fs = FieldStorage(fp=request._body_instream, environ=request._environ)
+        return fs[field_name].value
+
+
 class RootObject:
     implements(ILaunchpadApplication, ILaunchpadRoot)
 
@@ -1009,7 +1027,7 @@ class Navigation:
 
         # Next, look up views on the context object.  If a view exists,
         # use it.
-        view = zapi.queryMultiAdapter((self.context, request), name=name)
+        view = queryMultiAdapter((self.context, request), name=name)
         if view is not None:
             return view
 
@@ -1032,7 +1050,7 @@ class Navigation:
         return self._handle_next_object(nextobj, request, name)
 
     def browserDefault(self, request):
-        view_name = zapi.getDefaultViewName(self.context, request)
+        view_name = getDefaultViewName(self.context, request)
         return self.context, (view_name, )
 
 

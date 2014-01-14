@@ -16,7 +16,7 @@ from lp.registry.interfaces.persontransferjob import (
     IPersonMergeJob,
     IPersonMergeJobSource,
     )
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.job.interfaces.job import JobStatus

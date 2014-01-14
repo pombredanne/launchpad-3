@@ -23,7 +23,7 @@ from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.packaging import Packaging
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.orderingcheck import OrderingCheck
 from lp.services.scripts.base import (
     LaunchpadScript,
@@ -273,8 +273,10 @@ class MessageSharingMerge(LaunchpadScript):
         subset = self.template_set.getSharingSubset(
                 product=product, distribution=distribution,
                 sourcepackagename=sourcepackagename)
-        equivalence_classes = subset.groupEquivalentPOTemplates(
-                                                self.options.template_names)
+        template_regex = self.options.template_names
+        if isinstance(template_regex, str):
+            template_regex = template_regex.decode('utf-8')
+        equivalence_classes = subset.groupEquivalentPOTemplates(template_regex)
 
         class_count = len(equivalence_classes)
         log.info("Merging %d template equivalence classes." % class_count)

@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 
-from zope.app.form.browser import TextWidget
+from zope.formlib.widgets import TextWidget
 
 from lp.app.browser.launchpadform import (
     action,

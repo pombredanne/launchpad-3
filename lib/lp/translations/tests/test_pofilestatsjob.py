@@ -16,8 +16,10 @@ from lp.services.job.interfaces.job import (
     IRunnableJob,
     )
 from lp.services.job.tests import block_on_job
-from lp.services.webapp.testing import verifyObject
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCaseWithFactory,
+    verifyObject,
+    )
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import (
     CeleryJobLayer,
@@ -53,7 +55,7 @@ class TestPOFileStatsJob(TestCaseWithFactory):
         job = pofilestatsjob.schedule(pofile.id)
         # Just scheduling the job doesn't update the statistics.
         self.assertEqual(pofile.potemplate.messageCount(), 0)
-        with dbuser(config.pofile_stats.dbuser):
+        with dbuser('pofilestats'):
             job.run()
         # Now that the job ran, the statistics have been updated.
         self.assertEqual(pofile.potemplate.messageCount(), 1)
@@ -72,7 +74,7 @@ class TestPOFileStatsJob(TestCaseWithFactory):
         job = pofilestatsjob.schedule(pofile.id)
         # Just scheduling the job doesn't update the statistics.
         self.assertEqual(pofile.potemplate.messageCount(), 0)
-        with dbuser(config.pofile_stats.dbuser):
+        with dbuser('pofilestats'):
             job.run()
         # Now that the job ran, the statistics have been updated.
         self.assertEqual(pofile.potemplate.messageCount(), 1)
@@ -112,7 +114,7 @@ class TestPOFileStatsJob(TestCaseWithFactory):
         # Just scheduling the job doesn't update the statistics.
         self.assertEqual(pofile1.getStatistics(), (0, 0, 0, 0))
         self.assertEqual(pofile2.getStatistics(), (0, 0, 0, 0))
-        with dbuser(config.pofile_stats.dbuser):
+        with dbuser('pofilestats'):
             job.run()
         # Now that the job ran, the statistics for the POFile have been
         # updated.

@@ -23,7 +23,7 @@ from zope.publisher.interfaces import (
     Retry,
     )
 
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.oauth.interfaces import (
     IOAuthConsumerSet,

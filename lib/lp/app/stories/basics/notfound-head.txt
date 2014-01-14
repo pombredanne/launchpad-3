@@ -24,13 +24,16 @@ errors (such as 404s).
 
 Register a test page that generates HTTP 500 errors.
 
-  >>> from zope.app.testing import ztapi
+  >>> from zope.component import provideAdapter
+  >>> from zope.interface import Interface
+  >>> from zope.publisher.interfaces.browser import IDefaultBrowserLayer
   >>> class ErrorView(object):
   ...     """A broken view"""
   ...     def __init__(self, *args):
   ...         oops
   ...
-  >>> ztapi.browserView(None, "error-test", ErrorView)
+  >>> provideAdapter(
+  ...       ErrorView, (None, IDefaultBrowserLayer), Interface, "error-test")
 
 Do a HEAD request on the error test page, and check that its response also has
 no body.

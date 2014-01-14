@@ -7,8 +7,8 @@ import re
 
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.fields import Reference
-from zope.app.form.browser.interfaces import IBrowserWidget
-from zope.app.form.interfaces import (
+from zope.formlib.interfaces import (
+    IBrowserWidget,
     IInputWidget,
     WidgetInputError,
     )
@@ -26,8 +26,10 @@ from lp.code.model.branchtarget import (
 from lp.registry.vocabularies import ProductVocabulary
 from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.services.webapp.testing import verifyObject
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCaseWithFactory,
+    verifyObject,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 
 

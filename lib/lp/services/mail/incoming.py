@@ -1,11 +1,10 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functions dealing with mails coming into Launchpad."""
 
 __metaclass__ = type
 
-from cStringIO import StringIO as cStringIO
 import email.errors
 from email.utils import (
     getaddresses,
@@ -36,6 +35,7 @@ from lp.services.identity.interfaces.emailaddress import (
     IEmailAddressSet,
     )
 from lp.services.librarian.interfaces.client import UploadFailed
+from lp.services.log.logger import BufferLogger
 from lp.services.mail.handlers import mail_handlers
 from lp.services.mail.helpers import (
     ensure_sane_signature_timestamp,
@@ -129,27 +129,24 @@ def _verifyDkimOrigin(signed_message):
     # uncomment this for easier test debugging
     # log.addHandler(logging.FileHandler('/tmp/dkim.log'))
 
-    dkim_log = cStringIO()
+    dkim_log = BufferLogger()
     log.info(
         'Attempting DKIM authentication of message id=%r from=%r sender=%r'
         % (signed_message['Message-ID'],
            signed_message['From'],
            signed_message['Sender']))
-    signing_details = []
+    dkim_checker = None
     dkim_result = False
     try:
-        dkim_result = dkim.verify(
-            signed_message.parsed_string, dkim_log, details=signing_details)
+        dkim_checker = dkim.DKIM(signed_message.parsed_string, logger=dkim_log)
+        dkim_result = dkim_checker.verify()
     except dkim.DKIMException as e:
-        log.warning('DKIM error: %r' % (e,))
-    except dns.resolver.NXDOMAIN as e:
-        # This can easily happen just through bad input data, ie claiming to
+        log.info('DKIM error: %r' % (e,))
+    except dns.exception.DNSException as e:
+        # This can easily happen just through bad input data, eg. claiming to
         # be signed by a domain with no visible key of that name.  It's not an
         # operational error.
         log.info('DNS exception: %r' % (e,))
-    except dns.exception.DNSException as e:
-        # many of them have lame messages, thus %r
-        log.warning('DNS exception: %r' % (e,))
     except Exception as e:
         # DKIM leaks some errors when it gets bad input, as in bug 881237.  We
         # don't generally want them to cause the mail to be dropped entirely
@@ -160,17 +157,12 @@ def _verifyDkimOrigin(signed_message):
             'unexpected error in DKIM verification, treating as unsigned: %r'
             % (e,))
     log.info('DKIM verification result: trusted=%s' % (dkim_result,))
-    log.debug('DKIM debug log: %s' % (dkim_log.getvalue(),))
+    log.debug('DKIM debug log: %s' % (dkim_log.getLogBuffer(),))
     if not dkim_result:
         return None
     # in addition to the dkim signature being valid, we have to check that it
     # was actually signed by the user's domain.
-    if len(signing_details) != 1:
-        log.info(
-            'expected exactly one DKIM details record: %r'
-            % (signing_details,))
-        return None
-    signing_domain = signing_details[0]['d']
+    signing_domain = dkim_checker.domain
     if not _isDkimDomainTrusted(signing_domain):
         log.info("valid DKIM signature from untrusted domain %s"
             % (signing_domain,))
@@ -391,8 +383,7 @@ def report_oops(file_alias_url=None, error_msg=None):
     return report['id']
 
 
-def handleMail(trans=transaction,
-               signature_timestamp_checker=None):
+def handleMail(trans=transaction, signature_timestamp_checker=None):
 
     log = logging.getLogger('process-mail')
     mailbox = getUtility(IMailBox)
@@ -551,5 +542,4 @@ def handle_one_mail(log, mail, file_alias, file_alias_url,
 
     handled = handler.process(mail, email_addr, file_alias)
     if not handled:
-        raise AssertionError(
-            "Handler found, but message was not handled")
+        raise AssertionError("Handler found, but message was not handled")

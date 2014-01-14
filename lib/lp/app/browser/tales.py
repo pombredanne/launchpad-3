@@ -1,11 +1,11 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
 
 __metaclass__ = type
 
-import bisect
+from bisect import bisect
 from datetime import (
     datetime,
     timedelta,
@@ -19,10 +19,10 @@ from textwrap import dedent
 import urllib
 
 from lazr.enum import enumerated_type_registry
+from lazr.restful.utils import get_current_browser_request
 from lazr.uri import URI
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app import zapi
 from zope.component import (
     adapts,
     getMultiAdapter,
@@ -36,6 +36,7 @@ from zope.interface import (
     Interface,
     )
 from zope.publisher.browser import BrowserView
+from zope.publisher.defaultview import getDefaultViewName
 from zope.schema import TextLine
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
@@ -69,10 +70,6 @@ from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.utils import total_seconds
-from lp.services.webapp import (
-    canonical_url,
-    urlappend,
-    )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.canonicalurl import nearest_adapter
 from lp.services.webapp.error import SystemErrorView
@@ -94,14 +91,17 @@ from lp.services.webapp.menu import (
     get_facet,
     )
 from lp.services.webapp.publisher import (
-    get_current_browser_request,
+    canonical_url,
     LaunchpadView,
     nearest,
     )
 from lp.services.webapp.session import get_cookie_domain
+from lp.services.webapp.url import urlappend
 from lp.soyuz.enums import ArchivePurpose
-from lp.soyuz.interfaces.archive import IPPA
-from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.soyuz.interfaces.archive import (
+    IArchive,
+    IPPA,
+    )
 from lp.soyuz.interfaces.binarypackagename import IBinaryAndSourcePackageName
 
 
@@ -257,7 +257,7 @@ class MenuAPI:
         request_urlobj = URI(request.getURL())
         # If the default view name is being used, we will want the url
         # without the default view name.
-        defaultviewname = zapi.getDefaultViewName(self._context, request)
+        defaultviewname = getDefaultViewName(self._context, request)
         if request_urlobj.path.rstrip('/').endswith(defaultviewname):
             request_urlobj = URI(request.getURL(1))
         query = request.get('QUERY_STRING')
@@ -763,6 +763,8 @@ class ObjectImageDisplayAPI:
                 sprite_string = 'ppa-icon'
             else:
                 sprite_string = 'ppa-icon-inactive'
+        elif IArchive.providedBy(context):
+            sprite_string = 'distribution'
         elif IBranch.providedBy(context):
             sprite_string = 'branch'
         elif ISpecification.providedBy(context):
@@ -777,7 +779,6 @@ class ObjectImageDisplayAPI:
                 sprite_string = sprite_string + ' private'
 
             return "sprite %s" % sprite_string
-
 
     def default_logo_resource(self, context):
         # XXX: mars 2008-08-22 bug=260468
@@ -954,11 +955,11 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     def _hasBugBranch(self):
         """Return whether the bug has a branch linked to it."""
-        return self._context.bug.linked_branches.count() > 0
+        return not self._context.bug.linked_branches.is_empty()
 
     def _hasSpecification(self):
         """Return whether the bug is linked to a specification."""
-        return self._context.bug.specifications.count() > 0
+        return not self._context.bug.specifications.is_empty()
 
     def _hasPatch(self):
         """Return whether the bug has a patch."""
@@ -1041,7 +1042,7 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
 
         if self._context.priority:
             priority = self._context.priority.title.lower()
-            sprite_str = sprite_str +  "-%s" % priority
+            sprite_str = sprite_str + "-%s" % priority
 
         if self._context.private:
             sprite_str = sprite_str + ' private'
@@ -1052,7 +1053,7 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
 
         badges = ''
 
-        if self._context.linked_branches.count() > 0:
+        if len(self._context.linked_branches) > 0:
             badges += self.icon_template % (
                 "branch", "Branch is available", "sprite branch")
 
@@ -1152,7 +1153,6 @@ class ArchiveImageDisplayAPI(ObjectImageDisplayAPI):
             ArchivePurpose.PARTNER: '/@@/distribution',
             ArchivePurpose.PPA: '/@@/ppa-icon',
             ArchivePurpose.COPY: '/@@/distribution',
-            ArchivePurpose.DEBUG: '/@@/distribution',
             }
 
         alt = '[%s]' % self._context.purpose.title
@@ -1618,7 +1618,7 @@ class BranchFormatterAPI(ObjectFormatterAPI):
     """Adapter for IBranch objects to a formatted string."""
 
     traversable_names = {
-        'link': 'link', 'url': 'url', 'project-link': 'projectLink',
+        'link': 'link', 'url': 'url',
         'title-link': 'titleLink', 'bzr-link': 'bzrLink',
         'api_url': 'api_url'}
 
@@ -1643,14 +1643,6 @@ class BranchFormatterAPI(ObjectFormatterAPI):
         """A hyperlinked branch icon with the bazaar identity."""
         # Defer to link.
         return self.link(view_name)
-
-    def projectLink(self, view_name):
-        """A hyperlinked branch icon with the name and title."""
-        return structured(
-            '<a href="%(url)s" title="%(display_name)s">'
-            '<img src="/@@/branch" alt=""/>'
-            '&nbsp;%(name)s</a>: %(title)s',
-            **self._args(view_name)).escapedtext
 
     def titleLink(self, view_name):
         """A hyperlinked branch name with following title."""
@@ -1757,7 +1749,8 @@ class PackageBuildFormatterAPI(ObjectFormatterAPI):
 
     def link(self, view_name, rootsite=None):
         build = self._context
-        if not check_permission('launchpad.View', build):
+        if (not check_permission('launchpad.View', build) or
+            not check_permission('launchpad.View', build.archive.owner)):
             return 'private job'
 
         url = self.url(view_name=view_name, rootsite=rootsite)
@@ -1859,40 +1852,42 @@ class CodeReviewCommentFormatterAPI(CustomizableFormatter):
         return {'author': self._context.message.owner.displayname}
 
 
-class PPAFormatterAPI(CustomizableFormatter):
-    """Adapter providing fmt support for `IPPA` objects."""
+class ArchiveFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for `IArchive` objects."""
 
     _link_summary_template = '%(display_name)s'
     _link_permission = 'launchpad.View'
+    _reference_permission = 'launchpad.SubscriberView'
     _reference_template = "ppa:%(owner_name)s/%(ppa_name)s"
 
-    final_traversable_names = {
-        'reference': 'reference',
-        }
+    final_traversable_names = {'reference': 'reference'}
     final_traversable_names.update(
         CustomizableFormatter.final_traversable_names)
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
-        return {
-            'display_name': self._context.displayname,
-            }
+        return {'display_name': self._context.displayname}
 
     def link(self, view_name):
-        """Return html including a link for the context PPA.
+        """Return html including a link for the context archive.
 
         Render a link using CSS sprites for users with permission to view
-        the PPA.
+        the archive.
 
         Disabled PPAs are listed with sprites but not linkified.
 
-        Unaccessible private PPA are not rendered at all (empty string
+        Inaccessible private PPAs are not rendered at all (empty string
         is returned).
         """
         summary = self._make_link_summary()
         css = self.sprite_css()
         if check_permission(self._link_permission, self._context):
-            url = self.url(view_name)
+            if self._context.is_main:
+                url = queryAdapter(
+                    self._context.distribution, IPathAdapter, 'fmt').url(
+                        view_name)
+            else:
+                url = self.url(view_name)
             return '<a href="%s" class="%s">%s</a>' % (url, css, summary)
         else:
             if not self._context.private:
@@ -1902,21 +1897,15 @@ class PPAFormatterAPI(CustomizableFormatter):
 
     def reference(self, view_name=None, rootsite=None):
         """Return the text PPA reference for a PPA."""
-        # XXX: noodles 2010-02-11 bug=336779: This following check
-        # should be replaced with the normal check_permission once
-        # permissions for archive subscribers has been resolved.
-        if self._context.private:
-            request = get_current_browser_request()
-            person = IPerson(request.principal)
-            subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
-                person, self._context)
-            if subscriptions.is_empty():
-                return ''
-
+        if not IPPA.providedBy(self._context):
+            raise NotImplementedError(
+                "No reference implementation for non-PPA archive %r." %
+                self._context)
+        if not check_permission(self._reference_permission, self._context):
+            return ''
         return self._reference_template % {
             'owner_name': self._context.owner.name,
-            'ppa_name': self._context.name,
-            }
+            'ppa_name': self._context.name}
 
 
 class SpecificationBranchFormatterAPI(CustomizableFormatter):
@@ -2094,8 +2083,6 @@ class NumberFormatterAPI:
         """Render number as byte contractions according to IEC60027-2."""
         # See http://en.wikipedia.org/wiki
         # /Binary_prefixes#Specific_units_of_IEC_60027-2_A.2
-        # Note that there is a zope.app.size.byteDisplay() function, but
-        # it really limited and doesn't work well enough for us here.
         assert not float(self._number) < 0, "Expected a non-negative number."
         n = int(self._number)
         if n == 1:
@@ -2354,7 +2341,7 @@ class DurationFormatterAPI:
         if seconds < second_boundaries[-1]:
             # Use the built-in bisection algorithm to locate the index
             # of the item which "seconds" sorts after.
-            matching_element_index = bisect.bisect(second_boundaries, seconds)
+            matching_element_index = bisect(second_boundaries, seconds)
 
             # Return the corresponding display value.
             return display_values[matching_element_index]
@@ -2511,8 +2498,7 @@ class LaunchpadLayerToMainTemplateAdapter:
 
     def __init__(self, context):
         here = os.path.dirname(os.path.realpath(__file__))
-        self.path = os.path.join(
-            here, '../templates/base-layout.pt')
+        self.path = os.path.join(here, '../templates/base-layout.pt')
 
 
 class PageMacroDispatcher:
@@ -2602,8 +2588,9 @@ class PageMacroDispatcher:
         privacy = IPrivacy(view_context, None)
         if privacy is None or not privacy.private:
             return False
-        can_view = check_permission('launchpad.View', view_context)
-        return not can_view
+        return not (
+            check_permission('launchpad.SubscriberView', view_context) or
+            check_permission('launchpad.View', view_context))
 
     def pagetype(self):
         return getattr(self.context, '__pagetype__', 'unset')

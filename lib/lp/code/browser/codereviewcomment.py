@@ -13,7 +13,7 @@ __all__ = [
 
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
-from zope.app.form.browser import (
+from zope.formlib.widgets import (
     DropdownWidget,
     TextAreaWidget,
     )
@@ -219,7 +219,7 @@ class CodeReviewCommentAddView(LaunchpadFormView):
     """View for adding a CodeReviewComment."""
 
     class MyDropWidget(DropdownWidget):
-        "Override the default no-value display name to -Select-."
+        "Override the default none-selected display name to -Select-."
         _messageNoValue = 'Comment only'
 
     schema = IEditCodeReviewComment

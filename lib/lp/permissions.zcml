@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -15,6 +15,8 @@
   <permission
     id="launchpad.LimitedView" title="View basic details like name, URL" access_level="read" />
 
+  <permission
+    id="launchpad.SubscriberView" title="View shallow details" access_level="read" />
   <permission
     id="launchpad.AnyPerson" title="Any Authenticated Person"
     access_level="write" />
@@ -90,10 +92,13 @@
     title="The role of someone who created or otherwise owns an object."
     access_level="write" />
 
-  <!-- This permission only exists to please apidoc.launchpad.dev and
-       shouldn't be used anywhere else. -->
+  <!-- A permission that isn't held by anybody. Only used to let scripts
+       write to special attributes (in PermissiveSecurityPolicy a write
+       is allowed if any permission would allow it, as all permissions
+       are implicitly held). -->
   <permission
-    id="zope.ManageApplication" title="Needed by zope.app.apidoc"
-    access_level="read" />
+    id="launchpad.InternalScriptsOnly"
+    title="Special permission to allow only scripts to write."
+    access_level="write" />
 
 </configure>

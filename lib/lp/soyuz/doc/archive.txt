@@ -5,7 +5,7 @@ An Archive models a Debian Archive, providing operations like
 publication lookups and the complete publishing-pipeline from database
 records to disk, including configuration and indexes.
 
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
     >>> from lp.registry.interfaces.person import (
@@ -88,7 +88,7 @@ Amending it as an unprivileged user results in failure:
     >>> cprov_archive.external_dependencies = "test"
     Traceback (most recent call last):
     ...
-    Unauthorized: (..., 'external_dependencies', 'launchpad.Commercial')
+    Unauthorized: (..., 'external_dependencies', 'launchpad.Admin')
 
 As a Launchpad admin, setting this property will work.
 
@@ -134,10 +134,14 @@ It is only editable by someone with launchpad.Edit permissions:
     ...
     Unauthorized:...
 
+    >>> login("admin@canonical.com")
+    >>> cprov_archive.status = ArchiveStatus.ACTIVE
 
-'name' is only editable by an LP administrator and only exposed via
-the ArchiveRebuild user interface. PRIMARY, PARTNER and PPAs still
-using default names.
+
+'name' is only editable by an LP administrator and only exposed via the
+ArchiveRebuild user interface. PRIMARY and PARTNER archives cannot be
+renamed, and PPA named can only be changed once the PPA has been
+deleted.
 
     >>> login("celso.providelo@canonical.com")
 
@@ -154,7 +158,7 @@ asserts the archive is indeed a COPY and if the name is valid.
     >>> cprov_archive.name = 'there-we-go'
     Traceback (most recent call last):
     ...
-    AssertionError: Only COPY archives can be renamed.
+    AssertionError: Only COPY archives and deleted PPAs can be renamed.
 
 We will create a COPY archive and modify its name.
 
@@ -569,8 +573,11 @@ decreases.
 
     >>> cprov_archive.number_of_sources
     3
-    >>> cprov_archive.getPublishedSources(
-    ...     name=u'cdrkit').first().supersede()
+    >>> cdrkit = cprov_archive.getPublishedSources(name=u'cdrkit').first()
+    >>> cdrkit.supersede()
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.services.database.constants import UTC_NOW
+    >>> removeSecurityProxy(cdrkit).scheduleddeletiondate = UTC_NOW
 
     >>> cprov_archive.number_of_sources
     2
@@ -604,7 +611,7 @@ PUBLISHED status, respecting the given name and status filters.
 This method can optionally receive a source package name filter (SQL
 LIKE) to restrict its result.
 
-    >>> cprov_archive.getSourcesForDeletion(name='ice').count()
+    >>> cprov_archive.getSourcesForDeletion(name=u'ice').count()
     1
 
 If only the source publication is DELETED, leaving its binary behind,
@@ -618,29 +625,28 @@ it continues to be considered 'available for deletion'.
     >>> login("celso.providelo@canonical.com")
     >>> removal_candidate.requestDeletion(cprov, 'go away !')
 
-    >>> cprov_archive.getSourcesForDeletion(name='ice').count()
+    >>> cprov_archive.getSourcesForDeletion(name=u'ice').count()
     1
 
 The status filter can be used to only return sources that can be
 deleted matching a given status.
 
     >>> cprov_archive.getSourcesForDeletion(
-    ...      name='ice', status=PackagePublishingStatus.DELETED).count()
+    ...      name=u'ice', status=PackagePublishingStatus.DELETED).count()
     1
 
     >>> cprov_archive.getSourcesForDeletion(
-    ...      name='ice', status=PackagePublishingStatus.PUBLISHED).count()
+    ...      name=u'ice', status=PackagePublishingStatus.PUBLISHED).count()
     0
 
 The status filter can also be a sequence of status.
 
     >>> irrelevant_status = (
     ...     PackagePublishingStatus.SUPERSEDED,
-    ...     PackagePublishingStatus.DELETED,
-    ...     )
+    ...     PackagePublishingStatus.DELETED)
 
     >>> cprov_archive.getSourcesForDeletion(
-    ...      name='ice', status=irrelevant_status).count()
+    ...      name=u'ice', status=irrelevant_status).count()
     1
 
 The series filter can be used to return only sources from a certain
@@ -651,20 +657,17 @@ series:
     >>> cprov_archive.getSourcesForDeletion(distroseries=hoary).count()
     0
 
-The source publication is only excluded from 'deletion list' when its
-binary is also DELETED.
+The source publication is only excluded from 'deletion list' when it's
+scheduled deletion date is set.
 
-    >>> for bin in removal_candidate.getPublishedBinaries():
-    ...     bin.requestDeletion(cprov, 'go away !')
-
-    >>> cprov_archive.getSourcesForDeletion(name='ice').count()
+    >>> removeSecurityProxy(removal_candidate).scheduleddeletiondate = UTC_NOW
+    >>> cprov_archive.getSourcesForDeletion(name=u'ice').count()
     0
 
 Flush the database caches to invalidate old caches from the
 corresponding publishing Postgres views.
 
-    >>> from lp.services.database.sqlbase import flush_database_caches
-    >>> flush_database_caches()
+    >>> transaction.commit()
 
 
 Build Lookup
@@ -1057,10 +1060,6 @@ PunlisherConfig require us to log in as an admin:
     ...     ubuntutest, ArchivePurpose.PRIMARY).archive_url
     http://archive.launchpad.dev/ubuntutest
 
-    >>> print getUtility(IArchiveSet).getByDistroPurpose(
-    ...     ubuntu, ArchivePurpose.DEBUG).archive_url
-    http://archive.launchpad.dev/ubuntu-debug
-
 COPY archives use a URL format of <distro-name>-<archive-name>:
 
     >>> print naked_copy_target.archive.is_copy
@@ -1106,90 +1105,17 @@ distribution, person name and the PPA name. This method is used in
     True
 
 Iteration over the own utility is performed against all archives,
-including PPA, DEBUG, PRIMARY, PARTNER and COPY:
+including PPA, PRIMARY, PARTNER and COPY:
 
     >>> from lp.testing import celebrity_logged_in
     >>> with celebrity_logged_in('admin'):
     ...     archive_purposes = [
     ...         archive.purpose.name for archive in archive_set]
     >>> len(archive_purposes)
-    18
+    17
 
     >>> print sorted(set(archive_purposes))
-    ['COPY', 'DEBUG', 'PARTNER', 'PPA', 'PRIMARY']
-
-ArchiveSet utility also offers counters in the distribution context for:
-
- * The number of published sources in public PPAs
-   (getNumberOfPPASourcesForDistribution);
-
- * The number of published binaries in public PPAs
-   (getNumberOfPPABinariesForDistribution);
-
-Those counters are obtained from the cached package counters for each
-PPA, so they will change when the caches get updated.
-
-Those counters explicity exclude packages in private PPAs.
-
-The current counters says we only have 4 source and 4 binary published
-in public PPAs.
-
-    >>> archive_set.getNumberOfPPASourcesForDistribution(ubuntu)
-    4
-    >>> archive_set.getNumberOfPPABinariesForDistribution(ubuntu)
-    4
-
-As mentioned caches for private PPAs are not considered.
-
-    >>> print cprov_private_ppa.private
-    True
-
-    >>> cprov_private_ppa.sources_cached
-    0
-    >>> cprov_private_ppa.binaries_cached
-    0
-
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> naked_cprov_archive = removeSecurityProxy(cprov_private_ppa)
-    >>> naked_cprov_archive.sources_cached = 1000
-    >>> naked_cprov_archive.binaries_cached = 2000
-    >>> naked_cprov_archive.syncUpdate()
-
-    >>> archive_set.getNumberOfPPASourcesForDistribution(ubuntu)
-    4
-    >>> archive_set.getNumberOfPPABinariesForDistribution(ubuntu)
-    4
-
-On the other hand, changes in the a public PPA are immediately
-considered.
-
-    >>> print no_priv.archive.private
-    False
-
-    >>> no_priv.archive.sources_cached
-    0
-    >>> no_priv.archive.binaries_cached
-    0
-    >>> naked_no_priv_archive = removeSecurityProxy(no_priv.archive)
-    >>> naked_no_priv_archive.sources_cached = 10
-    >>> naked_no_priv_archive.binaries_cached = 2
-    >>> naked_no_priv_archive.syncUpdate()
-
-    >>> archive_set.getNumberOfPPASourcesForDistribution(ubuntu)
-    14
-    >>> archive_set.getNumberOfPPABinariesForDistribution(ubuntu)
-    6
-
-Since we currently only create archives for ubuntu distribution, the
-counters for other distributions are always 'zero'.
-
-    >>> debian = getUtility(IDistributionSet).getByName('debian')
-
-    >>> archive_set.getNumberOfPPASourcesForDistribution(debian)
-    0
-
-    >>> archive_set.getNumberOfPPABinariesForDistribution(debian)
-    0
+    ['COPY', 'PARTNER', 'PPA', 'PRIMARY']
 
 'getPPAsForUser' returns all the PPAs a given user participates in. It
 uses `TeamParticipation` relationships to calculate all the PPAs the
@@ -1488,57 +1414,6 @@ limited to 5 items.
     PPA for Launchpad Buildd Admins 8
     PPA for No Privileges Person 4
     PPA for Sample Person 4
-
-'getBuildCountersForArchitecture' allows callsites to quickly present
-the number of builds in pre-defined status for a given `IArchive` and
-`IDistroArchSeries` context.
-
-    >>> def print_build_counters_for(archive, distroarchseries):
-    ...     build_counters = archive_set.getBuildCountersForArchitecture(
-    ...         archive, distroarchseries)
-    ...     sorted_keys = sorted(build_counters.keys())
-    ...     for key in sorted_keys:
-    ...         print key, build_counters[key]
-
-
-Build counters for hoary/i386 in Celso's PPA.
-
-    >>> hoary_i386 = hoary['i386']
-    >>> print_build_counters_for(cprov_archive, hoary_i386)
-    failed     0
-    pending    0
-    succeeded  0
-    total      0
-
-Build counters for hoary/i386 in ubuntu primary archive.
-
-    >>> print_build_counters_for(ubuntu.main_archive, hoary_i386)
-    failed     1
-    pending    2
-    succeeded  1
-    total      4
-
-warty/i386 which has 3 SUPERSEDED builds computed in 'total', but not
-in any other predefined counter.
-
-    >>> warty_i386 = warty['i386']
-    >>> print_build_counters_for(ubuntu.main_archive, warty_i386)
-    failed     3
-    pending    0
-    succeeded  3
-    total      9
-
-Finally, build counters for breezy-autotest/i386 in ubuntu partner
-archive.
-
-    >>> ubuntu_partner = archive_set.getByDistroPurpose(
-    ...      ubuntu, ArchivePurpose.PARTNER)
-    >>> breezy_autotest_i386 = breezy_autotest['i386']
-    >>> print_build_counters_for(ubuntu_partner, breezy_autotest_i386)
-    failed     0
-    pending    0
-    succeeded  1
-    total      1
 
 
 A general way to get specific archives for a distribution
@@ -1881,6 +1756,27 @@ Re-enable Celso's PPA.
 
     >>> login('foo.bar@canonical.com')
     >>> cprov_archive.enable()
+
+Commercial admins can manage the privacy and build settings of any PPA.
+Additionally, a member of launchpad-ppa-self-admins can manage those
+settings on PPAs that they can otherwise edit.
+
+    >>> login('celso.providelo@canonical.com')
+    >>> check_permission('launchpad.Admin', cprov_archive)
+    False
+
+    >>> login('commercial-member@canonical.com')
+    >>> check_permission('launchpad.Admin', cprov_archive)
+    True
+    >>> celeb = getUtility(IPersonSet).getByName('launchpad-ppa-self-admins')
+    >>> celeb.addMember(person=cprov, reviewer=celeb.teamowner)
+    (True, ...)
+
+    >>> login('celso.providelo@canonical.com')
+    >>> check_permission('launchpad.Admin', cprov_archive)
+    True
+    >>> check_permission('launchpad.Admin', joes_ppa)
+    False
 
 
 Rebuild archives

@@ -13,7 +13,6 @@ from testtools.matchers import (
     )
 import transaction
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import (
     BuildFarmJobType,
@@ -25,17 +24,13 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.database.sqlbase import flush_database_updates
-from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.browser.build import getSpecificJobs
-from lp.soyuz.browser.builder import BuilderEditView
 from lp.testing import (
     celebrity_logged_in,
-    login,
     record_two_runs,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import ADMIN_EMAIL
@@ -45,54 +40,13 @@ from lp.translations.interfaces.translationtemplatesbuild import (
     )
 
 
-class TestBuilderEditView(TestCaseWithFactory):
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(TestBuilderEditView, self).setUp()
-        # Login as an admin to ensure access to the view's context
-        # object.
-        login(ADMIN_EMAIL)
-        self.builder = removeSecurityProxy(self.factory.makeBuilder())
-
-    def initialize_view(self):
-        form = {
-            "field.manual": "on",
-            "field.actions.update": "Change",
-            }
-        request = LaunchpadTestRequest(method="POST", form=form)
-        view = BuilderEditView(self.builder, request)
-        return view
-
-    def test_posting_form_doesnt_call_slave_xmlrpc(self):
-        # Posting the +edit for should not call isAvailable, which
-        # would do xmlrpc to a slave builder and is explicitly forbidden
-        # in a webapp process.
-        view = self.initialize_view()
-
-        # Stub out the slaveStatusSentence() method with a fake one that
-        # records if it's been called.
-        view.context.slaveStatusSentence = FakeMethod(result=[0])
-
-        view.initialize()
-
-        # If the dummy slaveStatusSentence() was called the call count
-        # would not be zero.
-        self.assertTrue(view.context.slaveStatusSentence.call_count == 0)
-
-
 class TestgetSpecificJobs(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
     def createTranslationTemplateBuild(self):
-        build_farm_job_source = getUtility(IBuildFarmJobSource)
-        build_farm_job = build_farm_job_source.new(
-            BuildFarmJobType.TRANSLATIONTEMPLATESBUILD)
-        source = getUtility(ITranslationTemplatesBuildSource)
         branch = self.factory.makeBranch()
-        return source.create(build_farm_job, branch)
+        return getUtility(ITranslationTemplatesBuildSource).create(branch)
 
     def createSourcePackageRecipeBuild(self):
         sprb = self.factory.makeSourcePackageRecipeBuild()
@@ -162,26 +116,19 @@ class TestgetSpecificJobs(TestCaseWithFactory):
 
 class BuildCreationMixin(object):
 
-    def markAsBuilt(self, build):
+    def markAsBuilt(self, build, builder):
         lfa = self.factory.makeLibraryFileAlias()
-        naked_build = removeSecurityProxy(build)
-        naked_build.log = lfa
-        naked_build.date_started = self.factory.getUniqueDate()
-        naked_build.date_finished = self.factory.getUniqueDate()
-        naked_build.status = BuildStatus.FULLYBUILT
+        build.updateStatus(BuildStatus.BUILDING, builder=builder)
+        build.updateStatus(BuildStatus.FULLYBUILT)
+        build.setLog(lfa)
         transaction.commit()
 
     def createTranslationTemplateBuildWithBuilder(self, builder=None):
         if builder is None:
             builder = self.factory.makeBuilder()
-        build_farm_job_source = getUtility(IBuildFarmJobSource)
-        build_farm_job = build_farm_job_source.new(
-            BuildFarmJobType.TRANSLATIONTEMPLATESBUILD)
-        source = getUtility(ITranslationTemplatesBuildSource)
         branch = self.factory.makeBranch()
-        build = source.create(build_farm_job, branch)
-        removeSecurityProxy(build).builder = builder
-        self.markAsBuilt(build)
+        build = getUtility(ITranslationTemplatesBuildSource).create(branch)
+        self.markAsBuilt(build, builder)
         return build
 
     def createRecipeBuildWithBuilder(self, private_branch=False,
@@ -198,8 +145,7 @@ class BuildCreationMixin(object):
                 branch1.setPrivate(
                     True, getUtility(IPersonSet).getByEmail(ADMIN_EMAIL))
         Store.of(build).flush()
-        removeSecurityProxy(build).builder = builder
-        self.markAsBuilt(build)
+        self.markAsBuilt(build, builder)
         return build
 
     def createBinaryPackageBuild(self, in_ppa=False, builder=None):
@@ -209,11 +155,7 @@ class BuildCreationMixin(object):
         if in_ppa:
             archive = self.factory.makeArchive()
         build = self.factory.makeBinaryPackageBuild(archive=archive)
-        naked_build = removeSecurityProxy(build)
-        naked_build.builder = builder
-        naked_build.date_started = self.factory.getUniqueDate()
-        naked_build.date_finished = self.factory.getUniqueDate()
-        self.markAsBuilt(build)
+        self.markAsBuilt(build, builder)
         return build
 
 
@@ -238,12 +180,7 @@ class TestBuilderHistoryView(TestCaseWithFactory, BuildCreationMixin):
             partial(self.createRecipeBuildWithBuilder, builder=self.builder),
             self.nb_objects)
 
-        # XXX: rvb 2011-11-14: The only query remaining is the one that
-        # results from a call to
-        # sourcepackagerecipebuild.buildqueue_record for each recipe build.
-        self.assertThat(
-            recorder2,
-            HasQueryCount(Equals(recorder1.count + 1 * self.nb_objects)))
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
 
     def test_build_history_queries_count_binary_package_builds(self):
         # Rendering to builder's history issues a constant number of queries

@@ -21,7 +21,6 @@ import itertools
 import operator
 
 from lazr.delegates import delegates
-from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.utils import smartquote
 from zope.component import (
     adapter,
@@ -123,18 +122,18 @@ class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
 
     def overview(self):
         text = 'Overview'
-        summary = 'General information about {0}'.format(
+        summary = u'General information about {0}'.format(
             self.context.displayname)
         return Link('', text, summary)
 
     def bugs(self):
         text = 'Bugs'
-        summary = 'Bugs reported about {0}'.format(self.context.displayname)
+        summary = u'Bugs reported about {0}'.format(self.context.displayname)
         return Link('', text, summary)
 
     def branches(self):
         text = 'Code'
-        summary = 'Branches for {0}'.format(self.context.displayname)
+        summary = u'Branches for {0}'.format(self.context.displayname)
         return Link('', text, summary)
 
 
@@ -274,6 +273,7 @@ class DistributionSourcePackageActionMenu(
 class DistributionSourcePackageBaseView(LaunchpadView):
     """Common features to all `DistributionSourcePackage` views."""
 
+    @property
     def releases(self):
         """All releases for this `IDistributionSourcePackage`."""
 
@@ -282,40 +282,38 @@ class DistributionSourcePackageBaseView(LaunchpadView):
                 text is not None and isinstance(text, basestring)
                 and len(text.strip()) > 0)
 
-        dspr_pubs = self.context.getReleasesAndPublishingHistory()
+        def decorate(dspr_pubs):
+            sprs = [dspr.sourcepackagerelease for (dspr, spphs) in dspr_pubs]
+            # Preload email/person data only if user is logged on. In
+            # the opposite case the emails in the changelog will be
+            # obfuscated anyway and thus cause no database lookups.
+            the_changelog = '\n'.join(
+                [spr.changelog_entry for spr in sprs
+                if not_empty(spr.changelog_entry)])
+            if self.user:
+                self._person_data = dict(
+                    [(email.email, person) for (email, person) in
+                        getUtility(IPersonSet).getByEmails(
+                            extract_email_addresses(the_changelog),
+                            include_hidden=False)])
+            else:
+                self._person_data = None
+            # Collate diffs for relevant SourcePackageReleases
+            pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(
+                sprs, preload_for_display=True)
+            spr_diffs = {}
+            for spr, diffs in itertools.groupby(
+                    pkg_diffs, operator.attrgetter('to_source')):
+                spr_diffs[spr] = list(diffs)
 
-        # Return as early as possible to avoid unnecessary processing.
-        if len(dspr_pubs) == 0:
-            return []
-
-        sprs = [dspr.sourcepackagerelease for (dspr, spphs) in dspr_pubs]
-        # Preload email/person data only if user is logged on. In the opposite
-        # case the emails in the changelog will be obfuscated anyway and thus
-        # cause no database lookups.
-        the_changelog = '\n'.join(
-            [spr.changelog_entry for spr in sprs
-             if not_empty(spr.changelog_entry)])
-        if self.user:
-            self._person_data = dict(
-                [(email.email, person) for (email, person) in
-                    getUtility(IPersonSet).getByEmails(
-                        extract_email_addresses(the_changelog),
-                        include_hidden=False)])
-        else:
-            self._person_data = None
-        # Collate diffs for relevant SourcePackageReleases
-        pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(
-            sprs, preload_for_display=True)
-        spr_diffs = {}
-        for spr, diffs in itertools.groupby(pkg_diffs,
-                                            operator.attrgetter('to_source')):
-            spr_diffs[spr] = list(diffs)
-
-        return [
-            DecoratedDistributionSourcePackageRelease(
-                dspr, spphs, spr_diffs.get(dspr.sourcepackagerelease, []),
-                self._person_data, self.user)
-            for (dspr, spphs) in dspr_pubs]
+            return [
+                DecoratedDistributionSourcePackageRelease(
+                    dspr, spphs, spr_diffs.get(dspr.sourcepackagerelease, []),
+                    self._person_data, self.user)
+                for (dspr, spphs) in dspr_pubs]
+        return DecoratedResultSet(
+            self.context.getReleasesAndPublishingHistory(),
+            bulk_decorator=decorate)
 
 
 class DistributionSourcePackageView(DistributionSourcePackageBaseView,
@@ -327,11 +325,6 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
         super(DistributionSourcePackageView, self).initialize()
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user)
-
-        pub = self.context.latest_overall_publication
-        if pub:
-            IJSONRequestCache(self.request).objects['archive_context_url'] = (
-                canonical_url(pub.archive, path_only_if_possible=True))
 
     @property
     def label(self):
@@ -582,6 +575,10 @@ class DistributionSourcePackageChangelogView(
     @property
     def label(self):
         return 'Change log for %s' % self.context.title
+
+    @cachedproperty
+    def batchnav(self):
+        return BatchNavigator(self.releases, self.request)
 
 
 class PublishingHistoryViewMixin:

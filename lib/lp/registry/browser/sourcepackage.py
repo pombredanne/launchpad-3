@@ -33,14 +33,14 @@ from lazr.enum import (
 from lazr.restful.interface import copy_field
 from lazr.restful.utils import smartquote
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser import DropdownWidget
-from zope.app.form.interfaces import IInputWidget
 from zope.component import (
     adapter,
     getMultiAdapter,
     getUtility,
     )
 from zope.formlib.form import Fields
+from zope.formlib.interfaces import IInputWidget
+from zope.formlib.widgets import DropdownWidget
 from zope.interface import (
     implements,
     Interface,
@@ -206,23 +206,23 @@ class SourcePackageFacets(StandardLaunchpadFacets):
 
     def overview(self):
         text = 'Overview'
-        summary = 'General information about {0}'.format(
+        summary = u'General information about {0}'.format(
             self.context.displayname)
         return Link('', text, summary)
 
     def bugs(self):
         text = 'Bugs'
-        summary = 'Bugs reported about {0}'.format(self.context.displayname)
+        summary = u'Bugs reported about {0}'.format(self.context.displayname)
         return Link('', text, summary)
 
     def branches(self):
         text = 'Code'
-        summary = 'Branches for {0}'.format(self.context.displayname)
+        summary = u'Branches for {0}'.format(self.context.displayname)
         return Link('', text, summary)
 
     def translations(self):
         text = 'Translations'
-        summary = 'Translations of {0} in Launchpad'.format(
+        summary = u'Translations of {0} in Launchpad'.format(
             self.context.displayname)
         return Link('', text, summary)
 

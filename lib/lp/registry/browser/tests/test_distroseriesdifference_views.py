@@ -34,7 +34,6 @@ from lp.services.comments.interfaces.conversation import (
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
-from lp.services.webapp.testing import verifyObject
 from lp.soyuz.enums import (
     PackageDiffStatus,
     PackagePublishingStatus,
@@ -47,6 +46,7 @@ from lp.testing import (
     celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
+    verifyObject,
     )
 from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.views import create_initialized_view
@@ -136,8 +136,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         ds_diff = self.factory.makeDistroSeriesDifference(
             difference_type=(
                 DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES))
-        with celebrity_logged_in('admin'):
-            ds_diff.parent_source_pub.status = PackagePublishingStatus.DELETED
+        with person_logged_in(ds_diff.parent_source_pub.archive.owner):
+            ds_diff.parent_source_pub.requestDeletion(None)
         ds_diff.update()
 
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
@@ -152,8 +152,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         ds_diff = self.factory.makeDistroSeriesDifference(
             difference_type=(
                 DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES))
-        with celebrity_logged_in('admin'):
-            ds_diff.parent_source_pub.status = PackagePublishingStatus.DELETED
+        removeSecurityProxy(ds_diff).parent_source_pub.status = (
+            PackagePublishingStatus.DELETED)
         ds_diff.update()
 
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')

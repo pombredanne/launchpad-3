@@ -18,7 +18,6 @@ from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import JobRunner
 from lp.services.job.tests import block_on_job
-from lp.services.webapp.testing import verifyObject
 from lp.soyuz.interfaces.processacceptedbugsjob import (
     IProcessAcceptedBugsJob,
     IProcessAcceptedBugsJobSource,
@@ -30,6 +29,7 @@ from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     run_script,
     TestCaseWithFactory,
+    verifyObject,
     )
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test native archive index generation for Soyuz."""
@@ -18,6 +18,15 @@ def get_field(stanza_fields, name):
 
 
 class TestNativeArchiveIndexes(TestNativePublishingBase):
+
+    deb_md5 = '008409e7feb1c24a6ccab9f6a62d24c5'
+    deb_sha1 = '30b7b4e583fa380772c5a40e428434628faef8cf'
+    deb_sha256 = (
+        '006ca0f356f54b1916c24c282e6fd19961f4356441401f4b0966f2a00bb3e945')
+    dsc_md5 = '5913c3ad52c14a62e6ae7eef51f9ef42'
+    dsc_sha1 = 'e35e29b2ea94bbaa831882e11d1f456690f04e69'
+    dsc_sha256 = (
+        'ac512102db9724bee18f26945efeeb82fdab89819e64e120fbfda755ca50c2c6')
 
     def setUp(self):
         """Setup global attributes."""
@@ -55,17 +64,28 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Format: 1.0',
              u'Directory: pool/main/f/foo',
              u'Files:',
-             u' 5913c3ad52c14a62e6ae7eef51f9ef42 28 foo_666.dsc'],
+             u' %s 28 foo_666.dsc' % self.dsc_md5,
+             u'Checksums-Sha1:',
+             u' %s 28 foo_666.dsc' % self.dsc_sha1,
+             u'Checksums-Sha256:',
+             u' %s 28 foo_666.dsc' % self.dsc_sha256,
+             ],
             pub_source.getIndexStanza().splitlines())
 
     def testSourceStanzaCustomFields(self):
         """Check just-created source publication Index stanza
         with custom fields (Python-Version).
+
+        A field is excluded if its key case-insensitively matches one that's
+        already there. This mostly affects sources that were uploaded before
+        Homepage, Checksums-Sha1 or Checksums-Sha256 were excluded.
         """
         pub_source = self.getPubSource(
             builddepends='fooish', builddependsindep='pyfoo',
             build_conflicts='bar', build_conflicts_indep='pybar',
-            user_defined_fields=[("Python-Version", "< 1.5")])
+            user_defined_fields=[
+                ("Python-Version", "< 1.5"),
+                ("CHECKSUMS-SHA1", "BLAH")])
 
         self.assertEqual(
             [u'Package: foo',
@@ -82,7 +102,11 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Format: 1.0',
              u'Directory: pool/main/f/foo',
              u'Files:',
-             u' 5913c3ad52c14a62e6ae7eef51f9ef42 28 foo_666.dsc',
+             u' %s 28 foo_666.dsc' % self.dsc_md5,
+             u'Checksums-Sha1:',
+             u' %s 28 foo_666.dsc' % self.dsc_sha1,
+             u'Checksums-Sha256:',
+             u' %s 28 foo_666.dsc' % self.dsc_sha256,
              u'Python-Version: < 1.5'],
             pub_source.getIndexStanza().splitlines())
 
@@ -95,7 +119,8 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
         pub_binaries = self.getPubBinaries(
             depends='biscuit', recommends='foo-dev', suggests='pyfoo',
             conflicts='old-foo', replaces='old-foo', provides='foo-master',
-            pre_depends='master-foo', enhances='foo-super', breaks='old-foo')
+            pre_depends='master-foo', enhances='foo-super', breaks='old-foo',
+            phased_update_percentage=50)
         pub_binary = pub_binaries[0]
         self.assertEqual(
             [u'Package: foo-bin',
@@ -117,8 +142,10 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Breaks: old-foo',
              u'Filename: pool/main/f/foo/foo-bin_666_all.deb',
              u'Size: 18',
-             u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
-             u'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             u'MD5sum: ' + self.deb_md5,
+             u'SHA1: ' + self.deb_sha1,
+             u'SHA256: ' + self.deb_sha256,
+             u'Phased-Update-Percentage: 50',
              u'Description: Foo app is great',
              u' Well ...',
              u' it does nothing, though'],
@@ -155,8 +182,9 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Breaks: old-foo',
              u'Filename: pool/main/f/foo/foo-bin_666_all.deb',
              u'Size: 18',
-             u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
-             u'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             u'MD5sum: ' + self.deb_md5,
+             u'SHA1: ' + self.deb_sha1,
+             u'SHA256: ' + self.deb_sha256,
              u'Description: Foo app is great',
              u' Well ...',
              u' it does nothing, though',
@@ -201,8 +229,9 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Version: 666',
              u'Filename: pool/main/f/foo/foo-bin_666_all.deb',
              u'Size: 18',
-             u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
-             u'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             u'MD5sum: ' + self.deb_md5,
+             u'SHA1: ' + self.deb_sha1,
+             u'SHA256: ' + self.deb_sha256,
              u'Description: Foo app is great',
              u' Normal',
              u' Normal',
@@ -237,8 +266,9 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Version: 666',
              u'Filename: pool/main/f/foo/foo-bin_666_all.deb',
              u'Size: 18',
-             u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
-             u'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             u'MD5sum: ' + self.deb_md5,
+             u'SHA1: ' + self.deb_sha1,
+             u'SHA256: ' + self.deb_sha256,
              u'Description: Foo app is great',
              u' Using non-ascii as: \xe7\xe3\xe9\xf3',
              ],
@@ -422,7 +452,6 @@ class TestIndexStanzaFieldsHelper(unittest.TestCase):
         fields.append('one', 'um')
         fields.append('three', 'tres')
         fields.append('two', 'dois')
-        fields.append(None, None)
 
         self.assertEqual(
             ['one: um', 'three: tres', 'two: dois',

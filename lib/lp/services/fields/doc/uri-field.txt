@@ -176,7 +176,7 @@ standard text widget with the following differences:
 
 This widget is registered as an input widget:
 
-  >>> from zope.app.form.interfaces import IInputWidget
+  >>> from zope.formlib.interfaces import IInputWidget
   >>> from zope.component import getMultiAdapter
   >>> from lp.app.widgets.textwidgets import URIWidget
   >>> from lp.services.webapp.servers import LaunchpadTestRequest

@@ -8,8 +8,9 @@ The collection of stuff we have traversed.
 """
 __metaclass__ = type
 
+import threading
+
 import pytz
-from zope import thread
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -55,7 +56,7 @@ class LaunchBag:
         IBugTask: 'bugtask',
         }
 
-    _store = thread.local()
+    _store = threading.local()
 
     def setLogin(self, login):
         '''See IOpenLaunchBag.'''
@@ -158,13 +159,6 @@ class LaunchBag:
                 # fall back to UTC
                 self._store.time_zone = _utc_tz
         return self._store.time_zone
-
-
-class LaunchBagView(object):
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.bag = getUtility(ILaunchBag)
 
 
 def set_login_in_launchbag_when_principal_identified(event):

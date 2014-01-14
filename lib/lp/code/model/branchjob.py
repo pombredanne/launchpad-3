@@ -99,23 +99,24 @@ from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
+    IMasterStore,
+    IStore,
     )
 from lp.services.database.locking import (
     AdvisoryLockHeld,
     LockType,
     try_advisory_lock,
     )
-from lp.services.database.lpstorm import IStore
 from lp.services.database.sqlbase import SQLBase
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import (
     EnumeratedSubclass,
     Job,
     )
-from lp.services.job.runner import BaseRunnableJob
+from lp.services.job.runner import (
+    BaseRunnableJob,
+    BaseRunnableJobSource,
+    )
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.webapp import (
     canonical_url,
@@ -264,8 +265,7 @@ class BranchJobDerived(BaseRunnableJob):
     @classmethod
     def iterReady(cls):
         """See `IRevisionMailJobSource`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        jobs = store.find(
+        jobs = IMasterStore(Branch).find(
             (BranchJob),
             And(BranchJob.job_type == cls.class_job_type,
                 BranchJob.job == Job.id,
@@ -313,7 +313,9 @@ class BranchScanJob(BranchJobDerived):
 
     retry_error_types = (AdvisoryLockHeld,)
 
-    config = config.branchscanner
+    task_queue = 'bzrsyncd_job'
+
+    config = config.IBranchScanJobSource
 
     @classmethod
     def create(cls, branch):
@@ -340,13 +342,6 @@ class BranchScanJob(BranchJobDerived):
                 log.warning('Skipping branch %s because it has been deleted.'
                     % self._cached_branch_name)
 
-    @classmethod
-    @contextlib.contextmanager
-    def contextManager(cls):
-        """See `IBranchScanJobSource`."""
-        errorlog.globalErrorUtility.configure('branchscanner')
-        yield
-
 
 class BranchUpgradeJob(BranchJobDerived):
     """A Job that upgrades branches to the current stable format."""
@@ -360,7 +355,7 @@ class BranchUpgradeJob(BranchJobDerived):
 
     task_queue = 'branch_write_job'
 
-    config = config.upgrade_branches
+    config = config.IBranchUpgradeJobSource
 
     def getOperationDescription(self):
         return 'upgrading a branch'
@@ -372,13 +367,6 @@ class BranchUpgradeJob(BranchJobDerived):
         branch_job = BranchJob(
             branch, cls.class_job_type, {}, requester=requester)
         return cls(branch_job)
-
-    @staticmethod
-    @contextlib.contextmanager
-    def contextManager():
-        """See `IBranchUpgradeJobSource`."""
-        errorlog.globalErrorUtility.configure('upgrade_branches')
-        yield
 
     def run(self, _check_transaction=False):
         """See `IBranchUpgradeJob`."""
@@ -446,7 +434,7 @@ class RevisionMailJob(BranchJobDerived):
 
     class_job_type = BranchJobType.REVISION_MAIL
 
-    config = config.sendbranchmail
+    config = config.IRevisionMailJobSource
 
     @classmethod
     def create(cls, branch, revno, from_address, body, subject):
@@ -493,7 +481,7 @@ class RevisionsAddedJob(BranchJobDerived):
 
     class_job_type = BranchJobType.REVISIONS_ADDED_MAIL
 
-    config = config.sendbranchmail
+    config = config.IRevisionsAddedJobSource
 
     @classmethod
     def create(cls, branch, last_scanned_id, last_revision_id,
@@ -752,7 +740,9 @@ class RosettaUploadJob(BranchJobDerived):
 
     class_job_type = BranchJobType.ROSETTA_UPLOAD
 
-    config = config.rosettabranches
+    task_queue = 'bzrsyncd_job'
+
+    config = config.IRosettaUploadJobSource
 
     def __init__(self, branch_job):
         super(RosettaUploadJob, self).__init__(branch_job)
@@ -953,8 +943,7 @@ class RosettaUploadJob(BranchJobDerived):
     @staticmethod
     def iterReady():
         """See `IRosettaUploadJobSource`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        jobs = store.using(BranchJob, Job, Branch).find(
+        jobs = IMasterStore(BranchJob).using(BranchJob, Job, Branch).find(
             (BranchJob),
             And(BranchJob.job_type == BranchJobType.ROSETTA_UPLOAD,
                 BranchJob.job == Job.id,
@@ -966,7 +955,7 @@ class RosettaUploadJob(BranchJobDerived):
     @staticmethod
     def findUnfinishedJobs(branch, since=None):
         """See `IRosettaUploadJobSource`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        store = IMasterStore(BranchJob)
         match = And(
             Job.id == BranchJob.jobID,
             BranchJob.branch == branch,
@@ -979,7 +968,7 @@ class RosettaUploadJob(BranchJobDerived):
         return jobs
 
 
-class ReclaimBranchSpaceJob(BranchJobDerived):
+class ReclaimBranchSpaceJob(BranchJobDerived, BaseRunnableJobSource):
     """Reclaim the disk space used by a branch that's deleted from the DB."""
 
     implements(IReclaimBranchSpaceJob)
@@ -990,7 +979,7 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
 
     task_queue = 'branch_write_job'
 
-    config = config.reclaimbranchspace
+    config = config.IReclaimBranchSpaceJobSource
 
     def __repr__(self):
         return '<RECLAIM_BRANCH_SPACE branch job (%(id)s) for %(branch)s>' % {

@@ -10,7 +10,7 @@ specific Storm tools to cope with our master and slave store arrangement.
     ...     EmailAddressStatus,
     ...     IEmailAddressSet,
     ...     )
-    >>> from lp.services.database.lpstorm import (
+    >>> from lp.services.database.interfaces import (
     ...     IMasterObject,
     ...     IMasterStore,
     ...     ISlaveStore,

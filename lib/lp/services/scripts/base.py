@@ -286,23 +286,8 @@ class LaunchpadScript:
         try:
             self.lock.acquire(blocking=blocking)
         except LockAlreadyAcquired:
-            self.logger.debug('Lockfile %s in use' % self.lockfilepath)
-            sys.exit(1)
-
-    @log_unhandled_exception_and_exit
-    def lock_or_quit(self, blocking=False):
-        """Attempt to lock, and sys.exit(0) if the lock's already taken.
-
-        For certain scripts the fact that a lock may already be acquired
-        is a normal condition that does not warrant an error log or a
-        non-zero exit code. Use this method if this is your case.
-        """
-        self.setup_lock()
-        try:
-            self.lock.acquire(blocking=blocking)
-        except LockAlreadyAcquired:
             self.logger.info('Lockfile %s in use' % self.lockfilepath)
-            sys.exit(0)
+            sys.exit(1)
 
     @log_unhandled_exception_and_exit
     def unlock(self, skip_delete=False):

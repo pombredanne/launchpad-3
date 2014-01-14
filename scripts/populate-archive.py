@@ -3,7 +3,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0403
 """Create a copy archive and populate it with packages.
 
     Please note: the destination copy archive must not exist yet. Otherwise

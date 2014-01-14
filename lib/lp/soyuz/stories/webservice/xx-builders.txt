@@ -33,8 +33,10 @@ Each builder has a number of properties exposed:
     failure_count
     manual
     name
+    processors
     title
     url
+    version
     virtualized
     vm_host
 

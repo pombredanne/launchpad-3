@@ -383,7 +383,7 @@
         class="lp.translations.model.translationtemplateitem.TranslationTemplateItem">
         <allow
             interface="lp.translations.interfaces.translationtemplateitem.ITranslationTemplateItem"/>
-        <require permission="launchpad.Admin" set_attributes="potmsgset"/>
+        <require permission="launchpad.InternalScriptsOnly" set_attributes="potmsgset"/>
     </class>
 
     <!-- ProductSeriesLanguage -->
@@ -512,7 +512,7 @@
              IPOTMsgSets outside of its usual security proxy environment. -->
 
         <require
-            permission="launchpad.Admin"
+            permission="launchpad.InternalScriptsOnly"
             set_attributes="commenttext sourcecomment filereferences flagscomment"/>
     </class>
 
@@ -591,19 +591,6 @@
             interface="lp.translations.interfaces.poexportrequest.IPOExportRequestSet"/>
     </securedutility>
 
-    <!-- TranslationTemplateBuildJob -->
-    <class
-        class="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob">
-        <allow
-            interface="lp.buildmaster.interfaces.buildfarmbranchjob.IBuildFarmBranchJob"/>
-        <allow
-            interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobOld"/>
-    </class>
-    <securedutility
-        component="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob"
-        provides="lp.translations.interfaces.translationtemplatesbuildjob.ITranslationTemplatesBuildJobSource">
-        <allow interface="lp.translations.interfaces.translationtemplatesbuildjob.ITranslationTemplatesBuildJobSource"/>
-    </securedutility>
     <securedutility
         component='lp.translations.model.translationpackagingjob.TranslationPackagingJob'
         provides='lp.translations.interfaces.translationpackagingjob.ITranslationPackagingJobSource'
@@ -623,21 +610,11 @@
         class="lp.translations.model.translationpackagingjob.TranslationTemplateChangeJob">
         <allow interface='lp.services.job.interfaces.job.IRunnableJob'/>
     </class>
-    <utility
-        component="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob"
-        provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"
-        name="TRANSLATIONTEMPLATESBUILD"/>
 
     <!-- TranslationTemplatesBuild -->
     <class
         class="lp.translations.model.translationtemplatesbuild.TranslationTemplatesBuild">
         <require permission="launchpad.View" interface="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuild"/>
-        <!-- This is needed for BuildManager to run. The permission isn't
-             important; launchpad.Edit isn't actually held by anybody.
-             Inspired by the similar change for SourcePackageRecipeBuild. -->
-        <require permission="launchpad.Edit"
-            set_attributes="builder date_finished date_started log status" />
-
     </class>
     <securedutility
         component="lp.translations.model.translationtemplatesbuild.TranslationTemplatesBuild"
@@ -660,7 +637,7 @@
 
     <adapter
         provides="lp.buildmaster.interfaces.buildfarmjobbehavior.IBuildFarmJobBehavior"
-        for="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob"
+        for="lp.translations.model.translationtemplatesbuild.TranslationTemplatesBuild"
         factory="lp.translations.model.translationtemplatesbuildbehavior.TranslationTemplatesBuildBehavior"
         />
 

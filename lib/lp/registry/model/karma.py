@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 __metaclass__ = type
 __all__ = [
     'Karma',
@@ -23,7 +21,6 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from sqlobject.sqlbuilder import AND
 from storm.expr import Desc
 from zope.interface import implements
 
@@ -44,7 +41,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -185,16 +182,14 @@ class KarmaCacheManager:
 
         Return None if it's not found.
         """
-        # Can't use selectBy() because product/distribution/sourcepackagename
-        # may be None.
-        query = AND(
-            KarmaCache.q.personID == person_id,
-            KarmaCache.q.categoryID == category_id,
-            KarmaCache.q.productID == product_id,
-            KarmaCache.q.projectID == project_id,
-            KarmaCache.q.distributionID == distribution_id,
-            KarmaCache.q.sourcepackagenameID == sourcepackagename_id)
-        return KarmaCache.selectOne(query)
+        return IStore(KarmaCache).find(
+            KarmaCache,
+            KarmaCache.personID == person_id,
+            KarmaCache.categoryID == category_id,
+            KarmaCache.productID == product_id,
+            KarmaCache.projectID == project_id,
+            KarmaCache.distributionID == distribution_id,
+            KarmaCache.sourcepackagenameID == sourcepackagename_id).one()
 
 
 class KarmaTotalCache(SQLBase):

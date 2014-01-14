@@ -63,7 +63,7 @@ The distroseries 'changeslist' field only accept valid email addresses.
     >>> form['field.changeslist'] = ''
     >>> administrate_distroseries(hoary, form)
     1 errors
-    E-mail changes to:
+    E-mail changes to: changeslist
     Name: hoary
     Version: 5.04
     Changeslist: hoary-changes@ubuntu.com

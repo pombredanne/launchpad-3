@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person interfaces."""
@@ -582,8 +582,7 @@ class IPersonPublic(IPrivacy):
         Choice(title=_("Visibility"),
                description=_(
                    "Anyone can see a public team's data. Only team members "
-                   "and Launchpad admins can see private team data. "
-                   "Private teams cannot become public."),
+                   "can see private team data."),
                required=True, vocabulary=PersonVisibility,
                default=PersonVisibility.PUBLIC, readonly=True))
 
@@ -1052,7 +1051,7 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         """
 
     def getVisiblePPAs(user):
-        """Return the PPAs for which user has launchpad.View permission."""
+        """Return active PPAs for which user has launchpad.View permission."""
 
     def getInvitedMemberships():
         """Return all TeamMemberships of this team with the INVITED status.
@@ -1271,13 +1270,6 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
     def hasUploadedPPAPackages():
         """Are there `SourcePackageRelease`s uploaded by this person to any
         PPA.
-        """
-
-    def isUploader(distribution):
-        """Return whether this person is an uploader for distribution.
-
-        Returns True if this person is an uploader for distribution, or
-        False otherwise.
         """
 
     def validateAndEnsurePreferredEmail(email):
@@ -1762,33 +1754,28 @@ class IPersonEditRestricted(Interface):
 class IPersonSpecialRestricted(Interface):
     """IPerson methods that require launchpad.Special permission to use."""
 
-    def canDeactivateAccount():
+    def canDeactivate():
         """Verify we safely deactivate this user account.
 
-        :return: True if the person can be deactivated, False otherwise.
+        :return: A possibly empty list which contains error messages.
         """
 
-    def canDeactivateAccountWithErrors():
-        """See canDeactivateAccount with the addition of error messages for
-        why the account cannot be deactivated.
+    def preDeactivate(comment):
+        """Perform the easy work in deactivating a user."""
 
-        :return tuple: boolean, list of error messages.
-        """
-
-    def deactivateAccount(comment, can_deactivate=None):
+    def deactivate(comment=None, validate=True, pre_deactivate=True):
         """Deactivate this person's Launchpad account.
 
         Deactivating an account means:
-            - Removing the user from all teams he's a member of;
-            - Changing all his email addresses' status to NEW;
+            - Removing the user from all teams they are a member of;
+            - Changing all of their email addresses' status to NEW;
             - Revoking Code of Conduct signatures of that user;
-            - Reassigning bugs/specs assigned to him;
-            - Changing the ownership of products/projects/teams owned by him.
+            - Reassigning bugs/specs assigned to that user;
+            - Changing the ownership of products/projects/teams owned by that
+              user.
 
         :param comment: An explanation of why the account status changed.
-        :param can_deactivate: Override the check if we can deactivate by
-            supplying a known value. If None, then the method will run the
-            checks.
+        :param validate: Run validation checks.
         """
 
     def reactivate(comment, preferred_email):
@@ -1798,7 +1785,7 @@ class IPersonSpecialRestricted(Interface):
         address.
 
         If the person's name contains a -deactivatedaccount suffix (usually
-        added by `IPerson`.deactivateAccount(), it is removed.
+        added by `IPerson`.deactivate(), it is removed.
 
         :param comment: An explanation of why the account status changed.
         :param preferred_email: The `EmailAddress` to set as the account's
@@ -2191,7 +2178,7 @@ class IPersonSet(Interface):
     def getByAccount(account):
         """Return the `IPerson` with the given account, or None."""
 
-    def updateStatistics(ztm):
+    def updateStatistics():
         """Update statistics caches and commit."""
 
     def peopleCount():
@@ -2293,38 +2280,6 @@ class IPersonSet(Interface):
         :param reviewer: An IPerson who approved the ITeam merger.
         :param delete: The merge is really a deletion.
         :return: A `PersonMergeJob` or None.
-        """
-
-    def delete(from_person, reviewer):
-        """Delete a person/team.
-
-        The old team (from_person) will be left as an atavism.
-
-        Deleting a person is not supported at this time.
-
-        When deleting teams, from_person must have no IMailingLists
-        associated with and no active members. Any active team members will be
-        deactivated.
-
-        :param from_person: An IPerson or ITeam that is a duplicate.
-        :param reviewer: An IPerson who approved the ITeam merger.
-        """
-
-    def merge(from_person, to_person, reviewer=None):
-        """Merge a person/team into another.
-
-        The old person/team (from_person) will be left as an atavism.
-
-        When merging two person entries, from_person can't have email
-        addresses associated with.
-
-        When merging teams, from_person must have no IMailingLists
-        associated with it. If it has active members they will be deactivated
-        - and reviewer must be supplied.
-
-        :param from_person: An IPerson or ITeam that is a duplicate.
-        :param to_person: An IPerson or ITeam that is a master.
-        :param reviewer: An IPerson who approved the ITeam merger.
         """
 
     def getValidPersons(persons):

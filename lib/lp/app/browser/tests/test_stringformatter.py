@@ -22,7 +22,11 @@ from lp.app.browser.stringformatter import (
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import ILaunchBag
-from lp.testing import TestCase
+from lp.services.webapp.publisher import canonical_url
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.pages import find_tags_by_class
 
@@ -160,7 +164,9 @@ class TestLinkifyingBugs(TestCase):
             linkify_bug_numbers(text))
 
 
-class TestLinkifyingProtocols(TestCase):
+class TestLinkifyingProtocols(TestCaseWithFactory):
+    
+    layer = DatabaseFunctionalLayer
 
     def test_normal_set(self):
         test_strings = [
@@ -271,6 +277,18 @@ class TestLinkifyingProtocols(TestCase):
             'http://example.com/&lt;/a&gt;</p>')
         self.assertEqual(expected_html, html)
 
+    def test_double_email_in_linkify_email(self):
+        person = self.factory.makePerson(email='foo@example.org')
+        test_string = (
+            ' * Foo. &lt;foo@example.org&gt;\n * Bar &lt;foo@example.org&gt;')
+        html = FormattersAPI(test_string).linkify_email()
+        url = canonical_url(person)
+        expected_html = (
+            ' * Foo. &lt;<a href="%s" class="sprite person">foo@example.org'
+            '</a>&gt;\n * Bar &lt;<a href="%s" class="sprite person">'
+            'foo@example.org</a>&gt;' % (url, url))
+        self.assertEqual(expected_html, html)
+
 
 class TestLastParagraphClass(TestCase):
 
@@ -292,15 +310,16 @@ class TestDiffFormatter(TestCase):
     def test_almostEmptyString(self):
         # White space doesn't count as empty, and is formtted.
         self.assertEqual(
-            '<table class="diff"><tr><td class="line-no">1</td>'
-            '<td class="text"> </td></tr></table>',
+            '<table class="diff"><tr id="diff-line-1">'
+            '<td class="line-no">1</td><td class="text"> </td></tr></table>',
             FormattersAPI(' ').format_diff())
 
     def test_format_unicode(self):
         # Sometimes the strings contain unicode, those should work too.
         self.assertEqual(
-            u'<table class="diff"><tr><td class="line-no">1</td>'
-            u'<td class="text">Unicode \u1010</td></tr></table>',
+            u'<table class="diff"><tr id="diff-line-1">'
+            u'<td class="line-no">1</td><td class="text">'
+            u'Unicode \u1010</td></tr></table>',
             FormattersAPI(u'Unicode \u1010').format_diff())
 
     def test_cssClasses(self):

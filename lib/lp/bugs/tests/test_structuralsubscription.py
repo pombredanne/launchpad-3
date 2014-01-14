@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `StructuralSubscription`."""
@@ -81,27 +81,26 @@ class TestStructuralSubscription(TestCaseWithFactory):
     def test_delete_cascades_to_filters(self):
         with person_logged_in(self.product.owner):
             subscription_id = self.subscription.id
-            self.subscription.newBugFilter()
+            bugfilter = self.subscription.newBugFilter()
+            bugfilter.information_types = [InformationType.USERDATA]
             self.subscription.delete()
             self.assertEqual(
                 self.product.getSubscription(self.product.owner), None)
-            store = Store.of(self.product)
             # We know that the filter is gone, because we know the
             # subscription is gone, and the database would have
             # prevented the deletion of a subscription without first
             # deleting the filters.  We'll double-check, to be sure.
-            self.assertEqual(
-                store.find(
-                    BugSubscriptionFilter,
-                    BugSubscriptionFilter.structural_subscription_id ==
-                        subscription_id).one(),
-                None)
+            bugfilter = Store.of(self.product).find(
+                BugSubscriptionFilter,
+                BugSubscriptionFilter.structural_subscription_id ==
+                    subscription_id).one()
+            self.assertIsNone(bugfilter)
 
     def test_bug_filters_default(self):
         # The bug_filters attribute has a default non-filtering bug filter
         # to begin with.
-        self.assertEqual([self.original_filter],
-                         list(self.subscription.bug_filters))
+        self.assertEqual(
+            [self.original_filter], list(self.subscription.bug_filters))
 
     def test_bug_filters(self):
         # The bug_filters attribute returns the BugSubscriptionFilter records

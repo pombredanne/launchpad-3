@@ -14,7 +14,7 @@ The class that implements ExternalBugTracker is called Bugzilla.
     >>> from lp.bugs.externalbugtracker import Bugzilla
     >>> from lp.bugs.interfaces.externalbugtracker import (
     ...     IExternalBugTracker)
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
 
     >>> external_bugzilla = Bugzilla('http://example.com')
     >>> verifyObject(IExternalBugTracker, external_bugzilla)

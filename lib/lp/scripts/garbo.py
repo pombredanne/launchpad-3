@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
@@ -18,7 +18,6 @@ from datetime import (
     )
 import logging
 import multiprocessing
-from operator import itemgetter
 import os
 import threading
 import time
@@ -40,9 +39,7 @@ from storm.expr import (
     Min,
     Or,
     Row,
-    Select,
     SQL,
-    Update,
     )
 from storm.info import ClassAlias
 from storm.store import EmptyResultSet
@@ -63,6 +60,10 @@ from lp.bugs.scripts.checkwatches.scheduler import (
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.code.model.diff import (
+    Diff,
+    PreviewDiff,
+    )
 from lp.code.model.revision import (
     RevisionAuthor,
     RevisionCache,
@@ -79,12 +80,7 @@ from lp.services.database.bulk import (
     dbify_value,
     )
 from lp.services.database.constants import UTC_NOW
-from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 from lp.services.database.sqlbase import (
     cursor,
     session_store,
@@ -123,7 +119,6 @@ from lp.services.session.model import SessionData
 from lp.services.verification.model.logintoken import LoginToken
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-from lp.soyuz.model.queue import PackageUpload
 from lp.soyuz.model.reporting import LatestPersonSourcePackageReleaseCache
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.interfaces.potemplate import IPOTemplateSet
@@ -146,8 +141,7 @@ ONE_DAY_IN_SECONDS = 24 * 60 * 60
 # provide convenient access to that state data.
 def load_garbo_job_state(job_name):
     # Load the json state data for the given job name.
-    store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-    job_data = store.execute(
+    job_data = IMasterStore(Person).execute(
         "SELECT json_data FROM GarboJobState WHERE name = ?",
         params=(unicode(job_name),)).get_one()
     if job_data:
@@ -157,7 +151,7 @@ def load_garbo_job_state(job_name):
 
 def save_garbo_job_state(job_name, job_data):
     # Save the json state data for the given job name.
-    store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+    store = IMasterStore(Person)
     json_data = simplejson.dumps(job_data, ensure_ascii=False)
     result = store.execute(
         "UPDATE GarboJobState SET json_data = ? WHERE name = ?",
@@ -381,6 +375,32 @@ class OAuthNoncePruner(BulkPruner):
         """
 
 
+class PreviewDiffPruner(BulkPruner):
+    """A BulkPruner to remove old PreviewDiffs.
+
+    We remove all but the latest PreviewDiff for each BranchMergeProposal.
+    """
+    target_table_class = PreviewDiff
+    ids_to_prune_query = """
+        SELECT id
+            FROM
+            (SELECT PreviewDiff.id,
+                rank() OVER (PARTITION BY PreviewDiff.branch_merge_proposal
+                ORDER BY PreviewDiff.date_created DESC) AS pos
+            FROM previewdiff) AS ss
+        WHERE pos > 1
+        """
+
+
+class DiffPruner(BulkPruner):
+    """A BulkPruner to remove all unreferenced Diffs."""
+    target_table_class = Diff
+    ids_to_prune_query = """
+        SELECT id FROM diff EXCEPT (SELECT diff FROM previewdiff UNION ALL
+            SELECT diff FROM incrementaldiff)
+        """
+
+
 class UnlinkedAccountPruner(BulkPruner):
     """Remove Account records not linked to a Person."""
     target_table_class = Account
@@ -403,7 +423,7 @@ class BugSummaryJournalRollup(TunableLoop):
 
     def __init__(self, log, abort_time=None):
         super(BugSummaryJournalRollup, self).__init__(log, abort_time)
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store = IMasterStore(Bug)
 
     def isDone(self):
         has_more = self.store.execute(
@@ -429,7 +449,7 @@ class VoucherRedeemer(TunableLoop):
 
     def __init__(self, log, abort_time=None):
         super(VoucherRedeemer, self).__init__(log, abort_time)
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store = IMasterStore(CommercialSubscription)
 
     @cachedproperty
     def _salesforce_proxy(self):
@@ -495,7 +515,7 @@ class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
     def __init__(self, log, abort_time=None):
         super_cl = super(PopulateLatestPersonSourcePackageReleaseCache, self)
         super_cl.__init__(log, abort_time)
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store = IMasterStore(LatestPersonSourcePackageReleaseCache)
         # Keep a record of the processed source package release id and data
         # type (creator or maintainer) so we know where to job got up to.
         self.last_spph_id = 0
@@ -654,7 +674,7 @@ class OpenIDConsumerNoncePruner(TunableLoop):
 
     def __init__(self, log, abort_time=None):
         super(OpenIDConsumerNoncePruner, self).__init__(log, abort_time)
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store = IMasterStore(OpenIDConsumerNonce)
         self.earliest_timestamp = self.store.find(
             Min(OpenIDConsumerNonce.timestamp)).one()
         utc_now = int(time.mktime(time.gmtime()))
@@ -690,7 +710,7 @@ class OpenIDConsumerAssociationPruner(TunableLoop):
 
     def __init__(self, log, abort_time=None):
         super(OpenIDConsumerAssociationPruner, self).__init__(log, abort_time)
-        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store = IMasterStore(OpenIDConsumerNonce)
 
     def __call__(self, chunksize):
         result = self.store.execute("""
@@ -1339,131 +1359,6 @@ class UnusedAccessPolicyPruner(TunableLoop):
         transaction.commit()
 
 
-class PopulatePackageUploadSearchables(TunableLoop):
-    """Populates PackageUpload.searchable_names and
-    PackageUpload.searchable_versions."""
-
-    maximum_chunk_size = 5000
-
-    def __init__(self, log, abort_time=None):
-        super(PopulatePackageUploadSearchables, self).__init__(log, abort_time)
-        self.start_at = 1
-        self.store = IMasterStore(PackageUpload)
-
-    def findPackageUploadIDs(self):
-        return self.store.find(
-            (PackageUpload.id,),
-            Or(PackageUpload.searchable_names == None,
-            PackageUpload.searchable_versions == None),
-            PackageUpload.id >= self.start_at).order_by(PackageUpload.id)
-
-    def isDone(self):
-        return self.findPackageUploadIDs().is_empty()
-
-    def __call__(self, chunk_size):
-        packageupload_ids = map(
-            itemgetter(0), list(self.findPackageUploadIDs()[:chunk_size]))
-        # The following SQL links from PU[SBC] to fetch all of the relevant
-        # source names, binary names, libraryfile filenames and their versions.
-        results = self.store.find(
-            (PackageUpload.id, SQL("""
-            (SELECT COALESCE(
-                string_agg(DISTINCT name, ' ' ORDER BY name), '') FROM (
-                (SELECT spn.name
-                    FROM
-                        packageuploadbuild
-                        JOIN binarypackagebuild AS bpb ON
-                        bpb.id = packageuploadbuild.build
-                        JOIN sourcepackagerelease AS spr ON
-                        spr.id = bpb.source_package_release
-                        JOIN sourcepackagename AS spn ON
-                        spn.id = spr.sourcepackagename
-                    WHERE packageuploadbuild.packageupload = packageupload.id
-                )
-                UNION
-                (SELECT bpn.name
-                    FROM
-                        packageuploadbuild
-                        JOIN binarypackagerelease ON
-                        binarypackagerelease.build = packageuploadbuild.build
-                        JOIN binarypackagename AS bpn ON
-                        bpn.id = binarypackagerelease.binarypackagename
-                    WHERE packageuploadbuild.packageupload = packageupload.id
-                )
-                UNION
-                (SELECT sourcepackagename.name
-                    FROM
-                        packageuploadsource
-                        JOIN sourcepackagerelease AS spr ON
-                        spr.id = packageuploadsource.sourcepackagerelease
-                        JOIN sourcepackagename ON
-                        sourcepackagename.id = spr.sourcepackagename
-                    WHERE packageuploadsource.packageupload = packageupload.id
-                )
-                UNION
-                (SELECT lfa.filename
-                    FROM
-                        packageuploadcustom
-                        JOIN libraryfilealias AS lfa ON
-                        lfa.id = packageuploadcustom.libraryfilealias
-                    WHERE packageuploadcustom.packageupload = packageupload.id
-                )
-                UNION
-                (SELECT package_name FROM packagecopyjob
-                WHERE packageupload.package_copy_job = packagecopyjob.id
-        )) AS names (name))
-        """), SQL("""
-        (SELECT COALESCE(array_agg(DISTINCT version ORDER BY version)::text[],
-            ARRAY[]::text[]) FROM (
-            (
-                SELECT spr.version
-                FROM packageuploadsource
-                    JOIN sourcepackagerelease AS spr ON
-                        spr.id = packageuploadsource.sourcepackagerelease
-                WHERE packageuploadsource.packageupload = packageupload.id
-            )
-            UNION
-            (
-                SELECT binarypackagerelease.version
-                FROM packageuploadbuild
-                    JOIN binarypackagerelease ON
-                        binarypackagerelease.build = packageuploadbuild.build
-                WHERE packageuploadbuild.packageupload = packageupload.id
-            )
-            UNION
-            (
-                SELECT (regexp_matches(json_data,
-                    '"package_version": "([^"]+)"')::debversion[])[1]
-                FROM packagecopyjob
-                WHERE packageupload.package_copy_job = packagecopyjob.id
-            )) AS versions (version))
-        """)), PackageUpload.id.is_in(packageupload_ids))
-        # Construct our cache data and populate our Values expression.
-        cache_data = ClassAlias(PackageUpload, "cache_data")
-        updated_columns = dict(
-            [(PackageUpload.searchable_names, cache_data.searchable_names),
-            (PackageUpload.searchable_versions,
-                cache_data.searchable_versions)])
-        values = [
-            [dbify_value(col, val)[0]
-            for (col, val) in zip(
-                (PackageUpload.id, PackageUpload.searchable_names,
-                PackageUpload.searchable_versions), data)]
-            for data in results]
-        cols = [
-            ('id', 'integer'), ('searchable_names', 'text'),
-            ('searchable_versions', 'text[]')]
-        cache_data_expr = Values('cache_data', cols, values)
-        # Using the PackageUpload table, and the pseudo-table Values, set
-        # updated_columns for every row in this loop.
-        self.store.execute(
-            BulkUpdate(
-                updated_columns, table=PackageUpload, values=cache_data_expr,
-                where=PackageUpload.id == cache_data.id))
-        self.start_at = packageupload_ids[-1] + 1
-        transaction.commit()
-
-
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1537,9 +1432,8 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
             else:
                 break
 
-        # If the script ran out of time, warn.
         if self.get_remaining_script_time() < 0:
-            self.logger.warn(
+            self.logger.info(
                 "Script aborted after %d seconds.", self.script_timeout)
 
         if tunable_loops:
@@ -1719,7 +1613,6 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
-        PopulatePackageUploadSearchables,
         ]
     experimental_tunable_loops = []
 
@@ -1756,6 +1649,8 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         UnlinkedAccountPruner,
         UnusedAccessPolicyPruner,
         UnusedPOTMsgSetPruner,
+        PreviewDiffPruner,
+        DiffPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,

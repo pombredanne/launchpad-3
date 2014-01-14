@@ -24,7 +24,7 @@ from lp.services.database.bulk import (
     load,
     load_related,
     )
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.looptuner import TunableLoop
 from lp.services.worlddata.model.language import Language
 from lp.translations.model.pofile import POFile

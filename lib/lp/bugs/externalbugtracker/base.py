@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """External bugtrackers."""
@@ -141,7 +141,9 @@ class ExternalBugTracker:
 
     batch_size = None
     batch_query_threshold = config.checkwatches.batch_query_threshold
+    timeout = config.checkwatches.default_socket_timeout
     comment_template = 'default_remotecomment_template.txt'
+    url_opener = None
 
     def __init__(self, baseurl):
         self.baseurl = baseurl.rstrip('/')
@@ -154,7 +156,11 @@ class ExternalBugTracker:
 
     @ensure_no_transaction
     def urlopen(self, request, data=None):
-        return urllib2.urlopen(request, data)
+        if self.url_opener:
+            func = self.url_opener.open
+        else:
+            func = urllib2.urlopen
+        return func(request, data, self.timeout)
 
     def getExternalBugTrackerToUse(self):
         """See `IExternalBugTracker`."""

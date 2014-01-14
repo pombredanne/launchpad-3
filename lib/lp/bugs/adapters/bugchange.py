@@ -226,6 +226,8 @@ class BugConvertedToQuestion(BugChangeBase):
 class BugTaskAdded(BugChangeBase):
     """A bug task got added to the bug."""
 
+    change_level = BugNotificationLevel.LIFECYCLE
+
     def __init__(self, when, person, bug_task):
         super(BugTaskAdded, self).__init__(when, person)
         self.bug_task = bug_task
@@ -261,6 +263,8 @@ class BugTaskAdded(BugChangeBase):
 
 class BugTaskDeleted(BugChangeBase):
     """A bugtask was removed from the bug."""
+
+    change_level = BugNotificationLevel.LIFECYCLE
 
     def __init__(self, when, person, bugtask):
         super(BugTaskDeleted, self).__init__(when, person)
@@ -839,6 +843,8 @@ class BugTaskAssigneeChange(AttributeChange):
 
 class BugTaskTargetChange(AttributeChange):
     """Used to represent a change in a BugTask's target."""
+
+    change_level = BugNotificationLevel.LIFECYCLE
 
     def __init__(self, bug_task, when, person,
                  what_changed, old_value, new_value):

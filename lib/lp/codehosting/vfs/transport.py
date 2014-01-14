@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0702,W0231
-
 """Transport utilities for the codehosting system.
 
 The code hosting filesystem is implemented using Bazaar transports. This
@@ -391,7 +389,6 @@ class AsyncVirtualServer(Server):
         """
         # bzrlib's Server class does not have a constructor, so we cannot
         # safely upcall it.
-        # pylint: disable-msg=W0231
         self._scheme = scheme
         self._is_started = False
 

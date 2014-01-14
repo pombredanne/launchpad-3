@@ -1,5 +1,5 @@
-# Copyright 2009-2012 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0105
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 """Test harness for running the new-login.txt tests."""
 
 __metaclass__ = type
@@ -41,8 +41,10 @@ from zope.session.interfaces import ISession
 from zope.testbrowser.testing import Browser as TestBrowser
 
 from lp.registry.interfaces.person import IPerson
-from lp.services.database.interfaces import IStoreSelector
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import (
+    IStore,
+    IStoreSelector,
+    )
 from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.identity.interfaces.account import (
     AccountStatus,
@@ -170,10 +172,12 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
     def _createViewWithResponse(
             self, account, response_status=SUCCESS, response_msg='',
             view_class=StubbedOpenIDCallbackView,
-            email='non-existent@example.com'):
+            email='non-existent@example.com', identifier=None):
+        if identifier is None:
+            identifier = ITestOpenIDPersistentIdentity(
+                account).openid_identity_url
         openid_response = FakeOpenIDResponse(
-            ITestOpenIDPersistentIdentity(account).openid_identity_url,
-            status=response_status, message=response_msg,
+            identifier, status=response_status, message=response_msg,
             email=email, full_name='Foo User')
         return self._createAndRenderView(
             openid_response, view_class=view_class)
@@ -430,11 +434,11 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         # team, there's not much we can do. See bug #556680 for
         # discussions about a proper solution.
         self.factory.makeTeam(email="foo@bar.com")
-        person = self.factory.makePerson()
 
         with SRegResponse_fromSuccessResponse_stubbed():
             view, html = self._createViewWithResponse(
-                person.account, email="foo@bar.com")
+                None, email="foo@bar.com",
+                identifier=self.factory.getUniqueString())
         self.assertFalse(view.login_called)
         main_content = extract_text(find_main_content(html))
         self.assertIn('Team email address conflict', main_content)
@@ -561,10 +565,10 @@ urls_redirected_to = []
 class MyHTTPRedirectHandler(mechanize.HTTPRedirectHandler):
     """Custom HTTPRedirectHandler which stores the URLs redirected to."""
 
-    def redirect_request(self, newurl, req, fp, code, msg, headers):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
         urls_redirected_to.append(newurl)
         return mechanize.HTTPRedirectHandler.redirect_request(
-            self, newurl, req, fp, code, msg, headers)
+            self, req, fp, code, msg, headers, newurl)
 
 
 class MyMechanizeBrowser(mechanize.Browser):

@@ -64,13 +64,14 @@ from lp.services.job.tests import (
     pop_remote_notifications,
     )
 from lp.services.osutils import override_environ
-from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     EventRecorder,
     TestCaseWithFactory,
+    verifyObject,
     )
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import (
+    CeleryBzrsyncdJobLayer,
     CeleryJobLayer,
     LaunchpadZopelessLayer,
     )
@@ -182,7 +183,7 @@ class TestMergeProposalNeedsReviewEmailJob(TestCaseWithFactory):
         self.createBzrBranch(bmp.source_branch, tree.branch)
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         job = MergeProposalNeedsReviewEmailJob.create(bmp)
-        with dbuser(config.merge_proposal_jobs.dbuser):
+        with dbuser("merge-proposal-jobs"):
             job.run()
 
 
@@ -214,7 +215,7 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         job = UpdatePreviewDiffJob.create(bmp)
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         bmp.source_branch.next_mirror_time = None
-        with dbuser(config.merge_proposal_jobs.dbuser):
+        with dbuser("merge-proposal-jobs"):
             JobRunner([job]).runAll()
         self.checkExampleMerge(bmp.preview_diff.text)
 
@@ -226,7 +227,7 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         job = UpdatePreviewDiffJob.create(bmp)
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         bmp.source_branch.next_mirror_time = None
-        with dbuser(config.merge_proposal_jobs.dbuser):
+        with dbuser("merge-proposal-jobs"):
             with EventRecorder() as event_recorder:
                 JobRunner([job]).runAll()
         bmp_object_events = [
@@ -327,13 +328,13 @@ class TestGenerateIncrementalDiffJob(DiffTestCase):
     def test_run(self):
         """The job runs successfully, and its results can be committed."""
         job = make_runnable_incremental_diff_job(self)
-        with dbuser(config.merge_proposal_jobs.dbuser):
+        with dbuser("merge-proposal-jobs"):
             job.run()
 
     def test_run_all(self):
         """The job can be run under the JobRunner successfully."""
         job = make_runnable_incremental_diff_job(self)
-        with dbuser(config.merge_proposal_jobs.dbuser):
+        with dbuser("merge-proposal-jobs"):
             runner = JobRunner([job])
             runner.runAll()
         self.assertEqual([job], runner.completed_jobs)
@@ -343,7 +344,7 @@ class TestGenerateIncrementalDiffJob(DiffTestCase):
         self.useBzrBranches(direct_database=True)
         bmp = create_example_merge(self)[0]
         job = GenerateIncrementalDiffJob.create(bmp, 'old', 'new')
-        with dbuser(config.merge_proposal_jobs.dbuser):
+        with dbuser("merge-proposal-jobs"):
             job.acquireLease()
         expiry_delta = job.lease_expires - datetime.now(pytz.UTC)
         self.assertTrue(500 <= expiry_delta.seconds, expiry_delta)
@@ -607,18 +608,6 @@ class TestViaCelery(TestCaseWithFactory):
             transaction.commit()
         self.assertEqual(2, len(pop_remote_notifications()))
 
-    def test_UpdatePreviewDiffJob(self):
-        """UpdatePreviewDiffJob runs under Celery."""
-        self.useBzrBranches(direct_database=True)
-        bmp = create_example_merge(self)[0]
-        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
-        self.useFixture(FeatureFixture(
-            {'jobs.celery.enabled_classes': 'UpdatePreviewDiffJob'}))
-        with block_on_job():
-            UpdatePreviewDiffJob.create(bmp)
-            transaction.commit()
-        self.assertIsNot(None, bmp.preview_diff)
-
     def test_CodeReviewCommentEmailJob(self):
         """CodeReviewCommentEmailJob runs under Celery."""
         comment = self.factory.makeCodeReviewComment()
@@ -649,6 +638,23 @@ class TestViaCelery(TestCaseWithFactory):
                 bmp, 'change', bmp.registrant)
             transaction.commit()
         self.assertEqual(2, len(pop_remote_notifications()))
+
+
+class TestViaBzrsyncdCelery(TestCaseWithFactory):
+
+    layer = CeleryBzrsyncdJobLayer
+
+    def test_UpdatePreviewDiffJob(self):
+        """UpdatePreviewDiffJob runs under Celery."""
+        self.useBzrBranches(direct_database=True)
+        bmp = create_example_merge(self)[0]
+        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
+        self.useFixture(FeatureFixture(
+            {'jobs.celery.enabled_classes': 'UpdatePreviewDiffJob'}))
+        with block_on_job():
+            UpdatePreviewDiffJob.create(bmp)
+            transaction.commit()
+        self.assertIsNot(None, bmp.preview_diff)
 
     def test_GenerateIncrementalDiffJob(self):
         """GenerateIncrementalDiffJob runs under Celery."""

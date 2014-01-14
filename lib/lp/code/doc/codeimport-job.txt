@@ -10,7 +10,7 @@ member of the vcs-imports team and can access the objects freely.
 They can be accessed via a utility registered for the ICodeImportJobSet
 interface.
 
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.code.interfaces.codeimportjob import ICodeImportJobSet
     >>> job_set = getUtility(ICodeImportJobSet)
     >>> verifyObject(ICodeImportJobSet, job_set)

@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for nickname generation"""
@@ -21,11 +21,9 @@ class TestNicknameGeneration(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_rejects_invalid_emails(self):
-        # generate_nick rejects invalid email addresses
+        # generate_nick rejects invalid email addresses.
         self.assertRaises(
-            NicknameGenerationError,
-            generate_nick,
-            'foo@example@com')
+            NicknameGenerationError, generate_nick, 'foo@example@com')
 
     def test_uses_email_address(self):
         # generate_nick uses the first part of the email address to create
@@ -36,39 +34,26 @@ class TestNicknameGeneration(TestCaseWithFactory):
     def test_handles_symbols(self):
         # If an email starts with symbols, generate_nick still creates a
         # valid nick that doesn't start with symbols.
-        nicks = [generate_nick(email) for email in [
-                                            '---bar@example.com',
-                                            'foo.bar@example.com',
-                                            'foo-bar@example.com',
-                                            'foo+bar@example.com',
-                                            ]]
-        self.assertEqual(
-            ['bar', 'foo-bar', 'foo-bar', 'foo+bar'],
-            nicks)
+        parts = ['---bar', 'foo.bar', 'foo-bar', 'foo+bar']
+        nicks = [generate_nick("%s@example.com" % part) for part in parts]
+        self.assertEqual(['bar', 'foo-bar', 'foo-bar', 'foo+bar'], nicks)
 
     def test_enforces_minimum_length(self):
         # Nicks must be a minimum length. generate_nick enforces this by 
         # adding random suffixes to the required length.
-        # The nick 'i' isn't used, so we know any additional prefi
-        person = getUtility(IPersonSet).getByName('i')
-        self.assertIs(None, person)
+        self.assertIs(None, getUtility(IPersonSet).getByName('i'))
         nick = generate_nick('i@example.com')
-        self.assertEqual('i-5', nick)
+        self.assertEqual('i-b', nick)
 
     def test_can_create_noncolliding_nicknames(self):
         # Given the same email address, generate_nick doesn't recreate the
         # same nick once that nick is used.
-        self._useNicknames(['bar'])
+        self.factory.makePerson(name='bar')
         nick = generate_nick('bar@example.com')
-        self.assertEqual('bar-c', nick)
+        self.assertEqual('bar-3', nick)
 
         # If we used the previously created nick and get another bar@ email
         # address, another new nick is generated.
-        self._useNicknames(['bar-c'])
+        self.factory.makePerson(name=nick)
         nick = generate_nick('bar@example.com')
-        self.assertEqual('a-bar', nick)
-
-    def _useNicknames(self, nicknames):
-        # Helper method to consume a nickname
-        for nick in nicknames:
-            self.factory.makePerson(name=nick)
+        self.assertEqual('5-bar', nick)

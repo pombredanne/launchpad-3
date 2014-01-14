@@ -1,6 +1,5 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
 
 """Job classes related to the sharing feature are in here."""
 
@@ -43,9 +42,9 @@ from zope.interface import (
 
 from lp.app.enums import InformationType
 from lp.blueprints.interfaces.specification import ISpecification
-from lp.blueprints.model.specification import (
-    Specification,
-    visible_specification_query,
+from lp.blueprints.model.specification import Specification
+from lp.blueprints.model.specificationsearch import (
+    get_specification_privacy_filter,
     )
 from lp.blueprints.model.specificationsubscription import (
     SpecificationSubscription,
@@ -78,7 +77,7 @@ from lp.registry.model.product import Product
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import (
     EnumeratedSubclass,
@@ -174,13 +173,6 @@ class SharingJobDerived(BaseRunnableJob):
 
     delegates(ISharingJob)
     classProvides(ISharingJobSource)
-
-    @staticmethod
-    @contextlib.contextmanager
-    def contextManager():
-        """See `IJobSource`."""
-        errorlog.globalErrorUtility.configure('ISharingJobSource')
-        yield
 
     def __init__(self, job):
         self.context = job
@@ -439,8 +431,8 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
                 sub.branch.unsubscribe(
                     sub.person, self.requestor, ignore_permissions=True)
         if specification_filters:
-            specification_filters.append(
-                spec_not_visible(SpecificationSubscription.personID))
+            specification_filters.append(Not(*get_specification_privacy_filter(
+                SpecificationSubscription.personID)))
             tables = (
                 SpecificationSubscription,
                 Join(
@@ -454,10 +446,3 @@ class RemoveArtifactSubscriptionsJob(SharingJobDerived):
             for sub in specifications_subscriptions:
                 sub.specification.unsubscribe(
                     sub.person, self.requestor, ignore_permissions=True)
-
-
-def spec_not_visible(person_id):
-    """Return an expression for finding specs not visible to the person."""
-    tables, clauses = visible_specification_query(person_id)
-    subselect = Select(Specification.id, tables=tables, where=And(clauses))
-    return Not(Specification.id.is_in(subselect))

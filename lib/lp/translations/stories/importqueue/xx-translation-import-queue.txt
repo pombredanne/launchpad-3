@@ -224,6 +224,7 @@ No Privileges Person tries to remove entries but to no effect.
   ...         'field.status_5': 'DELETED',
   ...         'field.actions.change_status': 'Change status',
   ...     })
+  >>> user_browser.addHeader("Referer", "http://launchpad.dev")
   >>> user_browser.open(
   ...     'http://translations.launchpad.dev/+imports',
   ...     data=post_data)
@@ -443,10 +444,7 @@ says that.
   >>> evo_owner_browser.getControl('Upload').click()
   >>> evo_owner_browser.url
   'http://translations.launchpad.dev/evolution/trunk/+translations-upload'
-  >>> msgs = get_feedback_messages(evo_owner_browser.contents)
-  >>> print len(msgs)
-  1
-  >>> print msgs[0]
+  >>> print_feedback_messages(evo_owner_browser.contents)
   Upload ignored.  The tarball you uploaded did not contain...
 
 Bad filter_extension

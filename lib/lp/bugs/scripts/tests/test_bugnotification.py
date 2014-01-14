@@ -67,7 +67,7 @@ from lp.bugs.scripts.bugnotification import (
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.config import config
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     flush_database_updates,
     sqlvalues,

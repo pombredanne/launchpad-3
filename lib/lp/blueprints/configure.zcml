@@ -171,6 +171,9 @@
                         approver assignee drafter man_days
                         implementation_status"/>
     <require
+        permission="launchpad.Driver"
+        interface="lp.blueprints.interfaces.specification.ISpecificationDriverRestricted"/>
+    <require
         permission="launchpad.Admin"
         set_attributes="priority direction_approved"/>
     <require
@@ -201,10 +204,6 @@
       for="lp.blueprints.interfaces.specification.ISpecification
            lazr.lifecycle.interfaces.IObjectModifiedEvent"
       handler="lp.blueprints.subscribers.specification_update_lifecycle_status"/>
-  <subscriber
-      for="lp.blueprints.interfaces.specification.ISpecification
-           lazr.lifecycle.interfaces.IObjectModifiedEvent"
-      handler="lp.blueprints.subscribers.specification_goalstatus"/>
   <subscriber
       for="lp.blueprints.interfaces.specification.ISpecification
            lazr.lifecycle.interfaces.IObjectModifiedEvent"

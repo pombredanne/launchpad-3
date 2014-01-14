@@ -1,8 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 __metaclass__ = type
 
 import logging
@@ -13,8 +11,7 @@ from lazr.enum import (
     DBItem,
     use_template,
     )
-import zope.app.publication.interfaces
-from zope.app.security.interfaces import (
+from zope.authentication.interfaces import (
     IAuthentication,
     IPrincipal,
     IPrincipalSource,
@@ -25,6 +22,7 @@ from zope.interface import (
     implements,
     Interface,
     )
+from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.schema import (
     Bool,
     Choice,
@@ -37,10 +35,6 @@ from zope.schema import (
 from zope.traversing.interfaces import IContainmentRoot
 
 from lp import _
-
-
-class IAPIDocRoot(IContainmentRoot):
-    """Marker interface for the root object of the apidoc vhost."""
 
 
 class ILaunchpadContainer(Interface):
@@ -405,8 +399,7 @@ class IBrowserFormNG(Interface):
 
 
 class ILaunchpadBrowserApplicationRequest(
-    IBasicLaunchpadRequest,
-    zope.publisher.interfaces.browser.IBrowserApplicationRequest):
+    IBasicLaunchpadRequest, IBrowserApplicationRequest):
     """The request interface to the application for LP browser requests."""
 
     form_ng = Object(
@@ -499,7 +492,7 @@ class IPlacelessLoginSource(IPrincipalSource):
         """Not implemented.
 
         Get principals with matching names.
-        See zope.app.pluggableauth.interfaces.IPrincipalSource
+        See zope.authentication.interfaces.IPrincipalSource
         """
 
 
@@ -745,32 +738,6 @@ class ICheckBoxWidgetLayout(IAlwaysSubmittedWidget):
 class IPrimaryContext(Interface):
     """The primary context that used to determine the tabs for the web UI."""
     context = Attribute('The primary context.')
-
-
-# XXX mars 2010-07-14 bug=598816
-#
-# We need a conditional import of the request events until the real events
-# land in the Zope mainline.
-#
-# See bug 598816 for the details.
-
-try:
-    from zope.publisher.interfaces import StartRequestEvent
-except ImportError:
-    class IStartRequestEvent(Interface):
-        """An event that gets sent before the start of a request."""
-
-        request = Attribute("The request the event is about")
-
-    class StartRequestEvent:
-        """An event fired once at the start of requests.
-
-        :ivar request: The request the event is for.
-        """
-        implements(IStartRequestEvent)
-
-        def __init__(self, request):
-            self.request = request
 
 
 class IFinishReadOnlyRequestEvent(Interface):

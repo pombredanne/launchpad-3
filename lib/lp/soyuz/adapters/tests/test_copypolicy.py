@@ -3,7 +3,6 @@
 
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.webapp.testing import verifyObject
 from lp.soyuz.adapters.copypolicy import (
     InsecureCopyPolicy,
     MassSyncCopyPolicy,
@@ -13,7 +12,10 @@ from lp.soyuz.enums import (
     PackageCopyPolicy,
     )
 from lp.soyuz.interfaces.copypolicy import ICopyPolicy
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCaseWithFactory,
+    verifyObject,
+    )
 from lp.testing.layers import ZopelessDatabaseLayer
 
 

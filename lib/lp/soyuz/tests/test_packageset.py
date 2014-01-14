@@ -10,7 +10,7 @@ from lp.app.errors import NotFoundError
 from lp.registry.errors import NoSuchSourcePackageName
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.soyuz.enums import ArchivePermissionType
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.packageset import (

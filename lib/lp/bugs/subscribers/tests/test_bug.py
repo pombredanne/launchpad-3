@@ -40,6 +40,7 @@ class BugSubscriberTestCase(TestCaseWithFactory):
             self.bug, 'lifecycle-subscriber', BugNotificationLevel.LIFECYCLE)
         self.metadata_subscriber = self.newSubscriber(
             self.bug, 'metadata-subscriber', BugNotificationLevel.METADATA)
+        self.bug.clearBugNotificationRecipientsCache()
         self.old_persons = set(self.getNotifiedPersons(include_all=True))
 
     def createDelta(self, user=None, **kwargs):

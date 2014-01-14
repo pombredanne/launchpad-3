@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -308,38 +308,9 @@ class TestPersonTranslationView(TestCaseWithFactory):
             nonurgent_pofile.potemplate.productseries.product,
             descriptions[0]['target'])
 
-    def test_suggestTargetsForTranslation(self):
-        # suggestTargetsForTranslation finds targets that the person
-        # could help translate.
-        previous_contrib = self._makePOFiles(1, previously_worked_on=True)
-        pofile = self._makePOFiles(1, previously_worked_on=False)[0]
-        self._addUntranslatedMessages(pofile, 1)
-
-        descriptions = self.view._suggestTargetsForTranslation()
-
-        self.assertEqual(1, len(descriptions))
-        self.assertEqual(
-            pofile.potemplate.productseries.product,
-            descriptions[0]['target'])
-
-    def test_suggestTargetsForTranslation_limits_query(self):
-        # The max_fetch argument limits how many POFiles
-        # suggestTargetsForTranslation fetches.
-        previous_contrib = self._makePOFiles(1, previously_worked_on=True)
-        pofiles = self._makePOFiles(3, previously_worked_on=False)
-        for pofile in pofiles:
-            self._addUntranslatedMessages(pofile, 1)
-
-        descriptions = self.view._suggestTargetsForTranslation(max_fetch=2)
-
-        self.assertEqual(2, len(descriptions))
-        self.assertNotEqual(
-            descriptions[0]['target'], descriptions[1]['target'])
-
     def test_top_projects_and_packages_to_translate(self):
         # top_projects_and_packages_to_translate lists targets that the
-        # user has worked on and could help translate, followed by
-        # randomly suggested ones that also need translation.
+        # user has worked on and could help translate.
         worked_on = self._makePOFiles(1, previously_worked_on=True)[0]
         self._addUntranslatedMessages(worked_on, 1)
         not_worked_on = self._makePOFiles(1, previously_worked_on=False)[0]
@@ -347,16 +318,13 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
         descriptions = self.view.top_projects_and_packages_to_translate
 
-        self.assertEqual(2, len(descriptions))
+        self.assertEqual(1, len(descriptions))
         self.assertEqual(
             worked_on.potemplate.productseries.product,
             descriptions[0]['target'])
-        self.assertEqual(
-            not_worked_on.potemplate.productseries.product,
-            descriptions[1]['target'])
 
     def test_top_p_n_p_to_translate_caps_existing_involvement(self):
-        # top_projects_and_packages_to_translate shows no more than 6
+        # top_projects_and_packages_to_translate shows up to ten
         # targets that the user has already worked on.
         pofiles = self._makePOFiles(7, previously_worked_on=True)
         for pofile in pofiles:
@@ -364,12 +332,12 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
         descriptions = self.view.top_projects_and_packages_to_translate
 
-        self.assertEqual(6, len(descriptions))
+        self.assertEqual(7, len(descriptions))
 
     def test_top_p_n_p_to_translate_lists_most_and_least_translated(self):
-        # Of the maximum of 6 translations that the user has already
-        # worked on, the first 3 will be the ones with the most
-        # untranslated strings; the last 3 will have the fewest.
+        # Of the maximum of ten translations that the user has already
+        # worked on, the first 5 will be the ones with the most
+        # untranslated strings; the last 5 will have the fewest.
         # We create a lot more POFiles because internally the property
         # will fetch many POFiles.
         pofiles = self._makePOFiles(50, previously_worked_on=True)
@@ -380,15 +348,15 @@ class TestPersonTranslationView(TestCaseWithFactory):
 
         descriptions = self.view.top_projects_and_packages_to_translate
 
-        self.assertEqual(6, len(descriptions))
+        self.assertEqual(10, len(descriptions))
         targets = [item['target'] for item in descriptions]
 
-        # We happen to know that no more than 15 POFiles are fetched for
-        # each of the two categories, so the top 3 targets must be taken
-        # from the last 15 pofiles and the next 3 must be taken from the
-        # first 15 pofiles.
-        self.assertTrue(set(targets[:3]).issubset(products[15:]))
-        self.assertTrue(set(targets[3:]).issubset(products[:15]))
+        # We happen to know that no more than 25 POFiles are fetched for
+        # each of the two categories, so the top 5 targets must be taken
+        # from the last 25 pofiles and the next 5 must be taken from the
+        # first 25 pofiles.
+        self.assertTrue(set(targets[:5]).issubset(products[25:]))
+        self.assertTrue(set(targets[5:]).issubset(products[:25]))
 
         # No target is mentioned more than once in the listing.
         self.assertEqual(len(targets), len(set(targets)))

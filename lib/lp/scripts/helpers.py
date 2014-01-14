@@ -78,7 +78,7 @@ class TransactionFreeOperation:
 
     @staticmethod
     def any_active_transactions():
-        return transaction.manager._txns != {}
+        return transaction.manager._txn
 
     @classmethod
     def __enter__(cls):

@@ -31,13 +31,13 @@ from lp.coop.answersbugs.visibility import (
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.services.webapp.publisher import canonical_url
-from lp.services.webapp.testing import verifyObject
 from lp.testing import (
     BrowserTestCase,
     celebrity_logged_in,
     login_person,
     TestCase,
     TestCaseWithFactory,
+    verifyObject,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.pages import find_tag_by_id

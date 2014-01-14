@@ -20,6 +20,7 @@ from zope.interface import Interface
 from zope.schema import (
     Bool,
     Bytes,
+    Datetime,
     Dict,
     Int,
     Text,
@@ -114,11 +115,17 @@ class IPreviewDiff(IDiff):
         title=_('Has conflicts'), readonly=True,
         description=_('The previewed merge produces conflicts.'))
 
+    branch_merge_proposal_id = Int(
+        title=_('The branch merge proposal for this diff.'), readonly=True)
+
     # The schema for the Reference gets patched in _schema_circular_imports.
     branch_merge_proposal = exported(
         Reference(
             Interface, readonly=True,
             title=_('The branch merge proposal that diff relates to.')))
+
+    date_created = Datetime(
+        title=_("When this diff was created."), readonly=True)
 
     stale = exported(
         Bool(readonly=True, description=_(

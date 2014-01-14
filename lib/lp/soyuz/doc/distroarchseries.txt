@@ -2,7 +2,7 @@
 Distro Arch Series
 ==================
 
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
 
     >>> from lp.soyuz.interfaces.distroarchseriesbinarypackage import (
     ...     IDistroArchSeriesBinaryPackage,
@@ -299,7 +299,7 @@ via the 'architectures' property.
 
     >>> print_architectures(warty.architectures)
     The Warty Warthog Release for hppa (hppa)
-    The Warty Warthog Release for i386 (x86) (official, ppa)
+    The Warty Warthog Release for i386 (386) (official, ppa)
 
 DistroArchSeries for which we support PPA building can be obtained via
 another distroseries method called 'virtualized_architectures'.
@@ -312,16 +312,16 @@ property.
     >>> expected_ppa_archs = [arch for arch in warty.architectures
     ...                       if arch.supports_virtualized is True]
     >>> print_architectures(expected_ppa_archs)
-    The Warty Warthog Release for i386 (x86) (official, ppa)
+    The Warty Warthog Release for i386 (386) (official, ppa)
 
     >>> print_architectures(warty.virtualized_architectures)
-    The Warty Warthog Release for i386 (x86) (official, ppa)
+    The Warty Warthog Release for i386 (386) (official, ppa)
 
 Let's activate ppa support for hoary/hppa and check if
 'virtualized_architectures' will include it this time.
 
     >>> print_architectures(hoary.virtualized_architectures)
-    The Hoary Hedgehog Release for i386 (x86) (official, ppa)
+    The Hoary Hedgehog Release for i386 (386) (official, ppa)
 
     >>> from lp.services.database.sqlbase import flush_database_updates
     >>> login('foo.bar@canonical.com')
@@ -331,7 +331,7 @@ Let's activate ppa support for hoary/hppa and check if
 
     >>> print_architectures(hoary.virtualized_architectures)
     The Hoary Hedgehog Release for hppa (hppa) (ppa)
-    The Hoary Hedgehog Release for i386 (x86) (official, ppa)
+    The Hoary Hedgehog Release for i386 (386) (official, ppa)
 
 There is also `DistroSeries.buildable_architectures` which returns a
 `ResultSet` containing only the `DistroArchSeries` with available
@@ -373,35 +373,4 @@ alphabetically by 'architecturetag'.
 
     >>> print_architectures(hoary.buildable_architectures)
     The Hoary Hedgehog Release for hppa (hppa) (ppa)
-    The Hoary Hedgehog Release for i386 (x86) (official, ppa)
-
-
-===========================
-DistroArchSeriesSet Methods
-===========================
-
-The `DistroArchSeriesSet` class provides a helper method
-getIdsForArchitectures() - not exposed through the `IDistroArchSeriesSet`
-interface - which will filter an iterable of DistroArchSeries
-using an optional arch_tag and return a list of their IDs.
-
-    >>> architectures = [
-    ...     factory.makeDistroArchSeries(architecturetag='i986'),
-    ...     factory.makeDistroArchSeries(architecturetag='i986'),
-    ...     factory.makeDistroArchSeries(architecturetag='powerpc'),
-    ... ]
-    >>> from lp.soyuz.model.distroarchseries import DistroArchSeriesSet
-    >>> distroarchseries_set = DistroArchSeriesSet()
-
-    >>> arch_ids = distroarchseries_set.getIdsForArchitectures(architectures)
-    >>> len(arch_ids)
-    3
-    >>> isinstance(arch_ids[0], int)
-    True
-    >>> len(distroarchseries_set.getIdsForArchitectures(architectures,
-    ...                                                 arch_tag='i986'))
-    2
-    >>> len(distroarchseries_set.getIdsForArchitectures(architectures,
-    ...                                                 arch_tag='powerpc'))
-    1
-
+    The Hoary Hedgehog Release for i386 (386) (official, ppa)

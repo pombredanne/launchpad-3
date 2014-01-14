@@ -76,7 +76,7 @@
           <metal:branch-link use-macro="branch/@@+macros/bug-branch-links"/>
         </tal:branch-link>
 
-        <div tal:repeat="spec_link mergeproposal/source_branch/spec_links">
+        <div tal:repeat="spec_link view/spec_links">
           <img src="/@@/blueprint"
                tal:replace="structure spec_link/specification/image:icon" />
           <a tal:attributes="href spec_link/specification/fmt:url:blueprints"
@@ -140,7 +140,7 @@
       show_edit - show the edit form
   </tal:comment>
 
-  <tal:spec-tasks repeat="spec_branch branch/spec_links">
+  <tal:spec-tasks repeat="spec_branch view/spec_links">
     <div tal:define="has_edit_permission spec_branch/required:launchpad.AnyPerson;
                      show_edit show_edit|nothing;
                      show_edit python: show_edit and has_edit_permission;

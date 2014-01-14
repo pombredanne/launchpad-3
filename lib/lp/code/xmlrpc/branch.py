@@ -1,9 +1,6 @@
 # Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Disable pylint 'should have "self" as first argument' warnings.
-# pylint: disable-msg=E0213
-
 """Branch XMLRPC API."""
 
 __metaclass__ = type

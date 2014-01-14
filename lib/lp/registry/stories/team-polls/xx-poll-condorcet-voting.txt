@@ -46,6 +46,7 @@
   ... POST /~ubuntu-team/+poll/never-closes2/+vote HTTP/1.1
   ... Authorization: Basic foo.bar@canonical.com:test
   ... Content-Type: application/x-www-form-urlencoded
+  ... Referer: https://launchpad.dev/
   ...
   ... token=xn9FDCTp4m&showvote=Show+My+Vote&option_12=&option_13=&option_14=&option_15=""")
   HTTP/1.1 200 Ok
@@ -81,6 +82,7 @@
   ... POST /~ubuntu-team/+poll/never-closes2/+vote HTTP/1.1
   ... Authorization: Basic foo.bar@canonical.com:test
   ... Content-Type: application/x-www-form-urlencoded
+  ... Referer: https://launchpad.dev/
   ...
   ... token=xn9FDCTp4m&option_12=2&option_13=3&option_14=4&option_15=1&changevote=Change+Vote""")
   HTTP/1.1 200 Ok
@@ -168,6 +170,7 @@
   ... POST /~ubuntu-team/+poll/never-closes3/+vote HTTP/1.1
   ... Authorization: Basic foo.bar@canonical.com:test
   ... Content-Type: application/x-www-form-urlencoded
+  ... Referer: https://launchpad.dev/
   ...
   ... option_16=4&option_17=2&option_18=1&option_19=3&changevote=Change+Vote""")
   HTTP/1.1 200 Ok

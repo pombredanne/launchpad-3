@@ -424,14 +424,14 @@ list of isolated attributes for each mentioned item.
     TEXT: "text with spaces"
 
 
-get_feedback_messages
+print_feedback_messages
 ---------------------
 
 When testing an error condition or a notification we often are only
 interested in the feedback messages.  This helper will get informational
 messages and error messages, based on the CSS class.
 
-    >>> get_feedback_messages = test.globs['get_feedback_messages']
+    >>> print_feedback_messages = test.globs['print_feedback_messages']
     >>> class FakeBrowser:
     ...     pass
     >>> browser = FakeBrowser()
@@ -442,8 +442,9 @@ messages and error messages, based on the CSS class.
     ...   <div class="error message">Red Alert!</div>
     ... </html>'''
 
-    >>> get_feedback_messages(browser.contents)
-    [u'1 file has been deleted.', u'Red Alert!']
+    >>> print_feedback_messages(browser.contents)
+    1 file has been deleted.
+    Red Alert!
 
 The helper extracts the text of the messages, which makes a difference
 if the messages contain html elements.
@@ -458,8 +459,9 @@ if the messages contain html elements.
     ...   </div>
     ... </html>'''
 
-    >>> get_feedback_messages(browser.contents)
-    [u'1 file has been deleted.', u'Red Alert!  There are more details.']
+    >>> print_feedback_messages(browser.contents)
+    1 file has been deleted.
+    Red Alert!  There are more details.
 
 
 print_radio_button_field

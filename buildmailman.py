@@ -133,7 +133,6 @@ def build_mailman():
         sys.exit(retcode)
     # Try again to import the package.
     try:
-        # pylint: disable-msg=W0404
         import Mailman
     except ImportError:
         print >> sys.stderr, 'Could not import the Mailman package'

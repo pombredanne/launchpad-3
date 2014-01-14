@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes for pillar and artifact sharing service."""
@@ -71,7 +71,7 @@ from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.bulk import load
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.stormexpr import ColumnSelect
 from lp.services.searchbuilder import any
 from lp.services.webapp.authorization import (
@@ -227,10 +227,20 @@ class SharingService:
 
         return bugtasks, branches, specifications
 
-    def userHasGrantsOnPillar(self, pillar, user):
+    def checkPillarArtifactAccess(self, pillar, user):
         """See `ISharingService`."""
-        return not self.getArtifactGrantsForPersonOnPillar(
-            pillar, user).is_empty()
+        tables = [
+            AccessPolicyGrantFlat,
+            Join(
+                TeamParticipation,
+                TeamParticipation.teamID == AccessPolicyGrantFlat.grantee_id),
+            Join(
+                AccessPolicy,
+                AccessPolicy.id == AccessPolicyGrantFlat.policy_id)]
+        return not IStore(AccessPolicyGrantFlat).using(*tables).find(
+            AccessPolicyGrantFlat,
+            AccessPolicy.product_id == pillar.id,
+            TeamParticipation.personID == user.id).is_empty()
 
     @available_with_permission('launchpad.Driver', 'pillar')
     def getSharedBugs(self, pillar, person, user):

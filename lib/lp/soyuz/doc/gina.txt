@@ -35,8 +35,7 @@ Get the current counts of stuff in the database:
 
 Create a distribution release and an arch release for breezy:
 
-    >>> from lp.soyuz.model.distroarchseries import DistroArchSeries
-    >>> from lp.soyuz.model.processor import ProcessorFamily
+    >>> from lp.soyuz.interfaces.processor import IProcessorSet
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> ubuntu = celebs.ubuntu
@@ -50,18 +49,10 @@ Create a distribution release and an arch release for breezy:
     ...     hoary, celebs.launchpad_developers)
     >>> login(ANONYMOUS)
 
-    # Enable the Derived Series feature flag, to make sure gina likes it.
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> from lp.soyuz.model.distroseriesdifferencejob import (
-    ...     FEATURE_FLAG_ENABLE_MODULE,
-    ...     )
-    >>> fixture = FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'})
-    >>> fixture.setUp()
-    >>> pf = ProcessorFamily.selectOneBy(name="x86")
-    >>> breezy_i386 = DistroArchSeries(distroseries=breezy,
-    ...                         processorfamily=pf,
-    ...                         architecturetag="i386", official=True,
-    ...                         owner=celebs.launchpad_developers)
+    >>> breezy_i386 = breezy.newArch(
+    ...     processor=getUtility(IProcessorSet).getByName('386'),
+    ...     architecturetag="i386", official=True,
+    ...     owner=celebs.launchpad_developers)
     >>> import transaction
     >>> transaction.commit()
 
@@ -196,7 +187,6 @@ The exit status must be 0, for success:
     >>> proc.wait()
     0
     >>> transaction.commit()
-    >>> fixture.cleanUp()
 
 
 Testing Source Package Results
@@ -412,8 +402,8 @@ priority was correctly munged to "extra":
     386
     >>> print ed.build.status
     Successfully built
-    >>> print ed.build.distro_arch_series.processorfamily.name
-    x86
+    >>> print ed.build.distro_arch_series.processor.name
+    386
     >>> print ed.build.distro_arch_series.architecturetag
     i386
     >>> print ed.priority
@@ -734,9 +724,8 @@ if no binaries get imported by mistake. However this is not required
 in production, i.e., just creating 'lenny' should suffice for the
 source-only import to happen.
 
-    >>> pf = ProcessorFamily.selectOneBy(name="x86")
-    >>> lenny_i386 = DistroArchSeries(
-    ...     distroseries=lenny, processorfamily=pf,
+    >>> lenny_i386 = lenny.newArch(
+    ...     processor=getUtility(IProcessorSet).getByName('386'),
     ...     architecturetag="i386", official=True,
     ...     owner=celebs.launchpad_developers)
 

@@ -85,22 +85,21 @@ we'll need them again later.
     ... except KeyboardInterrupt:
     ...     pass'''
     >>> def start_process():
-    ...     cmd = '%s -c "%s"' % (sys.executable, subprocess_code)
-    ...     subprocess.Popen(cmd, shell=True)
-    ...     for i in range(100):
+    ...     real_pid = subprocess.Popen(
+    ...         [sys.executable, '-c', subprocess_code]).pid
+    ...     for i in range(50):
     ...         if os.path.exists(pidfile_path('nuts')):
-    ...             return int(open(pidfile_path('nuts')).read())
+    ...             if real_pid == int(open(pidfile_path('nuts')).read()):
+    ...                 return real_pid
     ...         time.sleep(0.1)
     ...     else:
     ...         print 'Error: pid file was not created'
     ...
     >>> def stop(pid, sig):
     ...     os.kill(pid, sig)
-    ...     for i in range(300):
-    ...         if not os.path.exists(pidfile_path('nuts')):
-    ...             print 'Stopped successfully'
-    ...             break
-    ...         time.sleep(0.1)
+    ...     os.waitpid(pid, 0)
+    ...     if not os.path.exists(pidfile_path('nuts')):
+    ...         print 'Stopped successfully'
     ...     else:
     ...         try:
     ...             # Is it still here at all?
@@ -108,7 +107,8 @@ we'll need them again later.
     ...         except OSError as e:
     ...             if e.errno == errno.ESRCH:
     ...                 print 'Error: pid file was not removed'
-    ...             else: raise
+    ...             else:
+    ...                 raise
     ...         else:
     ...             print 'Error: process did not exit'
     ...
@@ -145,6 +145,28 @@ provide a documented interface for doing so.)
     True
     >>> stop(pid, signal.SIGTERM)
     Stopped successfully
+
+make_pidfile also handles stale PID files, where the owning process
+terminated without removing the file, by removing the old file and
+continuing as normal.
+
+    >>> stale_pid = start_process()
+    >>> make_pidfile('nuts')
+    Traceback (most recent call last):
+    ...
+    RuntimeError: PID file /var/tmp/...nuts.pid already exists.
+    Already running?
+    >>> stop(stale_pid, signal.SIGKILL)
+    Error: pid file was not removed
+    >>> new_pid = start_process()
+    >>> new_pid == stale_pid
+    False
+    >>> new_pid == get_pid('nuts')
+    True
+    >>> stop(new_pid, signal.SIGTERM)
+    Stopped successfully
+    >>> print get_pid('nuts')
+    None
 
 
 `get_pid`

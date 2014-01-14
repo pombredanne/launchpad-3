@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Mailing list interfaces."""
 
 __metaclass__ = type
@@ -66,10 +64,6 @@ class MailingListStatus(DBEnumeratedType):
     """
 
     # REGISTERED and DECLINED are obsolete states, no longer used.
-    # Originally, mailing lists requests had to be approved by a member of
-    # ~mailing-list-experts but we've since changed that to allow for
-    # auto-approval.  We keep these states for historical purposes, but no
-    # longer use them.
 
     REGISTERED = DBItem(1, """
         Registered; request creation

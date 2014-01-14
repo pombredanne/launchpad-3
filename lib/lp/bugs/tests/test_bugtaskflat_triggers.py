@@ -19,7 +19,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicyArtifactSource,
     IAccessPolicySource,
     )
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.testing import (
     login_person,
     person_logged_in,

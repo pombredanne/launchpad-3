@@ -88,8 +88,7 @@ that the series was deleted, and can not see a link to it anymore.
     >>> print owner_browser.title
     Mozilla Firefox in Launchpad
 
-    >>> for message in get_feedback_messages(owner_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(owner_browser.contents)
     Series trunk deleted.
 
     >>> owner_browser.getLink('trunk')

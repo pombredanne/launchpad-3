@@ -100,7 +100,6 @@ class BugJanitor:
                 notify(ObjectModifiedEvent(
                     bugtask, bugtask_before_modification,
                     ['status'], user=self.janitor))
-                # XXX sinzui 2007-08-02 bug=29744:
                 # We commit after each expiration because emails are sent
                 # immediately in zopeless. This minimize the risk of
                 # duplicate expiration emails being sent in case an error

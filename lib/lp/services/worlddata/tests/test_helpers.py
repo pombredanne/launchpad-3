@@ -96,7 +96,7 @@ class DummyLaunchBag:
 def test_preferred_or_request_languages():
     '''
     >>> from zope.app.testing.placelesssetup import setUp, tearDown
-    >>> from zope.app.testing import ztapi
+    >>> from zope.component import provideAdapter, provideUtility
     >>> from zope.i18n.interfaces import IUserPreferredLanguages
     >>> from lp.services.geoip.interfaces import IRequestPreferredLanguages
     >>> from lp.services.geoip.interfaces import IRequestLocalLanguages
@@ -106,14 +106,15 @@ def test_preferred_or_request_languages():
     First, test with a person who has a single preferred language.
 
     >>> setUp()
-    >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideUtility(
-    ...     ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
-    >>> ztapi.provideAdapter(
-    ...     IBrowserRequest, IRequestPreferredLanguages,
-    ...     adaptRequestToLanguages)
-    >>> ztapi.provideAdapter(
-    ...     IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
+    >>> provideUtility(DummyLanguageSet(), ILanguageSet)
+    >>> provideUtility(
+    ...     DummyLaunchBag('foo.bar@canonical.com', dummyPerson), ILaunchBag)
+    >>> provideAdapter(
+    ...     adaptRequestToLanguages, (IBrowserRequest,),
+    ...     IRequestPreferredLanguages)
+    >>> provideAdapter(
+    ...     adaptRequestToLanguages, (IBrowserRequest,),
+    ...     IRequestLocalLanguages)
 
     >>> languages = preferred_or_request_languages(DummyRequest())
     >>> len(languages)
@@ -126,15 +127,16 @@ def test_preferred_or_request_languages():
     Then test with a person who has no preferred language.
 
     >>> setUp()
-    >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideUtility(
-    ...     ILaunchBag,
-    ...     DummyLaunchBag('foo.bar@canonical.com', dummyNoLanguagePerson))
-    >>> ztapi.provideAdapter(
-    ...     IBrowserRequest, IRequestPreferredLanguages,
-    ...     adaptRequestToLanguages)
-    >>> ztapi.provideAdapter(
-    ...     IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
+    >>> provideUtility(DummyLanguageSet(), ILanguageSet)
+    >>> provideUtility(
+    ...     DummyLaunchBag('foo.bar@canonical.com', dummyNoLanguagePerson),
+    ...     ILaunchBag)
+    >>> provideAdapter(
+    ...     adaptRequestToLanguages, (IBrowserRequest,),
+    ...     IRequestPreferredLanguages)
+    >>> provideAdapter(
+    ...     adaptRequestToLanguages, (IBrowserRequest,),
+    ...     IRequestLocalLanguages)
 
     >>> languages = preferred_or_request_languages(DummyRequest())
     >>> len(languages)

@@ -41,7 +41,6 @@ from wsgi_intercept.urllib2_intercept import (
 from zope.component import (
     adapter,
     getGlobalSiteManager,
-    getUtility,
     provideHandler,
     )
 from zope.interface import Interface
@@ -54,11 +53,8 @@ from zope.security.checker import (
 
 from lp.services import webapp
 from lp.services.config import config
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
+from lp.services.librarian.model import LibraryFileAlias
 from lp.services.messaging.interfaces import MessagingUnavailable
 from lp.services.messaging.rabbit import connect
 from lp.services.timeline.requesttimeline import get_request_timeline
@@ -407,16 +403,14 @@ class DisableTriggerFixture(Fixture):
         self.addCleanup(self._enable_triggers)
 
     def _process_triggers(self, mode):
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         with dbuser('postgres'):
             for table, trigger in self.table_triggers.items():
                 sql = ("ALTER TABLE %(table)s %(mode)s trigger "
                        "%(trigger)s") % {
                     'table': table,
                     'mode': mode,
-                    'trigger': trigger,
-                }
-                store.execute(sql)
+                    'trigger': trigger}
+                IStore(LibraryFileAlias).execute(sql)
 
     def _disable_triggers(self):
         self._process_triggers(mode='DISABLE')

@@ -145,6 +145,7 @@ class LaunchpadCelebrities:
     launchpad_developers = PersonCelebrityDescriptor('launchpad')
     obsolete_junk = CelebrityDescriptor(IProductSet, 'obsolete-junk')
     ppa_key_guard = PersonCelebrityDescriptor('ppa-key-guard')
+    ppa_self_admins = PersonCelebrityDescriptor('launchpad-ppa-self-admins')
     registry_experts = PersonCelebrityDescriptor('registry')
     rosetta_experts = PersonCelebrityDescriptor('rosetta-admins')
     savannah_tracker = CelebrityDescriptor(IBugTrackerSet, 'savannah')

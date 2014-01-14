@@ -64,7 +64,7 @@ require no action from the Launchpad end.
     >>> from lp.testing.fixture import CaptureOops
     >>> capture = CaptureOops()
     >>> capture.setUp()
-    >>> def do_not_urlopen(url=None, data=None):
+    >>> def do_not_urlopen(url=None, data=None, timeout=None):
     ...     raise socket.timeout("Connection timed out.")
     >>> try:
     ...     urllib2.urlopen = do_not_urlopen

@@ -15,7 +15,9 @@ __all__ = [
     'fti_search',
     'Greatest',
     'get_where_for_reference',
+    'IsDistinctFrom',
     'NullCount',
+    'rank_by_fti',
     'TryAdvisoryLock',
     'Unnest',
     'Values',
@@ -204,6 +206,12 @@ class ArrayIntersects(CompoundOper):
     oper = "&&"
 
 
+class IsDistinctFrom(CompoundOper):
+    """True iff the left side is distinct from the right side."""
+    __slots__ = ()
+    oper = " IS DISTINCT FROM "
+
+
 def get_where_for_reference(reference, other):
     """Generate a column comparison expression for a reference property.
 
@@ -256,9 +264,25 @@ def _get_where_for_local_many(relation, others):
         return Or(*[relation.get_where_for_local(value) for value in others])
 
 
-def fti_search(table, text):
-    """An expression ensuring that table rows match the specified text."""
+def determine_table_and_fragment(table, ftq):
     table = get_cls_info(table).table
-    tables = (table,)
-    text = unicode(text)
-    return SQL('%s.fti @@ ftq(?)' % table.name, params=(text,), tables=tables)
+    if ftq:
+        query_fragment = "ftq(?)"
+    else:
+        query_fragment = "?::tsquery"
+    return table, query_fragment
+
+
+def fti_search(table, text, ftq=True):
+    """An expression ensuring that table rows match the specified text."""
+    table, query_fragment = determine_table_and_fragment(table, ftq)
+    return SQL(
+        '%s.fti @@ %s' % (table.name, query_fragment), params=(text,),
+        tables=(table,))
+
+
+def rank_by_fti(table, text, ftq=True):
+    table, query_fragment = determine_table_and_fragment(table, ftq)
+    return SQL(
+        '-rank(%s.fti, %s)' % (table.name, query_fragment), params=(text,),
+        tables=(table,))

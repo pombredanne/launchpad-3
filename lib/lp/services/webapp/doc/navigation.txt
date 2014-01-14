@@ -255,8 +255,8 @@ The zcml processor `browser:navigation` registers navigation classes.
     >>> from zope.configuration import xmlconfig
     >>> zcmlcontext = xmlconfig.string("""
     ... <configure xmlns:browser="http://namespaces.zope.org/browser">
+    ...   <include package="zope.browserpage" file="meta.zcml" />
     ...   <include package="lp.services.webapp" file="meta.zcml" />
-    ...   <include package="zope.app.zcmlfiles" file="meta.zcml" />
     ...   <browser:navigation
     ...       module="lp.testing"
     ...       classes="ThingSetNavigation"

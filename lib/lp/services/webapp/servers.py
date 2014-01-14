@@ -1,7 +1,5 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=W0231,E1002
 
 """Definition of the internet servers that Launchpad uses."""
 
@@ -20,12 +18,11 @@ from lazr.restful.publisher import (
     WebServicePublicationMixin,
     WebServiceRequestTraversal,
     )
+from lazr.restful.utils import get_current_browser_request
 from lazr.uri import URI
 import transaction
 from transaction.interfaces import ISynchronizer
 from zc.zservertracelog.tracelog import Server as ZServerTracelogServer
-from zope.app.form.browser.itemswidgets import MultiDataHelper
-from zope.app.form.browser.widget import SimpleInputWidget
 from zope.app.publication.httpfactory import HTTPPublicationRequestFactory
 from zope.app.publication.interfaces import IRequestPublicationFactory
 from zope.app.publication.requestpublicationregistry import (
@@ -35,6 +32,8 @@ from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
 from zope.component import getUtility
 from zope.event import notify
+from zope.formlib.itemswidgets import MultiDataHelper
+from zope.formlib.widget import SimpleInputWidget
 from zope.interface import (
     alsoProvides,
     implements,
@@ -84,7 +83,6 @@ from lp.services.webapp.authorization import (
 from lp.services.webapp.errorlog import ErrorReportRequest
 from lp.services.webapp.interfaces import (
     FinishReadOnlyRequestEvent,
-    IAPIDocRoot,
     IBasicLaunchpadRequest,
     IBrowserFormNG,
     ILaunchpadBrowserApplicationRequest,
@@ -102,10 +100,7 @@ from lp.services.webapp.notifications import (
     )
 from lp.services.webapp.opstats import OpStats
 from lp.services.webapp.publication import LaunchpadBrowserPublication
-from lp.services.webapp.publisher import (
-    get_current_browser_request,
-    RedirectionView,
-    )
+from lp.services.webapp.publisher import RedirectionView
 from lp.services.webapp.vhosts import allvhosts
 from lp.services.webservice.interfaces import IWebServiceApplication
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
@@ -574,6 +569,15 @@ class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
     def __init__(self, body_instream, environ, response=None):
         self.traversed_objects = []
         self._wsgi_keys = set()
+        if 'PATH_INFO' in environ:
+            # Zope's sane_environment assumes that PATH_INFO is UTF-8 encoded.
+            # This next step replaces problems with U+FFFD to ensure
+            # a UnicodeDecodeError is not raised before OOPS error handling
+            # is available. This change will convert a 400 error to a 404
+            # because tranversal will raise NotFound when it encounters a
+            # non-ascii path part.
+            environ['PATH_INFO'] = environ['PATH_INFO'].decode(
+                'utf-8', 'replace').encode('utf-8')
         super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
 
@@ -649,6 +653,15 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadBrowserResponse()
+
+    def _decode(self, text):
+        text = super(LaunchpadBrowserRequest, self)._decode(text)
+        if isinstance(text, str):
+            # BrowserRequest._decode failed to do so with the user-specified
+            # charsets, so decode as UTF-8 with replacements, since we always
+            # want unicode.
+            text = unicode(text, 'utf-8', 'replace')
+        return text
 
     @cachedproperty
     def form_ng(self):
@@ -1123,16 +1136,6 @@ class FeedsBrowserRequest(LaunchpadBrowserRequest):
     strict_transport_security = False
 
 
-# ---- apidoc
-
-class APIDocBrowserRequest(LaunchpadBrowserRequest):
-    implements(lp.layers.APIDocLayer)
-
-
-class APIDocBrowserPublication(LaunchpadBrowserPublication):
-    root_object_interface = IAPIDocRoot
-
-
 # ---- testopenid
 
 class TestOpenIDBrowserRequest(LaunchpadBrowserRequest):
@@ -1516,10 +1519,6 @@ def register_launchpad_request_publication_factories():
     if config.launchpad.enable_test_openid_provider:
         factories.append(VHRP('testopenid', TestOpenIDBrowserRequest,
                               TestOpenIDBrowserPublication))
-
-    if config.devmode:
-        factories.append(
-            VHRP('apidoc', APIDocBrowserRequest, APIDocBrowserPublication))
 
     # We may also have a private XML-RPC server.
     private_port = None

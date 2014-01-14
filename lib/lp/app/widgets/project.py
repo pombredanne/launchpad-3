@@ -7,18 +7,18 @@ __metaclass__ = type
 
 from textwrap import dedent
 
-from zope.app.form import InputWidget
-from zope.app.form.browser.widget import (
-    BrowserWidget,
-    renderElement,
-    )
-from zope.app.form.interfaces import (
+from zope.formlib.interfaces import (
     ConversionError,
     IInputWidget,
     InputErrors,
     WidgetInputError,
     )
-from zope.app.form.utility import setUpWidget
+from zope.formlib.utility import setUpWidget
+from zope.formlib.widget import (
+    BrowserWidget,
+    InputWidget,
+    renderElement,
+    )
 from zope.interface import implements
 from zope.schema import Choice
 
@@ -70,11 +70,11 @@ class ProjectScopeWidget(BrowserWidget, InputWidget):
             "selectWidget('%s.option.project', event)" % self.name)
 
     def hasInput(self):
-        """See zope.app.form.interfaces.IInputWidget."""
+        """See zope.formlib.interfaces.IInputWidget."""
         return self.name in self.request.form
 
     def hasValidInput(self):
-        """See zope.app.form.interfaces.IInputWidget."""
+        """See zope.formlib.interfaces.IInputWidget."""
         try:
             self.getInputValue()
             return self.hasInput()
@@ -82,7 +82,7 @@ class ProjectScopeWidget(BrowserWidget, InputWidget):
             return False
 
     def getInputValue(self):
-        """See zope.app.form.interfaces.IInputWidget."""
+        """See zope.formlib.interfaces.IInputWidget."""
         scope = self.request.form_ng.getOne(self.name)
         if scope == 'all':
             return None
@@ -123,7 +123,7 @@ class ProjectScopeWidget(BrowserWidget, InputWidget):
         self.setUpOptions()
 
     def __call__(self):
-        """See zope.app.form.interfaces.IBrowserWidget."""
+        """See zope.formlib.interfaces.IBrowserWidget."""
         return "\n".join([
             self.renderScopeOptions(),
             self.target_widget()])
@@ -140,7 +140,7 @@ class ProjectScopeWidget(BrowserWidget, InputWidget):
         ''' % self.options)
 
     def error(self):
-        """See zope.app.form.browser.interfaces.IBrowserWidget"""
+        """See zope.formlib.interfaces.IBrowserWidget"""
         if self._error:
             return self._error.doc()
         else:

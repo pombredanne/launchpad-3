@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Package copying utilities."""
@@ -181,7 +181,7 @@ def check_copy_permissions(person, archive, series, pocket, sources):
         # implementations of ancestry lookup:
         # NascentUpload.getSourceAncestry,
         # PackageUploadSource.getSourceAncestryForDiffs, and
-        # PublishingSet.getNearestAncestor, none of which is obviously
+        # Archive.getPublishedSources, none of which is obviously
         # correct here.  Instead of adding a fourth, we should consolidate
         # these.
         ancestries = archive.getPublishedSources(
@@ -468,6 +468,7 @@ class CopyChecker:
                     if binary_file.libraryfile.expires is not None:
                         raise CannotCopy('source has expired binaries')
                     if (self.archive.is_main and
+                        not self.archive.build_debug_symbols and
                         binary_file.filetype == BinaryPackageFileType.DDEB):
                         raise CannotCopy(
                             "Cannot copy DDEBs to a primary archive")
@@ -476,8 +477,10 @@ class CopyChecker:
         # published in the destination archive.
         self._checkArchiveConflicts(source, series)
 
-        ancestry = source.getAncestry(
-            self.archive, series, pocket, status=active_publishing_status)
+        ancestry = self.archive.getPublishedSources(
+            name=source.source_package_name, exact_match=True,
+            distroseries=series, pocket=pocket,
+            status=active_publishing_status).first()
         if ancestry is not None:
             ancestry_version = ancestry.sourcepackagerelease.version
             copy_version = source.sourcepackagerelease.version
@@ -503,7 +506,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             person=None, check_permissions=True, overrides=None,
             send_email=False, strict_binaries=True, close_bugs=True,
             create_dsd_job=True, announce_from_person=None, sponsored=None,
-            packageupload=None, unembargo=False, logger=None):
+            packageupload=None, unembargo=False, phased_update_percentage=None,
+            logger=None):
     """Perform the complete copy of the given sources incrementally.
 
     Verifies if each copy can be performed using `CopyChecker` and
@@ -550,6 +554,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
     :param unembargo: If True, allow copying restricted files from a private
         archive to a public archive, and unrestrict their library files when
         doing so.
+    :param phased_update_percentage: The phased update percentage to apply
+        to the copied publication.
     :param logger: An optional logger.
 
     :raise CannotCopy when one or more copies were not allowed. The error
@@ -625,7 +631,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             source, archive, destination_series, pocket, include_binaries,
             override, close_bugs=close_bugs, create_dsd_job=create_dsd_job,
             close_bugs_since_version=old_version, creator=creator,
-            sponsor=sponsor, packageupload=packageupload)
+            sponsor=sponsor, packageupload=packageupload,
+            phased_update_percentage=phased_update_percentage, logger=logger)
         if send_email:
             notify(
                 person, source.sourcepackagerelease, [], [], archive,
@@ -633,13 +640,12 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                 announce_from_person=announce_from_person,
                 previous_version=old_version)
         if not archive.private and has_restricted_files(source):
-            # Fix copies by overriding them according to the current
-            # ancestry and unrestrict files with privacy mismatch.  We must
-            # do this *after* calling notify (which only actually sends mail
-            # on commit), because otherwise the new changelog LFA won't be
-            # visible without a commit, which may not be safe here.
+            # Fix copies by unrestricting files with privacy mismatch.
+            # We must do this *after* calling notify (which only
+            # actually sends mail on commit), because otherwise the new
+            # changelog LFA won't be visible without a commit, which may
+            # not be safe here.
             for pub_record in sub_copies:
-                pub_record.overrideFromAncestry()
                 for changed_file in update_files_privacy(pub_record):
                     if logger is not None:
                         logger.info("Made %s public" % changed_file.filename)
@@ -653,7 +659,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
 def _do_direct_copy(source, archive, series, pocket, include_binaries,
                     override=None, close_bugs=True, create_dsd_job=True,
                     close_bugs_since_version=None, creator=None,
-                    sponsor=None, packageupload=None):
+                    sponsor=None, packageupload=None,
+                    phased_update_percentage=None, logger=None):
     """Copy publishing records to another location.
 
     Copy each item of the given list of `SourcePackagePublishingHistory`
@@ -683,6 +690,9 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
     :param sponsor: the sponsor `IPerson`, if this copy is being sponsored.
     :param packageupload: The `IPackageUpload` that caused this publication
         to be created.
+    :param phased_update_percentage: The phased update percentage to apply
+        to the copied publication.
+    :param logger: An optional logger.
 
     :return: a list of `ISourcePackagePublishingHistory` and
         `BinaryPackagePublishingHistory` corresponding to the copied
@@ -700,7 +710,8 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         version=source.sourcepackagerelease.version,
         status=active_publishing_status,
         distroseries=series, pocket=pocket)
-    policy = archive.getOverridePolicy()
+    policy = archive.getOverridePolicy(
+        phased_update_percentage=phased_update_percentage)
     if source_in_destination.is_empty():
         # If no manual overrides were specified and the archive has an
         # override policy then use that policy to get overrides.
@@ -733,8 +744,8 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         # publication per binary package releases (i.e. excludes irrelevant
         # arch-indep publications) and IBPPH.copy is prepared to expand
         # arch-indep publications.
-        binary_copies = getUtility(IPublishingSet).copyBinariesTo(
-            source.getBuiltBinaries(), series, pocket, archive, policy=policy)
+        binary_copies = getUtility(IPublishingSet).copyBinaries(
+            archive, series, pocket, source.getBuiltBinaries(), policy=policy)
 
         if binary_copies is not None:
             copies.extend(binary_copies)
@@ -757,6 +768,6 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
     # Always ensure the needed builds exist in the copy destination
     # after copying the binaries.
     # XXX cjwatson 2012-06-22 bug=869308: Fails to honour P-a-s.
-    source_copy.createMissingBuilds()
+    source_copy.createMissingBuilds(logger=logger)
 
     return copies

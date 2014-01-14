@@ -1,4 +1,5 @@
-= Distribution Arch Series =
+Distribution Arch Series
+========================
 
 We can get a distroarchseries object via a distroseries object custom
 operation:
@@ -42,8 +43,32 @@ For a distroarchseries we publish a subset of its attributes.
     official: True
     owner_link: u'http://.../~mark'
     package_count: 1
+    processor_link: u'http://.../+processors/386'
     resource_type_link: u'http://.../#distro_arch_series'
     self_link: u'http://.../ubuntu/hoary/i386'
     supports_virtualized: True
-    title: u'The Hoary Hedgehog Release for i386 (x86)'
+    title: u'The Hoary Hedgehog Release for i386 (386)'
+    web_link: u'http://launchpad.../ubuntu/hoary/i386'
+
+DistroArchSeries.enabled is published in the API devel version.
+
+    >>> distroarchseries = webservice.get(
+    ...     "/ubuntu/hoary/i386", api_version='devel').jsonBody()
+
+    >>> pprint_entry(distroarchseries)
+    architecture_tag: u'i386'
+    chroot_url: u'http://.../.../filename...'
+    display_name: u'Ubuntu Hoary i386'
+    distroseries_link: u'http://.../ubuntu/hoary'
+    enabled: True
+    is_nominated_arch_indep: True
+    main_archive_link: u'http://.../ubuntu/+archive/primary'
+    official: True
+    owner_link: u'http://.../~mark'
+    package_count: 1
+    processor_link: u'http://.../+processors/386'
+    resource_type_link: u'http://.../#distro_arch_series'
+    self_link: u'http://.../ubuntu/hoary/i386'
+    supports_virtualized: True
+    title: u'The Hoary Hedgehog Release for i386 (386)'
     web_link: u'http://launchpad.../ubuntu/hoary/i386'

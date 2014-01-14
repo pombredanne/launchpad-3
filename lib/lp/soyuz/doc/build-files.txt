@@ -58,22 +58,14 @@ SoyuzTestPublisher creates the "test" binary publication.
 
 Adding and retrieving a buildlog.
 
-    >>> buildlog_name = (
-    ...    'buildlog_ubuntu-breezy-autotest-i386.'
-    ...    'test-pkg_1.0_FULLYBUILT.txt.gz')
-    >>> buildlog = test_publisher.addMockFile(buildlog_name)
-    >>> build.log = buildlog
-
-    >>> buildlog == build.getFileByName(buildlog_name)
+    >>> build.log == build.getFileByName(build.log.filename)
     True
 
 Adding and retrieving a upload_log.
 
     >>> upload_log_name = 'upload_%d_log.txt' % build.id
-    >>> upload_log = test_publisher.addMockFile(upload_log_name)
-    >>> build.upload_log = upload_log
-
-    >>> upload_log == build.getFileByName(upload_log_name)
+    >>> build.storeUploadLog('i am an upload log')
+    >>> build.upload_log == build.getFileByName(upload_log_name)
     True
 
 Retrieve a built file:

@@ -1,7 +1,6 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
 """Milestone model classes."""
 
 __metaclass__ = type
@@ -16,6 +15,7 @@ __all__ = [
 
 import datetime
 import httplib
+from operator import itemgetter
 
 from lazr.restful.declarations import error_status
 from sqlobject import (
@@ -38,10 +38,10 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from lp.app.errors import NotFoundError
-from lp.app.enums import InformationType
-from lp.blueprints.model.specification import (
-    Specification,
-    visible_specification_query,
+from lp.blueprints.model.specification import Specification
+from lp.blueprints.model.specificationsearch import (
+    get_specification_active_product_filter,
+    get_specification_privacy_filter,
     )
 from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
@@ -56,7 +56,6 @@ from lp.bugs.model.bugtask import BugTaskSet
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
-from lp.registry.errors import ProprietaryProduct
 from lp.registry.interfaces.milestone import (
     IHasMilestones,
     IMilestone,
@@ -66,10 +65,9 @@ from lp.registry.interfaces.milestone import (
     )
 from lp.registry.model.productrelease import ProductRelease
 from lp.services.database.decoratedresultset import DecoratedResultSet
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import SQLBase
 from lp.services.propertycache import get_property_cache
-from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.sorting import expand_numbers
 
 
@@ -141,6 +139,14 @@ class MultipleProductReleases(Exception):
         super(MultipleProductReleases, self).__init__(msg)
 
 
+@error_status(httplib.BAD_REQUEST)
+class InvalidTags(Exception):
+    """Raised when tags are invalid."""
+
+    def __init__(self, msg='Tags are invalid.'):
+        super(InvalidTags, self).__init__(msg)
+
+
 class MilestoneData:
     implements(IMilestoneData)
 
@@ -153,17 +159,23 @@ class MilestoneData:
     def title(self):
         raise NotImplementedError
 
+    @property
+    def all_specifications(self):
+        return Store.of(self).find(
+            Specification, Specification.milestoneID == self.id)
+
     def getSpecifications(self, user):
         """See `IMilestoneData`"""
         from lp.registry.model.person import Person
-        store = Store.of(self.target)
-        origin, clauses = visible_specification_query(user)
-        origin.extend([
-            LeftJoin(Person, Specification._assigneeID == Person.id),
-            ])
+        origin = [Specification]
+        product_origin, clauses = get_specification_active_product_filter(
+            self)
+        origin.extend(product_origin)
+        clauses.extend(get_specification_privacy_filter(user))
+        origin.append(LeftJoin(Person, Specification._assigneeID == Person.id))
         milestones = self._milestone_ids_expr(user)
 
-        results = store.using(*origin).find(
+        results = Store.of(self.target).using(*origin).find(
             (Specification, Person),
             Specification.id.is_in(
                 Union(
@@ -179,13 +191,11 @@ class MilestoneData:
                             SpecificationWorkItem.deleted == False)),
                     all=True)),
             *clauses)
-        ordered_results = results.order_by(Desc(Specification.priority),
-                                           Specification.definition_status,
-                                           Specification.implementation_status,
-                                           Specification.title)
+        ordered_results = results.order_by(
+            Desc(Specification.priority), Specification.definition_status,
+            Specification.implementation_status, Specification.title)
         ordered_results.config(distinct=True)
-        mapper = lambda row: row[0]
-        return DecoratedResultSet(ordered_results, mapper)
+        return DecoratedResultSet(ordered_results, itemgetter(0))
 
     def bugtasks(self, user):
         """The list of non-conjoined bugtasks targeted to this milestone."""
@@ -276,10 +286,6 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
     def createProductRelease(self, owner, datereleased,
                              changelog=None, release_notes=None):
         """See `IMilestone`."""
-        info_type = self.product.information_type
-        if info_type == InformationType.PROPRIETARY:
-            raise ProprietaryProduct(
-                "Proprietary products cannot have releases.")
         if self.product_release is not None:
             raise MultipleProductReleases()
         release = ProductRelease(
@@ -304,20 +310,19 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
         params = BugTaskSearchParams(milestone=self, user=None)
         bugtasks = getUtility(IBugTaskSet).search(params)
         subscriptions = IResultSet(self.getSubscriptions())
-        user = getUtility(ILaunchBag).user
         assert subscriptions.is_empty(), (
             "You cannot delete a milestone which has structural "
             "subscriptions.")
-        assert bugtasks.count() == 0, (
+        assert bugtasks.is_empty(), (
             "You cannot delete a milestone which has bugtasks targeted "
             "to it.")
-        assert self.getSpecifications(user).count() == 0, (
+        assert self.all_specifications.is_empty(), (
             "You cannot delete a milestone which has specifications targeted "
             "to it.")
         assert self.product_release is None, (
             "You cannot delete a milestone which has a product release "
             "associated with it.")
-        SQLBase.destroySelf(self)
+        super(Milestone, self).destroySelf()
 
     def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
@@ -328,9 +333,11 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
     def setTags(self, tags, user):
         """See IMilestone."""
         # Circular reference prevention.
-        from lp.registry.model.milestonetag import MilestoneTag
+        from lp.registry.model.milestonetag import MilestoneTag, validate_tags
         store = Store.of(self)
         if tags:
+            if not validate_tags(tags):
+                raise InvalidTags()
             current_tags = set(self.getTags())
             new_tags = set(tags)
             if new_tags == current_tags:

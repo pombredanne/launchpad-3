@@ -154,7 +154,8 @@ they are assigned to the same facet.
     ... <configure xmlns="http://namespaces.zope.org/zope"
     ...            xmlns:zope="http://namespaces.zope.org/zope"
     ...            xmlns:browser="http://namespaces.zope.org/browser">
-    ...   <include package="zope.app" file="meta.zcml" />
+    ...   <include package="zope.browserpage" file="meta.zcml" />
+    ...   <include package="zope.publisher" file="meta.zcml" />
     ...   <includeOverrides
     ...     package="lp.services.webapp" file="meta-overrides.zcml" />
     ...   <browser:defaultView
@@ -1086,8 +1087,7 @@ NavigationMenus used in the previous TALES section.
 
     >>> import operator
     >>> import tempfile
-    >>> from zope.app.pagetemplate.viewpagetemplatefile import (
-    ...     ViewPageTemplateFile)
+    >>> from z3c.ptcompat import ViewPageTemplateFile
     >>> from lp.services.webapp.menu import (
     ...     get_facet, get_current_view)
 

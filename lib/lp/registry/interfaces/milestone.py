@@ -1,7 +1,5 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 """Milestone interfaces."""
 
@@ -137,6 +135,8 @@ class IMilestoneData(IHasBugs, IStructuralSubscriptionTarget,
     title = exported(
         TextLine(title=_("A context title for pages."),
                  readonly=True))
+    all_specifications = doNotSnapshot(
+        Attribute('All specifications linked to this milestone.'))
 
     def bugtasks(user):
         """Get a list of non-conjoined bugtasks visible to this user."""

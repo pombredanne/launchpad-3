@@ -6,7 +6,7 @@ The CommercialSubscription class is used to track whether a project,
 which does not qualify for free hosting, has an unexpired subscription.
 
     >>> from zope.component import getUtility
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.registry.interfaces.commercialsubscription import (
     ...     ICommercialSubscription)
     >>> from lp.registry.interfaces.product import IProductSet

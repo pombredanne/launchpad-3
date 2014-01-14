@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -45,14 +45,14 @@ from lazr.restful.utils import smartquote
 import pytz
 import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser import TextAreaWidget
-from zope.app.form.browser.textwidgets import IntWidget
 from zope.component import getUtility
 from zope.formlib.form import (
     Fields,
     FormField,
     FormFields,
     )
+from zope.formlib.textwidgets import IntWidget
+from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
     classImplements,
     implements,
@@ -2098,11 +2098,11 @@ class TeamReassignmentView(ObjectReassignmentView):
         # proposed members they'll be made administrators of the team.
         if newOwner not in team.inactivemembers:
             team.addMember(
-                newOwner, reviewer=oldOwner,
+                newOwner, reviewer=self.user,
                 status=TeamMembershipStatus.ADMIN, force_team_add=True)
         if oldOwner not in team.inactivemembers:
             team.addMember(
-                oldOwner, reviewer=oldOwner,
+                oldOwner, reviewer=self.user,
                 status=TeamMembershipStatus.ADMIN, force_team_add=True)
 
         # If the current logged in user cannot see the team anymore as a

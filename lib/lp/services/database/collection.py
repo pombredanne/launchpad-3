@@ -12,13 +12,8 @@ from storm.expr import (
     Join,
     LeftJoin,
     )
-from zope.component import getUtility
 
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 
 
 class Collection(object):
@@ -74,8 +69,8 @@ class Collection(object):
 
         self.store = kwargs.get('store')
         if self.store is None:
-            self.store = getUtility(IStoreSelector).get(
-                MAIN_STORE, DEFAULT_FLAVOR)
+            from lp.services.librarian.model import LibraryFileAlias
+            self.store = IStore(LibraryFileAlias)
 
         self.tables = (
             starting_tables + base_tables +

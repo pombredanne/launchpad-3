@@ -775,7 +775,7 @@ name.
     ...     'http://launchpad.dev/sesamestreet/+baz',
     ...     url1='http://launchpad.dev/sesamestreet/')
 
-    >>> from zope.app.zapi import getDefaultViewName
+    >>> from zope.publisher.defaultview import getDefaultViewName
     >>> getDefaultViewName(street, request)
     '+baz'
 

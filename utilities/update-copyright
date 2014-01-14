@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Update the year in copyright notices.
@@ -33,7 +33,7 @@ def years_string(yearfrom):
 
 def update_copyright(lines):
     """Update the copyright notice in the given file lines."""
-    for line in range(min(len(lines), 3)):
+    for line in range(min(len(lines), 5)):
         match = copyright_pattern.search(lines[line])
         if match is not None:
             old_years = match.group('years')

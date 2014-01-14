@@ -1,7 +1,5 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 """Interface for Soyuz build farm jobs."""
 
@@ -9,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'IBuildFarmJob',
-    'IBuildFarmJobOld',
     'IBuildFarmJobSet',
     'IBuildFarmJobSource',
     'InconsistentBuildFarmJobError',
@@ -48,18 +45,27 @@ class InconsistentBuildFarmJobError(Exception):
     """
 
 
-class IBuildFarmJobOld(Interface):
-    """Defines the previous non-database BuildFarmJob interface.
+class IBuildFarmJobDB(Interface):
+    """Operations on a `BuildFarmJob` DB row.
 
-    This interface is still used by the temporary build queue related
-    classes (TranslationTemplatesBuildJob, SourcePackageRecipeBuildJob
-    and BuildPackageJob).
-
-    XXX 2010-04-28 michael.nelson bug=567922
-    This class can be removed (merging all the attributes directly into
-    IBuildFarmJob) once all the corresponding *Build classes and the
-    BuildQueue have been transitioned to the new database schema.
+    This is deprecated while it's flattened into the concrete implementations.
     """
+
+    id = Attribute('The build farm job ID.')
+
+    job_type = Choice(
+        title=_("Job type"), required=True, readonly=True,
+        vocabulary=BuildFarmJobType,
+        description=_("The specific type of job."))
+
+
+class IBuildFarmJob(Interface):
+    """Operations that jobs for the build farm must implement."""
+
+    id = Attribute('The build farm job ID.')
+
+    build_farm_job = Attribute('Generic build farm job record')
+
     processor = Reference(
         IProcessor, title=_("Processor"), required=False, readonly=True,
         description=_(
@@ -73,108 +79,6 @@ class IBuildFarmJobOld(Interface):
             "This should be None for job types that do not care whether "
             "they run virtualized."))
 
-    def score():
-        """Calculate a job score appropriate for the job type in question."""
-
-    def getLogFileName():
-        """The preferred file name for this job's log."""
-
-    def getName():
-        """An appropriate name for this job."""
-
-    def getTitle():
-        """A string to identify and describe the job to users."""
-
-    def jobStarted():
-        """'Job started' life cycle event, handle as appropriate."""
-
-    def jobReset():
-        """'Job reset' life cycle event, handle as appropriate."""
-
-    def jobAborted():
-        """'Job aborted' life cycle event, handle as appropriate."""
-
-    def jobCancel():
-        """'Job cancel' life cycle event."""
-
-    def addCandidateSelectionCriteria(processor, virtualized):
-        """Provide a sub-query to refine the candidate job selection.
-
-        Return a sub-query to narrow down the list of candidate jobs.
-        The sub-query will become part of an "outer query" and is free to
-        refer to the `BuildQueue` and `Job` tables already utilized in the
-        latter.
-
-        Example (please see the `BuildPackageJob` implementation for a
-        complete example):
-
-            SELECT TRUE
-            FROM Archive, Build, BuildPackageJob, DistroArchSeries
-            WHERE
-            BuildPackageJob.job = Job.id AND
-            ..
-
-        :param processor: the type of processor that the candidate jobs are
-            expected to run on.
-        :param virtualized: whether the candidate jobs are expected to run on
-            the `processor` natively or inside a virtual machine.
-        :return: a string containing a sub-query that narrows down the list of
-            candidate jobs.
-        """
-
-    def postprocessCandidate(job, logger):
-        """True if the candidate job is fine and should be dispatched
-        to a builder, False otherwise.
-
-        :param job: The `BuildQueue` instance to be scrutinized.
-        :param logger: The logger to use.
-
-        :return: True if the candidate job should be dispatched
-            to a builder, False otherwise.
-        """
-
-    def getByJob(job):
-        """Get the specific `IBuildFarmJob` for the given `Job`.
-
-        Invoked on the specific `IBuildFarmJob`-implementing class that
-        has an entry associated with `job`.
-        """
-
-    def getByJobs(jobs):
-        """Get the specific `IBuildFarmJob`s for the given `Job`s.
-
-        Invoked on the specific `IBuildFarmJob`-implementing class that
-        has entries associated with `job`s.
-        """
-
-    def generateSlaveBuildCookie():
-        """Produce a cookie for the slave as a token of the job it's doing.
-
-        The cookie need not be unique, but should be hard for a
-        compromised slave to guess.
-
-        :return: a hard-to-guess ASCII string that can be reproduced
-            accurately based on this job's properties.
-        """
-
-    def makeJob():
-        """Create the specific job relating this with an lp.services.job.
-
-        XXX 2010-04-26 michael.nelson bug=567922
-        Once all *Build classes are using BuildFarmJob we can lose the
-        'specific_job' attributes and simply have a reference to the
-        services job directly on the BuildFarmJob.
-        """
-
-    def cleanUp():
-        """Job's finished.  Delete its supporting data."""
-
-
-class IBuildFarmJob(IBuildFarmJobOld):
-    """Operations that jobs for the build farm must implement."""
-
-    id = Attribute('The build farm job ID.')
-
     date_created = exported(
         Datetime(
             title=_("Date created"), required=True, readonly=True,
@@ -184,9 +88,12 @@ class IBuildFarmJob(IBuildFarmJobOld):
         as_of="beta",
         )
 
-    date_started = Datetime(
-        title=_("Date started"), required=False, readonly=True,
-        description=_("The timestamp when the build farm job was started."))
+    date_started = exported(
+        Datetime(
+            title=_("Date started"), required=False, readonly=True,
+            description=_(
+                "The timestamp when the build farm job was started.")),
+        as_of="devel")
 
     date_finished = exported(
         Datetime(
@@ -197,10 +104,12 @@ class IBuildFarmJob(IBuildFarmJobOld):
         as_of="beta",
         )
 
-    duration = Timedelta(
-        title=_("Duration"), required=False,
-        description=_("Duration interval, calculated when the "
-                      "result gets collected."))
+    duration = exported(
+        Timedelta(
+            title=_("Duration"), required=False, readonly=True,
+            description=_("Duration interval, calculated when the "
+                          "result gets collected.")),
+        as_of="devel")
 
     date_first_dispatched = exported(
         Datetime(
@@ -259,15 +168,34 @@ class IBuildFarmJob(IBuildFarmJobOld):
         default=0,
         description=_("Number of consecutive failures for this job."))
 
-    def getSpecificJob():
-        """Return the specific build job associated with this record.
+    def setLog(log):
+        """Set the `LibraryFileAlias` that contains the job log."""
 
-        :raises InconsistentBuildFarmJobError: if a specific job could not be
-            returned.
+    def updateStatus(status, builder=None, slave_status=None,
+                     date_started=None, date_finished=None):
+        """Update job metadata when the build status changes.
+
+        This automatically handles setting status, date_finished, builder,
+        dependencies. Later it will manage the denormalised search schema.
+
+        date_started and date_finished override the default (now).
         """
 
     def gotFailure():
         """Increment the failure_count for this job."""
+
+    def calculateScore():
+        """Calculate the build queue priority for this job."""
+
+    def estimateDuration():
+        """Estimate the build duration."""
+
+    def queueBuild(suspended=False):
+        """Create a BuildQueue entry for this build.
+
+        :param suspended: Whether the associated `Job` instance should be
+            created in a suspended state.
+        """
 
     title = exported(TextLine(title=_("Title"), required=False),
                      as_of="beta")
@@ -311,12 +239,39 @@ class ISpecificBuildFarmJobSource(Interface):
             job.
         """
 
+    def addCandidateSelectionCriteria(processor, virtualized):
+        """Provide a sub-query to refine the candidate job selection.
+
+        Return a sub-query to narrow down the list of candidate jobs.
+        The sub-query will become part of an "outer query" and is free to
+        refer to the `BuildQueue` and `BuildFarmJob` tables already utilized
+        in the latter.
+
+        :param processor: the type of processor that the candidate jobs are
+            expected to run on.
+        :param virtualized: whether the candidate jobs are expected to run on
+            the `processor` natively or inside a virtual machine.
+        :return: a string containing a sub-query that narrows down the list of
+            candidate jobs.
+        """
+
+    def postprocessCandidate(job, logger):
+        """True if the candidate job is fine and should be dispatched
+        to a builder, False otherwise.
+
+        :param job: The `BuildQueue` instance to be scrutinized.
+        :param logger: The logger to use.
+
+        :return: True if the candidate job should be dispatched
+            to a builder, False otherwise.
+        """
+
 
 class IBuildFarmJobSource(Interface):
     """A utility of BuildFarmJob used to create _things_."""
 
-    def new(job_type, status=None, processor=None,
-            virtualized=None):
+    def new(job_type, status=None, processor=None, virtualized=None,
+            builder=None):
         """Create a new `IBuildFarmJob`.
 
         :param job_type: A `BuildFarmJobType` item.
@@ -324,6 +279,7 @@ class IBuildFarmJobSource(Interface):
         :param processor: An optional processor for this job.
         :param virtualized: An optional boolean indicating whether
             this job should be run virtualized.
+        :param builder: An optional `IBuilder`.
         """
 
 
@@ -340,6 +296,11 @@ class IBuildFarmJobSet(Interface):
         :return: a `ResultSet` representing the requested builds.
         """
 
-    def getByID(job_id):
-        """Look up a `IBuildFarmJob` record by id.
+    def getBuildsForArchive(archive, status=None):
+        """Return `IBuildFarmJob` records targeted to a given `IArchive`.
+
+        :param archive: The archive for which builds will be returned.
+        :param status: If status is provided, only builders with that
+            status will be returned.
+        :return: a `ResultSet` representing the requested `IBuildFarmJobs`.
         """

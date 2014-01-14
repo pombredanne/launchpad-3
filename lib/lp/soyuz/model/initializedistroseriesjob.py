@@ -14,7 +14,7 @@ from zope.interface import (
 
 from lp.registry.model.distroseries import DistroSeries
 from lp.services.config import config
-from lp.services.database.lpstorm import (
+from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )
@@ -47,7 +47,7 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
 
     user_error_types = (InitializationError,)
 
-    config = config.initializedistroseries
+    config = config.IInitializeDistroSeriesJobSource
 
     @classmethod
     def create(cls, child, parents, arches=(), archindep_archtag=None,

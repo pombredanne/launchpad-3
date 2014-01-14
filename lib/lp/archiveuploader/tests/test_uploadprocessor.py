@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for uploadprocessor.py."""
@@ -48,6 +48,9 @@ from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
     )
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    IBuildFarmJobBehavior,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -57,7 +60,6 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
-from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import (
     BufferLogger,
@@ -86,9 +88,6 @@ from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
-from lp.soyuz.model.distroseriesdifferencejob import (
-    FEATURE_FLAG_ENABLE_MODULE,
-    )
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
@@ -166,9 +165,6 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         self.log = BufferLogger()
 
         self.switchToAdmin()
-        self.useFixture(FeatureFixture({
-            FEATURE_FLAG_ENABLE_MODULE: u'on',
-        }))
         self.switchToUploader()
 
     def tearDown(self):
@@ -1290,10 +1286,12 @@ class TestUploadProcessor(TestUploadProcessorBase):
         uploadprocessor = self.setupBreezyAndGetUploadProcessor()
         upload_dir = self.queueUpload("bar_1.0-1_malformed_section")
         self.processUpload(uploadprocessor, upload_dir)
-        self.assertRejectionMessage(
-            uploadprocessor,
-            'Wrong number of fields in Files line in .changes.',
-            with_file=False)
+        expected = (
+            'Wrong number of fields in Files field line.\n'
+            'Further error processing not possible because of a '
+            'critical previous error.')
+        self.assertEqual(
+            expected, uploadprocessor.last_processed_upload.rejection_message)
 
     def testUploadWithUnknownComponentIsRejected(self):
         uploadprocessor = self.setupBreezyAndGetUploadProcessor()
@@ -2088,10 +2086,8 @@ class TestUploadHandler(TestUploadProcessorBase):
 
         builder = self.factory.makeBuilder()
         build.buildqueue_record.markAsBuilding(builder)
-        build.builder = build.buildqueue_record.builder
-
-        build.status = BuildStatus.UPLOADING
-        build.date_finished = UTC_NOW
+        build.updateStatus(
+            BuildStatus.UPLOADING, builder=build.buildqueue_record.builder)
         self.switchToUploader()
 
         # Upload and accept a binary for the primary archive source.
@@ -2099,7 +2095,8 @@ class TestUploadHandler(TestUploadProcessorBase):
 
         # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
-        leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
+        behavior = IBuildFarmJobBehavior(build)
+        leaf_name = behavior.getUploadDirLeaf(behavior.getBuildCookie())
         os.mkdir(os.path.join(self.incoming_folder, leaf_name))
         self.options.context = 'buildd'
         self.options.builds = True
@@ -2133,7 +2130,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         queue_item.setDone()
 
         build.buildqueue_record.markAsBuilding(self.factory.makeBuilder())
-        build.status = BuildStatus.UPLOADING
+        build.updateStatus(BuildStatus.UPLOADING)
         self.switchToUploader()
 
         # Upload and accept a binary for the primary archive source.
@@ -2141,7 +2138,8 @@ class TestUploadHandler(TestUploadProcessorBase):
 
         # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
-        leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
+        behavior = IBuildFarmJobBehavior(build)
+        leaf_name = behavior.getUploadDirLeaf(behavior.getBuildCookie())
         upload_dir = self.queueUpload("bar_1.0-1_binary",
                 queue_entry=leaf_name)
         self.options.context = 'buildd'
@@ -2165,11 +2163,11 @@ class TestUploadHandler(TestUploadProcessorBase):
             distroseries=self.breezy, archive=archive,
             requester=archive.owner)
         self.assertEquals(archive.owner, build.requester)
-        self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         self.switchToUploader()
         # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
-        leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
+        behavior = IBuildFarmJobBehavior(build)
+        leaf_name = behavior.getUploadDirLeaf(behavior.getBuildCookie())
         relative_path = "~%s/%s/%s/%s" % (
             archive.owner.name, archive.name, self.breezy.distribution.name,
             self.breezy.name)
@@ -2177,12 +2175,9 @@ class TestUploadHandler(TestUploadProcessorBase):
             "bar_1.0-1", queue_entry=leaf_name, relative_path=relative_path)
         self.options.context = 'buildd'
         self.options.builds = True
-        build.jobStarted()
-        # Commit so date_started is recorded and doesn't cause constraint
-        # violations later.
-        build.status = BuildStatus.UPLOADING
-        build.date_finished = UTC_NOW
-        Store.of(build).flush()
+        build.updateStatus(BuildStatus.BUILDING)
+        build.updateStatus(BuildStatus.UPLOADING)
+        self.switchToUploader()
         BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
             leaf_name).process()
         self.layer.txn.commit()
@@ -2215,20 +2210,16 @@ class TestUploadHandler(TestUploadProcessorBase):
         archive.require_virtualized = False
         build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
             distroseries=self.breezy, archive=archive)
-        self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         # Commit so the build cookie has the right ids.
         Store.of(build).flush()
-        leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
+        behavior = IBuildFarmJobBehavior(build)
+        leaf_name = behavior.getUploadDirLeaf(behavior.getBuildCookie())
         os.mkdir(os.path.join(self.incoming_folder, leaf_name))
         self.options.context = 'buildd'
         self.options.builds = True
-        build.jobStarted()
+        build.updateStatus(BuildStatus.BUILDING)
+        build.updateStatus(BuildStatus.UPLOADING)
         self.switchToUploader()
-        # Commit so date_started is recorded and doesn't cause constraint
-        # violations later.
-        Store.of(build).flush()
-        build.status = BuildStatus.UPLOADING
-        build.date_finished = UTC_NOW
         BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
             leaf_name).process()
         self.layer.txn.commit()
@@ -2262,23 +2253,22 @@ class TestUploadHandler(TestUploadProcessorBase):
         archive.require_virtualized = False
         build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
             distroseries=self.breezy, archive=archive)
-        self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         self.switchToUploader()
         # Commit so the build cookie has the right ids.
         Store.of(build).flush()
-        leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
+        behavior = IBuildFarmJobBehavior(build)
+        leaf_name = behavior.getUploadDirLeaf(behavior.getBuildCookie())
         os.mkdir(os.path.join(self.incoming_folder, leaf_name))
         self.options.context = 'buildd'
         self.options.builds = True
-        build.jobStarted()
+        build.updateStatus(BuildStatus.BUILDING)
         self.switchToAdmin()
         build.recipe.destroySelf()
         self.switchToUploader()
         # Commit so date_started is recorded and doesn't cause constraint
         # violations later.
         Store.of(build).flush()
-        build.status = BuildStatus.UPLOADING
-        build.date_finished = UTC_NOW
+        build.updateStatus(BuildStatus.UPLOADING)
         BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
             leaf_name).process()
         self.layer.txn.commit()
@@ -2307,14 +2297,15 @@ class TestUploadHandler(TestUploadProcessorBase):
         queue_item.setDone()
 
         build.buildqueue_record.markAsBuilding(self.factory.makeBuilder())
-        build.status = BuildStatus.BUILDING
+        build.updateStatus(BuildStatus.BUILDING)
         self.switchToUploader()
 
         shutil.rmtree(upload_dir)
 
         # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
-        leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
+        behavior = IBuildFarmJobBehavior(build)
+        leaf_name = behavior.getUploadDirLeaf(behavior.getBuildCookie())
         upload_dir = self.queueUpload(
             "bar_1.0-1_binary", queue_entry=leaf_name)
         self.options.context = 'buildd'

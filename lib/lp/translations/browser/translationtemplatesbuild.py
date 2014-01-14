@@ -13,7 +13,7 @@ from zope.component import getUtility
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.services.webapp.publisher import LaunchpadView
-from lp.translations.model.translationtemplatesbuildjob import (
+from lp.translations.model.translationtemplatesbuild import (
     HARDCODED_TRANSLATIONTEMPLATESBUILD_SCORE,
     )
 

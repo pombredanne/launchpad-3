@@ -12,11 +12,11 @@ __all__ = [
 
 import re
 
-from zope.app.form.browser import TextWidget
 from zope.component import (
     adapter,
     getUtility,
     )
+from zope.formlib.widgets import TextWidget
 from zope.interface import implements
 
 from lp.app.browser.launchpadform import (

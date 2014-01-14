@@ -6,7 +6,8 @@
 __metaclass__ = type
 
 from lazr.restful import EntryResource
-from zope.app.pagetemplate.simpleviewclass import simple
+from lazr.restful.utils import get_current_browser_request
+from zope.browserpage.simpleviewclass import simple
 from zope.component import (
     getSiteManager,
     getUtility,
@@ -24,7 +25,6 @@ from lp.services.webapp.interfaces import (
     ILaunchpadRoot,
     )
 from lp.services.webapp.publisher import (
-    get_current_browser_request,
     Navigation,
     stepthrough,
     )

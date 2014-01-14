@@ -7,7 +7,7 @@ __metaclass__ = type
 from soupmatchers import (
     HTMLContains,
     Tag,
-)
+    )
 from testtools.matchers import Not
 
 from lp.app.enums import InformationType

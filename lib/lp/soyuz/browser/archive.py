@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archive."""
@@ -22,7 +22,7 @@ __all__ = [
     'ArchivePackagesView',
     'ArchiveView',
     'ArchiveViewBase',
-    'EnableRestrictedFamiliesMixin',
+    'EnableRestrictedProcessorsMixin',
     'make_archive_vocabulary',
     'PackageCopyingMixin',
     'traverse_named_ppa',
@@ -38,9 +38,9 @@ from lazr.restful.utils import smartquote
 import pytz
 from sqlobject import SQLObjectNotFound
 from storm.expr import Desc
-from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
+from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
     implements,
     Interface,
@@ -56,7 +56,6 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
-from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp import _
@@ -149,7 +148,7 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     inactive_publishing_status,
@@ -438,7 +437,7 @@ class ArchiveMenuMixin:
         text = 'View PPA'
         return Link(canonical_url(self.context), text, icon='info')
 
-    @enabled_with_permission('launchpad.Commercial')
+    @enabled_with_permission('launchpad.Admin')
     def admin(self):
         text = 'Administer archive'
         return Link('+admin', text, icon='edit')
@@ -867,9 +866,7 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
 
         This is after any filtering or overriding of the sources() method.
         """
-        # Trying to use bool(self.filtered_sources) here resulted in bug
-        # 702425 :(
-        return self.filtered_sources.count() > 0
+        return not self.filtered_sources.is_empty()
 
 
 class ArchiveView(ArchiveSourcePackageListViewBase):
@@ -1005,16 +1002,6 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
     """Detailed packages view for an archive."""
     implements(IArchivePackagesActionMenu)
 
-    def initialize(self):
-        super(ArchivePackagesView, self).initialize()
-        if self.context.private:
-            # To see the +packages page, you must be an uploader, or a
-            # commercial admin.
-            if not check_permission('launchpad.Append', self.context):
-                admins = getUtility(ILaunchpadCelebrities).commercial_admin
-                if not self.user.inTeam(admins):
-                    raise Unauthorized
-
     @property
     def page_title(self):
         return smartquote('Packages in "%s"' % self.context.displayname)
@@ -1053,12 +1040,19 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
         # Pre-load related source archives.
         load_related(Archive, pcjs, ['source_archive_id'])
 
-        return ppcjs
+        return ppcjs.config(limit=5)
 
     @cachedproperty
     def has_pending_copy_jobs(self):
         return self.package_copy_jobs.any()
 
+    @cachedproperty
+    def pending_copy_jobs_text(self):
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        count = job_source.getIncompleteJobsForArchive(self.context).count()
+        if count > 5:
+            return 'Showing 5 of %s' % count
+    
     @cachedproperty
     def has_append_perm(self):
         return check_permission('launchpad.Append', self.context)
@@ -1182,7 +1176,7 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
         to ensure that it only returns true if there are sources
         that can be deleted in this archive.
         """
-        return bool(self.context.getSourcesForDeletion())
+        return not self.context.getSourcesForDeletion().is_empty()
 
     def validate_delete(self, action, data):
         """Validate deletion parameters.
@@ -1375,7 +1369,7 @@ def make_archive_vocabulary(archives):
     terms = []
     for archive in archives:
         token = '%s/%s' % (archive.owner.name, archive.name)
-        label = archive.displayname
+        label = '%s [~%s]' % (archive.displayname, token)
         terms.append(SimpleTerm(archive, token, label))
     return SimpleVocabulary(terms)
 
@@ -1989,8 +1983,14 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
         return canonical_url(self.context)
 
     def validate_save(self, action, data):
-        """Default save validation does nothing."""
-        pass
+        """Check that we're not reenabling a deleted archive.."""
+        form.getWidgetsData(self.widgets, 'field', data)
+
+        # Deleted PPAs can't be reactivated.
+        if ((data.get('enabled') or data.get('publish'))
+            and not self.context.is_active):
+            self.setFieldError(
+                "enabled", "Deleted PPAs can't be enabled.")
 
 
 class ArchiveEditView(BaseArchiveEditView):
@@ -2005,16 +2005,16 @@ class ArchiveEditView(BaseArchiveEditView):
         return 'Edit %s' % self.context.displayname
 
 
-class EnableRestrictedFamiliesMixin:
-    """A mixin that provides enabled_restricted_families field support"""
+class EnableRestrictedProcessorsMixin:
+    """A mixin that provides enabled_restricted_processors field support"""
 
-    def createEnabledRestrictedFamilies(self, description=None):
-        """Creates the 'enabled_restricted_families' field."""
+    def createEnabledRestrictedProcessors(self, description=None):
+        """Creates the 'enabled_restricted_processors' field."""
         terms = []
-        for family in getUtility(IProcessorFamilySet).getRestricted():
+        for processor in getUtility(IProcessorSet).getRestricted():
             terms.append(SimpleTerm(
-                family, token=family.name, title=family.title))
-        old_field = IArchive['enabled_restricted_families']
+                processor, token=processor.name, title=processor.title))
+        old_field = IArchive['enabled_restricted_processors']
         return form.Fields(
             List(__name__=old_field.__name__,
                  title=old_field.title,
@@ -2025,7 +2025,7 @@ class EnableRestrictedFamiliesMixin:
                  render_context=self.render_context)
 
 
-class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
+class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedProcessorsMixin):
 
     field_names = [
         'enabled',
@@ -2033,39 +2033,23 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
         'suppress_subscription_notifications',
         'require_virtualized',
         'build_debug_symbols',
-        'buildd_secret',
+        'publish_debug_symbols',
+        'permit_obsolete_series_uploads',
         'authorized_size',
         'relative_build_score',
         'external_dependencies',
         ]
     custom_widget('external_dependencies', TextAreaWidget, height=3)
-    custom_widget('enabled_restricted_families', LabeledMultiCheckBoxWidget)
+    custom_widget('enabled_restricted_processors', LabeledMultiCheckBoxWidget)
     page_title = 'Administer'
 
     @property
     def label(self):
         return 'Administer %s' % self.context.displayname
 
-    def updateContextFromData(self, data):
-        """Update context from form data.
-
-        If the user did not specify a buildd secret but marked the
-        archive as private, generate a secret for them.
-        """
-        if data['private'] and data['buildd_secret'] is None:
-            # The buildd secret is auto-generated and set when 'private'
-            # is set to True
-            del(data['buildd_secret'])
-        super(ArchiveAdminView, self).updateContextFromData(data)
-
     def validate_save(self, action, data):
-        """Validate the save action on ArchiveAdminView.
-
-        buildd_secret can only, and must, be set for private archives.
-        If the archive is private and the buildd secret is not set it will be
-        generated.
-        """
-        form.getWidgetsData(self.widgets, 'field', data)
+        """Validate the save action on ArchiveAdminView."""
+        super(ArchiveAdminView, self).validate_save(action, data)
 
         if data.get('private') != self.context.private:
             # The privacy is being switched.
@@ -2079,10 +2063,6 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
             self.setFieldError(
                 'private',
                 'Private teams may not have public archives.')
-        elif data.get('buildd_secret') is not None and not data['private']:
-            self.setFieldError(
-                'buildd_secret',
-                'Do not specify for non-private archives')
 
         # Check the external_dependencies field.
         ext_deps = data.get('external_dependencies')
@@ -2104,17 +2084,17 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
     @property
     def initial_values(self):
         return {
-            'enabled_restricted_families':
-                self.context.enabled_restricted_families,
+            'enabled_restricted_processors':
+                self.context.enabled_restricted_processors,
             }
 
     def setUpFields(self):
         """Override `LaunchpadEditFormView`.
 
-        See `createEnabledRestrictedFamilies` method.
+        See `createEnabledRestrictedProcessors` method.
         """
         super(ArchiveAdminView, self).setUpFields()
-        self.form_fields += self.createEnabledRestrictedFamilies()
+        self.form_fields += self.createEnabledRestrictedProcessors()
 
 
 class ArchiveDeleteView(LaunchpadFormView):

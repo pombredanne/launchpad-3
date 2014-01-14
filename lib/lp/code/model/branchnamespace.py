@@ -78,11 +78,7 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.database.constants import UTC_NOW
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 
 
 BRANCH_POLICY_ALLOWED_TYPES = {
@@ -251,8 +247,7 @@ class _BaseNamespace:
 
     def getBranches(self, eager_load=False):
         """See `IBranchNamespace`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(Branch, self._getBranchesClause())
+        return IStore(Branch).find(Branch, self._getBranchesClause())
 
     def getBranchName(self, branch_name):
         """See `IBranchNamespace`."""
@@ -260,8 +255,7 @@ class _BaseNamespace:
 
     def getByName(self, branch_name, default=None):
         """See `IBranchNamespace`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        match = store.find(
+        match = IStore(Branch).find(
             Branch, self._getBranchesClause(),
             Branch.name == branch_name).one()
         if match is None:

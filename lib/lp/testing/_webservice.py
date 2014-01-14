@@ -1,8 +1,6 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# We like global statements!
-# pylint: disable-msg=W0602,W0603
 __metaclass__ = type
 
 __all__ = [
@@ -22,9 +20,9 @@ from launchpadlib.credentials import (
     )
 from launchpadlib.launchpad import Launchpad
 import transaction
-from zope.app.publication.interfaces import IEndRequestEvent
 from zope.app.testing import ztapi
 from zope.component import getUtility
+from zope.publisher.interfaces import IEndRequestEvent
 import zope.testing.cleanup
 
 from lp.registry.interfaces.person import IPersonSet

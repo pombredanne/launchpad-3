@@ -41,8 +41,7 @@ Claim OpenPGP key:
     >>> key = "A419AE861E88BC9E04B9C26FBA2B9389DFD20543"
     >>> browser.getControl(name='fingerprint').value = key
     >>> browser.getControl(name='import').click()
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print message
+    >>> print_feedback_messages(browser.contents)
     A message has been sent to test@canonical.com, encrypted
     with the key 1024D/DFD20543.
     To confirm the key is yours, decrypt the message and follow the
@@ -130,27 +129,14 @@ Get redirected to the user's homepage with a greeting:
 
     >>> browser.url
     'http://launchpad.dev/~name12'
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print message
+    >>> print_feedback_messages(browser.contents)
     The key 1024D/DFD20543 was successfully validated.
-    ...
 
 Certify the key is imported:
 
     >>> browser.open("http://launchpad.dev/~name12/+editpgpkeys")
     >>> browser.getControl(name='DEACTIVATE_GPGKEY').displayOptions
     ['1024D/DFD20543']
-
-Make sure that UIDs were properly processed; in particular, check that
-"sample.revoked@canonical.com", the revoked UID in the key, wasn't
-added as an email address:
-
-    >>> from lp.testing.pages import strip_label
-
-    >>> browser.open("http://launchpad.dev/~name12/+editemails")
-    >>> control = browser.getControl(name='field.UNVALIDATED_SELECTED')
-    >>> [strip_label(label) for label in sorted(control.displayOptions)]
-    ['sample.person@canonical.com', 'testtest@canonical.com']
 
 Verify that the key was imported with the "can encrypt" flag set:
 
@@ -177,8 +163,7 @@ their Launchpad account.
     >>> fingerprint = "447DBF38C4F9C4ED752246B77D88913717B05A8F"
     >>> browser.getControl(name='fingerprint').value = fingerprint
     >>> browser.getControl(name='import').click()
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print message
+    >>> print_feedback_messages(browser.contents)
     A message has been sent to test@canonical.com. To
     confirm the key 1024D/17B05A8F is yours, follow
     the link inside.
@@ -251,8 +236,7 @@ If he refuses to sign the text, he gets an error message.
     >>> browser.getControl('Continue').click()
     >>> browser.title
     'Confirm sign-only OpenPGP key'
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print message
+    >>> print_feedback_messages(browser.contents)
     There is 1 error.
     Required input is missing.
 
@@ -267,8 +251,7 @@ If he signs a different text, he gets an error message.
 
     >>> browser.getControl('Signed text').value = bad
     >>> browser.getControl('Continue').click()
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print message
+    >>> print_feedback_messages(browser.contents)
     There is 1 error.
     The signed content does not match the message found in the email.
 
@@ -291,8 +274,7 @@ message. The following text was signed with the key DFD20543:
     ... """
     >>> browser.getControl('Signed text').value = signed_content
     >>> browser.getControl('Continue').click()
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print message
+    >>> print_feedback_messages(browser.contents)
     There is 1 error.
     The key used to sign the content (A419AE861E88BC9E04B9C26FBA2B9389DFD20543)
     is not the key you were registering
@@ -309,14 +291,8 @@ If he signs the text correctly, he is redirected to his home page.
     >>> browser.getControl('Continue').click()
     >>> browser.url
     'http://launchpad.dev/~name12'
-
-The address associated with the key is not associated with his
-Launchpad account, so Launchpad gives him a message to that effect.
-
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print message
+    >>> print_feedback_messages(browser.contents)
     The key 1024D/17B05A8F was successfully validated.
-    Some of your key's UIDs (sign.only@canonical.com) are not registered...
 
 Now that the key has been validated, the login token is consumed:
 
@@ -337,8 +313,7 @@ On a mad whim he decides to de-activate the key he just imported.
     >>> browser.getControl(name="DEACTIVATE_GPGKEY").value = ['3']
     >>> browser.getControl('Deactivate Key').click()
 
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print message
+    >>> print_feedback_messages(browser.contents)
     Deactivated key(s): 1024D/17B05A8F
 
 Coming to his senses, he asks for a re-validation of the key.
@@ -346,8 +321,7 @@ Coming to his senses, he asks for a re-validation of the key.
     >>> browser.getControl(name="REACTIVATE_GPGKEY").value = ['3']
     >>> browser.getControl('Reactivate Key').click()
 
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print message
+    >>> print_feedback_messages(browser.contents)
     A message has been sent to test@canonical.com with instructions
     to reactivate these key(s): 1024D/17B05A8F
 
@@ -599,6 +573,7 @@ Ensure we are raising 404 error instead of System Error
   >>> print http(r"""
   ... POST /codeofconduct/donkey HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: https://launchpad.dev/
   ... """)
   HTTP/1.1 404 Not Found
   ...

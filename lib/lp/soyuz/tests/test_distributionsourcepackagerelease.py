@@ -7,10 +7,10 @@ from testtools.matchers import LessThan
 from zope.component import getUtility
 
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.soyuz.interfaces.distroarchseries import IDistroArchSeriesSet
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease,
     )
+from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     StormStatementRecorder,
@@ -41,7 +41,8 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
             source_package_release=self.sourcepackagerelease,
             distroarchseries=self.distroarchseries)
         bp_release = self.factory.makeBinaryPackageRelease(
-            build=bp_build, binarypackagename=name)
+            build=bp_build, binarypackagename=name, architecturespecific=True,
+            version=self.factory.getUniqueString())
         sourcepackagename = self.sourcepackagerelease.sourcepackagename
         self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=sourcepackagename,
@@ -108,8 +109,7 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
         publisher = SoyuzTestPublisher()
         publisher.updateDistroSeriesPackageCache(
             self.distroarchseries.distroseries)
-        self.distroarchseries = getUtility(IDistroArchSeriesSet).get(
-            self.distroarchseries.id)
+        self.distroarchseries = DistroArchSeries.get(self.distroarchseries.id)
         distribution = self.distroarchseries.distroseries.distribution
         releases = distribution.getCurrentSourceReleases([sourcepackagename])
         [(distribution_sourcepackage, dsp_release)] = releases.items()

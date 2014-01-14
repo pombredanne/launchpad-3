@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ISpecificationTarget browser views."""
@@ -161,7 +161,7 @@ class HasSpecificationsView(LaunchpadView):
     def template(self):
         # Check for the magical "index" added by the browser:page template
         # machinery. If it exists this is actually the
-        # zope.app.pagetemplate.simpleviewclass.simple class that is magically
+        # zope.browserpage.simpleviewclass.simple class that is magically
         # mixed in by the browser:page zcml directive the template defined in
         # the directive should be used.
         if safe_hasattr(self, 'index'):
@@ -259,7 +259,7 @@ class HasSpecificationsView(LaunchpadView):
 
     @cachedproperty
     def has_any_specifications(self):
-        return not self.context._all_specifications.is_empty()
+        return not self.context.visible_specifications.is_empty()
 
     @cachedproperty
     def all_specifications(self):
@@ -347,8 +347,7 @@ class HasSpecificationsView(LaunchpadView):
                 and self.context.private
                 and not check_permission('launchpad.View', self.context)):
             return []
-        filter = self.spec_filter
-        return self.context.specifications(self.user, filter=filter)
+        return self.context.specifications(self.user, filter=self.spec_filter)
 
     @cachedproperty
     def specs_batched(self):
@@ -407,7 +406,7 @@ class HasSpecificationsView(LaunchpadView):
         """
         return self.context.specifications(self.user,
             sort=SpecificationSort.DATE, quantity=quantity,
-            prejoin_people=False)
+            need_people=False, need_branches=False, need_workitems=False)
 
 
 class SpecificationAssignmentsView(HasSpecificationsView):

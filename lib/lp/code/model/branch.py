@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -66,6 +66,11 @@ from lp.app.interfaces.launchpad import (
     IPrivacy,
     )
 from lp.app.interfaces.services import IService
+from lp.blueprints.model.specification import Specification
+from lp.blueprints.model.specificationbranch import SpecificationBranch
+from lp.blueprints.model.specificationsearch import (
+    get_specification_privacy_filter,
+    )
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
@@ -164,7 +169,7 @@ from lp.services.database.constants import (
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.lpstorm import IMasterStore
+from lp.services.database.interfaces import IMasterStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -438,9 +443,20 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         return bug.unlinkBranch(self, user)
 
-    spec_links = SQLMultipleJoin('SpecificationBranch',
-        joinColumn='branch',
-        orderBy='id')
+    spec_links = SQLMultipleJoin(
+        'SpecificationBranch', joinColumn='branch', orderBy='id')
+
+    def getSpecificationLinks(self, user):
+        """See `IBranch`."""
+        tables = [
+            SpecificationBranch,
+            Join(
+                Specification,
+                SpecificationBranch.specificationID == Specification.id)]
+        return Store.of(self).using(*tables).find(
+            SpecificationBranch,
+            SpecificationBranch.branchID == self.id,
+            *get_specification_privacy_filter(user))
 
     def linkSpecification(self, spec, registrant):
         """See `IBranch`."""
@@ -459,8 +475,7 @@ class Branch(SQLBase, BzrIdentityMixin):
     @property
     def active_landing_targets(self):
         """Merge proposals not in final states where this branch is source."""
-        store = Store.of(self)
-        return store.find(
+        return Store.of(self).find(
             BranchMergeProposal, BranchMergeProposal.source_branch == self,
             Not(BranchMergeProposal.queue_status.is_in(
                 BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
@@ -615,8 +630,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def getStackedBranches(self):
         """See `IBranch`."""
-        store = Store.of(self)
-        return store.find(Branch, Branch.stacked_on == self)
+        return Store.of(self).find(Branch, Branch.stacked_on == self)
 
     def getStackedOnBranches(self):
         """See `IBranch`."""
@@ -730,8 +744,8 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def canBeDeleted(self):
         """See `IBranch`."""
-        if ((len(self.deletionRequirements()) != 0) or
-            self.getStackedBranches().count() > 0):
+        if ((len(self.deletionRequirements()) != 0) or not
+            self.getStackedBranches().is_empty()):
             # Can't delete if the branch is associated with anything.
             return False
         else:
@@ -839,9 +853,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         # This is eager loaded by BranchCollection.getBranches.
         # Imported here to avoid circular import.
         from lp.registry.model.productseries import ProductSeries
-        return Store.of(self).find(
-            ProductSeries,
-            ProductSeries.branch == self)
+        return Store.of(self).find(ProductSeries, ProductSeries.branch == self)
 
     def associatedProductSeries(self):
         """See `IBranch`."""
@@ -870,6 +882,10 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         return self._associatedSuiteSourcePackages
 
+    def userCanBeSubscribed(self, person):
+        return not (person.is_team and self.information_type in
+            PRIVATE_INFORMATION_TYPES and person.anyone_can_join())
+
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,
                   code_review_level, subscribed_by,
@@ -879,8 +895,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         Subscribe person to this branch and also to any editable stacked on
         branches they cannot see.
         """
-        if (person.is_team and self.information_type in
-            PRIVATE_INFORMATION_TYPES and person.anyone_can_join()):
+        if not self.userCanBeSubscribed(person):
             raise SubscriptionPrivacyViolation(
                 "Open and delegated teams cannot be subscribed to private "
                 "branches.")
@@ -1248,25 +1263,22 @@ class Branch(SQLBase, BzrIdentityMixin):
             TranslationTemplatesBuild,
             )
 
+        # Remove BranchJobs.
         store = Store.of(self)
         affected_jobs = Select(
             [BranchJob.jobID],
             And(BranchJob.job == Job.id, BranchJob.branch == self))
+        store.find(Job, Job.id.is_in(affected_jobs)).remove()
 
-        # Delete BuildQueue entries for affected Jobs.  They would pin
-        # the affected Jobs in the database otherwise.
-        store.find(BuildQueue, BuildQueue.jobID.is_in(affected_jobs)).remove()
-
-        # Find BuildFarmJobs to delete.
+        # Delete TranslationTemplatesBuilds, their BuildFarmJobs and
+        # their BuildQueues.
         bfjs = store.find(
             (BuildFarmJob.id,),
             TranslationTemplatesBuild.build_farm_job_id == BuildFarmJob.id,
             TranslationTemplatesBuild.branch == self)
         bfj_ids = [bfj[0] for bfj in bfjs]
-
-        # Delete Jobs.  Their BranchJobs cascade along in the database.
-        store.find(Job, Job.id.is_in(affected_jobs)).remove()
-
+        store.find(
+            BuildQueue, BuildQueue._build_farm_job_id.is_in(bfj_ids)).remove()
         store.find(
             TranslationTemplatesBuild,
             TranslationTemplatesBuild.branch == self).remove()
@@ -1338,7 +1350,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             Job._status != JobStatus.COMPLETED,
             Job._status != JobStatus.FAILED,
             BranchJob.job_type == BranchJobType.UPGRADE_BRANCH)
-        return jobs.count() > 0
+        return not jobs.is_empty()
 
     def requestUpgrade(self, requester):
         """See `IBranch`."""

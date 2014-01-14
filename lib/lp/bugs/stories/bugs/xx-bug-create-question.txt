@@ -70,8 +70,7 @@ bugtask directly.
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev'
     ...     '/ubuntu/+source/linux-source-2.6.15/+bug/10/+editstatus')
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
+    >>> print_feedback_messages(user_browser.contents)
     This bug was converted into a question. It cannot be edited.
 
     >>> user_browser.getControl('Save Changes')
@@ -203,12 +202,6 @@ could not be created.
     >>> print extract_text(message)
     This bug report was converted into a question:...question #16...
 
-    >>> user_browser.goBack(count=1)
-    >>> user_browser.getControl('Comment').value = 'This will fail.'
-    >>> user_browser.getControl('Convert this Bug into a Question').click()
-    >>> print "\n".join(get_feedback_messages(user_browser.contents))
-    This bug could not be converted into a question.
-
 
 Remove the question
 -------------------
@@ -244,8 +237,9 @@ the Open status.
     >>> user_browser.title
     'Bug #12 ... : Bugs : Jokosher'
 
-    >>> print "\n".join(get_feedback_messages(user_browser.contents))
-    Removed Question #...: Copy, Cut and Delete operations should work...
+    >>> print_feedback_messages(user_browser.contents)
+    Removed Question #...:
+    Copy, Cut and Delete operations should work...
 
     >>> portlet = find_portlet(user_browser.contents, 'Related questions')
     >>> print portlet

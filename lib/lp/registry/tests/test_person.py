@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -789,27 +789,22 @@ class TestPersonStates(TestCaseWithFactory):
         self.bzr = product_set.getByName('bzr')
         self.now = datetime.now(pytz.UTC)
 
-    def test_canDeactivateAccount_private_projects(self):
+    def test_canDeactivate_private_projects(self):
         """A user owning non-public products cannot be deactivated."""
         user = self.factory.makePerson()
         self.factory.makeProduct(
             information_type=InformationType.PUBLIC,
-            name="public",
-            owner=user)
+            name="public", owner=user)
         self.factory.makeProduct(
             information_type=InformationType.PROPRIETARY,
-            name="private",
-            owner=user)
+            name="private", owner=user)
 
         login(user.preferredemail.email)
-        can_deactivate, errors = user.canDeactivateAccountWithErrors()
-
-        self.assertFalse(can_deactivate)
         expected_error = ('This account cannot be deactivated because it owns '
                         'the following non-public products: private')
-        self.assertIn(expected_error, errors)
+        self.assertEquals([expected_error], user.canDeactivate())
 
-    def test_deactivateAccount_copes_with_names_already_in_use(self):
+    def test_deactivate_copes_with_names_already_in_use(self):
         """When a user deactivates his account, its name is changed.
 
         We do that so that other users can use that name, which the original
@@ -821,7 +816,7 @@ class TestPersonStates(TestCaseWithFactory):
         """
         sample_person = Person.byName('name12')
         login(sample_person.preferredemail.email)
-        sample_person.deactivateAccount("blah!")
+        sample_person.deactivate(comment="blah!")
         self.failUnlessEqual(sample_person.name, 'name12-deactivatedaccount')
         # Now that name12 is free Foo Bar can use it.
         foo_bar = Person.byName('name16')
@@ -829,10 +824,10 @@ class TestPersonStates(TestCaseWithFactory):
         # If Foo Bar deactivates his account, though, we'll have to use a name
         # other than name12-deactivatedaccount because that is already in use.
         login(foo_bar.preferredemail.email)
-        foo_bar.deactivateAccount("blah!")
+        foo_bar.deactivate(comment="blah!")
         self.failUnlessEqual(foo_bar.name, 'name12-deactivatedaccount1')
 
-    def test_deactivateAccountReassignsOwnerAndDriver(self):
+    def test_deactivate_reassigns_owner_and_driver(self):
         """Product owner and driver are reassigned.
 
         If a user is a product owner and/or driver, when the user is
@@ -845,14 +840,11 @@ class TestPersonStates(TestCaseWithFactory):
         with person_logged_in(user):
             product.driver = user
             product.bug_supervisor = user
-            user.deactivateAccount("Going off the grid.")
+            user.deactivate(comment="Going off the grid.")
         registry_team = getUtility(ILaunchpadCelebrities).registry_experts
-        self.assertEqual(registry_team, product.owner,
-                         "Owner is not registry team.")
-        self.assertEqual(None, product.driver,
-                         "Driver is not emptied.")
-        self.assertEqual(None, product.bug_supervisor,
-                         "Driver is not emptied.")
+        self.assertEqual(registry_team, product.owner)
+        self.assertIs(None, product.driver)
+        self.assertIs(None, product.bug_supervisor)
 
     def test_getDirectMemberIParticipateIn(self):
         sample_person = Person.byName('name12')
@@ -908,6 +900,7 @@ class TestPersonStates(TestCaseWithFactory):
         # needlessly run.
         fake_warning = 'Warning!  Warning!'
         naked_team = removeSecurityProxy(self.otherteam)
+        naked_team._visibility_warning_cache_key = PersonVisibility.PRIVATE
         naked_team._visibility_warning_cache = fake_warning
         warning = self.otherteam.visibilityConsistencyWarning(
             PersonVisibility.PRIVATE)
@@ -921,18 +914,33 @@ class TestPersonStates(TestCaseWithFactory):
         self.otherteam.visibility = PersonVisibility.PRIVATE
 
     def test_visibility_validator_team_private_to_public(self):
-        # A PRIVATE team cannot convert to PUBLIC.
+        # A PRIVATE team can transition to PUBLIC.
         self.otherteam.visibility = PersonVisibility.PRIVATE
+        self.otherteam.visibility = PersonVisibility.PUBLIC
+
+    def test_visibility_validator_team_private_to_public_with_forbidden(self):
+        # A PRIVATE team that owns a distribution can't become PUBLIC.
+        # XXX wgrant 2014-01-08: This probably isn't a sane constraint,
+        # but it'll do to test the forbidden case until we decide to
+        # relax it.
+        self.otherteam.visibility = PersonVisibility.PRIVATE
+        self.factory.makeDistribution(bug_supervisor=self.otherteam)
+        Store.of(self.otherteam).flush()
         try:
             self.otherteam.visibility = PersonVisibility.PUBLIC
         except ImmutableVisibilityError as exc:
             self.assertEqual(
                 str(exc),
-                'A private team cannot change visibility.')
+                'This team cannot be converted to Public since it is '
+                'referenced by a distribution.')
+        else:
+            raise AssertionError("Expected exception.")
 
     def test_visibility_validator_team_private_to_public_view(self):
         # A PRIVATE team cannot convert to PUBLIC.
         self.otherteam.visibility = PersonVisibility.PRIVATE
+        self.factory.makeDistribution(bug_supervisor=self.otherteam)
+        Store.of(self.otherteam).flush()
         view = create_initialized_view(self.otherteam, '+edit', {
             'field.name': 'otherteam',
             'field.displayname': 'Other Team',
@@ -943,8 +951,10 @@ class TestPersonStates(TestCaseWithFactory):
             })
         self.assertEqual(len(view.errors), 0)
         self.assertEqual(len(view.request.notifications), 1)
-        self.assertEqual(view.request.notifications[0].message,
-                         'A private team cannot change visibility.')
+        self.assertEqual(
+            view.request.notifications[0].message,
+            'This team cannot be converted to Public since it is '
+            'referenced by a distribution.')
 
     def test_person_snapshot(self):
         omitted = (
@@ -1947,9 +1957,9 @@ class TestSpecifications(TestCaseWithFactory):
         blueprint1 = self.makeSpec(title='abc')
         owner = blueprint1.owner
         blueprint2 = self.makeSpec(owner, title='def')
-        result = list_result(owner, ['abc'])
+        result = list_result(owner, [u'abc'])
         self.assertEqual([blueprint1], result)
-        result = list_result(owner, ['def'])
+        result = list_result(owner, [u'def'])
         self.assertEqual([blueprint2], result)
 
     def test_proprietary_not_listed(self):

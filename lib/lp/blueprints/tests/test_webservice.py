@@ -401,3 +401,65 @@ class TestSpecificationBugLinks(SpecificationWebserviceTestCase):
 
         # Now that we've unlinked the bug, there are no linked bugs at all.
         self.assertEqual(0, spec.bugs.total_size)
+
+
+class TestSpecificationGoalHandling(SpecificationWebserviceTestCase):
+
+    layer = AppServerLayer
+
+    def setUp(self):
+        super(TestSpecificationGoalHandling, self).setUp()
+        self.driver = self.factory.makePerson()
+        self.proposer = self.factory.makePerson()
+        self.product = self.factory.makeProduct(driver=self.driver)
+        self.series = self.factory.makeProductSeries(product=self.product)
+
+    def test_goal_propose_and_accept(self):
+        # Webservice clients can propose and accept spec series goals.
+        db_spec = self.factory.makeBlueprint(product=self.product,
+                                             owner=self.proposer)
+        # Propose for series goal
+        with person_logged_in(self.proposer):
+            launchpad = self.factory.makeLaunchpadService(person=self.proposer)
+            spec = ws_object(launchpad, db_spec)
+            series = ws_object(launchpad, self.series)
+            spec.proposeGoal(goal=series)
+            transaction.commit()
+            self.assertEqual(db_spec.goal, self.series)
+            self.assertFalse(spec.has_accepted_goal)
+
+        # Accept series goal
+        with person_logged_in(self.driver):
+            launchpad = self.factory.makeLaunchpadService(person=self.driver)
+            spec = ws_object(launchpad, db_spec)
+            spec.acceptGoal()
+            transaction.commit()
+            self.assertTrue(spec.has_accepted_goal)
+
+    def test_goal_propose_decline_and_clear(self):
+        # Webservice clients can decline and clear spec series goals.
+        db_spec = self.factory.makeBlueprint(product=self.product,
+                                             owner=self.proposer)
+        # Propose for series goal
+        with person_logged_in(self.proposer):
+            launchpad = self.factory.makeLaunchpadService(person=self.proposer)
+            spec = ws_object(launchpad, db_spec)
+            series = ws_object(launchpad, self.series)
+            spec.proposeGoal(goal=series)
+            transaction.commit()
+            self.assertEqual(db_spec.goal, self.series)
+            self.assertFalse(spec.has_accepted_goal)
+
+        with person_logged_in(self.driver):
+            # Decline series goal
+            launchpad = self.factory.makeLaunchpadService(person=self.driver)
+            spec = ws_object(launchpad, db_spec)
+            spec.declineGoal()
+            transaction.commit()
+            self.assertFalse(spec.has_accepted_goal)
+            self.assertEqual(db_spec.goal, self.series)
+
+            # Clear series goal as a driver
+            spec.proposeGoal(goal=None)
+            transaction.commit()
+            self.assertIsNone(db_spec.goal)

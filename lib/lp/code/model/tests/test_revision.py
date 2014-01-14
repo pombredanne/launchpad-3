@@ -28,11 +28,7 @@ from lp.code.model.revision import (
     RevisionSet,
     )
 from lp.registry.model.karma import Karma
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import cursor
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.testing import (
@@ -79,8 +75,7 @@ class TestRevisionKarma(TestCaseWithFactory):
         # Use an administrator to set branch privacy easily.
         TestCaseWithFactory.setUp(self, "admin@canonical.com")
         # Exclude sample data from the test results.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        store.execute(
+        IStore(RevisionCache).execute(
             "UPDATE Revision SET karma_allocated = TRUE "
             "WHERE karma_allocated IS FALSE")
 
@@ -229,9 +224,14 @@ class TestRevisionSet(TestCaseWithFactory):
     def test_newFromBazaarRevisions(self):
         # newFromBazaarRevisions behaves as expected.
         # only branchscanner can SELECT revisionproperties.
+
         self.becomeDbUser('branchscanner')
         bzr_revisions = [
-            self.factory.makeBzrRevision('rev-1', prop1="foo"),
+            self.factory.makeBzrRevision(
+                'rev-1',
+                props={
+                    'prop1': 'foo', 'deb-pristine-delta': 'bar',
+                    'deb-pristine-delta-xz': 'baz'}),
             self.factory.makeBzrRevision('rev-2', parent_ids=['rev-1'])
         ]
         with StormStatementRecorder() as recorder:
@@ -244,6 +244,9 @@ class TestRevisionSet(TestCaseWithFactory):
         self.assertEqual(
             datetime(1970, 1, 1, 0, 0, tzinfo=pytz.UTC), rev_1.revision_date)
         self.assertEqual([], rev_1.parents)
+        # Revision properties starting with 'deb-pristine-delta' aren't
+        # imported into the database; they're huge, opaque and
+        # uninteresting for the application.
         self.assertEqual({'prop1': 'foo'}, rev_1.getProperties())
         rev_2 = self.revision_set.getByRevisionId('rev-2')
         self.assertEqual(['rev-1'], rev_2.parent_ids)
@@ -736,8 +739,7 @@ class RevisionCacheTestCase(TestCaseWithFactory):
     def setUp(self):
         # Login as an admin as we don't care about permissions here.
         TestCaseWithFactory.setUp(self, 'admin@canonical.com')
-        self.store = getUtility(IStoreSelector).get(
-            MAIN_STORE, DEFAULT_FLAVOR)
+        self.store = IStore(RevisionCache)
         # There should be no RevisionCache entries in the test data.
         assert self.store.find(RevisionCache).count() == 0
 

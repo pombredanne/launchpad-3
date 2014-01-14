@@ -275,7 +275,7 @@ presented ordered to appear in a 3 column list.
     Educational Community Licence view licence
     Public Domain view licence
     Artistic Licence 2.0 view licence
-    GNU GFDL no options view licence
+    GNU FDL no options view licence
     Python Licence view licence
     Common Public Licence view licence
     Mozilla Public Licence view licence

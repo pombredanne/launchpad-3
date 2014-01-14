@@ -1,7 +1,5 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213,C0322
 
 """Person-related view classes."""
 
@@ -77,10 +75,6 @@ from lazr.uri import URI
 import pytz
 from storm.zope.interfaces import IResultSet
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser import (
-    TextAreaWidget,
-    TextWidget,
-    )
 from zope.component import (
     adapts,
     getUtility,
@@ -89,6 +83,10 @@ from zope.component import (
 from zope.error.interfaces import IErrorReportingUtility
 from zope.formlib import form
 from zope.formlib.form import FormFields
+from zope.formlib.widgets import (
+    TextAreaWidget,
+    TextWidget,
+    )
 from zope.interface import (
     classImplements,
     implements,
@@ -173,6 +171,9 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     )
 from lp.registry.interfaces.personproduct import IPersonProductFactory
+from lp.registry.interfaces.persontransferjob import (
+    IPersonDeactivateJobSource,
+    )
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.poll import IPollSubset
 from lp.registry.interfaces.product import IProduct
@@ -777,7 +778,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
     @enabled_with_permission('launchpad.Special')
     def editsshkeys(self):
         target = '+editsshkeys'
-        if self.context.sshkeys.count() == 0:
+        if self.context.sshkeys.is_empty():
             text = 'Add an SSH key'
             icon = 'add'
         else:
@@ -811,7 +812,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
         # Only enable the link if the person has some subscriptions.
         subscriptions = getUtility(IArchiveSubscriberSet).getBySubscriber(
             self.context)
-        enabled = subscriptions.count() > 0
+        enabled = not subscriptions.is_empty()
 
         return Link(target, text, summary, enabled=enabled, icon='info')
 
@@ -944,15 +945,12 @@ class PersonDeactivateAccountView(LaunchpadFormView):
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
-        can_deactivate, errors = self.context.canDeactivateAccountWithErrors()
-        if not can_deactivate:
-            [self.addError(message) for message in errors]
+        [self.addError(message) for message in self.context.canDeactivate()]
 
     @action(_("Deactivate My Account"), name="deactivate")
     def deactivate_action(self, action, data):
-        # We override the can_deactivate since validation already processed
-        # this information.
-        self.context.deactivateAccount(data['comment'], can_deactivate=True)
+        self.context.preDeactivate(data['comment'])
+        getUtility(IPersonDeactivateJobSource).create(self.context)
         logoutPerson(self.request)
         self.request.response.addInfoNotification(
             _(u'Your account has been deactivated.'))
@@ -1135,22 +1133,11 @@ class PersonAdministerView(PersonRenameFormMixin):
     """Administer an `IPerson`."""
     schema = IPerson
     label = "Review person"
-    default_field_names = [
+    field_names = [
         'name', 'displayname',
         'personal_standing', 'personal_standing_reason']
     custom_widget(
         'personal_standing_reason', TextAreaWidget, height=5, width=60)
-
-    def setUpFields(self):
-        """Setup the normal fields from the schema, as appropriate.
-
-        If not an admin (e.g. registry expert), remove the displayname field.
-        """
-        self.field_names = self.default_field_names[:]
-        admin = check_permission('launchpad.Admin', self.context)
-        if not admin:
-            self.field_names.remove('displayname')
-        super(PersonAdministerView, self).setUpFields()
 
     @property
     def is_viewing_person(self):
@@ -1181,6 +1168,7 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
     """Administer an `IAccount` belonging to an `IPerson`."""
     schema = IAccount
     label = "Review person's account"
+    field_names = ['displayname', 'status', 'status_comment']
     custom_widget(
         'status_comment', TextAreaWidget, height=5, width=60)
 
@@ -1191,10 +1179,6 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         # It also means that permissions are checked on IAccount, not IPerson.
         self.person = self.context
         self.context = self.person.account
-        # Set fields to be displayed.
-        self.field_names = ['status', 'status_comment']
-        if self.viewed_by_admin:
-            self.field_names = ['displayname'] + self.field_names
 
     @property
     def is_viewing_person(self):
@@ -1206,11 +1190,6 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         return False
 
     @property
-    def viewed_by_admin(self):
-        """Is the user a Launchpad admin?"""
-        return check_permission('launchpad.Admin', self.context)
-
-    @property
     def email_addresses(self):
         """A list of the user's preferred and validated email addresses."""
         emails = sorted(
@@ -1220,12 +1199,17 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         return emails
 
     @property
+    def guessed_email_addresses(self):
+        """A list of the user's new email addresses.
+
+        This is just EmailAddressStatus.NEW addresses, not unvalidated ones
+        created through the web UI. They only have LoginTokens.
+        """
+        return sorted(email.email for email in self.person.guessedemails)
+
+    @property
     def next_url(self):
         """See `LaunchpadEditFormView`."""
-        is_suspended = self.context.status == AccountStatus.SUSPENDED
-        if is_suspended and not self.viewed_by_admin:
-            # Non-admins cannot see suspended persons.
-            return canonical_url(getUtility(IPersonSet))
         return canonical_url(self.person)
 
     @property
@@ -1499,7 +1483,7 @@ class PersonKarmaView(LaunchpadView):
     @cachedproperty
     def has_expired_karma(self):
         """Did the person have karma?"""
-        return self.context.latestKarma().count() > 0
+        return not self.context.latestKarma().is_empty()
 
 
 class ContactViaWebLinksMixin:
@@ -1928,7 +1912,7 @@ class PersonView(LaunchpadView, FeedsMixin, ContactViaWebLinksMixin):
             return True
 
         # If the current user can view any PPA, show the section.
-        return self.visible_ppas.count() > 0
+        return not self.visible_ppas.is_empty()
 
     @cachedproperty
     def visible_ppas(self):
@@ -2265,7 +2249,7 @@ class PersonEditJabberIDsView(LaunchpadFormView):
 
     def setUpFields(self):
         super(PersonEditJabberIDsView, self).setUpFields()
-        if self.context.jabberids.count() > 0:
+        if not self.context.jabberids.is_empty():
             # Make the jabberid entry optional on the edit page if one or more
             # ids already exist, which allows the removal of ids without
             # filling out the new jabberid field.
@@ -2576,9 +2560,7 @@ class PersonGPGView(LaunchpadView):
         self.info_message = structured('\n<br />\n'.join(comments))
 
     def _validateGPG(self, key):
-        logintokenset = getUtility(ILoginTokenSet)
         bag = getUtility(ILaunchBag)
-
         preferredemail = bag.user.preferredemail.email
         login = bag.login
 
@@ -2587,10 +2569,9 @@ class PersonGPGView(LaunchpadView):
         else:
             tokentype = LoginTokenType.VALIDATESIGNONLYGPG
 
-        token = logintokenset.new(self.context, login,
-                                  preferredemail,
-                                  tokentype,
-                                  fingerprint=key.fingerprint)
+        token = getUtility(ILoginTokenSet).new(
+            self.context, login, preferredemail, tokentype,
+            fingerprint=key.fingerprint)
 
         token.sendGPGValidationRequest(key)
 
@@ -2736,7 +2717,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         """
         # Defaults for the user's email addresses.
         validated = self.context.preferredemail
-        if validated is None and self.context.validatedemails.count() > 0:
+        if validated is None and not self.context.validatedemails.is_empty():
             validated = self.context.validatedemails[0]
         unvalidated = self.unvalidated_addresses
         if len(unvalidated) > 0:
@@ -2990,8 +2971,8 @@ class PersonEditEmailsView(LaunchpadFormView):
         if IEmailAddress.providedBy(email):
             email = email.email
         token = getUtility(ILoginTokenSet).new(
-                    self.context, getUtility(ILaunchBag).login, email,
-                    LoginTokenType.VALIDATEEMAIL)
+            self.context, getUtility(ILaunchBag).login, email,
+            LoginTokenType.VALIDATEEMAIL)
         token.sendEmailValidationRequest()
         self.request.response.addInfoNotification(
             "An e-mail message was sent to '%s' with "
@@ -3075,9 +3056,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                     '<a href="%s">%s</a>. If you think that is a '
                     'duplicated account, you can <a href="%s">merge it'
                     "</a> into your account.",
-                    newemail,
-                    canonical_url(owner),
-                    owner.displayname,
+                    newemail, canonical_url(owner), owner.displayname,
                     merge_url))
         return self.errors
 
@@ -3085,10 +3064,9 @@ class PersonEditEmailsView(LaunchpadFormView):
     def action_add_email(self, action, data):
         """Register a new email for the person in context."""
         newemail = data['newemail']
-        logintokenset = getUtility(ILoginTokenSet)
-        token = logintokenset.new(
-                    self.context, getUtility(ILaunchBag).login, newemail,
-                    LoginTokenType.VALIDATEEMAIL)
+        token = getUtility(ILoginTokenSet).new(
+            self.context, getUtility(ILaunchBag).login, newemail,
+            LoginTokenType.VALIDATEEMAIL)
         token.sendEmailValidationRequest()
 
         self.request.response.addInfoNotification(

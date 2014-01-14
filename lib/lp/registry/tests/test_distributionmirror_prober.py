@@ -282,6 +282,9 @@ class FakeTransport:
     def write(self, text):
         pass
 
+    def writeSequence(self, text):
+        pass
+
 
 class FakeFactory(RedirectAwareProberFactory):
     redirectedTo = None
@@ -574,6 +577,17 @@ class TestRedirectAwareProberFactoryAndProtocol(TestCase):
         prober.redirect('http://foo.bar/baz/boo/notfound?file=package.deb')
         self.failUnless(prober.has_failed)
 
+    def test_does_not_raise_if_redirected_to_reencoded_file(self):
+        prober = self._createFactoryAndStubConnectAndTimeoutCall(
+            'http://foo.bar/baz/boo/package+foo.deb')
+
+        def failed(error):
+            prober.has_failed = True
+
+        prober.failed = failed
+        prober.redirect('http://foo.bar/baz/boo/package%2Bfoo.deb')
+        self.assertFalse(hasattr(prober, 'has_failed'))
+
     def test_connect_depends_on_localhost_only_config(self):
         # If localhost_only is True and the host to which we would connect is
         # not localhost, the connect() method is not called.
@@ -825,11 +839,11 @@ class TestProbeFunctionSemaphores(TestCase):
 
     def test_MirrorCDImageSeries_records_are_deleted_before_probing(self):
         mirror = DistributionMirror.byName('releases-mirror2')
-        self.failUnless(mirror.cdimage_series.count() > 0)
+        self.failUnless(not mirror.cdimage_series.is_empty())
         # Note that calling this function won't actually probe any mirrors; we
         # need to call reactor.run() to actually start the probing.
         probe_cdimage_mirror(mirror, StringIO(), [], logging)
-        self.failUnlessEqual(mirror.cdimage_series.count(), 0)
+        self.failUnless(mirror.cdimage_series.is_empty())
 
     def test_archive_mirror_probe_function(self):
         mirror1 = DistributionMirror.byName('archive-mirror')

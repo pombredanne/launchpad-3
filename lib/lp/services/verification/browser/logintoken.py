@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -17,8 +17,8 @@ __all__ = [
 
 import urllib
 
-from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
+from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
     alsoProvides,
     directlyProvides,
@@ -339,38 +339,18 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
 
     def _activateGPGKey(self, key, can_encrypt):
         person_url = canonical_url(self.context.requester)
-        lpkey, new, created, owned_by_others = self.context.activateGPGKey(
-            key, can_encrypt)
+        lpkey, new, = self.context.activateGPGKey(key, can_encrypt)
 
-        if not new:
+        if new:
+            self.request.response.addInfoNotification(_(
+                "The key ${lpkey} was successfully validated. ",
+                mapping=dict(lpkey=lpkey.displayname)))
+        else:
             msgid = _(
                 'Key ${lpkey} successfully reactivated. '
                 '<a href="${url}/+editpgpkeys">See more Information'
                 '</a>',
                 mapping=dict(lpkey=lpkey.displayname, url=person_url))
-            self.request.response.addInfoNotification(structured(msgid))
-            return
-
-        self.request.response.addInfoNotification(_(
-            "The key ${lpkey} was successfully validated. ",
-            mapping=dict(lpkey=lpkey.displayname)))
-
-        if len(created):
-            msgid = _(
-                "<p>Some of your key's UIDs (<code>${emails}</code>) are "
-                "not registered in Launchpad. If you want to use them in "
-                'Launchpad, you will need to <a href="${url}/+editemails">'
-                'confirm them</a> first.</p>',
-                mapping=dict(emails=', '.join(created), url=person_url))
-            self.request.response.addInfoNotification(structured(msgid))
-
-        if len(owned_by_others):
-            msgid = _(
-                "<p>Also, some of them (<code>${emails}</code>) are "
-                "associated with other profile(s) in Launchpad, so you may "
-                'want to <a href="/people/+requestmerge">merge them</a> into '
-                "your current one.</p>",
-                mapping=dict(emails=', '.join(owned_by_others)))
             self.request.response.addInfoNotification(structured(msgid))
 
     def _getGPGKey(self):
@@ -507,8 +487,7 @@ class ValidateEmailView(BaseTokenView, LaunchpadFormView):
         email = emailset.getByEmail(self.context.email)
         if email is None:
             email = emailset.new(
-                email=self.context.email,
-                person=self.context.requester)
+                email=self.context.email, person=self.context.requester)
         return email
 
     def markEmailAsValid(self, email):
@@ -553,9 +532,9 @@ class MergePeopleView(BaseTokenView, LaunchpadView):
         self._doMerge()
         if self.mergeCompleted:
             self.success(_(
-                'The accounts have been merged successfully. Everything that '
-                'belonged to the duplicated account should now belong to '
-                'your own account.'))
+                'The accounts are being merged. This can take up to an hour '
+                'to complete, after which everything that belonged to the '
+                'duplicated account will belong to your own account.'))
         else:
             self.success(_(
                 'The e-mail address %s has been assigned to you, but the '

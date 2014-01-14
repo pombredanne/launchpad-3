@@ -116,8 +116,7 @@
   </div><!--yui-g -->
 
 
-  <div class="yui-u"
-       tal:define="archive context/latest_overall_publication/archive|nothing">
+  <div class="yui-u">
 
     <table class="listing" id="packages_list">
       <tal:rows repeat="row view/version_table">
@@ -144,13 +143,13 @@
       </tal:title_row>
 
       <tal:package_row condition="row/data_row">
-      <tal:define define="pubid row/publication/id">
+      <tal:define define="pub row/publication">
 
       <tr class="archive_package_row">
         <td style="white-space: nowrap">
           <a class="expander"
-             tal:attributes="id string:pub${pubid}-expander;
-                             href string:${archive/fmt:url}/+sourcepub/${pubid}/+listing-archive-extra"></a>
+             tal:attributes="id string:pub${pub/id}-expander;
+                             href string:${pub/archive/fmt:url}/+sourcepub/${pub/id}/+listing-archive-extra"></a>
           <a tal:attributes="href row/version">
             <img src="/@@/package-source" />
             <tal:version content="row/version"/>
@@ -169,10 +168,10 @@
                content="string:(not published)"/>
         </td>
       </tr>
-      <tr tal:attributes="id string:pub${pubid}">
+      <tr tal:attributes="id string:pub${pub/id}">
         <td colspan="3">
           <div class="package-details"
-               tal:attributes="id string:pub${pubid}-container"></div>
+               tal:attributes="id string:pub${pub/id}-container"></div>
         </td>
       </tr>
 
@@ -185,7 +184,7 @@
 
       </tal:rows>
     </table>
-    <metal:js use-macro="archive/@@+macros/expandable-table-js"/>
+    <metal:js use-macro="context/distribution/main_archive/@@+macros/expandable-table-js"/>
 
   </div>
 

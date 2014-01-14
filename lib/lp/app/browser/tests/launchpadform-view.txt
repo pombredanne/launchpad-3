@@ -6,7 +6,7 @@ widget.  One that launchpadform utilizes is 'widget_class'.  The
 widget rendering is wrapped with a <div> using the widget_class, which
 can be used for subordinate field indentation, for example.
 
-    >>> from zope.app.form.browser import TextWidget
+    >>> from zope.formlib.widgets import TextWidget
     >>> from zope.interface import Interface
     >>> from zope.schema import TextLine
     >>> from lp.services.config import config

@@ -3,7 +3,7 @@
 The base class for BugChanges doesn't actually implement anything.
 
     >>> import pytz
-    >>> from lp.services.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from datetime import datetime
     >>> from lp.bugs.adapters.bugchange import BugChangeBase
     >>> from lp.bugs.interfaces.bugchange import IBugChange

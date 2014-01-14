@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import datetime
 
+from lazr.restfulclient.errors import BadRequest
 import transaction
 
 from lp.registry.model.milestonetag import (
@@ -243,3 +244,7 @@ class MilestoneTagWebServiceTest(WebServiceTestCase):
         self.ws_milestone.lp_save()
         transaction.begin()
         self.assertEqual(sorted(tags2), self.milestone.getTags())
+
+    def test_set_tags_invalid(self):
+        self.assertRaises(
+            BadRequest, self.ws_milestone.setTags, tags=[u'&%&%^&'])

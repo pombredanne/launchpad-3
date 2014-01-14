@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -1762,19 +1762,28 @@ class TestSharingService(TestCaseWithFactory):
             self.service.sharePillarInformation(
                 product, wrong_person, product.owner,
                 {InformationType.PRIVATESECURITY: SharingPermission.ALL})
-        self.assertEqual(
-            False,
+        self.assertFalse(
             self.service.checkPillarAccess(
                 [product], InformationType.USERDATA, wrong_person))
-        self.assertEqual(
-            True,
+        self.assertTrue(
             self.service.checkPillarAccess(
                 [product], InformationType.USERDATA, right_person))
 
+    def test_checkPillarArtifactAccess_respects_teams(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            information_type=InformationType.PROPRIETARY, owner=owner)
+        user = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            membership_policy=TeamMembershipPolicy.MODERATED, members=[user])
+        with person_logged_in(owner):
+            bug = self.factory.makeBug(target=product)
+            bug.subscribe(team, owner)
+        self.assertTrue(self.service.checkPillarArtifactAccess(product, user))
+
     def test_checkPillarAccess_no_policy(self):
         # checkPillarAccess returns False if there's no policy.
-        self.assertEqual(
-            False,
+        self.assertFalse(
             self.service.checkPillarAccess(
                 [self.factory.makeProduct()], InformationType.PUBLIC,
                 self.factory.makePerson()))

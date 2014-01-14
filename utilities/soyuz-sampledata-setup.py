@@ -1,5 +1,4 @@
 #!/usr/bin/python -S
-# pylint: disable-msg=W0403
 
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -41,15 +40,13 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
 from lp.services.database.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    SLAVE_FLAVOR,
+    IMasterStore,
+    ISlaveStore,
     )
 from lp.services.scripts.base import LaunchpadScript
 from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
@@ -77,18 +74,13 @@ def get_max_id(store, table_name):
         return max_id[0]
 
 
-def get_store(flavor=MASTER_FLAVOR):
-    """Obtain an ORM store."""
-    return getUtility(IStoreSelector).get(MAIN_STORE, flavor)
-
-
 def check_preconditions(options):
     """Try to ensure that it's safe to run.
 
     This script must not run on a production server, or anything
     remotely like it.
     """
-    store = get_store(SLAVE_FLAVOR)
+    store = ISlaveStore(ComponentSelection)
 
     # Just a guess, but dev systems aren't likely to have ids this high
     # in this table.  Production data does.
@@ -129,6 +121,13 @@ def retire_active_publishing_histories(histories, requester):
 
 def retire_distro_archives(distribution, culprit):
     """Retire all items in `distribution`'s archives."""
+
+    # Temporarily mark all `DistroSeries` as in-development so that we can
+    # delete publications from them.  We're about to delete the series
+    # anyway.
+    for series in distribution.series:
+        series.status = SeriesStatus.DEVELOPMENT
+
     for archive in distribution.all_distro_archives:
         retire_active_publishing_histories(
             archive.getPublishedSources, culprit)
@@ -147,13 +146,12 @@ def add_architecture(distroseries, architecture_name):
     # Avoid circular import.
     from lp.soyuz.model.distroarchseries import DistroArchSeries
 
-    store = get_store(MASTER_FLAVOR)
-    family = getUtility(IProcessorFamilySet).getByName(architecture_name)
+    processor = getUtility(IProcessorSet).getByName(architecture_name)
     archseries = DistroArchSeries(
-        distroseries=distroseries, processorfamily=family,
+        distroseries=distroseries, processor=processor,
         owner=distroseries.owner, official=True,
         architecturetag=architecture_name)
-    store.add(archseries)
+    IMasterStore(DistroArchSeries).add(archseries)
 
 
 def create_sections(distroseries):
@@ -218,18 +216,22 @@ def create_sample_series(original_series, log):
         and so on.
     """
     series_descriptions = [
-        ('Dapper Drake', SeriesStatus.SUPPORTED, '6.06'),
+        ('Dapper Drake', SeriesStatus.OBSOLETE, '6.06'),
         ('Edgy Eft', SeriesStatus.OBSOLETE, '6.10'),
         ('Feisty Fawn', SeriesStatus.OBSOLETE, '7.04'),
         ('Gutsy Gibbon', SeriesStatus.OBSOLETE, '7.10'),
         ('Hardy Heron', SeriesStatus.SUPPORTED, '8.04'),
         ('Intrepid Ibex', SeriesStatus.OBSOLETE, '8.10'),
         ('Jaunty Jackalope', SeriesStatus.OBSOLETE, '9.04'),
-        ('Karmic Koala', SeriesStatus.SUPPORTED, '9.10'),
+        ('Karmic Koala', SeriesStatus.OBSOLETE, '9.10'),
         ('Lucid Lynx', SeriesStatus.SUPPORTED, '10.04'),
-        ('Maverick Meerkat', SeriesStatus.CURRENT, '10.10'),
-        ('Natty Narwhal', SeriesStatus.DEVELOPMENT, '11.04'),
-        ('Onerous Ocelot', SeriesStatus.FUTURE, '11.10'),
+        ('Maverick Meerkat', SeriesStatus.OBSOLETE, '10.10'),
+        ('Natty Narwhal', SeriesStatus.OBSOLETE, '11.04'),
+        ('Oneiric Ocelot', SeriesStatus.SUPPORTED, '11.10'),
+        ('Precise Pangolin', SeriesStatus.SUPPORTED, '12.04'),
+        ('Quantal Quetzal', SeriesStatus.SUPPORTED, '12.10'),
+        ('Raring Ringtail', SeriesStatus.CURRENT, '13.04'),
+        ('Saucy Salamander', SeriesStatus.DEVELOPMENT, '13.10'),
         ]
 
     parent = original_series
@@ -247,9 +249,8 @@ def create_sample_series(original_series, log):
 def add_series_component(series):
     """Permit a component in the given series."""
     component = getUtility(IComponentSet)['main']
-    get_store(MASTER_FLAVOR).add(
-        ComponentSelection(
-            distroseries=series, component=component))
+    IMasterStore(ComponentSelection).add(
+        ComponentSelection(distroseries=series, component=component))
 
 
 def clean_up(distribution, log):

@@ -20,7 +20,7 @@ from lp.registry.enums import (
     INCLUSIVE_TEAM_POLICY,
     )
 from lp.registry.interfaces.nameblacklist import INameBlacklistSet
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.fields import (
     BaseImageUpload,
     BlacklistableContentNameField,

@@ -32,7 +32,11 @@
                  message view/performQueueAction;
                  error view/error|nothing">
 
-  <div class="top-portlet queue_list" tal:condition="not: error">
+  <div class="error message" tal:condition="error">
+    <span tal:content="error"></span>
+  </div>
+
+  <div class="top-portlet queue_list">
 
     <tal:batch define="batch view/decoratedQueueBatch|nothing">
 
@@ -153,6 +157,24 @@
            <td colspan="4" style="text-align: right;
                                   vertical-align: bottom;
                                   padding-bottom: 5px">
+             <label>Rejection comment:</label>
+           </td>
+           <td colspan="3" style="vertical-align: bottom">
+             <input style="width: 100%" type="text" name="rejection_comment" />
+           </td>
+           <td style="vertical-align: bottom">
+             <input
+               tal:condition="view/state/enumvalue:REJECTED"
+               disabled="true" value="Reject" name="Reject" type="submit"/>
+             <input
+               tal:condition="not:view/state/enumvalue:REJECTED"
+               value="Reject" name="Reject" type="submit"/>
+           </td>
+         </tr>
+         <tr tal:condition="view/availableActions">
+           <td colspan="4" style="text-align: right;
+                                  vertical-align: bottom;
+                                  padding-bottom: 5px">
              <label>Override for selected uploads:</label>
            </td>
            <td style="vertical-align: bottom">
@@ -183,14 +205,6 @@
              </select>
            </td>
            <td colspan="2" style="vertical-align: bottom">
-             <input
-               tal:condition="view/state/enumvalue:REJECTED"
-               disabled="true" value="Reject" name="Reject" type="submit"/>
-             <input
-               tal:condition="not:view/state/enumvalue:REJECTED"
-               value="Reject" name="Reject" type="submit"/>
-             <br/>
-             <br/>
              <input value="Accept" name="Accept" type="submit"/>
            </td>
          </tr>
@@ -224,15 +238,15 @@
       <tr>
         <td />
         <td tal:condition="view/availableActions" />
-        <td colspan="7">
+        <td colspan="7"
+            tal:define="pcj packageupload/package_copy_job;
+                        visible pcj/source_archive/required:launchpad.View">
           Sync from
-          <tal:archive
-            content="packageupload/package_copy_job/source_archive/displayname">
-            Primary Archive for Ubuntu
-          </tal:archive>,
+          <a tal:condition="visible"
+             tal:replace="structure pcj/source_archive/fmt:link"
+             /><span tal:condition="not:visible">private archive</span>,
           requested by
-          <tal:requester
-            content="structure packageupload/package_copy_job/job/requester/fmt:link" />
+          <tal:requester content="structure pcj/job/requester/fmt:link" />
         </td>
       </tr>
     </tal:sync>

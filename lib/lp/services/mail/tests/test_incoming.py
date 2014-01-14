@@ -2,8 +2,8 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 
-from email.mime.multipart import MIMEMultipart
 from doctest import DocTestSuite
+from email.mime.multipart import MIMEMultipart
 import logging
 import os
 import unittest
@@ -13,17 +13,20 @@ from testtools.matchers import (
     Is,
     )
 import transaction
+from zope.interface import implements
 from zope.security.management import setSecurityPolicy
 
 from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.services.mail import helpers
+from lp.services.mail.handlers import mail_handlers
 from lp.services.mail.incoming import (
     authenticateEmail,
     extract_addresses,
     handleMail,
     ORIGINAL_TO_HEADER,
     )
+from lp.services.mail.interfaces import IMailHandler
 from lp.services.mail.sendmail import MailController
 from lp.services.mail.stub import TestMailer
 from lp.services.mail.tests.helpers import testmails_path
@@ -35,11 +38,6 @@ from lp.testing.gpgkeys import import_secret_test_key
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.systemdocs import LayeredDocFileSuite
-
-
-from zope.interface import implements
-from lp.services.mail.handlers import mail_handlers
-from lp.services.mail.interfaces import IMailHandler
 
 
 class FakeHandler:

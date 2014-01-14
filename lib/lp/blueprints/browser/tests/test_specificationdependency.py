@@ -40,7 +40,7 @@ class TestAddDependency(BrowserTestCase):
         # We need a new interaction for the permission checks
         # on ISpecification objects.
         with person_logged_in(None):
-            self.assertIn(dependency, spec.dependencies)
+            self.assertIn(dependency, spec.getDependencies())
 
 
 class TestDepTree(TestCaseWithFactory):

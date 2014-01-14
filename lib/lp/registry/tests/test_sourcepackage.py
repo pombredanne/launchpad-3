@@ -582,6 +582,8 @@ class TestSourcePackageSecurity(TestCaseWithFactory):
     def test_uploader_has_launchpad_edit_on_obsolete_series(self):
         obsolete_series = self.factory.makeDistroSeries(
             status=SeriesStatus.OBSOLETE)
+        archive = obsolete_series.distribution.main_archive
+        removeSecurityProxy(archive).permit_obsolete_series_uploads = True
         sourcepackage = self.factory.makeSourcePackage(
             distroseries=obsolete_series)
         uploader = self.factory.makePerson()

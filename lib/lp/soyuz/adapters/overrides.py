@@ -1,8 +1,7 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Generic Override Policy classes.
-"""
+"""Generic Override Policy classes."""
 
 __metaclass__ = type
 
@@ -32,9 +31,9 @@ from zope.interface import (
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database import bulk
 from lp.services.database.decoratedresultset import DecoratedResultSet
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import DistroArchSeries
@@ -71,6 +70,8 @@ class IBinaryOverride(IOverride):
         "The IDistroArchSeries for the publication")
     priority = Attribute(
         "The PackagePublishingPriority that's being overridden")
+    phased_update_percentage = Attribute(
+        "The phased update percentage that's being overridden")
 
 
 class Override:
@@ -110,11 +111,12 @@ class BinaryOverride(Override):
     implements(IBinaryOverride)
 
     def __init__(self, binary_package_name, distro_arch_series, component,
-                 section, priority):
+                 section, priority, phased_update_percentage):
         super(BinaryOverride, self).__init__(component, section)
         self.binary_package_name = binary_package_name
         self.distro_arch_series = distro_arch_series
         self.priority = priority
+        self.phased_update_percentage = phased_update_percentage
 
     def __eq__(self, other):
         return (
@@ -122,13 +124,16 @@ class BinaryOverride(Override):
             self.distro_arch_series == other.distro_arch_series and
             self.component == other.component and
             self.section == other.section and
-            self.priority == other.priority)
+            self.priority == other.priority and
+            self.phased_update_percentage == other.phased_update_percentage)
 
     def __repr__(self):
         return ("<BinaryOverride at %x component=%r section=%r "
-            "binary_package_name=%r distro_arch_series=%r priority=%r>" %
+            "binary_package_name=%r distro_arch_series=%r priority=%r "
+            "phased_update_percentage=%r>" %
             (id(self), self.component, self.section, self.binary_package_name,
-             self.distro_arch_series, self.priority))
+             self.distro_arch_series, self.priority,
+             self.phased_update_percentage))
 
 
 class IOverridePolicy(Interface):
@@ -140,6 +145,9 @@ class IOverridePolicy(Interface):
     For example, an implementation might allow existing publications to
     keep the same component and section as their ancestor publications.
     """
+
+    phased_update_percentage = Attribute(
+        "The phased update percentage to apply to binary publications.")
 
     def calculateSourceOverrides(archive, distroseries, pocket, sources,
                                  source_component=None):
@@ -174,6 +182,10 @@ class BaseOverridePolicy:
 
     implements(IOverridePolicy)
 
+    def __init__(self, phased_update_percentage=None):
+        super(BaseOverridePolicy, self).__init__()
+        self.phased_update_percentage = phased_update_percentage
+
     def calculateSourceOverrides(self, archive, distroseries, pocket,
                                  sources, source_component=None):
         raise NotImplementedError()
@@ -192,9 +204,17 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
     for the latest published binary publication.
     """
 
-    def calculateSourceOverrides(self, archive, distroseries, pocket, spns,
-                                 source_component=None):
+    def getExistingPublishingStatuses(self, include_deleted):
+        status = [
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED,
+            ]
+        if include_deleted:
+            status.append(PackagePublishingStatus.DELETED)
+        return status
 
+    def calculateSourceOverrides(self, archive, distroseries, pocket, spns,
+                                 source_component=None, include_deleted=False):
         def eager_load(rows):
             bulk.load(Component, (row[1] for row in rows))
             bulk.load(Section, (row[2] for row in rows))
@@ -209,7 +229,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 SourcePackagePublishingHistory.distroseriesID ==
                     distroseries.id,
                 SourcePackagePublishingHistory.status.is_in(
-                    active_publishing_status),
+                    self.getExistingPublishingStatuses(include_deleted)),
                 SourcePackagePublishingHistory.sourcepackagenameID.is_in(
                     spn.id for spn in spns)).order_by(
                         SourcePackagePublishingHistory.sourcepackagenameID,
@@ -225,7 +245,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             for (name, component, section) in already_published]
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
-                                 binaries):
+                                 binaries, include_deleted=False):
         def eager_load(rows):
             bulk.load(Component, (row[2] for row in rows))
             bulk.load(Section, (row[3] for row in rows))
@@ -238,6 +258,8 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             for bpn, das in expanded if das is not None]
         if len(candidates) == 0:
             return []
+        # Do not copy phased_update_percentage from existing publications;
+        # it is too context-dependent to copy.
         already_published = DecoratedResultSet(
             store.find(
                 (BinaryPackagePublishingHistory.binarypackagenameID,
@@ -246,7 +268,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                  BinaryPackagePublishingHistory.sectionID,
                  BinaryPackagePublishingHistory.priority),
                 BinaryPackagePublishingHistory.status.is_in(
-                    active_publishing_status),
+                    self.getExistingPublishingStatuses(include_deleted)),
                 Or(*candidates)).order_by(
                     BinaryPackagePublishingHistory.distroarchseriesID,
                     BinaryPackagePublishingHistory.binarypackagenameID,
@@ -262,7 +284,9 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
                 None)),
             pre_iter_hook=eager_load)
         return [
-            BinaryOverride(name, das, component, section, priority)
+            BinaryOverride(
+                name, das, component, section, priority,
+                self.phased_update_percentage)
             for name, das, component, section, priority in already_published]
 
 
@@ -317,7 +341,9 @@ class UnknownOverridePolicy(BaseOverridePolicy):
         default_component = archive.default_component or getUtility(
             IComponentSet)['universe']
         return [
-            BinaryOverride(binary, das, default_component, None, None)
+            BinaryOverride(
+                binary, das, default_component, None, None,
+                self.phased_update_percentage)
             for binary, das in calculate_target_das(distroseries, binaries)]
 
 
@@ -333,13 +359,13 @@ class UbuntuOverridePolicy(FromExistingOverridePolicy,
                                  sources, source_component=None):
         total = set(sources)
         overrides = FromExistingOverridePolicy.calculateSourceOverrides(
-            self, archive, distroseries, pocket, sources, source_component)
+            self, archive, distroseries, pocket, sources, source_component,
+            include_deleted=True)
         existing = set(override.source_package_name for override in overrides)
         missing = total.difference(existing)
         if missing:
             unknown = UnknownOverridePolicy.calculateSourceOverrides(
-                self, archive, distroseries, pocket, missing,
-                source_component)
+                self, archive, distroseries, pocket, missing, source_component)
             overrides.extend(unknown)
         return overrides
 
@@ -347,7 +373,8 @@ class UbuntuOverridePolicy(FromExistingOverridePolicy,
                                  binaries):
         total = set(binaries)
         overrides = FromExistingOverridePolicy.calculateBinaryOverrides(
-            self, archive, distroseries, pocket, binaries)
+            self, archive, distroseries, pocket, binaries,
+            include_deleted=True)
         existing = set(
             (
                 override.binary_package_name,

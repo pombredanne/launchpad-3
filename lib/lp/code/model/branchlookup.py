@@ -68,12 +68,7 @@ from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.config import config
-from lp.services.database.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.services.webapp.authorization import check_permission
 
 
@@ -281,8 +276,7 @@ class BranchLookup:
                     InvalidNamespace):
                 pass
         elif lookup['type'] == 'branch_name':
-            store = IStore(Branch)
-            result = store.find(Branch,
+            result = IStore(Branch).find(Branch,
                                 Branch.unique_name == lookup['unique_name'])
             for branch in result:
                 return (branch, escape(lookup['trailing']))
@@ -332,31 +326,23 @@ class BranchLookup:
 
     def _getPersonalBranch(self, person, branch_name):
         """Find a personal branch given its path segments."""
-        # Avoid circular imports.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = [Branch, Join(Person, Branch.owner == Person.id)]
-        result = store.using(*origin).find(
+        return IStore(Branch).using(*origin).find(
             Branch, Person.name == person,
             Branch.distroseries == None,
             Branch.product == None,
             Branch.sourcepackagename == None,
-            Branch.name == branch_name)
-        branch = result.one()
-        return branch
+            Branch.name == branch_name).one()
 
     def _getProductBranch(self, person, product, branch_name):
         """Find a product branch given its path segments."""
-        # Avoid circular imports.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = [
             Branch,
             Join(Person, Branch.owner == Person.id),
             Join(Product, Branch.product == Product.id)]
-        result = store.using(*origin).find(
+        return IStore(Branch).using(*origin).find(
             Branch, Person.name == person, Product.name == product,
-            Branch.name == branch_name)
-        branch = result.one()
-        return branch
+            Branch.name == branch_name).one()
 
     def _getPackageBranch(self, owner, distribution, distroseries,
                           sourcepackagename, branch):
@@ -365,14 +351,12 @@ class BranchLookup:
         Only gets unofficial source package branches, that is, branches with
         names like ~jml/ubuntu/jaunty/openssh/stuff.
         """
-        # Avoid circular imports.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         origin = [
             Branch,
             Join(Person, Branch.owner == Person.id),
             Join(SourcePackageName,
                  Branch.sourcepackagename == SourcePackageName.id)]
-        result = store.using(*origin).find(
+        return IStore(Branch).using(*origin).find(
             Branch, Person.name == owner,
             Branch.distroseriesID == Select(
                 DistroSeries.id, And(
@@ -380,9 +364,7 @@ class BranchLookup:
                     DistroSeries.name == distroseries,
                     Distribution.name == distribution)),
             SourcePackageName.name == sourcepackagename,
-            Branch.name == branch)
-        branch = result.one()
-        return branch
+            Branch.name == branch).one()
 
     def getByLPPath(self, path):
         """See `IBranchLookup`."""

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Enumerations used in the lp/blueprints modules."""
@@ -332,6 +332,13 @@ class SpecificationFilter(DBEnumeratedType):
 
         This indicates that the list should include all the specifications
         to which the person has subscribed.
+        """)
+
+    STARTED = DBItem(110, """
+        Started
+
+        This indicates that the list should include specifications that are
+        marked as started.
         """)
 
 

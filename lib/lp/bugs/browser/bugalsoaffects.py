@@ -18,11 +18,11 @@ from lazr.enum import (
     )
 from lazr.lifecycle.event import ObjectCreatedEvent
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser import DropdownWidget
-from zope.app.form.interfaces import MissingInputError
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.formlib.interfaces import MissingInputError
+from zope.formlib.widgets import DropdownWidget
 from zope.schema import Choice
 from zope.schema.vocabulary import (
     SimpleTerm,

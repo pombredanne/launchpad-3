@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211
-
 """Single selection widget using a popup to select one item from many."""
 
 __metaclass__ = type
@@ -10,7 +8,7 @@ __metaclass__ = type
 from lazr.restful.utils import safe_hasattr
 import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form.browser.itemswidgets import (
+from zope.formlib.itemswidgets import (
     ItemsWidgetBase,
     SingleDataHelper,
     )

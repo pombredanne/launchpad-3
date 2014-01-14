@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the bugsubscription module."""
@@ -7,10 +7,7 @@ __metaclass__ = type
 
 from storm.store import Store
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import (
-    ProxyFactory,
-    removeSecurityProxy,
-    )
+from zope.security.proxy import ProxyFactory
 
 from lp.app.enums import InformationType
 from lp.bugs.enums import BugNotificationLevel
@@ -25,8 +22,9 @@ from lp.bugs.model.bugsubscriptionfilter import (
     BugSubscriptionFilterStatus,
     BugSubscriptionFilterTag,
     )
+from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.services import searchbuilder
-from lp.services.database.lpstorm import IStore
+from lp.services.database.interfaces import IStore
 from lp.testing import (
     anonymous_logged_in,
     login_person,
@@ -101,19 +99,6 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         self.assertIs(None, bug_subscription_filter.other_parameters)
         self.assertIs(None, bug_subscription_filter.description)
 
-    def test_has_other_filters_one(self):
-        # With only the initial, default filter, it returns False.
-        initial_filter = self.subscription.bug_filters.one()
-        naked_filter = removeSecurityProxy(initial_filter)
-        self.assertFalse(naked_filter._has_other_filters())
-
-    def test_has_other_filters_more_than_one(self):
-        # With more than one filter, it returns True.
-        bug_subscription_filter = BugSubscriptionFilter()
-        bug_subscription_filter.structural_subscription = self.subscription
-        naked_filter = removeSecurityProxy(bug_subscription_filter)
-        self.assertTrue(naked_filter._has_other_filters())
-
     def test_delete(self):
         """`BugSubscriptionFilter` objects can be deleted.
 
@@ -163,7 +148,11 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
                 BugSubscriptionFilter,
                 BugSubscriptionFilter.id == bug_subscription_filter.id).one())
         # The structural subscription is gone too.
-        self.assertIs(None, Store.of(self.subscription))
+        self.assertIs(
+            None,
+            IStore(self.subscription).find(
+                StructuralSubscription,
+                StructuralSubscription.id == self.subscription.id).one())
 
     def test_statuses(self):
         # The statuses property is a frozenset of the statuses that are

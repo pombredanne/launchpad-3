@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from datetime import datetime
 
+from lazr.restful.utils import get_current_browser_request
 import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -23,7 +24,6 @@ from lp.registry.subscribers import (
     product_licenses_modified,
     )
 from lp.services.webapp.escaping import html_escape
-from lp.services.webapp.publisher import get_current_browser_request
 from lp.testing import (
     login_person,
     logout,
