@@ -576,7 +576,7 @@ class DistributionSourcePackageChangelogView(
     def label(self):
         return 'Change log for %s' % self.context.title
 
-    @property
+    @cachedproperty
     def batchnav(self):
         return BatchNavigator(self.releases, self.request)
 
