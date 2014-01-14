@@ -552,16 +552,18 @@ We will create 4 new versions of 'alsa-utils' sourcepackages.
     >>> flush_database_updates()
     >>> logout()
 
-When the page is reload all versions are presented in descending order.
+After a reload the page lists each version, batched in descending order.
 
     >>> anon_browser.reload()
-
     >>> print_displayed_versions(anon_browser.contents)
     2.3
     2.2
     2.1
     2.0
     1.0.9a-4ubuntu1
+
+    >>> anon_browser.getLink('Next').click()
+    >>> print_displayed_versions(anon_browser.contents)
     1.0.9a-4
     1.0.8-1ubuntu1
 

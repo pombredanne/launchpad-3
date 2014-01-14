@@ -124,7 +124,27 @@ But this bug appears to be fixed, so we no longer override count():
     >>> decorated_results.count()
     14
 
-The pre_iter_hook() method is only called once when iteration begins.
+
+== Bulk operations ==
+
+Views or API calls often need to perform operations that are expensive
+when performed separately on each record. DecoratedResultSet's
+bulk_decorator argument permits operations to be performed over large
+chunks of results at once.
+
+    >>> def all_ones(rows):
+    ...     print "that's a chunk of %d" % len(rows)
+    ...     return (1 for row in rows)
+    >>> drs = DecoratedResultSet(results, bulk_decorator=all_ones)
+    >>> list(drs)
+    that's a chunk of 14
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    >>> drs.any()
+    that's a chunk of 1
+    1
+
+pre_iter_hook is like bulk_decorator, except that the return value is
+ignored in favour of the original results.
 
     >>> class FakeResultSet(list):
     ...     def count(self, *args, **kwargs):
