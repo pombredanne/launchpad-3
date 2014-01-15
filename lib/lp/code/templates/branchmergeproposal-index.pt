@@ -213,8 +213,6 @@
                 var config = {
                     on: {
                         success: function (r) {
-                            console.log(r);
-                            console.log(LP.cache.published_inline_comments);
                             LP.cache.published_inline_comments = r;
                             ns.populate_existing_comments();
                         },
