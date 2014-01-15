@@ -24,7 +24,7 @@ from dbcontroller import (
     DBController,
     streaming_sync,
     )
-from lp.services.database import activity_col
+from lp.services.database import activity_cols
 from lp.services.database.sqlbase import (
     ISOLATION_LEVEL_AUTOCOMMIT,
     sqlvalues,
@@ -150,7 +150,7 @@ class DatabasePreflight:
                     datname=current_database()
                     AND %(pid)s <> pg_backend_pid()
                 GROUP BY datname, usename
-                """ % {'pid': activity_col(cur, 'pid')})
+                """ % activity_cols(cur))
             for datname, usename, num_connections in cur.fetchall():
                 if usename in SYSTEM_USERS:
                     self.log.debug(
@@ -182,7 +182,7 @@ class DatabasePreflight:
                     AND %(pid)s <> pg_backend_pid()
                     AND usename IN %%s
                 GROUP BY datname, usename
-                """ % {'pid': activity_col(cur, 'pid')})
+                """ % activity_cols(cur))
                 % sqlvalues(FRAGILE_USERS))
             for datname, usename, num_connections in cur.fetchall():
                 self.log.fatal(
@@ -360,7 +360,7 @@ class KillConnectionsPreflight(DatabasePreflight):
                         datname=current_database()
                         AND %(pid)s <> pg_backend_pid()
                         AND usename NOT IN %%s
-                    """ % {'pid': activity_col(cur, 'pid')})
+                    """ % activity_cols(cur))
                     % sqlvalues(SYSTEM_USERS))
                 for pid, datname, usename, ignored in cur.fetchall():
                     all_clear = False

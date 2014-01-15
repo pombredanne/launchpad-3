@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'activity_col',
+    'activity_cols',
     'read_transaction',
     'write_transaction',
     ]
@@ -25,7 +25,7 @@ from lp.services.database.sqlbase import reset_store
 RETRY_ATTEMPTS = 3
 
 
-def activity_col(cur, name):
+def activity_cols(cur):
     """Adapt pg_stat_activity column names for the current DB server."""
     if isinstance(cur, Store):
         ver_str = cur.execute("SHOW server_version").get_one()
@@ -34,11 +34,9 @@ def activity_col(cur, name):
         ver_str = cur.fetchone()
     ver = tuple(map(int, ver_str[0].split('.')[:2]))
     if ver < (9, 2):
-        if name == 'query':
-            return 'current_query'
-        elif name == 'pid':
-            return 'procpid'
-    return name
+        return {'query': 'current_query', 'pid': 'procpid'}
+    else:
+        return {'query': 'query', 'pid': 'pid'}
 
 
 def retry_transaction(func):

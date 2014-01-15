@@ -18,7 +18,7 @@ import sys
 
 import psycopg2
 
-from lp.services.database import activity_col
+from lp.services.database import activity_cols
 
 
 def main():
@@ -59,7 +59,7 @@ def main():
         FROM pg_stat_activity
         WHERE xact_start < CURRENT_TIMESTAMP - '%%d seconds'::interval %%s
         ORDER BY %(pid)s
-        """ % {'pid': activity_col(cur, 'pid')})
+        """ % activity_cols(cur))
         % (options.max_seconds, user_match_sql), options.users)
 
     rows = list(cur.fetchall())

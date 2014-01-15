@@ -22,7 +22,7 @@ import time
 import psycopg2
 import psycopg2.extensions
 
-from lp.services.database import activity_col
+from lp.services.database import activity_cols
 
 
 def connect(dbname='template1'):
@@ -73,7 +73,7 @@ def still_open(database, max_wait=120):
                 datname=%%s
                 AND %(pid)s != pg_backend_pid()
             LIMIT 1
-            """ % {'pid': activity_col(cur, 'pid')}, [database])
+            """ % activity_cols(cur), [database])
         if cur.fetchone() is None:
             return False
         time.sleep(0.6)  # Stats only updated every 500ms.
@@ -112,7 +112,7 @@ def massacre(database):
             SELECT %(pid)s, pg_terminate_backend(%(pid)s)
             FROM pg_stat_activity
             WHERE datname=%%s AND %(pid)s <> pg_backend_pid()
-            """ % {'pid': activity_col(cur, 'pid')}, [database])
+            """ % activity_cols(cur), [database])
         for pid, success in cur.fetchall():
             if not success:
                 print >> sys.stderr, (
@@ -191,7 +191,7 @@ def report_open_connections(database):
         WHERE %(pid)s != pg_backend_pid()
         GROUP BY usename, datname
         ORDER BY datname, usename
-        """ % {'pid': activity_col(cur, 'pid')})
+        """ % activity_cols(cur))
     for usename, datname, num_connections in cur.fetchall():
         print >> sys.stderr, "%d connections by %s to %s" % (
             num_connections, usename, datname)

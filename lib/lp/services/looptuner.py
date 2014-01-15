@@ -21,7 +21,7 @@ from zope.interface import (
     Interface,
     )
 
-from lp.services.database import activity_col
+from lp.services.database import activity_cols
 from lp.services.database.interfaces import IMasterStore
 import lp.services.scripts
 
@@ -323,9 +323,7 @@ class DBLoopTuner(LoopTuner):
                 WHERE xact_start < CURRENT_TIMESTAMP - interval '%%f seconds'
                     AND datname = current_database()
                 ORDER BY xact_start LIMIT 4
-                """ % {
-                    'query': activity_col(store, 'query'),
-                    'pid': activity_col(store, 'pid')})
+                """ % activity_cols(store))
                 % self.long_running_transaction).get_all())
             if not results:
                 break

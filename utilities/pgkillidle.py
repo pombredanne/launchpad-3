@@ -18,7 +18,7 @@ import sys
 
 import psycopg2
 
-from lp.services.database import activity_col
+from lp.services.database import activity_cols
 
 
 def main():
@@ -57,9 +57,7 @@ def main():
         WHERE %(query)s = '<IDLE> in transaction'
             AND query_start < CURRENT_TIMESTAMP - '%%d seconds'::interval %%s
         ORDER BY %(pid)s
-        """ % {
-            'pid': activity_col(cur, 'pid'),
-            'query': activity_col(cur, 'query')})
+        """ % activity_cols(cur))
         % (options.max_idle_seconds, ignore_sql), options.ignore)
 
     rows = cur.fetchall()

@@ -26,7 +26,7 @@ import time
 
 import psycopg2
 
-from lp.services.database import activity_col
+from lp.services.database import activity_cols
 
 # The TIMEOUT setting (expressed in seconds) affects how long a test will run
 # before it is deemed to be hung, and then appropriately terminated.
@@ -94,7 +94,7 @@ def setup_test_database():
             FROM pg_stat_activity
             WHERE datname IN (
                 'launchpad_dev', 'launchpad_ftest_template', 'launchpad_ftest')
-            """ % {'query': activity_col(cur, 'query')})
+            """ % activity_cols(cur))
         results = list(cur.fetchall())
         if not results:
             break

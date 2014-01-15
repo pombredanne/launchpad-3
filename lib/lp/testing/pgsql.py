@@ -18,7 +18,7 @@ from bzrlib.lock import WriteLock
 import psycopg2
 
 from lp.services.config import config
-from lp.services.database import activity_col
+from lp.services.database import activity_cols
 from lp.services.database.postgresql import (
     generateResetSequencesSQL,
     resetSequences,
@@ -420,7 +420,7 @@ rw_main_slave:  dbname=%s host=localhost
                         SELECT pg_terminate_backend(%(pid)s)
                         FROM pg_stat_activity
                         WHERE %(pid)s <> pg_backend_pid() AND datname=%%s
-                        """ % {'pid': activity_col(cur, 'pid')},
+                        """ % activity_cols(cur),
                         [self.dbname])
                 except psycopg2.DatabaseError:
                     pass
