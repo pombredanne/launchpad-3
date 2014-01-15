@@ -10,12 +10,12 @@ from datetime import (
     datetime,
     timedelta,
     )
+import json
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib.revision import NULL_REVISION
 from pytz import UTC
-import simplejson
 from sqlobject import SQLObjectNotFound
 from storm.exceptions import LostObjectError
 from storm.locals import Store
@@ -140,12 +140,15 @@ from lp.services.job.tests import (
 from lp.services.osutils import override_environ
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.authorization import check_permission
-from lp.services.webapp.interfaces import IOpenLaunchBag
+from lp.services.webapp.interfaces import (
+    IOpenLaunchBag,
+    OAuthPermission,
+    )
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
+    api_url,
     celebrity_logged_in,
-    launchpadlib_for,
     login,
     login_person,
     logout,
@@ -155,11 +158,9 @@ from lp.testing import (
     TestCaseWithFactory,
     time_counter,
     WebServiceTestCase,
-    ws_object,
     )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
-    AppServerLayer,
     CeleryBranchWriteJobLayer,
     CeleryBzrsyncdJobLayer,
     DatabaseFunctionalLayer,
@@ -167,6 +168,7 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessAppServerLayer,
     )
+from lp.testing.pages import webservice_for_person
 
 
 def create_knit(test_case):
@@ -3252,7 +3254,7 @@ class TestMergeQueue(TestCaseWithFactory):
     def test_setMergeQueueConfig(self):
         """Test Branch.setMergeQueueConfig."""
         branch = self.factory.makeBranch()
-        config = simplejson.dumps({
+        config = json.dumps({
             'path': '/',
             'test': 'make test',
             })
@@ -3336,53 +3338,38 @@ class TestBranchUnscan(TestCaseWithFactory):
 class TestWebservice(TestCaseWithFactory):
     """Tests for the webservice."""
 
-    layer = AppServerLayer
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestWebservice, self).setUp()
+        self.branch_db = self.factory.makeBranch()
+        self.branch_url = api_url(self.branch_db)
+        self.webservice = webservice_for_person(
+            self.branch_db.owner, permission=OAuthPermission.WRITE_PUBLIC)
 
     def test_set_merge_queue(self):
-        """Test that the merge queue can be set properly."""
+        """Test that the merge queue and config can be set properly."""
         with person_logged_in(ANONYMOUS):
-            db_queue = self.factory.makeBranchMergeQueue()
-            db_branch = self.factory.makeBranch()
-            launchpad = launchpadlib_for('test', db_branch.owner,
-                service_root=self.layer.appserver_root_url('api'))
+            queue_db = self.factory.makeBranchMergeQueue()
+            queue_url = api_url(queue_db)
 
-        branch = ws_object(launchpad, db_branch)
-        queue = ws_object(launchpad, db_queue)
-        branch.merge_queue = queue
-        branch.lp_save()
-
-        branch2 = ws_object(launchpad, db_branch)
-        self.assertEqual(branch2.merge_queue, queue)
-
-    def test_set_configuration(self):
-        """Test the mutator for setting configuration."""
+        config = json.dumps({'test': 'make check'})
+        self.webservice.patch(
+            self.branch_url, "application/json",
+            json.dumps({
+                "merge_queue_link": queue_url,
+                "merge_queue_config": config,
+                }),
+            api_version='devel')
         with person_logged_in(ANONYMOUS):
-            db_branch = self.factory.makeBranch()
-            launchpad = launchpadlib_for('test', db_branch.owner,
-                service_root=self.layer.appserver_root_url('api'))
-
-        configuration = simplejson.dumps({'test': 'make check'})
-
-        branch = ws_object(launchpad, db_branch)
-        branch.merge_queue_config = configuration
-        branch.lp_save()
-
-        branch2 = ws_object(launchpad, db_branch)
-        self.assertEqual(branch2.merge_queue_config, configuration)
+            self.assertEqual(self.branch_db.merge_queue, queue_db)
+            self.assertEqual(self.branch_db.merge_queue_config, config)
 
     def test_transitionToInformationType(self):
         """Test transitionToInformationType() API arguments."""
-        product = self.factory.makeProduct()
-        self.factory.makeCommercialSubscription(product)
-        with person_logged_in(product.owner):
-            product.setBranchSharingPolicy(
-                BranchSharingPolicy.PUBLIC_OR_PROPRIETARY)
-            db_branch = self.factory.makeBranch(product=product)
-            launchpad = launchpadlib_for('test', db_branch.owner,
-                service_root=self.layer.appserver_root_url('api'))
-
-        branch = ws_object(launchpad, db_branch)
-        branch.transitionToInformationType(information_type='Proprietary')
-
-        updated_branch = ws_object(launchpad, db_branch)
-        self.assertEqual('Proprietary', updated_branch.information_type)
+        self.webservice.named_post(
+            self.branch_url, 'transitionToInformationType',
+            information_type='Private Security', api_version='devel')
+        with admin_logged_in():
+            self.assertEqual(
+                'Private Security', self.branch_db.information_type.title)
