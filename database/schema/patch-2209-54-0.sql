@@ -7,7 +7,7 @@ CREATE TABLE codereviewinlinecomment (
     previewdiff integer NOT NULL REFERENCES previewdiff,
     person integer NOT NULL REFERENCES person,
     comment integer PRIMARY KEY REFERENCES codereviewmessage,
-    comments text
+    comments text NOT NULL
 );
 
 CREATE INDEX codereviewinlinecomment__person__idx ON
@@ -18,7 +18,7 @@ CREATE INDEX codereviewinlinecomment__previewdiff__idx ON
 CREATE TABLE codereviewinlinecommentdraft (
     previewdiff integer NOT NULL REFERENCES previewdiff,
     person integer NOT NULL REFERENCES person,
-    comments text,
+    comments text NOT NULL,
     PRIMARY KEY (previewdiff, person)
 );
 
