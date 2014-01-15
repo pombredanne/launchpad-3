@@ -15,6 +15,7 @@ from testtools.deferredruntest import (
     AsynchronousDeferredRunTestForBrokenTwisted,
     SynchronousDeferredRunTest,
     )
+from testtools.matchers import ContainsAll
 from twisted.internet import defer
 from twisted.internet.task import Clock
 from twisted.python.failure import Failure
@@ -439,21 +440,23 @@ class TestSlave(TestCase):
         d = slave.echo('foo', 'bar', 42)
         return d.addCallback(self.assertEqual, ['foo', 'bar', 42])
 
+    @defer.inlineCallbacks
     def test_info(self):
         # Calling 'info' gets some information about the slave.
         self.slave_helper.getServerSlave()
         slave = self.slave_helper.getClientSlave()
-        d = slave.info()
+        info = yield slave.info()
         # We're testing the hard-coded values, since the version is hard-coded
         # into the remote slave, the supported build managers are hard-coded
         # into the tac file for the remote slave and config is returned from
         # the configuration file.
-        return d.addCallback(
-            self.assertEqual,
-            ['1.0',
-             'i386',
-             ['sourcepackagerecipe',
-              'translation-templates', 'binarypackage', 'debian']])
+        self.assertEqual(3, len(info))
+        self.assertEqual(['1.0', 'i386'], info[:2])
+        self.assertThat(
+            info[2],
+            ContainsAll(
+                ('sourcepackagerecipe', 'translation-templates',
+                 'binarypackage', 'debian')))
 
     @defer.inlineCallbacks
     def test_initial_status(self):
@@ -604,8 +607,8 @@ class TestSlaveTimeouts(TestCase):
         self.slave = self.slave_helper.getClientSlave(
             reactor=self.clock, proxy=self.proxy)
 
-    def assertCancelled(self, d):
-        self.clock.advance(config.builddmaster.socket_timeout + 1)
+    def assertCancelled(self, d, timeout=None):
+        self.clock.advance((timeout or config.builddmaster.socket_timeout) + 1)
         return assert_fails_with(d, defer.CancelledError)
 
     def test_timeout_abort(self):
@@ -625,7 +628,8 @@ class TestSlaveTimeouts(TestCase):
 
     def test_timeout_ensurepresent(self):
         return self.assertCancelled(
-            self.slave.ensurepresent(None, None, None, None))
+            self.slave.ensurepresent(None, None, None, None),
+            config.builddmaster.socket_timeout * 5)
 
     def test_timeout_build(self):
         return self.assertCancelled(

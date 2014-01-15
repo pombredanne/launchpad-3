@@ -582,8 +582,7 @@ class IPersonPublic(IPrivacy):
         Choice(title=_("Visibility"),
                description=_(
                    "Anyone can see a public team's data. Only team members "
-                   "and Launchpad admins can see private team data. "
-                   "Private teams cannot become public."),
+                   "can see private team data."),
                required=True, vocabulary=PersonVisibility,
                default=PersonVisibility.PUBLIC, readonly=True))
 

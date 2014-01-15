@@ -291,6 +291,7 @@ The full change log can be viewed as follows:
     ubuntutest
     ...testing-dspr... package
     Change log
+    ...
     0.9
     Pending in breezy-autotest-release
     ...
@@ -305,3 +306,4 @@ The full change log can be viewed as follows:
     Available diffs
     diff from 0.9 to 1.0
     (7 bytes)
+    ...
