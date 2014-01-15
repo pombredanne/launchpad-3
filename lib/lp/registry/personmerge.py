@@ -561,6 +561,19 @@ def _mergeDateCreated(cur, from_id, to_id):
         ''' % vars())
 
 
+def _mergeCoreReviewInlineComments(cur, from_id, to_id):
+    params = dict(from_id=from_id, to_id=to_id)
+    cur.execute('''
+    UPDATE CodeReviewInlineComment SET person=%(to_id)d
+    WHERE person = %(from_id)d
+    ''' % params)
+
+    cur.execute('''
+    UPDATE CodeReviewInlineCommentDraft SET person=%(to_id)d
+    WHERE person = %(from_id)d
+    ''' % params)
+
+
 def _purgeUnmergableTeamArtifacts(from_team, to_team, reviewer):
     """Purge team artifacts that cannot be merged, but can be removed."""
     # A team cannot have more than one mailing list.
@@ -777,9 +790,7 @@ def merge_people(from_person, to_person, reviewer, delete=False):
     _mergeLoginTokens(cur, from_id, to_id)
     skip.append(('logintoken', 'requester'))
 
-    # XXX wgrant 2014-01-15 bug=1269268: We only skip these so we can
-    # get the tables created everywhere before landing the merge code.
-    # They need to be merged properly before the tables grow any data.
+    _mergeCoreReviewInlineComments(cur, from_id, to_id)
     skip.append(('codereviewinlinecomment', 'person'))
     skip.append(('codereviewinlinecommentdraft', 'person'))
 
