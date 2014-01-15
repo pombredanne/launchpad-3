@@ -33,7 +33,7 @@ class CurrentOpenIDEndPoint:
     @classmethod
     def getServiceURL(cls):
         """The OpenID server URL (/+openid) for the current request."""
-        return config.openid_provider_root + '+openid'
+        return config.launchpad.openid_provider_root + '+openid'
 
 
 class OpenIDPersistentIdentity:
