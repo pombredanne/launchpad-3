@@ -24,7 +24,5 @@ CREATE TABLE codereviewinlinecommentdraft (
 
 CREATE INDEX codereviewinlinecommentdraft__person__idx ON
     codereviewinlinecommentdraft(person);
-CREATE INDEX codereviewinlinecommentdraft__previewdiff__idx ON
-    codereviewinlinecommentdraft(previewdiff);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 54, 0);
