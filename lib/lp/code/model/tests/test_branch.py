@@ -3373,3 +3373,14 @@ class TestWebservice(TestCaseWithFactory):
         with admin_logged_in():
             self.assertEqual(
                 'Private Security', self.branch_db.information_type.title)
+
+    def test_unscan(self):
+        """Test unscan() API call."""
+        with admin_logged_in():
+            self.assertEqual(
+                0, len(list(getUtility(IBranchScanJobSource).iterReady())))
+        self.webservice.named_post(
+            self.branch_url, 'unscan', rescan=True, api_version='devel')
+        with admin_logged_in():
+            self.assertEqual(
+                1, len(list(getUtility(IBranchScanJobSource).iterReady())))
