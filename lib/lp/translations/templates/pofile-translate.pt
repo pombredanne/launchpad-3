@@ -7,22 +7,13 @@
   i18n:domain="launchpad"
 >
   <body>
-    <div metal:fill-slot="head_epilogue">
-    <style>
-    .dismissed, .dismissed a {
-        color: lightgray;
-    }
-    </style>
-
+    <metal:head fill-slot="head_epilogue">
     <script type="text/javascript">
-      registerLaunchpadFunction(insertAllExpansionButtons);
-
-      LPS.use('lp.translations.pofile', function(Y) {
+      LPJS.use('lp.translations.pofile', function(Y) {
         Y.on('domready', Y.lp.translations.pofile.initializePOFile);
       });
-
     </script>
-    </div>
+    </metal:head>
     <div metal:fill-slot="main">
       <script type="text/javascript"
             tal:condition="view/translation_group"
@@ -61,7 +52,7 @@
         use-macro="context/@@+translations-macros/nav-pofile-subpages" />
 
       <!-- Sharing information -->
-      <div tal:condition="features/translations.sharing_information.enabled">
+      <div>
         <div id="sharing-information"
              tal:condition="view/is_sharing">
           <p tal:define="sharing_pofile view/sharing_pofile;

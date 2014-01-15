@@ -1,7 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 """ArchiveSubscriber interface."""
 
@@ -31,7 +29,8 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
+from lp.app.interfaces.launchpad import IPrivacy
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import PersonChoice
 from lp.soyuz.enums import ArchiveSubscriberStatus
@@ -48,6 +47,7 @@ class IArchiveSubscriberView(Interface):
 
     id = Int(title=_('ID'), required=True, readonly=True)
 
+    archive_id = Int(title=_('Archive ID'), required=True, readonly=True)
     archive = exported(Reference(
         IArchive, title=_("Archive"), required=True, readonly=True,
         description=_("The archive for this subscription.")))
@@ -178,3 +178,8 @@ class IPersonalArchiveSubscription(Interface):
 
     title = TextLine(title=_("Subscription title"),
         required=False)
+
+
+def pas_to_privacy(pas):
+    """Converts a PersonalArchiveSubscription to privacy"""
+    return IPrivacy(pas.archive)

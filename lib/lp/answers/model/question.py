@@ -1,7 +1,5 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0611,W0212
 
 """Question models."""
 
@@ -36,7 +34,6 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
-from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import LeftJoin
 from storm.store import Store
 from zope.component import getUtility
@@ -45,22 +42,9 @@ from zope.interface import (
     implements,
     providedBy,
     )
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.database.constants import (
-    DEFAULT,
-    UTC_NOW,
-    )
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.nl_search import nl_phrase_search
-from canonical.database.sqlbase import (
-    cursor,
-    quote,
-    SQLBase,
-    sqlvalues,
-    )
-from canonical.launchpad.helpers import is_english_variant
 from lp.answers.enums import (
     QUESTION_STATUS_DEFAULT_SEARCH,
     QuestionAction,
@@ -109,6 +93,20 @@ from lp.registry.interfaces.product import (
     IProductSet,
     )
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.nl_search import nl_phrase_search
+from lp.services.database.sqlbase import (
+    cursor,
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.database.stormexpr import rank_by_fti
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.messages.interfaces.message import IMessage
 from lp.services.messages.model.message import (
@@ -116,6 +114,8 @@ from lp.services.messages.model.message import (
     MessageChunk,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.authorization import check_permission
+from lp.services.worlddata.helpers import is_english_variant
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.services.worlddata.model.language import Language
 
@@ -225,8 +225,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         if self.product:
             return self.product
         elif self.sourcepackagename:
-            return self.distribution.getSourcePackage(
-                self.sourcepackagename.name)
+            return self.distribution.getSourcePackage(self.sourcepackagename)
         else:
             return self.distribution
 
@@ -683,7 +682,12 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IQuestion`."""
-        message = self.messages[comment_number].message
+        question_message = self.messages[comment_number]
+        if not check_permission('launchpad.Moderate', question_message):
+            raise Unauthorized(
+                "Only admins, project maintainers, and comment authors "
+                "can change a comment's visibility.")
+        message = question_message.message
         message.visible = visible
 
 
@@ -867,6 +871,7 @@ class QuestionSearch:
                  product=None, distribution=None, sourcepackagename=None,
                  project=None):
         self.search_text = search_text
+        self.nl_phrase_used = False
 
         if zope_isinstance(status, DBItem):
             self.status = [status]
@@ -909,7 +914,7 @@ class QuestionSearch:
                         self.sourcepackagename))
         elif self.project:
             constraints.append("""
-                Question.product = Product.id AND
+                Question.product = Product.id AND Product.active AND
                 Product.project = %s""" % sqlvalues(self.project))
 
         return constraints
@@ -947,8 +952,12 @@ class QuestionSearch:
         constraints = self.getTargetConstraints()
 
         if self.search_text is not None:
-            constraints.append(
-                'Question.fti @@ ftq(%s)' % quote(self.search_text))
+            if self.nl_phrase_used:
+                constraints.append(
+                    'Question.fti @@ %s' % quote(self.search_text))
+            else:
+                constraints.append(
+                    'Question.fti @@ ftq(%s)' % quote(self.search_text))
 
         if self.status:
             constraints.append('Question.status IN %s' % sqlvalues(
@@ -1011,11 +1020,10 @@ class QuestionSearch:
             return ["Question.status", "-Question.datecreated"]
         elif sort is QuestionSort.RELEVANCY:
             if self.search_text:
-                # SQLConstant is a workaround for bug 53455
-                return [SQLConstant(
-                            "-rank(Question.fti, ftq(%s))" % quote(
-                                self.search_text)),
-                        "-Question.datecreated"]
+                ftq = not self.nl_phrase_used
+                return [
+                    rank_by_fti(Question, self.search_text, ftq=ftq),
+                    "-Question.datecreated"]
             else:
                 return "-Question.datecreated"
         elif sort is QuestionSort.RECENT_OWNER_ACTIVITY:
@@ -1116,6 +1124,7 @@ class SimilarQuestionsSearch(QuestionSearch):
         # similarity search algorithm.
         self.search_text = nl_phrase_search(
             title, Question, " AND ".join(self.getTargetConstraints()))
+        self.nl_phrase_used = True
 
 
 class QuestionPersonSearch(QuestionSearch):
@@ -1423,7 +1432,7 @@ class QuestionTargetMixin:
         for person in contacts:
             reason_start = (
                 "You received this question notification because you are ")
-            if person.isTeam():
+            if person.is_team:
                 reason = reason_start + (
                     'a member of %s, which is an answer contact for %s.' % (
                         person.displayname, self.displayname))

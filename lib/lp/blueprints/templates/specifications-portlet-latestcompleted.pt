@@ -5,7 +5,7 @@
   omit-tag="">
 
 <h2>Recently completed</h2>
-<table tal:define="speclist context/latest_completed_specifications">
+<table tal:define="speclist view/latest_completed_specifications">
   <tr tal:repeat="spec speclist"
       tal:replace="structure spec/@@+listing-compact" />
 </table>

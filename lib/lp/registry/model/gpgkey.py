@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 __metaclass__ = type
 __all__ = ['GPGKey', 'GPGKeySet']
 
@@ -16,16 +14,18 @@ from sqlobject import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
+from lp.registry.interfaces.gpg import (
+    IGPGKey,
+    IGPGKeySet,
+    )
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from lp.registry.interfaces.gpg import (
+from lp.services.gpg.interfaces import (
     GPGKeyAlgorithm,
-    IGPGKey,
-    IGPGKeySet,
+    IGPGHandler,
     )
 
 

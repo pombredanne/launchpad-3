@@ -1,7 +1,5 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 """Common build interfaces."""
 
@@ -9,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'BuildStatus',
+    'BuildQueueStatus',
     'BuildFarmJobType',
     ]
 
@@ -37,9 +36,9 @@ class BuildStatus(DBEnumeratedType):
     FULLYBUILT = DBItem(1, """
         Successfully built
 
-        Build record is an historic account of the build. The build is complete
-        and needs no further work to complete it. The build log etc are all
-        in place if available.
+        Build record is an historic account of the build. The build is
+        complete and needs no further work to complete it. The build log etc
+        are all in place if available.
         """)
 
     FAILEDTOBUILD = DBItem(2, """
@@ -100,8 +99,22 @@ class BuildStatus(DBEnumeratedType):
     UPLOADING = DBItem(8, """
         Uploading build
 
-        The build has completed and is waiting to be processed by the 
+        The build has completed and is waiting to be processed by the
         upload processor.
+        """)
+
+    CANCELLING = DBItem(9, """
+        Cancelling build
+
+        A cancellation request was made for the build. It cannot be cancelled
+        immediately because a request is made in the webapp but we need to
+        wait for the buildd-manager to actually cancel it.
+        """)
+
+    CANCELLED = DBItem(10, """
+        Cancelled build
+
+        A build was cancelled. This is a terminal state.
         """)
 
 
@@ -134,4 +147,39 @@ class BuildFarmJobType(DBEnumeratedType):
         Translation template build
 
         Generate translation templates from a bazaar branch.
+        """)
+
+
+class BuildQueueStatus(DBEnumeratedType):
+    """Build queue status.
+
+    The status of a job in the build farm queue. The queue record only
+    exists while the job is running or waiting to run.
+
+    Not to be confused with BuildStatus, which is persistent and
+    includes values to represent the result of a completed job.
+    """
+
+    WAITING = DBItem(0, """
+        Waiting
+
+        The job is waiting to be run.
+        """)
+
+    RUNNING = DBItem(1, """
+        Running
+
+        The job is currently running.
+        """)
+
+    CANCELLING = DBItem(2, """
+        Cancelling
+
+        The job has been cancelled, so should be terminated.
+        """)
+
+    SUSPENDED = DBItem(3, """
+        Suspended
+
+        The job is suspended, so should not be run.
         """)

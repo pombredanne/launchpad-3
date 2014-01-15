@@ -1,5 +1,5 @@
 XXX: This test must be generalized and used like
-interfaces/ftests/questiontarget.txt, to test reassignment in all contexts that
+tests/questiontarget.txt, to test reassignment in all contexts that
 allow them. -- Guilherme Salgado, 2006-10-27
 
     These are the variables that will be defined in each setup hook once we
@@ -39,7 +39,8 @@ First we'll enter an unexistent name.
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     tag.renderContents()
     'There is 1 error.'
-    "There's no person/team named 'unexistent-name' in Launchpad."
+    'There&#x27;s no person/team named &#x27;unexistent-name&#x27; in
+    Launchpad.'
 
 We also try to use the name of an unvalidated account, which can't be used as
 the owner of something.
@@ -54,7 +55,7 @@ the owner of something.
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     tag.renderContents()
     'There is 1 error.'
-    "The person/team named 'matsubara' is not a valid owner for ..."
+    'The person/team named &#x27;matsubara&#x27; is not a valid owner for ...'
 
 Now we try to create a team using a name that is already taken.
 
@@ -66,7 +67,8 @@ Now we try to create a team using a name that is already taken.
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     tag.renderContents()
     'There is 1 error.'
-    "There's already a person/team with the name 'name16' in Launchpad..."
+    'There&#x27;s already a person/team with the name &#x27;name16&#x27;
+    in Launchpad...'
 
 Okay, let's do it properly now and reassign it to an existing (and validated)
 account.

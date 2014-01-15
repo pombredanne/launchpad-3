@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base class view for branch merge proposal listings."""
@@ -29,10 +29,7 @@ from zope.interface import (
     )
 from zope.schema import Choice
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import TableBatchNavigator
+from lp import _
 from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
@@ -53,7 +50,13 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalListingBatchNavigator,
     )
 from lp.code.interfaces.hasbranches import IHasMergeProposals
-from lp.services.propertycache import cachedproperty
+from lp.services.config import config
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import TableBatchNavigator
 
 
 class BranchMergeProposalListingItem:
@@ -139,8 +142,8 @@ class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
     implements(IBranchMergeProposalListingBatchNavigator)
 
     def __init__(self, view):
-        TableBatchNavigator.__init__(
-            self, view.getVisibleProposalsForUser(), view.request,
+        super(BranchMergeProposalListingBatchNavigator, self).__init__(
+            view.getVisibleProposalsForUser(), view.request,
             columns_to_show=view.extra_columns,
             size=config.launchpad.branchlisting_batch_size)
         self.view = view
@@ -213,9 +216,7 @@ class BranchMergeProposalListingView(LaunchpadFormView):
 
     @property
     def initial_values(self):
-        return {
-            'status': FilterableStatusValues.ALL,
-            }
+        return {'status': FilterableStatusValues.ALL}
 
     @cachedproperty
     def status_value(self):
@@ -245,8 +246,8 @@ class BranchMergeProposalListingView(LaunchpadFormView):
 
     def getVisibleProposalsForUser(self):
         """Branch merge proposals that are visible by the logged in user."""
-        has_proposals = IHasMergeProposals(self.context)
-        return has_proposals.getMergeProposals(self.status_filter, self.user)
+        return IHasMergeProposals(self.context).getMergeProposals(
+            self.status_filter, self.user, eager_load=True)
 
     @cachedproperty
     def proposal_count(self):
@@ -283,7 +284,7 @@ class ActiveReviewsView(BranchMergeProposalListingView):
         collection = collection.visibleByUser(self.user)
         proposals = collection.getMergeProposals(
             [BranchMergeProposalStatus.CODE_APPROVED,
-             BranchMergeProposalStatus.NEEDS_REVIEW, ])
+             BranchMergeProposalStatus.NEEDS_REVIEW], eager_load=True)
         return proposals
 
     def _getReviewGroup(self, proposal, votes, reviewer):
@@ -363,7 +364,7 @@ class ActiveReviewsView(BranchMergeProposalListingView):
         # Sort each collection...
         for group in self.review_groups.values():
             group.sort(key=attrgetter('sort_key'))
-        self.proposal_count = len(proposals)
+        get_property_cache(self).proposal_count = len(proposals)
 
     @cachedproperty
     def headings(self):
@@ -441,12 +442,9 @@ class PersonActiveReviewsView(ActiveReviewsView):
     def getProposals(self):
         """See `ActiveReviewsView`."""
         collection = self._getCollection().visibleByUser(self.user)
-        proposals = collection.getMergeProposalsForPerson(
-            self._getReviewer(),
-            [BranchMergeProposalStatus.CODE_APPROVED,
-             BranchMergeProposalStatus.NEEDS_REVIEW])
-
-        return proposals
+        return collection.getMergeProposalsForPerson(
+            self._getReviewer(), [BranchMergeProposalStatus.CODE_APPROVED,
+            BranchMergeProposalStatus.NEEDS_REVIEW], eager_load=True)
 
 
 class PersonProductActiveReviewsView(PersonActiveReviewsView):

@@ -7,8 +7,8 @@ __metaclass__ = type
 __all__ = ['update_last_updated']
 
 
-from canonical.database.constants import UTC_NOW
 from lp.registry.interfaces.person import IPerson
+from lp.services.database.constants import UTC_NOW
 
 
 def update_last_updated(faq, event):

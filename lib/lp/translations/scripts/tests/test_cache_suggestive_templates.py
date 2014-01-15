@@ -7,14 +7,12 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.app.enums import ServiceUsage
+from lp.services.database.interfaces import IStore
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessDatabaseLayer
 from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.model.pofile import POFile
 
 
 class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
@@ -31,8 +29,7 @@ class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
 
     def _readCache(self):
         """Read cache contents, in deterministic order."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result = store.execute(
+        result = IStore(POFile).execute(
             "SELECT * FROM SuggestivePOTemplate ORDER BY potemplate")
         return [id for id, in result.get_all()]
 
@@ -95,17 +92,17 @@ class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
 
         self.assertContentEqual(cache_before + [pot.id], self._readCache())
 
-    def test_product_official_rosetta_affects_caching(self):
+    def test_product_translations_usage_affects_caching(self):
         # Templates from projects are included in the cache only where
         # the project uses Launchpad Translations.
         productseries = self.factory.makeProductSeries()
-        productseries.product.official_rosetta = True
+        productseries.product.translations_usage = ServiceUsage.LAUNCHPAD
         pot = self.factory.makePOTemplate(productseries=productseries)
         self._refreshCache()
 
         cache_with_template = self._readCache()
 
-        productseries.product.official_rosetta = False
+        productseries.product.translations_usage = ServiceUsage.UNKNOWN
         self._refreshCache()
 
         cache_without_template = self._readCache()
@@ -113,11 +110,12 @@ class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
         self.assertContentEqual(
             cache_with_template, cache_without_template + [pot.id])
 
-    def test_distro_official_rosetta_affects_caching(self):
+    def test_distro_translations_usage_affects_caching(self):
         # Templates from distributions are included in the cache only
         # where the distribution uses Launchpad Translations.
         package = self.factory.makeSourcePackage()
-        package.distroseries.distribution.official_rosetta = True
+        package.distroseries.distribution.translations_usage = (
+            ServiceUsage.LAUNCHPAD)
         pot = self.factory.makePOTemplate(
             distroseries=package.distroseries,
             sourcepackagename=package.sourcepackagename)
@@ -125,7 +123,8 @@ class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
 
         cache_with_template = self._readCache()
 
-        package.distroseries.distribution.official_rosetta = False
+        package.distroseries.distribution.translations_usage = (
+            ServiceUsage.UNKNOWN)
         self._refreshCache()
 
         cache_without_template = self._readCache()

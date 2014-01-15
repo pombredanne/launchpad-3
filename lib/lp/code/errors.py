@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Errors used in the lp/code modules."""
@@ -8,13 +8,12 @@ __all__ = [
     'AlreadyLatestFormat',
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
-    'BranchCannotBePrivate',
-    'BranchCannotBePublic',
     'BranchCreationException',
     'BranchCreationForbidden',
     'BranchCreatorNotMemberOfOwnerTeam',
     'BranchCreatorNotOwner',
     'BranchExists',
+    'BranchHasPendingWrites',
     'BranchTargetError',
     'BranchTypeError',
     'BuildAlreadyPending',
@@ -39,6 +38,7 @@ __all__ = [
     'TooManyBuilds',
     'TooNewRecipeFormat',
     'UnknownBranchTypeError',
+    'UpdatePreviewDiffNotReady',
     'UpgradePending',
     'UserHasExistingReview',
     'UserNotBranchReviewer',
@@ -92,6 +92,15 @@ class BranchExists(BranchCreationException):
         BranchCreationException.__init__(self, message)
 
 
+class BranchHasPendingWrites(Exception):
+    """Raised if the branch can't be processed because a write is pending.
+
+    In this case the operation can usually be retried in a while.
+
+    See bug 612171.
+    """
+
+
 class BranchTargetError(Exception):
     """Raised when there is an error determining a branch target."""
 
@@ -134,14 +143,6 @@ class BranchTypeError(Exception):
     BranchTypeError exception is raised if one of these operations is called
     with a branch of the wrong type.
     """
-
-
-class BranchCannotBePublic(Exception):
-    """The branch cannot be made public."""
-
-
-class BranchCannotBePrivate(Exception):
-    """The branch cannot be made private."""
 
 
 class InvalidBranchException(Exception):
@@ -206,6 +207,7 @@ class ClaimReviewFailed(Exception):
     """The user cannot claim the pending review."""
 
 
+@error_status(httplib.BAD_REQUEST)
 class InvalidBranchMergeProposal(Exception):
     """Raised during the creation of a new branch merge proposal.
 
@@ -282,6 +284,10 @@ class PrivateBranchRecipe(Exception):
 
 class ReviewNotPending(Exception):
     """The requested review is not in a pending state."""
+
+
+class UpdatePreviewDiffNotReady(Exception):
+    """Raised if the preview diff is not ready to run."""
 
 
 class UserHasExistingReview(Exception):

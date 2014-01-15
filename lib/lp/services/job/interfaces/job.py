@@ -1,7 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0213,E0211
 
 """Interfaces including and related to IJob."""
 
@@ -11,10 +9,8 @@ __all__ = [
     'IJob',
     'IJobSource',
     'IRunnableJob',
-    'ITwistedJobSource',
     'JobStatus',
-    'LeaseHeld',
-    'SuspendJobException',
+    'JobType',
     ]
 
 
@@ -35,24 +31,12 @@ from zope.schema import (
     Text,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.person import IPerson
 
 
-class SuspendJobException(Exception):
-    """Raised when a running job wants to suspend itself."""
-    pass
-
-
-class LeaseHeld(Exception):
-    """Raised when attempting to acquire a list that is already held."""
-
-    def __init__(self):
-        Exception.__init__(self, 'Lease is already held.')
-
-
 class JobStatus(DBEnumeratedType):
-    """Values that ICodeImportJob.state can take."""
+    """Values that IJob.status can take."""
 
     WAITING = DBItem(0, """
         Waiting
@@ -85,8 +69,27 @@ class JobStatus(DBEnumeratedType):
         """)
 
 
+class JobType(DBEnumeratedType):
+
+    GENERATE_PACKAGE_DIFF = DBItem(0, """
+        Generate Package Diff
+
+        Job to generate the diff between two SourcePackageReleases.
+        """)
+
+    UPLOAD_PACKAGE_TRANSLATIONS = DBItem(1, """
+        Upload Package Translations
+
+        Job to upload package translations files and attach them to a
+        SourcePackageRelease.
+        """)
+
+
 class IJob(Interface):
     """Basic attributes of a job."""
+
+    job_id = Int(title=_(
+        'A unique identifier for this job.'))
 
     scheduled_start = Datetime(
         title=_('Time when the IJob was scheduled to start.'))
@@ -120,28 +123,38 @@ class IJob(Interface):
         title=_("Whether or not this job's status is such that it "
                 "could eventually complete."))
 
+    is_runnable = Bool(
+        title=_("Whether or not this job is ready to be run immediately."))
+
+    base_json_data = Attribute("A dict of data about the job.")
+
+    base_job_type = Choice(
+        vocabulary=JobType, readonly=True,
+        description=_("What type of job this is, only used for jobs that "
+            "do not have their own tables."))
+
     def acquireLease(duration=300):
         """Acquire the lease for this Job, or raise LeaseHeld."""
 
     def getTimeout():
         """Determine how long this job can run before timing out."""
 
-    def start():
+    def start(manage_transaction=False):
         """Mark the job as started."""
 
-    def complete():
+    def complete(manage_transaction=False):
         """Mark the job as completed."""
 
-    def fail():
+    def fail(manage_transaction=False):
         """Indicate that the job has failed permanently.
 
         Only running jobs can fail.
         """
 
-    def queue():
+    def queue(manage_transaction=False, abort_transaction=False):
         """Mark the job as queued for processing."""
 
-    def suspend():
+    def suspend(manage_transaction=False):
         """Mark the job as suspended.
 
         Only waiting jobs can be suspended."""
@@ -167,6 +180,13 @@ class IRunnableJob(IJob):
         These vars should help determine why the jobs OOPsed.
         """
 
+    def getOperationDescription():
+        """Describe the operation being performed, for use in oops emails.
+
+        Should grammatically fit the phrase "error while FOO", e.g. "error
+        while sending mail."
+        """
+
     user_error_types = Attribute(
         'A tuple of exception classes which result from user error.')
 
@@ -182,6 +202,9 @@ class IRunnableJob(IJob):
     def run():
         """Run this job."""
 
+    def celeryRunOnCommit():
+        """Request Celery to run this job on transaction commit."""
+
 
 class IJobSource(Interface):
     """Interface for creating and getting jobs."""
@@ -194,10 +217,3 @@ class IJobSource(Interface):
 
     def contextManager():
         """Get a context for running this kind of job in."""
-
-
-class ITwistedJobSource(IJobSource):
-    """Interface for a job source that is usable by the TwistedJobRunner."""
-
-    def get(id):
-        """Get a job by its id."""

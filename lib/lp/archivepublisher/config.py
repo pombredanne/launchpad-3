@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # This is the python package that defines the
@@ -10,8 +10,8 @@ import os
 
 from zope.component import getUtility
 
-from canonical.config import config
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
+from lp.services.config import config
 from lp.soyuz.enums import (
     archive_suffixes,
     ArchivePurpose,
@@ -74,10 +74,21 @@ def getPubConfig(archive):
         pubconf.overrideroot = pubconf.archiveroot + '-overrides'
         pubconf.cacheroot = pubconf.archiveroot + '-cache'
         pubconf.miscroot = pubconf.archiveroot + '-misc'
+        pubconf.germinateroot = pubconf.archiveroot + '-germinate'
     else:
         pubconf.overrideroot = None
         pubconf.cacheroot = None
         pubconf.miscroot = None
+        pubconf.germinateroot = None
+
+    if archive.is_main:
+        pubconf.uefiroot = pubconf.archiveroot + '-uefi'
+    elif archive.is_ppa:
+        pubconf.uefiroot = os.path.join(
+            ppa_config.signing_keys_root, "uefi",
+            archive.owner.name, archive.name)
+    else:
+        pubconf.uefiroot = None
 
     pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
     pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
@@ -106,6 +117,7 @@ class Config(object):
             self.cacheroot,
             self.overrideroot,
             self.miscroot,
+            self.germinateroot,
             self.temproot,
             ]
 

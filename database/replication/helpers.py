@@ -10,13 +10,24 @@ import subprocess
 from tempfile import NamedTemporaryFile
 from textwrap import dedent
 
-from canonical.config import config
-from canonical.database.sqlbase import connect, sqlvalues
-from canonical.database.postgresql import (
-    fqn, all_tables_in_schema, all_sequences_in_schema, ConnectionString
-    )
-from canonical.launchpad.scripts.logger import log, DEBUG2
+import psycopg2
 
+from lp.services.config import config
+from lp.services.database.postgresql import (
+    all_sequences_in_schema,
+    all_tables_in_schema,
+    ConnectionString,
+    fqn,
+    )
+from lp.services.database.sqlbase import (
+    connect,
+    ISOLATION_LEVEL_DEFAULT,
+    sqlvalues,
+    )
+from lp.services.scripts.logger import (
+    DEBUG2,
+    log,
+    )
 
 # The Slony-I clustername we use with Launchpad. Hardcoded because there
 # is no point changing this, ever.
@@ -28,16 +39,14 @@ CLUSTER_NAMESPACE = '_%s' % CLUSTERNAME
 # Replication set id constants. Don't change these without DBA help.
 LPMAIN_SET_ID = 1
 HOLDING_SET_ID = 666
+SSO_SET_ID = 3
 LPMIRROR_SET_ID = 4
 
 # Seed tables for the lpmain replication set to be passed to
 # calculate_replication_set().
 LPMAIN_SEED = frozenset([
     ('public', 'account'),
-    ('public', 'openidnonce'),
-    ('public', 'openidassociation'),
     ('public', 'person'),
-    ('public', 'launchpaddatabaserevision'),
     ('public', 'databasereplicationlag'),
     ('public', 'fticache'),
     ('public', 'nameblacklist'),
@@ -45,17 +54,25 @@ LPMAIN_SEED = frozenset([
     ('public', 'openidconsumernonce'),
     ('public', 'codeimportmachine'),
     ('public', 'scriptactivity'),
-    ('public', 'standardshipitrequest'),
-    ('public', 'bugtag'),
     ('public', 'launchpadstatistic'),
     ('public', 'parsedapachelog'),
-    ('public', 'shipitsurvey'),
     ('public', 'databasereplicationlag'),
     ('public', 'featureflag'),
+    ('public', 'bugtaskflat'),
     # suggestivepotemplate can be removed when the
     # suggestivepotemplate.potemplate foreign key constraint exists on
     # production.
     ('public', 'suggestivepotemplate'),
+    # These are odd. They are updated via slonik & EXECUTE SCRIPT, and
+    # the contents of these tables will be different on each node
+    # because we store timestamps when the patches were applied.
+    # However, we want the tables listed as replicated so that, when
+    # building a new replica, the data that documents the schema patch
+    # level matches the schema patch level and upgrade.py does the right
+    # thing. This is a bad thing to do, but we are safe in this
+    # particular case.
+    ('public', 'launchpaddatabaserevision'),
+    ('public', 'launchpaddatabaseupdatelog'),
     ])
 
 # Explicitly list tables that should not be replicated. This includes the
@@ -223,6 +240,11 @@ class Node:
         self.connection_string = connection_string
         self.is_master = is_master
 
+    def connect(self, isolation=ISOLATION_LEVEL_DEFAULT):
+        con = psycopg2.connect(str(self.connection_string))
+        con.set_isolation_level(isolation)
+        return con
+
 
 def _get_nodes(con, query):
     """Return a list of Nodes."""
@@ -337,8 +359,9 @@ def preamble(con=None):
         # Symbolic ids for replication sets.
         define lpmain_set   %d;
         define holding_set  %d;
+        define sso_set      %d;
         define lpmirror_set %d;
-        """ % (LPMAIN_SET_ID, HOLDING_SET_ID, LPMIRROR_SET_ID))]
+        """ % (LPMAIN_SET_ID, HOLDING_SET_ID, SSO_SET_ID, LPMIRROR_SET_ID))]
 
     if master_node is not None:
         preamble.append(dedent("""\

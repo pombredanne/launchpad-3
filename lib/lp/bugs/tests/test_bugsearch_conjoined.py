@@ -11,19 +11,19 @@ from storm.store import Store
 from testtools.matchers import Equals
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
     BugTaskStatus,
     IBugTaskSet,
     )
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.registry.interfaces.series import SeriesStatus
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 
 
@@ -31,8 +31,7 @@ class TestSearchBase(TestCaseWithFactory):
     """Tests of exclude_conjoined_tasks param."""
 
     def makeBug(self, milestone):
-        bug = self.factory.makeBug(
-            product=milestone.product, distribution=milestone.distribution)
+        bug = self.factory.makeBug(target=milestone.target)
         with person_logged_in(milestone.target.owner):
             bug.default_bugtask.transitionToMilestone(
                 milestone, milestone.target.owner)
@@ -70,7 +69,7 @@ class TestProjectExcludeConjoinedMasterSearch(TestSearchBase):
             list(self.bugtask_set.search(self.params))
         # 1 query for the tasks, 1 query for the product (target) eager
         # loading.
-        self.assertThat(recorder, HasQueryCount(Equals(2)))
+        self.assertThat(recorder, HasQueryCount(Equals(4)))
 
     def test_search_results_count_with_other_productseries_tasks(self):
         # Test with zero conjoined masters and bugtasks targeted to
@@ -98,7 +97,7 @@ class TestProjectExcludeConjoinedMasterSearch(TestSearchBase):
             self.assertIn(
                 (bug.id, self.product),
                 [(task.bug.id, task.product) for task in tasks])
-            bugtask = self.factory.makeBugTask(
+            self.factory.makeBugTask(
                 bug=bug, target=self.product.development_focus)
             tasks = list(self.bugtask_set.search(self.params))
             # The product bugtask is excluded from the results.
@@ -166,7 +165,7 @@ class TestProjectGroupExcludeConjoinedMasterSearch(TestSearchBase):
             list(self.bugtask_set.search(self.params))
         # 1 query for the tasks, 1 query for the product (target) eager
         # loading.
-        self.assertThat(recorder, HasQueryCount(Equals(2)))
+        self.assertThat(recorder, HasQueryCount(Equals(4)))
 
     def test_search_results_count_with_other_productseries_tasks(self):
         # Test with zero conjoined masters and bugtasks targeted to
@@ -278,7 +277,7 @@ class TestDistributionExcludeConjoinedMasterSearch(TestSearchBase):
         Store.of(self.milestone).flush()
         with StormStatementRecorder() as recorder:
             list(self.bugtask_set.search(self.params))
-        self.assertThat(recorder, HasQueryCount(Equals(2)))
+        self.assertThat(recorder, HasQueryCount(Equals(4)))
 
     def test_search_results_count_with_other_productseries_tasks(self):
         # Test with zero conjoined masters and bugtasks targeted to

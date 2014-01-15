@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """XMLRPC runner for querying Launchpad."""
@@ -24,7 +24,6 @@ import tarfile
 import traceback
 import xmlrpclib
 
-# pylint: disable-msg=F0401
 from Mailman import (
     Errors,
     mm_cfg,
@@ -36,9 +35,7 @@ from Mailman.MailList import MailList
 from Mailman.Queue.Runner import Runner
 from Mailman.Queue.sbcache import get_switchboard
 
-# XXX sinzui 2008-08-15 bug=258423:
-# We should be importing from lazr.errorlog.
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
+from lp.services.webapp.errorlog import ErrorReportingUtility
 from lp.services.xmlrpc import Transport
 
 
@@ -57,12 +54,6 @@ def get_mailing_list_api_proxy():
         mm_cfg.XMLRPC_URL, transport=Transport(timeout=mm_cfg.XMLRPC_TIMEOUT))
 
 
-class MailmanErrorUtility(ErrorReportingUtility):
-    """An error utility that for the MailMan xmlrpc process."""
-
-    _default_config_section = 'mailman'
-
-
 def log_exception(message, *args):
     """Write the current exception traceback into the Mailman log file.
 
@@ -73,7 +64,8 @@ def log_exception(message, *args):
         may be a format string.
     :param args: Optional arguments to be interpolated into a format string.
     """
-    error_utility = MailmanErrorUtility()
+    error_utility = ErrorReportingUtility()
+    error_utility.configure(section_name='mailman')
     error_utility.raising(sys.exc_info())
     out_file = StringIO()
     traceback.print_exc(file=out_file)
@@ -145,10 +137,15 @@ class XMLRPCRunner(Runner):
         This method always returns 0 to indicate to the base class's main loop
         that it should sleep for a while after calling this method.
         """
+        methods = (
+            self._check_list_actions, self._get_subscriptions,
+            self._check_held_messages)
         try:
-            self._check_list_actions()
-            self._get_subscriptions()
-            self._check_held_messages()
+            for method in methods:
+                if self._shortcircuit():
+                    # The runner was  shutdown during the long network call.
+                    break
+                method()
         except:
             # Log the exception and report an OOPS.
             log_exception('Unexpected XMLRPCRunner exception')
@@ -169,17 +166,18 @@ class XMLRPCRunner(Runner):
     def _log(self, exc):
         """Log the exception in a log file and as an OOPS."""
         Runner._log(self, exc)
-        error_utility = MailmanErrorUtility()
+        error_utility = ErrorReportingUtility()
+        error_utility.configure(section_name='mailman')
         error_utility.raising(sys.exc_info())
 
     def _check_list_actions(self):
         """See if there are any list actions to perform."""
         try:
             actions = self._proxy.getPendingActions()
-        except (xmlrpclib.ProtocolError, socket.error), error:
+        except (xmlrpclib.ProtocolError, socket.error) as error:
             log_exception('Cannot talk to Launchpad:\n%s', error)
             return
-        except xmlrpclib.Fault, error:
+        except xmlrpclib.Fault as error:
             log_exception('Launchpad exception: %s', error)
             return
         if actions:
@@ -226,9 +224,9 @@ class XMLRPCRunner(Runner):
             try:
                 self._proxy.reportStatus(this_status)
                 syslog('xmlrpc', '[%s] %s: %s' % (team_name, action, status))
-            except (xmlrpclib.ProtocolError, socket.error), error:
+            except (xmlrpclib.ProtocolError, socket.error) as error:
                 log_exception('Cannot talk to Launchpad:\n%s', error)
-            except xmlrpclib.Fault, error:
+            except xmlrpclib.Fault as error:
                 log_exception('Launchpad exception: %s', error)
 
     def _update_list_subscriptions(self, list_name, subscription_info):
@@ -351,6 +349,9 @@ class XMLRPCRunner(Runner):
         # different.
         shuffle(lists)
         while lists:
+            if self._shortcircuit():
+                # Stop was called during a long network call.
+                return
             batch = lists[:mm_cfg.XMLRPC_SUBSCRIPTION_BATCH_SIZE]
             lists = lists[mm_cfg.XMLRPC_SUBSCRIPTION_BATCH_SIZE:]
             ## syslog('xmlrpc', 'batch: %s', batch)
@@ -358,11 +359,11 @@ class XMLRPCRunner(Runner):
             # Get the information for this batch of mailing lists.
             try:
                 info = self._proxy.getMembershipInformation(batch)
-            except (xmlrpclib.ProtocolError, socket.error), error:
+            except (xmlrpclib.ProtocolError, socket.error) as error:
                 log_exception('Cannot talk to Launchpad: %s', error)
                 syslog('xmlrpc', 'batch: %s', batch)
                 continue
-            except xmlrpclib.Fault, error:
+            except xmlrpclib.Fault as error:
                 log_exception('Launchpad exception: %s', error)
                 syslog('xmlrpc', 'batch: %s', batch)
                 continue
@@ -413,7 +414,7 @@ class XMLRPCRunner(Runner):
                 mm_cfg.VAR_PREFIX, 'backups', team_name + '.tgz')
             try:
                 tgz_file = tarfile.open(tgz_file_name, 'r:gz')
-            except IOError, error:
+            except IOError as error:
                 if error.errno != errno.ENOENT:
                     raise
                 # The archive tarfile does not exist, meaning this is the
@@ -461,7 +462,7 @@ class XMLRPCRunner(Runner):
         old_cwd = os.getcwd()
         try:
             os.chdir(lists_dir)
-            extractall(tgz_file)
+            tgz_file.extractall()
         finally:
             os.chdir(old_cwd)
         syslog('xmlrpc', '%s: %s', lists_dir, os.listdir(lists_dir))
@@ -494,7 +495,6 @@ class XMLRPCRunner(Runner):
                 os.makedirs(path)
             # We have to use a bare except here because of the legacy string
             # exceptions that Mailman can raise.
-            # pylint: disable-msg=W0702
             except:
                 log_exception('List creation error for team: %s', team_name)
                 return False
@@ -535,7 +535,6 @@ class XMLRPCRunner(Runner):
                     mlist.Unlock()
             # We have to use a bare except here because of the legacy string
             # exceptions that Mailman can raise.
-            # pylint: disable-msg=W0702
             except:
                 log_exception(
                     'List modification error for team: %s', team_name)
@@ -586,7 +585,6 @@ class XMLRPCRunner(Runner):
                     os.chdir(old_cwd)
             # We have to use a bare except here because of the legacy string
             # exceptions that Mailman can raise.
-            # pylint: disable-msg=W0702
             except:
                 log_exception('List deletion error for team: %s', team_name)
                 statuses[team_name] = ('deactivate', 'failure')
@@ -597,10 +595,10 @@ class XMLRPCRunner(Runner):
         """See if any held messages have been accepted or rejected."""
         try:
             dispositions = self._proxy.getMessageDispositions()
-        except (xmlrpclib.ProtocolError, socket.error), error:
+        except (xmlrpclib.ProtocolError, socket.error) as error:
             log_exception('Cannot talk to Launchpad:\n%s', error)
             return
-        except xmlrpclib.Fault, error:
+        except xmlrpclib.Fault as error:
             log_exception('Launchpad exception: %s', error)
             return
         if dispositions:
@@ -681,7 +679,6 @@ class XMLRPCRunner(Runner):
             # succeeded or not, however, it's unlikely that an action would
             # fail leaving the mailing list in a usable state.  Therefore, if
             # the list is loadable and lockable, we'll say it succeeded.
-            # pylint: disable-msg=W0702
             try:
                 mlist = MailList(name)
             except Errors.MMUnknownListError:
@@ -705,36 +702,3 @@ class XMLRPCRunner(Runner):
                 # resynchronized.  Be sure to unlock it!
                 mlist.Unlock()
                 statuses[name] = ('resynchronize', 'success')
-
-
-def extractall(tgz_file):
-    """Extract all members of `tgz_file` to the current working directory."""
-    path = '.'
-    # XXX BarryWarsaw 2007-11-13: This is nearly a straight ripoff of
-    # Python 2.5's TarFile.extractall() method, though simplified for our
-    # particular purpose.  When we upgrade Launchpad to Python 2.5, this
-    # function can be removed.
-    directories = []
-    for tarinfo in tgz_file:
-        if tarinfo.isdir():
-            # Extract directory with a safe mode, so that
-            # all files below can be extracted as well.
-            try:
-                os.makedirs(os.path.join(path, tarinfo.name), 0777)
-            except EnvironmentError:
-                pass
-            directories.append(tarinfo)
-        else:
-            tgz_file.extract(tarinfo, path)
-    # Reverse sort directories.
-    directories.sort(lambda a, b: cmp(a.name, b.name))
-    directories.reverse()
-    # Set correct owner, mtime and filemode on directories.
-    for tarinfo in directories:
-        path = os.path.join(path, tarinfo.name)
-        try:
-            tgz_file.chown(tarinfo, path)
-            tgz_file.utime(tarinfo, path)
-            tgz_file.chmod(tarinfo, path)
-        except tarfile.ExtractError, e:
-            log_exception('xmlrpc', 'tarfile: %s', e)

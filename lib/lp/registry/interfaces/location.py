@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Location interface.
 
 An object can have a location, which includes geographic coordinates and a
@@ -41,18 +39,24 @@ from zope.schema import (
     Object,
     )
 
-from canonical.launchpad import _
+from lp import _
 
 
 class IHasLocation(Interface):
     """An interface supported by objects with a defined location."""
 
-    latitude = exported(doNotSnapshot(
-        Float(title=_("The latitude of this object."),
-              required=False, readonly=True)))
-    longitude = exported(doNotSnapshot(
-        Float(title=_("The longitude of this object."),
-              required=False, readonly=True)))
+    latitude = exported(
+        doNotSnapshot(
+            Float(title=_("The latitude of this object."),
+                  required=False, readonly=True)),
+        ('devel', dict(exported=False)),
+        exported=True)
+    longitude = exported(
+        doNotSnapshot(
+            Float(title=_("The longitude of this object."),
+                  required=False, readonly=True)),
+        ('devel', dict(exported=False)),
+        exported=True)
     time_zone = exported(doNotSnapshot(
         Choice(title=_('The time zone of this object.'),
                required=False, readonly=True,

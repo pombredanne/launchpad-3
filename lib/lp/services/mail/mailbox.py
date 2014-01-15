@@ -115,12 +115,12 @@ class POP3MailBox:
                 popbox = poplib.POP3_SSL(self._host)
             else:
                 popbox = poplib.POP3(self._host)
-        except socket.error, e:
+        except socket.error as e:
             raise MailBoxError(str(e))
         try:
             popbox.user(self._user)
             popbox.pass_(self._password)
-        except poplib.error_proto, e:
+        except poplib.error_proto as e:
             popbox.quit()
             raise MailBoxError(str(e))
         self._popbox = popbox
@@ -130,7 +130,7 @@ class POP3MailBox:
         popbox = self._popbox
         try:
             count, size = popbox.stat()
-        except poplib.error_proto, e:
+        except poplib.error_proto as e:
             # This means we lost the connection.
             raise MailBoxError(str(e))
 
@@ -142,7 +142,7 @@ class POP3MailBox:
         """See IMailBox."""
         try:
             self._popbox.dele(id)
-        except poplib.error_proto, e:
+        except poplib.error_proto as e:
             raise MailBoxError(str(e))
 
     def close(self):

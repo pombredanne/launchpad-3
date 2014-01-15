@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 __metaclass__ = type
 
 __all__ = [
@@ -19,7 +17,7 @@ from zope.schema import (
     Int,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.services.fields import (
     PublicPersonChoice,
     URIField,

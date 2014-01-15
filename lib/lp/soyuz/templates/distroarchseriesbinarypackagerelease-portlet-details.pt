@@ -37,6 +37,12 @@
     <dd tal:content="context/priority/title" />
   </dl>
 
+  <dl tal:define="phased_update_percentage view/phased_update_percentage"
+      tal:condition="phased_update_percentage">
+    <dt>Phased update:</dt>
+    <dd tal:content="phased_update_percentage">50% of users</dd>
+  </dl>
+
   </div>
 
 </div>

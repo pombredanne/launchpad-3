@@ -11,7 +11,7 @@ unnecessarily difficult to "take" a bug.
 Of course, a widget is just a view on a field, so it takes a request
 argument:
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
 and a context, which is an IBugTask.assignee field:
 
@@ -42,7 +42,7 @@ Taking a bug
 To take a bug, you can choose the "me" radio button. First, let's
 pretend to be logged in as Foo Bar:
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from lp.testing import login
     >>> login("foo.bar@canonical.com")
 
 Then, let's simulate selecting the "me" radio button, to assign the
@@ -81,7 +81,7 @@ The widget has valid input:
 
 The input value is the current user:
 
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> widget.getInputValue() == getUtility(ILaunchBag).user
     True
 

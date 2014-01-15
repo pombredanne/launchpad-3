@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Language pack store."""
 
 __metaclass__ = type
@@ -23,8 +21,8 @@ from zope.schema import (
     Object,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from lp import _
+from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.translations.enums import LanguagePackType
 
 

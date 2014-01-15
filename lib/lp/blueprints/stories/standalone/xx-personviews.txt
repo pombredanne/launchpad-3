@@ -73,7 +73,7 @@ For a team, the 'Workload' link first shows the specifications that
 are part of the workload for the team.  It then shows the workloads
 for each member of the team, using batching.
 
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
     >>> browser.open('http://blueprints.launchpad.dev/~admins')
     >>> print backslashreplace(browser.title)
     Blueprints : \u201cLaunchpad Administrators\u201d team
@@ -87,16 +87,3 @@ for each member of the team, using batching.
     Team member workload...
     Andrew Bennetts's specifications:...
     Daniel Silverstone has no outstanding specifications...
-
-The 'Feedback requests' link displays a list of the specifications that
-the person was asked to review.
-
-    >>> browser.open('http://blueprints.launchpad.dev/~name16')
-    >>> browser.getLink('Feedback request').click()
-    >>> browser.url
-    '.../~name16/+specfeedback'
-    >>> print browser.title
-    Feature feedback requests...
-    >>> soup = find_main_content(browser.contents)
-    >>> soup('p')
-    [... 1 specification(s) listed...]

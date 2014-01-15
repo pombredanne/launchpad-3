@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -37,7 +37,7 @@
     />
   <browser:page
     for="lp.answers.interfaces.questioncollection.IQuestionCollection"
-    class=".questiontarget.QuestionCollectionLatestQuestionsView"
+    class=".questiontarget.QuestionCollectionLatestQuestionsPortlet"
     name="+portlet-latestquestions"
     permission="zope.Public"
     template="../templates/questiontarget-portlet-latestquestions.pt"
@@ -113,7 +113,7 @@
   <browser:page
     name="+ask-a-question-button"
     for="lp.answers.interfaces.questiontarget.IQuestionTarget"
-    class=".questiontarget.AskAQuestionButtonView"
+    class=".questiontarget.AskAQuestionButtonPortlet"
     permission="zope.Public"
     />
   <browser:menus
@@ -151,7 +151,7 @@
     />
 
   <adapter
-    provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+    provides="lp.services.webapp.interfaces.IBreadcrumb"
     for="lp.answers.interfaces.question.IQuestion"
     factory="lp.answers.browser.question.QuestionBreadcrumb"
     permission="zope.Public"/>
@@ -172,7 +172,7 @@
 
   <browser:pages
     for="lp.answers.interfaces.question.IQuestion"
-    class="canonical.launchpad.webapp.LaunchpadView"
+    class="lp.services.webapp.LaunchpadView"
     permission="zope.Public"
     >
     <browser:page
@@ -288,7 +288,7 @@
   <browser:url
     for="lp.answers.interfaces.questioncollection.IQuestionSet"
     path_expression="string:questions"
-    parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+    parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"
     rootsite="answers"
     />
 
@@ -360,7 +360,7 @@
   <browser:page
     name="+portlet-related-questions"
     for="lp.answers.interfaces.faq.IFAQ"
-    class="canonical.launchpad.webapp.LaunchpadView"
+    class="lp.services.webapp.LaunchpadView"
     permission="zope.Public"
     template="../templates/faq-portlet-related-questions.pt"
     />
@@ -372,7 +372,7 @@
     template="../../app/templates/generic-edit.pt"
     />
   <adapter
-    provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+    provides="lp.services.webapp.interfaces.IBreadcrumb"
     for="lp.answers.interfaces.faq.IFAQ"
     factory="lp.answers.browser.faq.FAQBreadcrumb"
     permission="zope.Public"/>

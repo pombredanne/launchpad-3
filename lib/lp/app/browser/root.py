@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Browser code for the Launchpad root page."""
 
@@ -14,24 +14,14 @@ import time
 
 import feedparser
 from lazr.batchnavigator.z3batching import batch
-from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
+from zope.formlib.interfaces import ConversionError
 from zope.interface import Interface
 from zope.schema import TextLine
 from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import getVocabularyRegistry
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet,
-    )
-from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.lazr.timeout import urlfetch
+from lp import _
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.app.browser.launchpadform import (
     action,
@@ -48,11 +38,21 @@ from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.googlesearch.interfaces import (
     GoogleResponseError,
     ISearchService,
     )
+from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.propertycache import cachedproperty
+from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
+from lp.services.timeout import urlfetch
+from lp.services.webapp import LaunchpadView
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.vhosts import allvhosts
 
 
 shipit_faq_url = 'http://www.ubuntu.com/getubuntu/shipit-faq'
@@ -67,6 +67,7 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
 
     # Used by the footer to display the lp-arcana section.
     is_root_page = True
+    has_watermark = False
 
     @staticmethod
     def _get_day_of_year():
@@ -130,12 +131,20 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     @property
     def blueprint_count(self):
         """The total blueprint count in all of Launchpad."""
-        return getUtility(ISpecificationSet).specification_count
+        return getUtility(ISpecificationSet).specificationCount(self.user)
 
     @property
     def answer_count(self):
         """The total blueprint count in all of Launchpad."""
         return getUtility(ILaunchpadStatisticSet).value('question_count')
+
+    @property
+    def show_whatslaunchpad(self):
+        """True if introduction to Launchpad should be displayed.
+
+        Shown when not logged in or if blog is disabled.
+        """
+        return self.user is None or not getFeatureFlag("app.root_blog.enabled")
 
     def getRecentBlogPosts(self):
         """Return the parsed feed of the most recent blog posts.
@@ -149,13 +158,14 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
         launchpad.homepage_recent_posts_count. The posts are fetched
         from the feed specified in launchpad.homepage_recent_posts_feed.
 
-        Since the feed is parsed everytime, the template should cache this
-        through memcached.
-
         FeedParser takes care of sanitizing the HTML contained in the feed.
         """
-        # Use urlfetch which supports timeout
+        key = '%s:homepage-blog-posts' % config.instance_name
+        cached_data = getUtility(IMemcacheClient).get(key)
+        if cached_data:
+            return cached_data
         try:
+            # Use urlfetch which supports timeout
             data = urlfetch(config.launchpad.homepage_recent_posts_feed)
         except IOError:
             return []
@@ -170,6 +180,8 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
                 'link': entry.link,
                 'date': time.strftime('%d %b %Y', entry.updated_parsed),
                 })
+        # The cache of posts expires after an hour.
+        getUtility(IMemcacheClient).set(key, posts, time=3600)
         return posts
 
 
@@ -565,8 +577,6 @@ class WindowedListBatch(batch._Batch):
 
     def endNumber(self):
         """Return the end index of the batch, not including None objects."""
-        # This class should know about the private _window attribute.
-        # pylint: disable-msg=W0212
         return self.start + len(self.list._window)
 
 

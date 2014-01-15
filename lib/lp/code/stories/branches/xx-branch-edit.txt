@@ -73,7 +73,7 @@ so there whould be no emails.
     ...     browser.contents, 'branch-info'))
     Branch information ...
     Project:  GNOME Terminal
-    Status: Experimental
+    Status: Experimental Edit
     Location: http://trekkies.example.com/gnome-terminal/klingon
     Last mirrored: ...
 
@@ -112,7 +112,7 @@ The branch page is displayed with the new status:
     >>> contents = browser.contents
     >>> status_tag = find_tag_by_id(contents, 'edit-lifecycle_status')
     >>> print extract_text(status_tag)
-    Merged
+    Merged Edit
 
 Set the branch status back to its initial state.
 
@@ -175,8 +175,7 @@ already own in the same product.
     >>> browser.url
     'http://code.launchpad.dev/%7Ename12/gnome-terminal/main/+edit'
 
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
+    >>> print_feedback_messages(browser.contents)
     There is 1 error.
     You already have a branch for GNOME Terminal called 2.6.
 
@@ -192,8 +191,7 @@ Edit forms do the same URL validation checks as the add forms.
     ...     'http://bazaar.launchpad.dev/~foo/bar/baz')
     >>> browser.getControl('Change Branch').click()
 
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print message
+    >>> print_feedback_messages(browser.contents)
     There is 1 error.
     For Launchpad to mirror a branch, the original branch cannot be
     on launchpad.dev.
@@ -298,8 +296,7 @@ details page.
 
 When the owner is changed a notification is shown.
 
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print extract_text(message)
+    >>> print_feedback_messages(browser.contents)
     The branch owner has been changed to Landscape Developers ...
 
 
@@ -331,7 +328,7 @@ well have an owner that is different to the editor.
     ...     name='official-owner', displayname='Jane Doe')
     >>> branch = make_official_package_branch(factory, owner=owner)
     >>> editor = factory.makePerson(
-    ...     name='editor', email='editor@example.com', password='test')
+    ...     name='editor', email='editor@example.com')
     >>> archive = branch.distroseries.distribution.main_archive
     >>> spn = branch.sourcepackage.sourcepackagename
     >>> from lp.soyuz.interfaces.archivepermission import (

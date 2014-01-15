@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """ArchiveAuthToken interface."""
 
 __metaclass__ = type
@@ -13,14 +11,17 @@ __all__ = [
     ]
 
 from lazr.restful.fields import Reference
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Datetime,
     Int,
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.person import IPerson
 from lp.soyuz.interfaces.archive import IArchive
 
@@ -36,6 +37,7 @@ class IArchiveAuthTokenView(Interface):
     person = Reference(
         IPerson, title=_("Person"), required=True, readonly=True,
         description=_("The person for this authorisation token."))
+    person_id = Attribute('db person value')
 
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True,

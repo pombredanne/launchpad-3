@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0213
-
 """A person's view on a product."""
 
 __metaclass__ = type
@@ -13,22 +11,21 @@ __all__ = [
 
 from lazr.restful.fields import Reference
 from zope.interface import Interface
-from zope.schema import (
-    TextLine,
-)
+from zope.schema import TextLine
 
-from lp.code.interfaces.hasbranches import IHasMergeProposals
+from lp.code.interfaces.hasbranches import (
+    IHasBranches,
+    IHasMergeProposals,
+    )
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 
 
-class IPersonProduct(IHasMergeProposals):
+class IPersonProduct(IHasMergeProposals, IHasBranches):
     """A person's view on a product."""
 
     person = Reference(IPerson)
-
     product = Reference(IProduct)
-
     displayname = TextLine()
 
 

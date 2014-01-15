@@ -15,13 +15,14 @@ from sqlobject import (
     )
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase
+from lp.registry.errors import CannotDeleteCommercialSubscription
 from lp.registry.interfaces.commercialsubscription import (
     ICommercialSubscription,
     )
 from lp.registry.interfaces.person import validate_public_person
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.sqlbase import SQLBase
 
 
 class CommercialSubscription(SQLBase):
@@ -44,5 +45,13 @@ class CommercialSubscription(SQLBase):
 
     @property
     def is_active(self):
+        """See `ICommercialSubscription`"""
         now = datetime.datetime.now(pytz.timezone('UTC'))
         return self.date_starts < now < self.date_expires
+
+    def delete(self):
+        """See `ICommercialSubscription`"""
+        if self.is_active:
+            raise CannotDeleteCommercialSubscription(
+                "This CommercialSubscription is still active.")
+        self.destroySelf()

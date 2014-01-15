@@ -1,10 +1,19 @@
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+__metaclass__ = type
+
 import os
 import shutil
 import tempfile
 
 from paste.fixture import TestApp
 
-from lp.scripts.utilities.js.combo import parse_url, combine_files, combo_app
+from lp.scripts.utilities.js.combo import (
+    combine_files,
+    combo_app,
+    parse_url,
+    )
 from lp.testing import TestCase
 
 

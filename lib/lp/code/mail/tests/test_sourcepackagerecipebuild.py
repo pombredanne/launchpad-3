@@ -10,14 +10,14 @@ from datetime import timedelta
 from storm.locals import Store
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.buildmaster.enums import BuildStatus
 from lp.code.mail.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildMailer,
     )
+from lp.services.config import config
+from lp.services.webapp import canonical_url
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import LaunchpadFunctionalLayer
 
 
 expected_body = u"""\
@@ -42,6 +42,7 @@ superseded_body = u"""\
  * Builder: 
 """
 
+
 class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
@@ -59,13 +60,15 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
         pantry_owner = self.factory.makePerson(name='archiveowner')
         pantry = self.factory.makeArchive(name='ppa', owner=pantry_owner)
         secret = self.factory.makeDistroSeries(name=u'distroseries')
+        removeSecurityProxy(secret).nominatedarchindep = (
+            self.factory.makeDistroArchSeries(distroseries=secret))
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=cake, distroseries=secret, archive=pantry,
             status=BuildStatus.FULLYBUILT, duration=timedelta(minutes=5))
-        naked_build = removeSecurityProxy(build)
-        naked_build.builder = self.factory.makeBuilder(name='bob')
-        naked_build.log = self.factory.makeLibraryFileAlias()
-        Store.of(build).flush()
+        build.updateStatus(
+            BuildStatus.FULLYBUILT,
+            builder=self.factory.makeBuilder(name='bob'))
+        build.setLog(self.factory.makeLibraryFileAlias())
         ctrl = self.makeStatusEmail(build)
         self.assertEqual(
             u'[recipe build #%d] of ~person recipe in distroseries: '
@@ -94,6 +97,8 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
         pantry_owner = self.factory.makePerson(name='archiveowner')
         pantry = self.factory.makeArchive(name='ppa', owner=pantry_owner)
         secret = self.factory.makeDistroSeries(name=u'distroseries')
+        removeSecurityProxy(secret).nominatedarchindep = (
+            self.factory.makeDistroArchSeries(distroseries=secret))
         build = self.factory.makeSourcePackageRecipeBuild(
             recipe=cake, distroseries=secret, archive=pantry,
             status=BuildStatus.SUPERSEDED)
@@ -120,8 +125,7 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
     def test_generateEmail_upload_failure(self):
         """GenerateEmail works when many fields are NULL."""
         build = self.factory.makeSourcePackageRecipeBuild()
-        removeSecurityProxy(build).upload_log = (
-            self.factory.makeLibraryFileAlias())
+        build.storeUploadLog('uploaded')
         upload_log_fragment = 'Upload Log: %s' % build.upload_log_url
         ctrl = self.makeStatusEmail(build)
         self.assertTrue(upload_log_fragment in ctrl.body)

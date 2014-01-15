@@ -6,8 +6,7 @@
 
   <h2>Subscribers</h2>
 
-  <div class="portletBody portletContent"
-       tal:define="subscriptions context/bug_subscriptions;
+  <div tal:define="subscriptions context/bug_subscriptions;
                    parent_target context/parent_subscription_target;
                    target_type context/target_type_display">
     <b tal:content="view/target_label">To all Foobar bugs</b>:

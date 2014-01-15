@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `SpecificationDepCandidatesVocabulary`.
@@ -10,10 +10,12 @@ __metaclass__ = type
 
 from zope.schema.vocabulary import getVocabularyRegistry
 
-from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
-
-from lp.testing import TestCaseWithFactory
+from lp.services.webapp import canonical_url
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestSpecificationDepCandidatesVocabulary(TestCaseWithFactory):
@@ -184,7 +186,7 @@ class TestSpecificationDepCandidatesVocabulary(TestCaseWithFactory):
         foo_b = self.factory.makeSpecification(name='foo-b')
         foo_a = self.factory.makeSpecification(name='foo-a')
         vocab = self.getVocabularyForSpec(spec)
-        results = vocab.searchForTerms('foo')
+        results = vocab.searchForTerms(u'foo')
         self.assertEqual(2, len(results))
         found = [item.value for item in results]
         self.assertEqual([foo_a, foo_b], found)
@@ -196,7 +198,7 @@ class TestSpecificationDepCandidatesVocabulary(TestCaseWithFactory):
         foo_b = self.factory.makeSpecification(name='foo-b', product=widget)
         foo_a = self.factory.makeSpecification(name='foo-a')
         vocab = self.getVocabularyForSpec(spec)
-        results = vocab.searchForTerms('foo')
+        results = vocab.searchForTerms(u'foo')
         self.assertEqual(2, len(results))
         found = [item.value for item in results]
         self.assertEqual([foo_b, foo_a], found)
@@ -206,13 +208,15 @@ class TestSpecificationDepCandidatesVocabulary(TestCaseWithFactory):
         # products, and those before others.
         widget = self.factory.makeProduct()
         spec = self.factory.makeSpecification(product=widget)
-        spec.proposeGoal(widget.development_focus, widget.owner)
+        with person_logged_in(widget.owner):
+            spec.proposeGoal(widget.development_focus, widget.owner)
         foo_c = self.factory.makeSpecification(name='foo-c', product=widget)
-        foo_c.proposeGoal(widget.development_focus, widget.owner)
+        with person_logged_in(widget.owner):
+            foo_c.proposeGoal(widget.development_focus, widget.owner)
         foo_b = self.factory.makeSpecification(name='foo-b', product=widget)
         foo_a = self.factory.makeSpecification(name='foo-a')
         vocab = self.getVocabularyForSpec(spec)
-        results = vocab.searchForTerms('foo')
+        results = vocab.searchForTerms(u'foo')
         self.assertEqual(3, len(results))
         found = [item.value for item in results]
         self.assertEqual([foo_c, foo_b, foo_a], found)
@@ -221,10 +225,11 @@ class TestSpecificationDepCandidatesVocabulary(TestCaseWithFactory):
         # Specs on the same distribution are returned first.
         mint = self.factory.makeDistribution()
         spec = self.factory.makeSpecification(distribution=mint)
-        foo_b = self.factory.makeSpecification(name='foo-b', distribution=mint)
+        foo_b = self.factory.makeSpecification(
+            name='foo-b', distribution=mint)
         foo_a = self.factory.makeSpecification(name='foo-a')
         vocab = self.getVocabularyForSpec(spec)
-        results = vocab.searchForTerms('foo')
+        results = vocab.searchForTerms(u'foo')
         self.assertEqual(2, len(results))
         found = [item.value for item in results]
         self.assertEqual([foo_b, foo_a], found)
@@ -235,13 +240,17 @@ class TestSpecificationDepCandidatesVocabulary(TestCaseWithFactory):
         mint = self.factory.makeDistribution()
         next = self.factory.makeDistroSeries(mint)
         spec = self.factory.makeSpecification(distribution=mint)
-        spec.proposeGoal(next, mint.owner)
-        foo_c = self.factory.makeSpecification(name='foo-c', distribution=mint)
-        foo_c.proposeGoal(next, mint.owner)
-        foo_b = self.factory.makeSpecification(name='foo-b', distribution=mint)
+        with person_logged_in(mint.owner):
+            spec.proposeGoal(next, mint.owner)
+        foo_c = self.factory.makeSpecification(
+            name='foo-c', distribution=mint)
+        with person_logged_in(mint.owner):
+            foo_c.proposeGoal(next, mint.owner)
+        foo_b = self.factory.makeSpecification(
+            name='foo-b', distribution=mint)
         foo_a = self.factory.makeSpecification(name='foo-a')
         vocab = self.getVocabularyForSpec(spec)
-        results = vocab.searchForTerms('foo')
+        results = vocab.searchForTerms(u'foo')
         self.assertEqual(3, len(results))
         found = [item.value for item in results]
         self.assertEqual([foo_c, foo_b, foo_a], found)

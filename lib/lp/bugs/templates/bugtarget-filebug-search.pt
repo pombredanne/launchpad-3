@@ -6,26 +6,18 @@
   metal:use-macro="view/macro:page/main_only">
 
   <metal:block fill-slot="head_epilogue">
-    <script type="text/javascript"
-            tal:condition="devmode"
-            tal:content="string:var yui_base='${yui}';"></script>
-
-    <script type="text/javascript"
-            tal:condition="context/enable_bugfiling_duplicate_search">
-        LPS.use(
-          'base', 'node', 'oop', 'event', 'lp.bugs.filebug_dupefinder',
-          function(Y) {
-            Y.lp.bugs.filebug_dupefinder.setup_dupe_finder();
+    <script type="text/javascript">
+        LPJS.use('lp.bugs.filebug', function(Y) {
+            Y.on('domready', function() {
+              Y.lp.bugs.filebug.setup_filebug();
+            });
         });
     </script>
-    <meta http-equiv="refresh" content="10"
+   <meta http-equiv="refresh" content="10"
         tal:condition="view/extra_data_to_process"/>
   </metal:block>
 
   <div metal:fill-slot="heading">
-    <div tal:condition="view/isPrivate" id="privacy" class="aside private">
-      This report will be private, though you can disclose it later.
-    </div>
     <h2>Report a bug</h2>
   </div>
 
@@ -40,6 +32,16 @@
       </tal:does-not-use-malone>
 
       <tal:uses-malone tal:condition="view/contextUsesMalone">
+      <tal:no-new-bugs tal:condition="not: view/contextAllowsNewBugs">
+          Reporting new bugs for
+          <tal:name replace="context/displayname"/> is not allowed.
+          <tal:sharing-link condition="context/required:launchpad.Edit">
+          <br/>This can be fixed by changing the bug sharing policy on the
+          <a tal:attributes="href string:${context/fmt:url:mainsite}/+sharing">sharing page</a>.
+          </tal:sharing-link>
+      </tal:no-new-bugs>
+
+      <tal:new-bugs tal:condition="view/contextAllowsNewBugs">
         <div class="informational message"
             tal:condition="view/extra_data_to_process"
           >Please wait while bug data is processed. This page will
@@ -64,12 +66,6 @@
                     tal:condition="widget">
                   <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
                 </tal:product_widget>
-
-                <tal:bugtarget
-                    tal:define="widget nocall:view/widgets/bugtarget|nothing"
-                    tal:condition="widget">
-                  <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
-                </tal:bugtarget>
 
                 <tal:hidden_tags tal:replace="structure view/widgets/tags/hidden" />
 
@@ -115,7 +111,7 @@
                           tal:condition="widget">
                                     <input tal:replace="structure view/actions/field.actions.projectgroupsearch/render" />
                       </tal:project_group>
-                      <span id="spinner" style="text-align: center" class="unseen">
+                      <span id="spinner" style="text-align: center" class="hidden">
                         <img src="/@@/spinner" />
                       </span>
                     </td>
@@ -138,14 +134,14 @@
             tal:define="widget nocall:view/widgets/product|nothing"
             tal:condition="not:widget">
           <div tal:condition="context/enable_bugfiling_duplicate_search"
-               id="filebug-form-container" class="transparent" style="opacity: 0; display: none">
+               id="filebug-form-container" class="transparent hidden">
             <tal:filebug-form define="launchpad_form_id string:filebug-form">
               <metal:display-similar-bugs
                   use-macro="context/@@+filebug-macros/inline-filebug-form" />
             </tal:filebug-form>
           </div>
         </tal:not_project_group>
-        <p style="display: none">
+        <p class="hidden" tal:condition="view/inline_filebug_base_url|nothing">
           <a id="filebug-base-url"
               tal:attributes="href view/inline_filebug_base_url"></a>
           <a id="filebug-form-url"
@@ -153,6 +149,7 @@
           <a id="duplicate-search-url"
               tal:attributes="href view/duplicate_search_url"></a>
         </p>
+      </tal:new-bugs>
       </tal:uses-malone>
     </div>
 

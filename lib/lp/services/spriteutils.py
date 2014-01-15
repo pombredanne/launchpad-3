@@ -105,7 +105,6 @@ class SpriteUtil:
                 continue
             match = smartsprites_exp.search(rule.cssText)
             if match is not None:
-                smartsprites_info = match.group(1)
                 parameters = self._parseCommentParameters(match.group(1))
                 # Currently, only a single combined image is supported.
                 if parameters['sprite-ref'] == group_name:

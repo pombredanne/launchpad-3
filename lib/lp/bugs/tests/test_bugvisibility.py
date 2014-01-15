@@ -1,19 +1,23 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for visibility of a bug."""
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.app.enums import InformationType
 from lp.testing import (
-    person_logged_in,
+    celebrity_logged_in,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
     )
 
 
 class TestPublicBugVisibility(TestCaseWithFactory):
     """Test visibility for a public bug."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestPublicBugVisibility, self).setUp()
@@ -33,7 +37,7 @@ class TestPublicBugVisibility(TestCaseWithFactory):
 class TestPrivateBugVisibility(TestCaseWithFactory):
     """Test visibility for a private bug."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         super(TestPrivateBugVisibility, self).setUp()
@@ -44,13 +48,12 @@ class TestPrivateBugVisibility(TestCaseWithFactory):
         self.bug_team = self.factory.makeTeam(
             name="bugteam", owner=self.product.owner)
         self.bug_team_member = self.factory.makePerson(name="bugteammember")
-        with person_logged_in(self.product.owner):
+        with celebrity_logged_in('admin'):
             self.bug_team.addMember(self.bug_team_member, self.product.owner)
-            self.product.setBugSupervisor(
-                bug_supervisor=self.bug_team,
-                user=self.product.owner)
+            self.product.bug_supervisor = self.bug_team
         self.bug = self.factory.makeBug(
-            owner=self.owner, private=True, product=self.product)
+            owner=self.owner, target=self.product,
+            information_type=InformationType.USERDATA)
 
     def test_privateBugRegularUser(self):
         # A regular (non-privileged) user can not view a private bug.
@@ -68,17 +71,27 @@ class TestPrivateBugVisibility(TestCaseWithFactory):
     def test_privateBugSubscriber(self):
         # A person subscribed to a private bug can see it.
         user = self.factory.makePerson()
-        with person_logged_in(self.owner):
+        with celebrity_logged_in('admin'):
             self.bug.subscribe(user, self.owner)
         self.assertTrue(self.bug.userCanView(user))
 
-    def test_privateBugAssignee(self):
-        # The bug assignee can see the private bug.
-        bug_assignee = self.factory.makePerson(name="bugassignee")
-        with person_logged_in(self.product.owner):
-            self.bug.default_bugtask.transitionToAssignee(bug_assignee)
-        self.assertTrue(self.bug.userCanView(bug_assignee))
-
-    def test_publicBugAnonUser(self):
+    def test_privateBugAnonUser(self):
         # Since the bug is private, the anonymous user cannot see it.
         self.assertFalse(self.bug.userCanView(None))
+
+    def test_privateBugUnsubscribeRevokesVisibility(self):
+        # A person unsubscribed from a private bug can no longer see it.
+        user = self.factory.makePerson()
+        with celebrity_logged_in('admin'):
+            self.bug.subscribe(user, self.owner)
+            self.assertTrue(self.bug.userCanView(user))
+            self.bug.unsubscribe(user, self.owner)
+        self.assertFalse(self.bug.userCanView(user))
+
+    def test_subscribeGrantsVisibility(self):
+        # When a user is subscribed to a bug, they are granted access.
+        user = self.factory.makePerson()
+        self.assertFalse(self.bug.userCanView(user))
+        with celebrity_logged_in('admin'):
+            self.bug.subscribe(user, self.owner)
+            self.assertTrue(self.bug.userCanView(user))

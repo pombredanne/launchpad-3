@@ -1,15 +1,11 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
     'DirectEmailAuthorization',
     'Message',
     'MessageChunk',
-    'MessageJob',
-    'MessageJobAction',
     'MessageSet',
     'UserToUserEmail',
     ]
@@ -32,10 +28,6 @@ from operator import attrgetter
 import os.path
 
 from lazr.config import as_timedelta
-from lazr.enum import (
-    DBEnumeratedType,
-    DBItem,
-    )
 import pytz
 from sqlobject import (
     BoolCol,
@@ -58,36 +50,28 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import isinstance as zisinstance
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     validate_public_person,
     )
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.sqlbase import SQLBase
 from lp.services.encoding import guess as ensure_unicode
-from lp.services.job.model.job import Job
-from lp.services.mail.signedmessage import signed_message_from_string
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
     IMessage,
     IMessageChunk,
-    IMessageJob,
     IMessageSet,
     InvalidEmailMessage,
     IUserToUserEmail,
     UnknownSender,
     )
 from lp.services.propertycache import cachedproperty
-
-# this is a hard limit on the size of email we will be willing to store in
-# the database.
-MAX_EMAIL_SIZE = 10 * 1024 * 1024
 
 
 def utcdatetime_from_field(field_value):
@@ -126,10 +110,20 @@ class Message(SQLBase):
     rfc822msgid = StringCol(notNull=True)
     bugs = SQLRelatedJoin('Bug', joinColumn='message', otherColumn='bug',
         intermediateTable='BugMessage')
-    chunks = SQLMultipleJoin('MessageChunk', joinColumn='message')
+    _chunks = SQLMultipleJoin('MessageChunk', joinColumn='message')
+
+    @cachedproperty
+    def chunks(self):
+        return list(self._chunks)
+
     raw = ForeignKey(foreignKey='LibraryFileAlias', dbName='raw',
                      default=None)
-    bugattachments = SQLMultipleJoin('BugAttachment', joinColumn='_message')
+    _bugattachments = SQLMultipleJoin('BugAttachment', joinColumn='_message')
+
+    @cachedproperty
+    def bugattachments(self):
+        return list(self._bugattachments)
+
     visible = BoolCol(notNull=True, default=True)
 
     def __repr__(self):
@@ -139,25 +133,13 @@ class Message(SQLBase):
         """See IMessage.__iter__"""
         return iter(self.chunks)
 
-    @property
-    def followup_title(self):
-        """See IMessage."""
-        if self.title.lower().startswith('re: '):
-            return self.title
-        return 'Re: ' + self.title
+    def setVisible(self, visible):
+        self.visible = visible
 
     @property
     def title(self):
         """See IMessage."""
         return self.subject
-
-    @property
-    def has_new_title(self):
-        """See IMessage."""
-        if self.parent is None:
-            return True
-        return self.title.lower().lstrip('re:').strip() != \
-        self.parent.title.lower().lstrip('re:').strip()
 
     @property
     def sender(self):
@@ -178,6 +160,10 @@ class Message(SQLBase):
     # verifyObject doesn't fail. That attribute is part of the
     # interface because it is used as a UI field in MessageAddView
     content = None
+
+    def getAPIParent(self):
+        """See `IMessage`."""
+        return None
 
 
 def get_parent_msgids(parsed_message):
@@ -288,7 +274,7 @@ class MessageSet:
 
     def fromEmail(self, email_message, owner=None, filealias=None,
                   parsed_message=None, create_missing_persons=False,
-                  fallback_parent=None, date_created=None):
+                  fallback_parent=None, date_created=None, restricted=False):
         """See IMessageSet.fromEmail."""
         # It does not make sense to handle Unicode strings, as email
         # messages may contain chunks encoded in differing character sets.
@@ -312,20 +298,14 @@ class MessageSet:
         if not rfc822msgid:
             raise InvalidEmailMessage('Missing Message-Id')
 
-        # make sure we don't process anything too long
-        if len(email_message) > MAX_EMAIL_SIZE:
-            raise InvalidEmailMessage('Msg %s size %d exceeds limit %d' % (
-                rfc822msgid, len(email_message), MAX_EMAIL_SIZE))
+        # Over-long messages are checked for at the handle_on_message level.
 
-        # Stuff a copy of the raw email into the Librarian, if it isn't
-        # already in there.
-        file_alias_set = getUtility(ILibraryFileAliasSet)  # Reused later
-        if filealias is None:
-            # Avoid circular import.
-            from lp.services.mail.helpers import (
-                save_mail_to_librarian,
-                )
-            raw_email_message = save_mail_to_librarian(email_message)
+        # If it's a restricted mail (IE: for a private bug), or it hasn't been
+        # uploaded, do so now.
+        from lp.services.mail.helpers import save_mail_to_librarian
+        if restricted or filealias is None:
+            raw_email_message = save_mail_to_librarian(
+                email_message, restricted=restricted)
         else:
             raw_email_message = filealias
 
@@ -380,20 +360,19 @@ class MessageSet:
         else:
             parent = fallback_parent
 
-        # figure out the date of the message
+        # Figure out the date of the message.
         if date_created is not None:
             datecreated = date_created
         else:
             datecreated = utcdatetime_from_field(parsed_message['date'])
 
-        # make sure we don't create an email with a datecreated in the
-        # future. also make sure we don't create an ancient one
+        # Make sure we don't create an email with a datecreated in the
+        # distant past or future.
         now = datetime.now(pytz.timezone('UTC'))
         thedistantpast = datetime(1990, 1, 1, tzinfo=pytz.timezone('UTC'))
         if datecreated < thedistantpast or datecreated > now:
             datecreated = UTC_NOW
 
-        # DOIT
         message = Message(subject=subject, owner=owner,
             rfc822msgid=rfc822msgid, parent=parent,
             raw=raw_email_message, datecreated=datecreated)
@@ -463,8 +442,7 @@ class MessageSet:
 
                 if content.strip():
                     MessageChunk(
-                        message=message, sequence=sequence,
-                        content=content)
+                        message=message, sequence=sequence, content=content)
                     sequence += 1
             else:
                 filename = part.get_filename() or 'unnamed'
@@ -480,13 +458,11 @@ class MessageSet:
                     content_type = part['content-type']
 
                 if len(content) > 0:
-                    blob = file_alias_set.create(
-                        name=filename,
-                        size=len(content),
-                        file=cStringIO(content),
-                        contentType=content_type)
-                    MessageChunk(message=message, sequence=sequence,
-                                 blob=blob)
+                    blob = getUtility(ILibraryFileAliasSet).create(
+                        name=filename, size=len(content),
+                        file=cStringIO(content), contentType=content_type,
+                        restricted=restricted)
+                    MessageChunk(message=message, sequence=sequence, blob=blob)
                     sequence += 1
 
         # Don't store the epilogue
@@ -644,59 +620,6 @@ class UserToUserEmail(Storm):
         # constructor to add self to the store.  Also, this closely mimics
         # what the SQLObject compatibility layer does.
         Store.of(sender).add(self)
-
-
-class MessageJobAction(DBEnumeratedType):
-    """MessageJob action
-
-    The action that a job should perform.
-    """
-
-    CREATE_MERGE_PROPOSAL = DBItem(1, """
-        Create a merge proposal.
-
-        Create a merge proposal from a message which must contain a merge
-        directive.
-        """)
-
-
-class MessageJob(Storm):
-    """A job for processing messages."""
-
-    implements(IMessageJob)
-    # XXX: AaronBentley 2009-02-05 bug=325883: This table is poorly named.
-    __storm_table__ = 'MergeDirectiveJob'
-
-    id = Int(primary=True)
-
-    jobID = Int('job', allow_none=False)
-    job = Reference(jobID, Job.id)
-
-    message_bytesID = Int('merge_directive', allow_none=False)
-    message_bytes = Reference(message_bytesID, 'LibraryFileAlias.id')
-
-    action = EnumCol(enum=MessageJobAction)
-
-    def __init__(self, message_bytes, action):
-        Storm.__init__(self)
-        self.job = Job()
-        self.message_bytes = message_bytes
-        self.action = action
-
-    def destroySelf(self):
-        """See `IMessageJob`."""
-        self.job.destroySelf()
-        Store.of(self).remove(self)
-
-    def sync(self):
-        """Update the database with all changes for this object."""
-        store = Store.of(self)
-        store.flush()
-        store.autoreload(self)
-
-    def getMessage(self):
-        """See `IMessageJob`."""
-        return signed_message_from_string(self.message_bytes.read())
 
 
 class DirectEmailAuthorization:

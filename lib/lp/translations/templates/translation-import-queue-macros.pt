@@ -13,7 +13,7 @@
       <script type="text/javascript" tal:content="view/choice_confs_js" />
 
       <script type="text/javascript">
-          LPS.use('lp.translations.importqueue', 'event', function(Y) {
+          LPJS.use('lp.translations.importqueue', 'event', function(Y) {
               Y.on('domready', function(e) {
                   Y.lp.translations.importqueue.initialize_import_queue_page(Y);
               });
@@ -93,11 +93,11 @@
                               omit-tag="">
                     <td class="import_status"
                         tal:condition="entry/required:launchpad.Edit">
-                      <noscript>
+                      <span class="status-select">
                         <tal:status define="name string:status_${entry/id}"
                                     replace="structure view/widgets/?name" />
-                      </noscript>
-                      <span class="status-choice" style="display:none">
+                      </span>
+                      <span class="status-choice hidden">
                         <span tal:attributes="class string:value ${css_status}"
                               tal:content="entry/status/title">
                           Needs review</span>
@@ -125,7 +125,7 @@
                     </tal:block>
                   </td>
                 </tr>
-                <tr class="discreet secondary">
+                <tr class="lesser secondary">
                   <td colspan="3">
                     Uploaded by
                     <a tal:replace="structure entry/importer/fmt:link">
@@ -141,7 +141,7 @@
                   # sometimes, entry/import_into evaluates as false because
                   # __len__ method returns 0.
                 </tal:XXX>
-                <tr class="discreet secondary">
+                <tr class="lesser secondary">
                   <td colspan="3">
                     <span style="margin-right: 0.5em"
                           tal:condition="entry/import_into/title|nothing" >
@@ -160,9 +160,9 @@
                         intervening whitespace.  If the two are separated, the
                         edit links stop showing up in Webkit.
                       </tal:comment>
-                      <a class="sprite edit"
+                      <a class="sprite edit action-icon"
                          tal:attributes="href entry/fmt:url"
-                         ><span class="invisible-link">Change this entry</span></a>
+                         >Change this entry</a>
                     </tal:block>
                   </td>
                 </tr>
@@ -171,18 +171,16 @@
             <tal:navigation
                  replace="structure view/batchnav/@@+navigation-links-lower" />
 
+            <tal:block define="user request/lp:person" condition="user">
+              <div id="import-queue-submit" class="actions">
+                <input
+                  tal:replace="structure view/change_status_action/render" />
+              </div>
+            </tal:block>
             <script type="text/javascript"
                     tal:define="script view/focusedElementScript"
                     tal:condition="script"
                     tal:content="structure script" />
-            <tal:block define="user request/lp:person" condition="user">
-              <noscript>
-                <div class="actions">
-                  <input
-                    tal:replace="structure view/change_status_action/render" />
-                </div>
-              </noscript>
-            </tal:block>
           </form>
         </tal:block>
       </div>

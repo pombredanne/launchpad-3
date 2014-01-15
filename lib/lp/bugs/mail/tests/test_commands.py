@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from lazr.lifecycle.interfaces import (
@@ -6,16 +6,14 @@ from lazr.lifecycle.interfaces import (
     IObjectModifiedEvent,
     )
 
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
+from lp.app.enums import InformationType
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.mail.commands import (
     AffectsEmailCommand,
     BugEmailCommand,
     CVEEmailCommand,
     DuplicateEmailCommand,
+    InformationTypeEmailCommand,
     PrivateEmailCommand,
     SecurityEmailCommand,
     SubscribeEmailCommand,
@@ -23,6 +21,7 @@ from lp.bugs.mail.commands import (
     TagEmailCommand,
     UnsubscribeEmailCommand,
     )
+from lp.registry.enums import BugSharingPolicy
 from lp.services.mail.interfaces import (
     BugTargetNotFound,
     EmailProcessingError,
@@ -30,7 +29,12 @@ from lp.services.mail.interfaces import (
 from lp.testing import (
     login_celebrity,
     login_person,
+    normalize_whitespace,
     TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 
 
@@ -280,6 +284,29 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         self.assertTrue(IObjectCreatedEvent.providedBy(bugtask_event))
         self.assertTrue(IObjectCreatedEvent.providedBy(bug_event))
 
+    def test_execute_bug_cannot_add_task(self):
+        # Test that attempts to invalidly add a new bug task results in the
+        # expected error message.
+        product = self.factory.makeProduct(
+            bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
+        bug = self.factory.makeBug(
+            target=product, information_type=InformationType.PROPRIETARY)
+        self.factory.makeProduct(
+            name='fnord', bug_sharing_policy=BugSharingPolicy.PROPRIETARY)
+        login_celebrity('admin')
+        login_person(bug.owner)
+        command = AffectsEmailCommand('affects', ['fnord'])
+        error = self.assertRaises(
+            EmailProcessingError, command.execute, bug, None)
+        reason = ("This proprietary bug already affects %s. "
+                    "Proprietary bugs cannot affect multiple projects." %
+                    product.displayname)
+        self.assertEqual(
+            normalize_whitespace(
+                "Bug %s cannot be marked as affecting fnord. %s"
+                    % (bug.id, reason)),
+            normalize_whitespace(str(error)))
+
 
 class BugEmailCommandTestCase(TestCaseWithFactory):
 
@@ -328,7 +355,7 @@ class PrivateEmailCommandTestCase(TestCaseWithFactory):
 
     def test_execute_bug(self):
         bug = self.factory.makeBug()
-        login_person(bug.bugtasks[0].target.owner)
+        login_person(bug.owner)
         command = PrivateEmailCommand('private', ['yes'])
         exec_bug, event = command.execute(bug, None)
         self.assertEqual(bug, exec_bug)
@@ -343,7 +370,8 @@ class PrivateEmailCommandTestCase(TestCaseWithFactory):
         dummy_event = object()
         params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
-        self.assertEqual(True, bug_params.private)
+        self.assertEqual(
+            InformationType.USERDATA, bug_params.information_type)
         self.assertEqual(dummy_event, event)
 
     def test_execute_bug_params_with_security(self):
@@ -351,12 +379,14 @@ class PrivateEmailCommandTestCase(TestCaseWithFactory):
         user = self.factory.makePerson()
         login_person(user)
         bug_params = CreateBugParams(
-            title='bug title', owner=user, security_related='yes')
+            title='bug title', owner=user,
+            information_type=InformationType.PRIVATESECURITY)
         command = PrivateEmailCommand('private', ['no'])
         dummy_event = object()
         params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
-        self.assertEqual(True, bug_params.private)
+        self.assertEqual(
+            InformationType.PRIVATESECURITY, bug_params.information_type)
         self.assertEqual(dummy_event, event)
 
 
@@ -366,7 +396,7 @@ class SecurityEmailCommandTestCase(TestCaseWithFactory):
 
     def test_execute_bug(self):
         bug = self.factory.makeBug()
-        login_person(bug.bugtasks[0].target.owner)
+        login_person(bug.owner)
         command = SecurityEmailCommand('security', ['yes'])
         exec_bug, event = command.execute(bug, None)
         self.assertEqual(bug, exec_bug)
@@ -381,9 +411,48 @@ class SecurityEmailCommandTestCase(TestCaseWithFactory):
         dummy_event = object()
         params, event = command.execute(bug_params, dummy_event)
         self.assertEqual(bug_params, params)
-        self.assertEqual(True, bug_params.security_related)
-        self.assertEqual(True, bug_params.private)
+        self.assertEqual(
+            InformationType.PRIVATESECURITY, bug_params.information_type)
         self.assertEqual(dummy_event, event)
+
+
+class InformationTypeEmailCommandTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_execute_bug_params(self):
+        user = self.factory.makePerson()
+        login_person(user)
+        bug_params = CreateBugParams(title='bug title', owner=user)
+        command = InformationTypeEmailCommand(
+            'informationtype', ['publicsecurity'])
+        dummy_event = object()
+        params, event = command.execute(bug_params, dummy_event)
+        self.assertEqual(bug_params, params)
+        self.assertEqual(
+            InformationType.PUBLICSECURITY, bug_params.information_type)
+        self.assertTrue(IObjectModifiedEvent.providedBy(event))
+
+    def test_execute_bug(self):
+        bug = self.factory.makeBug()
+        login_person(bug.owner)
+        command = InformationTypeEmailCommand(
+            'informationtype', ['privatesecurity'])
+        exec_bug, event = command.execute(bug, None)
+        self.assertEqual(bug, exec_bug)
+        self.assertEqual(
+            InformationType.PRIVATESECURITY, bug.information_type)
+        self.assertTrue(IObjectModifiedEvent.providedBy(event))
+
+    def test_execute_bug_params_with_rubbish(self):
+        user = self.factory.makePerson()
+        login_person(user)
+        bug_params = CreateBugParams(title='bug title', owner=user)
+        command = InformationTypeEmailCommand(
+            'informationtype', ['rubbish'])
+        dummy_event = object()
+        self.assertRaises(
+            EmailProcessingError, command.execute, bug_params, dummy_event)
 
 
 class SubscribeEmailCommandTestCase(TestCaseWithFactory):

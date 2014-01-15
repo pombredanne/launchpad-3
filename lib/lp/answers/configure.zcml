@@ -110,17 +110,14 @@
     <require
       permission="launchpad.AnyPerson"
       attributes="requestInfo giveAnswer expireQuestion addComment
-                  addCommentWithoutNotify linkFAQ subscribe unsubscribe"
+                  addCommentWithoutNotify linkFAQ subscribe unsubscribe
+                  setCommentVisibility"
       set_attributes="title description datedue target language"
       />
     <require
       permission="launchpad.Append"
       attributes="reject"
       set_attributes="assignee"
-      />
-    <require
-      permission="launchpad.Moderate"
-      attributes="setCommentVisibility"
       />
     <require
       permission="launchpad.Admin"
@@ -190,6 +187,17 @@
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
   </securedutility>
 
+  <securedutility
+    name="UsesAnswersProduct"
+    component=".vocabulary.UsesAnswersProductVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class=".vocabulary.UsesAnswersProductVocabulary">
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
   <!-- QuestionSet -->
   <class class=".model.question.QuestionSet">
     <allow interface=".interfaces.questioncollection.IQuestionSet" />
@@ -251,27 +259,26 @@
   </securedutility>
 
   <class class=".vocabulary.FAQVocabulary">
-    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
-  <lp:help-folder
-      folder="help" type="lp.answers.publisher.AnswersLayer" />
+  <lp:help-folder folder="help" name="+help-answers"/>
   <adapter
       name="answers"
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+      provides="lp.services.webapp.interfaces.IBreadcrumb"
       for="lp.answers.interfaces.questiontarget.IQuestionTarget"
       factory="lp.answers.browser.questiontarget.AnswersVHostBreadcrumb"
       permission="zope.Public"/>
   <adapter
       name="answers"
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+      provides="lp.services.webapp.interfaces.IBreadcrumb"
       for="lp.registry.interfaces.projectgroup.IProjectGroup"
       factory="lp.answers.browser.questiontarget.AnswersVHostBreadcrumb"
       permission="zope.Public"/>
   <adapter
       name="answers"
-      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+      provides="lp.services.webapp.interfaces.IBreadcrumb"
       for="lp.registry.interfaces.person.IPerson"
       factory="lp.answers.browser.questiontarget.AnswersVHostBreadcrumb"
       permission="zope.Public"/>

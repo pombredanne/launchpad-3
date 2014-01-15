@@ -47,6 +47,7 @@ from bzrlib import log
 from bzrlib.branch import Branch
 from bzrlib.osutils import format_date
 
+
 try:
     from editmoin import editshortcut
 except:
@@ -134,6 +135,7 @@ known_canonical_lp_devs = \
                               u'Edwin Grubbs',
                               u'Elliot Murphy',
                               u'Firstname Lastname',
+                              u'Francesco Banconi',
                               u'Francis Lacoste',
                               u'Francis J. Lacoste',
                               u'Gary Poster',
@@ -185,6 +187,9 @@ known_canonical_lp_devs = \
                               u'Paul Hummer',
                               u'Raphael Badin',
                               u'Raphaël Badin',
+                              u'Richard Harding',
+                              u'Rick Harding',
+                              u'Rick harding',
                               u'Robert Collins',
                               u'root <root {_AT_} ubuntu>',
                               u'rvb',
@@ -231,6 +236,7 @@ known_canonical_non_lp_devs = \
                               u'Michael Casadevall',
                               u'Michael Vogt',
                               u'Sidnei da Silva',
+                              u'Steve Langasek',
                               u'Dustin Kirkland',
                               u'John Arbash Meinel',
                               )]
@@ -641,7 +647,7 @@ def main():
         opts, args = getopt.getopt(sys.argv[1:], '?hq',
                                    ['help', 'usage', 'dry-run', 'draft-run',
                                     'devel=', 'db-devel='])
-    except getopt.GetoptError, e:
+    except getopt.GetoptError as e:
         sys.stderr.write("ERROR: " + str(e) + '\n\n')
         usage()
         sys.exit(1)

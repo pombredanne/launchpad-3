@@ -10,23 +10,23 @@ from zope.schema.interfaces import IField
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import block_implicit_flushes
 from lp.bugs.adapters.bugchange import (
     BugTaskAdded,
+    BugTaskDeleted,
     BugWatchAdded,
     BugWatchRemoved,
     CveLinkedToBug,
     CveUnlinkedFromBug,
     )
+from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
+from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.milestone import IMilestone
-from lp.registry.interfaces.person import (
-    IPerson,
-    PersonVisibility,
-    )
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.productrelease import IProductRelease
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.sqlbase import block_implicit_flushes
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
@@ -96,12 +96,14 @@ def what_changed(sqlobject_modified_event):
 @block_implicit_flushes
 def record_bug_added(bug, object_created_event):
     activity = getUtility(IBugActivitySet).new(
-        bug = bug.id,
-        datechanged = UTC_NOW,
-        person = IPerson(object_created_event.user),
-        whatchanged = "bug",
-        message = "added bug")
-    bug.addCommentNotification(bug.initial_message, activity=activity)
+        bug=bug.id,
+        datechanged=UTC_NOW,
+        person=IPerson(object_created_event.user),
+        whatchanged="bug",
+        message="added bug")
+    bug.addCommentNotification(
+        bug.initial_message, activity=activity,
+        level=BugNotificationLevel.LIFECYCLE)
 
 
 @block_implicit_flushes
@@ -162,6 +164,16 @@ def notify_bugtask_added(bugtask, event):
     IObjectModifiedEvent.
     """
     bugtask.bug.addChange(BugTaskAdded(UTC_NOW, IPerson(event.user), bugtask))
+
+
+@block_implicit_flushes
+def notify_bugtask_deleted(bugtask, event):
+    """A bugtask has been deleted (removed from a bug).
+
+    bugtask must be in IBugTask. event must be anIObjectDeletedEvent.
+    """
+    bugtask.bug.addChange(
+        BugTaskDeleted(UTC_NOW, IPerson(event.user), bugtask))
 
 
 @block_implicit_flushes

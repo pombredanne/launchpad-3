@@ -16,17 +16,17 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
-from canonical.config import config
-from canonical.launchpad.webapp.interaction import (
-    endInteraction,
-    setupInteraction,
-    )
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTaskSet,
     )
+from lp.services.config import config
+from lp.services.webapp.interaction import (
+    endInteraction,
+    setupInteraction,
+    )
+from lp.services.webapp.interfaces import IPlacelessAuthUtility
 
 
 class BugJanitor:
@@ -100,7 +100,6 @@ class BugJanitor:
                 notify(ObjectModifiedEvent(
                     bugtask, bugtask_before_modification,
                     ['status'], user=self.janitor))
-                # XXX sinzui 2007-08-02 bug=29744:
                 # We commit after each expiration because emails are sent
                 # immediately in zopeless. This minimize the risk of
                 # duplicate expiration emails being sent in case an error
@@ -120,8 +119,7 @@ class BugJanitor:
         auth_utility = getUtility(IPlacelessAuthUtility)
         janitor_email = self.janitor.preferredemail.email
         setupInteraction(
-            auth_utility.getPrincipalByLogin(
-                janitor_email, want_password=False),
+            auth_utility.getPrincipalByLogin(janitor_email),
             login=janitor_email)
 
     def _logout(self):

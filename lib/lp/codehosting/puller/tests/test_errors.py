@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for the error presentation in worker.py."""
@@ -9,7 +9,6 @@ import httplib
 import os
 import socket
 import tempfile
-import unittest
 import urllib2
 
 from bzrlib.errors import (
@@ -30,19 +29,17 @@ from lp.codehosting.puller.worker import (
     PullerWorker,
     PullerWorkerProtocol,
     )
-
 from lp.codehosting.safe_open import (
     BranchLoopError,
     BranchReferenceForbidden,
     )
+from lp.testing import TestCase
 
 
 class StubbedPullerWorkerProtocol(PullerWorkerProtocol):
     """A `PullerWorkerProtocol` that logs events without acting on them."""
 
     def __init__(self):
-        # We are deliberately not calling PullerWorkerProtocol.__init__:
-        # pylint: disable-msg=W0231
         self.calls = []
 
     def sendEvent(self, command, *args):
@@ -51,7 +48,7 @@ class StubbedPullerWorkerProtocol(PullerWorkerProtocol):
         self.calls.append(log_event)
 
 
-class TestErrorCatching(unittest.TestCase):
+class TestErrorCatching(TestCase):
     """Tests for presenting error messages in useful ways.
 
     These are testing the large collection of except: clauses in
@@ -62,6 +59,7 @@ class TestErrorCatching(unittest.TestCase):
         def __init__(self, exc):
             super(TestErrorCatching.CustomErrorOpener, self).__init__(None)
             self.exc = exc
+
         def open(self, url):
             raise self.exc
 
@@ -71,8 +69,7 @@ class TestErrorCatching(unittest.TestCase):
             src='foo', dest='bar', branch_id=1,
             unique_name='owner/product/foo', branch_type=branch_type,
             default_stacked_on_url=None,
-            protocol=StubbedPullerWorkerProtocol(), branch_mirrorer=opener,
-            oops_prefix='TOKEN')
+            protocol=StubbedPullerWorkerProtocol(), branch_mirrorer=opener)
         return worker
 
     def getMirrorFailureForException(self, exc=None, worker=None,
@@ -93,7 +90,7 @@ class TestErrorCatching(unittest.TestCase):
         startMirroring, mirrorFailed = worker.protocol.calls
         self.assertEqual(('startMirroring',), startMirroring)
         self.assertEqual('mirrorFailed', mirrorFailed[0])
-        self.assertTrue('TOKEN' in mirrorFailed[2])
+        self.assertStartsWith(mirrorFailed[2], 'OOPS-')
         worker.protocol.calls = []
         return str(mirrorFailed[1])
 

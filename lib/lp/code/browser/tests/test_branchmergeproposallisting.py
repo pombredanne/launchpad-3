@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchMergeProposal listing views."""
@@ -8,29 +8,37 @@ __metaclass__ = type
 from datetime import datetime
 
 import pytz
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
+from testtools.matchers import Equals
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.enums import InformationType
 from lp.code.browser.branchmergeproposallisting import (
     ActiveReviewsView,
     BranchMergeProposalListingItem,
-    BranchMergeProposalListingView,
     )
 from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
     )
 from lp.registry.model.personproduct import PersonProduct
+from lp.services.database.sqlbase import flush_database_caches
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
     login,
     login_person,
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.testing.matchers import HasQueryCount
 from lp.testing.views import create_initialized_view
 
 
@@ -55,17 +63,13 @@ class TestProposalVoteSummary(TestCaseWithFactory):
         if comment is _default:
             comment = self.factory.getUniqueString()
         proposal.createComment(
-            owner=reviewer,
-            subject=self.factory.getUniqueString('subject'),
-            content=comment,
-            vote=vote)
+            owner=reviewer, subject=self.factory.getUniqueString('subject'),
+            content=comment, vote=vote)
 
     def _get_vote_summary(self, proposal):
         """Return the vote summary string for the proposal."""
-        view_context = proposal.source_branch.owner
-        view = BranchMergeProposalListingView(
-            view_context, LaunchpadTestRequest())
-        view.initialize()
+        view = create_initialized_view(
+            proposal.source_branch.owner, '+merges', rootsite='code')
         batch_navigator = view.proposals
         # There will only be one item in the list of proposals.
         [listing_item] = batch_navigator.proposals
@@ -95,8 +99,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
         summary, comment_count = self._get_vote_summary(proposal)
         self.assertEqual(
             [{'name': 'APPROVE', 'title':'Approve', 'count':1,
-              'reviewers': ''}],
-            summary)
+              'reviewers': ''}], summary)
         self.assertEqual(0, comment_count)
 
     def test_vote_with_comment(self):
@@ -106,8 +109,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
         summary, comment_count = self._get_vote_summary(proposal)
         self.assertEqual(
             [{'name': 'APPROVE', 'title':'Approve', 'count':1,
-              'reviewers': ''}],
-            summary)
+              'reviewers': ''}], summary)
         self.assertEqual(1, comment_count)
 
     def test_disapproval(self):
@@ -117,8 +119,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
         summary, comment_count = self._get_vote_summary(proposal)
         self.assertEqual(
             [{'name': 'DISAPPROVE', 'title':'Disapprove', 'count':1,
-              'reviewers': ''}],
-            summary)
+              'reviewers': ''}], summary)
         self.assertEqual(1, comment_count)
 
     def test_abstain(self):
@@ -129,8 +130,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
         summary, comment_count = self._get_vote_summary(proposal)
         self.assertEqual(
             [{'name': 'ABSTAIN', 'title':'Abstain', 'count':1,
-              'reviewers': ''}],
-            summary)
+              'reviewers': ''}], summary)
         self.assertEqual(1, comment_count)
 
     def test_vote_ranking(self):
@@ -143,8 +143,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
             [{'name': 'APPROVE', 'title':'Approve', 'count':1,
               'reviewers': ''},
              {'name': 'DISAPPROVE', 'title':'Disapprove', 'count':1,
-              'reviewers': ''}],
-            summary)
+              'reviewers': ''}], summary)
         self.assertEqual(2, comment_count)
         self._createComment(proposal, vote=CodeReviewVote.ABSTAIN)
         summary, comment_count = self._get_vote_summary(proposal)
@@ -154,8 +153,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
              {'name': 'ABSTAIN', 'title':'Abstain', 'count':1,
               'reviewers': ''},
              {'name': 'DISAPPROVE', 'title':'Disapprove', 'count':1,
-              'reviewers': ''}],
-            summary)
+              'reviewers': ''}], summary)
         self.assertEqual(3, comment_count)
 
     def test_multiple_votes_for_type(self):
@@ -176,8 +174,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
              {'name': 'ABSTAIN', 'title':'Abstain', 'count':1,
               'reviewers': ''},
              {'name': 'DISAPPROVE', 'title':'Disapprove', 'count':2,
-              'reviewers': ''}],
-            summary)
+              'reviewers': ''}], summary)
         self.assertEqual(4, comment_count)
 
 
@@ -189,13 +186,37 @@ class TestMerges(BrowserTestCase):
         """The merges view should be enabled for PersonProduct."""
         personproduct = PersonProduct(
             self.factory.makePerson(), self.factory.makeProduct())
-        self.getViewBrowser(personproduct, '+merges',
-                rootsite='code')
+        self.getViewBrowser(personproduct, '+merges', rootsite='code')
 
     def test_DistributionSourcePackage(self):
         """The merges view should be enabled for DistributionSourcePackage."""
         package = self.factory.makeDistributionSourcePackage()
         self.getViewBrowser(package, '+merges', rootsite='code')
+
+    def test_query_count(self):
+        product = self.factory.makeProduct()
+        target = self.factory.makeBranch(
+            product=product, information_type=InformationType.USERDATA)
+        for i in range(7):
+            source = self.factory.makeBranch(
+                product=product, information_type=InformationType.USERDATA)
+            self.factory.makeBranchMergeProposal(
+                source_branch=removeSecurityProxy(source),
+                target_branch=target)
+        flush_database_caches()
+        with StormStatementRecorder() as recorder:
+            self.getViewBrowser(
+                product, '+merges', rootsite='code', user=product.owner)
+        self.assertThat(recorder, HasQueryCount(Equals(41)))
+
+    def test_productseries(self):
+        target = self.factory.makeBranch()
+        unique_name = target.unique_name
+        with person_logged_in(target.product.owner):
+            target.product.development_focus.branch = target
+        self.factory.makeBranchMergeProposal(target_branch=target)
+        view = self.getViewBrowser(target, '+merges', rootsite='code')
+        self.assertIn(unique_name, view.contents)
 
 
 class ActiveReviewGroupsTest(TestCaseWithFactory):
@@ -213,8 +234,8 @@ class ActiveReviewGroupsTest(TestCaseWithFactory):
         login(ANONYMOUS)
         # The actual context of the view doesn't matter here as all the
         # parameters are passed in.
-        view = ActiveReviewsView(
-            self.factory.makeProduct(), LaunchpadTestRequest())
+        view = create_initialized_view(
+            self.factory.makeProduct(), '+activereviews', rootsite='code')
         self.assertEqual(
             group, view._getReviewGroup(self.bmp, self.bmp.votes, reviewer))
 
@@ -371,9 +392,102 @@ class ActiveReviewsWithPrivateBranches(TestCaseWithFactory):
         # Merge proposals against private branches are visible to
         # the branch owner.
         product = self.factory.makeProduct()
-        branch = self.factory.makeBranch(private=True, product=product)
+        branch = self.factory.makeBranch(
+            product=product, information_type=InformationType.USERDATA)
         with person_logged_in(removeSecurityProxy(branch).owner):
             mp = self.factory.makeBranchMergeProposal(target_branch=branch)
             view = create_initialized_view(
                 branch, name='+activereviews', rootsite='code')
             self.assertEqual([mp], list(view.getProposals()))
+
+
+class PersonActiveReviewsPerformance(TestCaseWithFactory):
+    """Test the performance of the person's active reviews page."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setupBMP(self, bmp):
+        self.factory.makePreviewDiff(merge_proposal=bmp)
+        login_person(bmp.source_branch.owner)
+        bmp.requestReview()
+
+    def createUserBMP(self, reviewer=None, target_branch_owner=None):
+        target_branch = None
+        if target_branch_owner is not None:
+            target_branch = self.factory.makePackageBranch(
+                owner=target_branch_owner)
+        bmp = self.factory.makeBranchMergeProposal(
+            reviewer=reviewer, target_branch=target_branch)
+        self.setupBMP(bmp)
+        return bmp
+
+    def createUserBMPsAndRecordQueries(self, number_of_bmps):
+        # Create {number_of_bmps} branch merge proposals related to a
+        # user, render the person's +activereviews page, and return the
+        # view and a recorder of the queries generated by this page
+        # rendering.
+        user = self.factory.makePerson()
+        for i in xrange(number_of_bmps):
+            # Create one of the two types of BMP which will be displayed
+            # on a person's +activereviews page:
+            # - A BMP for which the person is the reviewer.
+            # - A BMP for which the person is the owner of the target
+            # branch.
+            if i % 2 == 0:
+                self.createUserBMP(target_branch_owner=user)
+            else:
+                self.createUserBMP(reviewer=user)
+        login_person(user)
+        flush_database_caches()
+        with StormStatementRecorder() as recorder:
+            view = create_initialized_view(
+                user, name='+activereviews', rootsite='code', principal=user)
+            view.render()
+        return recorder, view
+
+    def test_person_activereviews_query_count(self):
+        base_bmps = 3
+        added_bmps = 4
+        recorder1, view1 = self.createUserBMPsAndRecordQueries(base_bmps)
+        self.assertEqual(base_bmps, view1.proposal_count)
+        self.addDetail("r1tb", Content(UTF8_TEXT, lambda: [str(recorder1)]))
+        recorder2, view2 = self.createUserBMPsAndRecordQueries(
+            base_bmps + added_bmps)
+        self.assertEqual(base_bmps + added_bmps, view2.proposal_count)
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+
+    def createProductBMP(self, product):
+        target_branch = self.factory.makeStackedOnBranchChain(product=product)
+        bmp = self.factory.makeBranchMergeProposal(
+            product=product, target_branch=target_branch)
+        self.setupBMP(bmp)
+        return bmp
+
+    def createProductBMPsAndRecordQueries(self, number_of_bmps):
+        # Create {number_of_bmps} branch merge proposals related to a
+        # product, render the product's +activereviews page, and return the
+        # view and a recorder of the queries generated by this page
+        # rendering.
+        product = self.factory.makeProduct()
+        for i in xrange(number_of_bmps):
+            self.createProductBMP(product=product)
+        login_person(product.owner)
+        flush_database_caches()
+        with StormStatementRecorder() as recorder:
+            view = create_initialized_view(
+                product, name='+activereviews', rootsite='code',
+                principal=product.owner)
+            view.render()
+        return recorder, view
+
+    def test_product_activereviews_query_count(self):
+        # We keep the number of bmps created small (3 and 7), see above.
+        base_bmps = 3
+        added_bmps = 4
+        recorder1, view1 = self.createProductBMPsAndRecordQueries(base_bmps)
+        self.assertEqual(base_bmps, view1.proposal_count)
+        self.addDetail("r1tb", Content(UTF8_TEXT, lambda: [str(recorder1)]))
+        recorder2, view2 = self.createProductBMPsAndRecordQueries(
+            base_bmps + added_bmps)
+        self.assertEqual(base_bmps + added_bmps, view2.proposal_count)
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))

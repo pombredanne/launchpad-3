@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for a difference between two distribution series."""
@@ -39,16 +39,8 @@ from zope.interface import (
     implements,
     )
 
-from canonical.database.enumcol import DBEnum
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
-from lp.registry.enum import (
+from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
@@ -68,6 +60,7 @@ from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     )
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment,
     )
@@ -75,6 +68,12 @@ from lp.registry.model.gpgkey import GPGKey
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database import bulk
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.enumcol import DBEnum
+from lp.services.database.interfaces import (
+    IMasterStore,
+    IStore,
+    )
 from lp.services.database.stormbase import StormBase
 from lp.services.messages.model.message import (
     Message,
@@ -118,53 +117,41 @@ def most_recent_publications(dsds, in_parent, statuses, match_version=False):
     :param in_parent: A boolean indicating if we should look in the parent
         series' archive instead of the derived series' archive.
     """
+    # Check in the parent archive or the child?
+    if in_parent:
+        series_col = DistroSeriesDifference.parent_series_id
+        version_col = DistroSeriesDifference.parent_source_version
+    else:
+        series_col = DistroSeriesDifference.derived_series_id
+        version_col = DistroSeriesDifference.source_version
     columns = (
         DistroSeriesDifference.source_package_name_id,
         SourcePackagePublishingHistory,
         )
+    # DistroSeries.getPublishedSources() matches on MAIN_ARCHIVE_PURPOSES,
+    # but we are only ever going to be interested in the distribution's
+    # main (PRIMARY) archive.
+    archive_subselect = Select(
+        Archive.id, tables=[Archive, DistroSeries],
+        where=And(
+            DistroSeries.id == series_col,
+            Archive.distributionID == DistroSeries.distributionID,
+            Archive.purpose == ArchivePurpose.PRIMARY))
     conditions = And(
         DistroSeriesDifference.id.is_in(dsd.id for dsd in dsds),
-        # XXX: GavinPanella 2011-06-23 bug=801097: The + 0 in the condition
-        # below prevents PostgreSQL from using the (archive, status) index on
-        # SourcePackagePublishingHistory, the use of which results in a
-        # terrible query plan. This might be indicative of an underlying,
-        # undiagnosed issue in production with wider repurcussions.
-        SourcePackagePublishingHistory.archiveID + 0 == Archive.id,
-        SourcePackagePublishingHistory.sourcepackagereleaseID == (
-            SourcePackageRelease.id),
+        SourcePackagePublishingHistory.archiveID == archive_subselect,
+        SourcePackagePublishingHistory.distroseriesID == series_col,
         SourcePackagePublishingHistory.status.is_in(statuses),
-        SourcePackageRelease.sourcepackagenameID == (
+        SourcePackagePublishingHistory.sourcepackagenameID == (
             DistroSeriesDifference.source_package_name_id),
-        )
-    # Check in the parent archive or the child?
-    if in_parent:
-        conditions = And(
-            conditions,
-            SourcePackagePublishingHistory.distroseriesID == (
-                DistroSeriesDifference.parent_series_id),
-            )
-    else:
-        conditions = And(
-            conditions,
-            SourcePackagePublishingHistory.distroseriesID == (
-                DistroSeriesDifference.derived_series_id),
-            )
-    # Ensure that the archive has the right purpose.
-    conditions = And(
-        conditions,
-        # DistroSeries.getPublishedSources() matches on MAIN_ARCHIVE_PURPOSES,
-        # but we are only ever going to be interested in PRIMARY archives.
-        Archive.purpose == ArchivePurpose.PRIMARY,
         )
     # Do we match on DistroSeriesDifference.(parent_)source_version?
     if match_version:
-        if in_parent:
-            version_column = DistroSeriesDifference.parent_source_version
-        else:
-            version_column = DistroSeriesDifference.source_version
         conditions = And(
             conditions,
-            SourcePackageRelease.version == version_column,
+            SourcePackageRelease.id ==
+                SourcePackagePublishingHistory.sourcepackagereleaseID,
+            SourcePackageRelease.version == version_col,
             )
     # The sort order is critical so that the DISTINCT ON clause selects the
     # most recent publication (i.e. the one with the highest id).
@@ -707,8 +694,7 @@ class DistroSeriesDifference(StormBase):
     def _package_release(self, distro_series, version):
         pubs = distro_series.main_archive.getPublishedSources(
             name=self.source_package_name.name, version=version,
-            status=active_publishing_status, distroseries=distro_series,
-            exact_match=True)
+            distroseries=distro_series, exact_match=True)
 
         # Get the most recent publication (pubs are ordered by
         # (name, id)).
@@ -774,7 +760,7 @@ class DistroSeriesDifference(StormBase):
         new_source_version = new_parent_source_version = None
         if self.source_pub:
             new_source_version = self.source_pub.source_package_version
-            if self.source_version is None or apt_pkg.VersionCompare(
+            if self.source_version is None or apt_pkg.version_compare(
                     self.source_version, new_source_version) != 0:
                 self.source_version = new_source_version
                 updated = True
@@ -786,7 +772,7 @@ class DistroSeriesDifference(StormBase):
         if self.parent_source_pub:
             new_parent_source_version = (
                 self.parent_source_pub.source_package_version)
-            if self.parent_source_version is None or apt_pkg.VersionCompare(
+            if self.parent_source_version is None or apt_pkg.version_compare(
                     self.parent_source_version,
                     new_parent_source_version) != 0:
                 self.parent_source_version = new_parent_source_version
@@ -800,13 +786,13 @@ class DistroSeriesDifference(StormBase):
         # If this difference was resolved but now the versions don't match
         # then we re-open the difference.
         if self.status == DistroSeriesDifferenceStatus.RESOLVED:
-            if apt_pkg.VersionCompare(
+            if apt_pkg.version_compare(
                 self.source_version, self.parent_source_version) < 0:
                 # Higher parent version.
                 updated = True
                 self.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
             elif (
-                apt_pkg.VersionCompare(
+                apt_pkg.version_compare(
                     self.source_version, self.parent_source_version) > 0
                 and not manual):
                 # The child was updated with a higher version so it's
@@ -820,12 +806,12 @@ class DistroSeriesDifference(StormBase):
         elif self.status in (
             DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
             DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT):
-            if apt_pkg.VersionCompare(
+            if apt_pkg.version_compare(
                     self.source_version, self.parent_source_version) == 0:
                 updated = True
                 self.status = DistroSeriesDifferenceStatus.RESOLVED
             elif (
-                apt_pkg.VersionCompare(
+                apt_pkg.version_compare(
                     self.source_version, self.parent_source_version) > 0
                 and not manual):
                 # If the derived version is lower than the parent's, we

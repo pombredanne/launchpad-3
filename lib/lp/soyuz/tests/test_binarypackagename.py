@@ -10,12 +10,12 @@ from datetime import datetime
 import pytz
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.errors import NotFoundError
-from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.model.binarypackagename import getBinaryPackageDescriptions
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestBinaryPackageNameSet(TestCaseWithFactory):
@@ -37,17 +37,6 @@ class TestBinaryPackageNameSet(TestCaseWithFactory):
     def test_getAll_contains_one(self):
         name = self.factory.makeBinaryPackageName()
         self.assertIn(name, self.name_set.getAll())
-
-    def test_findByName_not_found(self):
-        self.assertEqual([], list(self.name_set.findByName("notfound")))
-
-    def test_findByName_found(self):
-        name1 = self.factory.makeBinaryPackageName("prefixname")
-        name2 = self.factory.makeBinaryPackageName("name")
-        name3 = self.factory.makeBinaryPackageName("namesuffix")
-        name4 = self.factory.makeBinaryPackageName("other")
-        self.assertEqual(
-            [name1, name2, name3], list(self.name_set.findByName("name")))
 
     def test_queryByName_not_found(self):
         self.assertEqual(None, self.name_set.queryByName("notfound"))

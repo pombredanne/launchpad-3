@@ -34,7 +34,6 @@ its development focus.
     Gnome Applets
     NetApplet
     gnomebaker
-    ...
 
 The projects are linked.
 
@@ -160,10 +159,10 @@ Inactive products are not included in that list, though.
     >>> from lp.testing import unlink_source_packages
     >>> login('admin@canonical.com')
     >>> unlink_source_packages(firefox)
-    >>> logout()
     >>> firefox.active = False
     >>> firefox.syncUpdate()
 
+    >>> logout()
     >>> browser.open('http://launchpad.dev/mozilla')
     >>> products = find_tags_by_class(browser.contents, 'sprite product')
     >>> for product in products:
@@ -185,4 +184,4 @@ can create structural bug subscriptions.
     >>> print user_browser.url
     http://launchpad.dev/mozilla/+subscribe
     >>> print user_browser.title
-    Subscribe to Bugs in The Mozilla Project
+    Subscribe : The Mozilla Project

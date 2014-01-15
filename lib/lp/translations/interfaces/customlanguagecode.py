@@ -1,7 +1,5 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-# pylint: disable-msg=E0213
-
 """Custom language code."""
 
 __metaclass__ = type
@@ -22,7 +20,7 @@ from zope.schema import (
     )
 from zope.schema.interfaces import IObject
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName

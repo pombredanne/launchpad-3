@@ -3,8 +3,6 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0403
-
 """Request builds for stale daily build recipes."""
 
 __metaclass__ = type
@@ -14,13 +12,12 @@ import _pythonpath
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
-# fix circular import issue
-import canonical.launchpad.interfaces
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildSource,)
+    ISourcePackageRecipeBuildSource,
+    )
+from lp.services.config import config
 from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
+from lp.services.webapp.errorlog import globalErrorUtility
 
 
 class RequestDailyBuilds(LaunchpadCronScript):

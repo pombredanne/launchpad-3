@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 __metaclass__ = type
 __all__ = [
     'TranslationGroup',
@@ -25,24 +23,22 @@ from storm.expr import (
 from storm.store import Store
 from zope.interface import implements
 
-from canonical.database.constants import DEFAULT
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias,
-    LibraryFileContent,
-    )
-from canonical.launchpad.interfaces.lpstorm import (
-    IStore,
-    ISlaveStore,
-    )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.constants import DEFAULT
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.database.interfaces import (
+    ISlaveStore,
+    IStore,
+    )
+from lp.services.database.sqlbase import SQLBase
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from lp.services.worlddata.model.language import Language
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroup,

@@ -43,9 +43,9 @@ to allow user agents (and users) to update bookmarks, etc.
 
     >>> from lp.bugs.tests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
-     1  Firefox does not support SVG  mozilla-firefox      Medium  New
-    10  another test bug              linux-source-2.6.15  Medium  New
-     2  Blackhole Trash folder        &mdash;              Medium  New
+     1  Firefox does not support SVG mozilla-firefox (Ubuntu) Medium  New
+    10  another test bug linux-source-2.6.15 (Ubuntu) Medium  New
+     2  Blackhole Trash folder Ubuntu Medium  New
 
 Searching amongst all bugs also redirects to an updated location with
 the new status names in place of the old.
@@ -103,7 +103,7 @@ user agent is automatically redirected to an updated location:
     field.status:list=Rejected --> field.status:list=Invalid
 
     >>> print_bugtasks(anon_browser.contents)
-     1  Firefox does not support SVG  Mozilla Firefox  Low  New
+     1  Firefox does not support SVG Mozilla Firefox Low New
 
 Just as with assigned bugs, searching for reported bugs takes the user
 agent to a corrected location:

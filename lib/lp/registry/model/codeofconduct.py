@@ -1,7 +1,6 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
 """A module for CodeOfConduct (CoC) related classes.
 
 https://launchpad.canonical.com/CodeOfConduct
@@ -23,19 +22,6 @@ from sqlobject import (
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import (
-    flush_database_updates,
-    quote,
-    SQLBase,
-    )
-from canonical.launchpad.interfaces.gpghandler import (
-    GPGVerificationError,
-    IGPGHandler,
-    )
-from canonical.launchpad.webapp import canonical_url
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.codeofconduct import (
     ICodeOfConduct,
@@ -45,10 +31,23 @@ from lp.registry.interfaces.codeofconduct import (
     ISignedCodeOfConductSet,
     )
 from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.services.config import config
+from lp.services.database.constants import UTC_NOW
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.sqlbase import (
+    flush_database_updates,
+    quote,
+    SQLBase,
+    )
+from lp.services.gpg.interfaces import (
+    GPGVerificationError,
+    IGPGHandler,
+    )
 from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
+from lp.services.webapp import canonical_url
 
 
 class CodeOfConductConf:
@@ -62,7 +61,7 @@ class CodeOfConductConf:
 
     path = 'lib/lp/registry/codesofconduct/'
     prefix = 'Ubuntu Code of Conduct - '
-    currentrelease = '1.1'
+    currentrelease = '2.0'
     # Set the datereleased to the date that 1.0 CoC was released,
     # preserving everyone's Ubuntu Code of Conduct signatory status.
     # https://launchpad.net/products/launchpad/+bug/48995
@@ -114,7 +113,7 @@ class CodeOfConduct:
 
     @property
     def _filename(self):
-        """Rebuild filename according the local version."""
+        """Rebuild filename according to the local version."""
         # Recover the path for CoC from a Component
         path = getUtility(ICodeOfConductConf).path
         return os.path.join(path, self.version + '.txt')
@@ -215,7 +214,7 @@ class SignedCodeOfConduct(SQLBase):
     def sendAdvertisementEmail(self, subject, content):
         """See ISignedCodeOfConduct."""
         assert self.owner.preferredemail
-        template = open('lib/canonical/launchpad/emailtemplates/'
+        template = open('lib/lp/registry/emailtemplates/'
                         'signedcoc-acknowledge.txt').read()
         fromaddress = format_address(
             "Launchpad Code Of Conduct System",
@@ -268,7 +267,7 @@ class SignedCodeOfConductSet:
 
         try:
             sig = gpghandler.getVerifiedSignature(sane_signedcode)
-        except GPGVerificationError, e:
+        except GPGVerificationError as e:
             return str(e)
 
         if not sig.fingerprint:
@@ -318,7 +317,6 @@ class SignedCodeOfConductSet:
         content = ('Digitally Signed by %s\n' % sig.fingerprint)
         signed.sendAdvertisementEmail(subject, content)
 
-
     def searchByDisplayname(self, displayname, searchfor=None):
         """See ISignedCodeOfConductSet."""
         clauseTables = ['Person']
@@ -339,7 +337,7 @@ class SignedCodeOfConductSet:
         # the name shoudl work like a filter, if you don't enter anything
         # you get everything.
         if displayname:
-            query +=' AND Person.fti @@ ftq(%s)' % quote(displayname)
+            query += ' AND Person.fti @@ ftq(%s)' % quote(displayname)
 
         # Attempt to search for directive
         if searchfor == 'activeonly':
@@ -390,4 +388,3 @@ class SignedCodeOfConductSet:
     def getLastAcceptedDate(self):
         """See ISignedCodeOfConductSet."""
         return getUtility(ICodeOfConductConf).datereleased
-

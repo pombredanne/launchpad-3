@@ -1,17 +1,12 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-
-import unittest
 
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.ftests import login
-from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distributionmirror import (
@@ -21,29 +16,32 @@ from lp.registry.interfaces.distributionmirror import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distributionmirror import DistributionMirror
+from lp.services.database.sqlbase import flush_database_updates
 from lp.services.mail import stub
 from lp.services.worlddata.interfaces.country import ICountrySet
-from lp.testing import login_as
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing import (
+    login,
+    login_as,
+    TestCase,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import LaunchpadFunctionalLayer
 
-# XXX Jan 20, 2010, jcsackett: This test case really needs to be updated to
-# TestCaseWithFactory.
-class TestDistributionMirror(unittest.TestCase):
+
+class TestDistributionMirror(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
+        super(TestDistributionMirror, self).setUp()
         login('test@canonical.com')
-        self.factory = LaunchpadObjectFactory()
         mirrorset = getUtility(IDistributionMirrorSet)
-        self.cdimage_mirror = getUtility(IDistributionMirrorSet).getByName(
-            'releases-mirror')
-        self.archive_mirror = getUtility(IDistributionMirrorSet).getByName(
-            'archive-mirror')
+        self.cdimage_mirror = mirrorset.getByName('releases-mirror')
+        self.archive_mirror = mirrorset.getByName('archive-mirror')
         self.hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
         self.hoary_i386 = self.hoary['i386']
 
-    def _create_source_mirror(
-            self, distroseries, pocket, component, freshness):
+    def _create_source_mirror(self, distroseries, pocket, component,
+                              freshness):
         source_mirror1 = self.archive_mirror.ensureMirrorDistroSeriesSource(
             distroseries, pocket, component)
         removeSecurityProxy(source_mirror1).freshness = freshness
@@ -65,7 +63,7 @@ class TestDistributionMirror(unittest.TestCase):
 
     def test_cdimage_mirror_not_missing_content_should_not_be_disabled(self):
         expected_file_count = 1
-        mirror = self.cdimage_mirror.ensureMirrorCDImageSeries(
+        self.cdimage_mirror.ensureMirrorCDImageSeries(
             self.hoary, flavour='ubuntu')
         self.failIf(self.cdimage_mirror.shouldDisable(expected_file_count))
 
@@ -75,9 +73,9 @@ class TestDistributionMirror(unittest.TestCase):
             self.cdimage_mirror.shouldDisable(expected_file_count))
 
     def test_delete_all_mirror_cdimage_series(self):
-        mirror = self.cdimage_mirror.ensureMirrorCDImageSeries(
+        self.cdimage_mirror.ensureMirrorCDImageSeries(
             self.hoary, flavour='ubuntu')
-        mirror = self.cdimage_mirror.ensureMirrorCDImageSeries(
+        self.cdimage_mirror.ensureMirrorCDImageSeries(
             self.hoary, flavour='edubuntu')
         self.failUnlessEqual(
             self.cdimage_mirror.cdimage_series.count(), 2)
@@ -214,7 +212,7 @@ class TestDistributionMirror(unittest.TestCase):
         mirror = self.cdimage_mirror
         login_as(mirror.owner)
         # Deactivate the mirror owner to remove the contact address.
-        mirror.owner.deactivateAccount("I hate mirror spam.")
+        mirror.owner.deactivate(comment="I hate mirror spam.")
         login_as(mirror.distribution.mirror_admin)
         # Clear out notifications about the new team member.
         transaction.commit()
@@ -228,7 +226,7 @@ class TestDistributionMirror(unittest.TestCase):
         self.failUnlessEqual(len(stub.test_emails), 1)
 
 
-class TestDistributionMirrorSet(unittest.TestCase):
+class TestDistributionMirrorSet(TestCase):
     layer = LaunchpadFunctionalLayer
 
     def test_getBestMirrorsForCountry_randomizes_results(self):

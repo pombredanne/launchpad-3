@@ -1,4 +1,5 @@
-= Package Diff =
+Package Diff
+============
 
 The 'package-diff' subsystem allows users to request a diff between
 two SourcePackageReleases.
@@ -7,7 +8,8 @@ The diff can be requested by any user with permission to view both
 packages and will be performed frequently by our infrastructure.
 
 
-== Requesting a Diff ==
+Requesting a Diff
+-----------------
 
 First we have to retrieve a SourcePackageRelease from the sampledata,
 let's use 'pmount' sources.
@@ -33,7 +35,7 @@ Requesting a diff from pmount_0.1-1 to pmount_0.1-2.
 
 Let's inspect the PackageDiff record created.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.testing import verifyObject
     >>> from lp.soyuz.interfaces.packagediff import IPackageDiff
 
     >>> verifyObject(IPackageDiff, package_diff)
@@ -54,7 +56,8 @@ Its main attributes are:
  * 'from_source', which maps to a `ISourcePackageRelease`, the base
    source used in the diff.
 
-    >>> from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+    >>> from lp.soyuz.interfaces.sourcepackagerelease import (
+    ...     ISourcePackageRelease)
     >>> verifyObject(ISourcePackageRelease, package_diff.from_source)
     True
 
@@ -64,7 +67,6 @@ Its main attributes are:
  * 'to_source', which maps to a `ISourcePackageRelease`, the result
    source used in the diff.
 
-    >>> from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
     >>> verifyObject(ISourcePackageRelease, package_diff.to_source)
     True
 
@@ -102,11 +104,12 @@ error:
     ...     requester=cprov, to_sourcepackagerelease=pmount_to)
     Traceback (most recent call last):
     ...
-    PackageDiffAlreadyRequested: diff from 0.1-1 to 0.1-2 was already
-    requested by Celso Providelo
+    PackageDiffAlreadyRequested: diff from 0.1-1 to 0.1-2 has already
+    been requested
 
 
-== Diff request for source uploads ==
+Diff request for source uploads
+-------------------------------
 
 When a source package upload is processed, the upload-processor
 already requests a package diff against the immediate ancestry.
@@ -114,9 +117,8 @@ already requests a package diff against the immediate ancestry.
 Before starting let's enable the universe component and add the i386
 chroot in hoary in order to be able to accept the NEW packages.
 
-    >>> from lp.soyuz.model.component import (
-    ...     ComponentSelection)
-    >>> from canonical.launchpad.database.librarian import LibraryFileAlias
+    >>> from lp.soyuz.model.component import ComponentSelection
+    >>> from lp.services.librarian.model import LibraryFileAlias
     >>> from lp.soyuz.interfaces.component import IComponentSet
 
     >>> hoary = ubuntu.getSeries('hoary')
@@ -136,14 +138,14 @@ chroot in hoary in order to be able to accept the NEW packages.
 of a new source series for us. We can use this to avoid messing with
 sampledata to create valid packages.
 
-    >>> from canonical.launchpad.testing.fakepackager import FakePackager
+    >>> from lp.soyuz.tests.fakepackager import FakePackager
     >>> login('foo.bar@canonical.com')
     >>> packager = FakePackager(
     ...     'biscuit', '1.0', 'foo.bar@canonical.com-passwordless.sec')
 
 And setup the test_keys in order to build and upload signed packages.
 
-    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from lp.testing.gpgkeys import import_public_test_keys
     >>> import_public_test_keys()
 
 When the first version of 'biscuit' is uploaded, since there is no
@@ -151,10 +153,9 @@ suitable ancentry, no diff is requested.
 
     >>> packager.buildUpstream()
     >>> packager.buildSource(signed=False)
-    >>> biscuit_one_pub = packager.uploadSourceVersion(
-    ...     '1.0-1', policy='sync')
+    >>> biscuit_one_pub = packager.uploadSourceVersion('1.0-1', policy='sync')
 
-    >>> biscuit_one_pub.sourcepackagerelease.package_diffs.count()
+    >>> len(biscuit_one_pub.sourcepackagerelease.package_diffs)
     0
 
 When 1.0-8 is uploaded and 1.0-1 is published, the upload-processor
@@ -260,7 +261,8 @@ the version found in its context.
     diff from 1.0-2 to 1.0-3
 
 
-== Performing a Diff ==
+Performing a Diff
+-----------------
 
 Now we will actually perform a package diff and look at the results.
 
@@ -277,7 +279,7 @@ The auxiliary function below will facilitate the viewing of diff results.
     >>> import subprocess
     >>> import tempfile
 
-    >>> from canonical.librarian.utils import copy_and_close
+    >>> from lp.services.librarian.utils import copy_and_close
 
     >>> def get_diff_results(diff):
     ...     lfa = diff.diff_content
@@ -377,7 +379,7 @@ and 'text/plain' content-type. This combination instructs the browser
 to decompress the file and display it inline, which makes it easier
 for users to view it.
 
-    >>> from canonical.launchpad.webapp.url import urlparse
+    >>> from lp.services.webapp.url import urlparse
     >>> parsed_url = urlparse(diff.diff_content.http_url)
     >>> netloc, path = parsed_url[1:3]
 
@@ -394,14 +396,15 @@ for users to view it.
     text/plain
 
 
-== Dealing with all PackageDiff objects ==
+Dealing with all PackageDiff objects
+------------------------------------
 
 The PackageDiffSet utility implements simple auxiliary methods to deal
 directly with PackageDiffs objects.
 
 Let's flush all the updates done.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 Those methods are useful when the callsites are not interested only in
@@ -431,29 +434,6 @@ stored.
     biscuit diff from 1.0-1 to 1.0-8               True   -6
     pmount diff from 0.1-1 to 0.1-2                False  -7
 
-Or only the PackageDiffs not yet fullfilled.
-
-    >>> print_diffs(packagediff_set.getPendingDiffs())
-    pmount diff from 0.1-1 to 0.1-2                False   0
-    biscuit diff from 1.0-8 to 1.0-9               False   2
-    biscuit diff from 1.0-8 to 1.0-12              False   3
-    biscuit diff from 1.0-9 to 1.0-10              False   4
-    biscuit diff from 1.0-8 to 1.0-11              False   5
-    biscuit diff from 1.0-8 (in Ubuntu) to 1.0-2   False   6
-    biscuit diff from 1.0-2 to 1.0-3               False   7
-
-Note that the iteration over all PackageDiffs is sorted by descending
-database ID, i.e. newest first, and getPendingDiffs() results are
-ordered by ascending database IDs, oldest first.
-
-getPendingDiffs() results can optionally be limited.
-
-    >>> packagediff_set.getPendingDiffs().count()
-    7
-
-    >>> packagediff_set.getPendingDiffs(limit=2).count()
-    2
-
 All package diffs targeting a set of source package releases can also
 be requested.  The results are ordered by the source package release
 ID:
@@ -479,7 +459,8 @@ if necessary.
     True
 
 
-== Special circumstances ==
+Special circumstances
+---------------------
 
 There is only one way a PackageDiff request will result in an empty
 diff, when the same source package is re-uploaded.
@@ -502,7 +483,7 @@ if it builds correctly.
     >>> packager.buildSource()
     >>> staging_ubuntu_pub = packager.uploadSourceVersion(
     ...     '1.0-1', policy='sync')
-    >>> staging_ubuntu_pub.sourcepackagerelease.package_diffs.count()
+    >>> len(staging_ubuntu_pub.sourcepackagerelease.package_diffs)
     0
 
     >>> staging_ppa_pub = packager.uploadSourceVersion(
@@ -549,7 +530,7 @@ primary archive.
     >>> packager.buildSource()
     >>> collision_ubuntu_pub = packager.uploadSourceVersion(
     ...     '1.0-1', policy='sync')
-    >>> collision_ubuntu_pub.sourcepackagerelease.package_diffs.count()
+    >>> len(collision_ubuntu_pub.sourcepackagerelease.package_diffs)
     0
 
 Then we taint the package content and rebuild the same source package
@@ -643,7 +624,8 @@ uploaded source.
     ...     '1.0-2', archive=foobar.archive)
     >>> transaction.commit()
 
-    >>> from canonical.librarian.testing.server import fillLibrarianFile
+    >>> from lp.services.librarianserver.testing.server import (
+    ...     fillLibrarianFile)
     >>> [orig, upload_diff, dsc] = pub.sourcepackagerelease.files
     >>> fillLibrarianFile(dsc.libraryfile.id)
 
@@ -667,7 +649,8 @@ FAILED request (empty 'diff_content' and 'date_fullfilled').
     None
 
 
-== Problematic packages ==
+Problematic packages
+--------------------
 
 XXX 2009-11-23 Julian bug=314436
 Because of bug 314436, diffs of udev can generate huge output which fills the
@@ -693,7 +676,8 @@ default, which will stop the diff script from attempting to create the diff.
     FAILED
 
 
-== PackageDiff privacy ==
+PackageDiff privacy
+-------------------
 
 Packagediff decides whether the 'diff_content' file should be
 in the restricted librarian or not according to the privacy of the
@@ -733,6 +717,7 @@ the new 'diff_content' is stored in the restricted librarian instance.
     >>> private_ppa = factory.makeArchive(private=True)
     >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(diff.to_source).upload_archive = private_ppa
+    >>> removeSecurityProxy(biscuit_two_pub).archive = private_ppa
 
     >>> print diff.private
     True

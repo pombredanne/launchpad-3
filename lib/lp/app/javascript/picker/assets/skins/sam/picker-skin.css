@@ -25,7 +25,7 @@ input.yui3-picker-search {
 }
 
 .yui3-picker-search-mode button.lazr-search {
-    background: url('../../../../lazr/assets/skins/sam/spinner.gif') 
+    background: url('../../../../ui/assets/skins/sam/spinner.gif') 
                 0.2em 0 no-repeat;
 }
 

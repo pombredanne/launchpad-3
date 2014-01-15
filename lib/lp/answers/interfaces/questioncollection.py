@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Interfaces for a Question."""
 
 __metaclass__ = type
@@ -12,17 +10,6 @@ __all__ = [
     'IQuestionSet',
     'ISearchableByQuestionOwner',
     ]
-
-from zope.interface import (
-    Attribute,
-    Interface,
-    )
-from zope.schema import (
-    Choice,
-    Int,
-    List,
-    TextLine,
-    )
 
 from lazr.restful.declarations import (
     collection_default_content,
@@ -35,8 +22,18 @@ from lazr.restful.declarations import (
     operation_returns_entry,
     )
 from lazr.restful.fields import ReferenceChoice
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Int,
+    List,
+    TextLine,
+    )
 
-from canonical.launchpad import _
+from lp import _
 from lp.answers.enums import (
     QUESTION_STATUS_DEFAULT_SEARCH,
     QuestionSort,

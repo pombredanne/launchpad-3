@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Product series interfaces."""
 
 __metaclass__ = type
@@ -10,8 +8,10 @@ __metaclass__ = type
 __all__ = [
     'IProductSeries',
     'IProductSeriesEditRestricted',
+    'IProductSeriesLimitedView',
     'IProductSeriesPublic',
     'IProductSeriesSet',
+    'IProductSeriesView',
     'NoSuchProductSeries',
     'ITimelineProductSeries',
     ]
@@ -44,8 +44,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp.url import urlparse
+from lp import _
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.app.validators import LaunchpadValidationError
@@ -54,6 +53,7 @@ from lp.app.validators.url import validate_url
 from lp.blueprints.interfaces.specificationtarget import ISpecificationGoal
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
+    IHasExpirableBugs,
     IHasOfficialBugTags,
     )
 from lp.bugs.interfaces.structuralsubscription import (
@@ -78,6 +78,7 @@ from lp.services.fields import (
     PersonChoice,
     Title,
     )
+from lp.services.webapp.url import urlparse
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
     )
@@ -128,25 +129,15 @@ class IProductSeriesEditRestricted(Interface):
         """Create a new milestone for this ProjectSeries."""
 
 
-class IProductSeriesPublic(
-    ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
-    ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
-    IHasTranslationImports, IHasTranslationTemplates, IServiceUsage):
+class IProductSeriesPublic(Interface):
     """Public IProductSeries properties."""
     id = Int(title=_('ID'))
 
-    product = exported(
-        ReferenceChoice(title=_('Project'), required=True,
-            vocabulary='Product', schema=Interface),  # really IProduct
-        exported_as='project')
-    productID = Attribute('The product ID.')
+    def userCanView(user):
+        """True if the given user has access to this product."""
 
-    status = exported(
-        Choice(
-            title=_('Status'), required=True, vocabulary=SeriesStatus,
-            default=SeriesStatus.DEVELOPMENT))
 
-    parent = Attribute('The structural parent of this series - the product')
+class IProductSeriesLimitedView(Interface):
 
     name = exported(
         ProductSeriesNameField(
@@ -158,10 +149,26 @@ class IProductSeriesPublic(
                 "or 'trunk'."),
             constraint=name_validator))
 
+    product = exported(
+        ReferenceChoice(title=_('Project'), required=True,
+            vocabulary='Product', schema=Interface),  # really IProduct
+        exported_as='project')
+    productID = Attribute('The product ID.')
+
+
+class IProductSeriesView(
+    ISeriesMixin, IHasAppointedDriver, IHasOwner,
+    ISpecificationGoal, IHasMilestones, IHasOfficialBugTags, IHasExpirableBugs,
+    IHasTranslationImports, IHasTranslationTemplates, IServiceUsage):
+    status = exported(
+        Choice(
+            title=_('Status'), required=True, vocabulary=SeriesStatus,
+            default=SeriesStatus.DEVELOPMENT))
+
+    parent = Attribute('The structural parent of this series - the product')
+
     datecreated = exported(
-        Datetime(title=_('Date Registered'),
-                 required=True,
-                 readonly=True),
+        Datetime(title=_('Date Registered'), required=True, readonly=True),
         exported_as='date_created')
 
     owner = exported(
@@ -189,9 +196,9 @@ class IProductSeriesPublic(
     displayname = exported(
         TextLine(
             title=_('Display Name'),
-            description=_('Display name, in this case we have removed the '
-                          'underlying database field, and this attribute '
-                          'just returns the name.')),
+            description=_(
+                "Display name.  In this case we have removed the underlying "
+                "database field, and this attribute just returns the name.")),
         exported_as='display_name')
 
     releases = exported(
@@ -230,10 +237,8 @@ class IProductSeriesPublic(
 
     branch = exported(
         ReferenceChoice(
-            title=_('Branch'),
-            vocabulary='BranchRestrictedOnProduct',
-            schema=IBranch,
-            required=False,
+            title=_('Branch'), vocabulary='BranchRestrictedOnProduct',
+            schema=IBranch, required=False,
             description=_("The Bazaar branch for this series.  Leave blank "
                           "if this series is not maintained in Bazaar.")))
 
@@ -259,6 +264,14 @@ class IProductSeriesPublic(
         description=_(
             "A Bazaar branch to commit translation snapshots to.  "
             "Leave blank to disable."))
+
+    all_specifications = doNotSnapshot(
+        Attribute('All specifications linked to this series.'))
+
+    def getCachedReleases():
+        """Gets a cached copy of this series' releases.
+
+        Returns None if there is no release."""
 
     def getLatestRelease():
         """Gets the most recent release in the series.
@@ -324,7 +337,8 @@ class IProductSeriesPublic(
 
 
 class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic,
-                     IStructuralSubscriptionTarget):
+                     IProductSeriesView, IProductSeriesLimitedView,
+                     IStructuralSubscriptionTarget, IBugTarget):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     export_as_webservice_entry('project_series')
 

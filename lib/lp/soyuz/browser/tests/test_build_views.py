@@ -1,13 +1,9 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
-import pytz
+import soupmatchers
 from testtools.matchers import (
     MatchesException,
     Not,
@@ -19,24 +15,28 @@ from zope.component import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.interfaces import StormRangeFactoryError
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildQueueStatus,
+    BuildStatus,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.job.interfaces.job import JobStatus
+from lp.services.database.sqlbase import flush_database_caches
+from lp.services.webapp import canonical_url
+from lp.services.webapp.interfaces import StormRangeFactoryError
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.browser.build import BuildContextMenu
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.model.queue import PackageUploadBuild
 from lp.testing import (
+    admin_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 
@@ -55,28 +55,57 @@ class TestBuildViews(TestCaseWithFactory):
                 (build, self.empty_request), name="+index")
             self.assertEquals(build_view.user_can_retry_build, expected)
 
+    def test_view_with_component(self):
+        # The component name is provided when the component is known.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        removeSecurityProxy(archive).require_virtualized = False
+        build = self.factory.makeBinaryPackageBuild(archive=archive)
+        view = create_initialized_view(build, name="+index")
+        self.assertEqual('multiverse', view.component_name)
+
+    def test_view_without_component(self):
+        # Production has some buggy builds without source publications.
+        # current_component used by the view returns None in that case.
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        other_das = self.factory.makeDistroArchSeries()
+        build = spph.sourcepackagerelease.createBuild(
+            other_das, PackagePublishingPocket.RELEASE, spph.archive)
+        view = create_initialized_view(build, name="+index")
+        self.assertEqual('unknown', view.component_name)
+
     def test_build_menu_primary(self):
         # The menu presented in the build page depends on the targeted
         # archive. For instance the 'PPA' action-menu link is not enabled
         # for builds targeted to the PRIMARY archive.
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        removeSecurityProxy(archive).require_virtualized = False
         build = self.factory.makeBinaryPackageBuild(archive=archive)
         build_menu = BuildContextMenu(build)
-        self.assertEquals(build_menu.links,
-            ['ppa', 'records', 'retry', 'rescore'])
+        self.assertEquals(
+            build_menu.links,
+            ['ppa', 'records', 'retry', 'rescore', 'cancel'])
         self.assertFalse(build_menu.is_ppa_build)
         self.assertFalse(build_menu.ppa().enabled)
+        # Cancel is not enabled on non-virtual builds.
+        self.assertFalse(build_menu.cancel().enabled)
 
     def test_build_menu_ppa(self):
         # The 'PPA' action-menu item will be enabled if we target the build
         # to a PPA.
-        ppa = self.factory.makeArchive(purpose='PPA')
+        ppa = self.factory.makeArchive(
+            purpose=ArchivePurpose.PPA, virtualized=True)
         build = self.factory.makeBinaryPackageBuild(archive=ppa)
+        build.queueBuild()
         build_menu = BuildContextMenu(build)
-        self.assertEquals(build_menu.links,
-            ['ppa', 'records', 'retry', 'rescore'])
+        self.assertEquals(
+            build_menu.links,
+            ['ppa', 'records', 'retry', 'rescore', 'cancel'])
         self.assertTrue(build_menu.is_ppa_build)
         self.assertTrue(build_menu.ppa().enabled)
+        # Cancel is enabled on virtual builds if the user is in the
+        # owning archive's team.
+        with person_logged_in(ppa.owner):
+            self.assertTrue(build_menu.cancel().enabled)
 
     def test_cannot_retry_stable_distroseries(self):
         # 'BuildView.user_can_retry_build' property checks not only the
@@ -94,7 +123,7 @@ class TestBuildViews(TestCaseWithFactory):
             (build, self.empty_request), name="+index")
         self.assertFalse(build_view.is_ppa)
         self.assertEquals(build_view.buildqueue, None)
-        self.assertEquals(build_view.component.name, 'multiverse')
+        self.assertEquals(build_view.component_name, 'multiverse')
         self.assertFalse(build.can_be_retried)
         self.assertFalse(build_view.user_can_retry_build)
 
@@ -236,6 +265,59 @@ class TestBuildViews(TestCaseWithFactory):
         self.assertEquals(notification.message, "Build rescored to 0.")
         self.assertEquals(pending_build.buildqueue_record.lastscore, 0)
 
+    def test_build_page_has_cancel_link(self):
+        build = self.factory.makeBinaryPackageBuild()
+        build.queueBuild()
+        person = build.archive.owner
+        with person_logged_in(person):
+            build_view = create_initialized_view(
+                build, "+index", principal=person)
+            page = build_view()
+        url = canonical_url(build) + "/+cancel"
+        matches_cancel_link = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "CANCEL_LINK", "a", attrs=dict(href=url)))
+        self.assertThat(page, matches_cancel_link)
+
+    def test_cancelling_pending_build(self):
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        pending_build = self.factory.makeBinaryPackageBuild(archive=ppa)
+        pending_build.queueBuild()
+        with person_logged_in(ppa.owner):
+            view = create_initialized_view(
+                pending_build, name="+cancel", form={
+                    'field.actions.cancel': 'Cancel'})
+        notification = view.request.response.notifications[0]
+        self.assertEqual(notification.message, "Build cancelled.")
+        self.assertEqual(BuildStatus.CANCELLED, pending_build.status)
+
+    def test_cancelling_building_build(self):
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        pending_build = self.factory.makeBinaryPackageBuild(archive=ppa)
+        pending_build.queueBuild().markAsBuilding(self.factory.makeBuilder())
+        with person_logged_in(ppa.owner):
+            view = create_initialized_view(
+                pending_build, name="+cancel", form={
+                    'field.actions.cancel': 'Cancel'})
+        notification = view.request.response.notifications[0]
+        self.assertEqual(
+            notification.message, "Build cancellation in progress.")
+        self.assertEqual(BuildStatus.CANCELLING, pending_build.status)
+
+    def test_cancelling_uncancellable_build(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        pending_build = self.factory.makeBinaryPackageBuild(archive=archive)
+        pending_build.queueBuild()
+        pending_build.updateStatus(BuildStatus.FAILEDTOBUILD)
+        with person_logged_in(archive.owner):
+            view = create_initialized_view(
+                pending_build, name="+cancel", form={
+                    'field.actions.cancel': 'Cancel'})
+        notification = view.request.response.notifications[0]
+        self.assertEqual(
+            notification.message, "Unable to cancel build.")
+        self.assertEqual(BuildStatus.FAILEDTOBUILD, pending_build.status)
+
     def test_build_records_view(self):
         # The BuildRecordsView can also be used to filter by architecture tag.
         distroseries = self.factory.makeDistroSeries()
@@ -245,11 +327,9 @@ class TestBuildViews(TestCaseWithFactory):
             arch_list.append(das.architecturetag)
             build = self.factory.makeBinaryPackageBuild(
                 distroarchseries=das, archive=distroseries.main_archive,
-                status=BuildStatus.FULLYBUILT)
-            with person_logged_in(self.admin):
-                build.date_started = (
-                    datetime.now(pytz.UTC) - timedelta(hours=1))
-                build.date_finished = datetime.now(pytz.UTC)
+                status=BuildStatus.NEEDSBUILD)
+            build.updateStatus(BuildStatus.BUILDING)
+            build.updateStatus(BuildStatus.FULLYBUILT)
         view = create_initialized_view(
             distroseries, name="+builds", form={'build_state': 'all'})
         view.setupBuildList()
@@ -279,13 +359,13 @@ class TestBuildViews(TestCaseWithFactory):
         build = self.factory.makeBinaryPackageBuild()
         build.queueBuild()
         view = create_initialized_view(build, name="+index")
-        job = view.context.buildqueue_record.job
+        bq = view.context.buildqueue_record
         self.assertTrue(view.dispatch_time_estimate_available)
         self.assertEquals(view.context.status, BuildStatus.NEEDSBUILD)
-        self.assertEquals(job.status, JobStatus.WAITING)
+        self.assertEquals(bq.status, BuildQueueStatus.WAITING)
         # If we suspend the job, there is no estimate available
-        job.suspend()
-        self.assertEquals(job.status, JobStatus.SUSPENDED)
+        bq.suspend()
+        self.assertEquals(bq.status, BuildQueueStatus.SUSPENDED)
         self.assertFalse(view.dispatch_time_estimate_available)
 
     def test_old_url_redirection(self):
@@ -317,10 +397,8 @@ class TestBuildViews(TestCaseWithFactory):
             # BPBs in certain states need a bit tweaking to appear in
             # the result of getBuildRecords().
             if status == BuildStatus.FULLYBUILT:
-                with person_logged_in(self.admin):
-                    build.date_started = (
-                        datetime.now(pytz.UTC) - timedelta(hours=1))
-                    build.date_finished = datetime.now(pytz.UTC)
+                build.updateStatus(BuildStatus.BUILDING)
+                build.updateStatus(BuildStatus.FULLYBUILT)
             elif status in (BuildStatus.NEEDSBUILD, BuildStatus.BUILDING):
                 build.queueBuild()
         for status in ('built', 'failed', 'depwait', 'chrootwait',
@@ -338,3 +416,28 @@ class TestBuildViews(TestCaseWithFactory):
             self.assertThat(
                 test_range_factory,
                 Not(Raises(MatchesException(StormRangeFactoryError))))
+
+    def test_name_filter_with_storm_range_factory(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.factory.makeDistroArchSeries(distroseries=distroseries)
+        view = create_initialized_view(
+            distroseries.distribution, name="+builds",
+            form={
+                'build_state': 'built',
+                'build_text': u'foo',
+                'start': 75,
+                'memo': '["2012-01-01T01:01:01", 0]'})
+        view.setupBuildList()
+
+    def test_eta(self):
+        # BuildView.eta returns a non-None value when it should, or None
+        # when there's no start time.
+        build = self.factory.makeBinaryPackageBuild()
+        build.queueBuild()
+        self.factory.makeBuilder(
+            processors=[build.processor], virtualized=True)
+        self.assertIsNot(None, create_initialized_view(build, '+index').eta)
+        with admin_logged_in():
+            build.archive.disable()
+        flush_database_caches()
+        self.assertIs(None, create_initialized_view(build, '+index').eta)

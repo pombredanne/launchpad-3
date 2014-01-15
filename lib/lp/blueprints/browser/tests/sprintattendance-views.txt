@@ -107,7 +107,7 @@ The most common kind of attendance is that the user will be physically
 present at the sprint.
 
     >>> person = factory.makePerson(name='brown')
-    >>> login_person(person)
+    >>> ignored = login_person(person)
     >>> form = {
     ...     'field.time_starts': '2005-10-07 09:00',
     ...     'field.time_ends': '2005-10-17 19:05',
@@ -126,7 +126,7 @@ Some users attend the sprint virtually, such as via IRC, VOIP, or by
 using their psychotic powers :).
 
     >>> person = factory.makePerson(name='black')
-    >>> login_person(person)
+    >>> ignored = login_person(person)
     >>> form = {
     ...     'field.time_starts': '2005-10-07 09:00',
     ...     'field.time_ends': '2005-10-17 19:05',
@@ -204,23 +204,3 @@ include it.
 
     >>> print lines[-1]
     name12,Sample Person,...Australia/Perth,...True
-
-However, some people may set their location/timezone as hidden, so if
-that's the case we won't include the person's timezone.
-
-    >>> person = factory.makePerson(
-    ...     name='ubz-last-attendee', time_zone='Europe/London')
-    >>> login_person(person)
-    >>> person.setLocationVisibility(False)
-    >>> dates = ['2005-10-17 09:00', '2005-11-17 19:05']
-    >>> create_sprint_attendance_view(ubz, dates).initialize()
-
-    >>> view = create_view(ubz, '+attendees-csv')
-    >>> last_attendee = view.render().split('\n')[-2]
-    >>> print last_attendee
-    ubz-last-attendee,...
-
-    >>> 'Europe' in last_attendee
-    False
-
-

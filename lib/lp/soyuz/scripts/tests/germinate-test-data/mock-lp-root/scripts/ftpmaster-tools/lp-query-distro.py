@@ -8,20 +8,20 @@ import sys
 
 
 def error_and_exit():
-        sys.stderr.write("ERROR: I'm a mock, I only support 'development' "
-                         "and 'supported' as argument\n")
-        sys.exit(1)
+    sys.stderr.write("ERROR: I'm a mock, I only support 'supported' as "
+                     "argument\n")
+    sys.exit(1)
+
+
+def main(args):
+    # There is only a very limited subset of arguments that we support,
+    # test for it and error if it looks wrong
+    if len(args) == 2:
+        distro = args[1]
+        if distro == "supported":
+            return "hardy jaunty karmic lucid maverick"
+    error_and_exit()
 
 
 if __name__ == "__main__":
-        # There is only a very limited subset of arguments that we support,
-        # test for it and error if it looks wrong
-        if len(sys.argv) != 2:
-                error_and_exit()
-        distro = sys.argv[1]
-        if distro == "development":
-                print "natty"
-        elif distro == "supported":
-                print "hardy jaunty karmic lucid maverick"
-        else:
-                error_and_exit()
+    print main(sys.argv)

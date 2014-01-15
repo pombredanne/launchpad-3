@@ -6,14 +6,8 @@ import subprocess
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.database.interfaces import IStore
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount,
@@ -24,6 +18,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestPathParsing(TestCase):
@@ -79,8 +74,7 @@ class TestScriptRunning(TestCaseWithFactory):
         self.publisher = SoyuzTestPublisher()
         self.publisher.prepareBreezyAutotest()
 
-        self.store = getUtility(IStoreSelector).get(
-            MAIN_STORE, DEFAULT_FLAVOR)
+        self.store = IStore(BinaryPackageReleaseDownloadCount)
 
         self.archive = getUtility(IPersonSet).getByName('cprov').archive
         self.archive.require_virtualized = False
@@ -106,8 +100,6 @@ class TestScriptRunning(TestCaseWithFactory):
         self.assertEqual(
             0, self.store.find(BinaryPackageReleaseDownloadCount).count())
 
-        last_oops = globalErrorUtility.getLastOopsReport()
-
         process = subprocess.Popen(
             'cronscripts/parse-ppa-apache-access-logs.py', shell=True,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -118,7 +110,8 @@ class TestScriptRunning(TestCaseWithFactory):
 
         # The error log does not match the glob, so it is not processed,
         # and no OOPS is generated.
-        self.assertNoNewOops(last_oops)
+        self.oops_capture.sync()
+        self.assertEqual([], self.oopses)
 
         # Must commit because the changes were done in another transaction.
         import transaction

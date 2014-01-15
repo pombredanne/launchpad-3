@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0611,W0212
-
 __metaclass__ = type
 __all__ = [
     'Poll',
@@ -32,12 +30,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.poll import (
     IPoll,
@@ -52,6 +44,12 @@ from lp.registry.interfaces.poll import (
     PollAlgorithm,
     PollSecrecy,
     PollStatus,
+    )
+from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.enumcol import EnumCol
+from lp.services.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
     )
 
 

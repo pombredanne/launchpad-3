@@ -133,5 +133,4 @@ class VersionTests(unittest.TestCase):
         """Version should treat an omitted revision as being equal to zero.
         """
         self.assertEquals(Version("1.0"), Version("1.0-0"))
-        from lp.archivepublisher.debversion import Version
         self.failUnless(Version("1.0") == Version("1.0-0"))

@@ -5,9 +5,16 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.ftests import login
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.testing import TestCaseWithFactory
+from zope.component import getUtility
+
+from lp.app.enums import InformationType
+from lp.registry.interfaces.accesspolicy import IAccessPolicySource
+from lp.testing import (
+    login,
+    login_celebrity,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestBugIndexedMessages(TestCaseWithFactory):
@@ -35,3 +42,38 @@ class TestBugIndexedMessages(TestCaseWithFactory):
         # IIndexedMessage.
         for indexed_message in self.bug_2.indexed_messages:
             self.failUnlessEqual(None, indexed_message.parent)
+
+
+class TestUserCanSetCommentVisibility(TestCaseWithFactory):
+
+    """Test whether expected users can toggle bug comment visibility."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_random_user_cannot_toggle_comment_visibility(self):
+        # A random user cannot set bug comment visibility.
+        person = self.factory.makePerson()
+        bug = self.factory.makeBug()
+        self.assertFalse(bug.userCanSetCommentVisibility(person))
+
+    def test_registry_admin_can_toggle_comment_visibility(self):
+        # Members of registry experts can set bug comment visibility.
+        person = login_celebrity('registry_experts')
+        bug = self.factory.makeBug()
+        self.assertTrue(bug.userCanSetCommentVisibility(person))
+
+    def test_admin_can_toggle_comment_visibility(self):
+        # Admins can set bug comment visibility.
+        person = login_celebrity('admin')
+        bug = self.factory.makeBug()
+        self.assertTrue(bug.userCanSetCommentVisibility(person))
+
+    def test_userdata_grant_can_toggle_comment_visibility(self):
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(target=product)
+        policy = getUtility(IAccessPolicySource).find(
+            [(product, InformationType.USERDATA)]).one()
+        self.factory.makeAccessPolicyGrant(
+            policy=policy, grantor=product.owner, grantee=person)
+        self.assertTrue(bug.userCanSetCommentVisibility(person))

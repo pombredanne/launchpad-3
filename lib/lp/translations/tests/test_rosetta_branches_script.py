@@ -9,18 +9,15 @@ provisions to handle Bazaar branches.
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 from bzrlib.revision import NULL_REVISION
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.scripts.tests import run_script
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
-from canonical.testing.layers import ZopelessAppServerLayer
 from lp.code.model.branchjob import RosettaUploadJob
 from lp.services.osutils import override_environ
+from lp.services.scripts.tests import run_script
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import ZopelessAppServerLayer
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
@@ -66,11 +63,11 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
         self._clear_import_queue()
         pot_path = self.factory.getUniqueString() + ".pot"
         branch = self._setup_series_branch(pot_path)
-        job = RosettaUploadJob.create(branch, NULL_REVISION)
+        RosettaUploadJob.create(branch, NULL_REVISION)
         transaction.commit()
 
         return_code, stdout, stderr = run_script(
-            'cronscripts/rosetta-branches.py', [])
+            'cronscripts/process-job-source.py', ['IRosettaUploadJobSource'])
         self.assertEqual(0, return_code)
 
         queue = getUtility(ITranslationImportQueue)
@@ -78,31 +75,3 @@ class TestRosettaBranchesScript(TestCaseWithFactory):
         entry = list(queue)[0]
         self.assertEqual(RosettaImportStatus.APPROVED, entry.status)
         self.assertEqual(pot_path, entry.path)
-
-    def test_rosetta_branches_script_oops(self):
-        # A bogus revision in the job will trigger an OOPS.
-        globalErrorUtility.configure("rosettabranches")
-        previous_oops_report = globalErrorUtility.getLastOopsReport()
-        self._clear_import_queue()
-        pot_path = self.factory.getUniqueString() + ".pot"
-        branch = self._setup_series_branch(pot_path)
-        job = RosettaUploadJob.create(branch, self.factory.getUniqueString())
-        transaction.commit()
-
-        return_code, stdout, stderr = run_script(
-            'cronscripts/rosetta-branches.py', [])
-        self.assertEqual(0, return_code)
-
-        queue = getUtility(ITranslationImportQueue)
-        self.assertEqual(0, queue.countEntries())
-
-        oops_report = globalErrorUtility.getLastOopsReport()
-        if previous_oops_report is not None:
-            self.assertNotEqual(oops_report.id, previous_oops_report.id)
-        self.assertIn(
-            'INFO    Job resulted in OOPS: %s\n' % oops_report.id, stderr)
-        self.assertEqual('NoSuchRevision', oops_report.type)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

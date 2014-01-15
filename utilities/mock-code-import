@@ -23,15 +23,18 @@ Details of the Subversion server are printed to stdout.
 import _pythonpath
 
 import os
-from subprocess import PIPE, Popen
+from subprocess import (
+    PIPE,
+    Popen,
+    )
 import tempfile
+
 import transaction
 
-from lp.codehosting.codeimport.tests.test_foreigntree import (
-    SubversionServer)
-from canonical.launchpad.scripts import execute_zcml_for_scripts
+from lp.codehosting.codeimport.tests.test_foreigntree import SubversionServer
+from lp.services.scripts import execute_zcml_for_scripts
+from lp.services.webapp import canonical_url
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.launchpad.webapp import canonical_url
 
 
 def shell(*args):

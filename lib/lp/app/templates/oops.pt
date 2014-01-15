@@ -41,7 +41,7 @@
         <div class="related">
           <ul>
             <li>
-              <a tal:attributes="href modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl"
+              <a tal:attributes="href modules/lp.services.webapp.vhosts/allvhosts/configs/mainsite/rooturl"
               >Return to the Launchpad front page</a>
             </li>
           </ul>

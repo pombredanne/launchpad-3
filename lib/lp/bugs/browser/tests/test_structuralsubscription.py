@@ -5,20 +5,9 @@
 
 from urlparse import urlparse
 
-from lazr.restful.testing.webservice import FakeRequest
 import transaction
 from zope.publisher.interfaces import NotFound
 
-from canonical.launchpad.ftests import (
-    login,
-    logout,
-    )
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.servers import StepsToGo
-from canonical.testing.layers import (
-    AppServerLayer,
-    DatabaseFunctionalLayer,
-    )
 from lp.registry.browser.distribution import DistributionNavigation
 from lp.registry.browser.distributionsourcepackage import (
     DistributionSourcePackageNavigation,
@@ -28,20 +17,20 @@ from lp.registry.browser.milestone import MilestoneNavigation
 from lp.registry.browser.product import ProductNavigation
 from lp.registry.browser.productseries import ProductSeriesNavigation
 from lp.registry.browser.project import ProjectNavigation
+from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
+    FakeLaunchpadRequest,
+    login,
+    logout,
     person_logged_in,
     TestCaseWithFactory,
     ws_object,
     )
+from lp.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    )
 from lp.testing.views import create_initialized_view
-
-
-class FakeLaunchpadRequest(FakeRequest):
-
-    @property
-    def stepstogo(self):
-        """See `IBasicLaunchpadRequest`."""
-        return StepsToGo(self)
 
 
 class StructuralSubscriptionTraversalTestBase(TestCaseWithFactory):

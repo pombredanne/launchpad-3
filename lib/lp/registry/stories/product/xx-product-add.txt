@@ -14,14 +14,6 @@ from the Launchpad home page or the projects home page.
     >>> print user_browser.title
     Register a project in Launchpad...
 
-The page includes both a direct link and a button to test projects on staging.
-
-    >>> print user_browser.getLink('staging.launchpad.net').url
-    https://staging.launchpad.net/
-    >>> print user_browser.getControl(
-    ...     'Oh, I want to create a test project').type
-    submit
-
 The user can see links about things that are often assumed to be related to
 project registration.
 
@@ -108,19 +100,7 @@ summary.  She can also add a longer description.
     ...     'Control pesky aardvarkian fnords')
     >>> user_browser.getControl('Description').value = (
     ...     'The desktop aardvark is an ornery thing.')
-
-Before a project can be created though, a license for it must be selected.
-
-    >>> user_browser.getControl('Complete Registration').click()
-    >>> print_errors(user_browser.contents)
-    There is 1 error.
-    ...
-    You must select at least one license. If you select Other/Proprietary or
-    Other/OpenSource you must include a description of the license.
-
-This time, Sample Person remembers to select a license.
-
-    >>> user_browser.getControl('Python License').click()
+    >>> user_browser.getControl('Python Licence').click()
     >>> user_browser.getControl('Complete Registration').click()
     >>> print user_browser.title
     Aardvark Center in Launchpad
@@ -166,7 +146,7 @@ interested in being the project maintainer for the long run.
     >>> user_browser.getControl('Summary').value = (
     ...     'Kitty Hawk Air Traffic Simulator')
     >>> user_browser.getControl('Continue').click()
-    >>> user_browser.getControl('Python License').click()
+    >>> user_browser.getControl('Python Licence').click()
     >>> disclaim = user_browser.getControl(name='field.disclaim_maintainer')
     >>> disclaim.value = ['checked']
     >>> user_browser.getControl('Complete Registration').click()

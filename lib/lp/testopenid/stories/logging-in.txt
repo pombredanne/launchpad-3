@@ -33,24 +33,21 @@ At this point, the user is presented with a login form:
     >>> print browser.title
     Login
 
-As the user already has an account, they can enter their email address and
-password.  If the password does not match the given email address, an error is
-shown:
+If the email address isn't registered, an error is shown:
 
-    >>> browser.getControl(name='field.email').value = 'mark@example.com'
-    >>> browser.getControl(name='field.password').value = 'not the password'
+    >>> browser.getControl(name='field.email').value = 'does@not.exist'
     >>> browser.getControl('Continue').click()
     >>> print browser.title
     Login
     >>> for tag in find_tags_by_class(browser.contents, 'error'):
     ...     print extract_text(tag)
     There is 1 error.
-    Incorrect password for the provided email address.
+    Unknown email address.
 
-If the email address and password match, the user is logged in and returned to
-the relying party, with the user's identity URL:
+If the email address matches an account, the user is logged in and
+returned to the relying party, with the user's identity URL:
 
-    >>> browser.getControl(name='field.password').value = 'test'
+    >>> browser.getControl(name='field.email').value = 'mark@example.com'
     >>> browser.getControl('Continue').click()
     >>> print browser.url
     http://testopenid.dev/+echo?...

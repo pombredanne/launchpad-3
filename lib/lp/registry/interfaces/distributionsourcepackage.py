@@ -1,7 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 """Source package in Distribution interfaces."""
 
@@ -13,30 +11,21 @@ __all__ = [
 
 from lazr.restful.declarations import (
     export_as_webservice_entry,
-    export_operation_as,
-    export_read_operation,
     exported,
-    operation_parameters,
-    operation_returns_collection_of,
-    rename_parameters_as,
     )
 from lazr.restful.fields import Reference
 from zope.interface import (
     Attribute,
     Interface,
     )
-from zope.schema import (
-    Int,
-    TextLine,
-    )
+from zope.schema import TextLine
 
-from canonical.launchpad import _
+from lp import _
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
     IHasOfficialBugTags,
     )
-from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     )
@@ -45,13 +34,14 @@ from lp.code.interfaces.hasbranches import (
     IHasMergeProposals,
     )
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.role import IHasDrivers
 from lp.soyuz.enums import ArchivePurpose
 
 
 class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
                                  IHasOfficialBugTags,
                                  IStructuralSubscriptionTarget,
-                                 IQuestionTarget):
+                                 IQuestionTarget, IHasDrivers):
     """Represents a source package in a distribution.
 
     Create IDistributionSourcePackages by invoking
@@ -106,14 +96,6 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
         "no such package -- this occurs when there is no current series for "
         "the distribution.")
 
-    total_bug_heat = Attribute(
-        "Sum of the bug heat for all the bugs matching the distribution "
-        "and sourcepackagename of the IDistributionSourcePackage.")
-
-    max_bug_heat = Attribute(
-        "Maximum bug heat for a single bug matching the distribution "
-        "and sourcepackagename of the IDistributionSourcePackage.")
-
     bug_count = Attribute(
         "Number of bugs matching the distribution and sourcepackagename "
         "of the IDistributionSourcePackage.")
@@ -121,6 +103,8 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
     po_message_count = Attribute(
         "Number of translations matching the distribution and "
         "sourcepackagename of the IDistributionSourcePackage.")
+
+    drivers = Attribute("The drivers for the distribution.")
 
     def getReleasesAndPublishingHistory():
         """Return a list of all releases of this source package in this
@@ -187,21 +171,6 @@ class IDistributionSourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
         See https://bugs.launchpad.net/soyuz/+bug/236922 for a plan
         on how this criteria will be centrally encoded.
         """)
-
-    @rename_parameters_as(quantity='limit')
-    @operation_parameters(
-        quantity=Int(
-            title=_("The maximum number of bug tasks to return"),
-            min=1))
-    @operation_returns_collection_of(IBugTask)
-    @export_operation_as(name="getBugTasks")
-    @export_read_operation()
-    def bugtasks(quantity=None):
-        """Bug tasks on this source package, sorted newest first.
-
-        If needed, you can limit the number of bugtasks you are interested
-        in using the quantity parameter.
-        """
 
     def __eq__(other):
         """IDistributionSourcePackage comparison method.

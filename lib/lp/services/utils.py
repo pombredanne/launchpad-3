@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Generic Python utilities.
@@ -18,22 +18,28 @@ __all__ = [
     'file_exists',
     'iter_list_chunks',
     'iter_split',
+    'load_bz2_pickle',
     'obfuscate_email',
+    'obfuscate_structure',
     're_email_address',
     'run_capturing_output',
+    'save_bz2_pickle',
     'synchronize',
     'text_delta',
+    'total_seconds',
     'traceback_info',
     'utc_now',
     'value_string',
     ]
 
+import bz2
+import cPickle as pickle
 from datetime import datetime
 from itertools import tee
 import os
 import re
-from StringIO import StringIO
 import string
+from StringIO import StringIO
 import sys
 from textwrap import dedent
 from types import FunctionType
@@ -76,7 +82,7 @@ def base(number, radix):
     """Convert 'number' to an arbitrary base numbering scheme, 'radix'.
 
     This function is based on work from the Python Cookbook and is under the
-    Python license.
+    Python licence.
 
     Inverse function to int(str, radix) and long(str, radix)
     """
@@ -110,23 +116,28 @@ def compress_hash(hash_obj):
     return base(int(hash_obj.hexdigest(), 16), 62)
 
 
-def iter_split(string, splitter):
+def iter_split(string, splitter, splits=None):
     """Iterate over ways to split 'string' in two with 'splitter'.
 
     If 'string' is empty, then yield nothing. Otherwise, yield tuples like
-    ('a/b/c', ''), ('a/b', 'c'), ('a', 'b/c') for a string 'a/b/c' and a
+    ('a/b/c', ''), ('a/b', '/c'), ('a', '/b/c') for a string 'a/b/c' and a
     splitter '/'.
 
-    The tuples are yielded such that the first tuple has everything in the
+    The tuples are yielded such that the first result has everything in the
     first tuple. With each iteration, the first element gets smaller and the
     second gets larger. It stops iterating just before it would have to yield
     ('', 'a/b/c').
+
+    Splits, if specified, is an iterable of splitters to split the string at.
     """
     if string == '':
         return
     tokens = string.split(splitter)
-    for i in reversed(range(1, len(tokens) + 1)):
-        yield splitter.join(tokens[:i]), splitter.join(tokens[i:])
+    if splits is None:
+        splits = reversed(range(1, len(tokens) + 1))
+    for i in splits:
+        first = splitter.join(tokens[:i])
+        yield first, string[len(first):]
 
 
 def iter_list_chunks(a_list, size):
@@ -135,7 +146,7 @@ def iter_list_chunks(a_list, size):
     I'm amazed this isn't in itertools (mwhudson).
     """
     for i in range(0, len(a_list), size):
-        yield a_list[i:i+size]
+        yield a_list[i:i + size]
 
 
 def synchronize(source, target, add, remove):
@@ -245,7 +256,7 @@ def docstring_dedent(s):
     then reassemble.
     """
     # Make sure there is at least one newline so the split works.
-    first, rest = (s+'\n').split('\n', 1)
+    first, rest = (s + '\n').split('\n', 1)
     return (first + '\n' + dedent(rest)).strip()
 
 
@@ -318,18 +329,74 @@ re_email_address = re.compile(r"""
     """, re.VERBOSE)              # ' <- font-lock turd
 
 
-def obfuscate_email(text_to_obfuscate):
+def obfuscate_email(text_to_obfuscate, replacement=None):
     """Obfuscate an email address.
 
-    The email address is obfuscated as <email address hidden>.
+    The email address is obfuscated as <email address hidden> by default,
+    or with the given replacement.
 
     The pattern used to identify an email address is not 2822. It strives
     to match any possible email address embedded in the text. For example,
     mailto:person@domain.dom and http://person:password@domain.dom both
     match, though the http match is in fact not an email address.
     """
+    if replacement is None:
+        replacement = '<email address hidden>'
     text = re_email_address.sub(
-        r'<email address hidden>', text_to_obfuscate)
+        replacement, text_to_obfuscate)
+    # Avoid doubled angle brackets.
     text = text.replace(
         "<<email address hidden>>", "<email address hidden>")
     return text
+
+
+def save_bz2_pickle(obj, filename):
+    """Save a bz2 compressed pickle of `obj` to `filename`."""
+    fout = bz2.BZ2File(filename, "w")
+    try:
+        pickle.dump(obj, fout, pickle.HIGHEST_PROTOCOL)
+    finally:
+        fout.close()
+
+
+def load_bz2_pickle(filename):
+    """Load and return a bz2 compressed pickle from `filename`."""
+    fin = bz2.BZ2File(filename, "r")
+    try:
+        return pickle.load(fin)
+    finally:
+        fin.close()
+
+
+def obfuscate_structure(o):
+    """Obfuscate the strings of a json-serializable structure.
+
+    Note: tuples are converted to lists because json encoders do not
+    distinguish between lists and tuples.
+
+    :param o: Any json-serializable object.
+    :return: a possibly-new structure in which all strings, list and tuple
+        elements, and dict keys and values have undergone obfuscate_email
+        recursively.
+    """
+    if isinstance(o, basestring):
+        return obfuscate_email(o)
+    elif isinstance(o, (list, tuple)):
+        return [obfuscate_structure(value) for value in o]
+    elif isinstance(o, (dict)):
+        return dict(
+            (obfuscate_structure(key), obfuscate_structure(value))
+            for key, value in o.iteritems())
+    else:
+        return o
+
+
+def total_seconds(duration):
+    """The number of total seconds in a timedelta.
+    """
+    # XXX: JonathanLange 2012-05-12: In Python 2.7, spell this as
+    # duration.total_seconds().  Only needed for Python 2.6 or earlier.
+    return (
+        (duration.microseconds +
+         (duration.seconds + duration.days * 24 * 3600) * 1e6)
+        / 1e6)

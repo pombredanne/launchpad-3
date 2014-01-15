@@ -1,23 +1,26 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 """Specification interfaces."""
 
 __metaclass__ = type
 
 __all__ = [
+    'GoalProposeError',
     'ISpecification',
+    'ISpecificationDelta',
     'ISpecificationPublic',
     'ISpecificationSet',
-    'ISpecificationDelta',
+    'ISpecificationView',
     ]
 
+import httplib
 
 from lazr.restful.declarations import (
     call_with,
+    error_status,
     export_as_webservice_entry,
+    export_operation_as,
     export_write_operation,
     exported,
     mutator_for,
@@ -41,13 +44,14 @@ from zope.schema import (
     Choice,
     Datetime,
     Int,
+    List,
     Text,
     TextLine,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.menu import structured
+from lp import _
+from lp.app.enums import InformationType
+from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.url import valid_webref
 from lp.blueprints.enums import (
@@ -56,6 +60,7 @@ from lp.blueprints.enums import (
     SpecificationImplementationStatus,
     SpecificationLifecycleStatus,
     SpecificationPriority,
+    SpecificationWorkItemStatus,
     )
 from lp.blueprints.interfaces.specificationsubscription import (
     ISpecificationSubscription,
@@ -64,8 +69,12 @@ from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications,
     ISpecificationTarget,
     )
+from lp.blueprints.interfaces.specificationworkitem import (
+    ISpecificationWorkItem,
+    )
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.bugs.interfaces.buglink import IBugLinkTarget
+from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.code.interfaces.branchlink import IHasLinkedBranches
 from lp.registry.interfaces.milestone import IMilestone
 from lp.registry.interfaces.person import IPerson
@@ -76,7 +85,15 @@ from lp.services.fields import (
     PublicPersonChoice,
     Summary,
     Title,
+    WorkItemsText,
     )
+from lp.services.webapp import canonical_url
+from lp.services.webapp.escaping import structured
+
+
+@error_status(httplib.BAD_REQUEST)
+class GoalProposeError(Exception):
+    """Invalid series goal for this specification."""
 
 
 class SpecNameField(ContentNameField):
@@ -141,10 +158,27 @@ class SpecURLField(TextLine):
                         specification.title))
 
 
-class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
+class ISpecificationPublic(IPrivacy):
     """Specification's public attributes and methods."""
 
     id = Int(title=_("Database ID"), required=True, readonly=True)
+
+    information_type = exported(
+        Choice(
+            title=_('Information Type'), vocabulary=InformationType,
+            required=True, readonly=True, default=InformationType.PUBLIC,
+            description=_(
+                'The type of information contained in this specification.')))
+
+    def userCanView(user):
+        """Return True if `user` can see this ISpecification, false otherwise.
+        """
+
+
+class ISpecificationView(IHasOwner, IHasLinkedBranches):
+    """Specification's attributes and methods that require
+    the permission launchpad.LimitedView.
+    """
 
     name = exported(
         SpecNameField(
@@ -251,14 +285,14 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
         title=_('Series Goal'), required=False,
         vocabulary='FilteredProductSeries',
         description=_(
-             "Choose a series in which you would like to deliver "
-             "this feature. Selecting '(no value)' will clear the goal."))
+             "Choose a series in which you would like to deliver this "
+             "feature. Selecting '(nothing selected)' will clear the goal."))
     distroseries = Choice(
         title=_('Series Goal'), required=False,
         vocabulary='FilteredDistroSeries',
         description=_(
-            "Choose a series in which you would like to deliver "
-            "this feature. Selecting '(no value)' will clear the goal."))
+             "Choose a series in which you would like to deliver this "
+             "feature. Selecting '(nothing selected)' will clear the goal."))
 
     # milestone
     milestone = exported(
@@ -288,11 +322,22 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
     date_goal_decided = Attribute("The date the spec was approved "
         "or declined as a goal.")
 
+    work_items = List(
+        description=_("All non-deleted work items for this spec, sorted by "
+                      "their 'sequence'"),
+        value_type=Reference(schema=ISpecificationWorkItem), readonly=True)
     whiteboard = exported(
         Text(title=_('Status Whiteboard'), required=False,
              description=_(
                 "Any notes on the status of this spec you would like to "
                 "make. Your changes will override the current text.")),
+        as_of="devel")
+    workitems_text = exported(
+        WorkItemsText(
+            title=_('Work Items'), required=False, readonly=True,
+            description=_(
+                "Work items for this specification input in a text format. "
+                "Your changes will override the current work items.")),
         as_of="devel")
     direction_approved = exported(
         Bool(title=_('Basic direction approved?'),
@@ -362,18 +407,12 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
     subscribers = Attribute('The set of subscribers to this spec.')
     sprints = Attribute('The sprints at which this spec is discussed.')
     sprint_links = Attribute('The entries that link this spec to sprints.')
-    feedbackrequests = Attribute('The set of feedback requests queued.')
     dependencies = exported(
         CollectionField(
             title=_('Specs on which this one depends.'),
             value_type=Reference(schema=Interface),  # ISpecification, really.
             readonly=True),
         as_of="devel")
-    blocked_specs = Attribute('Specs for which this spec is a dependency.')
-    all_deps = Attribute(
-        "All the dependencies, including dependencies of dependencies.")
-    all_blocked = Attribute(
-        "All specs blocked on this, and those blocked on the blocked ones.")
     linked_branches = exported(
         CollectionField(
             title=_("Branches associated with this spec, usually "
@@ -381,6 +420,12 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
             value_type=Reference(schema=Interface),  # ISpecificationBranch
             readonly=True),
         as_of="devel")
+
+    def getDependencies():
+        """Specs on which this one depends."""
+
+    def getBlockedSpecs():
+        """Specs for which this spec is a dependency."""
 
     # emergent properties
     informational = Attribute('Is True if this spec is purely informational '
@@ -419,35 +464,35 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
             readonly=True),
         as_of="devel")
 
+    def all_deps():
+        """All the dependencies, including dependencies of dependencies.
+
+        If a user is provided, filters to only dependencies the user can see.
+        """
+    def all_blocked():
+        """All specs blocked on this, and those blocked on the blocked ones.
+
+        If a user is provided, filters to only blocked dependencies the user
+        can see.
+        """
+
     def validateMove(target):
         """Check that the specification can be moved to the target."""
 
     def getSprintSpecification(sprintname):
         """Get the record that links this spec to the named sprint."""
 
-    def getFeedbackRequests(person):
-        """Return the requests for feedback for a given person on this
-        specification.
-        """
-
     def notificationRecipientAddresses():
         """Return the list of email addresses that receive notifications."""
 
-    # goal management
-    def proposeGoal(goal, proposer):
-        """Propose this spec for a series or distroseries."""
-
-    def acceptBy(decider):
-        """Mark the spec as being accepted for its current series goal."""
-
-    def declineBy(decider):
-        """Mark the spec as being declined as a goal for the proposed
-        series.
-        """
-
-    has_accepted_goal = Attribute('Is true if this specification has been '
-        'proposed as a goal for a specific series, '
-        'and the drivers of that series have accepted the goal.')
+    has_accepted_goal = exported(
+        Bool(title=_('Series goal is accepted'),
+             readonly=True, required=True,
+             description=_(
+                'Is true if this specification has been '
+                'proposed as a goal for a specific series, '
+                'and the drivers of that series have accepted the goal.')),
+        as_of="devel")
 
     # lifecycle management
     def updateLifecycleStatus(user):
@@ -506,16 +551,6 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
         If person is None, the return value is always False.
         """
 
-    # queue-related methods
-    def queue(provider, requester, queuemsg=None):
-        """Put this specification into the feedback queue of the given person,
-        with an optional message."""
-
-    def unqueue(provider, requester):
-        """Remove the feedback request by the requester for this spec, from
-        the provider's feedback queue.
-        """
-
     # sprints
     def linkSprint(sprint, user):
         """Put this spec on the agenda of the sprint."""
@@ -544,30 +579,52 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
         :param user: The user doing the search.
         """
 
+    def getAllowedInformationTypes(who):
+        """Get a list of acceptable `InformationType`s for this spec."""
+
 
 class ISpecificationEditRestricted(Interface):
     """Specification's attributes and methods protected with launchpad.Edit.
     """
 
-    @mutator_for(ISpecificationPublic['definition_status'])
+    @mutator_for(ISpecificationView['definition_status'])
     @call_with(user=REQUEST_USER)
     @operation_parameters(
         definition_status=copy_field(
-            ISpecificationPublic['definition_status']))
+            ISpecificationView['definition_status']))
     @export_write_operation()
     @operation_for_version("devel")
     def setDefinitionStatus(definition_status, user):
         """Mutator for definition_status that calls updateLifeCycle."""
 
-    @mutator_for(ISpecificationPublic['implementation_status'])
+    @mutator_for(ISpecificationView['implementation_status'])
     @call_with(user=REQUEST_USER)
     @operation_parameters(
         implementation_status=copy_field(
-            ISpecificationPublic['implementation_status']))
+            ISpecificationView['implementation_status']))
     @export_write_operation()
     @operation_for_version("devel")
     def setImplementationStatus(implementation_status, user):
         """Mutator for implementation_status that calls updateLifeCycle."""
+
+    def newWorkItem(title, sequence,
+                    status=SpecificationWorkItemStatus.TODO, assignee=None,
+                    milestone=None):
+        """Create a new SpecificationWorkItem."""
+
+    def updateWorkItems(new_work_items):
+        """Update the existing work items to match the given ones.
+
+        First, for every existing work item that is not present on the new
+        list, mark it as deleted. Then, for every tuple in the given list,
+        lookup an existing work item with the same title and update its
+        status, assignee, milestone and sequence (position on the work-items
+        list). If there's no existing work items with that title, we create a
+        new one.
+
+        :param new_work_items: A list of dictionaries containing the following
+            keys: title, status, assignee and milestone.
+        """
 
     def setTarget(target):
         """Set this specification's target.
@@ -581,19 +638,63 @@ class ISpecificationEditRestricted(Interface):
         The new target must be an IProduct or IDistribution.
         """
 
+    def transitionToInformationType(information_type, who):
+        """Change the information type of the Specification."""
 
-class ISpecification(ISpecificationPublic, ISpecificationEditRestricted,
-                     IBugLinkTarget):
+    @call_with(proposer=REQUEST_USER)
+    @operation_parameters(
+        goal=Reference(
+            schema=IBugTarget, title=_('Target'),
+            required=False, default=None))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def proposeGoal(goal, proposer):
+        """Propose this spec for a series or distroseries."""
+
+
+class ISpecificationDriverRestricted(Interface):
+    """Specification bits protected with launchpad.Driver."""
+
+    @call_with(decider=REQUEST_USER)
+    @export_operation_as('acceptGoal')
+    @export_write_operation()
+    @operation_for_version("devel")
+    def acceptBy(decider):
+        """Mark the spec as being accepted for its current series goal."""
+
+    @call_with(decider=REQUEST_USER)
+    @export_operation_as('declineGoal')
+    @export_write_operation()
+    @operation_for_version("devel")
+    def declineBy(decider):
+        """Mark the spec as being declined as a goal for the proposed
+        series.
+        """
+
+
+class ISpecification(ISpecificationPublic, ISpecificationView,
+                     ISpecificationEditRestricted,
+                     ISpecificationDriverRestricted, IBugLinkTarget):
     """A Specification."""
 
     export_as_webservice_entry(as_of="beta")
+
+    @mutator_for(ISpecificationView['workitems_text'])
+    @operation_parameters(new_work_items=WorkItemsText())
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setWorkItems(new_work_items):
+        """Set work items on this specification.
+
+        :param new_work_items: Work items to set.
+        """
 
     @operation_parameters(
         bug=Reference(schema=Interface))  # Really IBug
     @export_write_operation()
     @operation_for_version('devel')
     def linkBug(bug):
-        """Link a bug to this branch.
+        """Link a bug to this specification.
 
         :param bug: IBug to link.
         """
@@ -603,7 +704,7 @@ class ISpecification(ISpecificationPublic, ISpecificationEditRestricted,
     @export_write_operation()
     @operation_for_version('devel')
     def unlinkBug(bug):
-        """Unlink a bug to this branch.
+        """Unlink a bug to this specification.
 
         :param bug: IBug to unlink.
         """
@@ -618,8 +719,8 @@ class ISpecificationSet(IHasSpecifications):
 
     coming_sprints = Attribute("The next 5 sprints in the system.")
 
-    specification_count = Attribute(
-        "The total number of blueprints in Launchpad")
+    def specificationCount(user):
+        """The total number of blueprints in Launchpad"""
 
     def getStatusCountsForProductSeries(product_series):
         """Return the status counts for blueprints in a series.
@@ -631,11 +732,12 @@ class ISpecificationSet(IHasSpecifications):
         :return: A list of tuples containing (status_id, count).
         """
 
-    def __iter__():
-        """Iterate over all specifications."""
-
     def getByURL(url):
         """Return the specification with the given url."""
+
+    def getByName(pillar, name):
+        """Return the specification with the given name for the given pillar.
+        """
 
     def new(name, title, specurl, summary, definition_status,
         owner, approver=None, product=None, distribution=None, assignee=None,
@@ -666,6 +768,7 @@ class ISpecificationDelta(Interface):
     title = Attribute("The spec title or None.")
     summary = Attribute("The spec summary or None.")
     whiteboard = Attribute("The spec whiteboard or None.")
+    workitems_text = Attribute("The spec work items as text or None.")
     specurl = Attribute("The URL to the spec home page (not in Launchpad).")
     productseries = Attribute("The product series.")
     distroseries = Attribute("The series to which this is targeted.")

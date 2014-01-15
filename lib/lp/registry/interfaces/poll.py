@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 __all__ = [
     'IPoll',
     'IPollSet',
@@ -45,7 +43,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.app.validators.name import name_validator
 from lp.registry.interfaces.person import ITeam
 from lp.services.fields import ContentNameField

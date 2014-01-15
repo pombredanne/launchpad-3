@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Interfaces for linking between Sprint and a Specification."""
 
 __metaclass__ = type
@@ -11,10 +9,18 @@ __all__ = [
     'ISprintSpecification',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int, Text
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    )
 
-from canonical.launchpad import _
+from lp import _
 from lp.blueprints.enums import SprintSpecificationStatus
 from lp.services.fields import PublicPersonChoice
 

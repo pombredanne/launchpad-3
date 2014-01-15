@@ -10,7 +10,7 @@ news feed.
     ...     BeautifulSoup,
     ...     SoupStrainer,
     ...     )
-    >>> from canonical.launchpad.ftests.feeds_helper import (
+    >>> from lp.services.feeds.tests.helper import (
     ...     parse_ids, parse_links, validate_feed)
 
     >>> NOANNOUNCE = 'no announcements for this project'
@@ -612,7 +612,7 @@ not be able to move it.
     Move announcement : Kubuntu announcement headline : GuadaLinex
     >>> kamion_browser.getControl('For').value = 'kubuntu'
     >>> kamion_browser.getControl('Retarget').click()
-    >>> "don't have permission" in extract_text(
+    >>> "don&#x27;t have permission" in extract_text(
     ...     find_main_content(kamion_browser.contents))
     True
     >>> print kamion_browser.title
@@ -755,16 +755,18 @@ let us use a DTD to define the html entities that standard xml is missing.
     No Errors
     >>> soup = BeautifulSoup(nopriv_browser.contents)
     >>> soup.find('feed').entry.title
-    <...>Ampersand="&amp;" LessThan="&lt;" GreaterThan="&gt;"</title>
+    <...>Ampersand=&quot;&amp;&quot; LessThan=&quot;&lt;&quot;
+    GreaterThan=&quot;&gt;&quot;</title>
     >>> soup.find('feed').entry.content
     <...
-    Ampersand="&amp;amp;"&lt;br /&gt;
-    LessThan="&amp;lt;"&lt;br /&gt;
-    GreaterThan="&amp;gt;"&lt;br /&gt;
-    Newline="&lt;br /&gt;
-    "&lt;br /&gt;
-    url="&lt;a rel="nofollow"
-    href="http://www.ubuntu.com"&gt;http://&lt;wbr&gt;&lt;/wbr&gt;www.ubuntu.&lt;wbr&gt;&lt;/wbr&gt;com&lt;/a&gt;"...
+    Ampersand=&amp;quot;&amp;amp;&amp;quot;&lt;br /&gt;
+    LessThan=&amp;quot;&amp;lt;&amp;quot;&lt;br /&gt;
+    GreaterThan=&amp;quot;&amp;gt;&amp;quot;&lt;br /&gt;
+    Newline=&amp;quot;&lt;br /&gt;
+    &amp;quot;&lt;br /&gt;
+    url=&amp;quot;&lt;a rel=&quot;nofollow&quot;
+    href=&quot;http://www.ubuntu.com&quot;&gt;http://&lt;wbr
+    /&gt;www.ubuntu.&lt;wbr /&gt;com&lt;/a&gt;&amp;quot;...
 
 
 Deletion

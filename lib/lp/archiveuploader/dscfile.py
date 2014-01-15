@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ DSCFile and related.
@@ -29,17 +29,10 @@ import apt_pkg
 from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.gpghandler import (
-    GPGVerificationError,
-    IGPGHandler,
-    )
-from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.nascentuploadfile import (
     NascentUploadFile,
     SourceUploadFile,
-    UploadError,
-    UploadWarning,
     )
 from lp.archiveuploader.tagfiles import (
     parse_tagfile_content,
@@ -50,12 +43,15 @@ from lp.archiveuploader.utils import (
     DpkgSourceError,
     extract_dpkg_source,
     get_source_file_extension,
+    parse_and_merge_file_lists,
     ParseMaintError,
     re_is_component_orig_tar_ext,
     re_issource,
     re_valid_pkg_name,
     re_valid_version,
     safe_fix_maintainer,
+    UploadError,
+    UploadWarning,
     )
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import (
@@ -65,6 +61,12 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.encoding import guess as guess_encoding
+from lp.services.gpg.interfaces import (
+    GPGVerificationError,
+    IGPGHandler,
+    )
+from lp.services.identity.interfaces.emailaddress import InvalidEmailAddress
+from lp.services.librarian.utils import copy_and_close
 from lp.soyuz.enums import (
     ArchivePurpose,
     SourcePackageFormat,
@@ -96,7 +98,7 @@ def cleanup_unpacked_dir(unpacked_dir):
     """
     try:
         shutil.rmtree(unpacked_dir)
-    except OSError, error:
+    except OSError as error:
         if errno.errorcode[error.errno] != 'EACCES':
             raise UploadError(
                 "couldn't remove tmp dir %s: code %s" % (
@@ -132,7 +134,7 @@ class SignableTagFile:
         try:
             with open(self.filepath, 'rb') as f:
                 self.raw_content = f.read()
-        except IOError, error:
+        except IOError as error:
             raise UploadError(
                 "Unable to read %s: %s" % (self.filename, error))
 
@@ -145,7 +147,7 @@ class SignableTagFile:
         try:
             self._dict = parse_tagfile_content(
                 self.parsed_content, filename=self.filepath)
-        except TagFileParseError, error:
+        except TagFileParseError as error:
             raise UploadError(
                 "Unable to parse %s: %s" % (self.filename, error))
 
@@ -164,7 +166,7 @@ class SignableTagFile:
         try:
             sig = getUtility(IGPGHandler).getVerifiedSignatureResilient(
                 content)
-        except GPGVerificationError, error:
+        except GPGVerificationError as error:
             raise UploadError(
                 "GPG verification of %s failed: %s" % (
                 filename, str(error)))
@@ -195,10 +197,14 @@ class SignableTagFile:
         try:
             (rfc822, rfc2047, name, email) = safe_fix_maintainer(
                 addr, fieldname)
-        except ParseMaintError, error:
+        except ParseMaintError as error:
             raise UploadError(str(error))
 
         person = getUtility(IPersonSet).getByEmail(email)
+        if person and person.private:
+            # Private teams can not be maintainers.
+            raise UploadError("Invalid Maintainer.")
+
         if person is None and self.policy.create_people:
             package = self._dict['Source']
             version = self._dict['Version']
@@ -207,10 +213,14 @@ class SignableTagFile:
                                            self.policy.pocket.name))
             else:
                 policy_suite = '(unknown)'
-            person = getUtility(IPersonSet).ensurePerson(
-                email, name, PersonCreationRationale.SOURCEPACKAGEUPLOAD,
-                comment=('when the %s_%s package was uploaded to %s'
-                         % (package, version, policy_suite)))
+            try:
+                person = getUtility(IPersonSet).ensurePerson(
+                    email, name, PersonCreationRationale.SOURCEPACKAGEUPLOAD,
+                    comment=('when the %s_%s package was uploaded to %s'
+                             % (package, version, policy_suite)))
+            except InvalidEmailAddress:
+                self.logger.info("Invalid email address: '%s'", email)
+                person = None
 
         if person is None:
             raise UploadError("Unable to identify '%s':<%s> in launchpad"
@@ -241,9 +251,11 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         "Build-Depends-Indep",
         "Build-Conflicts",
         "Build-Conflicts-Indep",
+        "Checksums-Sha1",
+        "Checksums-Sha256",
         "Format",
+        "Homepage",
         "Standards-Version",
-        "homepage",
         ]))
 
     # Note that files is actually only set inside verify().
@@ -252,7 +264,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
     copyright = None
     changelog = None
 
-    def __init__(self, filepath, digest, size, component_and_section,
+    def __init__(self, filepath, checksums, size, component_and_section,
                  priority, package, version, changes, policy, logger):
         """Construct a DSCFile instance.
 
@@ -265,7 +277,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         from lp.archiveuploader.nascentupload import EarlyReturnUploadError
 
         SourceUploadFile.__init__(
-            self, filepath, digest, size, component_and_section, priority,
+            self, filepath, checksums, size, component_and_section, priority,
             package, version, changes, policy, logger)
         self.parse(verify_signature=not policy.unsigned_dsc_ok)
 
@@ -287,7 +299,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         if self.format is None:
             raise EarlyReturnUploadError(
                 "Unsupported source format: %s" % self._dict['Format'])
-
 
     #
     # Useful properties.
@@ -337,13 +348,18 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         # Check size and checksum of the DSC file itself
         try:
             self.checkSizeAndCheckSum()
-        except UploadError, error:
+        except UploadError as error:
             yield error
 
+        try:
+            raw_files = parse_and_merge_file_lists(self._dict, changes=False)
+        except UploadError as e:
+            yield e
+            return
+
         files = []
-        for fileline in self._dict['Files'].strip().split("\n"):
-            # DSC lines are always of the form: CHECKSUM SIZE FILENAME
-            digest, size, filename = fileline.strip().split()
+        for attr in raw_files:
+            filename, hashes, size = attr
             if not re_issource.match(filename):
                 # DSC files only really hold on references to source
                 # files; they are essentially a description of a source
@@ -354,8 +370,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             filepath = os.path.join(self.dirname, filename)
             try:
                 file_instance = DSCUploadedFile(
-                    filepath, digest, size, self.policy, self.logger)
-            except UploadError, error:
+                    filepath, hashes, size, self.policy, self.logger)
+            except UploadError as error:
                 yield error
             else:
                 files.append(file_instance)
@@ -383,10 +399,10 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                         "%s: invalid %s field produced by a broken version "
                         "of dpkg-dev (1.10.11)" % (self.filename, field_name))
                 try:
-                    apt_pkg.ParseSrcDepends(field)
+                    apt_pkg.parse_src_depends(field)
                 except (SystemExit, KeyboardInterrupt):
                     raise
-                except Exception, error:
+                except Exception as error:
                     # Swallow everything apt_pkg throws at us because
                     # it is not desperately pythonic and can raise odd
                     # or confusing exceptions at times and is out of
@@ -502,16 +518,16 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             try:
                 library_file, file_archive = self._getFileByName(
                     sub_dsc_file.filename)
-            except NotFoundError, error:
+            except NotFoundError as error:
                 library_file = None
                 file_archive = None
             else:
                 # try to check dsc-mentioned file against its copy already
                 # in librarian, if it's new (aka not found in librarian)
-                # dismiss. It prevent us to have scary duplicated filenames
-                # in Librarian and missapplied files in archive, fixes
-                # bug # 38636 and friends.
-                if sub_dsc_file.digest != library_file.content.md5:
+                # dismiss. It prevents us from having scary duplicated
+                # filenames in Librarian and misapplied files in archive,
+                # fixes bug # 38636 and friends.
+                if sub_dsc_file.checksums['MD5'] != library_file.content.md5:
                     yield UploadError(
                         "File %s already exists in %s, but uploaded version "
                         "has different contents. See more information about "
@@ -570,7 +586,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         try:
             unpacked_dir = unpack_source(self.filepath)
-        except DpkgSourceError, e:
+        except DpkgSourceError as e:
             yield UploadError(
                 "dpkg-source failed for %s [return: %s]\n"
                 "[dpkg-source output: %s]"
@@ -597,18 +613,18 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             # processing.
             try:
                 self.copyright = find_copyright(unpacked_dir, self.logger)
-            except UploadError, error:
+            except UploadError as error:
                 yield error
                 return
-            except UploadWarning, warning:
+            except UploadWarning as warning:
                 yield warning
 
             try:
                 self.changelog = find_changelog(unpacked_dir, self.logger)
-            except UploadError, error:
+            except UploadError as error:
                 yield error
                 return
-            except UploadWarning, warning:
+            except UploadWarning as warning:
                 yield warning
         finally:
             self.logger.debug("Cleaning up source tree.")
@@ -666,7 +682,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             architecturehintlist=encoded.get('Architecture', ''),
             creator=self.changes.changed_by['person'],
             urgency=self.changes.converted_urgency,
-            homepage=encoded.get('homepage'),
+            homepage=encoded.get('Homepage'),
             dsc=encoded_raw_content,
             dscsigningkey=self.signingkey,
             dsc_maintainer_rfc822=encoded['Maintainer'],
@@ -711,17 +727,17 @@ class DSCUploadedFile(NascentUploadFile):
           store_in_database() method.
     """
 
-    def __init__(self, filepath, digest, size, policy, logger):
+    def __init__(self, filepath, checksums, size, policy, logger):
         component_and_section = priority = "--no-value--"
         NascentUploadFile.__init__(
-            self, filepath, digest, size, component_and_section,
+            self, filepath, checksums, size, component_and_section,
             priority, policy, logger)
 
     def verify(self):
         """Check Sub DSCFile mentioned size & checksum."""
         try:
             self.checkSizeAndCheckSum()
-        except UploadError, error:
+        except UploadError as error:
             yield error
 
 

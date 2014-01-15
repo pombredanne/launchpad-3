@@ -1,16 +1,11 @@
 Privileged users can approve and decline bug nominations from the bug
 page.
 
-The approve/decline links and buttons aren't visible to unprivileged users.
+The approve/decline buttons and buttons aren't visible to unprivileged users.
 
-    >>> no_priv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
+    >>> no_priv_browser = setupBrowser(
+    ...     auth="Basic no-priv@canonical.com:test")
     >>> no_priv_browser.open("http://launchpad.dev/bugs/1")
-    >>> no_priv_browser.getLink(
-    ...     url="http://launchpad.dev/firefox/+bug/1/nominations/"
-    ...         "1/+editstatus")
-    Traceback (most recent call last):
-      ...
-    LinkNotFoundError
 
     >>> no_priv_browser.getControl("Approve")
     Traceback (most recent call last):
@@ -25,12 +20,6 @@ The approve/decline links and buttons aren't visible to unprivileged users.
 But an admin can see them.
 
     >>> admin_browser.open("http://bugs.launchpad.dev/bugs/1")
-    >>> approve_decline_link = admin_browser.getLink(
-    ...     url="http://bugs.launchpad.dev/firefox/+bug/1/nominations/"
-    ...         "1/+editstatus")
-    >>> print approve_decline_link.text
-    approve/decline
-
     >>> approve_button = admin_browser.getControl("Approve", index=0)
     >>> decline_button = admin_browser.getControl("Decline", index=0)
 
@@ -60,12 +49,6 @@ After a productseries task has been created, it's editable.
 Privileged users can decline bug nominations.
 
     >>> admin_browser.open("http://bugs.launchpad.dev/bugs/1")
-    >>> approve_decline_link = admin_browser.getLink(
-    ...     url="http://bugs.launchpad.dev/firefox/+bug/1/nominations/"
-    ...         "2/+editstatus")
-    >>> print approve_decline_link.text
-    approve/decline
-
     >>> approve_button = admin_browser.getControl("Approve", index=0)
     >>> decline_button = admin_browser.getControl("Decline", index=0)
 
@@ -84,8 +67,7 @@ Nominate a bug to a distribution release
 A bug can be nominated for a distribution release.
 
     >>> login('foo.bar@canonical.com')
-    >>> nominater = factory.makePerson(name='denominater',
-    ...     password='g00dpassword')
+    >>> nominater = factory.makePerson(name='denominater')
     >>> poseidon = factory.makeDistribution(name='poseidon',
     ...     bug_supervisor=nominater)
     >>> dsp = factory.makeDistributionSourcePackage(distribution=poseidon)
@@ -99,8 +81,7 @@ A bug can be nominated for a distribution release.
     ...     distroseries=series, sourcepackagename=dsp.sourcepackagename)
     >>> bug_task = factory.makeBugTask(target=dsp)
     >>> nominater_browser = setupBrowser(
-    ...     auth='Basic %s:g00dpassword' %
-    ...     nominater.preferredemail.email)
+    ...     auth='Basic %s:test' % nominater.preferredemail.email)
     >>> logout()
     >>> nominater_browser.open(
     ...     "http://launchpad.dev/poseidon/+source/%s/+bug/%s/+nominate" %
@@ -113,8 +94,7 @@ errors, and we'll give an example of one shortly.
 
     >>> login('foo.bar@canonical.com')
     >>> nominater_other_browser = setupBrowser(
-    ...     auth='Basic %s:g00dpassword' %
-    ...     nominater.preferredemail.email)
+    ...     auth='Basic %s:test' % nominater.preferredemail.email)
     >>> logout()
     >>> nominater_other_browser.open(
     ...     "http://launchpad.dev/poseidon/+source/%s/+bug/%s/+nominate" %
@@ -146,7 +126,7 @@ approved and targeted to the release.
     ...     (dsp.name, bug_task.bug.id))
 
     >>> admin_browser.getControl("Hydro").selected = True
-    >>> admin_browser.getControl("Nominate").click()
+    >>> admin_browser.getControl("Target").click()
 
     >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print tag
@@ -158,17 +138,15 @@ Nominating a bug for a product series
 A bug can be nominated for a product series.
 
     >>> login('foo.bar@canonical.com')
-    >>> nominater = factory.makePerson(name='nominater',
-    ...     password='g00dpassword')
+    >>> nominater = factory.makePerson(name='nominater')
     >>> widget = factory.makeProduct(name='widget',
     ...     official_malone = True,
     ...     bug_supervisor=nominater)
     >>> series = factory.makeProductSeries(product=widget,
     ...     name='beta')
-    >>> bug = factory.makeBug(product=widget)
+    >>> bug = factory.makeBug(target=widget)
     >>> nominater_browser = setupBrowser(
-    ...     auth='Basic %s:g00dpassword' %
-    ...     nominater.preferredemail.email)
+    ...     auth='Basic %s:test' % nominater.preferredemail.email)
     >>> logout()
     >>> nominater_browser.open(
     ...     "http://launchpad.dev/widget/+bug/%s/+nominate" % bug.id)
@@ -180,8 +158,7 @@ errors, and we'll give an example of one shortly.
 
     >>> login('foo.bar@canonical.com')
     >>> nominater_other_browser = setupBrowser(
-    ...     auth='Basic %s:g00dpassword' %
-    ...     nominater.preferredemail.email)
+    ...     auth='Basic %s:test' % nominater.preferredemail.email)
     >>> logout()
     >>> nominater_other_browser.open(
     ...     "http://launchpad.dev/widget/+bug/%s/+nominate" % bug.id)
@@ -243,7 +220,8 @@ for Ubuntu:
     >>> admin_browser.getControl('Bug Supervisor').value = 'no-priv'
     >>> admin_browser.getControl('Change').click()
 
-    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'bug-supervisor'))
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'bug-supervisor'))
     Bug supervisor:
     No Privileges Person
 
@@ -398,6 +376,6 @@ targeted to it.
     >>> from lp.bugs.tests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
     5 Firefox install instructions should be complete
-      Undecided New
+      Mozilla Firefox 1.0 Undecided New
     1 Firefox does not support SVG
-      Undecided Confirmed
+      Mozilla Firefox 1.0 Undecided Confirmed

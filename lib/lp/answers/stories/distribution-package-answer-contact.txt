@@ -6,9 +6,9 @@ contacts as well as the distribution answer contacts.
 
     # Register a Sample Person as an answer contact for the distribution.
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.testing import login, logout
+    >>> from lp.services.database.sqlbase import flush_database_updates
+    >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> login('test@canonical.com')
@@ -40,7 +40,7 @@ To register himself as answer contact, the user clicks on the
       ...
     Unauthorized: ...
 
-    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from lp.services.helpers import backslashreplace
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/evolution/+questions')

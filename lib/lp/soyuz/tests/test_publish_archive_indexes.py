@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test native archive index generation for Soyuz."""
@@ -19,10 +19,19 @@ def get_field(stanza_fields, name):
 
 class TestNativeArchiveIndexes(TestNativePublishingBase):
 
+    deb_md5 = '008409e7feb1c24a6ccab9f6a62d24c5'
+    deb_sha1 = '30b7b4e583fa380772c5a40e428434628faef8cf'
+    deb_sha256 = (
+        '006ca0f356f54b1916c24c282e6fd19961f4356441401f4b0966f2a00bb3e945')
+    dsc_md5 = '5913c3ad52c14a62e6ae7eef51f9ef42'
+    dsc_sha1 = 'e35e29b2ea94bbaa831882e11d1f456690f04e69'
+    dsc_sha256 = (
+        'ac512102db9724bee18f26945efeeb82fdab89819e64e120fbfda755ca50c2c6')
+
     def setUp(self):
         """Setup global attributes."""
         TestNativePublishingBase.setUp(self)
-        apt_pkg.InitSystem()
+        apt_pkg.init_system()
 
     def testSourceStanza(self):
         """Check just-created source publication Index stanza.
@@ -55,17 +64,28 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Format: 1.0',
              u'Directory: pool/main/f/foo',
              u'Files:',
-             u' 5913c3ad52c14a62e6ae7eef51f9ef42 28 foo_666.dsc'],
+             u' %s 28 foo_666.dsc' % self.dsc_md5,
+             u'Checksums-Sha1:',
+             u' %s 28 foo_666.dsc' % self.dsc_sha1,
+             u'Checksums-Sha256:',
+             u' %s 28 foo_666.dsc' % self.dsc_sha256,
+             ],
             pub_source.getIndexStanza().splitlines())
 
     def testSourceStanzaCustomFields(self):
-        """Check just-created source publication Index stanza 
+        """Check just-created source publication Index stanza
         with custom fields (Python-Version).
+
+        A field is excluded if its key case-insensitively matches one that's
+        already there. This mostly affects sources that were uploaded before
+        Homepage, Checksums-Sha1 or Checksums-Sha256 were excluded.
         """
         pub_source = self.getPubSource(
             builddepends='fooish', builddependsindep='pyfoo',
             build_conflicts='bar', build_conflicts_indep='pybar',
-            user_defined_fields=[("Python-Version", "< 1.5")])
+            user_defined_fields=[
+                ("Python-Version", "< 1.5"),
+                ("CHECKSUMS-SHA1", "BLAH")])
 
         self.assertEqual(
             [u'Package: foo',
@@ -82,7 +102,11 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Format: 1.0',
              u'Directory: pool/main/f/foo',
              u'Files:',
-             u' 5913c3ad52c14a62e6ae7eef51f9ef42 28 foo_666.dsc',
+             u' %s 28 foo_666.dsc' % self.dsc_md5,
+             u'Checksums-Sha1:',
+             u' %s 28 foo_666.dsc' % self.dsc_sha1,
+             u'Checksums-Sha256:',
+             u' %s 28 foo_666.dsc' % self.dsc_sha256,
              u'Python-Version: < 1.5'],
             pub_source.getIndexStanza().splitlines())
 
@@ -95,7 +119,8 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
         pub_binaries = self.getPubBinaries(
             depends='biscuit', recommends='foo-dev', suggests='pyfoo',
             conflicts='old-foo', replaces='old-foo', provides='foo-master',
-            pre_depends='master-foo', enhances='foo-super', breaks='old-foo')
+            pre_depends='master-foo', enhances='foo-super', breaks='old-foo',
+            phased_update_percentage=50)
         pub_binary = pub_binaries[0]
         self.assertEqual(
             [u'Package: foo-bin',
@@ -117,8 +142,10 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Breaks: old-foo',
              u'Filename: pool/main/f/foo/foo-bin_666_all.deb',
              u'Size: 18',
-             u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
-             u'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             u'MD5sum: ' + self.deb_md5,
+             u'SHA1: ' + self.deb_sha1,
+             u'SHA256: ' + self.deb_sha256,
+             u'Phased-Update-Percentage: 50',
              u'Description: Foo app is great',
              u' Well ...',
              u' it does nothing, though'],
@@ -155,8 +182,9 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Breaks: old-foo',
              u'Filename: pool/main/f/foo/foo-bin_666_all.deb',
              u'Size: 18',
-             u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
-             u'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             u'MD5sum: ' + self.deb_md5,
+             u'SHA1: ' + self.deb_sha1,
+             u'SHA256: ' + self.deb_sha256,
              u'Description: Foo app is great',
              u' Well ...',
              u' it does nothing, though',
@@ -201,8 +229,9 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Version: 666',
              u'Filename: pool/main/f/foo/foo-bin_666_all.deb',
              u'Size: 18',
-             u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
-             u'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             u'MD5sum: ' + self.deb_md5,
+             u'SHA1: ' + self.deb_sha1,
+             u'SHA256: ' + self.deb_sha256,
              u'Description: Foo app is great',
              u' Normal',
              u' Normal',
@@ -237,8 +266,9 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u'Version: 666',
              u'Filename: pool/main/f/foo/foo-bin_666_all.deb',
              u'Size: 18',
-             u'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
-             u'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
+             u'MD5sum: ' + self.deb_md5,
+             u'SHA1: ' + self.deb_sha1,
+             u'SHA256: ' + self.deb_sha256,
              u'Description: Foo app is great',
              u' Using non-ascii as: \xe7\xe3\xe9\xf3',
              ],
@@ -274,13 +304,13 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
 
 class TestNativeArchiveIndexesReparsing(TestNativePublishingBase):
     """Tests for ensuring the native archive indexes that we publish
-    can be parsed correctly by apt_get.ParseTagFiles.
+    can be parsed correctly by apt_pkg.TagFile.
     """
 
     def setUp(self):
         """Setup global attributes."""
         TestNativePublishingBase.setUp(self)
-        apt_pkg.InitSystem()
+        apt_pkg.init_system()
 
     def write_stanza_and_reparse(self, stanza):
         """Helper method to return the apt_pkg parser for the stanza."""
@@ -289,35 +319,34 @@ class TestNativeArchiveIndexesReparsing(TestNativePublishingBase):
         index_file.write(stanza.encode('utf-8'))
         index_file.close()
 
-        parser = apt_pkg.ParseTagFile(open(index_filename))
+        parser = apt_pkg.TagFile(open(index_filename))
 
         # We're only interested in one stanza, so we'll parse it and remove
         # the tmp file again.
-        parser.Step()
+        section = next(parser)
         os.remove(index_filename)
 
-        return parser
+        return section
 
     def test_getIndexStanza_binary_stanza(self):
         """Check a binary stanza with APT parser."""
         pub_binary = self.getPubBinaries()[0]
 
-        parser = self.write_stanza_and_reparse(pub_binary.getIndexStanza())
+        section = self.write_stanza_and_reparse(pub_binary.getIndexStanza())
 
-        self.assertEqual(parser.Section.get('Package'), 'foo-bin')
+        self.assertEqual(section.get('Package'), 'foo-bin')
         self.assertEqual(
-            parser.Section.get('Description').splitlines(),
+            section.get('Description').splitlines(),
             ['Foo app is great', ' Well ...', ' it does nothing, though'])
 
     def test_getIndexStanza_source_stanza(self):
         """Check a source stanza with APT parser."""
         pub_source = self.getPubSource()
 
-        parser = self.write_stanza_and_reparse(pub_source.getIndexStanza())
+        section = self.write_stanza_and_reparse(pub_source.getIndexStanza())
 
-        self.assertEqual(parser.Section.get('Package'), 'foo')
-        self.assertEqual(
-            parser.Section.get('Maintainer'), 'Foo Bar <foo@bar.com>')
+        self.assertEqual(section.get('Package'), 'foo')
+        self.assertEqual(section.get('Maintainer'), 'Foo Bar <foo@bar.com>')
 
     def test_getIndexStanza_with_corrupt_dsc_binaries(self):
         """Ensure corrupt binary fields are written correctly to indexes.
@@ -331,11 +360,10 @@ class TestNativeArchiveIndexesReparsing(TestNativePublishingBase):
         leaves a trailing '\n' (which results in a blank line after the
         Binary field).
 
-        The second issue causes apt_pkg.ParseTagFile() to error during
+        The second issue causes apt_pkg.TagFile() to error during
         germination when it attempts to parse the generated Sources index.
-        But the first issue will also cause apt_pkg.ParseTagFile to
-        skip each newline of a multiline field that is not preceded with
-        a space.
+        But the first issue will also cause apt_pkg.TagFile to skip each
+        newline of a multiline field that is not preceded with a space.
 
         This test ensures that binary fields saved as such will continue
         to be written correctly to index files.
@@ -350,19 +378,18 @@ class TestNativeArchiveIndexesReparsing(TestNativePublishingBase):
         pub_source.sourcepackagerelease.dsc_binaries = (
             'foo_bin,\nbar_bin,\nzed_bin')
 
-        parser = self.write_stanza_and_reparse(pub_source.getIndexStanza())
+        section = self.write_stanza_and_reparse(pub_source.getIndexStanza())
 
-        self.assertEqual('foo', parser.Section['Package'])
+        self.assertEqual('foo', section['Package'])
 
         # Without the fix, this raises a key-error due to apt-pkg not
         # being able to parse the file.
         self.assertEqual(
-            '666', parser.Section['Version'],
+            '666', section['Version'],
             'The Version field should be parsed correctly.')
 
         # Without the fix, the second binary would not be parsed at all.
-        self.assertEqual(
-            'foo_bin,\n bar_bin,\n zed_bin', parser.Section['Binary'])
+        self.assertEqual('foo_bin,\n bar_bin,\n zed_bin', section['Binary'])
 
     def test_getIndexStanza_with_correct_dsc_binaries(self):
         """Ensure correct binary fields are written correctly to indexes.
@@ -374,9 +401,9 @@ class TestNativeArchiveIndexesReparsing(TestNativePublishingBase):
         leaves a trailing '\n' (which results in a blank line after the
         Binary field).
 
-        This test ensures that when our parser is updated to store
-        the binary field in the same way that apt_pkg.ParseTagFiles would,
-        that it will continue to be written correctly to index files.
+        This test ensures that when our parser is updated to store the
+        binary field in the same way that apt_pkg.TagFile would, that it
+        will continue to be written correctly to index files.
         """
         pub_source = self.getPubSource()
 
@@ -385,19 +412,18 @@ class TestNativeArchiveIndexesReparsing(TestNativePublishingBase):
         pub_source.sourcepackagerelease.dsc_binaries = (
             'foo_bin,\n bar_bin,\n zed_bin')
 
-        parser = self.write_stanza_and_reparse(pub_source.getIndexStanza())
+        section = self.write_stanza_and_reparse(pub_source.getIndexStanza())
 
-        self.assertEqual('foo', parser.Section['Package'])
+        self.assertEqual('foo', section['Package'])
 
         # Without the fix, this raises a key-error due to apt-pkg not
         # being able to parse the file.
         self.assertEqual(
-            '666', parser.Section['Version'],
+            '666', section['Version'],
             'The Version field should be parsed correctly.')
 
         # Without the fix, the second binary would not be parsed at all.
-        self.assertEqual(
-            'foo_bin,\n bar_bin,\n zed_bin', parser.Section['Binary'])
+        self.assertEqual('foo_bin,\n bar_bin,\n zed_bin', section['Binary'])
 
 
 class TestIndexStanzaFieldsHelper(unittest.TestCase):
@@ -408,7 +434,6 @@ class TestIndexStanzaFieldsHelper(unittest.TestCase):
 
     Provides an method to format the option in a ready-to-use string.
     """
-
 
     def test_simple(self):
         fields = IndexStanzaFields()
@@ -427,7 +452,6 @@ class TestIndexStanzaFieldsHelper(unittest.TestCase):
         fields.append('one', 'um')
         fields.append('three', 'tres')
         fields.append('two', 'dois')
-        fields.append(None, None)
 
         self.assertEqual(
             ['one: um', 'three: tres', 'two: dois',

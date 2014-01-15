@@ -1,4 +1,5 @@
-= ExternalBugTracker bug imports =
+ExternalBugTracker bug imports
+==============================
 
 Some ExternalBugTracker implementations support importing bugs from the
 remote bug tracker into Launchpad. They indicate that they support doing
@@ -46,17 +47,16 @@ imported into, and the remote bug number. At the moment only
 distributions are supported as the bug target.
 
     # Make sane data to play this test.
-    >>> from canonical.config import config
-    >>> from canonical.testing.layers import LaunchpadZopelessLayer
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> debian = getUtility(IDistributionSet).getByName('debian')
-    >>> evolution_dsp = debian.getSourcePackage('evolution')
-    >>> ignore = factory.makeSourcePackagePublishingHistory(
-    ...     distroseries=debian.currentseries,
-    ...     sourcepackagename=evolution_dsp.sourcepackagename)
-    >>> transaction.commit()
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> from lp.services.log.logger import FakeLogger
+    >>> from lp.testing.dbuser import lp_dbuser
+    >>> from lp.testing.layers import LaunchpadZopelessLayer
+
+    >>> with lp_dbuser():
+    ...     debian = getUtility(IDistributionSet).getByName('debian')
+    ...     evolution_dsp = debian.getSourcePackage('evolution')
+    ...     ignore = factory.makeSourcePackagePublishingHistory(
+    ...         distroseries=debian.currentseries,
+    ...         sourcepackagename=evolution_dsp.sourcepackagename)
 
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> debian = getUtility(IDistributionSet).getByName('debian')
@@ -64,7 +64,8 @@ distributions are supported as the bug target.
     ...     'package': 'evolution',
     ...     'reporter': ("Joe Bloggs", "joe.bloggs@example.com")}
     >>> transaction.commit()
-    >>> bug_watch_updater = CheckwatchesMaster(LaunchpadZopelessLayer.txn)
+    >>> bug_watch_updater = CheckwatchesMaster(
+    ...     LaunchpadZopelessLayer.txn, logger=FakeLogger())
     >>> bug = bug_watch_updater.importBug(
     ...     external_bugtracker, bugtracker, debian, '3')
 
@@ -79,7 +80,7 @@ by getBugSummaryAndDescription().
 The bug reporter, as returned by getBugReporter(), got automatically created.
 
     >>> getUtility(IPersonSet).getByEmail(
-    ...     'joe.bloggs@example.com') is not None
+    ...     'joe.bloggs@example.com', filter_status=False) is not None
     True
     >>> print bug.owner.displayname
     Joe Bloggs
@@ -88,7 +89,8 @@ Since he didn't have a Launchpad account before, he doesn't have a
 preferred e-mail address, and the one that is associated with his
 account is marked as NEW, since we don't know whether it's valid.
 
-    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+    >>> from lp.services.identity.interfaces.emailaddress import (
+    ...     IEmailAddressSet)
     >>> reporter_email_addresses = getUtility(IEmailAddressSet).getByPerson(
     ...     bug.owner)
     >>> for email_address in reporter_email_addresses:
@@ -122,7 +124,8 @@ kept in sync.
     u'3'
 
 
-=== Non-existent source package ===
+Non-existent source package
+---------------------------
 
 If a package doesn't exist in Launchpad already, it will be filed on the
 distribution itself, with no source package specified. The package is
@@ -137,7 +140,7 @@ the script gets notified about it.
     None
     >>> bug = bug_watch_updater.importBug(
     ...     external_bugtracker, bugtracker, debian, '5')
-    WARNING:...:Unknown debian package (#5 at http://...): no-such-package
+    WARNING Unknown debian package (#5 at http://...): no-such-package
     (OOPS-...)
 
     >>> [added_task] = bug.bugtasks
@@ -147,7 +150,8 @@ the script gets notified about it.
     None
 
 
-=== Syncing status ===
+Syncing status
+--------------
 
 After the bug watch has been created for the imported bug, the status is
 not synced immediately. The status will be updated the next time all the
@@ -160,7 +164,8 @@ one request per imported bug.
     None
 
 
-=== Reporter already registered in Launchpad ===
+Reporter already registered in Launchpad
+----------------------------------------
 
 Even if the reporter of the bug has an account in Launchpad (and thus a
 valid e-mail address), he still won't be subscribed to the imported bug.

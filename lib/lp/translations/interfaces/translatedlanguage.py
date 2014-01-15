@@ -1,8 +1,6 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 from zope.interface import (
     Attribute,
     Interface,
@@ -13,7 +11,7 @@ from zope.schema import (
     Object,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.person import IPerson
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.translations.interfaces.hastranslationtemplates import (

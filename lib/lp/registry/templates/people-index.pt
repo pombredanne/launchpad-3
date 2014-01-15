@@ -105,9 +105,12 @@
               </tr>
             </table>
           </form>
-          <script type="text/javascript"><!--
-            setFocusByName('name');
-          // --></script>
+          <script type="text/javascript">
+              LPJS.use('lp', function (Y) {
+                  setFocusByName('name');
+              });
+          </script>
+
         </div>
 
         <tal:block condition="not: batch">

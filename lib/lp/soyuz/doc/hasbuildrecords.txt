@@ -28,7 +28,7 @@ status,
 
 filtering by source package name,
 
-    >>> hoary.getBuildRecords(name='pm').count()
+    >>> hoary.getBuildRecords(name=u'pm').count()
     2
 
 filtering by the pocket to which the build was published,
@@ -40,7 +40,7 @@ filtering by the pocket to which the build was published,
 
 and filtering by the build architecture tag.
 
-    >>> builds = ubuntu['warty'].getBuildRecords(name='firefox',
+    >>> builds = ubuntu['warty'].getBuildRecords(name=u'firefox',
     ...                                          arch_tag='i386')
     >>> for build in builds:
     ...     print build.title

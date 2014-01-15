@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for package queue."""
@@ -6,28 +6,39 @@
 __metaclass__ = type
 
 __all__ = [
+    'PackageUploadNavigation',
     'QueueItemsView',
     ]
 
-import cgi
-import operator
+from operator import attrgetter
 
 from lazr.delegates import delegates
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.model.distribution import Distribution
 from lp.services.database.bulk import (
     load_referencing,
     load_related,
     )
 from lp.services.job.model.job import Job
+from lp.services.librarian.browser import FileNavigationMixin
+from lp.services.librarian.model import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
+from lp.services.webapp import (
+    GetitemNavigation,
+    LaunchpadView,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.escaping import structured
 from lp.soyuz.enums import (
     PackagePublishingPriority,
     PackageUploadStatus,
@@ -35,18 +46,28 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.files import (
-    IBinaryPackageFileSet,
-    ISourcePackageReleaseFileSet,
-    )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.publishing import name_priority_map
 from lp.soyuz.interfaces.queue import (
     IPackageUpload,
     IPackageUploadSet,
+    QueueAdminUnauthorizedError,
     QueueInconsistentStateError,
     )
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.files import (
+    BinaryPackageFile,
+    SourcePackageReleaseFile,
+    )
+from lp.soyuz.model.packagecopyjob import PackageCopyJob
+from lp.soyuz.model.queue import (
+    PackageUploadBuild,
+    PackageUploadSource,
+    )
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 QUEUE_SIZE = 30
@@ -113,8 +134,7 @@ class QueueItemsView(LaunchpadView):
         build_ids = [binary_file.binarypackagerelease.build.id
                      for binary_file in binary_files]
         upload_set = getUtility(IPackageUploadSet)
-        package_upload_builds = upload_set.getBuildByBuildIDs(
-            build_ids)
+        package_upload_builds = upload_set.getBuildByBuildIDs(build_ids)
         package_upload_builds_dict = {}
         for package_upload_build in package_upload_builds:
             package_upload_builds_dict[
@@ -124,8 +144,8 @@ class QueueItemsView(LaunchpadView):
     def binary_files_dict(self, package_upload_builds_dict, binary_files):
         """Build a dictionary of lists of binary files keyed by upload ID.
 
-        To do this efficiently we need to get all the PacakgeUploadBuild
-        records at once, otherwise the Ibuild.package_upload property
+        To do this efficiently we need to get all the PackageUploadBuild
+        records at once, otherwise the IBuild.package_upload property
         causes one query per iteration of the loop.
         """
         build_upload_files = {}
@@ -139,24 +159,6 @@ class QueueItemsView(LaunchpadView):
                 build_upload_files[upload_id] = []
             build_upload_files[upload_id].append(binary_file)
         return build_upload_files, binary_package_names
-
-    def source_dict(self, upload_ids, source_files):
-        """Return a dictionary of PackageUploadSource keyed on SPR ID.
-
-        :param upload_ids: A list of PackageUpload IDs.
-        """
-        sourcepackagerelease_ids = [
-            source_file.sourcepackagerelease.id
-            for source_file in source_files]
-
-        upload_set = getUtility(IPackageUploadSet)
-        pkg_upload_sources = upload_set.getSourceBySourcePackageReleaseIDs(
-            sourcepackagerelease_ids)
-        package_upload_source_dict = {}
-        for pkg_upload_source in pkg_upload_sources:
-            package_upload_source_dict[
-                pkg_upload_source.sourcepackagerelease.id] = pkg_upload_source
-        return package_upload_source_dict
 
     def source_files_dict(self, package_upload_source_dict, source_files):
         """Return a dictionary of source files keyed on PackageUpload ID."""
@@ -193,16 +195,16 @@ class QueueItemsView(LaunchpadView):
 
     def loadPackageCopyJobs(self, uploads):
         """Batch-load `PackageCopyJob`s and related information."""
-        # Avoid circular imports.
-        from lp.registry.model.person import Person
-        from lp.soyuz.model.archive import Archive
-        from lp.soyuz.model.packagecopyjob import PackageCopyJob
-
         package_copy_jobs = load_related(
             PackageCopyJob, uploads, ['package_copy_job_id'])
-        load_related(Archive, package_copy_jobs, ['source_archive_id'])
+        archives = load_related(
+            Archive, package_copy_jobs, ['source_archive_id'])
+        load_related(Distribution, archives, ['distributionID'])
+        person_ids = map(attrgetter('ownerID'), archives)
         jobs = load_related(Job, package_copy_jobs, ['job_id'])
-        load_related(Person, jobs, ['requester_id'])
+        person_ids.extend(map(attrgetter('requester_id'), jobs))
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            person_ids, need_validity=True, need_icon=True))
 
     def decoratedQueueBatch(self):
         """Return the current batch, converted to decorated objects.
@@ -211,43 +213,39 @@ class QueueItemsView(LaunchpadView):
         CompletePackageUpload.  This avoids many additional SQL queries
         in the +queue template.
         """
-        # Avoid circular imports.
-        from lp.soyuz.model.queue import PackageUploadSource
-        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-
         uploads = list(self.batchnav.currentBatch())
 
         if len(uploads) == 0:
             return None
 
-        # Operate only on upload and/or processed delayed-copies.
-        upload_ids = [
-            upload.id
-            for upload in uploads
-            if not (upload.is_delayed_copy and
-                    upload.status != PackageUploadStatus.DONE)]
-        binary_file_set = getUtility(IBinaryPackageFileSet)
-        binary_files = binary_file_set.getByPackageUploadIDs(upload_ids)
-        binary_file_set.loadLibraryFiles(binary_files)
-        packageuploadsources = load_referencing(
+        upload_ids = [upload.id for upload in uploads]
+        puses = load_referencing(
             PackageUploadSource, uploads, ['packageuploadID'])
-        source_file_set = getUtility(ISourcePackageReleaseFileSet)
-        source_files = source_file_set.getByPackageUploadIDs(upload_ids)
+        pubs = load_referencing(
+            PackageUploadBuild, uploads, ['packageuploadID'])
 
         source_sprs = load_related(
-            SourcePackageRelease, packageuploadsources,
-            ['sourcepackagereleaseID'])
+            SourcePackageRelease, puses, ['sourcepackagereleaseID'])
+        bpbs = load_related(BinaryPackageBuild, pubs, ['buildID'])
+        bprs = load_referencing(BinaryPackageRelease, bpbs, ['buildID'])
+        source_files = load_referencing(
+            SourcePackageReleaseFile, source_sprs, ['sourcepackagereleaseID'])
+        binary_files = load_referencing(
+            BinaryPackageFile, bprs, ['binarypackagereleaseID'])
+        file_lfas = load_related(
+            LibraryFileAlias, source_files + binary_files, ['libraryfileID'])
+        load_related(LibraryFileContent, file_lfas, ['contentID'])
 
         # Get a dictionary of lists of binary files keyed by upload ID.
-        package_upload_builds_dict = self.builds_dict(
-            upload_ids, binary_files)
+        package_upload_builds_dict = self.builds_dict(upload_ids, binary_files)
 
         build_upload_files, binary_package_names = self.binary_files_dict(
             package_upload_builds_dict, binary_files)
 
         # Get a dictionary of lists of source files keyed by upload ID.
-        package_upload_source_dict = self.source_dict(
-            upload_ids, source_files)
+        package_upload_source_dict = {}
+        for pus in puses:
+            package_upload_source_dict[pus.sourcepackagereleaseID] = pus
         source_upload_files = self.source_files_dict(
             package_upload_source_dict, source_files)
 
@@ -311,6 +309,7 @@ class QueueItemsView(LaunchpadView):
         # Retrieve the form data.
         accept = self.request.form.get('Accept', '')
         reject = self.request.form.get('Reject', '')
+        rejection_comment = self.request.form.get('rejection_comment', '')
         component_override = self.request.form.get('component_override', '')
         section_override = self.request.form.get('section_override', '')
         priority_override = self.request.form.get('priority_override', '')
@@ -318,6 +317,11 @@ class QueueItemsView(LaunchpadView):
 
         # If no boxes were checked, bail out.
         if (not accept and not reject) or not queue_ids:
+            return
+
+        # If we're asked to reject with no comment, bail.
+        if reject and not rejection_comment:
+            self.error = 'Rejection comment required.'
             return
 
         # Determine if there is a source override requested.
@@ -333,10 +337,12 @@ class QueueItemsView(LaunchpadView):
         # Get a list of components for which the user has rights to
         # override to or from.
         permission_set = getUtility(IArchivePermissionSet)
-        permissions = permission_set.componentsForQueueAdmin(
+        component_permissions = permission_set.componentsForQueueAdmin(
             self.context.main_archive, self.user)
         allowed_components = set(
-            permission.component for permission in permissions)
+            permission.component for permission in component_permissions)
+        pocket_permissions = permission_set.pocketsForQueueAdmin(
+            self.context.main_archive, self.user)
 
         try:
             if section_override:
@@ -383,12 +389,25 @@ class QueueItemsView(LaunchpadView):
             # Sources and binaries are mutually exclusive when it comes to
             # overriding, so only one of these will be set.
             try:
+                for permission in pocket_permissions:
+                    if (permission.pocket == queue_item.pocket and
+                        permission.distroseries in (
+                            None, queue_item.distroseries)):
+                        item_allowed_components = (
+                            queue_item.distroseries.upload_components)
+                else:
+                    item_allowed_components = allowed_components
                 source_overridden = queue_item.overrideSource(
-                    new_component, new_section, allowed_components)
+                    new_component, new_section, item_allowed_components)
+                binary_changes = [{
+                    "component": new_component,
+                    "section": new_section,
+                    "priority": new_priority,
+                    }]
                 binary_overridden = queue_item.overrideBinaries(
-                    new_component, new_section, new_priority,
-                    allowed_components)
-            except QueueInconsistentStateError, info:
+                    binary_changes, item_allowed_components)
+            except (QueueAdminUnauthorizedError,
+                    QueueInconsistentStateError) as info:
                 failure.append("FAILED: %s (%s)" %
                                (queue_item.displayname, info))
                 continue
@@ -408,8 +427,13 @@ class QueueItemsView(LaunchpadView):
                     'priority'] = new_priority.title.lower()
 
             try:
-                getattr(self, 'queue_action_' + action)(queue_item)
-            except QueueInconsistentStateError, info:
+                if action == 'accept':
+                    queue_item.acceptFromQueue(user=self.user)
+                elif action == 'reject':
+                    queue_item.rejectFromQueue(
+                        user=self.user, comment=rejection_comment)
+            except (QueueAdminUnauthorizedError,
+                    QueueInconsistentStateError) as info:
                 failure.append('FAILED: %s (%s)' %
                                (queue_item.displayname, info))
             else:
@@ -433,14 +457,6 @@ class QueueItemsView(LaunchpadView):
         url = str(self.request.URL) + "?queue_state=%s" % self.state.value
         self.request.response.redirect(url)
 
-    def queue_action_accept(self, queue_item):
-        """Reject the queue item passed."""
-        queue_item.acceptFromQueue()
-
-    def queue_action_reject(self, queue_item):
-        """Accept the queue item passed."""
-        queue_item.rejectFromQueue()
-
     def sortedSections(self):
         """Possible sections for the context distroseries.
 
@@ -448,11 +464,15 @@ class QueueItemsView(LaunchpadView):
         sorted by their name.
         """
         return sorted(
-            self.context.sections, key=operator.attrgetter('name'))
+            self.context.sections, key=attrgetter('name'))
 
     def priorities(self):
         """An iterable of priorities from PackagePublishingPriority."""
         return (priority for priority in PackagePublishingPriority)
+
+
+class PackageUploadNavigation(GetitemNavigation, FileNavigationMixin):
+    usedfor = IPackageUpload
 
 
 class CompletePackageUpload:
@@ -499,30 +519,10 @@ class CompletePackageUpload:
 
         if self.contains_source:
             self.sourcepackagerelease = self.sources[0].sourcepackagerelease
-
-        if self.contains_source:
             self.package_sets = package_sets.get(
                 self.sourcepackagerelease.sourcepackagenameID, [])
         else:
             self.package_sets = []
-
-    @property
-    def pending_delayed_copy(self):
-        """Whether the context is a delayed-copy pending processing."""
-        return (
-            self.is_delayed_copy and self.status != PackageUploadStatus.DONE)
-
-    @property
-    def changesfile(self):
-        """Return the upload changesfile object, even for delayed-copies.
-
-        If the context `PackageUpload` is a delayed-copy, which doesn't
-        have '.changesfile' by design, return the changesfile originally
-        used to upload the contained source.
-        """
-        if self.is_delayed_copy:
-            return self.sourcepackagerelease.upload_changesfile
-        return self.context.changesfile
 
     @property
     def display_package_sets(self):
@@ -561,11 +561,8 @@ class CompletePackageUpload:
         # These should really be sprites!
         if title is None:
             title = alt
-        return '<img alt="[%s]" src="/@@/%s" title="%s" />' % (
-            cgi.escape(alt, quote=True),
-            icon,
-            cgi.escape(title, quote=True),
-            )
+        return structured(
+            '<img alt="[%s]" src="/@@/%s" title="%s" />', alt, icon, title)
 
     def composeIconList(self):
         """List icons that should be shown for this upload."""
@@ -578,34 +575,29 @@ class CompletePackageUpload:
             (self.contains_installer, ("Installer", 'ubuntu-icon')),
             (self.contains_upgrader, ("Upgrader", 'ubuntu-icon')),
             (self.contains_ddtp, (ddtp, 'ubuntu-icon')),
+            (self.contains_uefi, ("Signed UEFI boot loader", 'ubuntu-icon')),
             ]
         return [
             self.composeIcon(*details)
-            for condition, details in potential_icons
-                if condition]
+            for condition, details in potential_icons if condition]
 
     def composeNameAndChangesLink(self):
         """Compose HTML: upload name and link to changes file."""
-        raw_displayname = self.displayname
-        displayname = cgi.escape(raw_displayname)
-        if self.pending_delayed_copy or self.changesfile is None:
-            return displayname
+        if self.changesfile is None:
+            return self.displayname
         else:
-            return '<a href="%s" title="Changes file for %s">%s</a>' % (
-                self.changesfile.http_url,
-                cgi.escape(self.displayname, quote=True),
-                displayname)
+            return structured(
+                '<a href="%s" title="Changes file for %s">%s</a>',
+                self.changesfile.http_url, self.displayname,
+                self.displayname)
 
     @property
     def icons_and_name(self):
         """Icon list and name, linked to changes file if appropriate."""
         iconlist_id = "queue%d-iconlist" % self.id
         icons = self.composeIconList()
+        icon_string = structured('\n'.join(['%s'] * len(icons)), *icons)
         link = self.composeNameAndChangesLink()
-        return """
-            <div id="%s">
-              %s
-              %s
-              (%s)
-            </div>
-            """ % (iconlist_id, '\n'.join(icons), link, self.displayarchs)
+        return structured(
+            """<div id="%s"> %s %s (%s)</div>""",
+            iconlist_id, icon_string, link, self.displayarchs).escapedtext

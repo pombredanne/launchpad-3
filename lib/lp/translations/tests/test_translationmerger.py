@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 
-from datetime import timedelta
 import gc
 from logging import ERROR
 
@@ -11,15 +10,15 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.log.logger import FakeLogger
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.sampledata import ADMIN_EMAIL
-from lp.translations.interfaces.pofiletranslator import IPOFileTranslatorSet
 from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.potranslation import POTranslation
@@ -53,7 +52,8 @@ class TranslatableProductMixin:
         self.stable_template.iscurrent = False
         self.templates = [self.trunk_template, self.stable_template]
 
-        self.script = MessageSharingMerge('tms-merging-test', test_args=[])
+        self.script = MessageSharingMerge(
+            'tms-merging-test', test_args=[], logger=FakeLogger())
         self.script.logger.setLevel(ERROR)
         tm = TransactionManager(self.script.txn, self.script.options.dry_run)
         self.merger = TranslationMerger(self.templates, tm)
@@ -77,8 +77,7 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
         # one.
         trunk_potmsgset = self.factory.makePOTMsgSet(
             self.trunk_template, singular='foo')
-        stable_potmsgset = self.factory.makePOTMsgSet(
-            self.stable_template, singular='foo')
+        self.factory.makePOTMsgSet(self.stable_template, singular='foo')
 
         self.merger.mergePOTMsgSets()
 
@@ -93,8 +92,7 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
         # produced.  It will produce the same situation.
         trunk_potmsgset = self.factory.makePOTMsgSet(
             self.trunk_template, singular='foo')
-        stable_potmsgset = self.factory.makePOTMsgSet(
-            self.stable_template, singular='foo')
+        self.factory.makePOTMsgSet(self.stable_template, singular='foo')
 
         self.merger.mergePOTMsgSets()
         self.merger.mergePOTMsgSets()
@@ -301,7 +299,6 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
         self.merger.mergePOTMsgSets()
 
         # The POTMsgSets are now merged.
-        potmsgset = self.trunk_template.getPOTMsgSetByMsgIDText('foo')
 
         # The "losing" message stays current within its template.
         self.assertEqual(self._getTranslations(), ('bar2', 'splat2'))
@@ -511,58 +508,6 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
         tms = trunk_message.potmsgset.getAllTranslationMessages()
         self.assertEqual(list(tms), [trunk_message])
 
-    def test_clashingPOFileTranslatorEntries(self):
-        # POFileTranslator is maintained by a trigger on
-        # TranslationMessage.  Fiddling with TranslationTemplateItems
-        # directly bypasses it, so the script must make sure that
-        # POFileTranslator respects its unique constraints.
-
-        # In this scenario, "trunk" has a TranslationMessage with a
-        # matching POFileTranslator entry.  This message is happy where
-        # it is; it's not changing in any way during the test.
-        poftset = getUtility(IPOFileTranslatorSet)
-
-        translator = self.trunk_template.owner
-        self.trunk_pofile.owner = translator
-        self.stable_pofile.owner = translator
-
-        contented_potmsgset = self.factory.makePOTMsgSet(
-            self.trunk_template, singular='snut', sequence=2)
-        contented_message = self._makeTranslationMessage(
-            self.trunk_pofile, contented_potmsgset, 'druf', False)
-        self.assertEqual(translator, contented_message.submitter)
-        poft = poftset.getForPersonPOFile(translator, self.trunk_pofile)
-        self.assertEqual(poft.latest_message, contented_message)
-
-        # Then there's the pair of POTMsgSets that are identical between
-        # trunk and stable.  This one is translated only in stable.
-        # Merging will transfer that TranslationMessage from
-        # stable to trunk (where it becomes the shared message) through
-        # direct manipulation of TranslationTemplateItem.
-        stable_message = self._makeTranslationMessage(
-                self.stable_pofile, self.stable_potmsgset, 'fulb', False)
-        self.assertEqual(
-            stable_message.submitter, contented_message.submitter)
-
-        stable_message = removeSecurityProxy(stable_message)
-
-        # As it happens, this message is more recent than the happy one.
-        # This doesn't matter except it makes our test more predictable.
-        stable_message.date_created += timedelta(0, 0, 1)
-        poft = poftset.getForPersonPOFile(translator, self.stable_pofile)
-        self.assertEqual(poft.latest_message, stable_message)
-        removeSecurityProxy(poft).date_last_touched = (
-            stable_message.date_created)
-
-        # Now the migration script runs.  This also carries the
-        # POFileTranslator record for stable_message into trunk_pofile.
-        # The one for contented_message disappears in the process.
-        self.merger.mergePOTMsgSets()
-        self.merger.mergeTranslationMessages()
-
-        poft = poftset.getForPersonPOFile(translator, self.trunk_pofile)
-        self.assertEqual(poft.latest_message, stable_message)
-
 
 class TestRemoveDuplicates(TestCaseWithFactory, TranslatedProductMixin):
     """Test _scrubPOTMsgSetTranslations and friends."""
@@ -636,7 +581,6 @@ class TestRemoveDuplicates(TestCaseWithFactory, TranslatedProductMixin):
         message2.is_current_ubuntu = True
         message2.potmsgset = self.trunk_potmsgset
         message2.potemplate = self.trunk_template
-        ids = (message1.id, message2.id)
 
         self.merger._scrubPOTMsgSetTranslations(self.trunk_potmsgset)
 
@@ -828,7 +772,7 @@ class TestFindMergablePackagings(TestCaseWithFactory):
 
     def test_no_templates(self):
         """A Packaging with no templates is ignored."""
-        packaging = self.makePackagingLink()
+        self.makePackagingLink()
         self.assertContentEqual(
             [], TranslationMerger.findMergeablePackagings())
 

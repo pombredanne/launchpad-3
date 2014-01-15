@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -16,24 +16,25 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.launchpad import helpers
-from canonical.launchpad.interfaces.launchpad import IRosettaApplication
-from canonical.launchpad.webapp import (
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
+from lp.services.config import config
+from lp.services.geoip.interfaces import IRequestPreferredLanguages
+from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
     Navigation,
     stepto,
     )
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import IProductSet
-from lp.services.geoip.interfaces import IRequestPreferredLanguages
-from lp.services.propertycache import cachedproperty
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import ILaunchpadRoot
+from lp.services.webapp.publisher import RedirectionView
+from lp.services.worlddata.helpers import preferred_or_request_languages
 from lp.services.worlddata.interfaces.country import ICountry
+from lp.translations.interfaces.translations import IRosettaApplication
 from lp.translations.publisher import TranslationsLayer
 
 
@@ -44,7 +45,7 @@ class TranslationsMixin:
     def translatable_languages(self):
         """Return a set of the Person's translatable languages."""
         english = getUtility(ILaunchpadCelebrities).english
-        languages = helpers.preferred_or_request_languages(self.request)
+        languages = preferred_or_request_languages(self.request)
         if english in languages:
             return [lang for lang in languages if lang != english]
         return languages
@@ -58,6 +59,8 @@ class TranslationsMixin:
 
 class RosettaApplicationView(LaunchpadView, TranslationsMixin):
     """View for various top-level Translations pages."""
+
+    page_title = 'Launchpad Translations'
 
     @property
     def ubuntu_translationseries(self):
@@ -102,6 +105,7 @@ class RosettaApplicationView(LaunchpadView, TranslationsMixin):
 class TranslatableProductsView(LaunchpadView):
     """List of translatable products."""
     label = "Projects with translations in Launchpad"
+    page_title = label
 
     @cachedproperty
     def batchnav(self):
@@ -110,13 +114,9 @@ class TranslatableProductsView(LaunchpadView):
             getUtility(IProductSet).getTranslatables(), self.request)
 
 
-class RosettaStatsView:
+class RosettaStatsView(LaunchpadView):
     """A view class for objects that support IRosettaStats. This is mainly
     used for the sortable untranslated percentage."""
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
 
     def sortable_untranslated(self):
         return '%06.2f' % self.context.untranslatedPercentage()
@@ -155,35 +155,24 @@ class RosettaApplicationNavigation(Navigation):
         return getUtility(IProductSet)
 
 
-class PageRedirectView:
-    """Redirects to translations site for the given page."""
-
-    def __init__(self, context, request, page):
-        self.context = context
-        self.request = request
-        self.page = page
-
-    def __call__(self):
-        """Redirect to self.page in the translations site."""
-        self.request.response.redirect(
-            '/'.join([
-                canonical_url(self.context, rootsite='translations'),
-                self.page,
-                ]), status=301)
-
-
-class TranslateRedirectView(PageRedirectView):
+class TranslateRedirectView(RedirectionView):
     """Redirects to translations site for +translate page."""
 
     def __init__(self, context, request):
-        PageRedirectView.__init__(self, context, request, '+translate')
+        target = canonical_url(
+            context, rootsite='translations', view_name='+translate')
+        super(TranslateRedirectView, self).__init__(
+            target, request, status=301)
 
 
-class TranslationsRedirectView(PageRedirectView):
+class TranslationsRedirectView(RedirectionView):
     """Redirects to translations site for +translations page."""
 
     def __init__(self, context, request):
-        PageRedirectView.__init__(self, context, request, '+translations')
+        target = canonical_url(
+            context, rootsite='translations', view_name='+translations')
+        super(TranslationsRedirectView, self).__init__(
+            target, request, status=301)
 
 
 class TranslationsVHostBreadcrumb(Breadcrumb):

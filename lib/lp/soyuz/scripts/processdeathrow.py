@@ -8,8 +8,6 @@ This script removes obsolete files from the selected archive(s) pool.
 # Disable warning on catching bare 'Exception', it's needed as a
 # production artifact for continuing processing data that doesn't
 # have problems.
-# pylint: disable-msg=W0703
-
 __metaclass__ = type
 
 __all__ = [
@@ -59,10 +57,9 @@ class DeathRowProcessor(LaunchpadCronScript):
     def processDeathRow(self, archive):
         """Process death-row for the given archive.
 
-        It handles the current DB transaction according with the results
-        of the operatin just executed, i.e, commits successfull runs and
-        aborts runs with errors. It also respects 'dry-run' command-line
-        option.
+        It handles the current DB transaction according to the results of
+        the operation just executed, i.e, commits successful runs and aborts
+        runs with errors. It also respects 'dry-run' command-line option.
         """
         death_row = getDeathRow(
             archive, self.logger, self.options.pool_root)
@@ -70,7 +67,7 @@ class DeathRowProcessor(LaunchpadCronScript):
             "Unpublishing death row for %s." % archive.displayname)
         try:
             death_row.reap(self.options.dry_run)
-        except Exception, e:
+        except Exception:
             self.logger.exception(
                 "Unexpected exception while doing death-row unpublish")
             self.txn.abort()

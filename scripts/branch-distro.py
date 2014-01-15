@@ -7,7 +7,10 @@ import _pythonpath
 
 from lp.codehosting.branchdistro import DistroBrancher
 from lp.codehosting.vfs import get_rw_server
-from lp.services.scripts.base import LaunchpadScript, LaunchpadScriptFailure
+from lp.services.scripts.base import (
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
 
 
 class BranchDistroScript(LaunchpadScript):

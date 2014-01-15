@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -14,16 +14,14 @@ __all__ = [
     'DistributionSourcePackageOverviewMenu',
     'DistributionSourcePackagePublishingHistoryView',
     'DistributionSourcePackageView',
+    'PublishingHistoryViewMixin',
     ]
 
-from datetime import datetime
 import itertools
 import operator
 
 from lazr.delegates import delegates
-from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.utils import smartquote
-import pytz
 from zope.component import (
     adapter,
     getUtility,
@@ -33,36 +31,18 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.webapp import (
-    action,
-    canonical_url,
-    LaunchpadEditFormView,
-    LaunchpadView,
-    Navigation,
-    redirection,
-    StandardLaunchpadFacets,
-    )
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import IBreadcrumb
-from canonical.launchpad.webapp.menu import (
-    ApplicationMenu,
-    enabled_with_permission,
-    Link,
-    NavigationMenu,
-    )
-from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 from lp.answers.browser.questiontarget import (
     QuestionTargetAnswersMenu,
     QuestionTargetFacetMixin,
     QuestionTargetTraversalMixin,
     )
 from lp.answers.enums import QuestionStatus
-from lp.app.browser.tales import CustomizableFormatter
-from lp.app.browser.stringformatter import (
-    extract_bug_numbers,
-    extract_email_addresses,
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadEditFormView,
     )
+from lp.app.browser.stringformatter import extract_email_addresses
+from lp.app.browser.tales import CustomizableFormatter
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
@@ -71,7 +51,8 @@ from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
-from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.registry.browser import add_subscribe_link
 from lp.registry.browser.pillar import PillarBugsMenu
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -80,7 +61,26 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.helpers import shortlist
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    Navigation,
+    redirection,
+    StandardLaunchpadFacets,
+    )
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import IBreadcrumb
+from lp.services.webapp.menu import (
+    ApplicationMenu,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
+from lp.services.webapp.publisher import LaunchpadView
+from lp.services.webapp.sorting import sorted_dotted_numbers
 from lp.soyuz.browser.sourcepackagerelease import linkify_changelog
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
@@ -122,18 +122,18 @@ class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
 
     def overview(self):
         text = 'Overview'
-        summary = 'General information about {0}'.format(
+        summary = u'General information about {0}'.format(
             self.context.displayname)
         return Link('', text, summary)
 
     def bugs(self):
         text = 'Bugs'
-        summary = 'Bugs reported about {0}'.format(self.context.displayname)
+        summary = u'Bugs reported about {0}'.format(self.context.displayname)
         return Link('', text, summary)
 
     def branches(self):
         text = 'Code'
-        summary = 'Branches for {0}'.format(self.context.displayname)
+        summary = u'Branches for {0}'.format(self.context.displayname)
         return Link('', text, summary)
 
 
@@ -273,6 +273,7 @@ class DistributionSourcePackageActionMenu(
 class DistributionSourcePackageBaseView(LaunchpadView):
     """Common features to all `DistributionSourcePackage` views."""
 
+    @property
     def releases(self):
         """All releases for this `IDistributionSourcePackage`."""
 
@@ -281,48 +282,38 @@ class DistributionSourcePackageBaseView(LaunchpadView):
                 text is not None and isinstance(text, basestring)
                 and len(text.strip()) > 0)
 
-        dspr_pubs = self.context.getReleasesAndPublishingHistory()
+        def decorate(dspr_pubs):
+            sprs = [dspr.sourcepackagerelease for (dspr, spphs) in dspr_pubs]
+            # Preload email/person data only if user is logged on. In
+            # the opposite case the emails in the changelog will be
+            # obfuscated anyway and thus cause no database lookups.
+            the_changelog = '\n'.join(
+                [spr.changelog_entry for spr in sprs
+                if not_empty(spr.changelog_entry)])
+            if self.user:
+                self._person_data = dict(
+                    [(email.email, person) for (email, person) in
+                        getUtility(IPersonSet).getByEmails(
+                            extract_email_addresses(the_changelog),
+                            include_hidden=False)])
+            else:
+                self._person_data = None
+            # Collate diffs for relevant SourcePackageReleases
+            pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(
+                sprs, preload_for_display=True)
+            spr_diffs = {}
+            for spr, diffs in itertools.groupby(
+                    pkg_diffs, operator.attrgetter('to_source')):
+                spr_diffs[spr] = list(diffs)
 
-        # Return as early as possible to avoid unnecessary processing.
-        if len(dspr_pubs) == 0:
-            return []
-
-        sprs = [dspr.sourcepackagerelease for (dspr, spphs) in dspr_pubs]
-        # Pre-load the bugs and persons referenced by the +changelog page from
-        # the database.
-        # This will improve the performance of the ensuing changelog
-        # linkification.
-        the_changelog = '\n'.join(
-            [spr.changelog_entry for spr in sprs
-             if not_empty(spr.changelog_entry)])
-        unique_bugs = extract_bug_numbers(the_changelog)
-        self._bug_data = list(
-            getUtility(IBugSet).getByNumbers(
-                [int(key) for key in unique_bugs.keys()]))
-        # Preload email/person data only if user is logged on. In the opposite
-        # case the emails in the changelog will be obfuscated anyway and thus
-        # cause no database lookups.
-        if self.user:
-            self._person_data = dict(
-                [(email.email, person) for (email, person) in
-                    getUtility(IPersonSet).getByEmails(
-                        extract_email_addresses(the_changelog),
-                        include_hidden=False)])
-        else:
-            self._person_data = None
-        # Collate diffs for relevant SourcePackageReleases
-        pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(
-            sprs, preload_for_display=True)
-        spr_diffs = {}
-        for spr, diffs in itertools.groupby(pkg_diffs,
-                                            operator.attrgetter('to_source')):
-            spr_diffs[spr] = list(diffs)
-
-        return [
-            DecoratedDistributionSourcePackageRelease(
-                dspr, spphs, spr_diffs.get(dspr.sourcepackagerelease, []),
-                self._person_data, self.user)
-            for (dspr, spphs) in dspr_pubs]
+            return [
+                DecoratedDistributionSourcePackageRelease(
+                    dspr, spphs, spr_diffs.get(dspr.sourcepackagerelease, []),
+                    self._person_data, self.user)
+                for (dspr, spphs) in dspr_pubs]
+        return DecoratedResultSet(
+            self.context.getReleasesAndPublishingHistory(),
+            bulk_decorator=decorate)
 
 
 class DistributionSourcePackageView(DistributionSourcePackageBaseView,
@@ -334,11 +325,6 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
         super(DistributionSourcePackageView, self).initialize()
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user)
-
-        pub = self.context.latest_overall_publication
-        if pub:
-            IJSONRequestCache(self.request).objects['archive_context_url'] = (
-                canonical_url(pub.archive, path_only_if_possible=True))
 
     @property
     def label(self):
@@ -530,11 +516,6 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
             for version in pocket_dict:
                 most_recent_publication = pocket_dict[version][0]
                 date_published = most_recent_publication.datepublished
-                if date_published is None:
-                    published_since = None
-                else:
-                    now = datetime.now(tz=pytz.UTC)
-                    published_since = now - date_published
                 pockets = ", ".join(
                     [pub.pocket.name for pub in pocket_dict[version]])
                 row = {
@@ -545,7 +526,7 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
                     'publication': most_recent_publication,
                     'pockets': pockets,
                     'component': most_recent_publication.component_name,
-                    'published_since': published_since,
+                    'date_published': date_published,
                     }
                 rows.append(row)
             # We need a blank row after each section, so the series
@@ -578,6 +559,12 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
             uses_bugs=uses_bugs, uses_answers=uses_answers,
             uses_both=uses_both, uses_either=uses_either)
 
+    @cachedproperty
+    def new_bugtasks_count(self):
+        search_params = BugTaskSearchParams(
+            self.user, status=BugTaskStatus.NEW, omit_dupes=True)
+        return self.context.searchTasks(search_params).count()
+
 
 class DistributionSourcePackageChangelogView(
     DistributionSourcePackageBaseView, LaunchpadView):
@@ -589,8 +576,36 @@ class DistributionSourcePackageChangelogView(
     def label(self):
         return 'Change log for %s' % self.context.title
 
+    @cachedproperty
+    def batchnav(self):
+        return BatchNavigator(self.releases, self.request)
 
-class DistributionSourcePackagePublishingHistoryView(LaunchpadView):
+
+class PublishingHistoryViewMixin:
+    """Mixin for presenting batches of `SourcePackagePublishingHistory`s."""
+
+    def _preload_people(self, pubs):
+        ids = set()
+        for spph in pubs:
+            ids.update((spph.removed_byID, spph.creatorID, spph.sponsorID))
+        ids.discard(None)
+        if ids:
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                ids, need_validity=True))
+
+    @property
+    def batchnav(self):
+        # No point using StormRangeFactory right now, as the sorted
+        # lookup can't be fully indexed (it spans multiple archives).
+        return BatchNavigator(
+            DecoratedResultSet(
+                self.context.publishing_history,
+                pre_iter_hook=self._preload_people),
+            self.request)
+
+
+class DistributionSourcePackagePublishingHistoryView(
+        LaunchpadView, PublishingHistoryViewMixin):
     """View for presenting `DistributionSourcePackage` publishing history."""
 
     page_title = 'Publishing history'

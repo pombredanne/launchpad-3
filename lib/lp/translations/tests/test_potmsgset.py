@@ -1,7 +1,5 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=C0102
 
 __metaclass__ = type
 
@@ -15,14 +13,14 @@ import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
-    ZopelessDatabaseLayer,
-    )
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.propertycache import get_property_cache
 from lp.testing import TestCaseWithFactory
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.potmsgset import (
     POTMsgSetInIncompatibleTemplatesError,
@@ -410,7 +408,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         self.assertContentEqual(
             self.potmsgset.getExternallyUsedTranslationMessages(language),
             [other_translation, current_translation])
-        self.assertEquals(
+        self.assertContentEqual(
             self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
                 used_languages=[language])[language].used,
             [other_translation, current_translation])

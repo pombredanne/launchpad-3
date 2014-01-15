@@ -64,8 +64,7 @@ This is done to so see what the page will look like when they exist.
     >>> st_coordinator = factory.makePerson(
     ...     name="ubuntu-l10n-es",
     ...     displayname='Ubuntu Spanish Translators')
-    >>> dude = factory.makePerson(
-    ...     name="dude", email="dude@ex.com", password="test")
+    >>> dude = factory.makePerson(name="dude", email="dude@ex.com")
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu.translationgroup = utg
     >>> ubuntu.translationpermission = TranslationPermission.RESTRICTED
@@ -159,8 +158,8 @@ Translation policy is rolled back to not affect other tests.
     >>> ubuntu.translationpermission = TranslationPermission.RESTRICTED
     >>> logout()
 
-Translators that have not agreed with the license can not make
-translations, and will see a link to the license page.
+Translators that have not agreed with the licence can not make
+translations, and will see a link to the licence page.
 
     >>> no_license_browser = setupBrowser(
     ...     auth='Basic dude@ex.com:test')

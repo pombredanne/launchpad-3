@@ -82,7 +82,7 @@ We can also filter by type.
 
 If we create a lot of imports, the listing view will be batched.
 
-    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.testing import login, logout
     >>> login('test@canonical.com')
     >>> for i in range(10):
     ...     new_import = factory.makeCodeImport()

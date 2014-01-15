@@ -44,9 +44,9 @@ and description and redirects the user to the bug page.
   >>> soup = find_main_content(browser.contents)
   >>> for tag in soup('h1'):
   ...     print extract_text(tag)
-  W3C SVG demo doesn't work in Firefox
+  W3C SVG demo doesn't work in Firefox Edit
   >>> print extract_text(find_tag_by_id(browser.contents, 'edit-description'))
-  Bug Description
+  Edit Bug Description
   Browsing to the W3C SVG demo results in a blank page.
 
 The bug page will display a link to the originating question in the 'Related

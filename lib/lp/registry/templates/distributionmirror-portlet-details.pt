@@ -6,8 +6,6 @@
 
   <h2><span tal:replace="context/title">Name</span> mirror details</h2>
 
-  <div class="portletBody portletContent">
-
     <b>Registrant:</b>
     <a tal:replace="structure context/owner/fmt:link" /><br />
 
@@ -27,6 +25,5 @@
     </b>
     <br />
 
-  </div>
 </div>
 

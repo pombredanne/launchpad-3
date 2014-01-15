@@ -1,11 +1,6 @@
 Question Workflow
 =================
 
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
-    >>> flags = FeatureFixture(feature_flag)
-    >>> flags.setUp()
-
 The status of a question changes based on the action done by users on
 it. To demonstrate the workflow, we will use the existing question #2 on
 the Firefox product which was filed by 'Sample Person'.
@@ -146,7 +141,7 @@ discussion.
     Status: Open ...
 
     >>> print_last_comment(owner_browser.contents)
-    The following SVG doesn't display properly:
+    The following SVG doesn&#x27;t display properly:
     http://www.w3.org/2001/08/rdfweb/rdfweb-chaals-and-dan.svg
 
 
@@ -164,7 +159,7 @@ clicking the 'Propose Answer' button.
     ...     "support enabled. You can use apt-get or adept to upgrade.")
     >>> support_browser.getControl('Propose Answer').click()
 
-This moves the the question to the Answered state and adds the answer to
+This moves the question to the Answered state and adds the answer to
 the end of the discussion:
 
     >>> print find_request_status(support_browser.contents)
@@ -284,7 +279,7 @@ its status back to 'Open'.
     >>> print_last_comment(owner_browser.contents)
     Actually, there are still SVGs that do not display correctly.
     For example, the following
-    http://people.w3.org/maxf/ChessGML/immortal.svg doesn't
+    http://people.w3.org/maxf/ChessGML/immortal.svg doesn&#x27;t
     display correctly.
 
 This also removes the highlighting from the previous answer and sets the
@@ -296,7 +291,8 @@ answerer back to None.
     True
 
     >>> bestAnswer.first('div', 'boardCommentBody')
-    <div class="boardCommentBody"><p>New version of the firefox package
+    <div class="boardCommentBody" itemprop="commentText"><p>New version
+    of the firefox package
     are available with SVG support enabled. You can use apt-get or adept to
     upgrade.</p></div>
 
@@ -360,8 +356,13 @@ The answer's message is also highlighted as the best answer.
     >>> print extract_text(answerer)
     No Privileges Person (no-priv)
 
-    >>> message = bestAnswer.parent.parent.find(
+    >>> message = soup.find(
     ...     'div', 'boardCommentBody highlighted')
+    >>> print message
+    <div class="boardCommentBody highlighted"
+    itemprop="commentText"><p>New version of the firefox package are
+    available with SVG support enabled. You can use apt-get or adept to
+    upgrade.</p></div>
     >>> print extract_text(message)
     New version of the firefox package are available with SVG support
     enabled. You can use apt-get or adept to upgrade.
@@ -461,7 +462,3 @@ similar problem so he asks his own question.
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
     Ask a question about...
-
-Clean up the feature flag.
-
-    >>> flags.cleanUp()

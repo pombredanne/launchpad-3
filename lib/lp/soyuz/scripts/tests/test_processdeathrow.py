@@ -22,12 +22,12 @@ import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.config import config
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestProcessDeathRow(TestCase):
@@ -102,12 +102,12 @@ class TestProcessDeathRow(TestCase):
 
         cprov = getUtility(IPersonSet).getByName('cprov')
         removeSecurityProxy(cprov.archive).distribution = ubuntutest
-        ppa_pubrecs = cprov.archive.getPublishedSources('iceweasel')
+        ppa_pubrecs = cprov.archive.getPublishedSources(u'iceweasel')
         self.ppa_pubrec_ids = self.markPublishingForRemoval(ppa_pubrecs)
 
         mark = getUtility(IPersonSet).getByName('mark')
         removeSecurityProxy(mark.archive).distribution = ubuntutest
-        ppa_pubrecs = mark.archive.getPublishedSources('iceweasel')
+        ppa_pubrecs = mark.archive.getPublishedSources(u'iceweasel')
         self.ppa_pubrec_ids.extend(self.markPublishingForRemoval(ppa_pubrecs))
 
         # Fill one of the files in cprov PPA just to ensure that deathrow

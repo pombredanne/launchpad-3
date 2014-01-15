@@ -10,15 +10,11 @@ __all__ = [
 
 from psycopg2.extensions import TRANSACTION_STATUS_IDLE
 import transaction
-from zope.component import getUtility
 
-from canonical.database.sqlbase import quote
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
+from lp.registry.model.person import Person
+from lp.services.database.interfaces import IMasterStore
 from lp.services.database.isolation import TransactionInProgress
+from lp.services.database.sqlbase import quote
 
 
 class DatabaseTransactionPolicy:
@@ -79,8 +75,7 @@ class DatabaseTransactionPolicy:
         """
         self.read_only = read_only
         if store is None:
-            self.store = getUtility(IStoreSelector).get(
-                MAIN_STORE, MASTER_FLAVOR)
+            self.store = IMasterStore(Person)
         else:
             self.store = store
 

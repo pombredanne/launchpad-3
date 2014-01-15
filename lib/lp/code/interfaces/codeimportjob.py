@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Interfaces and enumeratrions for CodeImportJobs.
 
 CodeImportJobs represent pending and running updates of a code import.
@@ -25,7 +23,7 @@ from zope.schema import (
     Text,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.code.enums import CodeImportJobState
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codeimportmachine import ICodeImportMachine

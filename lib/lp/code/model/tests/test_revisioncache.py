@@ -14,18 +14,14 @@ import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
-from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.revisioncache import IRevisionCache
 from lp.code.model.revision import RevisionCache
+from lp.services.database.interfaces import IStore
 from lp.testing import (
     TestCaseWithFactory,
     time_counter,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class TestRevisionCacheAdaptation(TestCaseWithFactory):
@@ -83,8 +79,7 @@ class TestRevisionCache(TestCaseWithFactory):
 
     def test_initially_empty(self):
         # A test just to confirm that the RevisionCache is empty.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        results = store.find(RevisionCache)
+        results = IStore(RevisionCache).find(RevisionCache)
         self.assertEqual(0, results.count())
 
     def makeCachedRevision(self, revision=None, product=None,

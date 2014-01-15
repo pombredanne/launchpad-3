@@ -12,14 +12,15 @@ from zope.component import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.layers import setFirstLayer
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.app.enums import ServiceUsage
+from lp.layers import setFirstLayer
+from lp.services.webapp import canonical_url
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.translations.browser.translationimportqueue import escape_js_string
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
@@ -41,7 +42,7 @@ class TestTranslationImportQueueEntryView(TestCaseWithFactory):
     def _makeProductSeries(self):
         """Set up a product series for a translatable product."""
         product = self.factory.makeProduct()
-        product.official_rosetta = True
+        product.translations_usage = ServiceUsage.LAUNCHPAD
         return product.getSeries('trunk')
 
     def _makeView(self, entry):

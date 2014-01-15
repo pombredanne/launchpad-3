@@ -6,12 +6,12 @@ __metaclass__ = type
 import transaction
 from zope.security.interfaces import Unauthorized
 
-from canonical.testing import LaunchpadFunctionalLayer
 from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.views import create_initialized_view
 
 

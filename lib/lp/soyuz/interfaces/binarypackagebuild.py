@@ -1,7 +1,5 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=E0211,E0213
 
 """BinaryPackageBuild interfaces."""
 
@@ -27,6 +25,7 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_write_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     )
 from lazr.restful.fields import Reference
@@ -41,7 +40,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import ISpecificBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
@@ -64,10 +63,6 @@ class IBinaryPackageBuildView(IPackageBuild):
     """A Build interface for items requiring launchpad.View."""
     id = Int(title=_('ID'), required=True, readonly=True)
 
-    package_build = Reference(
-        title=_('Package build'), schema=IPackageBuild, required=True,
-        readonly=True, description=_('The base package build'))
-
     # Overridden from IBuildFarmJob to ensure required is True.
     processor = Reference(
         title=_("Processor"), schema=IProcessor,
@@ -79,12 +74,16 @@ class IBinaryPackageBuildView(IPackageBuild):
         required=True, readonly=True,
         description=_("The SourcePackageRelease requested to build."))
 
+    source_package_release_id = Int()
+
     distro_arch_series = Reference(
         title=_("Architecture"),
         # Really IDistroArchSeries
         schema=Interface,
         required=True, readonly=True,
         description=_("The DistroArchSeries context for this build."))
+
+    distro_arch_series_id = Int()
 
     # Properties
     current_source_publication = exported(
@@ -118,6 +117,12 @@ class IBinaryPackageBuildView(IPackageBuild):
             title=_("Can Be Retried"), required=False, readonly=True,
             description=_(
                 "Whether or not this build record can be retried.")))
+
+    can_be_cancelled = exported(
+        Bool(
+            title=_("Can Be Cancelled"), required=False, readonly=True,
+            description=_(
+                "Whether or not this build record can be cancelled.")))
 
     is_virtualized = Attribute(
         "Whether or not this build requires a virtual build host or not.")
@@ -223,6 +228,22 @@ class IBinaryPackageBuildEdit(Interface):
         non-scored BuildQueue entry is created for it.
         """
 
+    @export_write_operation()
+    @operation_for_version("devel")
+    def cancel():
+        """Cancel the build if it is either pending or in progress.
+
+        Call the can_be_cancelled() method prior to this one to find out if
+        cancelling the build is possible.
+
+        If the build is in progress, it is marked as CANCELLING until the
+        buildd manager terminates the build and marks it CANCELLED. If the
+        build is not in progress, it is marked CANCELLED immediately and is
+        removed from the build queue.
+
+        If the build is not in a cancellable state, this method is a no-op.
+        """
+
 
 class IBinaryPackageBuildAdmin(Interface):
     """A Build interface for items requiring launchpad.Admin."""
@@ -276,7 +297,7 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
 
     def new(distro_arch_series, source_package_release, processor,
             archive, pocket, status=BuildStatus.NEEDSBUILD,
-            date_created=None):
+            date_created=None, builder=None):
         """Create a new `IBinaryPackageBuild`.
 
         :param distro_arch_series: An `IDistroArchSeries`.
@@ -287,18 +308,10 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
         :param status: A `BuildStatus` item indicating the builds status.
         :param date_created: An optional datetime to ensure multiple builds
             in the same transaction don't all get the same UTC_NOW.
+        :param builder: An optional `IBuilder`.
         """
 
-    def getBuildBySRAndArchtag(sourcepackagereleaseID, archtag):
-        """Return a build for a SourcePackageRelease and an ArchTag"""
-
-    def getPendingBuildsForArchSet(archseries):
-        """Return all pending build records within a group of ArchSeries
-
-        Pending means that buildstate is NEEDSBUILD.
-        """
-
-    def getBuildsForBuilder(builder_id, status=None, name=None,
+    def getBuildsForBuilder(builder_id, status=None, name=None, pocket=None,
                             arch_tag=None):
         """Return build records touched by a builder.
 
@@ -307,6 +320,8 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
             will be returned.
         :param name: If name is provided, only builds which correspond to a
             matching sourcepackagename will be returned (SQL LIKE).
+        :param pocket: If pocket is provided, only builds for that pocket
+            will be returned.
         :param arch_tag: If arch_tag is provided, only builds for that
             architecture will be returned.
         :return: a `ResultSet` representing the requested builds.
@@ -328,21 +343,13 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
         :return: a `ResultSet` representing the requested builds.
         """
 
-    def getBuildsByArchIds(distribution, arch_ids, status=None, name=None,
-                           pocket=None):
-        """Retrieve Build Records for a given arch_ids list.
+    def getBuildsForDistro(context, status=None, name=None, pocket=None,
+                           arch_tag=None):
+        """Retrieve `IBinaryPackageBuild`s for a given Distribution/DS/DAS.
 
         Optionally, for a given status and/or pocket, if ommited return all
         records. If name is passed return only the builds which the
         sourcepackagename matches (SQL LIKE).
-        """
-
-    def retryDepWaiting(distroarchseries):
-        """Re-process all MANUALDEPWAIT builds for a given IDistroArchSeries.
-
-        This method will update all the dependency lines of all MANUALDEPWAIT
-        records in the given architecture and those with all dependencies
-        satisfied at this point will be automatically retried and re-scored.
         """
 
     def getBuildsBySourcePackageRelease(sourcepackagerelease_ids,
@@ -386,21 +393,9 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
         build queue entry. If not found, return None.
         """
 
-    def getQueueEntriesForBuildIDs(build_ids):
-        """Return the IBuildQueue instances for the IBuild IDs at hand.
+    def preloadBuildsData(builds):
+        """Prefetch the data related to the builds.
 
-        Retrieve the build queue and related builder rows associated with the
-        builds in question where they exist.
-        """
-
-    def calculateCandidates(archseries):
-        """Return the BuildQueue records for the given archseries's Builds.
-
-        Returns a selectRelease of BuildQueue items for sorted by descending
-        'lastscore' for Builds within the given archseries.
-
-        'archseries' argument should be a list of DistroArchSeries and it is
-        asserted to not be None/empty.
         """
 
 

@@ -5,16 +5,21 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.answers.vocabulary import UsesAnswersDistributionVocabulary
+from lp.answers.vocabulary import (
+    UsesAnswersDistributionVocabulary,
+    UsesAnswersProductVocabulary,
+    )
+from lp.app.enums import ServiceUsage
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.layers import DatabaseFunctionalLayer
 
 
 class UsesAnswersDistributionVocabularyTestCase(TestCaseWithFactory):
     """Test that the vocabulary behaves as expected."""
+
     layer = DatabaseFunctionalLayer
 
     def test_init_with_distribution(self):
@@ -23,7 +28,7 @@ class UsesAnswersDistributionVocabularyTestCase(TestCaseWithFactory):
         distribution = self.factory.makeDistribution()
         vocabulary = UsesAnswersDistributionVocabulary(distribution)
         self.assertEqual(distribution, vocabulary.context)
-        self.assertEqual(distribution, vocabulary.distribution)
+        self.assertEqual(distribution, vocabulary.distribution) 
 
     def test_init_without_distribution(self):
         # When the context is not adaptable to IDistribution, the
@@ -67,3 +72,21 @@ class UsesAnswersDistributionVocabularyTestCase(TestCaseWithFactory):
         self.assertFalse(
             thing in vocabulary,
             "Vocabulary contains a non-distribution.")
+
+
+class UsesAnswersProductVocabularyTestCase(TestCaseWithFactory):
+    """Test that the product vocabulary behaves as expected."""
+    
+    layer = DatabaseFunctionalLayer
+
+    def test_products_not_using_answers_not_found(self):
+        using_product = self.factory.makeProduct(
+            name='foobar', answers_usage=ServiceUsage.LAUNCHPAD)
+        not_using_product = self.factory.makeProduct(
+            name='foobarbaz', answers_usage=ServiceUsage.NOT_APPLICABLE)
+        vocabulary = UsesAnswersProductVocabulary()
+        products = vocabulary.search(query='foobar')
+        self.assertTrue(using_product in products,
+            'Valid product not found in vocabulary.')
+        self.assertTrue(not_using_product not in products,
+            'Vocabulary found a product not using answers.')

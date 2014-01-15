@@ -22,7 +22,7 @@
       class="informational message"
     />
 
-    <div class="highlighted" style="font-size: 80%;">
+    <div class="highlighted">
       <tal:proposition replace="structure context/proposition/fmt:text-to-html">
          The proposition goes here.
       </tal:proposition>

@@ -1,4 +1,4 @@
-<div
+<div id="branches-table-listing"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
 >
@@ -11,22 +11,10 @@
     <tal:lifecycle-selector replace="structure context/view/widgets/lifecycle"/>
     <tal:sort-by replace="structure context/view/widgets/sort_by"
                  condition="context/view/widgets/sort_by|nothing"/>
-    <noscript>
-      <input type="submit" value="Filter"/>
-    </noscript>
+    <input id="filter_form_submit" type="submit" value="Filter"/>
   </form>
 
 <script type="text/javascript">
-function submit_filter() {
-    getElement('filter_form').submit();
-}
-
-function hookUpFilterSubmission () {
-    connect('field.lifecycle', 'onchange', submit_filter);
-    if (getElement('field.sort_by')) {
-        connect('field.sort_by', 'onchange', submit_filter);
-    }
-}
 function show_commit(id) {
     var div = document.getElementById('branch-log-' + id);
     if (div) {
@@ -39,9 +27,18 @@ function hide_commit(id) {
         div.style.display = "none";
     }
 }
-registerLaunchpadFunction(hookUpFilterSubmission);
 
 </script>
+
+<tal:comment
+tal:condition="not: request/features/ajax.batch_navigator.enabled"
+replace='structure string:&lt;script type="text/javascript"&gt;
+    LPJS.use("lp.code.util", function(Y) {
+      Y.on("domready", function(e) {
+          Y.lp.code.util.hookUpBranchFilterSubmission(Y);
+      }, window);
+    });
+&lt;/script&gt;'/>
 
   <tal:needs-batch condition="context/has_multiple_pages">
     <div id="branch-batch-links">
@@ -73,7 +70,7 @@ registerLaunchpadFunction(hookUpFilterSubmission);
         Only show the warning and link if the user can actually set the development focus
       </tal:ignore>
       <tr tal:condition="product/required:launchpad.Edit"
-          tal:define="edit_link product/development_focus/fmt:url/+linkbranchtoseries">
+          tal:define="edit_link product/development_focus/fmt:url/+setbranch">
         <td colspan="5" class="branch-no-dev-focus">A development focus branch hasn't
             been specified, <a tal:attributes="href edit_link">set it now</a>.</td>
       </tr>
@@ -181,7 +178,7 @@ registerLaunchpadFunction(hookUpFilterSubmission);
       <tr tal:condition="not:context/batch/total">
         <td tal:attributes="colspan context/column_count">
           <div id="no-branch-message"
-               tal:content="structure context/view/no_branch_message" />
+               tal:content="context/view/no_branch_message" />
         </td>
       </tr>
     </tbody>
@@ -189,4 +186,18 @@ registerLaunchpadFunction(hookUpFilterSubmission);
 
   <tal:navigation replace="structure context/@@+navigation-links-lower" />
 
+  <tal:comment
+    tal:condition="request/features/ajax.batch_navigator.enabled"
+    replace='structure string:&lt;script type="text/javascript"&gt;
+    LPJS.use("lp.app.batchnavigator",
+        function(Y) {
+            Y.on("domready", function () {
+                var config = {
+                    contentBox: "#branches-table-listing",
+                    post_refresh_hook: hookUpFilterSubmission
+                };
+                new Y.lp.app.batchnavigator.BatchNavigatorHooks(config);
+            });
+        });
+  &lt;/script&gt;'/>
 </div>

@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Answer contact interfaces."""
 
 __metaclass__ = type
@@ -15,7 +13,7 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import Choice
 
-from canonical.launchpad import _
+from lp import _
 from lp.services.fields import PublicPersonChoice
 
 

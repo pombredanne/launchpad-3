@@ -21,9 +21,8 @@ package.
     ...     return find_tag_by_id(browser.contents, 'custom-language-codes')
 
     >>> login(ANONYMOUS)
-    >>> owner = factory.makePerson(email='o@example.com', password='test')
-    >>> rosetta_admin = factory.makePerson(
-    ...     email='r@example.com', password='test')
+    >>> owner = factory.makePerson(email='o@example.com')
+    >>> rosetta_admin = factory.makePerson(email='r@example.com')
     >>> removeSecurityProxy(rosetta_admin).join(
     ...     getUtility(ILaunchpadCelebrities).rosetta_experts)
     >>> product = factory.makeProduct(displayname="Foo", owner=owner)
@@ -220,8 +219,7 @@ distribution's translation group is a translations administrator.
     ...     distroseries=other_series,
     ...     sourcepackagename=package.sourcepackagename),
     ...     rootsite="translations")
-    >>> translations_admin = factory.makePerson(
-    ...     email='ta@example.com', password='test')
+    >>> translations_admin = factory.makePerson(email='ta@example.com')
     >>> translationgroup = factory.makeTranslationGroup(
     ...     owner=translations_admin)
     >>> removeSecurityProxy(distro).translationgroup = translationgroup

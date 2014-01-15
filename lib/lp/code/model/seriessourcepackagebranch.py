@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0231
-
 """The content classes for links from source packages to branches.."""
 
 __metaclass__ = type
@@ -20,21 +18,18 @@ from storm.locals import (
     Reference,
     Storm,
     )
-from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.enumcol import DBEnum
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    MASTER_FLAVOR,
-    )
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     ISeriesSourcePackageBranch,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.database.enumcol import DBEnum
+from lp.services.database.interfaces import (
+    IMasterStore,
+    IStore,
+    )
 
 
 class SeriesSourcePackageBranch(Storm):
@@ -94,8 +89,7 @@ class SeriesSourcePackageBranchSet:
         sspb = SeriesSourcePackageBranch(
             distroseries, pocket, sourcepackagename, branch, registrant,
             date_created)
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        store.add(sspb)
+        IMasterStore(SeriesSourcePackageBranch).add(sspb)
         return sspb
 
     def findForBranch(self, branch):
@@ -105,17 +99,15 @@ class SeriesSourcePackageBranchSet:
     def findForBranches(self, branches):
         """See `IFindOfficialBranchLinks`."""
         branch_ids = set(branch.id for branch in branches)
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
+        return IStore(SeriesSourcePackageBranch).find(
             SeriesSourcePackageBranch,
             SeriesSourcePackageBranch.branchID.is_in(branch_ids))
 
     def findForSourcePackage(self, sourcepackage):
         """See `IFindOfficialBranchLinks`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         distroseries = sourcepackage.distroseries
         sourcepackagename = sourcepackage.sourcepackagename
-        return store.find(
+        return IStore(SeriesSourcePackageBranch).find(
             SeriesSourcePackageBranch,
             SeriesSourcePackageBranch.distroseries == distroseries.id,
             SeriesSourcePackageBranch.sourcepackagename ==
@@ -125,10 +117,9 @@ class SeriesSourcePackageBranchSet:
         """See `IFindOfficialBranchLinks`."""
         # To prevent circular imports.
         from lp.registry.model.distroseries import DistroSeries
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         distro = distrosourcepackage.distribution
         sourcepackagename = distrosourcepackage.sourcepackagename
-        return store.find(
+        return IStore(SeriesSourcePackageBranch).find(
             SeriesSourcePackageBranch,
             DistroSeries.distribution == distro.id,
             SeriesSourcePackageBranch.distroseries == DistroSeries.id,
@@ -142,10 +133,9 @@ class SeriesSourcePackageBranchSet:
         :param sourcepackage: An `ISourcePackage`.
         :param pocket: A `PackagePublishingPocket` enum item.
         """
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         distroseries = sourcepackage.distroseries
         sourcepackagename = sourcepackage.sourcepackagename
-        return store.find(
+        return IMasterStore(SeriesSourcePackageBranch).find(
             SeriesSourcePackageBranch,
             SeriesSourcePackageBranch.distroseries == distroseries.id,
             SeriesSourcePackageBranch.sourcepackagename ==

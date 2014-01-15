@@ -141,7 +141,7 @@ so that they are treated as "key: value" pairs.
     >>> [bug_dict] = return_value['bugs']
     >>> for key in sorted(bug_dict):
     ...     print "%s: %s" % (key, bug_dict[key])
-    alias: 
+    alias:
     assigned_to: test@canonical.com
     component: GPPSystems
     creation_time: 2008-06-10 16:19:53
@@ -167,7 +167,7 @@ one bug will be returned (assuming they all exist and are accessible).
     ...     for key in sorted(bug_dict):
     ...         print "%s: %s" % (key, bug_dict[key])
     ...     print
-    alias: 
+    alias:
     assigned_to: test@canonical.com
     component: GPPSystems
     creation_time: 2008-06-10 16:19:53
@@ -216,7 +216,7 @@ Bug aliases can also be used to request remote bugs.
     last_change_time: 2008-06-11 09:24:29
     priority: P1
     product: HeartOfGold
-    resolution: 
+    resolution:
     see_also: []
     severity: high
     status: NEW
@@ -252,7 +252,7 @@ set of remote bugs.
     last_change_time: 2008-06-11 09:24:29
     priority: P1
     product: HeartOfGold
-    resolution: 
+    resolution:
     see_also: []
     severity: high
     status: NEW
@@ -298,7 +298,7 @@ only return bugs which affect those products.
     last_change_time: 2008-06-11 09:24:29
     priority: P1
     product: HeartOfGold
-    resolution: 
+    resolution:
     see_also: []
     severity: high
     status: NEW
@@ -448,7 +448,8 @@ on the remote server.
 
     >>> comment = "Didn't we have a lovely time the day we went to Bangor?"
     >>> bugzilla_transport.auth_cookie = 'open sesame'
-    >>> return_dict = server.Launchpad.add_comment({'id': 1, 'comment': comment})
+    >>> return_dict = server.Launchpad.add_comment(
+    ...     {'id': 1, 'comment': comment})
     >>> print return_dict['comment_id']
     5
 

@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Interface classes for CodeImportResult, i.e. completed code import jobs."""
 
 __metaclass__ = type
@@ -23,12 +21,12 @@ from zope.schema import (
     Text,
     )
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from lp import _
 from lp.code.enums import CodeImportResultStatus
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codeimportmachine import ICodeImportMachine
 from lp.registry.interfaces.person import IPerson
+from lp.services.librarian.interfaces import ILibraryFileAlias
 
 
 class ICodeImportResult(Interface):

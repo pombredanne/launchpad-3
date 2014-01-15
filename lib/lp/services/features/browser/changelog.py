@@ -9,9 +9,9 @@ __all__ = [
 
 __metaclass__ = type
 
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.publisher import LaunchpadView
 from lp.services.features.changelog import ChangeLog
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.publisher import LaunchpadView
 
 
 class FeatureChangeLogView(LaunchpadView):

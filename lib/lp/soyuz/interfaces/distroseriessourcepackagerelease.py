@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """Source package release in Distribution Series interfaces."""
 
 __metaclass__ = type
@@ -14,8 +12,8 @@ __all__ = [
 from zope.interface import Attribute
 from zope.schema import Object
 
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from lp import _
+from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
@@ -53,9 +51,6 @@ class IDistroSeriesSourcePackageRelease(ISourcePackageRelease):
     binaries = Attribute(
         "Return binaries resulted from this sourcepackagerelease and  "
         "published in this distroseries.")
-
-    current_published = Attribute("is last SourcePackagePublishing record "
-                                  "that is in PUBLISHED status.")
 
     version = Attribute("The version of the source package release.")
 

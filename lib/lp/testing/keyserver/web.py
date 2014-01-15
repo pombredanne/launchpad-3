@@ -38,10 +38,9 @@ import os
 from time import sleep
 
 from twisted.web.resource import Resource
-
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.gpghandler import (
+from lp.services.gpg.interfaces import (
     GPGKeyNotFoundError,
     IGPGHandler,
     MoreThanOneGPGKeyFound,
@@ -113,7 +112,7 @@ class PksResource(_BaseResource):
 
 KEY_NOT_FOUND_BODY = (
     "<html><head><title>Error handling request</title></head>\n"
-    "<body><h1>Error handling request</h1>Error handling request: "
+    "<body><h1>Error handling request</h1>No results found: "
     "No keys found</body></html>")
 
 
@@ -154,9 +153,7 @@ class LookUp(Resource):
                     '<pre>\n%s\n</pre>\n</html>') % (keyid, keyid, content)
             return page
         else:
-            # No joke: our real-world keyserver returns a 500 error
-            # if it does not know about a key with the given ID.
-            request.setResponseCode(500)
+            request.setResponseCode(404)
             return KEY_NOT_FOUND_BODY
 
 
@@ -199,7 +196,7 @@ class SubmitKey(Resource):
         try:
             key = gpghandler.importPublicKey(keytext)
         except (GPGKeyNotFoundError, SecretGPGKeyImportDetected,
-                MoreThanOneGPGKeyFound), err:
+                MoreThanOneGPGKeyFound) as err:
             return SUBMIT_KEY_PAGE % {'banner': str(err)}
 
         filename = '0x%s.get' % key.fingerprint

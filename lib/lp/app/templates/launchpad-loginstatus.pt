@@ -9,14 +9,20 @@
 <div id="logincontrol" tal:condition="view/logged_in">
   <form action="/+logout" method="post">
     <input type="hidden" name="loggingout" value="1" />
-    <div id="rendertime" tal:condition="request/features/visible_render_time">Loading...</div>
+    <a
+      href="javascript:void(0)"
+      onclick="window.scrollTo(0, LPJS.one('#debug_timeline').toggleClass('hidden').getXY()[1])"
+      tal:condition="request/features/visible_render_time"
+      >
+      <div id="rendertime">Loading...</div>
+    </a>
     <div id="ajax-time" tal:condition="request/features/visible_render_time">
         <a href="" class="js-action">AJAX Log &darr;</a>
         <ul id="ajax-time-list" class="hidden">
             <li class="no-events">No AJAX events detected</li>
         </ul>
     </div>
-    <a tal:replace="structure request/lp:person/fmt:link-display-name-id/id-only" /> &bull;
+    <a tal:replace="structure request/lp:person/fmt:link-display-name-id" /> &bull;
     <input type="submit" name="logout" value="Log Out" />
   </form>
 </div>

@@ -10,12 +10,12 @@ __all__ = []
 from zope.security.proxy import removeSecurityProxy
 
 from lp.testing import login_person
+from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.yuixhr import (
     login_as_person,
     make_suite,
     setup,
     )
-from lp.testing.factory import LaunchpadObjectFactory
 
 # The following are the fixtures needed by the tests.
 

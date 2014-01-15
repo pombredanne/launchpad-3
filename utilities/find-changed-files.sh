@@ -37,9 +37,9 @@ else
     # bzr diff failed
     exit 1
 fi
-# Extract filename from status line.  Strip the @ that mark symlinks.
+# Extract filename from status line.  Skip symlinks.
 files=`bzr st --short $rev_option |
-    sed -e '/^.[MN]/!d; s/.* //' -e 's/@$//'`
+    sed -e '/^.[MN]/!d; s/.* //' -e '/@$/d'`
 
 echo $files
 

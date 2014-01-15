@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """SourcePackageRecipe views."""
@@ -11,6 +11,7 @@ __all__ = [
     'SourcePackageRecipeEditView',
     'SourcePackageRecipeNavigationMenu',
     'SourcePackageRecipeRequestBuildsView',
+    'SourcePackageRecipeRequestDailyBuildView',
     'SourcePackageRecipeView',
     ]
 
@@ -35,17 +36,17 @@ import simplejson
 from storm.locals import Store
 from z3c.ptcompat import ViewPageTemplateFile
 from zope import component
-from zope.app.form.browser.widget import Widget
-from zope.app.form.interfaces import IView
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.formlib.widget import Widget
 from zope.interface import (
     implementer,
     implements,
     Interface,
     providedBy,
     )
+from zope.publisher.interfaces import IView
 from zope.schema import (
     Choice,
     Field,
@@ -60,18 +61,7 @@ from zope.schema.vocabulary import (
     )
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    NavigationMenu,
-    structured,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from lp import _
 from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
     action,
@@ -109,13 +99,23 @@ from lp.code.interfaces.sourcepackagerecipe import (
     MINIMAL_RECIPE_TEXT,
     )
 from lp.code.model.branchtarget import PersonBranchTarget
-from lp.code.model.sourcepackagerecipe import get_buildable_distroseries_set
+from lp.code.vocabularies.sourcepackagerecipe import BuildableDistroSeries
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.features import getFeatureFlag
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    NavigationMenu,
+    structured,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.soyuz.interfaces.archive import ArchiveDisabled
-from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.archive import validate_ppa
 
 
 class IRecipesForPerson(Interface):
@@ -258,18 +258,9 @@ class SourcePackageRecipeView(LaunchpadView):
 
     @property
     def person_picker(self):
-        # If we are using the enhanced picker, we need to ensure the vocab
-        # gives us terms showing just the displyname rather than displayname
-        # plus Luanchpad id since the enhanced picker provides this extra
-        # information itself.
-        enhanced_picker_enabled = bool(
-                    getFeatureFlag('disclosure.picker_enhancements.enabled'))
-        if enhanced_picker_enabled:
-            vocabulary = 'UserTeamsParticipationPlusSelfSimpleDisplay'
-        else:
-            vocabulary = 'UserTeamsParticipationPlusSelf'
         field = copy_field(
-            ISourcePackageRecipe['owner'], vocabularyName=vocabulary)
+            ISourcePackageRecipe['owner'],
+            vocabularyName='UserTeamsParticipationPlusSelfSimpleDisplay')
         return InlinePersonEditPickerWidget(
             self.context, field,
             format_link(self.context.owner),
@@ -311,7 +302,9 @@ class SourcePackageRecipeView(LaunchpadView):
     def name_widget(self):
         name = ISourcePackageRecipe['name']
         title = "Edit the recipe name"
-        return TextLineEditorWidget(self.context, name, title, 'h1')
+        return TextLineEditorWidget(
+            self.context, name, title, 'h1', max_width='95%',
+            truncate_lines=1)
 
     @property
     def distroseries_widget(self):
@@ -360,16 +353,22 @@ def builds_for_recipe(recipe):
         other circumstance which resulted in the build not being completed).
         This allows started but unfinished builds to show up in the view but
         be discarded as more recent builds become available.
+
+        Builds that the user does not have permission to see are excluded.
         """
-        builds = list(recipe.pending_builds)
+        builds = [build for build in recipe.pending_builds
+            if check_permission('launchpad.View', build)]
         for build in recipe.completed_builds:
+            if not check_permission('launchpad.View', build):
+                continue
             builds.append(build)
             if len(builds) >= 5:
                 break
         return builds
 
 
-def new_builds_notification_text(builds, already_pending=None):
+def new_builds_notification_text(builds, already_pending=None,
+                                 contains_unbuildable=False):
     nr_builds = len(builds)
     if not nr_builds:
         builds_text = "All requested recipe builds are already queued."
@@ -379,6 +378,9 @@ def new_builds_notification_text(builds, already_pending=None):
         builds_text = "%d new recipe builds have been queued." % nr_builds
     if nr_builds > 0 and already_pending:
         builds_text = "<p>%s</p>%s" % (builds_text, already_pending)
+    if contains_unbuildable:
+        builds_text = ("%s<p>The recipe contains an obsolete distroseries, "
+            "which has been skipped.</p>" % builds_text)
     return structured(builds_text)
 
 
@@ -392,14 +394,15 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
         The distroseries function as defaults for requesting a build.
         """
         initial_values = {'distroseries': self.context.distroseries}
-        build = self.context.last_build
-        if build is not None:
-            initial_values['archive'] = build.archive
+        if self.context.daily_build_archive and check_permission(
+            'launchpad.Append', self.context.daily_build_archive):
+            initial_values['archive'] = self.context.daily_build_archive
         return initial_values
 
     class schema(Interface):
         """Schema for requesting a build."""
-        archive = Choice(vocabulary='TargetPPAs', title=u'Archive')
+        archive = Choice(
+            vocabulary='TargetPPAs', title=u'Archive', required=False)
         distroseries = List(
             Choice(vocabulary='BuildableDistroSeries'),
             title=u'Distribution series')
@@ -407,6 +410,10 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
     custom_widget('distroseries', LabeledMultiCheckBoxWidget)
 
     def validate(self, data):
+        if not data['archive']:
+            self.setFieldError(
+                'archive', "You must specify the archive to build into.")
+            return
         distros = data.get('distroseries', [])
         if not len(distros):
             self.setFieldError('distroseries',
@@ -437,7 +444,7 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
                 build = self.context.requestBuild(
                     data['archive'], self.user, distroseries, manual=True)
                 builds.append(build)
-            except BuildAlreadyPending, e:
+            except BuildAlreadyPending as e:
                 existing_message = informational.get("already_pending")
                 if existing_message:
                     new_message = existing_message[:-1] + (
@@ -537,6 +544,11 @@ class SourcePackageRecipeRequestDailyBuildView(LaunchpadFormView):
     # Attributes for the html version
     page_title = "Build now"
 
+    def initialize(self):
+        super(SourcePackageRecipeRequestDailyBuildView, self).initialize()
+        if self.request.method == 'GET':
+            self.request.response.redirect(canonical_url(self.context))
+
     class schema(Interface):
         """Schema for requesting a build."""
 
@@ -555,9 +567,12 @@ class SourcePackageRecipeRequestDailyBuildView(LaunchpadFormView):
                     "../templates/sourcepackagerecipe-builds.pt")
             return template(self)
         else:
+            contains_unbuildable = recipe.containsUnbuildableSeries(
+                recipe.daily_build_archive)
             self.next_url = canonical_url(recipe)
             self.request.response.addNotification(
-                    new_builds_notification_text(builds))
+                new_builds_notification_text(
+                    builds, contains_unbuildable=contains_unbuildable))
 
     @property
     def builds(self):
@@ -583,10 +598,10 @@ class ISourcePackageEditSchema(Interface):
         Text(
             title=u'Recipe text', required=True,
             description=u"""The text of the recipe.
-                <a href="/+help/recipe-syntax.html" target="help"
+                <a href="/+help-code/recipe-syntax.html" target="help"
                   >Syntax help&nbsp;
-                  <span class="sprite maybe">
-                    <span class="invisible-link">Help</span>
+                  <span class="sprite maybe action-icon">
+                    Help
                   </span></a>
                """))
 
@@ -639,7 +654,7 @@ class RecipeTextValidatorMixin:
         try:
             parser = RecipeParser(data['recipe_text'])
             parser.parse()
-        except RecipeParseError, error:
+        except RecipeParseError as error:
             self.setFieldError('recipe_text', str(error))
 
     def error_handler(self, callable, *args, **kwargs):
@@ -649,15 +664,15 @@ class RecipeTextValidatorMixin:
             self.setFieldError(
                 'recipe_text',
                 'The recipe format version specified is not available.')
-        except ForbiddenInstructionError, e:
+        except ForbiddenInstructionError as e:
             self.setFieldError(
                 'recipe_text',
                 'The bzr-builder instruction "%s" is not permitted '
                 'here.' % e.instruction_name)
-        except NoSuchBranch, e:
+        except NoSuchBranch as e:
             self.setFieldError(
                 'recipe_text', '%s is not a branch on Launchpad.' % e.name)
-        except PrivateBranchRecipe, e:
+        except PrivateBranchRecipe as e:
             self.setFieldError('recipe_text', str(e))
         raise ErrorHandled()
 
@@ -744,9 +759,10 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         self.show_ppa_chooser = len(archive_widget.vocabulary) > 0
         if not self.show_ppa_chooser:
             self.widgets['ppa_name'].setRenderedValue('ppa')
-        # Force there to be no '(no value)' item in the select.  We do this as
-        # the input isn't listed as 'required' otherwise the validator gets
-        # all confused when we want to create a new PPA.
+        # Force there to be no '(nothing selected)' item in the select.
+        # We do this as the input isn't listed as 'required' otherwise
+        # the validator gets all confused when we want to create a new
+        # PPA.
         archive_widget._displayItemForMissingValue = False
 
     def setUpFields(self):
@@ -780,7 +796,7 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
 
     @property
     def initial_values(self):
-        distroseries = get_buildable_distroseries_set(self.user)
+        distroseries = BuildableDistroSeries.findSeries(self.user)
         series = [series for series in distroseries if series.status in (
                 SeriesStatus.CURRENT, SeriesStatus.DEVELOPMENT)]
         return {
@@ -833,7 +849,7 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
                 self.setFieldError(
                     'ppa_name', 'You need to specify a name for the PPA.')
             else:
-                error = Archive.validatePPA(owner, ppa_name)
+                error = validate_ppa(owner, ppa_name)
                 if error is not None:
                     self.setFieldError('ppa_name', error)
 

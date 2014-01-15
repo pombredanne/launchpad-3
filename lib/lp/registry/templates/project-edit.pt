@@ -6,9 +6,20 @@
   metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
+  <head>
+    <tal:head-epilogue metal:fill-slot="head_epilogue">
+      <script type="text/javascript">
+          LPJS.use('registry.product-views',  function(Y) {
+              Y.on('domready', function() {
+                  var view = new Y.registry.views.EditProduct();
+                  view.render();
+              });
+          });
+      </script>
+    </tal:head-epilogue>
+  </head>
   <body>
     <div metal:fill-slot="main">
-
       <div class="top-portlet"
            metal:use-macro="context/@@launchpad_form/form">
 

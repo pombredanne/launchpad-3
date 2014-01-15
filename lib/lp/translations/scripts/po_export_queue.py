@@ -18,14 +18,17 @@ from zope.component import (
     getUtility,
     )
 
-from canonical.config import config
-from canonical.launchpad import helpers
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.dbpolicy import SlaveOnlyDatabasePolicy
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.config import config
+from lp.services.database.policy import SlaveOnlyDatabasePolicy
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.mail.helpers import (
+    get_contact_email_addresses,
+    get_email_template,
+    )
 from lp.services.mail.sendmail import simple_sendmail
+from lp.services.webapp import canonical_url
 from lp.translations.interfaces.poexportrequest import IPOExportRequestSet
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate
@@ -198,7 +201,7 @@ class ExportResult:
 
     def _getFailureEmailBody(self):
         """Send an email notification about the export failing."""
-        template = helpers.get_email_template(
+        template = get_email_template(
             'poexport-failure.txt', 'translations')
         return template % {
             'person': self.person.displayname,
@@ -218,7 +221,7 @@ class ExportResult:
 
     def _getAdminFailureNotificationEmailBody(self):
         """Send an email notification about failed export to admins."""
-        template = helpers.get_email_template(
+        template = get_email_template(
             'poexport-failure-admin-notification.txt', 'translations')
         failed_requests = self._getFailedRequestsDescription()
         return template % {
@@ -231,7 +234,7 @@ class ExportResult:
 
     def _getUnicodeDecodeErrorEmailBody(self):
         """Send an email notification to admins about UnicodeDecodeError."""
-        template = helpers.get_email_template(
+        template = get_email_template(
             'poexport-failure-unicodedecodeerror.txt',
             'translations')
         failed_requests = self._getFailedRequestsDescription()
@@ -244,7 +247,7 @@ class ExportResult:
 
     def _getSuccessEmailBody(self):
         """Send an email notification about the export working."""
-        template = helpers.get_email_template(
+        template = get_email_template(
             'poexport-success.txt', 'translations')
         return template % {
             'person': self.person.displayname,
@@ -310,11 +313,11 @@ class ExportResult:
         else:
             raise AssertionError('On success, an exported URL is expected.')
 
-        recipients = list(helpers.get_contact_email_addresses(self.person))
+        recipients = list(get_contact_email_addresses(self.person))
 
         for recipient in [str(recipient) for recipient in recipients]:
             simple_sendmail(
-                from_addr=config.rosetta.admin_email,
+                from_addr=config.rosetta.notification_address,
                 to_addrs=[recipient],
                 subject='Launchpad translation download: %s' % self.name,
                 body=body)
@@ -334,7 +337,7 @@ class ExportResult:
             admins_email_body = self._getUnicodeDecodeErrorEmailBody()
 
         simple_sendmail(
-            from_addr=config.rosetta.admin_email,
+            from_addr=config.rosetta.notification_address,
             to_addrs=[config.launchpad.errors_address],
             subject=(
                 'Launchpad translation download errors: %s' % self.name),

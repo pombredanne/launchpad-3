@@ -3,8 +3,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=W0403
-
 """Update stacked_on_location for all Bazaar branches.
 
 Expects standard input of:
@@ -21,16 +19,20 @@ renamed.
 __metaclass__ = type
 
 import _pythonpath
+
 from collections import namedtuple
 import sys
 
+from bzrlib import errors
 from bzrlib.bzrdir import BzrDir
 from bzrlib.config import TransportConfig
-from bzrlib import errors
 
-from lp.codehosting.vfs import get_rw_server, get_ro_server
-from lp.codehosting.bzrutils import get_branch_stacked_on_url
 from lp.code.interfaces.codehosting import branch_id_alias
+from lp.codehosting.bzrutils import get_branch_stacked_on_url
+from lp.codehosting.vfs import (
+    get_ro_server,
+    get_rw_server,
+    )
 from lp.services.scripts.base import LaunchpadScript
 
 

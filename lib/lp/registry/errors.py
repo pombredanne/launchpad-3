@@ -5,9 +5,14 @@ __metaclass__ = type
 __all__ = [
     'DistroSeriesDifferenceError',
     'NotADerivedSeriesError',
+    'CannotChangeInformationType',
+    'CannotDeleteCommercialSubscription',
     'CannotTransitionToCountryMirror',
+    'CommercialSubscribersOnly',
+    'CannotPackageProprietaryProduct',
     'CountryMirrorAlreadySet',
     'DeleteSubscriptionError',
+    'InvalidFilename',
     'InvalidName',
     'JoinNotAllowed',
     'MirrorNotOfficial',
@@ -16,12 +21,15 @@ __all__ = [
     'NameAlreadyTaken',
     'NoSuchDistroSeries',
     'NoSuchSourcePackageName',
+    'InclusiveTeamLinkageError',
     'PPACreationError',
     'PrivatePersonLinkageError',
+    'ProprietaryProduct',
     'TeamMembershipTransitionError',
-    'TeamSubscriptionPolicyError',
+    'TeamMembershipPolicyError',
     'UserCannotChangeMembershipSilently',
     'UserCannotSubscribePerson',
+    'VoucherAlreadyRedeemed',
     ]
 
 import httplib
@@ -38,6 +46,11 @@ class PrivatePersonLinkageError(ValueError):
     """An attempt was made to link a private person/team to something."""
 
 
+@error_status(httplib.FORBIDDEN)
+class InclusiveTeamLinkageError(ValueError):
+    """An attempt was made to link an open team to something."""
+
+
 @error_status(httplib.CONFLICT)
 class NameAlreadyTaken(Exception):
     """The name given for a person is already in use by other person."""
@@ -45,6 +58,11 @@ class NameAlreadyTaken(Exception):
 
 class InvalidName(Exception):
     """The name given for a person is not valid."""
+
+
+@error_status(httplib.BAD_REQUEST)
+class InvalidFilename(Exception):
+    """An invalid filename was used as an attachment filename."""
 
 
 class NoSuchDistroSeries(NameLookupFailed):
@@ -59,6 +77,19 @@ class UserCannotChangeMembershipSilently(Unauthorized):
     Raised when a user tries to change someone's membership silently, and is
     not a Launchpad Administrator.
     """
+
+
+@error_status(httplib.FORBIDDEN)
+class CommercialSubscribersOnly(Unauthorized):
+    """Feature is only available to current commercial subscribers.
+
+    Raised when a user tries to invoke an operation that is only available to
+    current commercial subscribers and they don't have an active subscription.
+    """
+
+
+class ProprietaryProduct(Exception):
+    """Cannot make the change because the project is proprietary."""
 
 
 class NoSuchSourcePackageName(NameLookupFailed):
@@ -138,15 +169,15 @@ class TeamMembershipTransitionError(ValueError):
 
 
 @error_status(httplib.BAD_REQUEST)
-class TeamSubscriptionPolicyError(ConstraintNotSatisfied):
-    """The team cannot have the specified TeamSubscriptionPolicy.
+class TeamMembershipPolicyError(ConstraintNotSatisfied):
+    """The team cannot have the specified TeamMembershipPolicy.
 
     The error can be raised because a super team or member team prevents
     this team from setting a specific policy. The error can also be
     raised if the team has an active PPA.
     """
 
-    _default_message = "Team Subscription Policy Error"
+    _default_message = "Team Membership Policy Error"
 
     def __init__(self, message=None):
         if message is None:
@@ -169,3 +200,20 @@ class JoinNotAllowed(Exception):
 @error_status(httplib.BAD_REQUEST)
 class PPACreationError(Exception):
     """Raised when there is an issue creating a new PPA."""
+
+
+class CannotDeleteCommercialSubscription(Exception):
+    """Raised when a commercial subscription cannot be deleted."""
+
+
+@error_status(httplib.BAD_REQUEST)
+class CannotChangeInformationType(Exception):
+    """The information type cannot be changed."""
+
+
+class CannotPackageProprietaryProduct(Exception):
+    """Raised when a non-PUBLIC product's series is linked to a package."""
+
+
+class VoucherAlreadyRedeemed(Exception):
+    """Raised when a voucher is redeemed more than once."""

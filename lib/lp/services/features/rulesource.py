@@ -12,20 +12,19 @@ __all__ = [
 
 __metaclass__ = type
 
-import re
 from collections import (
     defaultdict,
     namedtuple,
     )
+import re
 
 from storm.locals import Desc
 
-from canonical.launchpad.webapp import adapter
 from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
     )
-
+from lp.services.webapp import adapter
 
 # A convenient mapping for a feature flag rule in the database.
 Rule = namedtuple("Rule", "flag scope priority value")
@@ -87,7 +86,8 @@ class FeatureRuleSource(object):
     def parseRules(self, text_form):
         """Return a list of tuples for the parsed form of the text input.
 
-        For each non-blank line gives back a tuple of (flag, scope, priority, value).
+        For each non-blank line gives back a tuple of
+        (flag, scope, priority, value).
 
         Returns a list rather than a generator so that you see any syntax
         errors immediately.
@@ -117,7 +117,7 @@ class StormFeatureRuleSource(FeatureRuleSource):
             # timeouts also looks up flags, but doing such a lookup can
             # will cause a doom if the db request is not executed or is
             # canceled by the DB - and then results in a failure in
-            # zope.app.publications.ZopePublication.handleError when it
+            # zope.app.publication.ZopePublication.handleError when it
             # calls transaction.commit.
             # By Looking this up first, we avoid this and also permit
             # code using flags to work in timed out requests (by appearing to
@@ -139,8 +139,8 @@ class StormFeatureRuleSource(FeatureRuleSource):
 
         :param new_rules: List of (name, scope, priority, value) tuples.
         """
-        # XXX: would be slightly better to only update rules as necessary so we keep
-        # timestamps, and to avoid the direct sql etc -- mbp 20100924
+        # XXX: would be slightly better to only update rules as necessary so
+        # we keep timestamps, and to avoid the direct sql etc -- mbp 20100924
         store = getFeatureStore()
         store.execute('DELETE FROM FeatureFlag')
         for (flag, scope, priority, value) in new_rules:
@@ -149,6 +149,7 @@ class StormFeatureRuleSource(FeatureRuleSource):
                 flag=unicode(flag),
                 value=value,
                 priority=priority))
+        store.flush()
 
 
 class NullFeatureRuleSource(FeatureRuleSource):

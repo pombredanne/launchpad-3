@@ -1,7 +1,5 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# pylint: disable-msg=C0322,F0401
 
 """Views, navigation and actions for BranchMergeProposals."""
 
@@ -42,13 +40,13 @@ from lazr.restful.interfaces import (
     IWebServiceClientRequest,
     )
 import simplejson
-from zope.app.form.browser import TextAreaWidget
 from zope.component import (
     adapts,
     getMultiAdapter,
     getUtility,
     )
 from zope.formlib import form
+from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
     implements,
     Interface,
@@ -64,25 +62,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    ContextMenu,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    stepthrough,
-    stepto,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.launchpad.webapp.menu import (
-    NavigationMenu,
-    structured,
-    )
+from lp import _
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -119,13 +99,30 @@ from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
     )
+from lp.services.config import config
 from lp.services.features import getFeatureFlag
 from lp.services.fields import (
     Summary,
     Whiteboard,
     )
+from lp.services.librarian.interfaces.client import LibrarianServerError
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    stepthrough,
+    stepto,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.escaping import structured
+from lp.services.webapp.interfaces import IPrimaryContext
+from lp.services.webapp.menu import NavigationMenu
 
 
 def latest_proposals_for_each_branch(proposals):
@@ -519,9 +516,18 @@ class BranchMergeProposalStatusMixin:
 class DiffRenderingMixin:
     """A mixin class for handling diff text."""
 
+    @property
+    def diff_available(self):
+        """Is the preview diff available from the librarian?"""
+        if getattr(self, '_diff_available', None) is None:
+            # Load the cache so that the answer is known.
+            self.preview_diff_text
+        return self._diff_available
+
     @cachedproperty
     def preview_diff_text(self):
         """Return a (hopefully) intelligently encoded review diff."""
+        self._diff_available = True
         preview_diff = self.preview_diff
         if preview_diff is None:
             return None
@@ -529,6 +535,9 @@ class DiffRenderingMixin:
             diff = preview_diff.text.decode('utf-8')
         except UnicodeDecodeError:
             diff = preview_diff.text.decode('windows-1252', 'replace')
+        except LibrarianServerError:
+            self._diff_available = False
+            diff = ''
         # Strip off the trailing carriage returns.
         return diff.rstrip('\n')
 
@@ -573,8 +582,16 @@ class CodeReviewNewRevisions:
         self.extra_css_class = None
         self.comment_author = None
         self.body_text = None
+        self.text_for_display = None
+        self.download_url = None
+        self.too_long = False
+        self.too_long_to_render = False
         self.comment_date = None
         self.display_attachments = False
+        self.index = None
+
+    def download(self, request):
+        pass
 
 
 class CodeReviewNewRevisionsView(LaunchpadView):
@@ -594,7 +611,6 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
 
     implements(IBranchMergeProposalActionMenu)
 
-    label = "Proposal to merge branch"
     schema = ClaimButton
 
     def initialize(self):
@@ -607,8 +623,10 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                     self.context.source_branch.unique_name),
             })
         if getFeatureFlag("longpoll.merge_proposals.enabled"):
-            cache.objects['merge_proposal_event_key'] = (
-                subscribe(self.context).event_key)
+            cache.objects['merge_proposal_event_key'] = subscribe(
+                self.context).event_key
+        if getFeatureFlag("code.inline_diff_comments.enabled"):
+            cache.objects['inline_diff_comments'] = True
 
     @action('Claim', name='claim')
     def claim_action(self, action, data):
@@ -649,7 +667,8 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         while merge_proposal is not None:
             from_superseded = merge_proposal != self.context
             comments.extend(
-                CodeReviewDisplayComment(comment, from_superseded)
+                CodeReviewDisplayComment(
+                    comment, from_superseded, limit_length=True)
                 for comment in merge_proposal.all_comments)
             merge_proposal = merge_proposal.supersedes
         comments = sorted(comments, key=operator.attrgetter('date'))
@@ -677,6 +696,12 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         return result
 
     @property
+    def label(self):
+        return "Merge %s into %s" % (
+            self.context.source_branch.bzr_identity,
+            self.context.target_branch.bzr_identity)
+
+    @property
     def pending_diff(self):
         return (
             self.context.next_preview_diff_job is not None or
@@ -696,8 +721,12 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     def has_bug_or_spec(self):
         """Return whether or not the merge proposal has a linked bug or spec.
         """
-        branch = self.context.source_branch
-        return self.linked_bugtasks or branch.spec_links
+        return self.linked_bugtasks or self.spec_links
+
+    @property
+    def spec_links(self):
+        return list(
+            self.context.source_branch.getSpecificationLinks(self.user))
 
     @cachedproperty
     def linked_bugtasks(self):
@@ -707,7 +736,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     @property
     def edit_description_link_class(self):
         if self.context.description:
-            return "unseen"
+            return "hidden"
         else:
             return ""
 
@@ -723,7 +752,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     @property
     def edit_commit_message_link_class(self):
         if self.context.commit_message:
-            return "unseen"
+            return "hidden"
         else:
             return ""
 
@@ -766,10 +795,7 @@ class DecoratedCodeReviewVoteReference:
 
     def __init__(self, context, user, users_vote):
         self.context = context
-        proposal = self.context.branch_merge_proposal
         self.can_change_review = (user == context.reviewer)
-        self.trusted = proposal.target_branch.isPersonTrustedReviewer(
-            context.reviewer)
         if user is None:
             self.user_can_review = False
         else:
@@ -785,6 +811,13 @@ class DecoratedCodeReviewVoteReference:
             self.user_can_reassign = True
         else:
             self.user_can_reassign = False
+
+    @cachedproperty
+    def trusted(self):
+        """ Is the person a trusted reviewer."""
+        proposal = self.context.branch_merge_proposal
+        return proposal.target_branch.isPersonTrustedReviewer(
+            self.context.reviewer)
 
     @property
     def show_date_requested(self):
@@ -841,7 +874,8 @@ class BranchMergeProposalVoteView(LaunchpadView):
         """Return the decorated votes for the proposal."""
         users_vote = self.context.getUsersVoteReference(self.user)
         return [DecoratedCodeReviewVoteReference(vote, self.user, users_vote)
-                for vote in self.context.votes]
+                for vote in self.context.votes
+                if check_permission('launchpad.LimitedView', vote.reviewer)]
 
     @cachedproperty
     def current_reviews(self):
@@ -1416,7 +1450,7 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
     schema = IAddVote
     field_names = ['vote', 'review_type', 'comment']
 
-    custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
+    custom_widget('comment', TextAreaWidget, cssClass='comment-text')
 
     @cachedproperty
     def initial_values(self):

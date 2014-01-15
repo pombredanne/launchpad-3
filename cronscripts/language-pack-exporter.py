@@ -3,8 +3,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=C0103,W0403
-
 """Script to export a tarball of translations for a distro series."""
 
 __metaclass__ = type
@@ -12,7 +10,9 @@ __metaclass__ = type
 import _pythonpath
 
 from lp.services.scripts.base import (
-    LaunchpadCronScript, LaunchpadScriptFailure)
+    LaunchpadCronScript,
+    LaunchpadScriptFailure,
+    )
 from lp.translations.scripts.language_pack import export_language_pack
 
 

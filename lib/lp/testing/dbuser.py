@@ -22,7 +22,7 @@ from storm.zope.interfaces import IZStorm
 import transaction
 from zope.component import getUtility
 
-from canonical.config import dbconfig
+from lp.services.config import dbconfig
 
 
 def update_store_connections():

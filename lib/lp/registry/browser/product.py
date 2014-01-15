@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for products."""
@@ -43,25 +43,22 @@ __all__ = [
     ]
 
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
 from operator import attrgetter
 
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
-import pytz
+from lazr.restful.interfaces import IJSONRequestCache
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser import (
+from zope.component import getUtility
+from zope.event import notify
+from zope.formlib import form
+from zope.formlib.interfaces import WidgetInputError
+from zope.formlib.widget import CustomWidgetFactory
+from zope.formlib.widgets import (
     CheckBoxWidget,
     TextAreaWidget,
     TextWidget,
     )
-from zope.component import getUtility
-from zope.event import notify
-from zope.formlib import form
 from zope.interface import (
     implements,
     Interface,
@@ -75,43 +72,8 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
-from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-from canonical.launchpad import (
-    _,
-    helpers,
-    )
-from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.browser.multistep import (
-    MultiStepView,
-    StepView,
-    )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp import (
-    ApplicationMenu,
-    canonical_url,
-    enabled_with_permission,
-    LaunchpadView,
-    Link,
-    Navigation,
-    sorted_version_numbers,
-    StandardLaunchpadFacets,
-    stepthrough,
-    stepto,
-    structured,
-    )
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag,
-    UnsafeFormGetSubmissionError,
-    )
-from canonical.launchpad.webapp.menu import NavigationMenu
+from lp import _
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
@@ -127,18 +89,34 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.lazrjs import (
     BooleanChoiceWidget,
+    InlinePersonEditPickerWidget,
     TextLineEditorWidget,
     )
+from lp.app.browser.multistep import (
+    MultiStepView,
+    StepView,
+    )
 from lp.app.browser.stringformatter import FormattersAPI
-from lp.app.browser.tales import MenuAPI
-from lp.app.enums import ServiceUsage
+from lp.app.browser.tales import (
+    format_link,
+    MenuAPI,
+    )
+from lp.app.enums import (
+    InformationType,
+    PROPRIETARY_INFORMATION_TYPES,
+    PUBLIC_PROPRIETARY_INFORMATION_TYPES,
+    ServiceUsage,
+    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.headings import IEditableContextTitle
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.utilities import json_dump_information_types
+from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.date import DateWidget
 from lp.app.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
     LaunchpadRadioWidget,
+    LaunchpadRadioWidgetWithDescription,
     )
 from lp.app.widgets.popup import PersonPickerWidget
 from lp.app.widgets.product import (
@@ -174,7 +152,9 @@ from lp.registry.browser.menu import (
     )
 from lp.registry.browser.pillar import (
     PillarBugsMenu,
-    PillarView,
+    PillarInvolvementView,
+    PillarNavigationMixin,
+    PillarViewMixin,
     )
 from lp.registry.browser.productseries import get_series_branch_error
 from lp.registry.interfaces.pillar import IPillarNameSet
@@ -192,29 +172,49 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.config import config
+from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.feeds.browser import FeedsMixin
 from lp.services.fields import (
     PillarAliases,
     PublicPersonChoice,
     )
-from lp.services.mail.sendmail import (
-    format_address,
-    simple_sendmail,
-    )
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    sorted_version_numbers,
+    StandardLaunchpadFacets,
+    stepthrough,
+    stepto,
+    structured,
+    )
+from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.batching import BatchNavigator
+from lp.services.webapp.breadcrumb import Breadcrumb
+from lp.services.webapp.interfaces import UnsafeFormGetSubmissionError
+from lp.services.webapp.menu import NavigationMenu
+from lp.services.worlddata.helpers import browser_languages
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.translations.browser.customlanguagecode import (
     HasCustomLanguageCodesTraversalMixin,
     )
 
 
-OR = '|'
+OR = ' OR '
 SPACE = ' '
 
 
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin,
     FAQTargetNavigationMixin, HasCustomLanguageCodesTraversalMixin,
-    QuestionTargetTraversalMixin, StructuralSubscriptionTargetTraversalMixin):
+    QuestionTargetTraversalMixin, StructuralSubscriptionTargetTraversalMixin,
+    PillarNavigationMixin):
 
     usedfor = IProduct
 
@@ -227,7 +227,10 @@ class ProductNavigation(
 
     @stepthrough('+spec')
     def traverse_spec(self, name):
-        return self.context.getSpecification(name)
+        spec = self.context.getSpecification(name)
+        if not check_permission('launchpad.LimitedView', spec):
+            return None
+        return spec
 
     @stepthrough('+milestone')
     def traverse_milestone(self, name):
@@ -261,7 +264,7 @@ class ProductSetNavigation(Navigation):
 
 
 class ProductLicenseMixin:
-    """Adds license validation and requests reviews of licenses.
+    """Adds licence validation and requests reviews of licences.
 
     Subclasses must inherit from Launchpad[Edit]FormView as well.
 
@@ -273,105 +276,34 @@ class ProductLicenseMixin:
         """Validate 'licenses' and 'license_info'.
 
         'licenses' must not be empty unless the product already
-        exists and never has had a license set.
+        exists and never has had a licence set.
 
         'license_info' must not be empty if "Other/Proprietary"
         or "Other/Open Source" is checked.
         """
         licenses = data.get('licenses', [])
         license_widget = self.widgets.get('licenses')
-        if (len(licenses) == 0 and
-            license_widget is not None and
-            not license_widget.allow_pending_license):
-            # License is optional on +edit page if not already set.
+        if (len(licenses) == 0 and license_widget is not None):
             self.setFieldError(
                 'licenses',
-                'You must select at least one license.  If you select '
+                'You must select at least one licence.  If you select '
                 'Other/Proprietary or Other/OpenSource you must include a '
-                'description of the license.')
+                'description of the licence.')
         elif License.OTHER_PROPRIETARY in licenses:
             if not data.get('license_info'):
                 self.setFieldError(
                     'license_info',
                     'A description of the "Other/Proprietary" '
-                    'license you checked is required.')
+                    'licence you checked is required.')
         elif License.OTHER_OPEN_SOURCE in licenses:
             if not data.get('license_info'):
                 self.setFieldError(
                     'license_info',
                     'A description of the "Other/Open Source" '
-                    'license you checked is required.')
+                    'licence you checked is required.')
         else:
             # Launchpad is ok with all licenses used in this project.
             pass
-
-    def notifyCommercialMailingList(self):
-        """Notify user about Launchpad license rules."""
-        licenses = list(self.product.licenses)
-        needs_email = (
-            License.OTHER_PROPRIETARY in licenses
-            or License.OTHER_OPEN_SOURCE in licenses
-            or [License.DONT_KNOW] == licenses)
-        if not needs_email:
-            # The project has a recognized license.
-            return
-
-        def indent(text):
-            if text is None:
-                return None
-            text = '\n    '.join(line for line in text.split('\n'))
-            text = '    ' + text
-            return text
-
-        user = getUtility(ILaunchBag).user
-        user_address = format_address(
-            user.displayname, user.preferredemail.email)
-        from_address = format_address(
-            "Launchpad", config.canonical.noreply_from_address)
-        commercial_address = format_address(
-            'Commercial', 'commercial@launchpad.net')
-        license_titles = '\n'.join(
-            license.title for license in self.product.licenses)
-        substitutions = dict(
-            user_browsername=user.displayname,
-            user_name=user.name,
-            product_name=self.product.name,
-            product_url=canonical_url(self.product),
-            product_summary=indent(self.product.summary),
-            license_titles=indent(license_titles),
-            license_info=indent(self.product.license_info))
-        # Email the user about license policy.
-        subject = (
-            "License information for %(product_name)s "
-            "in Launchpad" % substitutions)
-        template = helpers.get_email_template(
-            'product-other-license.txt', app='registry')
-        message = template % substitutions
-        simple_sendmail(
-            from_address, user_address,
-            subject, message, headers={'Reply-To': commercial_address})
-        # Inform that Launchpad recognized the license change.
-        self._addLicenseChangeToReviewWhiteboard()
-        self.request.response.addInfoNotification(_(
-            "Launchpad is free to use for software under approved "
-            "licenses. The Launchpad team will be in contact with "
-            "you soon."))
-
-    def _addLicenseChangeToReviewWhiteboard(self):
-        """Update the whiteboard for the reviewer's benefit."""
-        now = self._formatDate()
-        whiteboard = 'User notified of license policy on %s.' % now
-        naked_product = removeSecurityProxy(self.product)
-        if naked_product.reviewer_whiteboard is None:
-            naked_product.reviewer_whiteboard = whiteboard
-        else:
-            naked_product.reviewer_whiteboard += '\n' + whiteboard
-
-    def _formatDate(self, now=None):
-        """Return the date formatted for messages."""
-        if now is None:
-            now = datetime.now(tz=pytz.UTC)
-        return now.strftime('%Y-%m-%d')
 
 
 class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -410,7 +342,7 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link('', text, summary)
 
 
-class ProductInvolvementView(PillarView):
+class ProductInvolvementView(PillarInvolvementView):
     """Encourage configuration of involvement links for projects."""
 
     has_involvement = True
@@ -497,7 +429,6 @@ class ProductNavigationMenu(NavigationMenu):
     links = [
         'details',
         'announcements',
-        'branchvisibility',
         'downloads',
         ]
 
@@ -512,11 +443,6 @@ class ProductNavigationMenu(NavigationMenu):
     def downloads(self):
         text = 'Downloads'
         return Link('+download', text)
-
-    @enabled_with_permission('launchpad.Admin')
-    def branchvisibility(self):
-        text = 'Branch Visibility Policy'
-        return Link('+branchvisibility', text)
 
 
 class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
@@ -571,6 +497,10 @@ class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Driver')
+    def sharing(self):
+        return Link('+sharing', 'Sharing', icon='edit')
+
 
 class IProductEditMenu(Interface):
     """A marker interface for the 'Change details' navigation menu."""
@@ -589,7 +519,7 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
 
     @cachedproperty
     def links(self):
-        links = ['edit', 'review_license', 'administer']
+        links = ['edit', 'review_license', 'administer', 'sharing']
         add_subscribe_link(links)
         return links
 
@@ -617,8 +547,6 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
         'announcements',
         'administer',
         'review_license',
-        'branch_add',
-        'branchvisibility',
         'rdf',
         'branding',
         'view_recipes',
@@ -670,19 +598,8 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
         text = 'Downloads'
         return Link('+download', text, icon='info')
 
-    @enabled_with_permission('launchpad.Admin')
-    def branchvisibility(self):
-        text = 'Branch Visibility Policy'
-        return Link('+branchvisibility', text, icon='edit')
 
-    def branch_add(self):
-        text = 'Register a branch'
-        summary = "Register a new Bazaar branch for this project"
-        return Link('+addbranch', text, summary, icon='add', site='code')
-
-
-class ProductBugsMenu(PillarBugsMenu,
-                      ProductEditLinksMixin):
+class ProductBugsMenu(PillarBugsMenu, ProductEditLinksMixin):
 
     usedfor = IProduct
     facet = 'bugs'
@@ -690,12 +607,7 @@ class ProductBugsMenu(PillarBugsMenu,
 
     @cachedproperty
     def links(self):
-        links = [
-            'filebug',
-            'bugsupervisor',
-            'securitycontact',
-            'cve',
-            ]
+        links = ['filebug', 'bugsupervisor', 'cve']
         add_subscribe_link(links)
         links.append('configure_bugtracker')
         return links
@@ -994,11 +906,39 @@ class ProductDownloadFileMixin:
                     return release
         return None
 
+    @cachedproperty
+    def has_download_files(self):
+        for series in self.context.series:
+            if series.status == SeriesStatus.OBSOLETE:
+                continue
+            for release in series.getCachedReleases():
+                if len(list(release.files)) > 0:
+                    return True
+        return False
 
-class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
-                  ProductDownloadFileMixin):
+
+class ProductView(PillarViewMixin, HasAnnouncementsView, SortSeriesMixin,
+                  FeedsMixin, ProductDownloadFileMixin):
 
     implements(IProductActionMenu, IEditableContextTitle)
+
+    @property
+    def maintainer_widget(self):
+        return InlinePersonEditPickerWidget(
+            self.context, IProduct['owner'],
+            format_link(self.context.owner),
+            header='Change maintainer', edit_view='+edit-people',
+            step_title='Select a new maintainer', show_create_team=True)
+
+    @property
+    def driver_widget(self):
+        return InlinePersonEditPickerWidget(
+            self.context, IProduct['driver'],
+            format_link(self.context.driver, empty_value="Not yet selected"),
+            header='Change driver', edit_view='+edit-people',
+            step_title='Select a new driver', show_create_team=True,
+            null_display_value="Not yet selected",
+            help_link="/+help-registry/driver.html")
 
     def __init__(self, context, request):
         HasAnnouncementsView.__init__(self, context, request)
@@ -1011,10 +951,13 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         title_field = IProduct['title']
         title = "Edit this title"
         self.title_edit_widget = TextLineEditorWidget(
-            product, title_field, title, 'h1')
+            product, title_field, title, 'h1', max_width='95%',
+            truncate_lines=2)
         programming_lang = IProduct['programminglang']
         title = 'Edit programming languages'
-        additional_arguments = {'width': '9em'}
+        additional_arguments = {
+            'width': '9em',
+            'css_class': 'nowrap'}
         if self.context.programminglang is None:
             additional_arguments.update(dict(
                 default_text='Not yet specified',
@@ -1031,6 +974,12 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
     @property
     def page_title(self):
         return '%s in Launchpad' % self.context.displayname
+
+    @property
+    def page_description(self):
+        return '\n'.filter(
+            None,
+            [self.context.summary, self.context.description])
 
     @property
     def show_license_status(self):
@@ -1066,7 +1015,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         The home page link is not included because its link must have the
         rel=nofollow attribute.
         """
-        from canonical.launchpad.webapp.menu import MenuLink
+        from lp.services.webapp.menu import MenuLink
         urls = [
             ('Sourceforge project', self.sourceforge_url),
             ('Freshmeat record', self.freshmeat_url),
@@ -1093,18 +1042,12 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         return ICountry(self.request, None)
 
     def browserLanguages(self):
-        return helpers.browserLanguages(self.request)
+        return browser_languages(self.request)
 
     def getClosedBugsURL(self, series):
         status = [status.title for status in RESOLVED_BUGTASK_STATUSES]
         url = canonical_url(series) + '/+bugs'
         return get_buglisting_search_filter_url(url, status=status)
-
-    @property
-    def requires_commercial_subscription(self):
-        """Whether to display notice to purchase a commercial subscription."""
-        return (len(self.context.licenses) > 0
-                and self.context.commercial_subscription_is_due)
 
     @property
     def can_purchase_subscription(self):
@@ -1137,7 +1080,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
 
     @cachedproperty
     def show_license_info(self):
-        """Should the view show the extra license information."""
+        """Should the view show the extra licence information."""
         return (
             License.OTHER_OPEN_SOURCE in self.context.licenses
             or License.OTHER_PROPRIETARY in self.context.licenses)
@@ -1177,7 +1120,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         if License.OTHER_PROPRIETARY in licenses:
             return 'Commercial subscription required'
         elif [License.DONT_KNOW] == licenses or [] == licenses:
-            return 'License required'
+            return 'Licence required'
         return BooleanChoiceWidget(
             self.context, IProduct['license_approved'],
             content_box_id='%s-edit-license-approved' % FormattersAPI(
@@ -1186,7 +1129,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             tag='span',
             false_text='Unapproved',
             true_text='Approved',
-            header='Does the license qualifiy the project for free hosting?')
+            header='Does the licence qualifiy the project for free hosting?')
 
 
 class ProductPurchaseSubscriptionView(ProductView):
@@ -1236,18 +1179,10 @@ class ProductPackagesView(LaunchpadView):
         return results
 
 
-class ProductPackagesPortletView(LaunchpadFormView):
+class ProductPackagesPortletView(LaunchpadView):
     """View class for product packaging portlet."""
 
     schema = Interface
-    package_field_name = 'distributionsourcepackage'
-    custom_widget(
-        package_field_name, LaunchpadRadioWidget, orientation='vertical')
-    suggestions = None
-    max_suggestions = 8
-    other_package = object()
-    not_packaged = object()
-    initial_focus_widget = None
 
     @cachedproperty
     def sourcepackages(self):
@@ -1263,81 +1198,6 @@ class ProductPackagesPortletView(LaunchpadFormView):
         """Are there packages, or can packages be suggested."""
         if len(self.sourcepackages) > 0:
             return True
-        if self.user is None:
-            return False
-        date_next_suggest_packaging = self.context.date_next_suggest_packaging
-        return (
-            date_next_suggest_packaging is None
-            or date_next_suggest_packaging <= datetime.now(tz=pytz.UTC))
-
-    @property
-    def initial_values(self):
-        """See `LaunchpadFormView`."""
-        return {self.package_field_name: self.other_package}
-
-    def setUpFields(self):
-        """See `LaunchpadFormView`."""
-        super(ProductPackagesPortletView, self).setUpFields()
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        distro_source_packages = ubuntu.searchSourcePackages(
-            self.context.name, has_packaging=False,
-            publishing_distroseries=ubuntu.currentseries)
-        # Based upon the matches, create a new vocabulary with
-        # term descriptions that include a link to the source package.
-        self.suggestions = []
-        vocab_terms = []
-        for package in distro_source_packages[:self.max_suggestions]:
-            if package.development_version.currentrelease is not None:
-                self.suggestions.append(package)
-                item_url = canonical_url(package)
-                description = structured(
-                    '<a href="%s">%s</a>', item_url, package.name)
-                vocab_terms.append(
-                    SimpleTerm(package, package.name, description))
-        # Add an option to represent the user's decision to choose a
-        # different package. Note that source packages cannot have uppercase
-        # names with underscores, so the name is safe to use.
-        description = 'Choose another Ubuntu package'
-        vocab_terms.append(
-            SimpleTerm(self.other_package, 'OTHER_PACKAGE', description))
-        vocabulary = SimpleVocabulary(vocab_terms)
-        # Add an option to represent that the project is not packaged in
-        # Ubuntu.
-        description = 'This project is not packaged in Ubuntu'
-        vocab_terms.append(
-            SimpleTerm(self.not_packaged, 'NOT_PACKAGED', description))
-        vocabulary = SimpleVocabulary(vocab_terms)
-        series_display_name = ubuntu.currentseries.displayname
-        self.form_fields = form.Fields(
-            Choice(__name__=self.package_field_name,
-                   title=_('Ubuntu %s packages') % series_display_name,
-                   default=None,
-                   vocabulary=vocabulary,
-                   required=True))
-
-    @action(_('Set Ubuntu Package Information'), name='link')
-    def link(self, action, data):
-        product = self.context
-        dsp = data.get(self.package_field_name)
-        product_series = product.development_focus
-        if dsp is self.other_package:
-            # The user wants to link an alternate package to this project.
-            self.next_url = canonical_url(
-                product_series, view_name="+ubuntupkg")
-            return
-        if dsp is self.not_packaged:
-            year_from_now = datetime.now(tz=pytz.UTC) + timedelta(days=365)
-            self.context.date_next_suggest_packaging = year_from_now
-            self.next_url = self.request.getURL()
-            return
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        product_series.setPackaging(ubuntu.currentseries,
-                                    dsp.sourcepackagename,
-                                    self.user)
-        self.request.response.addInfoNotification(
-            'This project was linked to the source package "%s"' %
-            dsp.displayname)
-        self.next_url = self.request.getURL()
 
 
 class SeriesReleasePair:
@@ -1470,6 +1330,15 @@ class ProductConfigureBase(ReturnToReferrerMixin, LaunchpadEditFormView):
                 field.description = (
                     field.description.replace('pillar', 'project'))
                 usage_field.field = field
+                if (self.usage_fieldname in
+                    ('answers_usage', 'translations_usage') and
+                    self.context.information_type in
+                    PROPRIETARY_INFORMATION_TYPES):
+                    values = usage_field.field.vocabulary.items
+                    terms = [SimpleTerm(value, value.name, value.title)
+                             for value in values
+                             if value != ServiceUsage.LAUNCHPAD]
+                    usage_field.field.vocabulary = SimpleVocabulary(terms)
 
     @property
     def field_names(self):
@@ -1512,6 +1381,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         "description",
         "project",
         "homepageurl",
+        "information_type",
         "sourceforgeproject",
         "freshmeatproject",
         "wikiurl",
@@ -1524,21 +1394,54 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         ]
     custom_widget('licenses', LicenseWidget)
     custom_widget('license_info', GhostWidget)
+    custom_widget(
+        'information_type', LaunchpadRadioWidgetWithDescription,
+        vocabulary=InformationTypeVocabulary(
+            types=PUBLIC_PROPRIETARY_INFORMATION_TYPES))
+
+    @property
+    def next_url(self):
+        """See `LaunchpadFormView`."""
+        if self.context.active:
+            if len(self.errors) > 0:
+                return None
+            return canonical_url(self.context)
+        else:
+            return canonical_url(getUtility(IProductSet))
+
+    cancel_url = next_url
 
     @property
     def page_title(self):
         """The HTML page title."""
         return "Change %s's details" % self.context.title
 
-    def setUpWidgets(self):
-        """See `LaunchpadFormView`."""
-        super(ProductEditView, self).setUpWidgets()
-        # Licenses are optional on +edit page if they have not already
-        # been set. Subclasses may not have 'licenses' widget.
-        # ('licenses' in self.widgets) is broken.
-        if (len(self.context.licenses) == 0 and
-            self.widgets.get('licenses') is not None):
-            self.widgets['licenses'].allow_pending_license = True
+    def initialize(self):
+        # The JSON cache must be populated before the super call, since
+        # the form is rendered during LaunchpadFormView's initialize()
+        # when an action is invoked.
+        cache = IJSONRequestCache(self.request)
+        json_dump_information_types(
+            cache, PUBLIC_PROPRIETARY_INFORMATION_TYPES)
+        super(ProductEditView, self).initialize()
+
+    def validate(self, data):
+        """Validate 'licenses' and 'license_info'.
+
+        'licenses' must not be empty unless the product already
+        exists and never has had a licence set.
+
+        'license_info' must not be empty if "Other/Proprietary"
+        or "Other/Open Source" is checked.
+        """
+        super(ProductEditView, self).validate(data)
+        information_type = data.get('information_type')
+        if information_type:
+            errors = [
+                str(e) for e in self.context.checkInformationType(
+                    information_type)]
+            if len(errors) > 0:
+                self.setFieldError('information_type', ' '.join(errors))
 
     def showOptionalMarker(self, field_name):
         """See `LaunchpadFormView`."""
@@ -1552,38 +1455,10 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
 
     @action("Change", name='change')
     def change_action(self, action, data):
-        previous_licenses = self.context.licenses
         self.updateContextFromData(data)
-        # only send email the first time licenses are set
-        if len(previous_licenses) == 0:
-            # self.product is expected by notifyCommercialMailingList
-            self.product = self.context
-            self.notifyCommercialMailingList()
-
-    @property
-    def next_url(self):
-        """See `LaunchpadFormView`."""
-        if self.context.active:
-            return canonical_url(self.context)
-        else:
-            return canonical_url(getUtility(IProductSet))
-
-    @property
-    def cancel_url(self):
-        """See `LaunchpadFormView`."""
-        return self.next_url
 
 
 class ProductValidationMixin:
-
-    def validate_private_bugs(self, data):
-        """Perform validation for the private bugs setting."""
-        if data.get('private_bugs') and self.context.bug_supervisor is None:
-            self.setFieldError('private_bugs',
-                structured(
-                    'Set a <a href="%s/+bugsupervisor">bug supervisor</a> '
-                    'for this project first.',
-                    canonical_url(self.context, rootsite="bugs")))
 
     def validate_deactivation(self, data):
         """Verify whether a product can be safely deactivated."""
@@ -1605,7 +1480,6 @@ class ProductAdminView(ProductEditView, ProductValidationMixin):
         "owner",
         "active",
         "autoupdate",
-        "private_bugs",
         ]
 
     @property
@@ -1665,7 +1539,7 @@ class ProductAdminView(ProductEditView, ProductValidationMixin):
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
-        self.validate_private_bugs(data)
+        super(ProductAdminView, self).validate(data)
         self.validate_deactivation(data)
 
     @property
@@ -1674,15 +1548,14 @@ class ProductAdminView(ProductEditView, ProductValidationMixin):
         return canonical_url(self.context)
 
 
-class ProductReviewLicenseView(ReturnToReferrerMixin,
-                               ProductEditView, ProductValidationMixin):
+class ProductReviewLicenseView(ReturnToReferrerMixin, ProductEditView,
+                               ProductValidationMixin):
     """A view to review a project and change project privileges."""
     label = "Review project"
     field_names = [
         "project_reviewed",
         "license_approved",
         "active",
-        "private_bugs",
         "reviewer_whiteboard",
         ]
 
@@ -1694,6 +1567,7 @@ class ProductReviewLicenseView(ReturnToReferrerMixin,
     def validate(self, data):
         """See `LaunchpadFormView`."""
 
+        super(ProductReviewLicenseView, self).validate(data)
         # A project can only be approved if it has OTHER_OPEN_SOURCE as one of
         # its licenses and not OTHER_PROPRIETARY.
         licenses = self.context.licenses
@@ -1707,13 +1581,10 @@ class ProductReviewLicenseView(ReturnToReferrerMixin,
                     'must use the commercial subscription voucher system '
                     'to be allowed to use Launchpad.')
             else:
-                # An Other/Open Source license was specified so it may be
+                # An Other/Open Source licence was specified so it may be
                 # approved.
                 pass
 
-        # Private bugs can only be enabled if the product has a bug
-        # supervisor.
-        self.validate_private_bugs(data)
         self.validate_deactivation(data)
 
 
@@ -1788,7 +1659,7 @@ class ProductRdfView(BaseRdfView):
 
     @property
     def filename(self):
-        return self.context.name
+        return '%s.rdf' % self.context.name
 
 
 class Icon:
@@ -1840,7 +1711,8 @@ class ProductSetView(LaunchpadView):
 
     @cachedproperty
     def all_batched(self):
-        return BatchNavigator(self.context.all_active, self.request)
+        return BatchNavigator(self.context.get_all_active(self.user),
+                              self.request)
 
     @cachedproperty
     def matches(self):
@@ -1858,6 +1730,9 @@ class ProductSetView(LaunchpadView):
     def tooManyResultsFound(self):
         return self.matches > self.max_results_to_display
 
+    def latest(self):
+        return self.context.get_all_active(self.user)[:5]
+
 
 class ProductSetReviewLicensesView(LaunchpadFormView):
     """View for searching products to be reviewed."""
@@ -1871,9 +1746,8 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         'active',
         'project_reviewed',
         'license_approved',
-        'license_info_is_empty',
         'licenses',
-        'has_zero_licenses',
+        'has_subscription',
         ]
 
     side_by_side_field_names = [
@@ -1891,9 +1765,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
                   _messageNoValue="(do not filter)")
     custom_widget('license_approved', LaunchpadRadioWidget,
                   _messageNoValue="(do not filter)")
-    custom_widget('license_info_is_empty', LaunchpadRadioWidget,
-                  _messageNoValue="(do not filter)")
-    custom_widget('has_zero_licenses', LaunchpadRadioWidget,
+    custom_widget('has_subscription', LaunchpadRadioWidget,
                   _messageNoValue="(do not filter)")
     custom_widget('created_after', DateWidget)
     custom_widget('created_before', DateWidget)
@@ -1936,8 +1808,8 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         search_params = self.initial_values
         # Override the defaults with the form values if available.
         search_params.update(data)
-        return BatchNavigator(self.context.forReview(**search_params),
-                              self.request, size=50)
+        result = self.context.forReview(self.user, **search_params)
+        return BatchNavigator(result, self.request, size=50)
 
 
 class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
@@ -1998,9 +1870,7 @@ class ProjectAddStepOne(StepView):
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(ProjectAddStepOne, self).setUpFields()
-        self.form_fields = (
-            self.form_fields +
-            create_source_package_fields())
+        self.form_fields = (self.form_fields + create_source_package_fields())
 
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
@@ -2040,9 +1910,9 @@ class ProjectAddStepOne(StepView):
 class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     """Step 2 (of 2) in the +new project add wizard."""
 
-    _field_names = ['displayname', 'name', 'title', 'summary',
-                    'description', 'homepageurl', 'licenses', 'license_info',
-                    ]
+    _field_names = ['displayname', 'name', 'title', 'summary', 'description',
+                    'homepageurl', 'information_type', 'licenses',
+                    'license_info', 'driver', 'bug_supervisor', 'owner']
     schema = IProduct
     step_name = 'projectaddstep2'
     template = ViewPageTemplateFile('../templates/product-new.pt')
@@ -2055,6 +1925,32 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     custom_widget('licenses', LicenseWidget)
     custom_widget('license_info', GhostWidget)
+    custom_widget(
+        'information_type',
+        LaunchpadRadioWidgetWithDescription,
+        vocabulary=InformationTypeVocabulary(
+            types=PUBLIC_PROPRIETARY_INFORMATION_TYPES))
+
+    custom_widget(
+        'owner', PersonPickerWidget, header="Select the maintainer",
+        show_create_team_link=True)
+    custom_widget(
+        'bug_supervisor', PersonPickerWidget, header="Set a bug supervisor",
+        required=True, show_create_team_link=True)
+    custom_widget(
+        'driver', PersonPickerWidget, header="Set a driver",
+        required=True, show_create_team_link=True)
+    custom_widget(
+        'disclaim_maintainer', CheckBoxWidget, cssClass="subordinate")
+
+    def initialize(self):
+        # The JSON cache must be populated before the super call, since
+        # the form is rendered during LaunchpadFormView's initialize()
+        # when an action is invoked.
+        cache = IJSONRequestCache(self.request)
+        json_dump_information_types(
+            cache, PUBLIC_PROPRIETARY_INFORMATION_TYPES)
+        super(ProjectAddStepTwo, self).initialize()
 
     @property
     def main_action_label(self):
@@ -2062,8 +1958,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             return u'Complete Registration'
         else:
             return u'Complete registration and link to %s package' % (
-                self.source_package_name.name,
-                )
+                self.source_package_name.name)
 
     @property
     def _return_url(self):
@@ -2082,12 +1977,33 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             return 'Check for duplicate projects'
         return 'Registration details'
 
+    @property
+    def initial_values(self):
+        return {
+            'driver': self.user.name,
+            'bug_supervisor': self.user.name,
+            'owner': self.user.name,
+            'information_type': InformationType.PUBLIC,
+        }
+
+    @property
+    def enable_information_type(self):
+        return not self.source_package_name
+
     def setUpFields(self):
         """See `LaunchpadFormView`."""
         super(ProjectAddStepTwo, self).setUpFields()
-        self.form_fields = (self.form_fields +
-                            self._createDisclaimMaintainerField() +
-                            create_source_package_fields())
+        hidden_names = ['__visited_steps__', 'license_info']
+        hidden_fields = self.form_fields.select(*hidden_names)
+
+        if not self.enable_information_type:
+            hidden_names.extend(
+                ['information_type', 'bug_supervisor', 'driver'])
+
+        visible_fields = self.form_fields.omit(*hidden_names)
+        self.form_fields = (
+            visible_fields + self._createDisclaimMaintainerField() +
+            create_source_package_fields() + hidden_fields)
 
     def _createDisclaimMaintainerField(self):
         """Return a Bool field for disclaiming maintainer.
@@ -2096,7 +2012,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         this checkbox and the ownership will be transfered to the registry
         admins team.
         """
-
         return form.Fields(
             Bool(__name__='disclaim_maintainer',
                  title=_("I do not want to maintain this project"),
@@ -2116,12 +2031,15 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         self.widgets['name'].read_only = True
         # The "hint" is really more of an explanation at this point, but the
         # phrasing is different.
-        self.widgets['name'].hint = ('When published, '
-                                     "this will be the project's URL.")
+        self.widgets['name'].hint = (
+            "When published, this will be the project's URL.")
         self.widgets['displayname'].visible = False
-
         self.widgets['source_package_name'].visible = False
         self.widgets['distroseries'].visible = False
+
+        if (self.enable_information_type and
+            IProductSet.providedBy(self.context)):
+            self.widgets['information_type'].value = InformationType.PUBLIC
 
         # Set the source_package_release attribute on the licenses
         # widget, so that the source package's copyright info can be
@@ -2165,17 +2083,16 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         """
         # XXX BarryWarsaw 16-Apr-2009 do we need batching and should we return
         # more than 7 hits?
-        pillar_set = getUtility(IPillarNameSet)
-        return pillar_set.search(self._search_string, 7)
+        return getUtility(IPillarNameSet).search(self._search_string, 7)
 
     @cachedproperty
     def search_results_count(self):
         """Return the count of matching `IPillar`s."""
-        pillar_set = getUtility(IPillarNameSet)
-        return pillar_set.count_search_matches(self._search_string)
+        return getUtility(IPillarNameSet).count_search_matches(
+            self._search_string)
 
     # StepView requires that its validate() method not be overridden, so make
-    # sure this calls the right method.  validateStep() will call the license
+    # sure this calls the right method.  validateStep() will call the licence
     # validation code.
     def validate(self, data):
         """See `MultiStepView`."""
@@ -2184,6 +2101,18 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     def validateStep(self, data):
         """See `MultiStepView`."""
         ProductLicenseMixin.validate(self, data)
+        if data.get('disclaim_maintainer') and self.errors:
+            # The checkbox supersedes the owner text input.
+            errors = [error for error in self.errors if error[0] == 'owner']
+            for error in errors:
+                self.errors.remove(error)
+
+        if self.enable_information_type:
+            if data.get('information_type') != InformationType.PUBLIC:
+                for required_field in ('bug_supervisor', 'driver'):
+                    if data.get(required_field) is None:
+                        self.setFieldError(
+                            required_field, 'Select a user or team.')
 
     @property
     def label(self):
@@ -2201,9 +2130,12 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
         if disclaim_maintainer:
             owner = getUtility(ILaunchpadCelebrities).registry_experts
         else:
-            owner = self.user
+            owner = data.get('owner')
+
         return getUtility(IProductSet).createProduct(
             registrant=self.user,
+            bug_supervisor=data.get('bug_supervisor', None),
+            driver=data.get('driver', None),
             owner=owner,
             name=data['name'],
             displayname=data['displayname'],
@@ -2213,6 +2145,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             homepageurl=data.get('homepageurl'),
             licenses=data['licenses'],
             license_info=data['license_info'],
+            information_type=data.get('information_type'),
             project=project)
 
     def link_source_package(self, product, data):
@@ -2229,7 +2162,6 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
     def main_action(self, data):
         """See `MultiStepView`."""
         self.product = self.create_product(data)
-        self.notifyCommercialMailingList()
         notify(ObjectCreatedEvent(self.product))
         self.link_source_package(self.product, data)
 
@@ -2239,7 +2171,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
             self.next_url = self._return_url
 
 
-class ProductAddView(MultiStepView):
+class ProductAddView(PillarViewMixin, MultiStepView):
     """The controlling view for product/+new."""
 
     page_title = ProjectAddStepOne.page_title
@@ -2292,11 +2224,11 @@ class ProductEditPeopleView(LaunchpadEditFormView):
     initial_values = {'transfer_to_registry': False}
 
     custom_widget('owner', PersonPickerWidget, header="Select the maintainer",
-                  include_create_team_link=True)
+                  show_create_team_link=True)
     custom_widget('transfer_to_registry', CheckBoxWidget,
                   widget_class='field subordinate')
     custom_widget('driver', PersonPickerWidget, header="Select the driver",
-                  include_create_team_link=True)
+                  show_create_team_link=True)
 
     @property
     def page_title(self):
@@ -2308,23 +2240,31 @@ class ProductEditPeopleView(LaunchpadEditFormView):
 
         At most one may be specified.
         """
-        # If errors have already been found we can skip validation.
-        if len(self.errors) > 0:
-            return
         xfer = data.get('transfer_to_registry', False)
         owner = data.get('owner')
-        if owner is not None and xfer:
-            self.setFieldError(
-                'owner',
-                'You may not specify a new owner if you '
-                'select the checkbox.')
-        elif xfer:
-            data['owner'] = getUtility(ILaunchpadCelebrities).registry_experts
-        elif owner is None:
-            self.setFieldError(
-                'owner',
-                'You must specify a maintainer or select '
-                'the checkbox.')
+        error = None
+        if xfer:
+            if owner:
+                error = (
+                    'You may not specify a new owner if you select the '
+                    'checkbox.')
+            else:
+                celebrities = getUtility(ILaunchpadCelebrities)
+                data['owner'] = celebrities.registry_experts
+        else:
+            if not owner:
+                if self.errors and isinstance(
+                    self.errors[0], WidgetInputError):
+                    del self.errors[0]
+                    error = (
+                        'You must choose a valid person or team to be the '
+                        'owner for %s.' % self.context.displayname)
+                else:
+                    error = (
+                        'You must specify a maintainer or select the '
+                        'checkbox.')
+        if error:
+            self.setFieldError('owner', error)
 
     @action(_('Save changes'), name='save')
     def save_action(self, action, data):

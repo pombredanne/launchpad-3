@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -116,6 +116,18 @@ class CachedProperty:
             value = self.populate(instance)
             setattr(cache, self.name, value)
             return value
+
+    def __set__(self, instance, value):
+        raise AttributeError(
+            "%s cannot be set here; instead set explicitly with "
+            "get_property_cache(object).%s = %r" % (
+                self.name, self.name, value))
+
+    def __delete__(self, instance):
+        raise AttributeError(
+            "%s cannot be deleted here; instead delete explicitly "
+            "with del get_property_cache(object).%s" % (
+                self.name, self.name))
 
 
 def cachedproperty(name_or_function):

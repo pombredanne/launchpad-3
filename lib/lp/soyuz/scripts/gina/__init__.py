@@ -8,7 +8,7 @@ from subprocess import (
     STDOUT,
     )
 
-from canonical.launchpad.scripts import log
+from lp.services.scripts import log
 
 
 class ExecutionError(Exception):

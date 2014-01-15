@@ -8,59 +8,51 @@ lot of state and many relationships to other objects.
 Bugs themselves
 ---------------
 
-At the top level we provide a collection of bugs.
+Bugs are indexed by number beneath the top-level collection.
 
     >>> from lazr.restful.testing.webservice import (
     ...     pprint_collection, pprint_entry)
-    >>> from operator import itemgetter
-    >>> bugs = webservice.get("/bugs").jsonBody()
-    >>> bugs['total_size']
-    15
-    >>> bug_entries = sorted(bugs['entries'], key=itemgetter('id'))
-    >>> pprint_entry(bug_entries[0])
-    activity_collection_link: u'http://.../bugs/11/activity'
-    attachments_collection_link: u'http://.../bugs/11/attachments'
-    bug_tasks_collection_link: u'http://.../bugs/11/bug_tasks'
-    bug_watches_collection_link: u'http://.../bugs/11/bug_watches'
+    >>> bug_one = webservice.get("/bugs/1").jsonBody()
+    >>> pprint_entry(bug_one)
+    activity_collection_link: u'http://.../bugs/1/activity'
+    attachments_collection_link: u'http://.../bugs/1/attachments'
+    bug_tasks_collection_link: u'http://.../bugs/1/bug_tasks'
+    bug_watches_collection_link: u'http://.../bugs/1/bug_watches'
     can_expire: False
-    cves_collection_link: u'http://.../bugs/11/cves'
-    date_created: u'2007-03-15T20:33:56.678930+00:00'
+    cves_collection_link: u'http://.../bugs/1/cves'
+    date_created: u'2004-01-01T20:58:04.553583+00:00'
     date_last_message: None
-    date_last_updated: u'2007-03-15T20:37:51.603369+00:00'
+    date_last_updated: u'2006-05-19T06:37:40.344941+00:00'
     date_made_private: None
-    description: u"I've had problems when switching..."
+    description: u'Firefox needs to support embedded SVG...'
     duplicate_of_link: None
-    duplicates_collection_link: u'http://.../bugs/11/duplicates'
+    duplicates_collection_link: u'http://.../bugs/1/duplicates'
     heat: 0
-    id: 11
+    id: 1
+    information_type: u'Public'
     latest_patch_uploaded: None
-    linked_branches_collection_link: u'http://.../bugs/11/linked_branches'
-    message_count: 7
-    messages_collection_link: u'http://.../bugs/11/messages'
+    linked_branches_collection_link: u'http://.../bugs/1/linked_branches'
+    message_count: 2
+    messages_collection_link: u'http://.../bugs/1/messages'
     name: None
     number_of_duplicates: 0
-    owner_link: u'http://.../~name16'
+    other_users_affected_count_with_dupes: 0
+    owner_link: u'http://.../~name12'
     private: False
     resource_type_link: u'http://.../#bug'
     security_related: False
-    self_link: u'http://.../bugs/11'
-    subscriptions_collection_link: u'http://.../bugs/11/subscriptions'
+    self_link: u'http://.../bugs/1'
+    subscriptions_collection_link: u'http://.../bugs/1/subscriptions'
     tags: []
-    title: u'Make Jokosher use autoaudiosink'
-    users_affected_collection_link: u'http://.../bugs/11/users_affected'
+    title: u'Firefox does not support SVG'
+    users_affected_collection_link: u'http://.../bugs/1/users_affected'
     users_affected_count: 0
     users_affected_count_with_dupes: 0
-    users_affected_with_dupes_collection_link: u'http://.../bugs/11/users_affected_with_dupes'
-    users_unaffected_collection_link: u'http://.../bugs/11/users_unaffected'
+    users_affected_with_dupes_collection_link: u'http://.../bugs/1/users_affected_with_dupes'
+    users_unaffected_collection_link: u'http://.../bugs/1/users_unaffected'
     users_unaffected_count: 0
-    web_link: u'http://bugs.../bugs/11'
+    web_link: u'http://bugs.../bugs/1'
     who_made_private_link: None
-
-Bugs are indexed by number beneath the top-level collection.
-
-    >>> bug_one = webservice.get("/bugs/1").jsonBody()
-    >>> bug_one['id']
-    1
 
 Bugs have relationships to other bugs, like "duplicate_of".
 
@@ -119,7 +111,7 @@ bugs.
 
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.bugs.model.bugnotification import BugNotification
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from lp.testing import ANONYMOUS, login, logout
     >>> from zope.component import getUtility
 
     >>> login(ANONYMOUS)
@@ -147,8 +139,8 @@ A ProductSeries can't be the target of a new bug.
     ...     target=webservice.getAbsoluteUrl('/firefox/1.0'))
     HTTP/1.1 400 Bad Request
     ...
-    A bug target must be a Project, a Distribution or a
-    DistributionSourcePackage.  Got <ProductSeries...
+    Can't create a bug on a series. Create it with a non-series
+    task instead, and target it to the series afterwards.
 
 That operation will fail if the client doesn't specify the product or
 distribution in which the bug exists.
@@ -201,6 +193,8 @@ Now set it back to none:
 
 Marking a bug as duplicate follows the same validation rules as available in
 the web UI. It is impossible, for example, to create circular relationships.
+Due to bug #1088358 the error is escaped as if it was HTML.
+
 
     >>> print webservice.patch(
     ...       webservice.getAbsoluteUrl('/bugs/16'), 'application/json',
@@ -216,7 +210,7 @@ the web UI. It is impossible, for example, to create circular relationships.
     ...
     Bug 16 is already a duplicate of bug 5. You
     can only mark a bug report as duplicate of one that
-    isn't a duplicate itself...
+    isn&#x27;t a duplicate itself...
 
     >>> print webservice.patch(
     ...       webservice.getAbsoluteUrl('/bugs/16'), 'application/json',
@@ -460,7 +454,9 @@ have tasks, so we first add a publication.
     >>> print webservice.named_post(
     ...     task['self_link'], 'transitionToTarget',
     ...     target=webservice.getAbsoluteUrl('/debian/+source/evolution'))
-    HTTP/1.1 200 Ok
+    HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://api.launchpad.dev/beta/debian/+source/evolution/+bug/1
     ...
 
 We can also PATCH the target attribute to accomplish the same thing.
@@ -491,7 +487,9 @@ We can change an upstream task to target a different project.
     >>> print webservice.named_post(
     ...     product_bugtask['self_link'], 'transitionToTarget',
     ...     target=webservice.getAbsoluteUrl('/bzr'))
-    HTTP/1.1 200 Ok
+    HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://api.launchpad.dev/beta/bzr/+bug/14
     ...
 
 If the milestone of a task is on a target other than the new
@@ -514,7 +512,9 @@ target, we reset it in order to avoid data inconsistencies.
     ...     firefox_bugtask['self_link'],
     ...     'transitionToTarget',
     ...     target=webservice.getAbsoluteUrl('/jokosher'))
-    HTTP/1.1 200 Ok
+    HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://api.launchpad.dev/beta/jokosher/+bug/1
     ...
     <BLANKLINE>
     >>> jokosher_bugtask = webservice.get(
@@ -527,7 +527,9 @@ target, we reset it in order to avoid data inconsistencies.
     ...     jokosher_bugtask['self_link'],
     ...     'transitionToTarget',
     ...     target=webservice.getAbsoluteUrl('/firefox'))
-    HTTP/1.1 200 Ok
+    HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://api.launchpad.dev/beta/firefox/+bug/1
     ...
 
 We can change a distribution task to a task with a package from the same
@@ -545,7 +547,10 @@ distribution.
     >>> print webservice.named_post(
     ...     distro_bugtask_path, 'transitionToTarget',
     ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/alsa-utils'))
-    HTTP/1.1 200 Ok ...
+    HTTP/1.1 301 Moved Permanently
+    ...
+    Location: http://api.launchpad.dev/beta/ubuntu/+source/alsa-utils/+bug/19
+    ...
 
 It's possible to get a list of similar bugs for a bug task by calling
 its findSimilarBugs() method. As it happens, there aren't any bugs
@@ -560,16 +565,12 @@ similar to bug 1 for Firefox.
 If we add a new bug that's quite similar to others, findSimilarBugs()
 will return something more useful.
 
-    >>> print webservice.named_post(
+    >>> new_bug_response = webservice.named_post(
     ...     '/bugs', 'createBug',
     ...     title='a', description='Test bug',
     ...     target=firefox['self_link'])
-    HTTP/1.1 201 Created...
-
-    >>> bugs = webservice.get("/bugs").jsonBody()
-    >>> bug_entries = sorted(bugs['entries'], key=itemgetter('id'))
-    >>> new_bug = webservice.get(bug_entries[-1]['self_link']).jsonBody()
-
+    >>> new_bug = webservice.get(
+    ...     new_bug_response.getHeader('Location')).jsonBody()
     >>> new_bug_task = webservice.get(
     ...     webservice.getAbsoluteUrl('/firefox/+bug/%s' % new_bug['id'])
     ...     ).jsonBody()
@@ -602,7 +603,7 @@ Eric creates Fooix 0.1 and 0.2.
     >>> debuntu = factory.makeDistribution(name='debuntu', owner=eric)
     >>> debuntu50 = debuntu.newSeries(
     ...     '5.0', '5.0', '5.0', '5.0', '5.0', '5.0', None, eric)
-    >>> bug = factory.makeBug(product=fooix)
+    >>> bug = factory.makeBug(target=fooix)
     >>> logout()
 
 Initially there are no nominations.
@@ -623,8 +624,8 @@ Initially there are no nominations.
     >>> fooix.bug_supervisor = john
     >>> logout()
 
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.testing.pages import webservice_for_person
+    >>> from lp.services.webapp.interfaces import OAuthPermission
 
     >>> john_webservice = webservice_for_person(
     ...     john, permission=OAuthPermission.WRITE_PRIVATE)
@@ -800,6 +801,7 @@ Bug subscriptions
 
 We can get the collection of subscriptions to a bug.
 
+    >>> from operator import itemgetter
     >>> bug_one_subscriptions_url = bug_one['subscriptions_collection_link']
     >>> subscriptions = webservice.get(bug_one_subscriptions_url).jsonBody()
     >>> subscription_entries = sorted(
@@ -1463,13 +1465,14 @@ It can also be used to find bugs modified since a certain date.
     >>> from lp.testing.sampledata import ADMIN_EMAIL
     >>> login(ADMIN_EMAIL)
     >>> target = factory.makeProduct()
-    >>> bug = factory.makeBug(product=target)
+    >>> target_name = target.name
+    >>> bug = factory.makeBug(target=target)
     >>> bug = removeSecurityProxy(bug)
     >>> date = bug.date_last_updated - timedelta(days=6)
     >>> logout()
 
     >>> pprint_collection(webservice.named_get(
-    ...     '/%s' % target.name, 'searchTasks',
+    ...     '/%s' % target_name, 'searchTasks',
     ...     modified_since=u'%s' % date ).jsonBody())
     start: 0
     total_size: 1
@@ -1481,13 +1484,25 @@ It can also be used to find bug tasks created since a certain date.
     >>> from lp.bugs.interfaces.bugtarget import IBugTarget
     >>> login(ADMIN_EMAIL)
     >>> target = IBugTarget(factory.makeProduct())
+    >>> target_name = target.name
     >>> task = factory.makeBugTask(target=target)
     >>> date = task.datecreated - timedelta(days=8)
     >>> logout()
 
     >>> pprint_collection(webservice.named_get(
-    ...     '/%s' % target.name, 'searchTasks',
+    ...     '/%s' % target_name, 'searchTasks',
     ...     created_since=u'%s' % date).jsonBody())
+    start: 0
+    total_size: 1
+    ...
+    ---
+
+Or for finding bug tasks created before a certain date.
+
+    >>> before_date = task.datecreated + timedelta(days=8)
+    >>> pprint_collection(webservice.named_get(
+    ...     '/%s' % target_name, 'searchTasks',
+    ...     created_before=u'%s' % before_date).jsonBody())
     start: 0
     total_size: 1
     ...
@@ -1504,7 +1519,7 @@ project group.
     >>> firefox = product_set.getByName('firefox')
     >>> firefox_1_0 = milestone_set.getByNameAndProduct(
     ...     product=firefox, name='1.0')
-    >>> bug = factory.makeBug(product=firefox)
+    >>> bug = factory.makeBug(target=firefox)
     >>> bug.bugtasks[0].milestone = firefox_1_0
     >>> logout()
 

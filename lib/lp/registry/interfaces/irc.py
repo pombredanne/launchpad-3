@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# pylint: disable-msg=E0211,E0213
-
 """IRC interfaces."""
 
 __metaclass__ = type
@@ -23,7 +21,7 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.launchpad import _
+from lp import _
 from lp.registry.interfaces.role import IHasOwner
 
 
@@ -31,7 +29,7 @@ class IIrcID(IHasOwner):
     """A person's nickname on an IRC network."""
     export_as_webservice_entry('irc_id')
     id = Int(title=_("Database ID"), required=True, readonly=True)
-    # schema=Interface will be overriden in person.py because of circular
+    # schema=Interface will be overridden in person.py because of circular
     # dependencies.
     person = exported(
         Reference(

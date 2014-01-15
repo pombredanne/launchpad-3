@@ -155,7 +155,7 @@
     </div>
     <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-upper" />
     <table class="listing sortable" id="speclisting"
-          tal:condition="view/specs">
+          tal:condition="not: view/specs/is_empty">
       <thead>
         <tr>
           <th tal:condition="view/show_priority">Priority</th>
@@ -229,7 +229,7 @@
     </table>
     <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-lower" />
   
-    <tal:nomatches condition="not: view/specs"
+    <tal:nomatches condition="view/specs/is_empty"
                    replace="structure context/@@+nomatches" />
 
     <p tal:condition="view/is_series">
