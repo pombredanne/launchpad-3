@@ -148,21 +148,19 @@ class TestPersonSet(TestCaseWithFactory):
         person = self.factory.makePerson()
         with person_logged_in(person):
             identifier = person.account.openid_identifiers.one().identifier
-        self.assertEqual(
-            person,
-            self.person_set.getByOpenIDIdentifier(
-                u'http://openid.launchpad.dev/+id/%s' % identifier))
-        self.assertEqual(
-            person,
-            self.person_set.getByOpenIDIdentifier(
-                u'http://ubuntu-openid.launchpad.dev/+id/%s' % identifier))
+        for id_url in (
+                u'http://testopenid.dev/+id/%s' % identifier,
+                u'http://login1.dev/+id/%s' % identifier,
+                u'http://login2.dev/+id/%s' % identifier):
+            self.assertEqual(
+                person, self.person_set.getByOpenIDIdentifier(id_url))
 
     def test_getByOpenIDIdentifier_for_nonexistent_identifier_is_none(self):
         # None is returned if there's no matching person.
         self.assertIs(
             None,
             self.person_set.getByOpenIDIdentifier(
-                u'http://openid.launchpad.dev/+id/notanid'))
+                u'http://testopenid.dev/+id/notanid'))
 
     def test_getByOpenIDIdentifier_for_bad_domain_is_none(self):
         # Even though the OpenIDIdentifier table doesn't store the
