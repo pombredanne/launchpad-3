@@ -561,15 +561,18 @@ def _mergeDateCreated(cur, from_id, to_id):
         ''' % vars())
 
 
-def _mergeCoreReviewInlineComments(cur, from_id, to_id):
+def _mergeCodeReviewInlineCommentDraft(cur, from_id, to_id):
     params = dict(from_id=from_id, to_id=to_id)
+    # Remove conflicting drafts.
     cur.execute('''
-    UPDATE CodeReviewInlineComment SET person=%(to_id)d
-    WHERE person = %(from_id)d
+    DELETE FROM CodeReviewInlineCommentDraft
+    WHERE person = %(from_id)d AND previewdiff IN (
+        SELECT previewdiff FROM CodeReviewInlineCommentDraft
+            WHERE person = %(to_id)d)
     ''' % params)
-
+    # Update draft comments to the new owner.
     cur.execute('''
-    UPDATE CodeReviewInlineCommentDraft SET person=%(to_id)d
+    UPDATE CodeReviewInlineCommentDraft SET person = %(to_id)d
     WHERE person = %(from_id)d
     ''' % params)
 
@@ -790,8 +793,7 @@ def merge_people(from_person, to_person, reviewer, delete=False):
     _mergeLoginTokens(cur, from_id, to_id)
     skip.append(('logintoken', 'requester'))
 
-    _mergeCoreReviewInlineComments(cur, from_id, to_id)
-    skip.append(('codereviewinlinecomment', 'person'))
+    _mergeCodeReviewInlineCommentDraft(cur, from_id, to_id)
     skip.append(('codereviewinlinecommentdraft', 'person'))
 
     # Sanity check. If we have a reference that participates in a
