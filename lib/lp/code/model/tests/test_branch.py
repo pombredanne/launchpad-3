@@ -17,6 +17,7 @@ from bzrlib.revision import NULL_REVISION
 from pytz import UTC
 import simplejson
 from sqlobject import SQLObjectNotFound
+from storm.exceptions import LostObjectError
 from storm.locals import Store
 from testtools import ExpectedException
 from testtools.matchers import (
@@ -25,6 +26,7 @@ from testtools.matchers import (
     )
 import transaction
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp import _
@@ -3270,6 +3272,65 @@ class TestMergeQueue(TestCaseWithFactory):
                 InvalidMergeQueueConfig,
                 branch.setMergeQueueConfig,
                 config)
+
+
+class TestBranchUnscan(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_unscan(self):
+        # Unscanning a branch resets the scan data, including the
+        # BranchRevisions, last_scanned_id and revision_count.
+        branch = self.factory.makeAnyBranch()
+        self.factory.makeRevisionsForBranch(branch=branch)
+        head = branch.getBranchRevision(revision_id=branch.last_scanned_id)
+        self.assertEqual(5, head.sequence)
+        self.assertEqual(5, branch.revision_count)
+
+        with person_logged_in(branch.owner):
+            self.assertEqual(
+                (head.revision.revision_id, head.revision.revision_id),
+                branch.unscan())
+        transaction.commit()
+
+        self.assertIs(None, branch.last_scanned_id)
+        self.assertEqual(0, branch.revision_count)
+        self.assertRaises(LostObjectError, getattr, head, 'sequence')
+
+    def test_rescan(self):
+        branch = self.factory.makeAnyBranch()
+        self.assertEqual(
+            0, Store.of(branch).find(BranchJob, branch=branch).count())
+        with person_logged_in(branch.owner):
+            branch.unscan(rescan=True)
+        self.assertEqual(
+            1, Store.of(branch).find(BranchJob, branch=branch).count())
+
+    def test_no_rescan(self):
+        branch = self.factory.makeAnyBranch()
+        self.assertEqual(
+            0, Store.of(branch).find(BranchJob, branch=branch).count())
+        with person_logged_in(branch.owner):
+            branch.unscan(rescan=False)
+        self.assertEqual(
+            0, Store.of(branch).find(BranchJob, branch=branch).count())
+
+    def test_security(self):
+        branch = self.factory.makeAnyBranch()
+
+        # Random users can't unscan a branch.
+        with person_logged_in(self.factory.makePerson()):
+            self.assertRaises(Unauthorized, getattr, branch, 'unscan')
+
+        # But the owner can.
+        with person_logged_in(branch.owner):
+            branch.unscan()
+
+        # And so can commercial-admins (and maybe registry too,
+        # eventually).
+        with person_logged_in(
+                getUtility(ILaunchpadCelebrities).commercial_admin):
+            branch.unscan()
 
 
 class TestWebservice(TestCaseWithFactory):
