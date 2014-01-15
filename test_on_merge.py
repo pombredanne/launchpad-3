@@ -4,6 +4,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests that get run automatically on a merge."""
+
 import _pythonpath
 
 import errno
@@ -15,17 +16,17 @@ from signal import (
     SIGKILL,
     SIGTERM,
     )
-from StringIO import StringIO
 from subprocess import (
     PIPE,
     Popen,
     STDOUT,
     )
 import sys
-import tabnanny
 import time
 
 import psycopg2
+
+from lp.services.database import activity_col
 
 # The TIMEOUT setting (expressed in seconds) affects how long a test will run
 # before it is deemed to be hung, and then appropriately terminated.
@@ -89,17 +90,17 @@ def setup_test_database():
     # rogue processes still connected to the database.
     for loop in range(2):
         cur.execute("""
-            SELECT usename, current_query
+            SELECT usename, %(query)s
             FROM pg_stat_activity
             WHERE datname IN (
                 'launchpad_dev', 'launchpad_ftest_template', 'launchpad_ftest')
-            """)
+            """ % {'query': activity_col(cur, 'query')})
         results = list(cur.fetchall())
         if not results:
             break
         # Rogue processes. Report, sleep for a bit, and try again.
-        for usename, current_query in results:
-            print '!! Open connection %s - %s' % (usename, current_query)
+        for usename, query in results:
+            print '!! Open connection %s - %s' % (usename, query)
         print 'Sleeping'
         time.sleep(20)
     else:

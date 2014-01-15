@@ -18,6 +18,7 @@ from bzrlib.lock import WriteLock
 import psycopg2
 
 from lp.services.config import config
+from lp.services.database import activity_col
 from lp.services.database.postgresql import (
     generateResetSequencesSQL,
     resetSequences,
@@ -416,10 +417,11 @@ rw_main_slave:  dbname=%s host=localhost
                 try:
                     cur = con.cursor()
                     cur.execute("""
-                        SELECT pg_terminate_backend(procpid)
+                        SELECT pg_terminate_backend(%(pid)s)
                         FROM pg_stat_activity
-                        WHERE procpid <> pg_backend_pid() AND datname=%s
-                        """, [self.dbname])
+                        WHERE %(pid)s <> pg_backend_pid() AND datname=%%s
+                        """ % {'pid': activity_col(cur, 'pid')},
+                        [self.dbname])
                 except psycopg2.DatabaseError:
                     pass
 

@@ -9,14 +9,16 @@
 __metaclass__ = type
 __all__ = []
 
+import _pythonpath
 
 from optparse import OptionParser
 import os
 import signal
 import sys
-import time
 
 import psycopg2
+
+from lp.services.database import activity_col
 
 
 def main():
@@ -27,7 +29,7 @@ def main():
         )
     parser.add_option(
         '-s', '--max-seconds', type='int',
-        dest='max_seconds', default=60*60,
+        dest='max_seconds', default=60 * 60,
         help='Maximum seconds time connections are allowed to remain active.',
         )
     parser.add_option(
@@ -52,12 +54,13 @@ def main():
 
     con = psycopg2.connect(options.connect_string)
     cur = con.cursor()
-    cur.execute("""
-        SELECT usename, procpid, backend_start, xact_start
+    cur.execute(("""
+        SELECT usename, %(pid)s, backend_start, xact_start
         FROM pg_stat_activity
-        WHERE xact_start < CURRENT_TIMESTAMP - '%d seconds'::interval %s
-        ORDER BY procpid
-        """ % (options.max_seconds, user_match_sql), options.users)
+        WHERE xact_start < CURRENT_TIMESTAMP - '%%d seconds'::interval %%s
+        ORDER BY %(pid)s
+        """ % {'pid': activity_col(cur, 'pid')})
+        % (options.max_seconds, user_match_sql), options.users)
 
     rows = list(cur.fetchall())
 
@@ -66,12 +69,12 @@ def main():
             print 'No transactions to kill'
             return 0
 
-    for usename, procpid, backend_start, transaction_start in rows:
+    for usename, pid, backend_start, transaction_start in rows:
         print 'Killing %s (%d), %s, %s' % (
-            usename, procpid, backend_start, transaction_start,
+            usename, pid, backend_start, transaction_start,
             )
         if not options.dry_run:
-            os.kill(procpid, signal.SIGTERM)
+            os.kill(pid, signal.SIGTERM)
     return 0
 
 

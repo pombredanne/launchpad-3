@@ -13,12 +13,16 @@ Cut off access, slaughter connections and burn the database to the ground
 (but do nothing that could put the system into recovery mode).
 """
 
+import _pythonpath
+
 from optparse import OptionParser
 import sys
 import time
 
 import psycopg2
 import psycopg2.extensions
+
+from lp.services.database import activity_col
 
 
 def connect(dbname='template1'):
@@ -66,10 +70,10 @@ def still_open(database, max_wait=120):
         cur.execute("""
             SELECT TRUE FROM pg_stat_activity
             WHERE
-                datname=%(database)s
-                AND procpid != pg_backend_pid()
+                datname=%%s
+                AND %(pid)s != pg_backend_pid()
             LIMIT 1
-            """, vars())
+            """ % {'pid': activity_col(cur, 'pid')}, [database])
         if cur.fetchone() is None:
             return False
         time.sleep(0.6)  # Stats only updated every 500ms.
@@ -105,14 +109,14 @@ def massacre(database):
 
         # Terminate open connections.
         cur.execute("""
-            SELECT procpid, pg_terminate_backend(procpid)
+            SELECT %(pid)s, pg_terminate_backend(%(pid)s)
             FROM pg_stat_activity
-            WHERE datname=%s AND procpid <> pg_backend_pid()
-            """, [database])
-        for procpid, success in cur.fetchall():
+            WHERE datname=%%s AND %(pid)s <> pg_backend_pid()
+            """ % {'pid': activity_col(cur, 'pid')}, [database])
+        for pid, success in cur.fetchall():
             if not success:
                 print >> sys.stderr, (
-                    "pg_terminate_backend(%s) failed" % procpid)
+                    "pg_terminate_backend(%s) failed" % pid)
         con.close()
 
         if still_open(database):
@@ -184,10 +188,10 @@ def report_open_connections(database):
     cur.execute("""
         SELECT usename, datname, count(*)
         FROM pg_stat_activity
-        WHERE procpid != pg_backend_pid()
+        WHERE %(pid)s != pg_backend_pid()
         GROUP BY usename, datname
         ORDER BY datname, usename
-        """, [database])
+        """ % {'pid': activity_col(cur, 'pid')})
     for usename, datname, num_connections in cur.fetchall():
         print >> sys.stderr, "%d connections by %s to %s" % (
             num_connections, usename, datname)

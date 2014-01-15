@@ -24,6 +24,7 @@ from dbcontroller import (
     DBController,
     streaming_sync,
     )
+from lp.services.database import activity_col
 from lp.services.database.sqlbase import (
     ISOLATION_LEVEL_AUTOCOMMIT,
     sqlvalues,
@@ -147,9 +148,9 @@ class DatabasePreflight:
                 FROM pg_stat_activity
                 WHERE
                     datname=current_database()
-                    AND procpid <> pg_backend_pid()
+                    AND %(pid)s <> pg_backend_pid()
                 GROUP BY datname, usename
-                """)
+                """ % {'pid': activity_col(cur, 'pid')})
             for datname, usename, num_connections in cur.fetchall():
                 if usename in SYSTEM_USERS:
                     self.log.debug(
@@ -173,15 +174,16 @@ class DatabasePreflight:
         success = True
         for node in self.lpmain_nodes:
             cur = node.con.cursor()
-            cur.execute("""
+            cur.execute(("""
                 SELECT datname, usename, COUNT(*) AS num_connections
                 FROM pg_stat_activity
                 WHERE
                     datname=current_database()
-                    AND procpid <> pg_backend_pid()
-                    AND usename IN %s
+                    AND %(pid)s <> pg_backend_pid()
+                    AND usename IN %%s
                 GROUP BY datname, usename
-                """ % sqlvalues(FRAGILE_USERS))
+                """ % {'pid': activity_col(cur, 'pid')})
+                % sqlvalues(FRAGILE_USERS))
             for datname, usename, num_connections in cur.fetchall():
                 self.log.fatal(
                     "Fragile system %s running. %s has %d connections.",
@@ -211,13 +213,13 @@ class DatabasePreflight:
             cur.execute("""
                 SELECT
                     datname, usename,
-                    age(current_timestamp, xact_start) AS age, current_query
+                    age(current_timestamp, xact_start) AS age
                 FROM pg_stat_activity
                 WHERE
                     age(current_timestamp, xact_start) > interval '%d secs'
                     AND datname=current_database()
                 """ % max_secs)
-            for datname, usename, age, current_query in cur.fetchall():
+            for datname, usename, age in cur.fetchall():
                 if usename in BAD_USERS:
                     self.log.info(
                         "%s has transactions by %s open %s (ignoring)",
@@ -349,30 +351,31 @@ class KillConnectionsPreflight(DatabasePreflight):
             all_clear = True
             for node in nodes:
                 cur = node.con.cursor()
-                cur.execute("""
+                cur.execute(("""
                     SELECT
-                        procpid, datname, usename,
-                        pg_terminate_backend(procpid)
+                        %(pid)s, datname, usename,
+                        pg_terminate_backend(%(pid)s)
                     FROM pg_stat_activity
                     WHERE
                         datname=current_database()
-                        AND procpid <> pg_backend_pid()
-                        AND usename NOT IN %s
-                    """ % sqlvalues(SYSTEM_USERS))
-                for procpid, datname, usename, ignored in cur.fetchall():
+                        AND %(pid)s <> pg_backend_pid()
+                        AND usename NOT IN %%s
+                    """ % {'pid': activity_col(cur, 'pid')})
+                    % sqlvalues(SYSTEM_USERS))
+                for pid, datname, usename, ignored in cur.fetchall():
                     all_clear = False
                     if loop_count == num_tries - 1:
                         self.log.fatal(
                             "Unable to kill %s [%s] on %s.",
-                            usename, procpid, datname)
+                            usename, pid, datname)
                     elif usename in BAD_USERS:
                         self.log.info(
                             "Killed %s [%s] on %s.",
-                            usename, procpid, datname)
+                            usename, pid, datname)
                     else:
                         self.log.warning(
                             "Killed %s [%s] on %s.",
-                            usename, procpid, datname)
+                            usename, pid, datname)
             if all_clear:
                 break
 
