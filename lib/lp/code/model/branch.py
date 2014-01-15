@@ -1153,6 +1153,17 @@ class Branch(SQLBase, BzrIdentityMixin):
         else:
             raise AssertionError("No pull URL for %r" % (self, ))
 
+    def unscan(self, rescan=True):
+        from lp.code.model.branchjob import BranchScanJob
+        old_scanned_id = self.last_scanned_id
+        Store.of(self).find(BranchRevision, branch=self).remove()
+        self.last_scanned = self.last_scanned_id = None
+        self.revision_count = 0
+        if rescan:
+            job = BranchScanJob.create(self)
+            job.celeryRunOnCommit()
+        return (self.last_mirrored_id, old_scanned_id)
+
     def requestMirror(self):
         """See `IBranch`."""
         if self.branch_type in (BranchType.REMOTE, BranchType.HOSTED):

@@ -1048,6 +1048,15 @@ class IBranchModerate(Interface):
             with the `IBranchNamespacePolicy`.
         """
 
+    @operation_parameters(
+        rescan=Bool(
+            title=_("Scan the branch after resetting its scan data."),
+            default=True))
+    @export_write_operation()
+    @operation_for_version('devel')
+    def unscan(rescan=True):
+        """Reset this branch's scan data and optionally request a scan."""
+
 
 class IBranchEditableAttributes(Interface):
     """IBranch attributes that can be edited.
