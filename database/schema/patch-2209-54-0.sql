@@ -27,4 +27,4 @@ CREATE INDEX codereviewinlinecommentdraft__person__idx ON
 CREATE INDEX codereviewinlinecommentdraft__previewdiff__idx ON
     codereviewinlinecommentdraft(previewdiff);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 53, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 54, 0);
