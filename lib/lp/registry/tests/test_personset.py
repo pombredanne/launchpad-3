@@ -160,7 +160,7 @@ class TestPersonSet(TestCaseWithFactory):
         self.assertIs(
             None,
             self.person_set.getByOpenIDIdentifier(
-                u'http://openid.launchpad.dev/+id/notanid'))
+                u'http://testopenid.dev/+id/notanid'))
 
     def test_getByOpenIDIdentifier_for_bad_domain_is_none(self):
         # Even though the OpenIDIdentifier table doesn't store the
