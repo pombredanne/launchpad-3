@@ -94,10 +94,8 @@ request is headed to one of the officialy-used Launchpad host names:
     feeds.launchpad.dev
     launchpad.dev
     localhost
-    openid.launchpad.dev
     testopenid.dev
     translations.launchpad.dev
-    ubuntu-openid.launchpad.dev
     xmlrpc-private.launchpad.dev
     xmlrpc.launchpad.dev
 
