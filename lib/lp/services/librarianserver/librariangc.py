@@ -769,7 +769,12 @@ def delete_unwanted_swift_files(con):
 
     for container, obj in swift_files(max_lfc_id):
         name = obj['name']
-        content_id = int(name)
+
+        # We may have a segment of a large file.
+        if '/' in name:
+            content_id = int(name.split('/', 1)[0])
+        else:
+            content_id = int(name)
 
         while (next_wanted_content_id is not None
             and content_id > next_wanted_content_id):

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python -S
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -9,6 +9,7 @@
 __metaclass__ = type
 __all__ = []
 
+import _pythonpath
 
 from optparse import OptionParser
 import os
@@ -16,6 +17,8 @@ import signal
 import sys
 
 import psycopg2
+
+from lp.services.database import activity_cols
 
 
 def main():
@@ -26,7 +29,7 @@ def main():
         )
     parser.add_option(
         '-s', '--max-idle-seconds', type='int',
-        dest='max_idle_seconds', default=10*60,
+        dest='max_idle_seconds', default=10 * 60,
         help='Maximum seconds time idle but open transactions are allowed',
         )
     parser.add_option(
@@ -48,13 +51,14 @@ def main():
 
     con = psycopg2.connect(options.connect_string)
     cur = con.cursor()
-    cur.execute("""
-        SELECT usename, procpid, backend_start, query_start
+    cur.execute(("""
+        SELECT usename, %(pid)s, backend_start, query_start
         FROM pg_stat_activity
-        WHERE current_query = '<IDLE> in transaction'
-            AND query_start < CURRENT_TIMESTAMP - '%d seconds'::interval %s
-        ORDER BY procpid
-        """ % (options.max_idle_seconds, ignore_sql), options.ignore)
+        WHERE %(query)s = '<IDLE> in transaction'
+            AND query_start < CURRENT_TIMESTAMP - '%%d seconds'::interval %%s
+        ORDER BY %(pid)s
+        """ % activity_cols(cur))
+        % (options.max_idle_seconds, ignore_sql), options.ignore)
 
     rows = cur.fetchall()
 
@@ -63,12 +67,12 @@ def main():
             print 'No IDLE transactions to kill'
             return 0
 
-    for usename, procpid, backend_start, query_start in rows:
+    for usename, pid, backend_start, query_start in rows:
         print 'Killing %s(%d), %s, %s' % (
-            usename, procpid, backend_start, query_start,
+            usename, pid, backend_start, query_start,
             )
         if not options.dryrun:
-            os.kill(procpid, signal.SIGTERM)
+            os.kill(pid, signal.SIGTERM)
     return 0
 
 
