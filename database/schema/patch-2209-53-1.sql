@@ -1,14 +1,7 @@
 SET client_min_messages = ERROR;
 
--- NOTE: This is not the original patch 2209-00-5. That was originally
--- to support 8.4 and 9.1, but it failed to apply in 9.3, so history was
--- altered to make it support 9.1 and 9.3 instead. It's duplicated as
--- 2209-53-1 to ensure the new version is applied to systems that
--- already have 2209-00-5.
-
--- Compatibility code. During transition, we need code that runs with
--- both PostgreSQL 9.1 and 9.3. Once we're on 9.3 this can probably be
--- replaced with a simple SQL function.
+-- NOTE: This is a duplicate of 2209-00-5. See 2209-00-5.sql for
+-- rationale.
 
 CREATE OR REPLACE FUNCTION activity()
 RETURNS SETOF pg_stat_activity
@@ -53,4 +46,4 @@ END;
 $$;
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 0, 5);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 53, 1);

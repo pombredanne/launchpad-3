@@ -23,6 +23,7 @@ from optparse import OptionParser
 import sys
 import time
 
+from lp.services.database import activity_cols
 from lp.services.database.sqlbase import (
     connect,
     ISOLATION_LEVEL_AUTOCOMMIT,
@@ -83,16 +84,16 @@ def main():
         # Sleep long enough for pg_stat_activity to be updated.
         time.sleep(0.6)
         cur.execute("""
-            SELECT procpid FROM pg_stat_activity
+            SELECT %(pid)s FROM pg_stat_activity
             WHERE
                 datname=current_database()
-                AND current_query LIKE 'autovacuum: %'
-            """)
+                AND %(query)s LIKE 'autovacuum: %%'
+            """ % activity_cols(cur))
         autovacuums = [row[0] for row in cur.fetchall()]
         num_autovacuums = len(autovacuums)
-        for procpid in autovacuums:
-            log.debug("Cancelling %d" % procpid)
-            cur.execute("SELECT pg_cancel_backend(%d)" % procpid)
+        for pid in autovacuums:
+            log.debug("Cancelling %d" % pid)
+            cur.execute("SELECT pg_cancel_backend(%d)" % pid)
 
 
 if __name__ == '__main__':

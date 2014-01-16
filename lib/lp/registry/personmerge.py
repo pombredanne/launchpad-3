@@ -777,6 +777,12 @@ def merge_people(from_person, to_person, reviewer, delete=False):
     _mergeLoginTokens(cur, from_id, to_id)
     skip.append(('logintoken', 'requester'))
 
+    # XXX wgrant 2014-01-15 bug=1269268: We only skip these so we can
+    # get the tables created everywhere before landing the merge code.
+    # They need to be merged properly before the tables grow any data.
+    skip.append(('codereviewinlinecomment', 'person'))
+    skip.append(('codereviewinlinecommentdraft', 'person'))
+
     # Sanity check. If we have a reference that participates in a
     # UNIQUE index, it must have already been handled by this point.
     # We can tell this by looking at the skip list.
