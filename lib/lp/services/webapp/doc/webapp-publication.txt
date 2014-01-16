@@ -63,20 +63,12 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://launchpad.dev/
     althosts: localhost
     ----
-    openid @ openid.launchpad.dev
-    rooturl: http://openid.launchpad.dev/
-    althosts:
-    ----
     testopenid @ testopenid.dev
     rooturl: http://testopenid.dev/
     althosts:
     ----
     translations @ translations.launchpad.dev
     rooturl: http://translations.launchpad.dev/
-    althosts:
-    ----
-    ubuntu_openid @ ubuntu-openid.launchpad.dev
-    rooturl: http://ubuntu-openid.launchpad.dev/
     althosts:
     ----
     xmlrpc @ xmlrpc.launchpad.dev
@@ -102,10 +94,8 @@ request is headed to one of the officialy-used Launchpad host names:
     feeds.launchpad.dev
     launchpad.dev
     localhost
-    openid.launchpad.dev
     testopenid.dev
     translations.launchpad.dev
-    ubuntu-openid.launchpad.dev
     xmlrpc-private.launchpad.dev
     xmlrpc.launchpad.dev
 
