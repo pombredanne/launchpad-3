@@ -210,13 +210,19 @@
             comment._add_comment_success = function () {
                 var lp_client = new Y.lp.client.Launchpad();
                 var ns = Y.lp.code.branchmergeproposal.inlinecomments;
+                var diff_timestamp = (
+                    LP.cache.preview_diff_timestamps.slice(-1)[0]);
                 var config = {
                     on: {
                         success: function (r) {
                             LP.cache.published_inline_comments = r;
+                            LP.cache.draft_inline_comments = [];
                             ns.populate_existing_comments();
                         },
                     },
+                    parameters: {
+                        diff_timestamp: diff_timestamp,
+                    }
                 };
                 lp_client.named_get(
                     LP.cache.context.self_link, 'getInlineComments', config);
