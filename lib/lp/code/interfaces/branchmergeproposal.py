@@ -545,13 +545,14 @@ class IBranchMergeProposalAnyAllowedPerson(Interface):
         subject=Text(), content=Text(),
         vote=Choice(vocabulary=CodeReviewVote), review_type=Text(),
         parent=Reference(schema=Interface),
-        publish_inline_comments=Bool())
+        diff_timestamp=Datetime(),
+        inline_comments=Dict(key_type=TextLine()))
     @call_with(owner=REQUEST_USER)
     # ICodeReviewComment supplied as Interface to avoid circular imports.
     @export_factory_operation(Interface, [])
     def createComment(owner, subject, content=None, vote=None,
                       review_type=None, parent=None,
-                      publish_inline_comments=False):
+                      diff_timestamp=None, inline_comments=None):
         """Create an ICodeReviewComment associated with this merge proposal.
 
         :param owner: The person who the message is from.
@@ -560,8 +561,10 @@ class IBranchMergeProposalAnyAllowedPerson(Interface):
             unspecified, the text of the merge proposal is used.
         :param parent: The previous CodeReviewComment in the thread.  If
             unspecified, the root message is used.
-        :param publish_inline_comments: whether or not to publish the existing
-            (draft) code review inline comments.
+        :param diff_timestamp: the context diff creation timestamp which
+            will be used to retrive the actual `PreviewDiff` register.
+        :param inline_comments: a dictionary containing the draft inline
+            comments keyed by the diff line number.
         """
 
     def createCommentFromMessage(message, vote, review_type,

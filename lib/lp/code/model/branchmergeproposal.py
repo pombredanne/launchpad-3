@@ -752,7 +752,8 @@ class BranchMergeProposal(SQLBase):
 
     def createComment(self, owner, subject, content=None, vote=None,
                       review_type=None, parent=None, _date_created=DEFAULT,
-                      publish_inline_comments=False, _notify_listeners=True):
+                      diff_timestamp=None, inline_comments=None,
+                      _notify_listeners=True):
         """See `IBranchMergeProposal`."""
         #:param _date_created: The date the message was created.  Provided
         #    only for testing purposes, as it can break
@@ -785,12 +786,36 @@ class BranchMergeProposal(SQLBase):
             message, vote, review_type, original_email=None,
             _notify_listeners=_notify_listeners, _validate=False)
 
-        if (getFeatureFlag("code.inline_diff_comments.enabled") and
-            publish_inline_comments):
-            getUtility(ICodeReviewInlineCommentSet).publishDraft(
-                self.preview_diff, owner, comment)
+        if getFeatureFlag("code.inline_diff_comments.enabled"):
+            if inline_comments:
+                assert diff_timestamp is not None, (
+                    'Inline comments must be associated with a previewdiff '
+                    'timestamp.')
+                previewdiff = self._getPreviewDiffByTimestamp(diff_timestamp)
+                getUtility(ICodeReviewInlineCommentSet).ensureDraft(
+                    previewdiff, owner, inline_comments)
+                getUtility(ICodeReviewInlineCommentSet).publishDraft(
+                    previewdiff, owner, comment)
 
         return comment
+
+    def _getPreviewDiffByTimestamp(self, diff_timestamp):
+        """Return a `PreviewDiff` created on the given timestamp.
+
+        Looks for a `PreviewDiff` for this merge proposal created exactly
+        on the given timestamp. If it could not be found `DiffNotFound`
+        is raised.
+        """
+        previewdiff = IStore(PreviewDiff).find(
+            PreviewDiff,
+            PreviewDiff.branch_merge_proposal_id == self.id,
+            PreviewDiff.date_created == diff_timestamp).one()
+        if not previewdiff:
+            raise DiffNotFound(
+                "Could not locate a preview diff with a timestamp of "
+                "%s" % (diff_timestamp))
+
+        return previewdiff
 
     def getUsersVoteReference(self, user, review_type=None):
         """Get the existing vote reference for the given user."""
@@ -888,14 +913,9 @@ class BranchMergeProposal(SQLBase):
 
     def saveDraftInlineComment(self, diff_timestamp, person, comments):
         """See `IBranchMergeProposal`."""
-        previewdiff = IStore(PreviewDiff).find(
-            PreviewDiff,
-            PreviewDiff.branch_merge_proposal_id == self.id,
-            PreviewDiff.date_created == diff_timestamp).one()
-        if not previewdiff:
-            raise DiffNotFound(
-                "Could not locate a preview diff with a timestamp of %s" % (
-                    diff_timestamp))
+        if not getFeatureFlag("code.inline_diff_comments.enabled"):
+            return
+        previewdiff = self._getPreviewDiffByTimestamp(diff_timestamp)
         getUtility(ICodeReviewInlineCommentSet).ensureDraft(
             previewdiff, person, comments)
 

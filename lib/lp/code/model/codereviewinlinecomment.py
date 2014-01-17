@@ -10,11 +10,11 @@ __all__ = [
     'CodeReviewInlineCommentSet',
     ]
 
-import simplejson
+import json
 from storm.locals import (
     Int,
     Reference,
-    Unicode,
+    JSON,
     )
 from zope.component import getUtility
 from zope.interface import implements
@@ -41,7 +41,7 @@ class CodeReviewInlineComment(StormBase):
     person = Reference(person_id, 'Person.id')
     comment_id = Int(name='comment', primary=True)
     comment = Reference(comment_id, 'CodeReviewComment.id')
-    comments = Unicode()
+    comments = JSON()
 
 
 class CodeReviewInlineCommentDraft(StormBase):
@@ -52,7 +52,7 @@ class CodeReviewInlineCommentDraft(StormBase):
     previewdiff = Reference(previewdiff_id, 'PreviewDiff.id')
     person_id = Int(name='person')
     person = Reference(person_id, 'Person.id')
-    comments = Unicode()
+    comments = JSON()
 
 
 class CodeReviewInlineCommentSet:
@@ -68,7 +68,7 @@ class CodeReviewInlineCommentSet:
     def findDraft(self, previewdiff, person):
         cricd = self._findDraftObject(previewdiff, person)
         if cricd:
-            return simplejson.loads(cricd.comments)
+            return json.loads(cricd.comments)
         return {}
 
     def ensureDraft(self, previewdiff, person, comments):
@@ -78,7 +78,7 @@ class CodeReviewInlineCommentSet:
                 IStore(CodeReviewInlineCommentDraft).remove(cricd)
         else:
             if type(comments) == dict:
-                comments = simplejson.dumps(comments).decode('utf-8')
+                comments = json.dumps(comments).decode('utf-8')
             if cricd:
                 cricd.comments = comments
             else:
@@ -113,7 +113,7 @@ class CodeReviewInlineCommentSet:
             list(crics), key=lambda c: c.comment.date_created)
         inline_comments = []
         for cric in sorted_crics:
-            comments = simplejson.loads(cric.comments)
+            comments = json.loads(cric.comments)
             for lineno in comments:
                 inline_comments.append(
                     [lineno, cric.person, comments[lineno],
