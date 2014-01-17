@@ -31,6 +31,7 @@ setup(
         'auditorfixture',
         'BeautifulSoup',
         'bzr',
+        'cssselect',
         'cssutils',
         'dkimpy',
         # Required for dkimpy
