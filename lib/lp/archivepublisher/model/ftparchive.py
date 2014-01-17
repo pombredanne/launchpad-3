@@ -76,6 +76,7 @@ Default
 
 TreeDefault
 {
+    Contents "$(DIST)/Contents-$(ARCH)";
     Contents::Header "%s/contents.header";
 };
 
