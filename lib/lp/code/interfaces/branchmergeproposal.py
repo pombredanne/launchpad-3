@@ -578,14 +578,30 @@ class IBranchMergeProposalAnyAllowedPerson(Interface):
         """
 
     @export_read_operation()
-    @call_with(person=REQUEST_USER)
+    @operation_parameters(
+        diff_timestamp=Datetime())
     @operation_for_version('devel')
-    def getInlineComments(person):
-        """Return the set of inline comments related to this MP.
+    def getPublishedInlineComments(diff_timestamp):
+        """Return a list of published inline comments related to this MP.
 
         The return value is a list of 4-tuples representing published and
         draft inline comments.
 
+        :param diff_timestamp: The timestamp of the target `PreviewDiff`.
+        """
+
+    @export_read_operation()
+    @operation_parameters(
+        diff_timestamp=Datetime())
+    @call_with(person=REQUEST_USER)
+    @operation_for_version('devel')
+    def getDraftInlineComments(diff_timestamp, person):
+        """Return a list of draft inline comments related to this MP.
+
+        The return value is a list of 4-tuples representing published and
+        draft inline comments.
+
+        :param diff_timestamp: The timestamp of the target `PreviewDiff`.
         :param person: The `IPerson` owner of the draft comments.
         """
 
@@ -597,8 +613,7 @@ class IBranchMergeProposalAnyAllowedPerson(Interface):
     def saveDraftInlineComment(diff_timestamp, person, comments):
         """Save `ICodeReviewInlineCommentDraft`
 
-        :param diff_timestamp: The timestamp of the `PreviewDiff` the comments
-            are on.
+        :param diff_timestamp: The timestamp of the target `PreviewDiff`.
         :param person: The `IPerson` making the comments.
         :param comments: The comments.
         """

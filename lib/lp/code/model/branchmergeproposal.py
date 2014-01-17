@@ -906,10 +906,17 @@ class BranchMergeProposal(SQLBase):
                     code_review_message, original_email))
         return code_review_message
 
-    def getInlineComments(self, person):
+    def getPublishedInlineComments(self, diff_timestamp):
         """See `IBranchMergeProposal`."""
-        return getUtility(ICodeReviewInlineCommentSet).findByPreviewDiff(
-            self.preview_diff, person)
+        previewdiff = self._getPreviewDiffByTimestamp(diff_timestamp)
+        return getUtility(ICodeReviewInlineCommentSet).getPublished(
+            previewdiff)
+
+    def getDraftInlineComments(self, diff_timestamp, person):
+        """See `IBranchMergeProposal`."""
+        previewdiff = self._getPreviewDiffByTimestamp(diff_timestamp)
+        return getUtility(ICodeReviewInlineCommentSet).getDraft(
+            previewdiff, person)
 
     def saveDraftInlineComment(self, diff_timestamp, person, comments):
         """See `IBranchMergeProposal`."""

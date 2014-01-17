@@ -65,12 +65,6 @@ class CodeReviewInlineCommentSet:
             CodeReviewInlineCommentDraft.previewdiff_id == previewdiff.id,
             CodeReviewInlineCommentDraft.person_id == person.id).one()
 
-    def findDraft(self, previewdiff, person):
-        cricd = self._findDraftObject(previewdiff, person)
-        if cricd:
-            return json.loads(cricd.comments)
-        return {}
-
     def ensureDraft(self, previewdiff, person, comments):
         cricd = self._findDraftObject(previewdiff, person)
         if not comments:
@@ -102,7 +96,15 @@ class CodeReviewInlineCommentSet:
         IStore(CodeReviewInlineComment).remove(cricd)
         return cric
 
-    def findByPreviewDiff(self, previewdiff, person):
+    def getDraft(self, previewdiff, person):
+        draft_comments = []
+        cricd = self._findDraftObject(previewdiff, person)
+        if cricd:
+            for lineno, comment in json.loads(cricd.comments).iteritems():
+                draft_comments.append([lineno, None, comment, None])
+        return draft_comments
+
+    def getPublished(self, previewdiff):
         crics = IStore(CodeReviewInlineComment).find(
             CodeReviewInlineComment,
             CodeReviewInlineComment.previewdiff_id == previewdiff.id)
@@ -118,8 +120,4 @@ class CodeReviewInlineCommentSet:
                 inline_comments.append(
                     [lineno, cric.person, comments[lineno],
                         cric.comment.date_created])
-        draft_comments = self.findDraft(previewdiff, person)
-        for draft_lineno in draft_comments:
-            inline_comments.append(
-                [draft_lineno, None, draft_comments[draft_lineno], None])
         return inline_comments

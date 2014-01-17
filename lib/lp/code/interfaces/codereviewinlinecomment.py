@@ -39,12 +39,6 @@ class ICodeReviewInlineComment(Interface):
 
 
 class ICodeReviewInlineCommentSet(Interface):
-    def findDraft(previewdiff, person):
-        """Find the draft comments for a given diff and person.
-
-        :param previewdiff: The `PreviewDiff` these comments are for.
-        :param person: The `Person` making the comments.
-        """
 
     def ensureDraft(previewdiff, person, comments):
         """Ensure a `ICodeReviewInlineCommentDraft` is up to date. This method
@@ -63,5 +57,15 @@ class ICodeReviewInlineCommentSet(Interface):
         :param comment: The `CodeReviewComment` linked to the comments.
         """
 
-    def findByPreviewDiff(previewdiff):
-        """Find all comments for a given `PreviewDiff`."""
+    def getDraft(previewdiff, person):
+        """Return the draft comments for a given diff and person.
+
+        :param previewdiff: The `PreviewDiff` these comments are for.
+        :param person: The `Person` making the comments.
+        """
+
+    def getPublished(previewdiff):
+        """Return published comments for a given `PreviewDiff`.
+
+        :param previewdiff: The `PreviewDiff` these comments are for.
+        """
