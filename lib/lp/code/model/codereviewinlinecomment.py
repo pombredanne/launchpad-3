@@ -10,7 +10,6 @@ __all__ = [
     'CodeReviewInlineCommentSet',
     ]
 
-import json
 from storm.locals import (
     Int,
     Reference,
@@ -70,25 +69,21 @@ class CodeReviewInlineCommentSet:
         if not comments:
             if cricd:
                 IStore(CodeReviewInlineCommentDraft).remove(cricd)
-        else:
-            if type(comments) == dict:
-                comments = json.dumps(comments).decode('utf-8')
-            if cricd:
-                cricd.comments = comments
-            else:
-                cricd = CodeReviewInlineCommentDraft()
-                cricd.previewdiff = previewdiff
-                cricd.person = person
-                cricd.comments = comments
-                IStore(CodeReviewInlineCommentDraft).add(cricd)
+            return
+        if not cricd:
+            cricd = CodeReviewInlineCommentDraft()
+            cricd.previewdiff = previewdiff
+            cricd.person = person
+            cricd.comments = comments
+            IStore(CodeReviewInlineCommentDraft).add(cricd)
+        cricd.comments = comments
 
     def publishDraft(self, previewdiff, person, comment):
         cricd = self._findDraftObject(previewdiff, person)
         if cricd is None:
             return
         cric = CodeReviewInlineComment()
-        cric.previewdiff = cricd.previewdiff
-        # XXX cprov 20140114: why the hell cricd.person is empty here ?
+        cric.previewdiff = previewdiff
         cric.person = person
         cric.comment = comment
         cric.comments = cricd.comments
@@ -100,7 +95,7 @@ class CodeReviewInlineCommentSet:
         draft_comments = []
         cricd = self._findDraftObject(previewdiff, person)
         if cricd:
-            for lineno, comment in json.loads(cricd.comments).iteritems():
+            for lineno, comment in cricd.comments.iteritems():
                 draft_comments.append([lineno, None, comment, None])
         return draft_comments
 
@@ -115,9 +110,7 @@ class CodeReviewInlineCommentSet:
             list(crics), key=lambda c: c.comment.date_created)
         inline_comments = []
         for cric in sorted_crics:
-            comments = json.loads(cric.comments)
-            for lineno in comments:
+            for lineno, text in cric.comments.iteritems():
                 inline_comments.append(
-                    [lineno, cric.person, comments[lineno],
-                        cric.comment.date_created])
+                    [lineno, cric.person, text, cric.comment.date_created])
         return inline_comments

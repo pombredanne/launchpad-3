@@ -906,7 +906,7 @@ class BranchMergeProposal(SQLBase):
                     code_review_message, original_email))
         return code_review_message
 
-    def getPublishedInlineComments(self, diff_timestamp):
+    def getInlineComments(self, diff_timestamp):
         """See `IBranchMergeProposal`."""
         previewdiff = self._getPreviewDiffByTimestamp(diff_timestamp)
         return getUtility(ICodeReviewInlineCommentSet).getPublished(

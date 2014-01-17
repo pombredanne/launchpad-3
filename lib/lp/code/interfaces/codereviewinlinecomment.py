@@ -10,7 +10,10 @@ __all__ = [
     ]
 
 from lazr.restful.fields import Reference
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Datetime,
     TextLine,
@@ -34,8 +37,7 @@ class ICodeReviewInlineComment(Interface):
     date_created = Datetime(
         title=_('The date on which the comments were published'),
         required=True, readonly=True)
-    comments = TextLine(
-        title=_('Inline comments'), required=True, readonly=True)
+    comments = Attribute(_('Inline comments'))
 
 
 class ICodeReviewInlineCommentSet(Interface):

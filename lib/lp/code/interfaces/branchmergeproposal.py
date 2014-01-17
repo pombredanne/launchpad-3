@@ -546,7 +546,7 @@ class IBranchMergeProposalAnyAllowedPerson(Interface):
         vote=Choice(vocabulary=CodeReviewVote), review_type=Text(),
         parent=Reference(schema=Interface),
         diff_timestamp=Datetime(),
-        inline_comments=Dict(key_type=TextLine()))
+        inline_comments=Dict(key_type=TextLine(), value_type=TextLine()))
     @call_with(owner=REQUEST_USER)
     # ICodeReviewComment supplied as Interface to avoid circular imports.
     @export_factory_operation(Interface, [])
@@ -581,8 +581,8 @@ class IBranchMergeProposalAnyAllowedPerson(Interface):
     @operation_parameters(
         diff_timestamp=Datetime())
     @operation_for_version('devel')
-    def getPublishedInlineComments(diff_timestamp):
-        """Return a list of published inline comments related to this MP.
+    def getInlineComments(diff_timestamp):
+        """Return a list of inline comments related to this MP.
 
         The return value is a list of 4-tuples representing published and
         draft inline comments.
@@ -607,7 +607,8 @@ class IBranchMergeProposalAnyAllowedPerson(Interface):
 
     @export_write_operation()
     @operation_parameters(
-        diff_timestamp=Datetime(), comments=Dict(key_type=TextLine()))
+        diff_timestamp=Datetime(),
+        comments=Dict(key_type=TextLine(), value_type=TextLine()))
     @call_with(person=REQUEST_USER)
     @operation_for_version('devel')
     def saveDraftInlineComment(diff_timestamp, person, comments):
