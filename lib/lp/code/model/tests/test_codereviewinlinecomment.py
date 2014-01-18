@@ -55,8 +55,7 @@ class TestCodeReviewInlineComment(TestCaseWithFactory):
             previewdiff, person, {'2': 'foobar'})
         drafts = getUtility(ICodeReviewInlineCommentSet).getDraft(
             previewdiff, person)
-        self.assertEqual(
-            [['2', None, 'foobar', None]], drafts)
+        self.assertEqual({'2':'foobar'}, drafts)
 
     def test_ensure_deletes(self):
         # ICodeReviewInlineCommentSet.ensureDraft() will delete a draft if
@@ -66,7 +65,7 @@ class TestCodeReviewInlineComment(TestCaseWithFactory):
             previewdiff, person, {})
         drafts = getUtility(ICodeReviewInlineCommentSet).getDraft(
             previewdiff, person)
-        self.assertEqual([], drafts)
+        self.assertIsNone(drafts)
 
     def test_ensure_deletes_with_no_draft(self):
         # ICodeReviewInlineCommentSet.ensureDraft() will cope with a draft
@@ -77,7 +76,7 @@ class TestCodeReviewInlineComment(TestCaseWithFactory):
             previewdiff, person, {})
         drafts = getUtility(ICodeReviewInlineCommentSet).getDraft(
             previewdiff, person)
-        self.assertEqual([], drafts)
+        self.assertIsNone(drafts)
 
     def test_ensure_updates(self):
         # ICodeReviewInlineCommentSet.ensureDraft() will update the draft when
@@ -87,7 +86,7 @@ class TestCodeReviewInlineComment(TestCaseWithFactory):
             previewdiff, person, {'1': 'bar'})
         drafts = getUtility(ICodeReviewInlineCommentSet).getDraft(
             previewdiff, person)
-        self.assertEqual([['1', None, 'bar', None]], drafts)
+        self.assertEqual({'1':'bar'}, drafts)
 
     def test_publishDraft(self):
         # ICodeReviewInlineCommentSet.publishDraft() will publish draft
@@ -97,7 +96,7 @@ class TestCodeReviewInlineComment(TestCaseWithFactory):
             merge_proposal=previewdiff.branch_merge_proposal, sender=person)
         cric = getUtility(ICodeReviewInlineCommentSet).publishDraft(
             previewdiff, person, comment)
-        self.assertIsNot(None, cric)
+        self.assertIsNotNone(cric)
         self.assertEqual(previewdiff, cric.previewdiff)
         self.assertEqual(comment, cric.comment)
         self.assertEqual(person, cric.person)
@@ -110,7 +109,7 @@ class TestCodeReviewInlineComment(TestCaseWithFactory):
             merge_proposal=comment.branch_merge_proposal)
         cric = getUtility(ICodeReviewInlineCommentSet).publishDraft(
             previewdiff, comment.author, comment)
-        self.assertIs(None, cric)
+        self.assertIsNone(cric)
 
     def test_getDraft(self):
         # ICodeReviewInlineCommentSet.getDraft() will return a draft
@@ -118,11 +117,11 @@ class TestCodeReviewInlineComment(TestCaseWithFactory):
         previewdiff, person = self.makeCodeReviewInlineCommentDraft()
         drafts = getUtility(ICodeReviewInlineCommentSet).getDraft(
             previewdiff, person)
-        self.assertEqual([['2', None, 'foobar', None]], drafts)
+        self.assertEqual({'2':'foobar'}, drafts)
 
     def test_get_published_sorted(self):
         # ICodeReviewInlineCommentSet.findByPreviewDiff() will return a sorted
-        # list.
+        # list of dictionaries.
         previewdiff = self.factory.makePreviewDiff()
         person = self.factory.makePerson()
         comment = self.factory.makeCodeReviewComment()
@@ -134,6 +133,8 @@ class TestCodeReviewInlineComment(TestCaseWithFactory):
             previewdiff=previewdiff, person=person, comment=old_comment,
             comments={'8': 'baz'})
         self.assertEqual(
-            [[u'8', person, u'baz', old_comment.date_created],
-             [u'2', person, u'foobar', comment.date_created]],
+            [{'line_number': '8', 'person': person, 'text': 'baz',
+              'date': old_comment.date_created},
+             {'line_number': '2', 'person': person, 'text': 'foobar',
+              'date': comment.date_created}],
             getUtility(ICodeReviewInlineCommentSet).getPublished(previewdiff))

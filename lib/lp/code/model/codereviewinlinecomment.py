@@ -92,12 +92,10 @@ class CodeReviewInlineCommentSet:
         return cric
 
     def getDraft(self, previewdiff, person):
-        draft_comments = []
         cricd = self._findDraftObject(previewdiff, person)
-        if cricd:
-            for lineno, comment in cricd.comments.iteritems():
-                draft_comments.append([lineno, None, comment, None])
-        return draft_comments
+        if not cricd:
+            return
+        return cricd.comments
 
     def getPublished(self, previewdiff):
         crics = IStore(CodeReviewInlineComment).find(
@@ -110,7 +108,12 @@ class CodeReviewInlineCommentSet:
             list(crics), key=lambda c: c.comment.date_created)
         inline_comments = []
         for cric in sorted_crics:
-            for lineno, text in cric.comments.iteritems():
-                inline_comments.append(
-                    [lineno, cric.person, text, cric.comment.date_created])
+            for line_number, text in cric.comments.iteritems():
+                comment = {
+                    'line_number': line_number,
+                    'person': cric.person,
+                    'text': text,
+                    'date': cric.comment.date_created,
+                }
+                inline_comments.append(comment)
         return inline_comments

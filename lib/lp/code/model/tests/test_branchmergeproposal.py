@@ -2217,7 +2217,8 @@ class TestBranchMergeProposalInlineCommentsEnabled(
         # A 'published' inline comment is represented by a list of 4
         # elements (line_number, author, comment, timestamp).
         self.assertEqual(
-            ['11', self.person, 'eleven', comment.date_created],
+            {'line_number': '11', 'person': self.person, 'text': 'eleven',
+             'date': comment.date_created},
             published_comment)
 
     def test_get_draft(self):
@@ -2230,13 +2231,11 @@ class TestBranchMergeProposalInlineCommentsEnabled(
 
         draft_comments = self.bmp.getDraftInlineComments(
             self.previewdiff.date_created, self.person)
-        self.assertEqual(1, len(draft_comments))
-        [draft_comment] = draft_comments
 
-        # A 'published' inline comment is represented by a list of 4
-        # elements (line_number, author, comment, timestamp).
-        self.assertEqual(
-            ['10', None, 'ten', None], draft_comment)
+        # A 'draft' inline comment is represented by a dictionary (object)
+        # with keyed by line numbers (as text) and the corresponding
+        # comment as value, exactly as it was sent to LP.
+        self.assertEqual({'10': 'ten'}, draft_comments)
 
     def test_get_draft_different_users(self):
         #  Different users have different draft comments.
@@ -2251,11 +2250,8 @@ class TestBranchMergeProposalInlineCommentsEnabled(
             person=someone_else,
             comments={'1': 'boing!'})
 
-        self.assertEqual(
-            [['1', None, 'zoing!', None]], self.getDraft())
-        self.assertEqual(
-            [['1', None, 'boing!', None]],
-            self.getDraft(person=someone_else))
+        self.assertEqual({'1': 'zoing!'}, self.getDraft())
+        self.assertEqual({'1': 'boing!'}, self.getDraft(person=someone_else))
 
     def test_get_diff_not_found(self):
         # Trying to fetch inline comments (draft or published) with a
@@ -2347,14 +2343,12 @@ class TestWebservice(WebServiceTestCase):
 
         ws_bmp.saveDraftInlineComment(
             diff_timestamp=previewdiff.date_created,
-            comments={u'2': u'foo'})
+            comments={'2': 'foo'})
         transaction.commit()
 
         draft_comments = ws_bmp.getDraftInlineComments(
             diff_timestamp=previewdiff.date_created)
-        self.assertEqual(
-            [['2', None, 'foo', None]],
-            draft_comments)
+        self.assertEqual({'2': 'foo'}, draft_comments)
 
     def test_getInlineComment(self):
         # Publishing and retrieving inline comments.
@@ -2379,11 +2373,8 @@ class TestWebservice(WebServiceTestCase):
         self.assertEqual(1, len(inline_comments))
         [inline_comment] = inline_comments
 
-        self.assertEqual(4, len(inline_comment))
-        [line_number, author, text, date_created] = inline_comment
-
-        self.assertEqual('2', line_number)
-        self.assertEqual(user.name, author.get('name'))
-        self.assertEqual('foo', text)
-        self.assertEqual(
-            review_comment.date_created.isoformat(), date_created)
+        self.assertEqual('2', inline_comment.get('line_number'))
+        self.assertEqual(user.name, inline_comment.get('person').get('name'))
+        self.assertEqual('foo', inline_comment.get('text'))
+        comment_date = review_comment.date_created.isoformat()
+        self.assertEqual(comment_date, inline_comment.get('date'))

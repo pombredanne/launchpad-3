@@ -216,7 +216,7 @@
                     on: {
                         success: function (r) {
                             LP.cache.published_inline_comments = r;
-                            LP.cache.draft_inline_comments = [];
+                            LP.cache.draft_inline_comments = null;
                             ns.populate_existing_comments();
                         },
                     },
