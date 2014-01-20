@@ -2089,7 +2089,7 @@ class TestBranchMergeProposalInlineCommentsDisabled(
             diff_timestamp=self.previewdiff.date_created,
             person=self.person,
             comments={'10': 'No game'})
-        self.assertEqual(0, len(self.getDraft()))
+        self.assertIsNone(self.getDraft())
 
     def test_publish(self):
         # `createComment` does not publish given inline comments
